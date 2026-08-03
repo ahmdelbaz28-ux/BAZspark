@@ -500,8 +500,8 @@ const handleSearchOpen = useCallback(() => {
                                                 onHelpOpen={handleHelpOpen}
                                                 onSearchOpen={handleSearchOpen}
                                         >
-                                                <main
-                                                        id="main-content"
+                                                <div
+                                                        id="app-content"
                                                         className="flex-1 overflow-auto relative"
                                                         tabIndex={-1}
                                                 >
@@ -532,7 +532,7 @@ const handleSearchOpen = useCallback(() => {
                                                                         </Routes>
                                                                 </PageErrorBoundary>
                                                         </Suspense>
-                                                </main>
+                                                </div>
                                         </AppShell>
                                         </Suspense>
                                 )}

@@ -23,6 +23,7 @@
                 "test:visual": "playwright test --reporter=list",
                 "test:visual:ui": "playwright test --ui",
                 "test:visual:update": "playwright test --update-snapshots",
+                "test:a11y": "playwright test --grep @a11y --reporter=list",
                 "audit": "npm audit --audit-level=high",
                 "audit:fix": "npm audit fix",
                 "outdated": "npm outdated",
@@ -100,6 +101,7 @@
                 "zod": "^3.22.0"
         },
         "devDependencies": {
+                "@axe-core/playwright": "^4.12.1",
                 "@eslint/js": "^9.0.0",
                 "@playwright/test": "^1.62.1",
                 "@tailwindcss/vite": "^4.3.2",

@@ -308,7 +308,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 
 						<div className="flex gap-2 pt-2">
 							<Button
-								className="flex-1 bg-danger hover:bg-danger/90 text-white border-none"
+								className="flex-1 bg-danger hover:bg-danger/90 text-danger-foreground border-none"
 								onClick={handleSave}
 							>
 								<Save aria-hidden="true" className="h-4 w-4 mr-2" />

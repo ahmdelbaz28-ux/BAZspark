@@ -653,7 +653,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                         <div key={group.id} className={groupIndex > 0 ? "mt-4" : ""}>
                                                 {!collapsed && (
                                                         <div
-                                                                className="px-5 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70"
+                                                                className="px-5 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                                                                 aria-hidden="true"
                                                         >
                                                                 {t(group.labelKey, group.defaultLabel)}

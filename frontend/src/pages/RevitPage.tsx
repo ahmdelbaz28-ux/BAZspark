@@ -178,7 +178,7 @@ export function RevitPage() {
                                                 <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                         SIMULATION MODE — No real Revit instance is connected
                                                 </p>
-                                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                                <p className="text-xs text-amber-200">
                                                         create_wall/create_floor/create_door will return None.
                                                         read_rvt will return empty results (RVT is a closed
                                                         format requiring Revit API). write_rvt will write a

@@ -310,7 +310,7 @@ export function EngineeringPage() {
                                                 variant={activeTab === "voltage-drop" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "voltage-drop"
-                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("voltage-drop")}
@@ -322,7 +322,7 @@ export function EngineeringPage() {
                                                 variant={activeTab === "cable-sizing" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "cable-sizing"
-                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("cable-sizing")}
@@ -334,7 +334,7 @@ export function EngineeringPage() {
                                                 variant={activeTab === "battery-calc" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "battery-calc"
-                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("battery-calc")}
@@ -346,7 +346,7 @@ export function EngineeringPage() {
                                                 variant={activeTab === "room-analysis" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "room-analysis"
-                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("room-analysis")}
@@ -358,7 +358,7 @@ export function EngineeringPage() {
                                                 variant={activeTab === "integration" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "integration"
-                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("integration")}
@@ -463,7 +463,7 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.material", "Material")}>
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
                                                                                 <SelectContent className="bg-card border-border">
@@ -629,7 +629,7 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.installationMethod", "Installation method")}>
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
                                                                                 <SelectContent className="bg-card border-border">

@@ -89,7 +89,7 @@ export function VariantB(props: Readonly<LoginVariantProps>) {
                                         <p
                                                 style={{
                                                         fontSize: "0.8rem",
-                                                        color: "#64748b",
+                                                        color: "#94a3b8",
                                                         marginTop: "0.5rem",
                                                         fontFamily: "monospace",
                                                         letterSpacing: "0.1em",
@@ -124,7 +124,7 @@ export function VariantB(props: Readonly<LoginVariantProps>) {
                                                                                         display: "block",
                                                                                         fontSize: "0.65rem",
                                                                                         fontWeight: 600,
-                                                                                        color: "#64748b",
+                                                                                        color: "#94a3b8",
                                                                                         textTransform: "uppercase",
                                                                                         letterSpacing: "0.08em",
                                                                                         marginBottom: "0.4rem",

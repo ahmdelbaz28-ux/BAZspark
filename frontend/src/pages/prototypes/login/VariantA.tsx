@@ -65,7 +65,7 @@ export function VariantA(props: Readonly<LoginVariantProps>) {
                                                                                 fontFamily: "monospace",
                                                                                 fontWeight: 800,
                                                                                 letterSpacing: "0.15em",
-                                                                                color: "#64748b",
+                                                                                color: "#94a3b8",
                                                                                 textTransform: "uppercase",
                                                                                 marginTop: "0.15rem",
                                                                         }}

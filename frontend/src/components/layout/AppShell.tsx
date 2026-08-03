@@ -65,7 +65,6 @@ const AppShell: React.FC<AppShellProps> = ({
                                 <main
                                         id="main-content"
                                         className="flex-1 overflow-auto bg-background relative"
-                                        role="main"
                                 >
                                         <div className="relative z-10">{children}</div>
                                 </main>

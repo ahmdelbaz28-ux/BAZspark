@@ -633,7 +633,7 @@ export function ReportsPage() {
                                                                         {t("reports.reportType")}
                                                                 </Label>
                                                                 <Select value={reportType} onValueChange={setReportType}>
-                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground" aria-label="Select option">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
                                                                         <SelectContent className="bg-card border-border">
@@ -672,7 +672,7 @@ export function ReportsPage() {
                                                                                 setExecParams((p) => ({ ...p, kernel_coverage: v }))
                                                                         }
                                                                 >
-                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground" aria-label="Select option">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
                                                                         <SelectContent className="bg-card border-border">
@@ -721,7 +721,7 @@ export function ReportsPage() {
                                                                                                 </div>
 
                                                 <Button
-                                                        className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                        className="bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                         onClick={handleGenerate}
                                                         disabled={generating}
                                                 >
@@ -773,7 +773,7 @@ export function ReportsPage() {
                                                                                                                         NFPA Edition
                                                                                                                 </Label>
                                                                                                                 <Select value={ahjNfpaEdition} onValueChange={setAhjNfpaEdition}>
-                                                                                                                        <SelectTrigger className="mt-1 bg-card border-border text-foreground">
+                                                                                                                        <SelectTrigger className="mt-1 bg-card border-border text-foreground" aria-label="Select option">
                                                                                                                                 <SelectValue />
                                                                                                                         </SelectTrigger>
                                                                                                                         <SelectContent className="bg-card border-border">
@@ -824,7 +824,7 @@ export function ReportsPage() {
                                                         <div className="font-semibold text-amber-600 dark:text-amber-400">
                                                                 SAMPLE DATA — Not Real Calculations
                                                         </div>
-                                                        <div className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                                        <div className="text-sm text-amber-200 mt-1">
                                                                 The battery and coverage calculations below use hardcoded sample
                                                                 data for demonstration only. They do NOT reflect your actual
                                                                 project. Do NOT use these values for real system design or AHJ
