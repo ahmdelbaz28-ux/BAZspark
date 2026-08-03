@@ -3,21 +3,18 @@
  *
  * V216: New page — 5 backend endpoints now have UI.
  * Panel selection, verification, schedule generation, spec, panel list.
+ *
+ * Phase 13 (frontend-design skill): applied FACP industrial identity.
+ * See styles/facp.css for the visual vocabulary. All shadcn Card/Input/Button
+ * defaults are overridden with .facp-* classes — graphite + panel-recess +
+ * evac-green + IBM Plex Mono + 2px sharp corners.
  */
 import { useState } from "react";
 import { Loader2, Cpu, ListChecks, ShieldCheck, FileCode2, FileText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-        Card,
-        CardContent,
-        CardDescription,
-        CardHeader,
-        CardTitle,
-} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
         Select,
         SelectContent,
@@ -27,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { facpApi, facpExtendedApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
+import "@/styles/facp.css";
 
 interface FACPForm {
         device_count: string;
@@ -38,6 +36,17 @@ interface FACPForm {
         requires_releasing: boolean;
         jurisdiction: string;
         min_temperature_c: string;
+}
+
+// NFPA 72 §10.6.10.1.2 — NAC utilization cap is 80%, derating zone starts at 70%.
+// We use 70% / 90% as the green/amber/red thresholds with a 10% safety margin.
+const UTIL_THRESHOLD_WARNING = 0.70;
+const UTIL_THRESHOLD_DANGER = 0.90;
+
+function utilClass(value: number): "ok" | "warning" | "danger" {
+        if (value >= UTIL_THRESHOLD_DANGER) return "danger";
+        if (value >= UTIL_THRESHOLD_WARNING) return "warning";
+        return "ok";
 }
 
 export function FACPPage() {
@@ -104,76 +113,89 @@ export function FACPPage() {
                 }
         };
 
+        const capacityUtil = result ? (result.capacity_utilization as number) ?? 0 : 0;
+        const nacUtil = result ? (result.nac_utilization as number) ?? 0 : 0;
+
         return (
                 <div className="flex-1 overflow-auto">
                         <div className="p-6 max-w-5xl mx-auto space-y-6">
-                                <div>
-                                        <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                                <Cpu aria-hidden="true" className="h-5 w-5 text-primary" />
+                                {/* Page header — FACP nameplate vocabulary */}
+                                <div className="facp-page-header">
+                                        <h1 className="facp-page-title">
+                                                <Cpu aria-hidden="true" className="h-6 w-6 facp-page-title-icon" />
                                                 FACP Panel Selection
                                         </h1>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                                NFPA 72 §10.6.10 · UL 864 · Battery sizing with temperature/aging derating
+                                        <p className="facp-page-ref">
+                                                <span className="facp-page-ref-accent">NFPA 72 §10.6.10</span>
+                                                {" · "}
+                                                UL 864
+                                                {" · "}
+                                                Battery sizing with temperature/aging derating
                                         </p>
                                 </div>
 
                                 {/* Requirements Input */}
-                                <Card>
-                                        <CardHeader>
-                                                <CardTitle>Project Requirements</CardTitle>
-                                                <CardDescription>
+                                <div className="facp-card">
+                                        <div className="facp-card-header">
+                                                <h2 className="facp-card-title">Project Requirements</h2>
+                                                <p className="facp-card-desc">
                                                         Define the building and system requirements for panel selection
-                                                </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
+                                                </p>
+                                        </div>
+                                        <div className="facp-card-content">
                                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Device Count</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Device Count</Label>
                                                                 <Input
                                                                         type="number"
+                                                                        className="facp-input"
                                                                         value={form.device_count}
                                                                         onChange={(e) => setForm({ ...form, device_count: e.target.value })}
                                                                 />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">NAC Circuits</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">NAC Circuits</Label>
                                                                 <Input
                                                                         type="number"
+                                                                        className="facp-input"
                                                                         value={form.nac_circuit_count}
                                                                         onChange={(e) => setForm({ ...form, nac_circuit_count: e.target.value })}
                                                                 />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Building Size (m²)</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Building Size (m²)</Label>
                                                                 <Input
                                                                         type="number"
+                                                                        className="facp-input"
                                                                         value={form.building_size_m2}
                                                                         onChange={(e) => setForm({ ...form, building_size_m2: e.target.value })}
                                                                 />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Building Floors</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Building Floors</Label>
                                                                 <Input
                                                                         type="number"
+                                                                        className="facp-input"
                                                                         value={form.building_floors}
                                                                         onChange={(e) => setForm({ ...form, building_floors: e.target.value })}
                                                                 />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Min Temp (°C)</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Min Temp (°C)</Label>
                                                                 <Input
                                                                         type="number"
+                                                                        className="facp-input"
                                                                         value={form.min_temperature_c}
                                                                         onChange={(e) => setForm({ ...form, min_temperature_c: e.target.value })}
                                                                 />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Jurisdiction</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Jurisdiction</Label>
                                                                 <Select
                                                                         value={form.jurisdiction}
                                                                         onValueChange={(v) => setForm({ ...form, jurisdiction: v })}
                                                                 >
-                                                                        <SelectTrigger>
+                                                                        <SelectTrigger className="facp-select-trigger">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
                                                                         <SelectContent>
@@ -193,7 +215,7 @@ export function FACPPage() {
                                                                         checked={form.requires_network}
                                                                         onCheckedChange={(v) => setForm({ ...form, requires_network: v === true })}
                                                                 />
-                                                                <Label htmlFor="network" className="text-xs text-muted-foreground cursor-pointer">
+                                                                <Label htmlFor="network" className="facp-check-label">
                                                                         Networked
                                                                 </Label>
                                                         </div>
@@ -203,7 +225,7 @@ export function FACPPage() {
                                                                         checked={form.requires_voice}
                                                                         onCheckedChange={(v) => setForm({ ...form, requires_voice: v === true })}
                                                                 />
-                                                                <Label htmlFor="voice" className="text-xs text-muted-foreground cursor-pointer">
+                                                                <Label htmlFor="voice" className="facp-check-label">
                                                                         Voice Evac
                                                                 </Label>
                                                         </div>
@@ -213,21 +235,21 @@ export function FACPPage() {
                                                                         checked={form.requires_releasing}
                                                                         onCheckedChange={(v) => setForm({ ...form, requires_releasing: v === true })}
                                                                 />
-                                                                <Label htmlFor="releasing" className="text-xs text-muted-foreground cursor-pointer">
+                                                                <Label htmlFor="releasing" className="facp-check-label">
                                                                         Releasing Service
                                                                 </Label>
                                                         </div>
                                                 </div>
-                                        </CardContent>
-                                </Card>
+                                        </div>
+                                </div>
 
                                 {/* Actions */}
-                                <div className="flex gap-3">
-                                        <Button onClick={handleSelect} disabled={loading}>
+                                <div className="flex flex-wrap gap-3">
+                                        <Button onClick={handleSelect} disabled={loading} className="facp-btn-primary inline-flex items-center gap-2 px-4 py-2">
                                                 {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cpu aria-hidden="true" className="h-4 w-4" />}
                                                 Select Panel
                                         </Button>
-                                        <Button onClick={handleListPanels} disabled={loading} variant="outline">
+                                        <Button onClick={handleListPanels} disabled={loading} className="facp-btn-outline inline-flex items-center gap-2 px-4 py-2">
                                                 {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <ListChecks aria-hidden="true" className="h-4 w-4" />}
                                                 List All Panels
                                         </Button>
@@ -235,95 +257,126 @@ export function FACPPage() {
 
                                 {/* Selection Result */}
                                 {result && (
-                                        <Card>
-                                                <CardHeader>
-                                                        <CardTitle>Recommended Panel</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                        <div className="space-y-3">
-                                                                <div className="flex items-center gap-3">
-                                                                        <Badge variant="default" className="text-sm">
+                                        <div className="facp-card">
+                                                <div className="facp-card-header">
+                                                        <h2 className="facp-card-title">
+                                                                <ShieldCheck aria-hidden="true" className="h-5 w-5 facp-card-title-icon" />
+                                                                Recommended Panel
+                                                        </h2>
+                                                </div>
+                                                <div className="facp-card-content">
+                                                        <div className="space-y-4">
+                                                                <div className="flex flex-wrap items-center gap-3">
+                                                                        <span className="facp-result-nameplate">
                                                                                 {result.recommended_model as string}
-                                                                        </Badge>
-                                                                        <span className="text-sm text-muted-foreground">
+                                                                        </span>
+                                                                        <span className="facp-result-manufacturer">
                                                                                 {result.manufacturer as string}
                                                                         </span>
                                                                 </div>
-                                                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                                                        <div>
-                                                                                <span className="text-muted-foreground">Capacity utilization: </span>
-                                                                                <span className="font-mono text-foreground">
-                                                                                        {((result.capacity_utilization as number) * 100).toFixed(1)}%
+                                                                <div className="space-y-3">
+                                                                        <div className="facp-util-row">
+                                                                                <span className="facp-util-label">Capacity Utilization</span>
+                                                                                <span className="facp-util-value">
+                                                                                        {(capacityUtil * 100).toFixed(1)}%
                                                                                 </span>
+                                                                                <div className="facp-util-bar" role="progressbar"
+                                                                                        aria-valuenow={Math.round(capacityUtil * 100)}
+                                                                                        aria-valuemin={0} aria-valuemax={100}
+                                                                                        aria-label="Capacity utilization">
+                                                                                        <div
+                                                                                                className={`facp-util-bar-fill ${utilClass(capacityUtil)}`}
+                                                                                                style={{ width: `${Math.min(100, capacityUtil * 100)}%` }}
+                                                                                        />
+                                                                                </div>
                                                                         </div>
-                                                                        <div>
-                                                                                <span className="text-muted-foreground">NAC utilization: </span>
-                                                                                <span className="font-mono text-foreground">
-                                                                                        {((result.nac_utilization as number) * 100).toFixed(1)}%
+                                                                        <div className="facp-util-row">
+                                                                                <span className="facp-util-label">NAC Utilization</span>
+                                                                                <span className="facp-util-value">
+                                                                                        {(nacUtil * 100).toFixed(1)}%
                                                                                 </span>
+                                                                                <div className="facp-util-bar" role="progressbar"
+                                                                                        aria-valuenow={Math.round(nacUtil * 100)}
+                                                                                        aria-valuemin={0} aria-valuemax={100}
+                                                                                        aria-label="NAC utilization">
+                                                                                        <div
+                                                                                                className={`facp-util-bar-fill ${utilClass(nacUtil)}`}
+                                                                                                style={{ width: `${Math.min(100, nacUtil * 100)}%` }}
+                                                                                        />
+                                                                                </div>
                                                                         </div>
-                                                                        <div>
-                                                                                <span className="text-muted-foreground">Battery size: </span>
-                                                                                <span className="font-mono text-foreground">
+                                                                        <div className="facp-util-row">
+                                                                                <span className="facp-util-label">Battery Size</span>
+                                                                                <span className="facp-util-value">
                                                                                         {result.battery_size_ah as number} Ah
                                                                                 </span>
+                                                                                <div className="facp-util-bar" aria-hidden="true">
+                                                                                        <div className="facp-util-bar-fill ok" style={{ width: `100%` }} />
+                                                                                </div>
                                                                         </div>
                                                                 </div>
                                                                 {result.battery_derating_details ? (
-                                                                        <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md">
-                                                                                <div>Method: {(result.battery_derating_details as Record<string, unknown>).method as string}</div>
-                                                                                <div>Temperature derating: {(result.battery_derating_details as Record<string, unknown>).temperature_derating as number}</div>
-                                                                                <div>Aging derating: {(result.battery_derating_details as Record<string, unknown>).aging_derating as number}</div>
-                                                                                <div>Combined safety factor: {(result.battery_derating_details as Record<string, unknown>).combined_safety_factor as number}</div>
-                                                                        </div>
+                                                                        <dl className="facp-derating-block">
+                                                                                <dt>Method</dt>
+                                                                                <dd>{(result.battery_derating_details as Record<string, unknown>).method as string}</dd>
+                                                                                <dt>Temperature Derating</dt>
+                                                                                <dd>{(result.battery_derating_details as Record<string, unknown>).temperature_derating as number}</dd>
+                                                                                <dt>Aging Derating</dt>
+                                                                                <dd>{(result.battery_derating_details as Record<string, unknown>).aging_derating as number}</dd>
+                                                                                <dt>Combined Safety Factor</dt>
+                                                                                <dd>{(result.battery_derating_details as Record<string, unknown>).combined_safety_factor as number}</dd>
+                                                                        </dl>
                                                                 ) : null}
                                                         </div>
-                                                </CardContent>
-                                        </Card>
+                                                </div>
+                                        </div>
                                 )}
 
                                 {/* Panel Database */}
                                 {panels.length > 0 && (
-                                        <Card>
-                                                <CardHeader>
-                                                        <CardTitle>Panel Database ({panels.length})</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                        <div className="space-y-2">
+                                        <div className="facp-card">
+                                                <div className="facp-card-header">
+                                                        <h2 className="facp-card-title">
+                                                                <ListChecks aria-hidden="true" className="h-5 w-5 facp-card-title-icon" />
+                                                                Panel Database ({panels.length})
+                                                        </h2>
+                                                </div>
+                                                <div className="facp-card-content">
+                                                        <div className="space-y-0">
                                                                 {panels.map((p, i) => {
                                                                         const panel = p as { model: string; manufacturer: string; device_capacity?: number; points_capacity?: number; points?: number; nac_capacity?: number };
                                                                         const devCap = panel.device_capacity ?? panel.points_capacity ?? panel.points ?? 0;
                                                                         const nacCap = panel.nac_capacity ?? 0;
                                                                         return (
-                                                                                <div key={i} className="flex items-center justify-between text-sm border-b border-border pb-2">
-                                                                                        <span className="font-mono text-foreground">{panel.model}</span>
-                                                                                        <span className="text-muted-foreground">{panel.manufacturer}</span>
-                                                                                        <span className="font-mono text-muted-foreground">
+                                                                                <div key={i} className="facp-panel-row">
+                                                                                        <span className="facp-panel-model">{panel.model}</span>
+                                                                                        <span className="facp-panel-manufacturer">{panel.manufacturer}</span>
+                                                                                        <span className="facp-panel-capacity">
                                                                                                 {devCap} dev / {nacCap} NAC
                                                                                         </span>
                                                                                 </div>
                                                                         );
                                                                 })}
-
                                                         </div>
-                                                </CardContent>
-                                        </Card>
+                                                </div>
+                                        </div>
                                 )}
 
                                 {/* Extended FACP Operations */}
-                                <Card>
-                                        <CardHeader>
-                                                <CardTitle>Extended Operations</CardTitle>
-                                                <CardDescription>
+                                <div className="facp-card">
+                                        <div className="facp-card-header">
+                                                <h2 className="facp-card-title">Extended Operations</h2>
+                                                <p className="facp-card-desc">
                                                         Verify compliance, generate schedules and specifications
-                                                </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
+                                                </p>
+                                        </div>
+                                        <div className="facp-card-content">
                                                 <div className="space-y-4">
-                                                        <div className="space-y-1.5">
-                                                                <Label className="text-xs text-muted-foreground">Panel ID</Label>
+                                                        <div className="space-y-1">
+                                                                <Label className="facp-field-label">Panel ID</Label>
                                                                 <Input
                                                                         type="text"
+                                                                        className="facp-input"
                                                                         value={panelId}
                                                                         onChange={(e) => setPanelId(e.target.value)}
                                                                         placeholder="Enter panel ID..."
@@ -343,7 +396,7 @@ export function FACPPage() {
                                                                                 } finally { setLoading(false); }
                                                                         }}
                                                                         disabled={loading || !panelId}
-                                                                        variant="outline"
+                                                                        className="facp-btn-outline inline-flex items-center gap-2 px-4 py-2"
                                                                 >
                                                                         {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <ShieldCheck aria-hidden="true" className="h-4 w-4" />}
                                                                         Verify Compliance
@@ -361,7 +414,7 @@ export function FACPPage() {
                                                                                 } finally { setLoading(false); }
                                                                         }}
                                                                         disabled={loading || !panelId}
-                                                                        variant="outline"
+                                                                        className="facp-btn-outline inline-flex items-center gap-2 px-4 py-2"
                                                                 >
                                                                         {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <FileCode2 aria-hidden="true" className="h-4 w-4" />}
                                                                         Generate DXF Schedule
@@ -379,33 +432,33 @@ export function FACPPage() {
                                                                                 } finally { setLoading(false); }
                                                                         }}
                                                                         disabled={loading || !panelId}
-                                                                        variant="outline"
+                                                                        className="facp-btn-outline inline-flex items-center gap-2 px-4 py-2"
                                                                 >
                                                                         {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <FileText aria-hidden="true" className="h-4 w-4" />}
                                                                         Generate CSI Spec
                                                                 </Button>
                                                         </div>
                                                         {extendedResult && (
-                                                                <pre className="text-xs font-mono whitespace-pre-wrap text-muted-foreground bg-muted p-3 rounded-md overflow-auto max-h-60">
+                                                                <pre className="facp-event-log">
                                                                         {JSON.stringify(extendedResult, null, 2)}
                                                                 </pre>
                                                         )}
                                                 </div>
-                                        </CardContent>
-                                </Card>
+                                        </div>
+                                </div>
 
                                 {/* Distributed FACP Cluster Visualizer */}
-                                <Card>
-                                        <CardHeader>
-                                                <CardTitle className="text-base flex items-center gap-2">
-                                                        <Cpu aria-hidden="true" className="h-5 w-5 text-cyan-400" />
+                                <div className="facp-card">
+                                        <div className="facp-card-header">
+                                                <h2 className="facp-card-title">
+                                                        <Cpu aria-hidden="true" className="h-5 w-5 facp-card-title-icon" />
                                                         Distributed FACP Cluster Visualizer
-                                                </CardTitle>
-                                                <CardDescription>
+                                                </h2>
+                                                <p className="facp-card-desc">
                                                         Real-time cluster node state, leader node status, and event bus communicator metrics
-                                                </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
+                                                </p>
+                                        </div>
+                                        <div className="facp-card-content">
                                                 <div className="space-y-4">
                                                         <div className="flex items-center justify-between">
                                                                 <Button
@@ -418,17 +471,15 @@ export function FACPPage() {
                                                                                         toast({ title: "Cluster status failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
                                                                                 }
                                                                         }}
-                                                                        variant="outline"
-                                                                        size="sm"
+                                                                        className="facp-btn-outline inline-flex items-center gap-2 px-4 py-2"
                                                                 >
                                                                         Fetch Cluster Status
                                                                 </Button>
                                                         </div>
                                                 </div>
-                                        </CardContent>
-                                </Card>
+                                        </div>
+                                </div>
                         </div>
                 </div>
         );
 }
-
