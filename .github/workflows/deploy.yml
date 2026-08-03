@@ -230,7 +230,7 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4.2.0  # NOSONAR — S7637: GitHub Actions acceptable
 
       - name: Log in to registry
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7  # v4.4.0  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.4.0  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.REGISTRY_USERNAME }}
