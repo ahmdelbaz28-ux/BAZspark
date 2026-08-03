@@ -325,3 +325,11 @@ API_Test_Collection.postman_collection.json
 .agents/skills/
 audit_master.json
 
+
+# ─── Root build artifacts (Phase 3 cleanup — 2026-08-03) ─────────────
+# These are NOT deployment targets. Vercel/HF build from frontend/.
+# Prevents re-adding the frozen gh-pages build that caused stale UI.
+/index.html
+/assets/
+/static/
+/404.html
