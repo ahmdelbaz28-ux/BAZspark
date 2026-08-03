@@ -24,6 +24,30 @@ interface AlertsResponse {
   high_count?: number;
 }
 
+// Fallback sample data when backend is unavailable.
+// Extracted to module scope so it is hoisted above any reference inside the
+// component (react-hooks/immutability: cannot access a variable before declaration)
+// and so its reference is stable across renders (React Compiler friendly).
+const getSampleAlerts = (): SecurityAlert[] => [
+  { id: "1", timestamp: new Date().toISOString(), severity: "high", title: "Failed Login Attempts", message: "5 failed login attempts from IP 203.0.113.42 in the last 10 minutes", source: "auth", acknowledged: false },
+  { id: "2", timestamp: new Date(Date.now() - 600000).toISOString(), severity: "medium", title: "Unusual API Traffic", message: "Traffic spike detected on /api/v1/projects endpoint", source: "monitor", acknowledged: false },
+  { id: "3", timestamp: new Date(Date.now() - 1800000).toISOString(), severity: "low", title: "Expired API Key", message: "API key for user 'engineer@example.com' expired", source: "auth", acknowledged: true },
+  { id: "4", timestamp: new Date(Date.now() - 3600000).toISOString(), severity: "critical", title: "Database Connection Failure", message: "Redis connection timeout after 30s", source: "database", acknowledged: false },
+];
+
+// Pure fetch helper — does NOT call any React setState. Extracted to module
+// scope so it can be safely called from the mount effect's async IIFE without
+// triggering react-hooks/set-state-in-effect.
+async function fetchAlertsData(apiBase: string, severity: string): Promise<SecurityAlert[]> {
+  const params = severity !== "all" ? `?severity=${severity}` : "";
+  const res = await fetch(`${apiBase}/monitor/security-alerts${params}`, {
+    credentials: "same-origin",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: AlertsResponse = await res.json();
+  return data.alerts || [];
+}
+
 export const SecurityAlertsPage: React.FC = () => {
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,17 +57,15 @@ export const SecurityAlertsPage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
+  // `fetchAlerts` is intended for explicit user actions (Refresh button) — it
+  // synchronously calls setLoading(true)/setError(null) which is fine in an
+  // event handler.
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = severityFilter !== "all" ? `?severity=${severityFilter}` : "";
-      const res = await fetch(`${API_BASE}/monitor/security-alerts${params}`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: AlertsResponse = await res.json();
-      setAlerts(data.alerts || []);
+      const data = await fetchAlertsData(API_BASE, severityFilter);
+      setAlerts(data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load security alerts");
@@ -55,15 +77,30 @@ export const SecurityAlertsPage: React.FC = () => {
   }, [API_BASE, severityFilter]);
 
   useEffect(() => {
-    fetchAlerts();
-  }, [fetchAlerts]);
-
-  const getSampleAlerts = (): SecurityAlert[] => [
-    { id: "1", timestamp: new Date().toISOString(), severity: "high", title: "Failed Login Attempts", message: "5 failed login attempts from IP 203.0.113.42 in the last 10 minutes", source: "auth", acknowledged: false },
-    { id: "2", timestamp: new Date(Date.now() - 600000).toISOString(), severity: "medium", title: "Unusual API Traffic", message: "Traffic spike detected on /api/v1/projects endpoint", source: "monitor", acknowledged: false },
-    { id: "3", timestamp: new Date(Date.now() - 1800000).toISOString(), severity: "low", title: "Expired API Key", message: "API key for user 'engineer@example.com' expired", source: "auth", acknowledged: true },
-    { id: "4", timestamp: new Date(Date.now() - 3600000).toISOString(), severity: "critical", title: "Database Connection Failure", message: "Redis connection timeout after 30s", source: "database", acknowledged: false },
-  ];
+    // Inline async IIFE — no synchronous setState in the effect body. Every
+    // setState happens after the first `await`, so react-hooks/set-state-in-effect
+    // does not fire. `loading` is already initialised to `true` in useState.
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchAlertsData(API_BASE, severityFilter);
+        if (!cancelled) {
+          setAlerts(data);
+          setLastUpdated(new Date().toLocaleTimeString());
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load security alerts");
+          setAlerts(getSampleAlerts());
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [API_BASE, severityFilter]);
 
   const severityColors: Record<string, { bg: string; text: string; dot: string }> = {
     critical: { bg: "bg-red-500/15", text: "text-red-400", dot: "bg-red-500" },
@@ -90,7 +127,7 @@ export const SecurityAlertsPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={fetchAlerts}
+          onClick={() => fetchAlerts()}
           disabled={loading}
           className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors disabled:opacity-50"
         >

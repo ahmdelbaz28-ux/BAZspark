@@ -31,6 +31,76 @@ interface SystemCard {
   link?: string;
 }
 
+/**
+ * Fetch system status data (health + device count) and return an updater
+ * function that transforms the prev systems array. Extracted to module scope
+ * to eliminate the 51-line within-file duplication between `fetchSystemStatus`
+ * (refresh button) and the mount effect's IIFE (SonarCloud CPD finding on PR #285).
+ *
+ * Returns either a systems updater + lastUpdated timestamp, or an error string.
+ */
+async function fetchSystemStatusData(
+  apiBase: string,
+): Promise<
+  | { systemsUpdater: (prev: SystemCard[]) => SystemCard[]; lastUpdated: Date }
+  | { error: string }
+> {
+  try {
+    const healthRes = await fetch(`${apiBase}/health`, {
+      credentials: "same-origin",
+    });
+    const healthJson = healthRes.ok ? await healthRes.json() : {};
+
+    let deviceCount = "—";
+    try {
+      const devRes = await fetch(`${apiBase}/devices?limit=1`, {
+        credentials: "same-origin",
+      });
+      if (devRes.ok) {
+        const devJson = await devRes.json();
+        const total = devJson?.data?.total ?? devJson?.total;
+        if (total != null) deviceCount = String(total);
+      }
+    } catch { /* ignore */ }
+
+    const systemsUpdater = (prev: SystemCard[]): SystemCard[] =>
+      prev.map((s): SystemCard => {
+        if (s.id === "fire-alarm") {
+          return {
+            ...s,
+            status: (healthRes.ok ? "healthy" : "warning") as SystemCard["status"],
+            metrics: s.metrics.map((m) =>
+              m.label === "Devices" ? { ...m, value: deviceCount } : m
+            ),
+          };
+        }
+        if (s.id === "system-health") {
+          const apiStatus = healthRes.ok ? "Online" : "Offline";
+          return {
+            ...s,
+            status: (healthRes.ok ? "healthy" : "error") as SystemCard["status"],
+            metrics: [
+              { label: "API", value: apiStatus },
+              { label: "Database", value: healthJson?.database ?? "—" },
+              {
+                label: "Uptime",
+                value:
+                  healthJson?.uptime != null
+                    ? `${Math.round(healthJson.uptime / 60)}m`
+                    : "—",
+              },
+            ],
+          };
+        }
+        return s;
+      });
+
+    return { systemsUpdater, lastUpdated: new Date() };
+  } catch {
+    return { error: "Failed to fetch system status" };
+  }
+}
+
 export const BMSPage: React.FC = () => {
   const [systems, setSystems] = useState<SystemCard[]>([
     {
@@ -93,68 +163,34 @@ export const BMSPage: React.FC = () => {
   const fetchSystemStatus = async () => {
     setLoading(true);
     setError(null);
-    try {
-      // Try to fetch health info
-      const healthRes = await fetch(`${API_BASE}/health`, {
-        credentials: "same-origin",
-      });
-      const healthJson = healthRes.ok ? await healthRes.json() : {};
-
-      // Try to fetch project info for device count
-      let deviceCount = "—";
-      try {
-        const devRes = await fetch(`${API_BASE}/devices?limit=1`, {
-          credentials: "same-origin",
-        });
-        if (devRes.ok) {
-          const devJson = await devRes.json();
-          const total = devJson?.data?.total ?? devJson?.total;
-          if (total != null) deviceCount = String(total);
-        }
-      } catch { /* ignore */ }
-
-      setSystems((prev) =>
-        prev.map((s) => {
-          if (s.id === "fire-alarm") {
-            return {
-              ...s,
-              status: healthRes.ok ? "healthy" : "warning",
-              metrics: s.metrics.map((m) =>
-                m.label === "Devices" ? { ...m, value: deviceCount } : m
-              ),
-            };
-          }
-          if (s.id === "system-health") {
-            const apiStatus = healthRes.ok ? "Online" : "Offline";
-            return {
-              ...s,
-              status: healthRes.ok ? "healthy" : "error",
-              metrics: [
-                { label: "API", value: apiStatus },
-                { label: "Database", value: healthJson?.database ?? "—" },
-                {
-                  label: "Uptime",
-                  value:
-                    healthJson?.uptime != null
-                      ? `${Math.round(healthJson.uptime / 60)}m`
-                      : "—",
-                },
-              ],
-            };
-          }
-          return s;
-        })
-      );
-      setLastUpdated(new Date());
-    } catch {
-      setError("Failed to fetch system status");
-    } finally {
-      setLoading(false);
+    const result = await fetchSystemStatusData(API_BASE);
+    if ("error" in result) {
+      setError(result.error);
+    } else {
+      setSystems(result.systemsUpdater);
+      setLastUpdated(result.lastUpdated);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchSystemStatus();
+    // Mount fetch — uses the shared fetchSystemStatusData helper. No
+    // synchronous setState in the effect body (react-hooks/set-state-in-effect).
+    let cancelled = false;
+    (async () => {
+      const result = await fetchSystemStatusData(API_BASE);
+      if (cancelled) return;
+      if ("error" in result) {
+        setError(result.error);
+      } else {
+        setSystems(result.systemsUpdater);
+        setLastUpdated(result.lastUpdated);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const statusColors: Record<string, string> = {

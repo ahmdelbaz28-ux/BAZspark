@@ -29,13 +29,18 @@ import { type MouseEvent, useEffect, useState } from "react";
 
 export function EngineeringBackground() {
         const [mouse, setMouse] = useState<{ x: number; y: number } | null>(null);
-        const [reducedMotion, setReducedMotion] = useState(false);
+        // Lazy initializer so the initial render already has the correct value
+        // (avoids react-hooks/set-state-in-effect: no setState needed on mount).
+        const [reducedMotion, setReducedMotion] = useState(() => {
+                if (typeof window === "undefined") return false;
+                return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        });
 
         useEffect(() => {
                 const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-                setReducedMotion(mq.matches);
                 const handler = () => setReducedMotion(mq.matches);
                 mq.addEventListener("change", handler);
+                // No setState on mount — initial state already correct from lazy initializer.
                 return () => mq.removeEventListener("change", handler);
         }, []);
 

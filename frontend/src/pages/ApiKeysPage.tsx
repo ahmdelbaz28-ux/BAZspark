@@ -93,7 +93,27 @@ export function ApiKeysPage() {
                 }
         };
 
-        useEffect(() => { fetchKeys(); }, []);
+        useEffect(() => {
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). `fetchKeys` is still defined
+                // above for use by event handlers (refresh, create, delete).
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const resp = await fetch("/api/v1/admin/keys", { headers: buildAuthHeaders(), credentials: "same-origin" });
+                                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                                const data = await resp.json();
+                                if (!cancelled) setKeys(data.keys || data.data?.keys || []);
+                        } catch (err) {
+                                if (!cancelled) toast.error(`Failed to load API keys: ${err instanceof Error ? err.message : "Unknown"}`);
+                        } finally {
+                                if (!cancelled) setLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         const handleCreate = async () => {
                 setCreating(true);

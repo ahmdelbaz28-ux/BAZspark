@@ -264,7 +264,34 @@ export function RbacPage() {
         };
 
         useEffect(() => {
-                fetchPermissions();
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). `fetchPermissions` is still
+                // defined above for use by event handlers (refresh button).
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const data = await rbacApi.getPermissions();
+                                if (cancelled) return;
+                                const payload = (data as Record<string, unknown>).data
+                                        ? (data as Record<string, unknown>).data as Record<string, unknown>
+                                        : data as Record<string, unknown>;
+                                if (payload.categories) setCategories(payload.categories as PermissionCategory[]);
+                                if (payload.role_permissions) setRolePermissions(payload.role_permissions as RolePermissionMap);
+                        } catch (err) {
+                                if (cancelled) return;
+                                setUsingFallback(true);
+                                setCategories(FALLBACK_CATEGORIES);
+                                setRolePermissions(FALLBACK_ROLE_PERMISSIONS);
+                                toast.error(
+                                        `Failed to load RBAC data from backend: ${err instanceof Error ? err.message : "Unknown"}. Using local fallback.`,
+                                );
+                        } finally {
+                                if (!cancelled) setLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
         }, []);
 
         const hasPermission = (role: string, permission: string): boolean => {

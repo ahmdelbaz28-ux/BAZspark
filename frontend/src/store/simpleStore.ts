@@ -248,8 +248,12 @@ export const getState = (): AppState => state;
 
 export const useStore = <T>(selector: (s: AppState) => T): T => {
         const [slice, setSlice] = useState(selector(state));
+        // "Latest ref" pattern: keep the selector ref in sync inside an effect so
+        // we never mutate refs during render (react-hooks/refs).
         const selectorRef = useRef(selector);
-        selectorRef.current = selector;
+        useEffect(() => {
+                selectorRef.current = selector;
+        });
 
         useEffect(() => {
                 const unsubscribe = subscribe((newState) => {
