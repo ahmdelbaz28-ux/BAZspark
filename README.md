@@ -9,46 +9,41 @@
 [![Stars](https://img.shields.io/github/stars/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/stargazers)
 [![Release](https://img.shields.io/github/v/release/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/releases)
 
-[![Frontend](https://img.shields.io/badge/Web%20App-ba--zspark-tau.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark-tau.vercel.app)
-[![API](https://img.shields.io/badge/API%20Engine-HuggingFace%20Space-orange?style=for-the-badge&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
-
 </div>
 
 ---
 
 ## What is this?
 
-BAZspark automates fire alarm system design and compliance verification according to **NFPA 72-2022** and **SOLAS Marine** standards. It runs deterministic voltage drop and battery capacity calculations, generates a Merkle-tree signed audit trail for every design decision, and bridges AutoCAD DWG files to Autodesk Revit BIM models — eliminating manual drafting errors from protection engineering workflows.
+BAZspark automates fire alarm system design and compliance verification per **NFPA 72-2022** and **SOLAS Marine** standards. It runs deterministic voltage drop and battery capacity calculations, generates a Merkle-tree signed audit trail for every design decision, and bridges AutoCAD DWG to Revit BIM models — eliminating manual drafting errors from protection engineering workflows.
 
 ---
 
 ## Quick Start
 
+This is a monorepo. The backend (Python/FastAPI) is the primary entry point; the frontend (React) runs separately.
+
 **Prerequisites:** Python 3.8+, Node.js 22+, npm 11+, Git 2.40+
 
 ```bash
-# 1. Clone and install backend
+# Fastest: run the entire stack with Docker
+git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
+cd BAZspark
+docker-compose up -d --build
+```
+
+```bash
+# Or start backend and frontend separately:
 git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
 cd BAZspark
 pip install -e ".[dev,parsing]"
-
-# 2. Set secrets and start the API server
 export FIREAI_API_KEY="your-secure-api-key"
 export FIREAI_SESSION_SECRET=$(python3 -m backend.session_secret generate | tail -1)
 uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
-```
 
-```bash
-# 3. Start the frontend (in a second terminal)
-cd frontend
-npm ci
-npm run dev
+# Frontend (in a second terminal):
+cd frontend && npm ci && npm run dev
 # Open http://localhost:5173 → Settings → enter FIREAI_API_KEY
-```
-
-```bash
-# Or run the entire stack with Docker
-docker-compose up -d --build
 ```
 
 ---
@@ -69,11 +64,13 @@ docker-compose up -d --build
 
 ```mermaid
 graph LR
-    FE["Frontend\nReact 18 + Vite + TypeScript"] --> API["FastAPI Backend\n247+ endpoints · RBAC · SSRF Guard"]
-    API --> Calc["NFPA 72 Engine\nVoltage Drop · Battery Sizing\nAcoustic & Strobe Coverage"]
-    API --> Twin["Digital Twin Kernel\nAutoCAD DWG ↔ Revit BIM\nDXF · IFC 4.3 · PDF Parser"]
-    API --> Store["Storage\nPostgreSQL · SQLite WAL\nRedis · Qdrant Vector"]
-    Calc --> Audit["Merkle Audit Trail\nCryptographic Signatures"]
+    FE["frontend/\nReact 18 + Vite + TypeScript"] --> API["backend/\nFastAPI · 247+ endpoints · RBAC"]
+    API --> Calc["fireai/\nNFPA 72 Engine · Voltage Drop\nBattery Sizing · Coverage"]
+    API --> Twin["parsers/ + autocad_addin/\nDWG ↔ BIM · DXF · IFC 4.3"]
+    API --> Store["PostgreSQL · SQLite WAL\nRedis · Qdrant Vector"]
+    API --> Marine["marine/\nSOLAS · IEC 60092 · ISO 15370"]
+    API --> Copilot["engineering_copilot/\nAI Agent · MCP Server"]
+    Calc --> Audit["Merkle Audit Trail\nHMAC-SHA256 Signatures"]
     Twin --> Audit
 ```
 
@@ -83,19 +80,38 @@ graph LR
 
 ```
 BAZspark/
-├── .github/workflows/     # CI/CD, deployment, and security scan pipelines
+├── adapters/              # Cross-module adapters (PDF-to-rooms, etc.)
+├── alembic/               # Database migration scripts and versions
 ├── autocad_addin/         # AutoCAD C# .NET bridge add-in
-├── backend/               # FastAPI routers, services, auth, and RBAC
-├── deploy/                # Docker, Helm, and Kubernetes manifests
-├── docs/                  # Architecture, API, and operational docs
-├── facp_distributed/      # Distributed FACP multi-agent pipeline
+├── backend/               # FastAPI routers, services, auth, RBAC (pip)
+│   ├── core/              # Core business logic and config
+│   ├── db/                # Database service and models
+│   ├── integrations/      # External service integrations
+│   ├── middleware/         # SSRF guard, rate limiting, CSP
+│   ├── routers/           # API route handlers (247+ endpoints)
+│   ├── services/          # Domain service layer
+│   ├── use_cases/         # Application use-case orchestration
+│   └── utils/             # Shared backend utilities
+├── core/                  # Shared core: models, DB, retry logic
+├── deploy/                # Docker, Helm, K8s, Akamai, observability
+├── docs/                  # Architecture, API, ADRs, operational docs
+├── engineering_copilot/   # AI agent, MCP server, translation engine
+├── facp_distributed/      # Distributed FACP multi-agent pipeline (L1/L2/L3)
 ├── fireai/                # NFPA 72 calculation engine and audit core
-├── frontend/              # React SPA — canvas designer, dashboard, reports
+├── frontend/              # React SPA — canvas designer, dashboard, reports (npm)
 ├── marine/                # SOLAS marine fire detection compliance module
 ├── parsers/               # DXF, DWG, IFC, and PDF high-throughput parsers
+├── qomn_conduit/          # Conduit routing and sizing engine
 ├── qomn_fire/             # Standalone QOMN-FIRE physics kernel
 ├── scripts/               # Developer tooling and secret management
-└── tests/                 # Unit and integration test suites (145+ tests)
+├── tests/                 # Unit, integration, property-based, and factory tests
+├── CHANGELOG.md           # Version history
+├── CONTRIBUTING.md        # Contribution guide and CI/CD policy
+├── Dockerfile             # Production container image
+├── LICENSE                # MIT License
+├── ONBOARDING.md          # Developer onboarding guide
+├── SECURITY.md            # Vulnerability reporting and defense-in-depth
+└── VERSION                # Current version string
 ```
 
 ---
@@ -104,39 +120,44 @@ BAZspark/
 
 | Resource | Description |
 |----------|-------------|
-| [Architecture Overview](docs/ARCHITECTURE_CHANGE_PROPOSAL_V2.md) | System design, component boundaries, and data flow |
+| [Architecture Overview](ARCHITECTURE.md) | System design, component boundaries, and data flow |
+| [Engineering Basis](ENGINEERING_BASIS.md) | NFPA 72/NEC/IBC formulas, constants, and citations |
+| [Configuration Guide](CONFIGURATION_GUIDE.md) | Environment variables, secrets, and runtime config |
 | [API Keys Guide](docs/API_KEYS_GUIDE.md) | Generating and managing FIREAI_API_KEY and session secrets |
 | [Production Deployment](docs/PRODUCTION_DEPLOYMENT_GUIDE.md) | Docker Compose, Kubernetes, and Vercel deployment steps |
 | [NFPA 72 Specification](docs/FACP_SPECIFICATION.md) | Calculation methods, coverage rules, and standard references |
 | [Dev Pipeline](docs/DEV_PIPELINE.md) | CI gates, test strategy, and PR review requirements |
 | [Database Config](docs/DATABASE_STANDARD_CONFIG.md) | PostgreSQL, SQLite WAL, Redis, and Qdrant setup |
+| [Troubleshooting](TROUBLESHOOTING_GUIDE.md) | Common issues, diagnostics, and resolution steps |
+| [Onboarding](ONBOARDING.md) | Developer onboarding and environment setup |
+| [Security Policy](SECURITY.md) | Vulnerability reporting and defense-in-depth model |
 | [Release Notes](docs/RELEASE_NOTES.md) | Changelog and version history |
+
+### Package READMEs
+
+| Package | Description |
+|---------|-------------|
+| [fireai/](fireai/README.md) | NFPA 72-2022 fire alarm design system — calculation engine and audit core |
+| [facp_distributed/](facp_distributed/README.md) | Distributed FACP agent communication protocol (L1/L2/L3 planes) |
+| [engineering_copilot/](engineering_copilot/README.md) | AI-driven engineering copilot — intent understanding, data sync, validation |
+| [marine/](marine/README.md) | Ship and marine fire-protection engineering (SOLAS, IEC 60092, ISO 15370) |
 
 ---
 
-## Verification
+## Live Demos
 
-```bash
-# Run the full test suite (145+ tests)
-pytest
-
-# Run only security and SSRF tests
-pytest tests/test_ssrf_and_security_protocol.py tests/test_security.py
-
-# Run static linting (must pass before every PR)
-python -m ruff check .
-
-# Generate HTML coverage report
-pytest --cov=fireai --cov-report=html
-```
-
-All pull requests must pass the CI quality gates — static analysis, security checks, calculation accuracy, and integration tests — before merge.
+[![Frontend](https://img.shields.io/badge/Web%20App-ba--zspark-tau.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark-tau.vercel.app)
+[![API](https://img.shields.io/badge/API%20Engine-HuggingFace%20Space-orange?style=for-the-badge&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
 
 ---
 
 ## Contributing
 
-Engineering contributions are welcome. Open an issue to discuss significant changes before submitting a PR. All submissions undergo strict safety-critical code review.
+Engineering contributions are welcome. This is a **safety-critical system** — all changes must preserve deterministic execution and fail-safe behavior. Open an issue to discuss significant changes before submitting a PR.
+
+Changes to the calculation engine (`fireai/core/`), NFPA 72 constants (`fireai/constants/`), or audit trail (`fireai/core/audit_trail.py`) require 100% branch coverage and property-based tests. All submissions must pass the CI quality gates (15 workflows including secret-scan, container-scan, and regulatory-data-guard).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete guide and [ONBOARDING.md](ONBOARDING.md) to set up your environment.
 
 <a href="https://github.com/ahmdelbaz28-ux/BAZspark/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ahmdelbaz28-ux/BAZspark" />
