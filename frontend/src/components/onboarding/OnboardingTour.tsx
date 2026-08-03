@@ -111,17 +111,6 @@ export const OnboardingTour: React.FC = () => {
         // user opt-in (e.g. a "Take Tour" button in the help drawer) rather
         // than auto-firing on first visit.
 
-        const getTargetPosition = useCallback(() => {
-                const selector = TOUR_STEPS[currentStep].target;
-                const element = document.querySelector(selector) as HTMLElement;
-                if (element) {
-                        const rect = element.getBoundingClientRect();
-                        setTargetElement(rect);
-                } else {
-                        setTargetElement(null);
-                }
-        }, [currentStep]);
-
         useEffect(() => {
                 if (!isVisible) return;
                 // Inline the DOM read in an async IIFE so the setState

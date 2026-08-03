@@ -316,11 +316,6 @@ export const AdvancedSettingsPage: React.FC = () => {
     finally { setFlagsLoading(false); }
   }, []);
 
-  const fetchFeatureFlags = useCallback(async () => {
-    setFlagsLoading(true);
-    await fetchFeatureFlagsCore();
-  }, [fetchFeatureFlagsCore]);
-
   const handleToggleFlag = useCallback(async (key: string, enabled: boolean) => {
     setFlagToggling(key);
     setAdminMessage(null);
