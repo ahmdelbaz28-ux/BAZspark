@@ -49,6 +49,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
+import "@/styles/sidebar.css";
 
 // Vercel React Best Practices: network-prefetch — preload lazy chunks on hover
 const routePrefetchMap: Record<string, () => Promise<unknown>> = {
@@ -624,23 +625,18 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
 
         return (
                 <aside
-                        className={`${width} h-full glass flex flex-col transition-[width] duration-300 ${isRTL ? "order-last" : "order-first"}`}
-                        style={{
-                                borderRight: isRTL ? "none" : "1px solid rgba(255,255,255,0.1)",
-                                borderLeft: isRTL ? "1px solid rgba(255,255,255,0.1)" : "none",
-                        }}
+                        className={`sidebar-root ${width} h-full flex flex-col transition-[width] duration-300 ${collapsed ? "collapsed" : ""} ${isRTL ? "order-last" : "order-first"}`}
                 >
-                        {/* Brand header — BAZSPARK with official flame logo */}
-                        <div className="flex items-center gap-3 px-5 h-16 shrink-0 border-b border-white/10">
+                        {/* Brand header — BAZSPARK wordmark + FACP nameplate subtitle.
+                            Phase 14: glass blur + white/10 border → solid graphite + steel hairline.
+                            Wordmark switches to Space Grotesk (matches login hero / TopBar title).
+                            Subtitle becomes IBM Plex Mono uppercase tracked (FACP nameplate style). */}
+                        <div className="sidebar-brand flex items-center gap-3 px-5 h-16 shrink-0">
                                 <BazSparkLogo size={32} className="shrink-0" />
                                 {!collapsed && (
                                          <div className="flex flex-col leading-relaxed">
-                                                 <span className="text-foreground font-semibold text-[15px] tracking-tight">
-                                                         BAZSPARK
-                                                 </span>
-                                                 <span className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
-                                                         FireAI Digital Twin
-                                                 </span>
+                                                 <span className="sidebar-brand-wordmark">BAZSPARK</span>
+                                                 <span className="sidebar-brand-subtitle">FireAI Digital Twin</span>
                                          </div>
                                 )}
                         </div>
@@ -650,10 +646,10 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 aria-label="Primary navigation"
                         >
                                 {visibleGroups.map((group, groupIndex) => (
-                                        <div key={group.id} className={groupIndex > 0 ? "mt-4" : ""}>
+                                        <div key={group.id} className={groupIndex > 0 ? "sidebar-group-divider" : ""}>
                                                 {!collapsed && (
                                                         <div
-                                                                className="px-5 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70"
+                                                                className="sidebar-group-label px-5"
                                                                 aria-hidden="true"
                                                         >
                                                                 {t(group.labelKey, group.defaultLabel)}
@@ -670,20 +666,16 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                                                         <Link
                                                                                 to={item.path}
                                                                                 aria-current={isActive ? "page" : undefined}
-                                                                                className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-[color,background-color,border-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                                                                                        isActive
-                                                                                                ? "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20"
-                                                                                                : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
-                                                                                }`}
+                                                                                className={`sidebar-nav-item ${isActive ? "active" : ""}`}
                                                                                 title={collapsed ? labelText : undefined}
                                                                                 data-onboarding={item.dataOnboarding}
                                                                                 onMouseEnter={() => routePrefetchMap[item.path]?.()}
                                                                         >
                                                                                 <item.icon
-                                                                                        className={`shrink-0 h-5 w-5 ${isActive ? "text-cyan-300" : ""}`}  // NOSONAR: typescript:S3358
+                                                                                        className="sidebar-nav-icon h-5 w-5"  // NOSONAR: typescript:S3358
                                                                                 />
                                                                                 {!collapsed && (
-                                                                                        <span className="truncate text-sm font-medium tracking-wide">
+                                                                                        <span className="sidebar-nav-label">
                                                                                                 {labelText}
                                                                                         </span>
                                                                                 )}
@@ -695,20 +687,22 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 ))}
                         </nav>
 
-                        {/* Footer — About + collapse */}
-                        <div className="border-t border-white/10 shrink-0 p-3">
+                        {/* Footer — About + collapse. Phase 14: matches the membrane-switch
+                            affordance used on the dashboard refresh button (inset shadow on
+                            hover = physical depression). Evac-green hover = "go" affordance. */}
+                        <div className="sidebar-footer shrink-0 p-3">
                                 {!collapsed && (
                                         <Link
                                                 to="/settings"
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground cursor-pointer transition-[color,background-color,border-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                                className="sidebar-about-link"
                                         >
-                                                <Info aria-hidden="true" className="h-5 w-5 shrink-0" />
+                                                <Info aria-hidden="true" className="sidebar-about-icon h-5 w-5" />
                                                 <span className="text-sm font-medium">About BAZSPARK</span>
                                         </Link>
                                 )}
                                 <button type="button"
                                         onClick={() => setCollapsed(!collapsed)}
-                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 cursor-pointer transition-[color,background-color,border-color] duration-200 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                        className="sidebar-collapse-btn"
                                         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                                         aria-expanded={!collapsed}
                                         data-onboarding="sidebar-toggle"
