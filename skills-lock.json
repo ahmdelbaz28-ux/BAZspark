@@ -73,6 +73,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "569299a60c8e93880f3b3c1eca55578f58f7e1a4155876edb4cb814da3d6b3ea"
     },
+    "readme-wizard": {
+      "source": "debs-obrien/learn-agent-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/readme-wizard/SKILL.md",
+      "computedHash": "54b0b97360b7f024ca888128f55ae807323277b970a752812561045a819d153f"
+    },
     "receiving-code-review": {
       "source": "obra/superpowers",
       "sourceType": "github",
