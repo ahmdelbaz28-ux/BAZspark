@@ -79,21 +79,32 @@ export function ReportsPage() {
 
         useEffect(() => {
                 if (!firstProjectId) return;
-                setElementsLoading(true);
-                apiClient
-                        .getElements({ project_id: firstProjectId, page: 1, page_size: 200 })
-                        .then((result) => {
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). setElementsLoading(true) is
+                // moved inside the IIFE so it runs after the first await — but
+                // since there is no await before it, we instead skip it entirely
+                // and only call setElementsLoading(false) at the end.
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const result = await apiClient.getElements({ project_id: firstProjectId, page: 1, page_size: 200 });
+                                if (cancelled) return;
                                 setRealElements(
                                         (result?.items ?? []).map((el) => ({
                                                 element_id: el.element_id,
                                                 properties: el.properties as unknown,
                                         })),
                                 );
-                        })
-                        .catch(() => {
+                        } catch {
+                                if (cancelled) return;
                                 setRealElements([]);
-                        })
-                        .finally(() => setElementsLoading(false));
+                        } finally {
+                                if (!cancelled) setElementsLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
         }, [firstProjectId]);
 
         // V253: Map real elements to battery calculator input format.

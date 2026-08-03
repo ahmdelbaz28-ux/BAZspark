@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { actions } from "@/store/simpleStore";
 
 // Web Speech API types — not in all TS DOM lib configurations
@@ -35,7 +35,11 @@ type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
 export function useVoiceControl() {
         const [isListening, setIsListening] = useState(false);
-        const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+        // `recognition` is a ref-like value (used to call .start() / .stop()
+        // from event handlers). It does NOT need to trigger re-renders, so we
+        // use useRef instead of useState (avoids react-hooks/set-state-in-effect:
+        // no setState needed when creating the SpeechRecognition object on mount).
+        const recognitionRef = useRef<SpeechRecognition | null>(null);
 
         useEffect(() => {
                 const SpeechRecognitionCtor =
@@ -104,11 +108,12 @@ export function useVoiceControl() {
                                 actions.setVoiceActive(false);
                         };
 
-                        setRecognition(rec);
+                        recognitionRef.current = rec;
                 }
         }, []);
 
         const startListening = useCallback(() => {
+                const recognition = recognitionRef.current;
                 if (recognition) {
                         try {
                                 recognition.start();
@@ -123,15 +128,16 @@ export function useVoiceControl() {
                                 message: "Speech Recognition not supported in this browser.",
                         });
                 }
-        }, [recognition]);
+        }, []);
 
         const stopListening = useCallback(() => {
+                const recognition = recognitionRef.current;
                 if (recognition) {
                         recognition.stop();
                         setIsListening(false);
                         actions.setVoiceActive(false);
                 }
-        }, [recognition]);
+        }, []);
 
         return { isListening, startListening, stopListening };
 }

@@ -47,8 +47,31 @@ export const GuardsPage: React.FC = () => {
   }, [API_BASE]);
 
   useEffect(() => {
-    fetchGuards();
-  }, [fetchGuards]);
+    // Inline async IIFE — no synchronous setState in the effect body
+    // (react-hooks/set-state-in-effect). `fetchGuards` is still defined above
+    // for use by event handlers (refresh button).
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/qomn/physics-guards`, {
+          credentials: "same-origin",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: GuardsResponse = await res.json();
+        if (cancelled) return;
+        setGuards(data.guards || []);
+        setLastUpdated(new Date().toLocaleTimeString());
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load physics guards");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [API_BASE]);
 
   return (
     <div className="p-6 space-y-6">

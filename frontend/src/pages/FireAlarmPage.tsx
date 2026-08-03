@@ -132,52 +132,72 @@ const _mockZones = [
         },
 ];
 
+// Default detectors — extracted to module scope so the lazy useState
+// initializer below can reference it without re-creating the array on every
+// render. Loading from localStorage now happens in the lazy initializer
+// (react-hooks/set-state-in-effect: no setState needed on mount).
+const DEFAULT_DETECTORS: Detector[] = [
+        {
+                id: "det-1",
+                x: 100,
+                y: 150,
+                type: "smoke",
+                status: "normal",
+                coverageRadius: 6.37,
+                location: "Room 101",
+                heightAFF: 2.7,
+                manufacturer: "Hochiki",
+                model: "LT-1",
+                sensitivity: "standard",
+                lastTestDate: "2023-05-15",
+        },
+        {
+                id: "det-2",
+                x: 250,
+                y: 200,
+                type: "heat",
+                status: "warning",
+                coverageRadius: 4.27,
+                location: "Room 102",
+                heightAFF: 2.7,
+                manufacturer: "System Sensor",
+                model: "LSH-1",
+                sensitivity: "standard",
+                lastTestDate: "2023-05-10",
+        },
+        {
+                id: "det-3",
+                x: 400,
+                y: 100,
+                type: "pull",
+                status: "normal",
+                coverageRadius: 0,
+                location: "Hallway",
+                heightAFF: 1.2,
+                manufacturer: "Honeywell",
+                model: "PSS-1",
+                sensitivity: "standard",
+                lastTestDate: "2023-05-12",
+        },
+];
+
 export function FireAlarmPage() {
         const { t } = useTranslation();
-        const [detectors, setDetectors] = useState<Detector[]>([
-                {
-                        id: "det-1",
-                        x: 100,
-                        y: 150,
-                        type: "smoke",
-                        status: "normal",
-                        coverageRadius: 6.37,
-                        location: "Room 101",
-                        heightAFF: 2.7,
-                        manufacturer: "Hochiki",
-                        model: "LT-1",
-                        sensitivity: "standard",
-                        lastTestDate: "2023-05-15",
-                },
-                {
-                        id: "det-2",
-                        x: 250,
-                        y: 200,
-                        type: "heat",
-                        status: "warning",
-                        coverageRadius: 4.27,
-                        location: "Room 102",
-                        heightAFF: 2.7,
-                        manufacturer: "System Sensor",
-                        model: "LSH-1",
-                        sensitivity: "standard",
-                        lastTestDate: "2023-05-10",
-                },
-                {
-                        id: "det-3",
-                        x: 400,
-                        y: 100,
-                        type: "pull",
-                        status: "normal",
-                        coverageRadius: 0,
-                        location: "Hallway",
-                        heightAFF: 1.2,
-                        manufacturer: "Honeywell",
-                        model: "PSS-1",
-                        sensitivity: "standard",
-                        lastTestDate: "2023-05-12",
-                },
-        ]);
+        const [detectors, setDetectors] = useState<Detector[]>(() => {
+                // V187: Load saved detectors from localStorage on mount (lazy
+                // initializer — runs once on first render, no useEffect needed,
+                // avoids react-hooks/set-state-in-effect).
+                try {
+                        const saved = localStorage.getItem("fireai_firealarm_detectors");
+                        if (saved) {
+                                const parsed = JSON.parse(saved) as Detector[];
+                                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                        }
+                } catch {
+                        // Corrupt localStorage - ignore, use default detectors
+                }
+                return DEFAULT_DETECTORS;
+        });
         const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
         const [showProperties, setShowProperties] = useState(false);
 
@@ -191,8 +211,11 @@ export function FireAlarmPage() {
         const [history, setHistory] = useState<Detector[][]>([]);
         const [redoStack, setRedoStack] = useState<Detector[][]>([]);
         const [saveStatus, setSaveStatus] = useState<string | null>(null);
+        // Latest-ref pattern: keep ref in sync via effect (react-hooks/refs).
         const detectorsRef = useRef<Detector[]>(detectors);
-        detectorsRef.current = detectors;
+        useEffect(() => {
+                detectorsRef.current = detectors;
+        });
 
         const pushHistory = (snapshot: Detector[]) => {
                 setHistory((prev) => [...prev.slice(-19), snapshot]);
@@ -244,20 +267,8 @@ export function FireAlarmPage() {
                 }
         };
 
-        // V187: Load saved detectors from localStorage on mount
-        useEffect(() => {
-                try {
-                        const saved = localStorage.getItem("fireai_firealarm_detectors");
-                        if (saved) {
-                                const parsed = JSON.parse(saved) as Detector[];
-                                if (Array.isArray(parsed) && parsed.length > 0) {
-                                        setDetectors(parsed);
-                                }
-                        }
-                } catch {
-                        // Corrupt localStorage - ignore, use default detectors
-                }
-        }, []);
+        // V187: Load saved detectors from localStorage on mount — moved to the
+        // lazy useState initializer above (no useEffect needed).
 
         // V140 Phase 5: Fetch zones from API
         const [zones, setZones] = useState<typeof _mockZones>([]);

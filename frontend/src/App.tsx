@@ -332,8 +332,11 @@ function App() {
 
         // V140 Phase 7: Magic Help — F1 opens help for current page
         // V207.3: Ctrl+J opens AI Copilot
+        // Latest-ref pattern: keep ref in sync via effect (react-hooks/refs).
         const pathnameRef = useRef(location.pathname);
-        pathnameRef.current = location.pathname;
+        useEffect(() => {
+                pathnameRef.current = location.pathname;
+        });
         useEffect(() => {
                 const handleKeyDown = (e: KeyboardEvent) => {
                         if (e.key === "F1" || (e.ctrlKey && e.key === "h")) {

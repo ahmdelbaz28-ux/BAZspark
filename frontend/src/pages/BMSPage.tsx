@@ -154,7 +154,72 @@ export const BMSPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSystemStatus();
+    // Inline async IIFE — no synchronous setState in the effect body
+    // (react-hooks/set-state-in-effect). `fetchSystemStatus` is still defined
+    // above for use by event handlers (refresh button).
+    let cancelled = false;
+    (async () => {
+      try {
+        const healthRes = await fetch(`${API_BASE}/health`, {
+          credentials: "same-origin",
+        });
+        const healthJson = healthRes.ok ? await healthRes.json() : {};
+
+        let deviceCount = "—";
+        try {
+          const devRes = await fetch(`${API_BASE}/devices?limit=1`, {
+            credentials: "same-origin",
+          });
+          if (devRes.ok) {
+            const devJson = await devRes.json();
+            const total = devJson?.data?.total ?? devJson?.total;
+            if (total != null) deviceCount = String(total);
+          }
+        } catch { /* ignore */ }
+
+        if (cancelled) return;
+        setSystems((prev) =>
+          prev.map((s) => {
+            if (s.id === "fire-alarm") {
+              return {
+                ...s,
+                status: healthRes.ok ? "healthy" : "warning",
+                metrics: s.metrics.map((m) =>
+                  m.label === "Devices" ? { ...m, value: deviceCount } : m
+                ),
+              };
+            }
+            if (s.id === "system-health") {
+              const apiStatus = healthRes.ok ? "Online" : "Offline";
+              return {
+                ...s,
+                status: healthRes.ok ? "healthy" : "error",
+                metrics: [
+                  { label: "API", value: apiStatus },
+                  { label: "Database", value: healthJson?.database ?? "—" },
+                  {
+                    label: "Uptime",
+                    value:
+                      healthJson?.uptime != null
+                        ? `${Math.round(healthJson.uptime / 60)}m`
+                        : "—",
+                  },
+                ],
+              };
+            }
+            return s;
+          })
+        );
+        setLastUpdated(new Date());
+      } catch {
+        if (!cancelled) setError("Failed to fetch system status");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const statusColors: Record<string, string> = {

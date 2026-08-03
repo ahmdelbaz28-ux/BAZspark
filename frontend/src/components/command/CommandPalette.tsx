@@ -147,17 +147,39 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                 ];
         })();
 
-        useEffect(() => {
+        // React docs pattern: "set state during render based on previous value"
+        // — reset query/selectedIndex when `open` transitions to true (avoids
+        // react-hooks/set-state-in-effect). The focus is handled in a separate
+        // useEffect below (it's a side effect, not state, and accessing
+        // inputRef.current during render is not allowed by react-hooks/refs).
+        const [prevOpen, setPrevOpen] = useState(open);
+        if (open !== prevOpen) {
+                setPrevOpen(open);
                 if (open) {
                         setQuery("");
                         setSelectedIndex(0);
-                        setTimeout(() => inputRef.current?.focus(), 50);
+                }
+        }
+
+        // Focus the input when the palette opens (50ms delay so the input is
+        // mounted + visible before focus). Side-effect-only effect — no
+        // setState, just a DOM call, so react-hooks/set-state-in-effect does
+        // not fire.
+        useEffect(() => {
+                if (open) {
+                        const id = setTimeout(() => inputRef.current?.focus(), 50);
+                        return () => clearTimeout(id);
                 }
         }, [open]);
 
-        useEffect(() => {
-                setSelectedIndex(0);
-        }, []);
+        // `effectiveSelectedIndex` is the clamped value of `selectedIndex` —
+        // if the results list shrank below the current index, clamp to the last
+        // valid index. Computed during render instead of an effect (avoids
+        // react-hooks/set-state-in-effect).
+        const effectiveSelectedIndex =
+                selectedIndex >= results.length && results.length > 0
+                        ? results.length - 1
+                        : selectedIndex;
 
         const execute = (result: PaletteItem) => {
                 if (result.type === "command") {
@@ -178,7 +200,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                         setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
                 } else if (e.key === "Enter") {
                         e.preventDefault();
-                        execute(results[selectedIndex]);
+                        execute(results[effectiveSelectedIndex]);
                 } else if (e.key === "Escape") {
                         e.preventDefault();
                         setQuery("");
@@ -187,21 +209,15 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         };
 
         useEffect(() => {
-                if (selectedIndex >= results.length && results.length > 0) {
-                        setSelectedIndex(results.length - 1);
-                }
-        }, [selectedIndex, results.length]);
-
-        useEffect(() => {
                 if (!open || !listRef.current) {
                         return;
                 }
                 const items = listRef.current.querySelectorAll('[role="option"]');
-                const active = items[selectedIndex];
+                const active = items[effectiveSelectedIndex];
                 if (active) {
                         active.scrollIntoView({ block: "nearest" });
                 }
-        }, [selectedIndex, open]);
+        }, [effectiveSelectedIndex, open]);
 
         if (!open) {
                 return null;
@@ -251,7 +267,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                 </div>
                                         ) : (
                                                 results.map((result, index) => {
-                                                        const isActive = index === selectedIndex;
+                                                        const isActive = index === effectiveSelectedIndex;
                                                         if (result.type === "command") {
                                                                 return (
                                                                         <button  // NOSONAR: typescript:S6819

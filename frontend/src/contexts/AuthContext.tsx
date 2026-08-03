@@ -80,14 +80,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
         }, []);
 
-        // Initial check on mount
+        // Initial check on mount. Uses an inline async IIFE so every setState
+        // happens after the first `await` — this avoids react-hooks/set-state-in-effect
+        // (no synchronous setState in the effect body). `refresh` is still exposed
+        // via context for event handlers (window focus, login, logout).
         useEffect(() => {
-                refresh();
-        }, [refresh]);
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const user = await getCurrentUser();
+                                if (cancelled) return;
+                                if (user) {
+                                        setState({
+                                                isAuthenticated: true,
+                                                role: user.role,
+                                                loading: false,
+                                                error: null,
+                                        });
+                                } else {
+                                        setState({
+                                                isAuthenticated: false,
+                                                role: null,
+                                                loading: false,
+                                                error: null,
+                                        });
+                                }
+                        } catch {
+                                if (cancelled) return;
+                                setState({
+                                        isAuthenticated: false,
+                                        role: null,
+                                        loading: false,
+                                        error: "Session check failed",
+                                });
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         // Re-check on window focus (catches logout in another tab)
+        // Latest-ref pattern: keep ref in sync via effect (react-hooks/refs).
         const isAuthRef = useRef(state.isAuthenticated);
-        isAuthRef.current = state.isAuthenticated;
+        useEffect(() => {
+                isAuthRef.current = state.isAuthenticated;
+        });
         useEffect(() => {
                 const onFocus = () => {
                         // Only re-check if we think we're authenticated (avoid spamming

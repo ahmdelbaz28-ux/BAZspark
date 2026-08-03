@@ -112,8 +112,38 @@ export const AdvancedSettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    // Inline async IIFE — no synchronous setState in the effect body
+    // (react-hooks/set-state-in-effect). `fetchConfig` is still defined above
+    // for use by event handlers (refresh button, after-save reload).
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await adminConfigApi.getEnvConfig();
+        if (cancelled) return;
+        const payload = (data as Record<string, unknown>).data
+          ? (data as Record<string, unknown>).data as EnvConfigData
+          : data as unknown as EnvConfigData;
+        if (payload.categories) {
+          setConfigData(payload);
+          const initial: Record<string, string> = {};
+          for (const cat of Object.values(payload.categories)) {
+            for (const s of cat.settings) {
+              initial[s.key] = s.value;
+            }
+          }
+          setEditedValues(initial);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load configuration");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleValueChange = (key: string, value: string) => {
     setEditedValues((prev) => ({ ...prev, [key]: value }));
@@ -249,14 +279,22 @@ export const AdvancedSettingsPage: React.FC = () => {
 
   // ── Admin action handlers ──
 
-  const fetchCacheStats = useCallback(async () => {
-    setCacheLoading(true);
+  // `fetchCacheStatsCore` does NOT call setCacheLoading(true) synchronously —
+  // only setCacheStats/setCacheLoading(false) after the first await. Safe to
+  // call from an effect (react-hooks/set-state-in-effect). `fetchCacheStats`
+  // wraps it with synchronous setCacheLoading(true) for explicit user actions.
+  const fetchCacheStatsCore = useCallback(async () => {
     try {
       const res = await adminApi.getCacheStats();
       if (res.success && res.data) setCacheStats(res.data);
     } catch { /* ignore */ }
     finally { setCacheLoading(false); }
   }, []);
+
+  const fetchCacheStats = useCallback(async () => {
+    setCacheLoading(true);
+    await fetchCacheStatsCore();
+  }, [fetchCacheStatsCore]);
 
   const handleClearCache = useCallback(async () => {
     setCacheClearing(true);
@@ -270,14 +308,18 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setCacheClearing(false); }
   }, [fetchCacheStats]);
 
-  const fetchFeatureFlags = useCallback(async () => {
-    setFlagsLoading(true);
+  const fetchFeatureFlagsCore = useCallback(async () => {
     try {
       const res = await adminApi.getFeatureFlags();
       if (res.success && res.data) setFeatureFlags(res.data);
     } catch { /* ignore */ }
     finally { setFlagsLoading(false); }
   }, []);
+
+  const fetchFeatureFlags = useCallback(async () => {
+    setFlagsLoading(true);
+    await fetchFeatureFlagsCore();
+  }, [fetchFeatureFlagsCore]);
 
   const handleToggleFlag = useCallback(async (key: string, enabled: boolean) => {
     setFlagToggling(key);
@@ -291,14 +333,18 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setFlagToggling(null); }
   }, []);
 
-  const fetchDbHealth = useCallback(async () => {
-    setDbHealthLoading(true);
+  const fetchDbHealthCore = useCallback(async () => {
     try {
       const res = await adminApi.getDatabaseHealth();
       if (res.success && res.data) setDbHealth(res.data);
     } catch { /* ignore */ }
     finally { setDbHealthLoading(false); }
   }, []);
+
+  const fetchDbHealth = useCallback(async () => {
+    setDbHealthLoading(true);
+    await fetchDbHealthCore();
+  }, [fetchDbHealthCore]);
 
   const handleRotateSecret = useCallback(async () => {
     if (!secretName || !secretValue) return;
@@ -326,12 +372,44 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setAdminTokenRotating(false); }
   }, [adminTokenValue, adminTokenGrace]);
 
-  // Load admin data when category is selected
+  // Load admin data when category is selected. Uses inline async IIFEs so every
+  // setState happens after the first `await` — avoids react-hooks/set-state-in-effect.
+  // The `*Core` variants above are still used by the wrapper functions
+  // (`fetchCacheStats`, etc.) for the explicit Refresh buttons.
   useEffect(() => {
-    if (activeCategory === "_cache") fetchCacheStats();
-    if (activeCategory === "_feature_flags") fetchFeatureFlags();
-    if (activeCategory === "_db_health") fetchDbHealth();
-  }, [activeCategory, fetchCacheStats, fetchFeatureFlags, fetchDbHealth]);
+    let cancelled = false;
+    if (activeCategory === "_cache") {
+      (async () => {
+        try {
+          const res = await adminApi.getCacheStats();
+          if (cancelled) return;
+          if (res.success && res.data) setCacheStats(res.data);
+        } catch { /* ignore */ }
+        finally { if (!cancelled) setCacheLoading(false); }
+      })();
+    } else if (activeCategory === "_feature_flags") {
+      (async () => {
+        try {
+          const res = await adminApi.getFeatureFlags();
+          if (cancelled) return;
+          if (res.success && res.data) setFeatureFlags(res.data);
+        } catch { /* ignore */ }
+        finally { if (!cancelled) setFlagsLoading(false); }
+      })();
+    } else if (activeCategory === "_db_health") {
+      (async () => {
+        try {
+          const res = await adminApi.getDatabaseHealth();
+          if (cancelled) return;
+          if (res.success && res.data) setDbHealth(res.data);
+        } catch { /* ignore */ }
+        finally { if (!cancelled) setDbHealthLoading(false); }
+      })();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCategory]);
 
   // ── Render admin sections ──
 

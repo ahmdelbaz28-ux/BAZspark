@@ -11,13 +11,22 @@ import { useEffect, useRef, useState } from "react";
 
 export function MagneticCursor() {
         const cursorRef = useRef<HTMLDivElement>(null);
-        const [isDesktop, setIsDesktop] = useState(false);
+        // Lazy initializer so the initial render already has the correct value
+        // (avoids react-hooks/set-state-in-effect: no setState needed on mount).
+        const computeIsDesktop = () => {
+                if (typeof window === "undefined") return false;
+                const mq = window.matchMedia("(min-width: 1024px)");
+                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+                return mq.matches && !reduced.matches;
+        };
+        const [isDesktop, setIsDesktop] = useState(computeIsDesktop);
 
         useEffect(() => {
                 const mq = window.matchMedia("(min-width: 1024px)");
                 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
                 const active = mq.matches && !reduced.matches;
-                setIsDesktop(active);
+                // setIsDesktop is NOT called here — initial state already correct
+                // from the lazy initializer. We only set up the subscription.
 
                 // Only hide native cursor when MagneticCursor is actually active
                 if (active) {

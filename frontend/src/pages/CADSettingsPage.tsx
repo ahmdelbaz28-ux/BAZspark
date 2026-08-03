@@ -48,44 +48,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 let _cachedCadSettings: Record<string, unknown> | null = null;
 
 interface CadSettingsShape {
-	autocad?: {
-		path?: string;
-		version?: string;
-		template?: string;
-		units?: string;
-	};
-	revit?: {
-		path?: string;
-		version?: string;
-		template?: string;
-		units?: string;
-	};
-	cloud?: {
-		speckleServer?: string;
-		speckleStreamId?: string;
-		apsClientId?: string;
-		apsActivityId?: string;
-	};
+        autocad?: {
+                path?: string;
+                version?: string;
+                template?: string;
+                units?: string;
+        };
+        revit?: {
+                path?: string;
+                version?: string;
+                template?: string;
+                units?: string;
+        };
+        cloud?: {
+                speckleServer?: string;
+                speckleStreamId?: string;
+                apsClientId?: string;
+                apsActivityId?: string;
+        };
 }
 
 function getCadSettings(): Record<string, unknown> {
-	if (_cachedCadSettings !== null) return _cachedCadSettings;
-	try {
-		const saved = localStorage.getItem("cad_settings");
-		_cachedCadSettings = saved ? JSON.parse(saved) : {};
-	} catch {
-		_cachedCadSettings = {};
-	}
-	return _cachedCadSettings!;
+        if (_cachedCadSettings !== null) return _cachedCadSettings;
+        try {
+                const saved = localStorage.getItem("cad_settings");
+                _cachedCadSettings = saved ? JSON.parse(saved) : {};
+        } catch {
+                _cachedCadSettings = {};
+        }
+        return _cachedCadSettings!;
 }
 
 function setCadSettings(settings: Record<string, unknown>): void {
-	try {
-		localStorage.setItem("cad_settings", JSON.stringify(settings));
-	} catch {
-		// Storage unavailable or quota exceeded
-	}
-	_cachedCadSettings = settings;
+        try {
+                localStorage.setItem("cad_settings", JSON.stringify(settings));
+        } catch {
+                // Storage unavailable or quota exceeded
+        }
+        _cachedCadSettings = settings;
 }
 
 interface CADConnectionStatus {
@@ -106,67 +106,51 @@ export function CADSettingsPage() {
         useTranslation(); // V249: Keep hook for language context, remove unused 't'
         const [activeTab, setActiveTab] = useState("autocad");
 
+        // V284 SECURITY: speckleToken / apsClientSecret are NO LONGER loaded from
+        // localStorage — they were readable by any XSS payload. A backend credential
+        // vault is in development (POST /api/v1/integrations/credentials, encrypted
+        // at rest). Until then, the token fields stay empty on page load and are
+        // never persisted to localStorage by saveCloudSettings().
+        //
+        // Load saved settings via a single lazy initializer (runs once on first
+        // render — avoids react-hooks/set-state-in-effect: no setState in effect).
+        const [savedSettings] = useState(() => {
+                const raw = getCadSettings();
+                return raw as unknown as CadSettingsShape;
+        });
+
         // AutoCAD settings
-        const [acadPath, setAcadPath] = useState("");
-        const [acadVersion, setAcadVersion] = useState("2024");
-        const [acadTemplate, setAcadTemplate] = useState("");
-        const [acadUnits, setAcadUnits] = useState("Millimeters");
+        const [acadPath, setAcadPath] = useState(savedSettings.autocad?.path || "");
+        const [acadVersion, setAcadVersion] = useState(savedSettings.autocad?.version || "2024");
+        const [acadTemplate, setAcadTemplate] = useState(savedSettings.autocad?.template || "");
+        const [acadUnits, setAcadUnits] = useState(savedSettings.autocad?.units || "Millimeters");
         const [acadStatus, setAcadStatus] = useState<CADConnectionStatus | null>(
                 null,
         );
         const [checkingAcad, setCheckingAcad] = useState(false);
 
         // Revit settings
-        const [revitPath, setRevitPath] = useState("");
-        const [revitVersion, setRevitVersion] = useState("2024");
-        const [revitTemplate, setRevitTemplate] = useState("");
-        const [revitUnits, setRevitUnits] = useState("Millimeters");
+        const [revitPath, setRevitPath] = useState(savedSettings.revit?.path || "");
+        const [revitVersion, setRevitVersion] = useState(savedSettings.revit?.version || "2024");
+        const [revitTemplate, setRevitTemplate] = useState(savedSettings.revit?.template || "");
+        const [revitUnits, setRevitUnits] = useState(savedSettings.revit?.units || "Millimeters");
         const [revitStatus, setRevitStatus] = useState<RevitConnectionStatus | null>(
                 null,
         );
         const [checkingRevit, setCheckingRevit] = useState(false);
 
         // Speckle settings
-        const [speckleServer, setSpeckleServer] = useState("https://speckle.xyz");
+        const [speckleServer, setSpeckleServer] = useState(savedSettings.cloud?.speckleServer || "https://speckle.xyz");
         const [speckleToken, setSpeckleToken] = useState("");
-        const [speckleStreamId, setSpeckleStreamId] = useState("");
+        const [speckleStreamId, setSpeckleStreamId] = useState(savedSettings.cloud?.speckleStreamId || "");
 
         // APS settings
-        const [apsClientId, setApsClientId] = useState("");
+        const [apsClientId, setApsClientId] = useState(savedSettings.cloud?.apsClientId || "");
         const [apsClientSecret, setApsClientSecret] = useState("");
-        const [apsActivityId, setApsActivityId] = useState("BazSparkAutoCADBridge.DrawLayout");
+        const [apsActivityId, setApsActivityId] = useState(savedSettings.cloud?.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
 
-        // Load saved settings on mount
-        useEffect(() => {
-                const raw = getCadSettings();
-                const settings = raw as unknown as CadSettingsShape;
-                if (Object.keys(settings).length > 0) {
-                        if (settings.autocad) {
-                                setAcadPath(settings.autocad.path || "");
-                                setAcadVersion(settings.autocad.version || "2024");
-                                setAcadTemplate(settings.autocad.template || "");
-                                setAcadUnits(settings.autocad.units || "Millimeters");
-                        }
-                        if (settings.revit) {
-                                setRevitPath(settings.revit.path || "");
-                                setRevitVersion(settings.revit.version || "2024");
-                                setRevitTemplate(settings.revit.template || "");
-                                setRevitUnits(settings.revit.units || "Millimeters");
-                        }
-                        if (settings.cloud) {
-                                setSpeckleServer(settings.cloud.speckleServer || "https://speckle.xyz");
-                                // V284 SECURITY: speckleToken / apsClientSecret are NO LONGER
-                                // loaded from localStorage — they were readable by any XSS
-                                // payload. A backend credential vault is in development
-                                // (POST /api/v1/integrations/credentials, encrypted at rest).
-                                // Until then, the token fields stay empty on page load and
-                                // are never persisted to localStorage by saveCloudSettings().
-                                setSpeckleStreamId(settings.cloud.speckleStreamId || "");
-                                setApsClientId(settings.cloud.apsClientId || "");
-                                setApsActivityId(settings.cloud.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
-                        }
-                }
-        }, []);
+        // Settings are loaded via the lazy useState initializer above — no
+        // useEffect needed (avoids react-hooks/set-state-in-effect).
 
         const checkAutoCADConnection = async () => {
                 setCheckingAcad(true);

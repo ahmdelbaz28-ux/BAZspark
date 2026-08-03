@@ -56,8 +56,29 @@ export function AutoCADPage() {
         }, []);
 
         useEffect(() => {
-                checkStatus();
-        }, [checkStatus]);
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). `checkStatus` is still defined
+                // above for use by event handlers (manual reconnect button).
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const s = await autocadApi.getStatus();
+                                if (cancelled) return;
+                                setStatus(s as Record<string, unknown>);
+                                setConnected(true);
+                                const sim = (s as Record<string, unknown>)?.simulation_mode;
+                                setSimulationMode(Boolean(sim));
+                        } catch {
+                                if (cancelled) return;
+                                setConnected(false);
+                                setStatus(null);
+                                setSimulationMode(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         const handleConnect = async () => {
                 setConnecting(true);

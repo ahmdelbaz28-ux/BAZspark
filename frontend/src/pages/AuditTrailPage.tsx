@@ -18,6 +18,46 @@ interface AuditEvent {
   severity?: "info" | "warning" | "error";
 }
 
+// Fallback sample data when backend is unavailable.
+// Extracted to module scope so it is hoisted above any reference inside the
+// component (react-hooks/immutability: cannot access a variable before declaration)
+// and so its reference is stable across renders (React Compiler friendly).
+const getSampleEvents = (): AuditEvent[] => [
+  { id: "1", timestamp: new Date(Date.now() - 60000).toISOString(), action: "workflow.approved", entity_type: "workflow", entity_id: "WF-001", user: "admin", details: "Smoke detector layout approved", severity: "info" },
+  { id: "2", timestamp: new Date(Date.now() - 300000).toISOString(), action: "device.created", entity_type: "device", entity_id: "DEV-042", user: "engineer", details: "Heat detector added to Zone 3", severity: "info" },
+  { id: "3", timestamp: new Date(Date.now() - 900000).toISOString(), action: "project.updated", entity_type: "project", entity_id: "PRJ-015", user: "admin", details: "Project specification updated", severity: "warning" },
+  { id: "4", timestamp: new Date(Date.now() - 1800000).toISOString(), action: "connection.deleted", entity_type: "connection", entity_id: "CON-007", user: "system", details: "Orphaned SLC connection pruned", severity: "info" },
+  { id: "5", timestamp: new Date(Date.now() - 3600000).toISOString(), action: "workflow.rejected", entity_type: "workflow", entity_id: "WF-002", user: "reviewer", details: "NAC circuit count exceeds panel capacity", severity: "error" },
+  { id: "6", timestamp: new Date(Date.now() - 7200000).toISOString(), action: "conflict.detected", entity_type: "conflict", entity_id: "CF-012", user: "system", details: "Device spacing overlap in Room 204", severity: "warning" },
+];
+
+// Pure fetch helper — does NOT call any React setState. Extracted to module
+// scope so it can be safely called from the mount effect's async IIFE without
+// triggering react-hooks/set-state-in-effect.
+async function fetchAuditEventsData(apiBase: string): Promise<AuditEvent[]> {
+  // Fetch from workflows audit endpoints as primary source
+  const res = await fetch(`${apiBase}/workflow/status`, {
+    credentials: "same-origin",
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  // Transform workflow data into audit events if available
+  const workflows = Array.isArray(data) ? data : data?.workflows || [];
+  return workflows.flatMap((wf: Record<string, unknown>, idx: number) => {
+    const transitions = (wf as { transition_log?: Array<Record<string, unknown>> }).transition_log || [];
+    return transitions.map((t: Record<string, unknown>, tIdx: number) => ({
+      id: `wf-${idx}-${tIdx}`,
+      timestamp: (t.timestamp as string) || new Date().toISOString(),
+      action: (t.action as string) || "transition",
+      entity_type: "workflow",
+      entity_id: (wf.id as string) || `wf-${idx}`,
+      user: (t.actor as string) || "system",
+      details: (t.comment as string) || "",
+      severity: "info" as const,
+    }));
+  });
+}
+
 export const AuditTrailPage: React.FC = () => {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,35 +69,15 @@ export const AuditTrailPage: React.FC = () => {
 
   const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
+  // `fetchAuditEvents` is intended for explicit user actions (Refresh button) —
+  // it synchronously calls setLoading(true)/setError(null) which is fine in an
+  // event handler.
   const fetchAuditEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch from workflows audit endpoints as primary source
-      const res = await fetch(`${API_BASE}/workflow/status`, {
-        credentials: "same-origin",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Transform workflow data into audit events if available
-        const workflows = Array.isArray(data) ? data : data?.workflows || [];
-        const auditEvents: AuditEvent[] = workflows.flatMap((wf: Record<string, unknown>, idx: number) => {
-          const transitions = (wf as { transition_log?: Array<Record<string, unknown>> }).transition_log || [];
-          return transitions.map((t: Record<string, unknown>, tIdx: number) => ({
-            id: `wf-${idx}-${tIdx}`,
-            timestamp: (t.timestamp as string) || new Date().toISOString(),
-            action: (t.action as string) || "transition",
-            entity_type: "workflow",
-            entity_id: (wf.id as string) || `wf-${idx}`,
-            user: (t.actor as string) || "system",
-            details: (t.comment as string) || "",
-            severity: "info" as const,
-          }));
-        });
-        setEvents(auditEvents.length > 0 ? auditEvents : getSampleEvents());
-      } else {
-        setEvents(getSampleEvents());
-      }
+      const auditEvents = await fetchAuditEventsData(API_BASE);
+      setEvents(auditEvents.length > 0 ? auditEvents : getSampleEvents());
     } catch {
       setEvents(getSampleEvents());
     } finally {
@@ -66,18 +86,26 @@ export const AuditTrailPage: React.FC = () => {
   }, [API_BASE]);
 
   useEffect(() => {
-    fetchAuditEvents();
-  }, [fetchAuditEvents]);
-
-  // Fallback sample data when backend is unavailable
-  const getSampleEvents = (): AuditEvent[] => [
-    { id: "1", timestamp: new Date(Date.now() - 60000).toISOString(), action: "workflow.approved", entity_type: "workflow", entity_id: "WF-001", user: "admin", details: "Smoke detector layout approved", severity: "info" },
-    { id: "2", timestamp: new Date(Date.now() - 300000).toISOString(), action: "device.created", entity_type: "device", entity_id: "DEV-042", user: "engineer", details: "Heat detector added to Zone 3", severity: "info" },
-    { id: "3", timestamp: new Date(Date.now() - 900000).toISOString(), action: "project.updated", entity_type: "project", entity_id: "PRJ-015", user: "admin", details: "Project specification updated", severity: "warning" },
-    { id: "4", timestamp: new Date(Date.now() - 1800000).toISOString(), action: "connection.deleted", entity_type: "connection", entity_id: "CON-007", user: "system", details: "Orphaned SLC connection pruned", severity: "info" },
-    { id: "5", timestamp: new Date(Date.now() - 3600000).toISOString(), action: "workflow.rejected", entity_type: "workflow", entity_id: "WF-002", user: "reviewer", details: "NAC circuit count exceeds panel capacity", severity: "error" },
-    { id: "6", timestamp: new Date(Date.now() - 7200000).toISOString(), action: "conflict.detected", entity_type: "conflict", entity_id: "CF-012", user: "system", details: "Device spacing overlap in Room 204", severity: "warning" },
-  ];
+    // Inline async IIFE — no synchronous setState in the effect body. Every
+    // setState happens after the first `await`, so react-hooks/set-state-in-effect
+    // does not fire. `loading` is already initialised to `true` in useState.
+    let cancelled = false;
+    (async () => {
+      try {
+        const auditEvents = await fetchAuditEventsData(API_BASE);
+        if (!cancelled) {
+          setEvents(auditEvents.length > 0 ? auditEvents : getSampleEvents());
+        }
+      } catch {
+        if (!cancelled) setEvents(getSampleEvents());
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [API_BASE]);
 
   const filteredEvents = events.filter((ev) => {
     const matchesSearch =
@@ -111,7 +139,7 @@ export const AuditTrailPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={fetchAuditEvents}
+          onClick={() => fetchAuditEvents()}
           disabled={loading}
           className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
