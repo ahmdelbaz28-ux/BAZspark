@@ -9,6 +9,13 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorRecovery } from "./components/core/ErrorRecovery";
 import "@/utils/fontLoader";
 import "./i18n";
+// Phase 5: tokens.css MUST be loaded BEFORE index.css so that design tokens
+// (--color-*, --radius, --glass-*, --ease-*) have a single source of truth.
+// index.css and globals.css no longer define these variables — they only
+// consume them. This eliminates the cascade conflict that existed when 3
+// files (index.css, globals.css, dark-mode.css) each defined different
+// values for the same variables.
+import "./styles/tokens.css";
 import "./index.css";
 
 // ── React Query Client ────────────────────────────────────────────────────

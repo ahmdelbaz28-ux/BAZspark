@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * tokens.css — SINGLE SOURCE OF TRUTH for BAZSPARK design tokens
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Phase 5 of the UI cleanup plan (2026-08-03).
+ *
+ * This file is loaded FIRST in main.tsx, before tailwind and component styles.
+ * No other file may define --color-*, --radius, --glass-*, or --ease-* variables.
+ *
+ * Previously, design tokens were defined in 3 conflicting files:
+ *   - index.css        (used hex values: #070b12, rgba(17,24,39,0.6))
+ *   - globals.css      (used RGB tuples: 8 12 20, 15 23 42)
+ *   - dark-mode.css    (used different hex: #0a0e17)
+ *
+ * The cascade order (index.css → dark-mode.css → globals.css) caused globals.css
+ * to win, but the body style in index.css overrode it inline — leading to
+ * unpredictable behavior when files were reordered.
+ *
+ * This file consolidates ALL tokens into ONE place using consistent hex/rgba
+ * syntax. The BAZSPARK dark theme is the DEFAULT (no .dark class needed).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  --color-background: #070b12;          /* deep navy — pure void */
+  --color-foreground: #e8f0fe;          /* off-white at 95% */
+  --color-card: rgba(17, 24, 39, 0.6);  /* glassmorphism surface */
+  --color-card-foreground: #e8f0fe;
+  --color-popover: rgba(17, 24, 39, 0.8);
+  --color-popover-foreground: #e8f0fe;
+
+  /* ── Brand ────────────────────────────────────────────────────────────── */
+  --color-primary: #22d3ee;             /* softer cyan-400 */
+  --color-primary-foreground: #070b12;
+  --color-secondary: rgba(255, 255, 255, 0.05);
+  --color-secondary-foreground: #e8f0fe;
+  --color-accent: #22d3ee;
+  --color-accent-foreground: #070b12;
+
+  /* ── Status ───────────────────────────────────────────────────────────── */
+  --color-success: #34d399;             /* emerald */
+  --color-warning: #fbbf24;             /* amber */
+  --color-danger: rgb(248, 113, 113);   /* red — ONLY for real errors */
+  --color-destructive: rgb(248, 113, 113);
+  --color-destructive-foreground: #070b12;
+  --color-info: #22d3ee;                /* cyan */
+
+  /* ── Structural ───────────────────────────────────────────────────────── */
+  --color-border: rgba(31, 45, 68, 0.5); /* muted navy hairline */
+  --color-input: rgba(31, 45, 68, 0.5);
+  --color-ring: #22d3ee;
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #94a3b8;    /* slate at 60% */
+  --color-darker: #0a0e17;
+
+  /* ── Radius ───────────────────────────────────────────────────────────── */
+  --radius: 0.75rem;                    /* 12px */
+  --radius-sm: 0.5rem;                  /* 8px */
+
+  /* ── Glassmorphism helpers ────────────────────────────────────────────── */
+  --glass-bg: rgba(17, 24, 39, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 20px;
+
+  /* ── Motion easings ───────────────────────────────────────────────────── */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Dark mode is the DEFAULT for BAZSPARK — no .dark class needed.
+ *
+ * The previous dark-mode.css applied overrides under a .dark selector, but
+ * the app never actually toggled that class (htmlClasses showed only
+ * "cursor-active"). All the .dark overrides are now merged into :root above.
+ *
+ * If light mode is added in the future, define it under a
+ * [data-theme="light"] selector in a new light-theme.css file.
+ * ═══════════════════════════════════════════════════════════════════════════ */

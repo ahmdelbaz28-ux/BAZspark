@@ -1,15 +1,12 @@
-/* Dark mode overrides for design system tokens */
-.dark {
-  /* Dark mode overrides */
-  --color-background: #0a0e17;
-  --color-foreground: #e8f0fe;
-  --color-card: rgba(17, 24, 39, 0.6);
-  --color-card-foreground: #e8f0fe;
-  --color-muted: rgba(255, 255, 255, 0.05);
-  --color-muted-foreground: #94a3b8;
-  --color-accent: #22d3ee;
-  --color-accent-foreground: #070b12;
-  --color-border: rgba(31, 45, 68, 0.5);
-  --color-input: rgba(31, 45, 68, 0.5);
-  --color-ring: #22d3ee;
-}
+/* dark-mode.css — DEPRECATED (Phase 5, 2026-08-03)
+ *
+ * The .dark class overrides that were in this file have been merged into
+ * tokens.css :root because BAZSPARK uses the dark theme by default.
+ *
+ * The app's ThemeContext.tsx never actually toggled the .dark class on
+ * <html> — verified by checking computed htmlClasses which showed only
+ * "cursor-active". So the .dark overrides here were dead code.
+ *
+ * This file is intentionally empty. Do NOT add variables here.
+ * All design tokens live in tokens.css.
+ */
