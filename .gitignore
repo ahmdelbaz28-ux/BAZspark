@@ -318,3 +318,6 @@ API_Test_Collection.postman_collection.json
 
 !frontend/src/data/
 
+# Agent Skills (Local agent settings only — do not commit to repository)
+.agents/skills/
+

@@ -1,7 +1,0 @@
-
-class Application:
-    ...
-
-class Desktop:
-    ...
-
