@@ -6,7 +6,7 @@ psycopg2-binary>=2.9.0
 qdrant-client>=1.18.0
 
 # Graph Database  
-neo4j>=5.0.0
+neo4j>=6.2.0
 
 # Cache/In-Memory Database
 # V263: use [hiredis] for consistency with main deps — hiredis C extension speeds up parsing.
