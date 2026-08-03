@@ -27,8 +27,8 @@
 set -eu
 
 REPO="${GH_REPO:-ahmdelbaz28-ux/BAZspark}"
-PROJECT_ID="${VERCEL_PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
-TEAM_ID="${VERCEL_TEAM_ID:-team_thkWFCepMKbBSrOf5ulqi4wF}"
+PROJECT_ID="${VERCEL_PROJECT_ID:-prj_4woP4FCyUNNi1Ak90ixCgwknB6lg}"
+TEAM_ID="${VERCEL_TEAM_ID:-team_N9AUYRX4QJ8lLYc1dBDHJymT}"
 LOG_DIR="${LOG_DIR:-work}"
 TIMESTAMP=$(date +%Y%mDD_%H%M%S)
 LOG_FILE="${LOG_DIR}/vercel_verify_${TIMESTAMP}.log"
