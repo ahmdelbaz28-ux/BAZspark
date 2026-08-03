@@ -320,4 +320,5 @@ API_Test_Collection.postman_collection.json
 
 # Agent Skills (Local agent settings only — do not commit to repository)
 .agents/skills/
+audit_master.json
 

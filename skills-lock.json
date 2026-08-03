@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "agent-architecture-audit": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/agent-architecture-audit/SKILL.md",
+      "computedHash": "f20cd1f810f5df07bdf12dc2f0895915842bd084e115c0a45bcd1c9633909401"
+    },
+    "backend-code-review": {
+      "source": "langflow-ai/langflow",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/backend-code-review/SKILL.md",
+      "computedHash": "51dda1867fc487cfe8c48ef9901cd51e8ea5525c9674dca46240fa5cd70994a2"
+    },
     "better-auth-security-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",
@@ -102,6 +114,12 @@
       "sourceType": "github",
       "skillPath": "skills/using-superpowers/SKILL.md",
       "computedHash": "a77a803b7fc1a19c87605cf7a5ef318c5adc233de10b9ebeecb2ee2609f5454e"
+    },
+    "verification-loop": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/verification-loop/SKILL.md",
+      "computedHash": "8b34b684c58df967598910e0771428ecaa6615033f7605cfd99d72b59acde31b"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
