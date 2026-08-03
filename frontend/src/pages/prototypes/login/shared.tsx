@@ -122,23 +122,33 @@ export function ApiKeyInputField({
                                         height: "2.75rem",
                                         paddingLeft: "2.5rem",
                                         paddingRight: "2.5rem",
-                                        backgroundColor: "#050811",
-                                        border: "1px solid #1e293b",
-                                        borderRadius: "0.5rem",
-                                        color: "#ffffff",
-                                        fontFamily: "monospace",
+                                        /* Phase 12 (frontend-design skill): machined-recess affordance.
+                                           Inset shadow makes the input look like a slot milled into
+                                           the panel, not a flat consumer-SaaS text field. The
+                                           background uses --color-panel-recess so the input reads
+                                           as a deeper well than the surrounding form surface. */
+                                        backgroundColor: "var(--color-panel-recess)",
+                                        border: "1px solid rgba(90, 103, 112, 0.35)",
+                                        borderRadius: "2px",
+                                        color: "var(--color-bone)",
+                                        fontFamily: "var(--font-data)",
                                         fontSize: "0.8rem",
+                                        letterSpacing: "0.04em",
+                                        boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.6)",
                                         boxSizing: "border-box",
                                         transition: "border-color 0.2s, box-shadow 0.2s",
                                 }}
                                 onFocus={(e) => {
-                                        e.target.style.borderColor = "#22d3ee";
-                                        e.target.style.boxShadow = "0 0 0 3px rgba(34, 211, 238, 0.2)";
+                                        /* Phase 12: focus uses evac-green (the FACP "all-clear" color),
+                                           NOT the legacy cyan. This keeps the alarm-color vocabulary
+                                           consistent across the entire surface. */
+                                        e.target.style.borderColor = "var(--color-evac-green)";
+                                        e.target.style.boxShadow = "inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(61, 138, 77, 0.25)";
                                         e.target.style.outline = "none";
                                 }}
                                 onBlur={(e) => {
-                                        e.target.style.borderColor = "#1e293b";
-                                        e.target.style.boxShadow = "none";
+                                        e.target.style.borderColor = "rgba(90, 103, 112, 0.35)";
+                                        e.target.style.boxShadow = "inset 0 1px 3px rgba(0, 0, 0, 0.6)";
                                 }}
                         />
                         <button
@@ -186,30 +196,42 @@ export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps
                         style={{
                                 width: "100%",
                                 height: "2.75rem",
-                                backgroundColor: "#22d3ee",
-                                border: "none",
-                                borderRadius: "0.5rem",
-                                color: "#070b12",
-                                fontWeight: 700,
-                                fontSize: "0.8rem",
+                                /* Phase 12 (frontend-design skill): monochrome panel-button.
+                                   The button reads as a momentary FACP switch — darker than
+                                   the surrounding form surface, steel hairline border, mono
+                                   uppercase label. On hover the border turns evac-green to
+                                   signal "this action is safe to perform" (the same green
+                                   the alarm bar uses for SECURE). This keeps the button
+                                   quiet and lets the alarm bar remain the signature element.
+                                   No cyan. No gradient. No glow by default. */
+                                backgroundColor: "var(--color-panel-recess)",
+                                border: "1px solid rgba(90, 103, 112, 0.5)",
+                                borderRadius: "2px",
+                                color: "var(--color-bone)",
+                                fontFamily: "var(--font-data)",
+                                fontWeight: 500,
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.12em",
+                                textTransform: "uppercase",
                                 cursor: submitting ? "not-allowed" : "pointer",
-                                opacity: submitting || disabled ? 0.6 : 1,
+                                opacity: submitting || disabled ? 0.5 : 1,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "0.5rem",
-                                transition: "background-color 0.2s, box-shadow 0.2s, transform 0.1s",
-                                boxShadow: "0 8px 16px rgba(34, 211, 238, 0.25)",
+                                transition: "border-color 0.2s, box-shadow 0.2s, color 0.2s",
                         }}
                         onMouseEnter={(e) => {
                                 if (!submitting && !disabled) {
-                                        e.currentTarget.style.backgroundColor = "#67e8f9";
-                                        e.currentTarget.style.boxShadow = "0 10px 20px rgba(34, 211, 238, 0.35)";
+                                        e.currentTarget.style.borderColor = "var(--color-evac-green)";
+                                        e.currentTarget.style.color = "#fff";
+                                        e.currentTarget.style.boxShadow = "0 0 0 1px rgba(61, 138, 77, 0.2)";
                                 }
                         }}
                         onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = "#22d3ee";
-                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(34, 211, 238, 0.25)";
+                                e.currentTarget.style.borderColor = "rgba(90, 103, 112, 0.5)";
+                                e.currentTarget.style.color = "var(--color-bone)";
+                                e.currentTarget.style.boxShadow = "none";
                         }}
                 >
                         {submitting ? (

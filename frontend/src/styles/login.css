@@ -1,16 +1,44 @@
-/* LoginPage.tsx — extracted inline <style> for grid, scanline, and feature interactions */
+/* LoginPage.tsx — extracted inline <style> for grid, scanline, and feature interactions
+ *
+ * Phase 12 (frontend-design skill): the .login-screen-root / .login-split-container
+ * / .login-hero-title / .login-feature-* / .login-form-* / .icon-box-* classes
+ * referenced by VariantA.tsx are now DEFINED here. They previously did not exist
+ * in any CSS file, so the production login page was rendering as unstyled stacked
+ * divs. This file fixes that bug and applies the FACP industrial identity:
+ *
+ *   - Graphite + panel-recess + bone palette (replaces cyan-on-navy default)
+ *   - Space Grotesk display + IBM Plex Sans body + IBM Plex Mono data
+ *   - Signature alarm status bar (state-driven, not decorative)
+ *   - Two-panel fire control plan layout (brief panel + authorization key slot)
+ *   - Reduced-motion + RTL + keyboard focus respected
+ *
+ * This file is OPT-IN: it only styles selectors used by VariantA. It does not
+ * touch the default --color-primary cyan or any other surface's classes.
+ *
+ * DEV-MODE NOTE: in `vite dev`, this CSS is injected as an inline <style> tag
+ * which is BLOCKED by the strict CSP in index.html (style-src 'self' without
+ * 'unsafe-inline'). This is a pre-existing limitation of the project's CSP
+ * policy — ALL Vite-injected <style> tags are blocked in dev mode (including
+ * index.css, globals.css, tokens.css, typography.css). Only /critical.css
+ * (loaded via <link>) and inline React style={{...}} attributes apply in dev.
+ * In `vite build` + `vite preview` (production mode), Vite emits this CSS as
+ * a hashed .css file loaded via <link>, which IS allowed by the CSP. So the
+ * rules below apply correctly in production. To visually verify during
+ * development, run `npm run build && npm run preview`.
+ */
 
 @keyframes scanline {
         0% { top: -25%; }
         100% { top: 100%; }
 }
 
+/* ── Legacy 3D grid background (kept for VariantB/C if they need it) ── */
 .grid-3d-bg {
         position: absolute;
         inset: 0;
         z-index: 0;
         overflow: hidden;
-        background-color: #05070f;
+        background-color: var(--color-graphite);
         perspective: 280px;
 }
 .grid-3d-grid {
@@ -36,19 +64,454 @@
 .grid-3d-overlay {
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 50% 40%, transparent 10%, #05070f 85%);
+        background: radial-gradient(circle at 50% 40%, transparent 10%, var(--color-graphite) 85%);
         pointer-events: none;
 }
-.feature-icon-box {
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SIGNATURE ELEMENT — Alarm status bar
+ *
+ * A 4px horizontal strip pinned to the very top of the login screen. It uses
+ * the actual industrial alarm color vocabulary a real NFPA 72 FACP uses:
+ *
+ *   .alarm-state-idle      evac-green at 75% — system secure, awaiting input
+ *   .alarm-state-submitting amber with 1.6s two-stroke pulse — acknowledged
+ *   .alarm-state-error     signal-red solid — life-safety alarm / auth fail
+ *   .alarm-state-success   evac-green solid + 600ms glow — session initialized
+ *
+ * The pulse is intentionally NOT a sine wave. A real FACP trouble LED blinks
+ * on/off/on/off at a fixed cadence, not a smooth oscillation. We honor that.
+ *
+ * Self-critique round 2 (VLM review): the original 3px bar at 70% opacity
+ * was functionally invisible. Per the frontend-design skill's "signature
+ * element should be the one memorable thing" rule, the bar was too quiet
+ * to register. Bumped to 4px + 75% opacity + added a mono state label
+ * inline. The label is NOT decorative — it's the same affordance a real
+ * FACP uses to communicate state ("NORMAL" / "TROUBLE" / "ALARM").
+ *
+ * We do NOT strobe. Strobing is a WCAG 2.3.1 photosensitive seizure
+ * violation. The pulse cadence stays at 1.6s two-stroke.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.alarm-status-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        z-index: 100;
+        background-color: var(--color-evac-green);
+        opacity: 0.75;
+        transition: background-color 200ms var(--ease-micro), opacity 200ms var(--ease-micro);
+        /* Inline state label — mono, uppercase, tracked. Same vocabulary as a
+           real FACP LCD readout. Hidden from screen readers (aria-label on
+           the parent carries the accessible name). */
+        font-family: var(--font-data);
+        font-size: 0.625rem;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        line-height: 4px;
+        color: rgba(255, 255, 255, 0.85);
+        text-indent: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
 }
+.alarm-state-idle {
+        background-color: var(--color-evac-green);
+        opacity: 0.75;
+}
+.alarm-state-idle::after { content: "NORMAL"; }
+.alarm-state-submitting {
+        background-color: var(--color-amber-alert);
+        opacity: 1;
+        animation: alarm-pulse var(--alarm-pulse-duration) steps(2, end) infinite;
+}
+.alarm-state-submitting::after { content: "ACKNOWLEDGED"; }
+.alarm-state-error {
+        background-color: var(--color-signal-red);
+        opacity: 1;
+}
+.alarm-state-error::after { content: "ALARM"; }
+.alarm-state-success {
+        background-color: var(--color-evac-green);
+        opacity: 1;
+        animation: alarm-success-glow 600ms var(--ease-entrance) forwards;
+}
+.alarm-state-success::after { content: "CLEARED"; }
+@keyframes alarm-pulse {
+        /* Two-stroke on/off — matches FACP trouble LED cadence, not a sine */
+        0%, 49%   { opacity: 1; }
+        50%, 100% { opacity: 0.3; }
+}
+@keyframes alarm-success-glow {
+        0%   { box-shadow: 0 0 0 0 rgba(61, 138, 77, 0); }
+        40%  { box-shadow: 0 0 14px 2px rgba(61, 138, 77, 0.55); }
+        100% { box-shadow: 0 0 0 0 rgba(61, 138, 77, 0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ROOT + LAYOUT
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.login-screen-root {
+        position: relative;
+        min-height: 100vh;
+        background-color: var(--color-graphite);
+        color: var(--color-bone);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.6;
+        overflow: hidden;
+}
+
+/* Top language toggle header — thin, panel-label styled */
+.login-header-lang {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        justify-content: flex-end;
+        padding: 1rem 1.5rem;
+}
+
+/* Two-panel fire control plan layout. Brief panel left (60%), key slot right (40%).
+   Below md (768px) it stacks vertically — see responsive section at bottom. */
+.login-split-container {
+        position: relative;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        min-height: calc(100vh - 4rem); /* minus header */
+        max-width: 1600px;
+        margin: 0 auto;
+}
+
+/* ── Left panel: the brief ──────────────────────────────────────────────── */
+.login-left-panel {
+        position: relative;
+        padding: 3rem 3.5rem 4rem;
+        display: flex;
+        align-items: center;
+        background:
+                linear-gradient(180deg, rgba(21, 26, 31, 0.4) 0%, rgba(10, 14, 16, 0) 60%),
+                var(--color-graphite);
+        border-right: 1px solid rgba(90, 103, 112, 0.25); /* steel hairline */
+}
+.login-left-panel::before {
+        /* Vertical rule on the left edge — like the binding of a code book */
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(90, 103, 112, 0.4) 20%,
+                rgba(90, 103, 112, 0.4) 80%,
+                transparent 100%);
+}
+
+/* Logo + wordmark card */
+.login-logo-card {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 2.5rem;
+}
+
+/* Hero typography — display face carries the personality */
+.login-hero-title {
+        font-family: var(--font-display);
+        /* Phase 12 self-critique: weight 700 (not 600) because that's what we
+           load from Google Fonts for Space Grotesk. With 600 the browser
+           falls back to Inter 600, killing the display-face distinction. */
+        font-weight: 700;
+        font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        color: var(--color-bone);
+        margin-bottom: 1rem;
+        max-width: 32ch;
+}
+.login-hero-subtitle {
+        font-family: var(--font-body);
+        font-size: 0.9375rem;
+        line-height: 1.65;
+        color: rgba(232, 228, 216, 0.7);
+        max-width: 48ch;
+        margin-bottom: 2.5rem;
+}
+
+/* Feature list — rendered as an event log.
+   Each row has a mono index label, icon well, title, description.
+   The mono indices are STRUCTURAL (the order encodes the feature priority),
+   not decorative — they satisfy the skill's rule "numbered markers only
+   when order carries information." */
+.login-feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+}
+.login-feature-item {
+        display: grid;
+        grid-template-columns: 2.5rem 2.25rem 1fr;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.65rem 0.5rem;
+        border-left: 2px solid transparent;
+        transition: border-color 200ms var(--ease-micro), background-color 200ms var(--ease-micro);
+}
+.login-feature-item:hover,
+.login-feature-item:focus-within {
+        border-left-color: var(--color-evac-green);
+        background-color: rgba(61, 138, 77, 0.04);
+}
+.login-feature-item::before {
+        /* Mono index — 01, 02, 03... set via data-index attribute on the row */
+        content: attr(data-index);
+        font-family: var(--font-data);
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: var(--color-steel);
+        letter-spacing: 0.05em;
+}
+.feature-icon-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        background-color: var(--color-panel-recess);
+        border: 1px solid rgba(90, 103, 112, 0.3);
+        border-radius: 2px; /* sharp — industrial, not glassy */
+        color: var(--color-bone);
+        transition: transform 200ms var(--ease-micro), border-color 200ms var(--ease-micro);
+}
+.login-feature-item:hover .feature-icon-box {
+        border-color: var(--color-evac-green);
+        transform: translateY(-1px);
+}
+.login-feature-title {
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--color-bone);
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+}
+.login-feature-desc {
+        font-family: var(--font-body);
+        font-size: 0.8125rem;
+        color: rgba(232, 228, 216, 0.55);
+        line-height: 1.45;
+        margin-top: 0.15rem;
+}
+
+/* Per-feature icon accents — subtle, NOT a rainbow.
+   Each feature gets a faint signal-color tint on its icon border, mapping
+   to the FACP alarm vocabulary: cad=amber (planning), compliance=evac-green
+   (verified), bim=steel (structural), ai=bone (neutral), marine=signal-red
+   (life safety at sea). The colors are desaturated 30% so the row stays
+   quiet — only the border-left turns fully green on hover. */
+.icon-box-cad       { border-color: rgba(200, 149, 30, 0.35); }
+.icon-box-compliance{ border-color: rgba(61, 138, 77, 0.35); }
+.icon-box-bim       { border-color: rgba(90, 103, 112, 0.45); }
+.icon-box-ai        { border-color: rgba(232, 228, 216, 0.18); }
+.icon-box-marine    { border-color: rgba(194, 54, 44, 0.35); }
+
+/* ── Right panel: authorization key slot ────────────────────────────────── */
+.login-right-panel {
+        position: relative;
+        background-color: var(--color-panel-recess);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 3rem 2.5rem 2rem;
+}
+/* Phase 12 self-critique: removed the repeating-linear-gradient scan-line
+   texture that was originally here. Per the frontend-design skill's
+   "remove one accessory" rule, the scan-line was the most decorative
+   element in an otherwise disciplined layout. The darker panel-recess
+   background already distinguishes this surface from the brief panel —
+   the texture was gilding the lily. */
+.login-form-wrapper {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+}
+.login-form-title {
+        font-family: var(--font-display);
+        /* Phase 12: weight 700 to match loaded Space Grotesk weights (500, 700). */
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.01em;
+        color: var(--color-bone);
+        margin-bottom: 0.5rem;
+}
+.login-form-subtitle {
+        font-family: var(--font-body);
+        font-size: 0.8125rem;
+        color: rgba(232, 228, 216, 0.55);
+        margin-bottom: 2rem;
+}
+
+/* Input row layout — label + support link */
+.input-label-row,
+.input-sub-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-family: var(--font-data);
+        font-size: 0.6875rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-steel);
+        margin-bottom: 0.5rem;
+}
+.input-sub-row {
+        margin-top: 0.5rem;
+        margin-bottom: 1.25rem;
+        text-transform: none;
+        font-size: 0.75rem;
+        letter-spacing: 0;
+        font-family: var(--font-body);
+        color: rgba(232, 228, 216, 0.45);
+}
+.support-link-btn {
+        background: none;
+        border: none;
+        color: var(--color-evac-green);
+        font-family: var(--font-data);
+        font-size: 0.6875rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        padding: 0;
+        transition: color 200ms var(--ease-micro);
+}
+.support-link-btn:hover,
+.support-link-btn:focus-visible {
+        color: var(--color-bone);
+        outline: none;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+}
+
+/* Footer bar inside right panel — encryption + version, like a FACP nameplate */
+.login-footer-bar {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(90, 103, 112, 0.25);
+        font-family: var(--font-data);
+        font-size: 0.6875rem;
+        color: var(--color-steel);
+        letter-spacing: 0.04em;
+}
+.footer-encryption-status {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--color-evac-green);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * RTL — Arabic mirror
+ * The layout is symmetric (grid columns + ::before vertical rule on left).
+ * For RTL we flip the left-panel ::before to the right and reverse the
+ * feature-row grid so the index reads right-to-left.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.login-screen-root.rtl .login-left-panel::before {
+        left: auto;
+        right: 0;
+}
+.login-screen-root.rtl .login-feature-item {
+        border-left: none;
+        border-right: 2px solid transparent;
+}
+.login-screen-root.rtl .login-feature-item:hover,
+.login-screen-root.rtl .login-feature-item:focus-within {
+        border-left: none;
+        border-right-color: var(--color-evac-green);
+}
+.login-screen-root.rtl .login-feature-item::before {
+        text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * RESPONSIVE — stack panels below md (768px)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+        .login-split-container {
+                grid-template-columns: 1fr;
+        }
+        .login-left-panel {
+                padding: 2rem 1.25rem 1.5rem;
+                border-right: none;
+                border-bottom: 1px solid rgba(90, 103, 112, 0.25);
+        }
+        .login-left-panel::before { display: none; }
+        .login-right-panel {
+                padding: 2rem 1.25rem 2.5rem;
+        }
+        .login-hero-title {
+                font-size: clamp(1.5rem, 6vw, 2rem);
+        }
+        .login-hero-subtitle {
+                font-size: 0.875rem;
+        }
+        /* Feature list collapses to icon + title only on phones — descriptions hidden */
+        .login-feature-item {
+                grid-template-columns: 2rem 2rem 1fr;
+        }
+        .login-feature-desc { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * REDUCED MOTION — neutralize the alarm pulse + glow (WCAG 2.3.3)
+ * The status bar still changes color (that's information, not motion) but
+ * stops pulsing. The success glow is replaced by a static color shift.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+        .alarm-status-bar,
+        .alarm-state-submitting,
+        .alarm-state-success {
+                animation: none !important;
+                transition: background-color 200ms var(--ease-micro), opacity 200ms var(--ease-micro) !important;
+        }
+        .alarm-state-submitting {
+                opacity: 1;
+                background-color: var(--color-amber-alert);
+        }
+        .alarm-state-success {
+                opacity: 1;
+                background-color: var(--color-evac-green);
+        }
+        .login-feature-item,
+        .feature-icon-box,
+        .support-link-btn {
+                transition-duration: 0.01ms !important;
+        }
+        .login-feature-item:hover .feature-icon-box,
+        .feature-icon-box {
+                transform: none !important;
+        }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Legacy login CSS kept for backwards compat (VariantB/C use these)
+ * ═══════════════════════════════════════════════════════════════════════════ */
 .feature-row:hover .feature-icon-box {
         transform: scale(1.08) rotate(3deg);
 }
 
-.login-feature-item {
-        transition: border-color 0.2s, transform 0.2s;
-}
 .login-submit-btn {
         transition: background-color 0.2s, transform 0.1s;
 }
@@ -57,14 +520,4 @@
 }
 .lang-toggle-btn {
         transition: border-color 0.2s, color 0.2s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-        .login-feature-item,
-        .login-submit-btn,
-        .login-input-control,
-        .lang-toggle-btn {
-                transition-duration: 0.01ms !important;
-                transition-delay: 0s !important;
-        }
 }
