@@ -16,7 +16,7 @@ celery>=5.1.0
 asyncio-mqtt>=0.10.0
 
 # Observability (fireai.infrastructure.metrics imports prometheus_client)
-prometheus_client>=0.16.0,<1.0.0
+prometheus_client>=0.26.0,<1.0.0
 
 # Load testing (dev)
 locust>=2.46.2  # V265: bump lower bound (PR #150)
