@@ -2,6 +2,7 @@ import type React from "react";
 import Sidebar from "./Sidebar";
 import StatusBar from "./StatusBar";
 import TopBar from "@/components/layout/TopBar";
+import "@/styles/shell.css";
 
 interface AppShellProps {
         children: React.ReactNode;
@@ -43,10 +44,11 @@ const AppShell: React.FC<AppShellProps> = ({
                         dir={isRTL ? "rtl" : "ltr"}
                 >
                         {/* UI/UX Pro Max audit (Phase 5.1): skip-link for keyboard users.
-                            Visually hidden until focused, then floats top-left above everything. */}
+                            Visually hidden until focused, then floats top-left above everything.
+                            Phase 13: switched from bg-cyan-400 to evac-green (FACP vocabulary). */}
                         <a
                                 href="#main-content"
-                                className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-cyan-400 focus:text-cyan-950 focus:font-medium focus:shadow-lg"
+                                className="shell-skip-link sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:font-medium focus:shadow-lg"
                         >
                                 Skip to main content
                         </a>
