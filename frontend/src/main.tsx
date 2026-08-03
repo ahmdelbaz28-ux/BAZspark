@@ -2,6 +2,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import App from "./App";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorRecovery } from "./components/core/ErrorRecovery";
@@ -70,16 +72,18 @@ window.addEventListener("error", (event) => {
 createRoot(rootEl).render(
         <BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
                 <QueryClientProvider client={queryClient}><ThemeProvider>
-				<ErrorRecovery
-					onError={(error, info) =>
-						console.error(
-							"[BAZSPARK] Fatal error caught by boundary:",
-							error,
-							info,
-						)
-					}
-				>
-				<App />
+                                <ErrorRecovery
+                                        onError={(error, info) =>
+                                                console.error(
+                                                        "[BAZSPARK] Fatal error caught by boundary:",
+                                                        error,
+                                                        info,
+                                                )
+                                        }
+                                >
+                                <App />
+                                <Analytics />
+                                <SpeedInsights />
 </ErrorRecovery>
 </ThemeProvider>
                 </QueryClientProvider>
