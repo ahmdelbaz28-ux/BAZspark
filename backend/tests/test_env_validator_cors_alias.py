@@ -38,7 +38,8 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FIREAI_ENV", "production")
     for key in _HARD_KEYS:
         if key in ("SUPABASE_URL", "LANGFUSE_HOST"):
-            monkeypatch.setenv(key, f"https://{key.lower().split("_")[0]}.example.co")
+            prefix = key.lower().split("_")[0]
+            monkeypatch.setenv(key, f"https://{prefix}.example.co")
         else:
             monkeypatch.setenv(key, "x" * 64)
     # CORS handled per-test.
