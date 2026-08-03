@@ -15,8 +15,11 @@ Capabilities:
    semantically for comparison ("show me similar short circuit studies").
 3. **Document RAG**: Equipment datasheets, cable catalogs, protection
    standards indexed for semantic search.
-4. **ETAP Expert Knowledge**: 4,400+ lines of skills/etap-expert.md +
-   IEC/IEEE standards indexed for instant retrieval.
+4. **ETAP Expert Knowledge**: ETAP study results (short circuit, arc flash,
+   relay coordination) + IEC/IEEE standards indexed for instant retrieval.
+   (The legacy `skills/etap-expert.md` path referenced in earlier revisions no
+   longer exists — F8 hygiene fix; the ETAP skill content lives in agent.md
+   history when installed.)
 
 Architecture:
 - Uses Qdrant as the primary vector database (docker-compose service)

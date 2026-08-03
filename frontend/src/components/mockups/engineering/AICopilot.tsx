@@ -34,12 +34,6 @@ interface ChatMessage {
         model?: string;
 }
 
-const SYSTEM_PROMPT =
-        "You are a licensed fire-protection engineering assistant for the BAZSPARK platform. " +
-        "Answer questions about NFPA 72, NEC, fire alarm system design, voltage drop, battery sizing, " +
-        "detector placement, and FACP selection. Be precise, cite code sections, and flag non-compliance. " +
-        "If unsure, say so. Never invent code requirements.";
-
 const QUICK_COMMANDS = [
         "Compliance Check",
         "Load Calculation",
@@ -94,7 +88,7 @@ export function AICopilot() {
                         await llmApi.chatStream(
                                 {
                                         prompt: content.trim(),
-                                        system: SYSTEM_PROMPT,
+                                        role: "engineer_assistant",
                                         temperature: 0.1,
                                         max_tokens: 1500,
                                 },

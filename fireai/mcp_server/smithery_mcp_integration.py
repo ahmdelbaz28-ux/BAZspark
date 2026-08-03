@@ -41,6 +41,18 @@ Components
 3. ``ProposedAction``: Dataclass for a proposed (not executed) Revit change
 4. ``LiveActionBridge``: Enqueues proposed actions for human review
 
+STATUS NOTE (F8 naming hygiene — Architecture Audit)
+-----------------------------------------------------
+- ``connect_to_smithery()`` is a CONNECTIVITY CHECK ONLY: it validates the
+  API key format and basic reachability. It does NOT proxy tool calls to the
+  Smithery cloud; full Smithery execution requires their SDK. Do not read
+  this module as "Smithery is wired end-to-end" — the human-approved-write
+  queue (ThreadSafeModelUpdateQueue) is the real integration path.
+- Despite the "Agentic" title, every write path in this module is gated by
+  the human-review queue; there is no autonomous write capability.
+- This module is NOT part of the deterministic QOMN/NFPA kernel; it is an
+  advisory BIM integration layer (see AGENTS.md advisory-only invariant).
+
 References
 ----------
 - agent.md Rule 12 (Safety-First) + Rule 15 (NO PHASE SKIPPING)

@@ -210,14 +210,20 @@ export const llmApi = {
         chatStream: async (
                 data: {
                         prompt: string;
-                        system?: string;
+                        role?: "engineer_assistant" | "code_explainer" | "narrative_writer";
+                        history?: Array<{ role: "user" | "assistant"; content: string }>;
                         model?: string;
                         temperature?: number;
                         max_tokens?: number;
                 },
                 signal: AbortSignal,
                 onChunk: (chunk: string) => void,
-                onDone: (done: { content: string; model: string; source: string }) => void,
+                onDone: (done: {
+                        content: string;
+                        model: string;
+                        source: string;
+                        disclaimer?: string;
+                }) => void,
                 onError: (message: string) => void,
         ): Promise<void> => {
                 const apiKey = getApiKey();
@@ -285,6 +291,7 @@ export const llmApi = {
                                                                 content: event.content,
                                                                 model: event.model,
                                                                 source: event.source,
+                                                                disclaimer: event.disclaimer,
                                                         });
                                                 } else if (event.type === "error") {
                                                         onError(event.message || "Stream error");

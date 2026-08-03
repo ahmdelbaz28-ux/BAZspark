@@ -25,10 +25,11 @@ DESIGN NOTES:
 
 from __future__ import annotations
 
+import hashlib as _hashlib
 import hmac as _hmac
 import logging
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 from backend.api_keys import validate_api_key as _validate_api_key
 from backend.rbac import Role
@@ -98,5 +99,35 @@ def validate_api_key_credential(api_key: str) -> Optional[Role]:
     info = _validate_api_key(api_key)
     if info is not None:
         return info.role
+
+    return None
+
+
+def resolve_credential(api_key: str) -> Optional[Tuple[Role, str]]:
+    """
+    Validate an API key credential and return ``(role, principal)``.
+
+    The **principal** is an opaque, stable per-credential identifier used to
+    scope user-owned resources (e.g. Mem0 memories). It is derived from
+    server-side material only and is NOT reversible:
+
+      - RBAC store key  -> ``info.key_hash`` (HMAC-SHA256 lookup hash)
+      - env bypass key  -> ``"env:" + sha256(key)[:32]`` (deterministic)
+
+    Two different credentials ALWAYS produce two different principals, so
+    resources scoped by principal can never leak across credentials.
+
+    Returns None for invalid/empty keys. This is the single implementation
+    used by both ApiKeyMiddleware (stamping scope) and routers/auth.py
+    (storing the principal in the session at login).
+    """
+    env_key = os.getenv("FIREAI_API_KEY")
+    if env_key and api_key and _hmac.compare_digest(api_key, env_key):
+        principal = "env:" + _hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:32]
+        return (Role.ADMIN, principal)
+
+    info = _validate_api_key(api_key)
+    if info is not None:
+        return (info.role, info.key_hash)
 
     return None

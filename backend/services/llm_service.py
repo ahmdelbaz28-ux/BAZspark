@@ -64,6 +64,8 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+from backend.llm_constants import AI_DISCLAIMER
+
 # ── Defaults ─────────────────────────────────────────────────────────────────
 _DEFAULT_BASE_URL = "https://zenmux.ai/api/v1"
 _DEFAULT_MODEL = "z-ai/glm-4.7"
@@ -225,6 +227,49 @@ class LLMService:
                 logger.debug("Error closing %s client", name, exc_info=True)
         self._clients.clear()
 
+    # ── Message assembly (F5b) ────────────────────────────────────────────
+
+    @staticmethod
+    def _assemble_messages(
+        *,
+        system: str | None,
+        prompt: str,
+        history: list[dict[str, str]] | None,
+    ) -> list[dict[str, str]]:
+        """Assemble ``[system] + history + [user]`` with server-side caps.
+
+        Guards (defense in depth — the router already bounds the request):
+          - history is truncated to the newest 20 turns
+          - every history entry must be exactly {"role", "content"} with
+            role in {"user", "assistant"}
+          - total assembled messages may not exceed 50
+
+        Raises ValueError on malformed history instead of sending it upstream.
+        """
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+
+        if history:
+            for entry in history[-20:]:
+                if not isinstance(entry, dict):
+                    raise ValueError("history entries must be objects")
+                role = entry.get("role")
+                content = entry.get("content")
+                if role not in ("user", "assistant") or not isinstance(
+                    content, str
+                ):
+                    raise ValueError(
+                        "history entries must have role in "
+                        "{'user','assistant'} and string content"
+                    )
+                messages.append({"role": role, "content": content[:8000]})
+
+        messages.append({"role": "user", "content": prompt})
+        if len(messages) > 50:
+            raise ValueError("conversation history exceeds server limit")
+        return messages
+
     # ── Core chat method ──────────────────────────────────────────────────
 
     async def chat(
@@ -235,6 +280,7 @@ class LLMService:
         model: str | None = None,
         temperature: float = _DEFAULT_TEMPERATURE,
         max_tokens: int | None = None,
+        history: list[dict[str, str]] | None = None,
     ) -> LLMResponse:
         """Send a chat completion request and return the response.
 
@@ -248,12 +294,16 @@ class LLMService:
             model: Override the default model (per-provider default if None).
             temperature: Sampling temperature [0.0, 2.0]. Default 0.1.
             max_tokens: Max tokens to generate. Defaults to ZENMUX_MAX_TOKENS.
+            history: Optional bounded conversation history (list of dicts with
+                ``role`` in {"user","assistant"} and ``content``). Assembled
+                between the system message and the current prompt, oldest first.
 
         Returns:
             LLMResponse with the generated content and usage stats.
 
         Raises:
-            ValueError: If prompt is empty.
+            ValueError: If prompt is empty, history is malformed or exceeds
+                the server-side cap.
             RuntimeError: If no provider is configured.
             Exception: On API errors after retries and fallback are exhausted.
         """
@@ -264,10 +314,7 @@ class LLMService:
                 "LLM service not configured. Set ZENMUX_API_KEY to enable."
             )
 
-        messages: list[dict[str, str]] = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+        messages = self._assemble_messages(system=system, prompt=prompt, history=history)
         use_max_tokens = max_tokens or self._max_tokens
 
         # Try primary provider first
@@ -398,31 +445,40 @@ class LLMService:
         model: str | None = None,
         temperature: float = _DEFAULT_TEMPERATURE,
         max_tokens: int | None = None,
+        history: list[dict[str, str]] | None = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream a chat completion token-by-token via SSE.
 
         Yields dicts with one of these shapes:
           - {"type": "chunk", "content": "...", "model": "...", "source": "..."}
           - {"type": "done", "content": "full text", "model": "...",
-             "source": "...", "usage": {...}}
-          - {"type": "error", "message": "..."}
+             "source": "...", "usage": {...}, "disclaimer": "..."}
+          - {"type": "error", "message": "...", "disclaimer": "..."}
 
         Falls back to non-streaming if the provider doesn't support streaming.
         """
         if not prompt or not prompt.strip():
-            yield {"type": "error", "message": "prompt must be non-empty"}
+            yield {
+                "type": "error",
+                "message": "prompt must be non-empty",
+                "disclaimer": AI_DISCLAIMER,
+            }
             return
         if not self.available:
             yield {
                 "type": "error",
                 "message": "LLM service not configured. Set ZENMUX_API_KEY.",
+                "disclaimer": AI_DISCLAIMER,
             }
             return
 
-        messages: list[dict[str, str]] = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+        try:
+            messages = self._assemble_messages(
+                system=system, prompt=prompt, history=history
+            )
+        except ValueError as exc:
+            yield {"type": "error", "message": str(exc), "disclaimer": AI_DISCLAIMER}
+            return
         use_max_tokens = max_tokens or self._max_tokens
 
         # Try primary provider first, then fallback
@@ -433,7 +489,11 @@ class LLMService:
             providers_to_try.append(self._fallback)
 
         if not providers_to_try:
-            yield {"type": "error", "message": "No LLM provider available"}
+            yield {
+                "type": "error",
+                "message": "No LLM provider available",
+                "disclaimer": AI_DISCLAIMER,
+            }
             return
 
         for provider in providers_to_try:
@@ -451,7 +511,11 @@ class LLMService:
                 )
                 continue
 
-        yield {"type": "error", "message": "All LLM providers failed"}
+        yield {
+            "type": "error",
+            "message": "All LLM providers failed",
+            "disclaimer": AI_DISCLAIMER,
+        }
 
     async def _stream_provider(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
@@ -540,6 +604,7 @@ class LLMService:
                 "model": use_model,
                 "source": provider.name,
                 "usage": usage_data,
+                "disclaimer": AI_DISCLAIMER,
             }
         except asyncio.TimeoutError:
             logger.warning(
@@ -549,7 +614,8 @@ class LLMService:
             )
             yield {
                 "type": "error",
-                "message": f"Stream timed out after {self._timeout}s"
+                "message": f"Stream timed out after {self._timeout}s",
+                "disclaimer": AI_DISCLAIMER,
             }
             raise
         except Exception as e:
@@ -563,7 +629,57 @@ class LLMService:
     # ── Health check ──────────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:  # noqa: S7503 — async for future extensibility
-        """Return a health/status dict (never raises)."""
+        """Return a health/status dict (never raises).
+
+        F6: includes a ``subsystems`` block that surfaces the status of every
+        LLM-adjacent subsystem (memory, Tier-2 self-healing, tracing) so a
+        single /llm/health call answers "what AI is wired up and on?".
+        """
+        subsystems: dict[str, Any] = {}
+        try:
+            from backend.services.memory_service import get_memory_service as _mem
+
+            mem = _mem()
+            subsystems["memory"] = {
+                "name": "mem0",
+                "initialized": bool(getattr(mem, "is_initialized", False)),
+                "status": (
+                    "ok" if getattr(mem, "is_initialized", False) else "disabled"
+                ),
+            }
+        except Exception as exc:  # pragma: no cover - defensive
+            subsystems["memory"] = {"name": "mem0", "status": "error", "detail": str(exc)[:120]}
+
+        try:
+            import os as _os
+
+            llm_healing = _os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in (
+                "1",
+                "true",
+                "yes",
+            )
+            subsystems["self_healing_tier2"] = {
+                "name": "ollama_llama3",
+                "enabled": llm_healing,
+                "status": "enabled" if llm_healing else "gated_off",
+            }
+        except Exception as exc:  # pragma: no cover - defensive
+            subsystems["self_healing_tier2"] = {"name": "ollama_llama3", "status": "error", "detail": str(exc)[:120]}
+
+        try:
+            langfuse_enabled = os.environ.get("LANGFUSE_ENABLED", "").lower() in (
+                "1",
+                "true",
+                "yes",
+            )
+            subsystems["tracing_langfuse"] = {
+                "name": "langfuse",
+                "enabled": bool(langfuse_enabled and os.environ.get("LANGFUSE_PUBLIC_KEY")),
+                "status": "enabled" if (langfuse_enabled and os.environ.get("LANGFUSE_PUBLIC_KEY")) else "disabled",
+            }
+        except Exception as exc:  # pragma: no cover - defensive
+            subsystems["tracing_langfuse"] = {"name": "langfuse", "status": "error", "detail": str(exc)[:120]}
+
         return {
             "available": self.available,
             "primary": {
@@ -581,6 +697,7 @@ class LLMService:
             },
             "timeout_s": self._timeout,
             "max_tokens": self._max_tokens,
+            "subsystems": subsystems,
         }
 
 

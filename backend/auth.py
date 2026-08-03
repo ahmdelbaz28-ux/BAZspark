@@ -60,3 +60,23 @@ def require_permission(permission: Permission):
         return role
 
     return checker
+
+
+def get_current_principal(request: Request) -> Optional[str]:
+    """
+    Extract the current credential's opaque principal id from the request.
+
+    The principal is stamped by ApiKeyMiddleware (both the API-key path and
+    the session-cookie path) as an opaque, stable, per-credential identifier
+    used to scope user-owned resources (e.g. Mem0 memories).
+
+    Returns None when the request is unauthenticated or the principal is
+    absent (e.g. legacy middleware without the stamp).
+    """
+    principal: Optional[str] = getattr(request.state, "fireai_principal", None)
+    if principal is not None:
+        return principal
+    scope_principal = request.scope.get("fireai_principal")
+    if isinstance(scope_principal, str) and scope_principal:
+        return scope_principal
+    return None

@@ -81,6 +81,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Literal
 
+# F7: event bus for runtime healing notifications (stdlib-only module,
+# no circular-import risk — see fireai/core/event_bus.py).
+from fireai.core.event_bus import Events
+
 # Setup secure audit logger console format
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
 
@@ -1584,17 +1588,45 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                         f"Tier 1 could not resolve {err_type} in {func_name}. "
                         f"Re-raising original error. Set QOMN_ENABLE_LLM_HEALING=true to enable LLM recovery."
                     )
+                    # F7: record the BLOCKED heal in the audit ledger (previously
+                    # the ledger only ever captured successful Tier-2 heals, so a
+                    # gate-disabled deployment produced an empty audit file that
+                    # was indistinguishable from "no heals attempted").
+                    try:
+                        global_audit_logger.log_event(
+                            {
+                                "function_name": func_name,
+                                "error_type": err_type,
+                                "error_message": err_msg,
+                                "tier_used": 2,
+                                "fix_applied": None,
+                                "verification_result": "BLOCKED_BY_SAFETY_GATE",
+                                "before_hash": before_hash,
+                                "after_hash": before_hash,
+                                "user_notification_status": "NOT_ALERTED",
+                            }
+                        )
+                    except Exception:  # pragma: no cover - defensive
+                        pass
+                    _publish_healing_event(
+                        Events.HEALING_BLOCKED,
+                        func_name,
+                        err_type,
+                        "LLM healing disabled by QOMN_ENABLE_LLM_HEALING gate",
+                    )
                     raise e
 
                 llm_response_val = None
                 tier_2_verified = False
 
-                # This function raises OSError when source is unavailable
-                # (PyInstaller bundles, .pyc-only, Cython, REPL, frozen exe).
+                # F7: the local LLM receives ONLY the function signature —
+                # never the full source code. (Previously inspect.getsource
+                # sent the entire body, including embedded credentials or
+                # deployment paths, to the local model.)
                 try:
-                    source_code = inspect.getsource(func)
-                except (OSError, TypeError):
-                    source_code = "<source unavailable>"
+                    func_signature = _function_signature(func)
+                except Exception:  # pragma: no cover - defensive
+                    func_signature = getattr(func, "__name__", "unknown")
 
                 if not global_llm_breaker.allow_request():
                     logging.warning(
@@ -1606,13 +1638,14 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     # Deterministic mock fallback for environment consistency
                     llm_response_val = default_value if default_value is not None else safe_minimum
                 else:
-                    # Make a structured HTTP call to localhost Ollama service
+                    # Make a structured HTTP call to localhost Ollama service.
+                    # F7: send sanitized inputs + signature only (no source).
                     llm_response_val = query_local_ollama_engine(
                         func_name=func_name,
                         err_type=err_type,
                         err_msg=err_msg,
-                        inputs=input_args_dict,
-                        source_code=source_code,
+                        inputs=_sanitize_inputs(input_args_dict),
+                        function_signature=func_signature,
                         default_fallback=default_value if default_value is not None else safe_minimum,
                         timeout=global_llm_breaker.timeout,
                     )
@@ -1649,6 +1682,14 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                         "user_notification_status": "ALERTED"
                     }
                     global_audit_logger.log_event(event_data)
+                    # F7: runtime notification — operators subscribed to the
+                    # bus now see healing decisions without tailing logs.
+                    _publish_healing_event(
+                        Events.HEALING_OCCURRED,
+                        func_name,
+                        err_type,
+                        f"Tier 2 LLM heal applied: {llm_response_val}",
+                    )
 
                     # Log message notifying user/operator of recovery action
                     logging.info(
@@ -1674,12 +1715,110 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
 # SECTION 8: LOCAL OLLAMA MCP DRIVER
 # =====================================================================
 
+# ── F7: sanitization + event notification helpers ───────────────────────────
+# (F7 fix from the Architecture Audit: the Tier-2 local LLM previously
+# received the FULL function source code and raw inputs. It now receives
+# only the function signature, with inputs sanitized, and every Tier-2
+# decision is published on the EventBus + audit ledger.)
+
+_SECRET_KEY_HINTS = ("token", "secret", "password", "api_key", "apikey", "authorization", "credential")
+
+
+def _sanitize_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    """
+    Sanitize an inputs dict before it leaves the process for an LLM.
+
+    Rules:
+      - Values whose key hints at a secret (token/secret/password/key/...) are
+        replaced with ``"***REDACTED***"``.
+      - Values that look like absolute filesystem paths are replaced with the
+        basename (leaks structure, never the full path).
+      - String values are truncated to 200 chars.
+      - Nested containers are processed one level deep; everything else is
+        passed through unchanged (best-effort, never raises).
+    """
+    try:
+        if not isinstance(inputs, dict):
+            return inputs
+        sanitized: dict[str, Any] = {}
+        for key, value in inputs.items():
+            key_lower = str(key).lower()
+            if any(hint in key_lower for hint in _SECRET_KEY_HINTS):
+                sanitized[key] = "***REDACTED***"
+                continue
+            if isinstance(value, str):
+                if value.startswith(("/", "C:\\", "\\\\", "~/")):
+                    import os as _os
+
+                    sanitized[key] = f"<path>{_os.path.basename(value)}</path>"
+                else:
+                    sanitized[key] = value[:200]
+                continue
+            if isinstance(value, dict):
+                sanitized[key] = _sanitize_inputs(value)
+                continue
+            if isinstance(value, (list, tuple)):
+                sanitized[key] = [
+                    _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
+                ]
+                continue
+            sanitized[key] = value
+        return sanitized
+    except Exception:  # pragma: no cover - defensive, never blocks healing
+        return inputs
+
+
+def _function_signature(func: Any) -> str:
+    """
+    Best-effort signature-only descriptor for a wrapped function.
+
+    Returns ``module.qualified_name(args...)`` WITHOUT the function body —
+    the Tier-2 LLM must never receive the full source code. Falls back to
+    the plain name when the signature cannot be computed.
+    """
+    try:
+        sig = inspect.signature(func)
+        module = getattr(func, "__module__", "unknown")
+        name = getattr(func, "__qualname__", getattr(func, "__name__", "unknown"))
+        return f"{module}.{name}{sig}"
+    except (TypeError, ValueError):
+        return getattr(func, "__qualname__", getattr(func, "__name__", "unknown"))
+
+
+def _publish_healing_event(
+    event_type: str,
+    func_name: str,
+    err_type: str,
+    message: str,
+) -> None:
+    """
+    Publish a healing decision on the central EventBus (best-effort).
+
+    Synchronous bus (fireai.core.event_bus) — no asyncio coordination
+    needed. NEVER raises: observability must not break healing.
+    """
+    try:
+        from fireai.core.event_bus import EventBus
+
+        EventBus.instance().publish(
+            event_type,
+            {
+                "function_name": func_name,
+                "error_type": err_type,
+                "message": message,
+            },
+            source="qomn_self_healing_engine",
+        )
+    except Exception:  # pragma: no cover - defensive
+        logging.debug("healing event publish failed (non-fatal)", exc_info=True)
+
+
 def query_local_ollama_engine(
     func_name: str,
     err_type: str,
     err_msg: str,
     inputs: dict[str, Any],
-    source_code: str,
+    function_signature: str,
     default_fallback: Any,
     timeout: float = 2.0,
 ) -> Any:
@@ -1698,7 +1837,7 @@ def query_local_ollama_engine(
         f"Error Type: {err_type}\n"
         f"Error Message: {err_msg}\n"
         f"Inputs: {inputs}\n"
-        f"Source Code:\n{source_code}\n\n"
+        f"Function Signature (F7 — body not provided):\n{function_signature}\n\n"
         f"Provide a safe return value to heal this execution and prevent system crash.\n"
         f"Respond ONLY with a valid JSON document conforming to this schema:\n"
         f'{{"suggested_return_value": <safe_value>}}\n'

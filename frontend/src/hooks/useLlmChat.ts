@@ -13,9 +13,12 @@ export interface ChatMessage {
         content: string;
         source?: string;
         model?: string;
+        disclaimer?: string;
         timestamp: number;
         isStreaming?: boolean;
 }
+
+export type ChatRole = "engineer_assistant" | "code_explainer" | "narrative_writer";
 
 export interface UseLlmChatResult {
         messages: ChatMessage[];
@@ -26,13 +29,18 @@ export interface UseLlmChatResult {
 }
 
 const BATCH_INTERVAL_MS = 50;
+const MAX_HISTORY_TURNS = 10;
 
 /**
  * Hook for AI Copilot chat with SSE streaming.
  * Maintains message history and calls the backend LLM streaming endpoint.
  * Batches streaming updates to reduce GC pressure from rapid array copies.
+ *
+ * F5a: sends a whitelisted ``role`` (never a free-text system prompt).
+ * F5b: sends a bounded history window (last MAX_HISTORY_TURNS completed turns).
+ * F4: persists the server-provided disclaimer on the assistant message.
  */
-export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
+export function useLlmChat(role: ChatRole = "engineer_assistant"): UseLlmChatResult {
         const [messages, setMessages] = useState<ChatMessage[]>([]);
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState<string | null>(null);
@@ -96,11 +104,19 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
                         setError(null);
                         streamBufferRef.current = "";
 
+                        // F5b: bounded history window — last MAX_HISTORY_TURNS
+                        // completed turns (oldest first, server also caps at 20).
+                        const history = messages
+                                .filter((m) => m.content)
+                                .slice(-MAX_HISTORY_TURNS)
+                                .map((m) => ({ role: m.role, content: m.content }));
+
                         try {
                                 await llmApi.chatStream(
                                         {
                                                 prompt: content.trim(),
-                                                system: systemPrompt,
+                                                role,
+                                                history: history.length > 0 ? history : undefined,
                                                 temperature: 0.1,
                                                 max_tokens: 1500,
                                         },
@@ -116,7 +132,12 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
                                                 }
                                         },
                                         // onDone — flush remaining buffer and finalize
-                                        (done: { content: string; model: string; source: string }) => {
+                                        (done: {
+                                                content: string;
+                                                model: string;
+                                                source: string;
+                                                disclaimer?: string;
+                                        }) => {
                                                 if (batchTimerRef.current) {
                                                         clearTimeout(batchTimerRef.current);
                                                         batchTimerRef.current = null;
@@ -131,6 +152,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
                                                                         content: done.content || lastMsg.content,
                                                                         model: done.model,
                                                                         source: done.source,
+                                                                        disclaimer: done.disclaimer,
                                                                         isStreaming: false,
                                                                 };
                                                         }
@@ -196,7 +218,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
                                 setLoading(false);
                         }
                 },
-                [loading, systemPrompt, toast, flushBuffer],
+                [loading, role, messages, toast, flushBuffer],
         );
 
         const clearChat = useCallback(() => {
