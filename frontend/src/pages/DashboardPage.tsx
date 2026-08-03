@@ -106,7 +106,7 @@ export function DashboardPage() {
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card hover:border-cyan-400/40"
                                                 onClick={() => refetchHealth()}
                                         >
                                                 <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -117,7 +117,7 @@ export function DashboardPage() {
                                 {/* Stats Cards */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         {/* Projects Card */}
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card card-hover cursor-pointer" onClick={() => navigate("/projects")} role="button" tabIndex={0}>
                                                 <CardHeader className="pb-3">
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("dashboard.projects")}
@@ -130,7 +130,7 @@ export function DashboardPage() {
                                                         {projectsLoading ? (
                                                                 <Skeleton className="h-8 w-16 bg-secondary" />
                                                         ) : (
-                                                                <div className="text-3xl font-bold text-foreground">
+                                                                <div className="text-3xl font-bold text-foreground font-mono-num">
                                                                         {totalProjects}
                                                                 </div>
                                                         )}
@@ -138,7 +138,7 @@ export function DashboardPage() {
                                         </Card>
 
                                         {/* Active Projects Card */}
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card card-hover cursor-pointer" onClick={() => navigate("/projects")} role="button" tabIndex={0}>
                                                 <CardHeader className="pb-3">
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("dashboard.active")}
@@ -151,7 +151,7 @@ export function DashboardPage() {
                                                         {projectsLoading ? (
                                                                 <Skeleton className="h-8 w-16 bg-secondary" />
                                                         ) : (
-                                                                <div className="text-3xl font-bold text-slate-500">
+                                                                <div className="text-3xl font-bold text-cyan-300 font-mono-num">
                                                                         {activeProjects}
                                                                 </div>
                                                         )}
@@ -159,7 +159,7 @@ export function DashboardPage() {
                                         </Card>
 
                                         {/* Total Devices Card */}
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card card-hover cursor-pointer" onClick={() => navigate("/devices")} role="button" tabIndex={0}>
                                                 <CardHeader className="pb-3">
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("dashboard.totalDevices")}
@@ -172,7 +172,7 @@ export function DashboardPage() {
                                                         {devicesLoading ? (
                                                                 <Skeleton className="h-8 w-16 bg-secondary" />
                                                         ) : (
-                                                                <div className="text-3xl font-bold text-foreground">
+                                                                <div className="text-3xl font-bold text-foreground font-mono-num">
                                                                         {totalDevices}
                                                                 </div>
                                                         )}
@@ -180,7 +180,7 @@ export function DashboardPage() {
                                         </Card>
 
                                         {/* System Health Card */}
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card card-hover cursor-pointer" onClick={() => navigate("/dashboard/system-health")} role="button" tabIndex={0}>
                                                 <CardHeader className="pb-3">
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("dashboard.systemHealth")}

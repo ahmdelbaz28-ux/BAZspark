@@ -114,6 +114,9 @@ export function ApiKeyInputField({
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
                                 disabled={submitting}
+                                aria-label={t.inputLabel}
+                                aria-required="true"
+                                aria-invalid={Boolean(apiKey) && apiKey.length < 4}
                                 style={{
                                         width: "100%",
                                         height: "2.75rem",
@@ -126,14 +129,16 @@ export function ApiKeyInputField({
                                         fontFamily: "monospace",
                                         fontSize: "0.8rem",
                                         boxSizing: "border-box",
-                                        transition: "border-color 0.2s",
+                                        transition: "border-color 0.2s, box-shadow 0.2s",
                                 }}
                                 onFocus={(e) => {
-                                        e.target.style.borderColor = "#38bdf8";
+                                        e.target.style.borderColor = "#22d3ee";
+                                        e.target.style.boxShadow = "0 0 0 3px rgba(34, 211, 238, 0.2)";
                                         e.target.style.outline = "none";
                                 }}
                                 onBlur={(e) => {
                                         e.target.style.borderColor = "#1e293b";
+                                        e.target.style.boxShadow = "none";
                                 }}
                         />
                         <button
@@ -181,10 +186,10 @@ export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps
                         style={{
                                 width: "100%",
                                 height: "2.75rem",
-                                backgroundColor: "#2563eb",
+                                backgroundColor: "#22d3ee",
                                 border: "none",
                                 borderRadius: "0.5rem",
-                                color: "#ffffff",
+                                color: "#070b12",
                                 fontWeight: 700,
                                 fontSize: "0.8rem",
                                 cursor: submitting ? "not-allowed" : "pointer",
@@ -193,8 +198,18 @@ export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "0.5rem",
-                                transition: "background-color 0.2s",
-                                boxShadow: "0 8px 16px rgba(37,99,235,0.25)",
+                                transition: "background-color 0.2s, box-shadow 0.2s, transform 0.1s",
+                                boxShadow: "0 8px 16px rgba(34, 211, 238, 0.25)",
+                        }}
+                        onMouseEnter={(e) => {
+                                if (!submitting && !disabled) {
+                                        e.currentTarget.style.backgroundColor = "#67e8f9";
+                                        e.currentTarget.style.boxShadow = "0 10px 20px rgba(34, 211, 238, 0.35)";
+                                }
+                        }}
+                        onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#22d3ee";
+                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(34, 211, 238, 0.25)";
                         }}
                 >
                         {submitting ? (

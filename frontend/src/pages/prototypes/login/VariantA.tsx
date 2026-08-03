@@ -83,7 +83,7 @@ export function VariantA(props: Readonly<LoginVariantProps>) {
                                                                 { icon: <Layers style={{ width: "1.25rem", height: "1.25rem" }} />, cls: "icon-box-bim", title: t.feature3Title, desc: t.feature3Desc },
                                                                 { icon: <Bot style={{ width: "1.25rem", height: "1.25rem" }} />, cls: "icon-box-ai", title: t.feature4Title, desc: t.feature4Desc },
                                                                 { icon: <Anchor style={{ width: "1.25rem", height: "1.25rem" }} />, cls: "icon-box-marine", title: t.feature5Title, desc: t.feature5Desc },
-                                                        ].map((f, i) => (
+                                                        ].map((f) => (
                                                                 <div key={f.cls} className="login-feature-item">
                                                                         <div className={`feature-icon-box ${f.cls}`}>{f.icon}</div>
                                                                         <div>

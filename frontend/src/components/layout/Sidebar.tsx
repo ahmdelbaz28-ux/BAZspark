@@ -669,7 +669,8 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                                                 <div key={item.path} className="relative px-3 mb-0.5">
                                                                         <Link
                                                                                 to={item.path}
-                                                                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-[color,background-color,border-color,transform] duration-200 ${
+                                                                                aria-current={isActive ? "page" : undefined}
+                                                                                className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-[color,background-color,border-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                                                                                         isActive
                                                                                                 ? "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20"
                                                                                                 : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
@@ -699,7 +700,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 {!collapsed && (
                                         <Link
                                                 to="/settings"
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-[color,background-color,border-color,transform] duration-200"
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground cursor-pointer transition-[color,background-color,border-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                         >
                                                 <Info aria-hidden="true" className="h-5 w-5 shrink-0" />
                                                 <span className="text-sm font-medium">About BAZSPARK</span>
@@ -707,8 +708,9 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 )}
                                 <button type="button"
                                         onClick={() => setCollapsed(!collapsed)}
-                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-[color,background-color,border-color] duration-200 mt-1"
+                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 cursor-pointer transition-[color,background-color,border-color] duration-200 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                                        aria-expanded={!collapsed}
                                         data-onboarding="sidebar-toggle"
                                 >
                                         {collapsed ? (
