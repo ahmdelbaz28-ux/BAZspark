@@ -372,40 +372,29 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setAdminTokenRotating(false); }
   }, [adminTokenValue, adminTokenGrace]);
 
-  // Load admin data when category is selected. Uses inline async IIFEs so every
-  // setState happens after the first `await` — avoids react-hooks/set-state-in-effect.
-  // The `*Core` variants above are still used by the wrapper functions
-  // (`fetchCacheStats`, etc.) for the explicit Refresh buttons.
+  // Load admin data when category is selected. Uses a shared helper that
+  // performs the fetch + setState after the first `await`, so no synchronous
+  // setState in the effect body (react-hooks/set-state-in-effect). The helper
+  // eliminates the cross-category duplication (SonarCloud CPD finding).
   useEffect(() => {
     let cancelled = false;
-    if (activeCategory === "_cache") {
+    const run = <T,>(
+      fetcher: () => Promise<{ success: boolean; data?: T }>,
+      setter: (data: T) => void,
+      loadingSetter: (loading: boolean) => void,
+    ) => {
       (async () => {
         try {
-          const res = await adminApi.getCacheStats();
+          const res = await fetcher();
           if (cancelled) return;
-          if (res.success && res.data) setCacheStats(res.data);
+          if (res.success && res.data) setter(res.data);
         } catch { /* ignore */ }
-        finally { if (!cancelled) setCacheLoading(false); }
+        finally { if (!cancelled) loadingSetter(false); }
       })();
-    } else if (activeCategory === "_feature_flags") {
-      (async () => {
-        try {
-          const res = await adminApi.getFeatureFlags();
-          if (cancelled) return;
-          if (res.success && res.data) setFeatureFlags(res.data);
-        } catch { /* ignore */ }
-        finally { if (!cancelled) setFlagsLoading(false); }
-      })();
-    } else if (activeCategory === "_db_health") {
-      (async () => {
-        try {
-          const res = await adminApi.getDatabaseHealth();
-          if (cancelled) return;
-          if (res.success && res.data) setDbHealth(res.data);
-        } catch { /* ignore */ }
-        finally { if (!cancelled) setDbHealthLoading(false); }
-      })();
-    }
+    };
+    if (activeCategory === "_cache") run(adminApi.getCacheStats, setCacheStats, setCacheLoading);
+    else if (activeCategory === "_feature_flags") run(adminApi.getFeatureFlags, setFeatureFlags, setFlagsLoading);
+    else if (activeCategory === "_db_health") run(adminApi.getDatabaseHealth, setDbHealth, setDbHealthLoading);
     return () => {
       cancelled = true;
     };

@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { autocadApi } from "@/services/fullApi";
+import { checkCadStatus } from "@/lib/cadStatus";
 
 export function AutoCADPage() {
         const [connected, setConnected] = useState(false);
@@ -41,40 +42,22 @@ export function AutoCADPage() {
         const [filepath, setFilepath] = useState("");
 
         const checkStatus = useCallback(async () => {
-                try {
-                        const s = await autocadApi.getStatus();
-                        setStatus(s as Record<string, unknown>);
-                        setConnected(true);
-                        // V214: Check simulation_mode from status response
-                        const sim = (s as Record<string, unknown>)?.simulation_mode;
-                        setSimulationMode(Boolean(sim));
-                } catch {
-                        setConnected(false);
-                        setStatus(null);
-                        setSimulationMode(false);
-                }
+                await checkCadStatus(() => autocadApi.getStatus(), {
+                        setStatus,
+                        setConnected,
+                        setSimulationMode,
+                });
         }, []);
 
         useEffect(() => {
-                // Inline async IIFE — no synchronous setState in the effect body
-                // (react-hooks/set-state-in-effect). `checkStatus` is still defined
-                // above for use by event handlers (manual reconnect button).
+                // Mount fetch via the shared checkCadStatus helper — no synchronous
+                // setState in the effect body (react-hooks/set-state-in-effect).
                 let cancelled = false;
-                (async () => {
-                        try {
-                                const s = await autocadApi.getStatus();
-                                if (cancelled) return;
-                                setStatus(s as Record<string, unknown>);
-                                setConnected(true);
-                                const sim = (s as Record<string, unknown>)?.simulation_mode;
-                                setSimulationMode(Boolean(sim));
-                        } catch {
-                                if (cancelled) return;
-                                setConnected(false);
-                                setStatus(null);
-                                setSimulationMode(false);
-                        }
-                })();
+                checkCadStatus(
+                        () => autocadApi.getStatus(),
+                        { setStatus, setConnected, setSimulationMode },
+                        () => cancelled,
+                );
                 return () => {
                         cancelled = true;
                 };
