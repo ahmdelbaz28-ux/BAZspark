@@ -83,6 +83,7 @@ Usage:
 
 from __future__ import annotations
 
+import base64
 import logging
 import math
 import re
@@ -654,9 +655,17 @@ class AcousticsEngine:
                 "':', '(', ')'. Control characters are not permitted."
             )
 
+        # S5145: room_id is user-controlled. Sanitize the logged form with the
+        # documented isalnum()/base64.b64encode pattern; the allowlist above
+        # already bounds the charset, this keeps the analyzer satisfied.
+        if room_id.isalnum():
+            log_room_id = room_id
+        else:
+            log_room_id = base64.b64encode(room_id.encode("utf-8")).decode("utf-8")
+
         logger.info(
             "check_coverage: room=%s mode=%s speakers=%d points=%d",
-            room_id[:50],
+            log_room_id[:50],
             mode[:50],
             len(speakers),
             len(check_points),
@@ -725,13 +734,13 @@ class AcousticsEngine:
         if compliant:
             logger.info(
                 "check_coverage PASS: room=%s margin=%.1f dB",
-                room_id[:50],
+                log_room_id[:50],
                 result.margin_dba,
             )
         else:
             logger.warning(
                 "check_coverage FAIL: room=%s violations=%d",
-                room_id[:50],
+                log_room_id[:50],
                 len(violations),
             )
 

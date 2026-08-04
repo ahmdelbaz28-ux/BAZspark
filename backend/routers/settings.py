@@ -37,6 +37,7 @@ when no key is available or when the stored key fails at runtime.
 
 from __future__ import annotations
 
+import base64
 import logging
 import re
 import uuid
@@ -462,10 +463,7 @@ async def store_provider_key(
             detail="Internal inconsistency after key insertion.",
         )
 
-    logger.info(
-        "Stored %s Vision key id=%s masked=%s model=%s",
-        _safe_log_fragment(provider), key_id, _safe_log_fragment(masked), _safe_log_fragment(model_name),
-    )
+    logger.info("Stored %s Vision key id=%s", provider, key_id)
     _audit_key_event("added", key_id, masked, {"provider": provider, "model_name": model_name, "base_url": base_url})
     return _row_to_response(row)
 
@@ -709,6 +707,13 @@ async def test_provider_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid key id.",
         )
+    # S5145: key_id is user-controlled (URL path). Sanitize the logged form
+    # with the documented isalnum()/base64.b64encode pattern; the allowlist
+    # above already bounds the charset.
+    if key_id.isalnum():
+        log_key_id = key_id
+    else:
+        log_key_id = base64.b64encode(key_id.encode("utf-8")).decode("utf-8")
     _ensure_v152_columns()
     db = get_db()
     try:
@@ -751,7 +756,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id[:36], type(e).__name__)
+        logger.exception("Vision key test (decrypt) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -766,7 +771,7 @@ async def test_provider_key(
                 (utc_now_iso(), key_id),
             )
     except Exception as e:
-        logger.debug("Failed to update last_used_at for id=%s: %s", key_id[:36], type(e).__name__)
+        logger.debug("Failed to update last_used_at for id=%s: %s", log_key_id[:36], type(e).__name__)
 
     test_url = f"{base_url}{test_path}"
     try:
@@ -791,7 +796,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except httpx.HTTPError as e:
-        logger.debug("Vision key test (network) failed for id=%s: %s", key_id[:36], type(e).__name__)
+        logger.debug("Vision key test (network) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -799,7 +804,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
-        logger.exception("Vision key test (unknown) failed for id=%s: %s", key_id[:36], type(e).__name__)
+        logger.exception("Vision key test (unknown) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
