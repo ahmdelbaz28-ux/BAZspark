@@ -42,7 +42,7 @@ celery>=5.2.0,<6.0.0
 # GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf).
 pyjwt[crypto]>=2.13.0,<3.0.0  # V163 RESTORE: was reverted to 2.9.0 by 9da220d2 with false 'Python 3.8' justification
 passlib[bcrypt]>=1.7.0,<2.0.0
-cryptography>=48.0.1,<50.0.0  # V163 RESTORE: was reverted to 43.0.0 by 9da220d2 with false 'Python 3.8' justification
+cryptography>=48.0.1,<51.0.0  # V163/V314: upper bound lifted to <51 so pip-audit installs 50.0.x — fixes CVE-2026-69247 (GHSA-g6cj-pr64-35w5, fixed in 50.0.0); reverting to 43.0.0 by 9da220d2 was a false 'Python 3.8' justification
 
 # ── Networking ───────────────────────────────────────────────────────────────
 requests>=2.30.0,<3.0.0
