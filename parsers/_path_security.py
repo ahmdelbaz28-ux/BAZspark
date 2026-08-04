@@ -121,7 +121,11 @@ def validate_input_path(
         UnsafePathError: Any security check failed (hard rejection).
 
     """
-    if input_path is None or not isinstance(input_path, str):
+    if (
+        input_path is None
+        or not isinstance(input_path, str)
+        or not input_path.strip()
+    ):
         raise UnsafePathError(
             f"{parser_name}: input_path must be a non-empty string"
         )
