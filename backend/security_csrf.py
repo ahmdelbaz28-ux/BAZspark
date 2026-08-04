@@ -4,6 +4,12 @@
 csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie).
 ==============================================================================
 
+CANONICAL CSRF MODULE (Phase 5 dedup):
+  This is the ACTIVE, production CSRF middleware used by backend/app.py.
+  The alternative module ``backend/middleware/csrf.py`` is DEPRECATED and unused.
+  All new CSRF code MUST import from ``backend.security_csrf``, not from
+  ``backend.middleware.csrf``.
+
 MISSION PHASE 1.1 — Cybersecurity Hardening (The Shield)
 =========================================================
 

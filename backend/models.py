@@ -6,6 +6,16 @@ frontend/src/services/digitalTwinApi.ts exactly.
 
 LIFE-SAFETY NOTE: All numerical fields use strict validation to prevent
 silent data corruption that could lead to incorrect engineering calculations.
+
+DEDUP NOTE (Phase 5):
+  This module is NOT a duplicate of core/models.py. They serve different purposes:
+    - backend/models.py       → Pydantic V2 REST API request/response models
+                                (Project, Device, Connection, Report, HealthStatus)
+    - core/models.py          → Frozen dataclass domain models (UniversalElement,
+                                Point3D, Geometry, SemanticProperties, Relationship)
+    - backend/core/models.py  → DEPRECATED shim re-exporting core/models.py
+  Both this file and core/models.py are canonical in their own domains.
+  Do NOT merge them.
 """
 
 from __future__ import annotations

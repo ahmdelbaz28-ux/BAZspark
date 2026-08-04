@@ -1,4 +1,14 @@
-"""QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER"""
+"""QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER
+
+DOMAIN SCOPE (Phase 5 dedup):
+  This exporter is specific to the qomn_fire domain — it exports devices,
+  conduit runs, and FACP panel recommendations to Revit-compatible JSON.
+  It is NOT a duplicate of the other revit_exporter modules:
+    - qomn_fire/output/revit_exporter.py     → QOMN-FIRE device/conduit/FACP JSON export
+    - marine/integration/revit_exporter.py    → Marine detector family/placement generation
+    - fireai/core/revit_exporter.py            → Cable routing IFC/Revit schedule/report export
+  Each serves a distinct domain. Do NOT merge.
+"""
 
 import json
 from typing import List

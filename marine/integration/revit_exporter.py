@@ -1,6 +1,15 @@
 """
 marine/integration/revit_exporter.py — Revit Family + Model Generator (JSON-only).
 
+DOMAIN SCOPE (Phase 5 dedup):
+  This exporter is specific to the marine domain — it generates Revit family
+  definitions and model placements for marine fire detectors and fire divisions.
+  It is NOT a duplicate of the other revit_exporter modules:
+    - qomn_fire/output/revit_exporter.py     → QOMN-FIRE device/conduit/FACP JSON export
+    - marine/integration/revit_exporter.py    → Marine detector family/placement generation (this file)
+    - fireai/core/revit_exporter.py            → Cable routing IFC/Revit schedule/report export
+  Each serves a distinct domain. Do NOT merge.
+
 V141.2 HONEST DOCUMENTATION (adversarial audit fix):
 Previous versions claimed "Generates .rfa family definitions and .rvt
 model placements for marine detectors". This was MISLEADING. This module

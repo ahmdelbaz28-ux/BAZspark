@@ -4,6 +4,15 @@
 fireai.core.revit_exporter — IFC & Revit Output Generation.
 ===========================================================
 
+DOMAIN SCOPE (Phase 5 dedup):
+  This exporter is specific to the fireai core domain — it generates IFC elements,
+  cable schedules, Revit model lines, and compliance reports from cable routing results.
+  It is NOT a duplicate of the other revit_exporter modules:
+    - qomn_fire/output/revit_exporter.py     → QOMN-FIRE device/conduit/FACP JSON export
+    - marine/integration/revit_exporter.py    → Marine detector family/placement generation
+    - fireai/core/revit_exporter.py            → Cable routing IFC/Revit schedule/report export (this file)
+  Each serves a distinct domain. Do NOT merge.
+
 Generates output files from cable routing results:
 
 1. IFC Output:

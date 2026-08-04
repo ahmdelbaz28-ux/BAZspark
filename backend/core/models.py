@@ -12,6 +12,13 @@ collection (e.g., crashes inside dataclasses when ``__module__`` cannot be
 resolved).
 
 Fix: import ``core.models`` normally and re-export its public symbols.
+
+DEPRECATED (Phase 5 dedup):
+  This module is a compatibility shim re-exporting core/models.py.
+  No code currently imports from ``backend.core.models`` — all importers use
+  ``core.models`` directly. Prefer:
+      from core.models import UniversalElement  # canonical
+  New code MUST NOT import from ``backend.core.models``.
 """
 
 from __future__ import annotations

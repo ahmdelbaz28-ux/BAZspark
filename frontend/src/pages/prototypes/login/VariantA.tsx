@@ -1,3 +1,5 @@
+/** @internal Design prototype — excluded from production via PrototypeSwitcher feature flag */
+
 /**
  * VariantA.tsx — Engineering Terminal Login (Production Design)
  *

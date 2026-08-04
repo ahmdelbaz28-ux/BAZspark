@@ -1,3 +1,8 @@
+/**
+ * Page-level settings registry — read-only view of environment variables (fetched from /settings/config).
+ * Distinct from ui/SettingsRegistry (three-tier security settings with runtime toggles and bootstrap config).
+ * Neither component imports the other; they serve different sections of the settings UI.
+ */
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

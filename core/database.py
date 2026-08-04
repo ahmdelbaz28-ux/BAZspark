@@ -27,6 +27,14 @@ DESIGN DECISIONS
 - Full CRUD: add, get, update, delete (soft), list.
 - Relationships and conflicts tables for directed edges and merge tracking.
 
+DEDUP NOTE (Phase 5):
+--------------------
+  This is the CANONICAL UniversalDataModel persistence module.
+  It is NOT a duplicate of backend/database.py — they serve different purposes:
+    - core/database.py           → UniversalDataModel BIM element persistence (this file)
+    - backend/database.py        → REST API CRUD layer (projects, devices, connections)
+    - backend/core/database.py   → DEPRECATED shim re-exporting this file
+
 V83 SAFETY HARDENING
 --------------------
 - C-3 FIX: ``update_element()`` now validates update keys against a whitelist

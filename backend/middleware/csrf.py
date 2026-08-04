@@ -2,6 +2,17 @@
 backend/middleware/csrf.py — Cross-Site Request Forgery Protection
 ==================================================================
 
+DEPRECATED (Phase 5 dedup):
+  This module is NOT used by the application. The ACTIVE CSRF middleware is
+  ``backend.security_csrf`` (CSRFMiddleware), which uses the Double Submit Cookie
+  pattern with pure ASGI middleware — better performance and no Redis dependency.
+
+  This module uses the Synchronizer Token pattern with Redis and BaseHTTPMiddleware,
+  which is a different (and currently unused) approach. It is kept only as a
+  reference implementation. Do NOT add new imports from this module.
+
+  Canonical: ``from backend.security_csrf import CSRFMiddleware``
+
 Implements CSRF protection for the FireAI backend using:
 1. Synchronizer token pattern with secure token generation
 2. SameSite cookie attributes

@@ -1,3 +1,4 @@
+/** Project-scoped sidebar for project-specific navigation. Distinct from layout/Sidebar (app-level) and ui/sidebar (shadcn primitive). */
 
 import { Box, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

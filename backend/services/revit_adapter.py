@@ -8,6 +8,16 @@ for future refactoring.
 The adapter follows the domain vocabulary from the `improve-codebase-architecture`
 skill: **adapter** = hypothetical seam separating higher-level service logic from
 low-level Revit interactions.
+
+DEDUP NOTE (Phase 5):
+  This module is NOT a duplicate of revit_integration/adapters/revit_adapter.py.
+  They serve different purposes:
+    - backend/services/revit_adapter.py       → Backend service adapter (RevitAdapter)
+      for RevitService, handles simulation/API mode, wall creation, level/type lookups.
+    - revit_integration/adapters/revit_adapter.py → ETAP integration adapters
+      (IRevitAdapter, RevitElementAdapter, ETAPDataAdapter, IFCAdapter, GeoJSONAdapter)
+      for converting Revit elements to DTOs and ETAP-compatible formats.
+  Do NOT merge them.
 """
 
 from typing import Any, Dict, List, Optional

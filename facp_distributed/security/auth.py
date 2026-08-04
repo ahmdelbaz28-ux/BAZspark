@@ -1,4 +1,14 @@
-"""Authentication System for Distributed FACP"""
+"""Authentication System for Distributed FACP
+
+LAYER NOTE (Phase 5 dedup):
+  This module is the JWT-based auth system for the distributed FACP architecture.
+  It is NOT a duplicate of the other auth modules:
+    - backend/auth.py               → FastAPI dependency layer (require_permission, get_current_role)
+    - backend/routers/auth.py       → FastAPI router layer (login, logout, verify, me endpoints)
+    - facp_distributed/security/auth.py → JWT-based auth for distributed FACP nodes (this file:
+                                      TokenManager, AuthProvider with RS256/HS256 signing)
+  Each serves a distinct layer. Do NOT merge.
+"""
 import hashlib
 import os
 import secrets

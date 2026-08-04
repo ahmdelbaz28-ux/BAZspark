@@ -1,3 +1,6 @@
+/**
+ * @deprecated Use layout/TopBar instead. This component is not imported anywhere in the active app shell.
+ */
 export function Header() {
 	return (
 		<header className="h-14 flex items-center justify-between px-4 bg-card text-foreground">
