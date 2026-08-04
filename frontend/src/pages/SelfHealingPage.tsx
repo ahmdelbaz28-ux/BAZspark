@@ -236,7 +236,7 @@ export function SelfHealingPage() {
                         {/* Grid: 4 stat cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {/* Circuit Breaker */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                                                         <Zap aria-hidden="true" className="h-4 w-4 text-amber-500" />
@@ -289,7 +289,7 @@ export function SelfHealingPage() {
                                 </Card>
 
                                 {/* LRU Cache */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                                                         <Activity aria-hidden="true" className="h-4 w-4 text-blue-500" />
@@ -333,7 +333,7 @@ export function SelfHealingPage() {
                                 </Card>
 
                                 {/* Audit Logger */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                                                         <Shield aria-hidden="true" className="h-4 w-4 text-purple-500" />
@@ -385,7 +385,7 @@ export function SelfHealingPage() {
                                 </Card>
 
                                 {/* LLM Breaker */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                                                         <AlertTriangle aria-hidden="true" className="h-4 w-4 text-orange-500" />
@@ -420,7 +420,7 @@ export function SelfHealingPage() {
                         </div>
 
                         {/* Configuration Card */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
                                                 <Shield aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -509,7 +509,7 @@ export function SelfHealingPage() {
                         )}
 
                         {/* LLM Healing Toggle */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
                                                 <Zap aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -559,7 +559,7 @@ export function SelfHealingPage() {
                         </Card>
 
                         {/* Protected Methods Info */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
                                                 <Shield aria-hidden="true" className="h-5 w-5 text-primary" />

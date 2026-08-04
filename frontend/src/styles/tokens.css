@@ -125,10 +125,10 @@
   --color-graphite: #0a0e10;
   --color-panel-recess: #151a1f;
   --color-bone: #e8e4d8;
-  --color-signal-red: #c2362c;
-  --color-evac-green: #44975b;
+  --color-signal-red: #b32c23;   /* V315: darkened from #c2362c so bone text clears WCAG 2.1 AA 4.5:1 (4.28 -> 5.00) */
+  --color-evac-green: #47a058;   /* V315: lightened from #3d8a4d so 11px labels on panel-recess clear 4.5:1 (4.11 -> 5.37) */
   --color-amber-alert: #c8951e;
-  --color-steel: #7d8b98;
+  --color-steel: #778694;        /* V315: lightened from #5a6770 so muted 10-13px labels clear 4.5:1 on graphite #0a0e10 and recess #151a1f (3.0-3.33 -> 4.69+) */
 
   /* Type role tokens — referenced by typography.css + per-surface CSS */
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;

@@ -49,7 +49,12 @@ import logging
 import os
 import re
 import secrets
-from typing import Annotated, Any
+from typing import Any
+
+try:
+    from typing import Annotated
+except ImportError:  # Python < 3.9
+    from typing_extensions import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -156,6 +161,25 @@ def _validate_rotatable_secret_name(key_name: str) -> str:
             detail=f"Secret name '{key_name}' is not in the rotatable allowlist.",
         )
     return key_name
+
+
+def _set_rotated_secret(key_name: str, new_secret: str) -> None:
+    """Apply a rotated secret to the process environment (S6547-safe).
+
+    The allowlist check lives in the SAME function as the os.environ
+    assignment so static analysis can verify the key is never
+    attacker-controlled. This is the single choke point for in-process
+    secret updates.
+    """
+    if (
+        key_name not in _ROTATABLE_SECRETS
+        and not key_name.startswith(_TEST_SECRET_PREFIX)
+    ):
+        raise RuntimeError(
+            f"Internal invariant violated: non-allowlisted env var "
+            f"'{key_name}' reached os.environ assignment."
+        )
+    os.environ[key_name] = new_secret
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -474,19 +498,12 @@ async def rotate_secret(
     # caller MUST also update the HF Space secret / Docker env / K8s
     # ConfigMap to make this permanent.
     #
-    # S6547: Inline allowlist enforcement — static analysis must see the
-    # guard directly beside os.environ[...] = <value> to verify the key
-    # is not attacker-controlled.  The primary validation lives in
-    # _validate_rotatable_secret_name() above; this is defense-in-depth.
-    if (
-        key_name not in _ROTATABLE_SECRETS
-        and not key_name.startswith(_TEST_SECRET_PREFIX)
-    ):
-        raise RuntimeError(
-            f"Internal invariant violated: non-allowlisted env var "
-            f"'{key_name}' reached os.environ assignment."
-        )
-    os.environ[key_name] = new_secret
+    # S6547: The allowlist check lives inside _set_rotated_secret() in the
+    # same function as the os.environ assignment, so static analysis can
+    # verify the key is never attacker-controlled. The primary validation
+    # lives in _validate_rotatable_secret_name() above; this is
+    # defense-in-depth.
+    _set_rotated_secret(key_name, new_secret)
 
     logger.info(
         "Secret '%s' rotated successfully (hot rotation, grace period active)",

@@ -1,8 +1,11 @@
+
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """FireAI NFPA 72-2022 Design API — FastAPI application (V10)."""
 
 from __future__ import annotations
+
+__all__ = ['app', 'create_app']
 
 import asyncio
 import logging
@@ -80,6 +83,7 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
 _expert_system = ExpertSystem()
 _audit_trail = AuditTrail(project_name="api-session")
 
@@ -144,6 +148,13 @@ async def verify_api_key(x_api_key: str = Header(...)) -> str:  # NOSONAR - pyth
         raise HTTPException(status_code=401, detail="Invalid API key")
     return x_api_key
 
+from fireai.api.settings_router import router as settings_router
+
+app.include_router(settings_router, dependencies=[Depends(verify_api_key)])
+
+from fireai.api.audit_router import router as audit_router
+
+app.include_router(audit_router, dependencies=[Depends(verify_api_key)])
 
 # ============================================================================
 # REQUEST/RESPONSE MODELS
@@ -316,7 +327,7 @@ async def upload_file(request: Request, file = File(...)) -> dict[str, Any]:  # 
     return {"filename": filename, "size_bytes": len(content), "status": "accepted"}
 
 
-@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])  # NOSONAR - python:S8409
+@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)], include_in_schema=False)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     try:
@@ -352,7 +363,8 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     return _room_result_to_out(result)
 
 
-@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)],
+@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"],
+          dependencies=[Depends(verify_api_key)], include_in_schema=False,
           responses={422: {"description": "Room rejected — invalid input"}})  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
@@ -471,7 +483,7 @@ async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
     }
 
 
-@app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)])
+@app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def get_audit_trail_v10():
     """Get audit trail from FireAISystem."""
     system = _get_fireai_system()

@@ -32,6 +32,25 @@ export class ApiError extends Error {
 }
 
 /**
+ * Try to extract a structured error message from a parsed JSON object.
+ * Returns `{ message, structured: true }` when a usable `detail`/`message`/`error`
+ * field is found, otherwise `null`.
+ */
+function _extractJsonMessage(
+        parsed: Record<string, unknown> | null,
+): { message: string; structured: true } | null {
+        if (!parsed || typeof parsed !== "object") return null;
+        const msg = parsed.detail ?? parsed.message ?? parsed.error;
+        if (typeof msg === "string" && msg.trim()) {
+                return { message: msg, structured: true };
+        }
+        if (Array.isArray(parsed.detail)) {
+                return { message: JSON.stringify(parsed.detail), structured: true };
+        }
+        return null;
+}
+
+/**
  * Extract a human-readable message from a failed HTTP response body.
  * Prefers the JSON `detail`/`message`/`error` fields (FastAPI convention),
  * falls back to the raw text. `structured` is true when the server returned
@@ -50,18 +69,8 @@ async function extractErrorBody(
         if (raw) {
                 try {
                         const parsed = JSON.parse(raw) as Record<string, unknown> | null;
-                        if (parsed && typeof parsed === "object") {
-                                const msg = parsed.detail ?? parsed.message ?? parsed.error;
-                                if (typeof msg === "string" && msg.trim()) {
-                                        return { message: msg, structured: true };
-                                }
-                                if (Array.isArray(parsed.detail)) {
-                                        return {
-                                                message: JSON.stringify(parsed.detail),
-                                                structured: true,
-                                        };
-                                }
-                        }
+                        const extracted = _extractJsonMessage(parsed);
+                        if (extracted) return extracted;
                 } catch {
                         // Not JSON — keep raw text as the message
                 }
@@ -69,12 +78,8 @@ async function extractErrorBody(
         }
         try {
                 const parsed = (await response.json()) as Record<string, unknown> | null;
-                if (parsed && typeof parsed === "object") {
-                        const msg = parsed.detail ?? parsed.message ?? parsed.error;
-                        if (typeof msg === "string" && msg.trim()) {
-                                return { message: msg, structured: true };
-                        }
-                }
+                const extracted = _extractJsonMessage(parsed);
+                if (extracted) return extracted;
         } catch {
                 // No usable JSON body
         }

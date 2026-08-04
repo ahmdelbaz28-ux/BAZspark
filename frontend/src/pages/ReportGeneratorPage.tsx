@@ -231,7 +231,7 @@ export function ReportGeneratorPage() {
                                 </div>
 
                                 {/* Project Selector */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground">
                                                         Select Project
@@ -261,10 +261,10 @@ export function ReportGeneratorPage() {
                                                                         setShowGenerateForm(false);
                                                                 }}
                                                         >
-                                                                <SelectTrigger className="bg-card border-border text-foreground">
+                                                                <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                         <SelectValue placeholder="Choose a project…" />
                                                                 </SelectTrigger>
-                                                                <SelectContent className="bg-card border-border">
+                                                                <SelectContent className="bg-card border-border stagger-card">
                                                                         {projects.map((project: Project) => (
                                                                                 <SelectItem key={project.id} value={project.id}>
                                                                                         {project.name} ({project.deviceCount || 0} devices)
@@ -298,7 +298,7 @@ export function ReportGeneratorPage() {
 
                                                 {/* Generate Form - matches PNG design */}
                                                 {showGenerateForm && (
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader className="pb-3">
                                                                         <CardTitle className="text-lg text-foreground">
                                                                                 Generate New Report
@@ -374,10 +374,10 @@ export function ReportGeneratorPage() {
                                                                                                         value={targetScope}
                                                                                                         onValueChange={setTargetScope}
                                                                                                 >
-                                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                                 <SelectValue />
                                                                                                         </SelectTrigger>
-                                                                                                        <SelectContent className="bg-card border-border">
+                                                                                                        <SelectContent className="bg-card border-border stagger-card">
                                                                                                                 <SelectItem value="ENTIRE_PROJECT">
                                                                                                                         Entire Project
                                                                                                                 </SelectItem>
@@ -399,10 +399,10 @@ export function ReportGeneratorPage() {
                                                                                                         value={outputFormat}
                                                                                                         onValueChange={setOutputFormat}
                                                                                                 >
-                                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                                 <SelectValue />
                                                                                                         </SelectTrigger>
-                                                                                                        <SelectContent className="bg-card border-border">
+                                                                                                        <SelectContent className="bg-card border-border stagger-card">
                                                                                                                 <SelectItem value="PDF_STRICT_COMPLIANCE">
                                                                                                                         PDF - Strict Compliance
                                                                                                                 </SelectItem>
@@ -427,7 +427,7 @@ export function ReportGeneratorPage() {
                                                                                         Kernel Coverage
                                                                                 </h3>
 
-                                                                                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30">
+                                                                                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30 stagger-card">
                                                                                         <div className="flex items-center gap-3">
                                                                                                 <input
                                                                                                         type="checkbox"
@@ -436,7 +436,7 @@ export function ReportGeneratorPage() {
                                                                                                         onChange={(e) =>
                                                                                                                 setIncludeDisabledDevices(e.target.checked)
                                                                                                         }
-                                                                                                        className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
+                                                                                                        className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800 stagger-card"
                                                                                                 />
                                                                                                 <div>
                                                                                                         <Label
@@ -453,7 +453,7 @@ export function ReportGeneratorPage() {
                                                                                         </div>
                                                                                 </div>
 
-                                                                                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30">
+                                                                                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30 stagger-card">
                                                                                         <div className="flex items-center gap-3">
                                                                                                 <input
                                                                                                         type="checkbox"
@@ -462,7 +462,7 @@ export function ReportGeneratorPage() {
                                                                                                         onChange={(e) =>
                                                                                                                 setSafetyMarginPadding(e.target.checked)
                                                                                                         }
-                                                                                                        className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
+                                                                                                        className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800 stagger-card"
                                                                                                 />
                                                                                                 <div>
                                                                                                         <Label
@@ -481,7 +481,7 @@ export function ReportGeneratorPage() {
                                                                         </div>
 
                                                                         {/* Kernel Information */}
-                                                                        <div className="p-4 rounded-lg border border-border bg-card/30">
+                                                                        <div className="p-4 rounded-lg border border-border bg-card/30 stagger-card">
                                                                                 <div className="flex items-center gap-2 mb-2">
                                                                                         <Calculator aria-hidden="true" className="h-4 w-4 text-info" />
                                                                                         <h4 className="text-sm font-medium text-foreground uppercase tracking-wider">
@@ -532,7 +532,7 @@ export function ReportGeneratorPage() {
                                                 )}
 
                                                 {/* Reports List */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Report History
@@ -622,7 +622,7 @@ export function ReportGeneratorPage() {
 
                                 {/* No project selected state */}
                                 {selectedProjectId === null && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardContent className="py-16 text-center">
                                                         <FileText aria-hidden="true" className="h-16 w-16 mx-auto mb-4 text-muted-foreground/70" />
                                                         <h3 className="text-lg font-medium text-foreground/90">

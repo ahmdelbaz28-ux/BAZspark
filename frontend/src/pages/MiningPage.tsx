@@ -204,7 +204,7 @@ export function MiningPage() {
 
                         {/* Standards Tab */}
                         {activeTab === "standards" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -232,7 +232,7 @@ export function MiningPage() {
 
                         {/* Methane Tab */}
                         {activeTab === "methane" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500" />
@@ -279,7 +279,7 @@ export function MiningPage() {
 
                         {/* Ventilation Tab */}
                         {activeTab === "ventilation" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <Wind aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -333,7 +333,7 @@ export function MiningPage() {
 
                         {/* CO Tab */}
                         {activeTab === "co" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500" />
@@ -375,7 +375,7 @@ export function MiningPage() {
 
                         {/* Conveyor Tab */}
                         {activeTab === "conveyor" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -420,7 +420,7 @@ export function MiningPage() {
 
                         {/* Report Tab */}
                         {activeTab === "report" && (
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                         <FileText aria-hidden="true" className="h-5 w-5 text-primary" />

@@ -59,7 +59,7 @@ export function AgentChatPage() {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card">
+      <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card stagger-card">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary to-secondary/60 flex items-center justify-center border border-secondary/50">
             <Zap className="h-5 w-5 text-secondary-foreground" />
@@ -163,7 +163,7 @@ export function AgentChatPage() {
       </ScrollArea>
 
       {/* Quick Commands */}
-      <div className="px-6 py-4 border-t border-border bg-card/50">
+      <div className="px-6 py-4 border-t border-border bg-card/50 stagger-card">
         <p className="text-xs text-muted-foreground mb-3 font-medium">الأوامر السريعة:</p>
         <div className="flex flex-wrap gap-2">
           {quickCommands.map((cmd) => (
@@ -180,7 +180,7 @@ export function AgentChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border p-4 bg-card">
+      <div className="border-t border-border p-4 bg-card stagger-card">
         <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
           <div className="relative flex items-center gap-2">
             <Button

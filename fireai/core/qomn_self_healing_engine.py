@@ -1,5 +1,5 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 from __future__ import annotations
 
 """
@@ -1142,7 +1142,7 @@ def compute_hash(data: Any) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
     safe_minimum: float = 0.0,
     default_value: Any = None,
     conservative_estimate: Any = 1.0,
@@ -1724,6 +1724,31 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
 _SECRET_KEY_HINTS = ("token", "secret", "password", "api_key", "apikey", "authorization", "credential")
 
 
+def _sanitize_string_value(value: str) -> str:
+    """Sanitize a single string: scrub paths or truncate."""
+    if value.startswith(("/", "C:\\", "\\\\", "~/")):
+        import os as _os
+
+        return f"<path>{_os.path.basename(value)}</path>"
+    return value[:200]
+
+
+def _sanitize_value(key: Any, value: Any) -> Any:
+    """Sanitize a single value based on its key and type."""
+    key_lower = str(key).lower()
+    if any(hint in key_lower for hint in _SECRET_KEY_HINTS):
+        return "***REDACTED***"
+    if isinstance(value, str):
+        return _sanitize_string_value(value)
+    if isinstance(value, dict):
+        return _sanitize_inputs(value)
+    if isinstance(value, (list, tuple)):
+        return [
+            _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
+        ]
+    return value
+
+
 def _sanitize_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
     """
     Sanitize an inputs dict before it leaves the process for an LLM.
@@ -1740,30 +1765,7 @@ def _sanitize_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
     try:
         if not isinstance(inputs, dict):
             return inputs
-        sanitized: dict[str, Any] = {}
-        for key, value in inputs.items():
-            key_lower = str(key).lower()
-            if any(hint in key_lower for hint in _SECRET_KEY_HINTS):
-                sanitized[key] = "***REDACTED***"
-                continue
-            if isinstance(value, str):
-                if value.startswith(("/", "C:\\", "\\\\", "~/")):
-                    import os as _os
-
-                    sanitized[key] = f"<path>{_os.path.basename(value)}</path>"
-                else:
-                    sanitized[key] = value[:200]
-                continue
-            if isinstance(value, dict):
-                sanitized[key] = _sanitize_inputs(value)
-                continue
-            if isinstance(value, (list, tuple)):
-                sanitized[key] = [
-                    _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
-                ]
-                continue
-            sanitized[key] = value
-        return sanitized
+        return {key: _sanitize_value(key, value) for key, value in inputs.items()}
     except Exception:  # pragma: no cover - defensive, never blocks healing
         return inputs
 
@@ -1924,7 +1926,7 @@ def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
     Computes required operating pressure: P = (Q / K)^2
     Citing: NFPA 13 Section 23.4.4.
     """
-    if k_factor == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+    if k_factor == 0.0:  # NOSONAR:S1244: import retained for re-export / API surface
         raise ZeroDivisionError("K-Factor cannot be zero under active calculations.")
     return (flow_gpm / k_factor) ** 2
 

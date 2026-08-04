@@ -26,15 +26,16 @@ if HAS_CLR:
     try:
         clr.AddReference("RevitAPI")
         clr.AddReference("RevitAPIUI")
-    except ImportError:
+        clr.AddReference("RevitServices")
+    except Exception:
         # Mock for testing outside Revit
-        pass
+        HAS_CLR = False
 
 if HAS_CLR:
     try:
         from Autodesk.Revit.DB import *  # noqa: S2208 — Revit .NET interop requires full namespace imports as per API convention
         from Autodesk.Revit.UI import *  # noqa: S2208
-    except ImportError:
+    except Exception:
         # Mock classes when not in Revit environment
         BuiltInCategory = None
         Transaction = None

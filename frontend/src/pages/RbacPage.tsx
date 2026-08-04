@@ -329,7 +329,7 @@ export function RbacPage() {
                         {/* Role Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {permissionCounts.map(({ role, count }) => (
-                                        <Card key={role} className="border-border bg-card">
+                                        <Card key={role} className="border-border bg-card stagger-card">
                                                 <CardHeader className="pb-2">
                                                         <div className="flex items-center justify-between">
                                                                 <CardTitle className="text-base">{roleLabel(role)}</CardTitle>
@@ -353,7 +353,7 @@ export function RbacPage() {
                         </div>
 
                         {/* Permission Matrix */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <div className="flex items-center justify-between">
                                                 <div>

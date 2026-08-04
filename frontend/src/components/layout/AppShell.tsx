@@ -2,6 +2,7 @@ import type React from "react";
 import Sidebar from "./Sidebar";
 import StatusBar from "./StatusBar";
 import TopBar from "@/components/layout/TopBar";
+import { PageAnimator } from "@/components/layout/PageAnimator";
 import "@/styles/shell.css";
 
 interface AppShellProps {
@@ -68,7 +69,9 @@ const AppShell: React.FC<AppShellProps> = ({
                                         id="main-content"
                                         className="flex-1 overflow-auto bg-background relative"
                                 >
-                                        <div className="relative z-10">{children}</div>
+                                        <div className="relative z-10">
+                                                <PageAnimator>{children}</PageAnimator>
+                                        </div>
                                 </main>
 
                                 <StatusBar

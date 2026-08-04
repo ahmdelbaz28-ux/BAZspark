@@ -147,7 +147,7 @@ export function GenerativeDesignPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Input Panel */}
-          <Card className="lg:col-span-2 border-border bg-card">
+          <Card className="lg:col-span-2 border-border bg-card stagger-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Dumbbell aria-hidden="true" className="h-4 w-4 text-primary" />
@@ -316,7 +316,7 @@ export function GenerativeDesignPage() {
             {result && (
               <>
                 {/* Recommendation */}
-                <Card className="border-border bg-card">
+                <Card className="border-border bg-card stagger-card">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Sparkles aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -346,7 +346,7 @@ export function GenerativeDesignPage() {
                       idx === result.recommended_index
                         ? "ring-1 ring-primary/30"
                         : ""
-                    }`}
+                    } stagger-card`}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">

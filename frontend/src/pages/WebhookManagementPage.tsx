@@ -327,7 +327,7 @@ export function WebhookManagementPage() {
                 {subscriptions.map((sub) => (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50"
+                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 stagger-card"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

@@ -109,7 +109,7 @@ export function ARExportPage() {
                                 </div>
 
                                 {/* Export Form */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                         <Camera aria-hidden="true" className="h-5 w-5 text-info" />
@@ -128,7 +128,7 @@ export function ARExportPage() {
                                                                         placeholder="Building_A"
                                                                         value={buildingId}
                                                                         onChange={(e) => setBuildingId(e.target.value)}
-                                                                        className="bg-card border-border text-foreground"
+                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                 />
                                                         </div>
                                                         <div className="space-y-2">
@@ -136,7 +136,7 @@ export function ARExportPage() {
                                                                 <select
                                                                         value={format}
                                                                         onChange={(e) => setFormat(e.target.value as ExportFormat)}
-                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                 >
                                                                         <option value="glb">GLB (glTF Binary)</option>
                                                                         <option value="usdz">USDZ (Apple AR Quick Look)</option>
@@ -171,7 +171,7 @@ export function ARExportPage() {
 
                                 {/* Results */}
                                 {result && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader className="pb-3">
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <CheckCircle2
@@ -197,7 +197,7 @@ export function ARExportPage() {
                                                                                 ).map(([fmtName, fmtData]) => (
                                                                                         <div
                                                                                                 key={fmtName}
-                                                                                                className="p-4 rounded-lg bg-card border border-border"
+                                                                                                className="p-4 rounded-lg bg-card border border-border stagger-card"
                                                                                         >
                                                                                                 <div className="flex items-center gap-2 mb-3">
                                                                                                         <FileBox
@@ -215,7 +215,7 @@ export function ARExportPage() {
                                                                                                         <Button
                                                                                                                 variant="outline"
                                                                                                                 size="sm"
-                                                                                                                className="border-border text-foreground/90 hover:bg-card"
+                                                                                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                                                 onClick={() =>
                                                                                                                         handleDownload(
                                                                                                                                 fmtName,
@@ -241,7 +241,7 @@ export function ARExportPage() {
                                                                         <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-200">
                                                                                 View raw response
                                                                         </summary>
-                                                                        <pre className="mt-2 text-xs text-muted-foreground overflow-auto max-h-48 font-mono bg-card p-3 rounded-lg border border-border">
+                                                                        <pre className="mt-2 text-xs text-muted-foreground overflow-auto max-h-48 font-mono bg-card p-3 rounded-lg border border-border stagger-card">
                                                                                 {JSON.stringify(result, null, 2)}
                                                                         </pre>
                                                                 </details>
@@ -252,7 +252,7 @@ export function ARExportPage() {
 
                                 {/* Empty state */}
                                 {!exporting && !result && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardContent>
                                                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                                                                 <Smartphone

@@ -31,6 +31,20 @@ import {
         LanguageToggle,
 } from "./shared";
 
+function _deriveAlarmState(error: string | null, submitting: boolean, isSuccess: boolean): string {
+  if (error) return "alarm-state-error";
+  if (submitting) return "alarm-state-submitting";
+  if (isSuccess) return "alarm-state-success";
+  return "alarm-state-idle";
+}
+
+function _deriveAlarmAriaLabel(error: string | null, submitting: boolean, isSuccess: boolean, lang: string): string {
+  if (error) return lang === "ar" ? "فشل المصادقة" : "Authentication failed";
+  if (submitting) return lang === "ar" ? "جاري المصادقة" : "Authenticating";
+  if (isSuccess) return lang === "ar" ? "تم بدء الجلسة" : "Session initialized";
+  return lang === "ar" ? "النظام آمن" : "System secure";
+}
+
 export function VariantA(props: Readonly<LoginVariantProps>) {
         const {
                 lang,
@@ -55,24 +69,12 @@ export function VariantA(props: Readonly<LoginVariantProps>) {
 
         // Derive alarm status bar state from form state.
         // Order matters: error > submitting > success > idle.
-        const alarmState = error
-                ? "alarm-state-error"
-                : submitting
-                        ? "alarm-state-submitting"
-                        : isSuccess
-                                ? "alarm-state-success"
-                                : "alarm-state-idle";
+        const alarmState = _deriveAlarmState(error, submitting, isSuccess);
 
         // Screen-reader announcements must match the UI language (per the
         // frontend-design skill's "Language Consistency Rule"). These four
         // status phrases are the spoken equivalent of the bar's color.
-        const alarmAriaLabel = error
-                ? (lang === "ar" ? "فشل المصادقة" : "Authentication failed")
-                : submitting
-                        ? (lang === "ar" ? "جاري المصادقة" : "Authenticating")
-                        : isSuccess
-                                ? (lang === "ar" ? "تم بدء الجلسة" : "Session initialized")
-                                : (lang === "ar" ? "النظام آمن" : "System secure");
+        const alarmAriaLabel = _deriveAlarmAriaLabel(error, submitting, isSuccess, lang);
 
         const features = [
                 { icon: <Compass style={{ width: "1.25rem", height: "1.25rem" }} />, cls: "icon-box-cad", title: t.feature1Title, desc: t.feature1Desc },

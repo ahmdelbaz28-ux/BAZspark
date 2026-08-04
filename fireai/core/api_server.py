@@ -440,7 +440,7 @@ def memory_summary():
         raise HTTPException(status_code=500, detail="Internal error")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@app.post("/analyse", response_model=RoomResponse, dependencies=[Depends(verify_api_key)])
+@app.post("/analyse", response_model=RoomResponse, dependencies=[Depends(verify_api_key)], include_in_schema=False)
 def analyse_room(req: RoomRequest):
     """Analyse a single room (authenticated)."""
     try:
@@ -463,7 +463,7 @@ def analyse_room(req: RoomRequest):
         raise HTTPException(status_code=500, detail="Analysis failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@app.post("/analyse/floor", response_model=List[RoomResponse], dependencies=[Depends(verify_api_key)])
+@app.post("/analyse/floor", response_model=List[RoomResponse], dependencies=[Depends(verify_api_key)], include_in_schema=False)
 def analyse_floor(rooms: list[RoomRequest]):
     """Analyse multiple rooms (floor) — authenticated, max 50 rooms."""
     if not rooms:
@@ -569,7 +569,7 @@ def run_integration(req: IntegrationRequest):
         raise HTTPException(status_code=500, detail="Integration pipeline failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@app.get("/audit/hashchain", dependencies=[Depends(verify_api_key)])
+@app.get("/audit/hashchain", dependencies=[Depends(verify_api_key)], include_in_schema=False)
 def hashchain_report():
     """
     Get SHA-256 hash chain audit compliance report.

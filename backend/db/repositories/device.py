@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import uuid
@@ -9,6 +8,19 @@ from datetime import datetime, timezone
 from backend.db.repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
+    """Sanitize user-controlled strings for safe inclusion in log output (S5145).
+
+    Strips control characters (including newlines used for log forging) and
+    truncates to a bounded length. Satisfies SonarCloud python:S5145 by making
+    the logged value non-injectable.
+    """
+    if value is None:
+        return ""
+    cleaned = "".join(ch for ch in str(value) if ch.isprintable())
+    return cleaned[:max_len]
 
 
 class DeviceRepository(BaseRepository):
@@ -153,12 +165,6 @@ class DeviceRepository(BaseRepository):
 
     def delete_device(self, project_id: str, device_id: str) -> bool:
         """Delete a device and its associated connections."""
-        # S5145: device_id is user-controlled (URL path). Sanitize the logged
-        # form with the documented isalnum()/base64.b64encode pattern.
-        if device_id.isalnum():
-            log_device_id = device_id
-        else:
-            log_device_id = base64.b64encode(device_id.encode("utf-8")).decode("utf-8")
         with self.db._transaction() as cur:
             # Delete orphaned connections first (no FK cascade on from_id/to_id)
             cur.execute(
@@ -169,7 +175,7 @@ class DeviceRepository(BaseRepository):
             if deleted_conns > 0:
                 logger.info(
                     "Deleted %s orphaned connection(s) for device %s",
-                    deleted_conns, log_device_id,
+                    deleted_conns, _safe_log_fragment(device_id),
                 )
             cur.execute(
                 f"DELETE FROM devices WHERE id = {self.db._ph()} AND project_id = {self.db._ph()}",

@@ -85,9 +85,9 @@ class CreateProjectInput(BaseModel):
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
-    author: str | None = Field(default=None, max_length=255)  # V113: max_length prevents DoS
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
+    author: Optional[str] = Field(default=None, max_length=255)  # V113: max_length prevents DoS
     status: Literal["active", "archived", "draft"] | None = Field(default=None)
 
 
@@ -163,7 +163,7 @@ class CreateDeviceInput(BaseModel):
             "battery sizing calculations."
         ),
     )
-    properties: dict | None = Field(default=None)
+    properties: Optional[Dict] = Field(default=None)
 
     @field_validator("load")
     @classmethod
@@ -192,7 +192,7 @@ class UpdateDeviceInput(BaseModel):
     a 1000x error in life-safety battery sizing calculations.
     """
 
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     x: float | None = Field(default=None)
     y: float | None = Field(default=None)
     z: float | None = Field(default=None)
@@ -207,7 +207,7 @@ class UpdateDeviceInput(BaseModel):
             "Must match the unit of the load value being set."
         ),
     )
-    properties: dict | None = Field(default=None)
+    properties: Optional[Dict] = Field(default=None)
 
 
 # ============================================================================
@@ -234,9 +234,9 @@ class CreateConnectionInput(BaseModel):
 
     fromId: str = Field(min_length=1, max_length=255)
     toId: str = Field(min_length=1, max_length=255)
-    cableSize: str | None = Field(default="1.5mm²")
+    cableSize: Optional[str] = Field(default="1.5mm²")
     length: float | None = Field(default=0.0, ge=0)
-    type: str | None = Field(default="power")
+    type: Optional[str] = Field(default="power")
 
     @field_validator("toId")
     @classmethod
@@ -276,19 +276,19 @@ class Report(BaseModel):
     createdAt: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    completedAt: str | None = Field(default=None)
+    completedAt: Optional[str] = Field(default=None)
 
 
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
 
-    type: str | None = Field(None, max_length=255)
-    name: str | None = Field(default=None, max_length=255)
-    parameters: dict | None = Field(default=None)
+    type: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(default=None, max_length=255)
+    parameters: Optional[Dict] = Field(default=None)
 
     # Postman / Compatibility fields
-    reportType: str | None = None
-    filters: dict | None = None
+    reportType: Optional[str] = None
+    filters: Optional[Dict] = None
 
     @field_validator("parameters")
     @classmethod
@@ -336,7 +336,7 @@ class SyncStatus(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     pendingChanges: int = Field(default=0, ge=0)
-    error: str | None = Field(default=None)
+    error: Optional[str] = Field(default=None)
 
 
 # ============================================================================

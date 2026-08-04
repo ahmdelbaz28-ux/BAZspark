@@ -9,7 +9,7 @@
  *   GET    /admin/keys/roles    — List available roles
  */
 
-import { Key, Loader2, Plus, Trash2 } from "lucide-react";
+import { Key, Loader2, Plus, Trash2, Pencil, X, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,10 @@ export function ApiKeysPage() {
         const [newKeyDesc, setNewKeyDesc] = useState("");
         const [creating, setCreating] = useState(false);
         const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+        
+        const [editingKeyHash, setEditingKeyHash] = useState<string | null>(null);
+        const [editRole, setEditRole] = useState("viewer");
+        const [savingRole, setSavingRole] = useState(false);
 
         const fetchKeys = async () => {
                 setLoading(true);
@@ -173,6 +177,27 @@ export function ApiKeysPage() {
                 }
         };
 
+        const handleSaveRole = async (keyHash: string) => {
+                setSavingRole(true);
+                try {
+                        const headers = await buildSecureHeaders();
+                        const resp = await fetch(`/api/v1/admin/keys/${keyHash}`, {
+                                method: "PUT",
+                                headers,
+                                body: JSON.stringify({ role: editRole }),
+                                credentials: "same-origin",
+                        });
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        toast.success("Role updated successfully");
+                        setEditingKeyHash(null);
+                        fetchKeys();
+                } catch (err) {
+                        toast.error(`Update failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                } finally {
+                        setSavingRole(false);
+                }
+        };
+
         const roleColor = (role: string) => {
                 if (role === "admin") return "bg-red-600";
                 if (role === "engineer") return "bg-amber-500";
@@ -192,7 +217,7 @@ export function ApiKeysPage() {
                                 </p>
                         </div>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <div className="flex items-center justify-between">
                                                 <div>
@@ -257,26 +282,67 @@ export function ApiKeysPage() {
                                                         {keys.map((key) => (
                                                                 <div
                                                                         key={key.key_hash}
-                                                                        className="flex items-center justify-between p-3 rounded-lg border border-border"
+                                                                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2"
                                                                 >
-                                                                        <div className="space-y-1">
-                                                                                <div className="flex items-center gap-2">
-                                                                                        <code className="text-sm font-mono">{key.prefix}...</code>
-                                                                                        <Badge className={roleColor(key.role)}>{key.role}</Badge>
+                                                                        {editingKeyHash === key.key_hash ? (
+                                                                                <div className="flex-1 flex items-center gap-3">
+                                                                                        <code className="text-sm font-mono text-muted-foreground">{key.prefix}...</code>
+                                                                                        <Select value={editRole} onValueChange={setEditRole}>
+                                                                                                <SelectTrigger className="w-[180px] h-8"><SelectValue /></SelectTrigger>
+                                                                                                <SelectContent>
+                                                                                                        <SelectItem value="admin">Admin (full access)</SelectItem>
+                                                                                                        <SelectItem value="engineer">Engineer (read/write)</SelectItem>
+                                                                                                        <SelectItem value="reviewer">Reviewer (read-only)</SelectItem>
+                                                                                                        <SelectItem value="viewer">Viewer (minimal)</SelectItem>
+                                                                                                </SelectContent>
+                                                                                        </Select>
                                                                                 </div>
-                                                                                <p className="text-xs text-muted-foreground">
-                                                                                        {key.description || "No description"} · Created {new Date(key.created_at).toLocaleDateString()}
-                                                                                        {key.last_used && ` · Last used ${new Date(key.last_used).toLocaleDateString()}`}
-                                                                                </p>
+                                                                        ) : (
+                                                                                <div className="space-y-1">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                                <code className="text-sm font-mono">{key.prefix}...</code>
+                                                                                                <Badge className={roleColor(key.role)}>{key.role}</Badge>
+                                                                                        </div>
+                                                                                        <p className="text-xs text-muted-foreground">
+                                                                                                {key.description || "No description"} · Created {new Date(key.created_at).toLocaleDateString()}
+                                                                                                {key.last_used && ` · Last used ${new Date(key.last_used).toLocaleDateString()}`}
+                                                                                        </p>
+                                                                                </div>
+                                                                        )}
+                                                                        <div className="flex items-center gap-1 self-end sm:self-auto">
+                                                                                {editingKeyHash === key.key_hash ? (
+                                                                                        <>
+                                                                                                <Button variant="ghost" size="sm" onClick={() => handleSaveRole(key.key_hash)} disabled={savingRole} className="text-emerald-500 hover:text-emerald-400">
+                                                                                                        <Check className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                                <Button variant="ghost" size="sm" onClick={() => setEditingKeyHash(null)} disabled={savingRole}>
+                                                                                                        <X className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                        </>
+                                                                                ) : (
+                                                                                        <>
+                                                                                                <Button
+                                                                                                        variant="ghost"
+                                                                                                        size="sm"
+                                                                                                        onClick={() => {
+                                                                                                                setEditRole(key.role);
+                                                                                                                setEditingKeyHash(key.key_hash);
+                                                                                                        }}
+                                                                                                        className="text-slate-400 hover:text-slate-300"
+                                                                                                >
+                                                                                                        <Pencil className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                        variant="ghost"
+                                                                                                        size="sm"
+                                                                                                        onClick={() => handleDelete(key.key_hash)}
+                                                                                                        className="text-red-600 hover:text-red-700"
+                                                                                                >
+                                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                        </>
+                                                                                )}
                                                                         </div>
-                                                                        <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={() => handleDelete(key.key_hash)}
-                                                                                className="text-red-600 hover:text-red-700"
-                                                                        >
-                                                                                <Trash2 aria-hidden="true" className="h-4 w-4" />
-                                                                        </Button>
                                                                 </div>
                                                         ))}
                                                 </div>
