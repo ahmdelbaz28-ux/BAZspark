@@ -147,7 +147,7 @@ class APSDataExchange:
                         storage_id = storage_result['data']['id']
 
                         # Step 2: Upload file to storage location
-                        # NOSONAR: python:S7493 — aiohttp.FormData.add_field requires a
+                        # NOSONAR:S7493 — aiohttp.FormData.add_field requires a
                         # synchronous file handle for streaming upload. Reading the entire
                         # file into memory first (aiofiles) would break large-file streaming
                         # and is the documented reason aiofiles is intentionally not a dep
@@ -251,7 +251,7 @@ class APSDataExchange:
                                 # Create directory if it doesn't exist
                                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
-                                # NOSONAR: python:S7493 — download writes arrive in 8 KiB
+                                # NOSONAR:S7493 — download writes arrive in 8 KiB
                                 # chunks via an async iterator (iter_chunked). Using
                                 # aiofiles.open() would add a hard dependency intentionally
                                 # avoided (see backend/routers/digital_twin.py:401). The

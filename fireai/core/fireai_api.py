@@ -80,6 +80,10 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+from fireai.api.settings_router import router as settings_router
+app.include_router(settings_router)
+
 _expert_system = ExpertSystem()
 _audit_trail = AuditTrail(project_name="api-session")
 

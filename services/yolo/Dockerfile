@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # NOSONAR
 # services/yolo/Dockerfile â€” YOLO Layout Segmentation Service for FireAI
 FROM python:3.12-slim
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt # NOSONAR: docker:S8544 — requirements.txt pins all versions
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions
 
 # V248 FIX: Resolved git merge conflict. Kept the non-root user + .dockerignore
 # approach (Updated upstream) which is more secure. The "Stashed changes"

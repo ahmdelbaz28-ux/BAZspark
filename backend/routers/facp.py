@@ -49,6 +49,10 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+#: S1192: "Temperature-compensated (NFPA 72 §10.6.7)" used 3+ times —
+#: define a module-level constant instead of duplicating the literal.
+BATTERY_DERATING_TEMP_COMPENSATED = "Temperature-compensated (NFPA 72 §10.6.7)"
+
 router = APIRouter(tags=["facp"])
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -133,7 +137,7 @@ class FACPVerificationRequest(BaseModel):
     nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
     battery_size_ah: float = Field(26.0, gt=0)
     battery_derating_method: str = Field(
-        "Temperature-compensated (NFPA 72 §10.6.7)", description="Battery sizing method used"
+        BATTERY_DERATING_TEMP_COMPENSATED, description="Battery sizing method used"
     )
 
     @model_validator(mode="after")
@@ -173,7 +177,7 @@ class FACPScheduleRequest(BaseModel):
     capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
     nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
     battery_size_ah: float = Field(26.0, gt=0)
-    battery_derating_method: str = Field("Temperature-compensated (NFPA 72 §10.6.7)")
+    battery_derating_method: str = Field(BATTERY_DERATING_TEMP_COMPENSATED)
     power_supply_watts: int = Field(120, gt=0)
     listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
     signature_hash: str = Field("facp_sig_default", description="Cryptographic signature from selection")
@@ -197,7 +201,7 @@ class FACPSpecRequest(BaseModel):
     capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
     nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
     battery_size_ah: float = Field(26.0, gt=0)
-    battery_derating_method: str = Field("Temperature-compensated (NFPA 72 §10.6.7)")
+    battery_derating_method: str = Field(BATTERY_DERATING_TEMP_COMPENSATED)
     power_supply_watts: int = Field(120, gt=0)
     listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
     signature_hash: str = Field("facp_sig_default")

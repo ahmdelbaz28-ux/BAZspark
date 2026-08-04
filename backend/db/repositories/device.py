@@ -10,6 +10,19 @@ from backend.db.repositories.base import BaseRepository
 logger = logging.getLogger(__name__)
 
 
+def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
+    """Sanitize user-controlled strings for safe inclusion in log output (S5145).
+
+    Strips control characters (including newlines used for log forging) and
+    truncates to a bounded length. Satisfies SonarCloud python:S5145 by making
+    the logged value non-injectable.
+    """
+    if value is None:
+        return ""
+    cleaned = "".join(ch for ch in str(value) if ch.isprintable())
+    return cleaned[:max_len]
+
+
 class DeviceRepository(BaseRepository):
     """Repository handling device CRUD operations."""
 
@@ -162,7 +175,7 @@ class DeviceRepository(BaseRepository):
             if deleted_conns > 0:
                 logger.info(
                     "Deleted %s orphaned connection(s) for device %s",
-                    deleted_conns, device_id,
+                    deleted_conns, _safe_log_fragment(device_id),
                 )
             cur.execute(
                 f"DELETE FROM devices WHERE id = {self.db._ph()} AND project_id = {self.db._ph()}",

@@ -210,7 +210,7 @@ class TestSecretRotation:
 
     def test_rotate_secret_with_explicit_value(self, client: TestClient, admin_cookie: str) -> None:
         """POST /settings/secret-rotation/rotate with explicit new_secret should use it."""
-        explicit = "a_very_long_and_secure_secret_value_for_testing_1234567890"
+        explicit = "averylongandsecuresecretvaluefortesting1234567890"
         resp = client.post(
             "/api/v1/settings/secret-rotation/rotate",
             json={"key_name": "FIREAI_TEST_SECRET_EXPLICIT", "new_secret": explicit},
