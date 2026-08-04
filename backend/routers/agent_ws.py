@@ -202,6 +202,37 @@ async def _wait_for_pong(pong_flag: dict[str, bool], timeout: float) -> bool:
     return False
 
 
+async def _check_api_key_revoked(websocket: WebSocket, api_key: str) -> bool:
+    """Re-authenticate API key; close socket and return True if revoked."""
+    if not api_key:
+        return False
+    if await _revalidate_api_key(api_key):
+        return False
+    logger.warning(
+        "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
+    )
+    await websocket.close(code=4003)
+    return True
+
+
+async def _handle_pong_timeout(
+    websocket: WebSocket,
+    pong_received: dict[str, bool],
+) -> bool:
+    """Wait for pong; close socket and return True if timeout occurs."""
+    if await _wait_for_pong(pong_received, WS_HEARTBEAT_TIMEOUT_SECONDS):
+        return False
+    logger.warning(
+        "Agent WebSocket heartbeat timeout: no pong within %ss — terminating connection",
+        WS_HEARTBEAT_TIMEOUT_SECONDS,
+    )
+    try:
+        await websocket.close(code=4008)
+    except Exception:
+        pass
+    return True
+
+
 def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[str, bool], Callable[[], Coroutine[Any, Any, None]]]:
     """Active ping/pong heartbeat loop with periodic token re-authentication.
 
@@ -216,11 +247,7 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
         while True:
             await asyncio.sleep(WS_PING_INTERVAL_SECONDS)
             # Re-authenticate API key on every heartbeat cycle to prevent session hijacking
-            if api_key and not await _revalidate_api_key(api_key):
-                logger.warning(
-                    "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
-                )
-                await websocket.close(code=4003)
+            if await _check_api_key_revoked(websocket, api_key):
                 return
 
             _pong_received["value"] = False
@@ -229,15 +256,7 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
             except Exception:
                 return  # connection already dead — let message loop handle it
 
-            if not await _wait_for_pong(_pong_received, WS_HEARTBEAT_TIMEOUT_SECONDS):
-                logger.warning(
-                    "Agent WebSocket heartbeat timeout: no pong within %ss — terminating connection",
-                    WS_HEARTBEAT_TIMEOUT_SECONDS,
-                )
-                try:
-                    await websocket.close(code=4008)
-                except Exception:
-                    pass
+            if await _handle_pong_timeout(websocket, _pong_received):
                 return  # signal to caller that we closed
 
     return _pong_received, _ping_cycle

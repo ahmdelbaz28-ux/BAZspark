@@ -84,6 +84,8 @@ from .revit_adapter import RevitAdapter
 logger = logging.getLogger(__name__)
 
 _DEFAULT_LEVEL = "Level 1"
+#: S1192: "Floor Plan" used 3+ times — define a constant instead of duplicating.
+FLOOR_PLAN_TYPE = "Floor Plan"
 
 _EXC_MSG = ""
 
@@ -1967,15 +1969,15 @@ class RevitService:
 
         if self._connection_method == ConnectionMethod.SIMULATION:
             return [
-                {"id": "v1", "name": f"{_DEFAULT_LEVEL} Floor Plan", "type": "Floor Plan"},
-                {"id": "v2", "name": "Level 2 Floor Plan", "type": "Floor Plan"},
+                {"id": "v1", "name": f"{_DEFAULT_LEVEL} {FLOOR_PLAN_TYPE}", "type": FLOOR_PLAN_TYPE},
+                {"id": "v2", "name": "Level 2 Floor Plan", "type": FLOOR_PLAN_TYPE},
                 {"id": "v3", "name": "Section 1", "type": "Section"},
                 {"id": "v4", "name": "3D View", "type": "3D View"}
             ]
 
         return self.get_elements(category="Views")
 
-    def create_view(self, view_name: str, view_type: str = "Floor Plan", level: str = _DEFAULT_LEVEL) -> Optional[str]:
+    def create_view(self, view_name: str, view_type: str = FLOOR_PLAN_TYPE, level: str = _DEFAULT_LEVEL) -> Optional[str]:
         """
         Create a new view.
 

@@ -1724,6 +1724,31 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
 _SECRET_KEY_HINTS = ("token", "secret", "password", "api_key", "apikey", "authorization", "credential")
 
 
+def _sanitize_string_value(value: str) -> str:
+    """Sanitize a single string: scrub paths or truncate."""
+    if value.startswith(("/", "C:\\", "\\\\", "~/")):
+        import os as _os
+
+        return f"<path>{_os.path.basename(value)}</path>"
+    return value[:200]
+
+
+def _sanitize_value(key: Any, value: Any) -> Any:
+    """Sanitize a single value based on its key and type."""
+    key_lower = str(key).lower()
+    if any(hint in key_lower for hint in _SECRET_KEY_HINTS):
+        return "***REDACTED***"
+    if isinstance(value, str):
+        return _sanitize_string_value(value)
+    if isinstance(value, dict):
+        return _sanitize_inputs(value)
+    if isinstance(value, (list, tuple)):
+        return [
+            _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
+        ]
+    return value
+
+
 def _sanitize_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
     """
     Sanitize an inputs dict before it leaves the process for an LLM.
@@ -1740,30 +1765,7 @@ def _sanitize_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
     try:
         if not isinstance(inputs, dict):
             return inputs
-        sanitized: dict[str, Any] = {}
-        for key, value in inputs.items():
-            key_lower = str(key).lower()
-            if any(hint in key_lower for hint in _SECRET_KEY_HINTS):
-                sanitized[key] = "***REDACTED***"
-                continue
-            if isinstance(value, str):
-                if value.startswith(("/", "C:\\", "\\\\", "~/")):
-                    import os as _os
-
-                    sanitized[key] = f"<path>{_os.path.basename(value)}</path>"
-                else:
-                    sanitized[key] = value[:200]
-                continue
-            if isinstance(value, dict):
-                sanitized[key] = _sanitize_inputs(value)
-                continue
-            if isinstance(value, (list, tuple)):
-                sanitized[key] = [
-                    _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
-                ]
-                continue
-            sanitized[key] = value
-        return sanitized
+        return {key: _sanitize_value(key, value) for key, value in inputs.items()}
     except Exception:  # pragma: no cover - defensive, never blocks healing
         return inputs
 

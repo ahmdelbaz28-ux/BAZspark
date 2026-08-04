@@ -373,10 +373,16 @@ def test_l1_honest_caveat_file_is_orphaned_in_production():
         if import_pattern.search(text):
             importers.append(ts_file.relative_to(FRONTEND_SRC).as_posix())
 
-    expected_hooks = {
-        "components/mockups/engineering/hooks/useTelemetryStream.ts",
-        "components/mockups/engineering/hooks/useLiveData.ts",
-    }
+    # The two hooks that historically imported dataService
+    # (useTelemetryStream, useLiveData) were archived out of the
+    # production tree during the mockups-v1 housekeeping phase
+    # (see docs/deletion-log.md). They now live under archived/,
+    # which is intentionally outside frontend/src — so the production
+    # tree must contain NO importers of dataService at all. If a future
+    # commit wires dataService (or a hook that imports it) back into
+    # frontend/src, the `extra_importers` assertion below fails and the
+    # L-1 claim must be re-evaluated.
+    expected_hooks: set[str] = set()
     actual_importers = set(importers)
 
     missing_expected = expected_hooks - actual_importers

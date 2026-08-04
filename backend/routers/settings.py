@@ -35,12 +35,12 @@ The CUA loop (fireai/vision/cua_loop.py) independently falls back to OpenCV
 when no key is available or when the stored key fails at runtime.
 """
 
-from __future__ import annotations
+
 
 import logging
 import re
 import uuid
-from typing import Optional
+from typing import Optional, Dict, List, Tuple, Set
 
 try:
     from typing import Annotated
@@ -121,7 +121,7 @@ def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict 
 
 # V152: Supported providers — extensible list. Each provider has a default
 # base_url and a default vision-capable model. The customer can override both.
-SUPPORTED_PROVIDERS: dict[str, dict[str, str]] = {
+SUPPORTED_PROVIDERS: Dict[str, Dict[str, str]] = {
     "openai": {
         "default_base_url": "https://api.openai.com/v1",
         "default_model": "gpt-4o",
@@ -487,7 +487,7 @@ async def store_openai_key_compat(
     return await store_provider_key(request, "openai", body, _role)
 
 
-@router.get("/{provider}", response_model=list[OpenAIKeyResponse])
+@router.get("/{provider}", response_model=List[OpenAIKeyResponse])
 async def list_provider_keys(
     _role: SystemConfigRole,
     provider: str,
@@ -527,7 +527,7 @@ async def list_provider_keys(
     return [_row_to_response(r) for r in rows]
 
 
-@router.get("/openai", response_model=list[OpenAIKeyResponse], include_in_schema=False)
+@router.get("/openai", response_model=List[OpenAIKeyResponse], include_in_schema=False)
 async def list_openai_keys_compat(
     _role: SystemConfigRole,
     include_inactive: bool = False,
@@ -612,7 +612,7 @@ async def delete_provider_key(
 # V152: Bulk delete — delete all keys for a provider, or specific ids
 class BulkDeleteRequest(BaseModel):
     """Request body for bulk-delete endpoint."""
-    ids: Optional[list[str]] = Field(
+    ids: Optional[List[str]] = Field(
         None,
         description="List of key IDs to delete. If omitted, deletes ALL keys for the provider.",
     )
@@ -639,7 +639,7 @@ async def bulk_delete_provider_keys(
     _ensure_v152_columns()
     db = get_db()
     deleted_count = 0
-    deleted_masks: list[str] = []
+    deleted_masks: List[str] = []
     try:
         with db._transaction() as cur:
             if body.ids:

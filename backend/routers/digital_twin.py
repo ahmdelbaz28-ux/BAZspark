@@ -239,6 +239,67 @@ def _resolve_conversion_type(
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
+async def _resolve_source_filepath(request: ConvertRequest, source_format: str) -> str:
+    """Resolve and validate the source file path."""
+    import tempfile
+
+    source_filepath = request.source_filepath
+    if not source_filepath:
+        temp_dir = tempfile.gettempdir()
+        source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
+        # Create the dummy source file if it doesn't exist
+        if not os.path.exists(source_filepath):
+            import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+            async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
+                await f.write("MOCK SOURCE DATA")
+        return source_filepath
+
+    try:
+        return validate_input_path(source_filepath, parser_name='digital_twin_convert')
+    except (UnsafePathError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
+
+
+async def _resolve_target_filepath(request: ConvertRequest, target_format: str) -> str:
+    """Resolve and validate the target file path."""
+    import tempfile
+
+    target_filepath = request.target_filepath
+    if not target_filepath:
+        temp_dir = tempfile.gettempdir()
+        return os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
+
+    try:
+        return validate_output_path(target_filepath, parser_name='digital_twin_convert')
+    except (UnsafePathError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid target path: {e}")
+
+
+def _execute_conversion(
+    service: DigitalTwinServiceDep,
+    conversion_type: str,
+    source_filepath: str,
+    target_filepath: str,
+    request: ConvertRequest,
+):
+    """Dispatch the conversion to the appropriate service method."""
+    if conversion_type == "autocad_to_revit":
+        return service.convert_autocad_to_revit(
+            source_filepath,
+            target_filepath,
+            request.template_path,
+        )
+    if conversion_type == "revit_to_autocad":
+        return service.convert_revit_to_autocad(
+            source_filepath,
+            target_filepath,
+        )
+    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+        status_code=400,
+        detail=f"Invalid conversion type: {conversion_type}",
+    )
+
+
 @router.post(
     "/convert",
     response_model=ConvertResponse,  # NOSONAR - python:S8409
@@ -255,8 +316,6 @@ async def convert_files(
 ) -> ConvertResponse:
     """Perform bidirectional CAD/BIM conversion."""
     try:
-        import tempfile
-
         # Resolve formats and path defaults
         source_format = request.sourceFormat or "dwg"
         target_format = request.targetFormat or "rvt"
@@ -271,47 +330,12 @@ async def convert_files(
                 detail=f"Invalid conversion type: {conversion_type}",
             )
 
-        source_filepath = request.source_filepath
-        if not source_filepath:
-            temp_dir = tempfile.gettempdir()
-            source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
-            # Create the dummy source file if it doesn't exist
-            if not os.path.exists(source_filepath):
-                import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
-                async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
-                    await f.write("MOCK SOURCE DATA")
-        else:
-            try:
-                source_filepath = validate_input_path(source_filepath, parser_name='digital_twin_convert')
-            except (UnsafePathError, FileNotFoundError) as e:
-                raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
+        source_filepath = await _resolve_source_filepath(request, source_format)
+        target_filepath = await _resolve_target_filepath(request, target_format)
 
-        target_filepath = request.target_filepath
-        if not target_filepath:
-            temp_dir = tempfile.gettempdir()
-            target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
-        else:
-            try:
-                target_filepath = validate_output_path(target_filepath, parser_name='digital_twin_convert')
-            except (UnsafePathError, FileNotFoundError) as e:
-                raise HTTPException(status_code=400, detail=f"Invalid target path: {e}")
-
-        if conversion_type == "autocad_to_revit":
-            result = service.convert_autocad_to_revit(
-                source_filepath,
-                target_filepath,
-                request.template_path,
-            )
-        elif conversion_type == "revit_to_autocad":
-            result = service.convert_revit_to_autocad(
-                source_filepath,
-                target_filepath,
-            )
-        else:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=400,
-                detail=f"Invalid conversion type: {conversion_type}",
-            )
+        result = _execute_conversion(
+            service, conversion_type, source_filepath, target_filepath, request,
+        )
 
         return ConvertResponse(
             success=result.success,
