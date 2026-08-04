@@ -53,6 +53,7 @@ dependencies = [
     "pythonnet>=3.0.0rc1;platform_system=='Windows'",
     "tenacity>=8.2.0,<10.0.0",
     "hypothesis>=6.82.0,<7.0.0",
+    "pytesseract>=0.3.10,<1.0.0",  # V301 FIX: backend/services/ocr_service.py hard-imports pytesseract (was missing from deps)
     # V141.3 MERGE FIX: main (post-CodeQL PRs) upgraded to langgraph 1.x +
     # langgraph-checkpoint-sqlite 3.x, which resolves the is_alive() bug
     # at the upstream level (3.x no longer calls the removed aiosqlite
