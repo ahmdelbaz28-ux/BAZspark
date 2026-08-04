@@ -93,32 +93,14 @@ export function MeezaPayment() {
     const [phase, setPhase] = useState<Phase>({ kind: "select" });
     const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pollAttemptsRef = useRef(0);
+    // Ref indirection lets `pollOrderStatus` reference itself recursively
+    // without tripping react-compiler's "Cannot access variable before
+    // declaration" rule (TDZ check on const useCallback).
+    const pollOrderStatusRef = useRef<
+        ((orderId: string, txnId: string) => Promise<void>) | null
+    >(null);
 
-    // ── Resume in-flight payment on mount ──────────────────────────────
-    useEffect(() => {
-        const pendingOrderId = sessionStorage.getItem(PENDING_ORDER_KEY);
-        if (!pendingOrderId) return;
-        sessionStorage.removeItem(PENDING_ORDER_KEY);
-        (async () => {
-            try {
-                const order = await getOrder(pendingOrderId);
-                if (order.status === "pending") {
-                    setPhase({ kind: "polling", order, txnId: "" });
-                } else {
-                    setPhaseFromOrder(order);
-                }
-            } catch {
-                // Order may belong to another session or be deleted — silently
-                // return to plan selection.
-                setPhase({ kind: "select" });
-            }
-        })();
-        return () => {
-            if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
+    // ── Map an Order's terminal status to the corresponding Phase ──────
     const setPhaseFromOrder = useCallback((order: Order) => {
         switch (order.status) {
             case "paid":
@@ -165,23 +147,52 @@ export function MeezaPayment() {
             try {
                 const order = await getOrder(orderId);
                 if (order.status === "pending") {
-                    pollTimerRef.current = setTimeout(
-                        () => pollOrderStatus(orderId, txnId),
-                        backoff,
-                    );
+                    pollTimerRef.current = setTimeout(() => {
+                        void pollOrderStatusRef.current?.(orderId, txnId);
+                    }, backoff);
                     return;
                 }
                 setPhaseFromOrder(order);
             } catch {
                 // Network blip — keep polling with backoff
-                pollTimerRef.current = setTimeout(
-                    () => pollOrderStatus(orderId, txnId),
-                    backoff,
-                );
+                pollTimerRef.current = setTimeout(() => {
+                    void pollOrderStatusRef.current?.(orderId, txnId);
+                }, backoff);
             }
         },
         [setPhaseFromOrder],
     );
+
+    // Keep the ref in sync so the setTimeout recursion resolves to the
+    // latest memoized instance. Refs must not be mutated during render,
+    // so we do it inside an effect (react-hooks/refs rule).
+    useEffect(() => {
+        pollOrderStatusRef.current = pollOrderStatus;
+    }, [pollOrderStatus]);
+
+    // ── Resume in-flight payment on mount ──────────────────────────────
+    useEffect(() => {
+        const pendingOrderId = sessionStorage.getItem(PENDING_ORDER_KEY);
+        if (!pendingOrderId) return;
+        sessionStorage.removeItem(PENDING_ORDER_KEY);
+        (async () => {
+            try {
+                const order = await getOrder(pendingOrderId);
+                if (order.status === "pending") {
+                    setPhase({ kind: "polling", order, txnId: "" });
+                } else {
+                    setPhaseFromOrder(order);
+                }
+            } catch {
+                // Order may belong to another session or be deleted — silently
+                // return to plan selection.
+                setPhase({ kind: "select" });
+            }
+        })();
+        return () => {
+            if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+        };
+    }, [setPhaseFromOrder]);
 
     // ── Action: start checkout for a selected plan ─────────────────────
     const startCheckout = useCallback(
@@ -235,7 +246,6 @@ export function MeezaPayment() {
             setPhaseFromOrder(updated);
         } catch (e: unknown) {
             // simulate-webhook returns 403 when not in sandbox mode
-            // eslint-disable-next-line no-console
             console.warn("[MeezaPayment] simulate-webhook failed:", e);
         }
     }, [phase, setPhaseFromOrder]);

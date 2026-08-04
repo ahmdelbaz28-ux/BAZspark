@@ -72,6 +72,7 @@ import logging
 import os
 import sqlite3
 import threading
+import types
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -295,17 +296,17 @@ def _init_schema() -> None:
 
 _REDIS_LOCK_MODULE = None
 try:
-    import redis  # type: ignore
-    import redis.lock  # type: ignore  # noqa: F401
+    import redis
+    import redis.lock  # noqa: F401
     _REDIS_LOCK_MODULE = redis
 except ImportError:
-    redis = None  # type: ignore
+    redis = None  # type: ignore[assignment]
 
 _REDIS_CLIENT = None
 _REDIS_CLIENT_LOCK = threading.Lock()
 
 
-def _get_redis_client():
+def _get_redis_client() -> Optional["redis.Redis"]:
     """Return a Redis client if REDIS_URL is set and redis-py is installed.
 
     Returns None otherwise. The caller must handle the None case gracefully
@@ -342,8 +343,8 @@ class _RedlockFence:
     def __init__(self, key: str, ttl_ms: int = 5000):
         self.key = f"meeza:lock:{key}"
         self.ttl_ms = ttl_ms
-        self._lock = None
-        self._client = None
+        self._lock: Optional[Any] = None
+        self._client: Optional[Any] = None
 
     def __enter__(self) -> _RedlockFence:
         self._client = _get_redis_client()
@@ -362,7 +363,12 @@ class _RedlockFence:
                 self._lock = None
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc: Optional[BaseException],
+        tb: Optional[types.TracebackType],
+    ) -> None:
         if self._lock is not None:
             try:
                 self._lock.release()
