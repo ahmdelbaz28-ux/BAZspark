@@ -8,6 +8,10 @@
  * - Conversion settings configuration
  * - Version history and rollback
  * - Conversion logs and error tracking
+ *
+ * V235: Real-time conversion progress via useWebSocketStream.
+ * When the backend sends sequenced WebSocket messages on the "digital-twin" channel
+ * (e.g., conversion_progress, version_update), they are applied to state in real time.
  */
 
 import {
@@ -22,8 +26,10 @@ import {
         RefreshCw,
         Settings,
         Upload,
+        Wifi,
+        WifiOff,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +52,18 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { digitalTwinApi } from "@/services/fullApi";
+import { useWebSocketStream, type StreamMessage } from "@/hooks/useWebSocketStream";
+
+/**
+ * Derive the WebSocket URL for the digital-twin channel.
+ * Mirrors the pattern used in dataService.ts and digitalTwinApi.ts.
+ */
+function getDigitalTwinWsUrl(): string {
+        const envWs = import.meta.env.VITE_WS_URL;
+        if (envWs) return envWs;
+        const apiBase = import.meta.env.VITE_API_URL || "/api/v1";
+        return apiBase.replace(/^http/, "ws").replace(/\/api\/v\d+/, "/ws") + "/digital-twin";
+}
 
 interface ConversionResult {
         success: boolean;
@@ -106,6 +124,51 @@ export function DigitalTwinPage() {
         const [conversionType, setConversionType] = useState<
                 "autocad_to_revit" | "revit_to_autocad"
         >("autocad_to_revit");
+
+        // ---- Real-time WebSocket streaming ----
+        // Handles conversion progress, version updates, and status changes
+        // pushed from the backend via sequenced WebSocket messages.
+        const handleStreamBatch = useCallback((messages: StreamMessage[]) => {
+                for (const msg of messages) {
+                        switch (msg.type) {
+                                case "conversion_progress": {
+                                        const progress = msg.data as { percent?: number; status?: string };
+                                        if (progress.status === "completed") {
+                                                setConverting(false);
+                                        } else if (progress.status === "failed") {
+                                                setConverting(false);
+                                                toast.error("Conversion failed", {
+                                                        description: "WebSocket: conversion process reported failure",
+                                                });
+                                        }
+                                        break;
+                                }
+                                case "conversion_result":
+                                        setConversionResult(msg.data as ConversionResult);
+                                        setConverting(false);
+                                        break;
+                                case "version_update": {
+                                        const versionInfo = msg.data as VersionInfo;
+                                        setVersions((prev) => [versionInfo, ...prev]);
+                                        break;
+                                }
+                                default:
+                                        // Unknown message type — ignore gracefully
+                                        break;
+                        }
+                }
+        }, []);
+
+        const { connected: wsConnected } = useWebSocketStream({
+                url: getDigitalTwinWsUrl(),
+                onBatch: handleStreamBatch,
+                onGap: () => {
+                        /* Could trigger REST resync of version history here */
+                },
+                onError: () => {
+                        /* REST fallback remains available — no toast spam */
+                },
+        });
 
         const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
                 const file = event.target.files?.[0];
@@ -294,14 +357,27 @@ export function DigitalTwinPage() {
                                                         Bidirectional AutoCAD ↔ Revit conversion with semantic mapping
                                                 </p>
                                         </div>
-                                        <Button
-                                                variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
-                                                onClick={fetchVersionHistory}
-                                        >
-                                                <History aria-hidden="true" className="h-4 w-4 mr-2" />
-                                                Refresh History
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                                {wsConnected ? (
+                                                        <Badge variant="default" className="gap-1">
+                                                                <Wifi aria-hidden="true" className="h-3 w-3" />
+                                                                Live
+                                                        </Badge>
+                                                ) : (
+                                                        <Badge variant="secondary" className="gap-1">
+                                                                <WifiOff aria-hidden="true" className="h-3 w-3" />
+                                                                Offline
+                                                        </Badge>
+                                                )}
+                                                <Button
+                                                        variant="outline"
+                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
+                                                        onClick={fetchVersionHistory}
+                                                >
+                                                        <History aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                        Refresh History
+                                                </Button>
+                                        </div>
                                 </div>
 
                                 {/* Main Tabs */}
