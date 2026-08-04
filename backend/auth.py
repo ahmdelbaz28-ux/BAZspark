@@ -3,6 +3,16 @@ Authentication and authorization dependencies for FastAPI.
 
 Provides FastAPI dependencies for extracting the current user's role
 from the request and enforcing permission checks on endpoints.
+
+LAYER NOTE (Phase 5 dedup):
+  This module is the FastAPI *dependency* layer for auth — it provides
+  ``require_permission()`` and ``get_current_role()`` used by ~40 routers.
+  It is NOT a duplicate of the other auth modules:
+    - backend/auth.py               → FastAPI dependency layer (this file:
+                                      require_permission, get_current_role, get_current_principal)
+    - backend/routers/auth.py       → FastAPI router layer (login, logout, verify, me endpoints)
+    - facp_distributed/security/auth.py → JWT-based auth for distributed FACP nodes
+  Each serves a distinct layer. Do NOT merge.
 """
 
 from __future__ import annotations

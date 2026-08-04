@@ -1,3 +1,4 @@
+/** shadcn/ui sidebar primitive — collapsible sidebar layout component with Sheet-based mobile drawer. Distinct from layout/Sidebar (app navigation) and core/ProjectSidebar (project-scoped). */
 
 "use client";
 

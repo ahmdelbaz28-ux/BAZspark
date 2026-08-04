@@ -3,6 +3,15 @@ from __future__ import annotations
 """
 backend/routers/auth.py — Session-based authentication with signed HttpOnly cookies.
 
+LAYER NOTE (Phase 5 dedup):
+  This module is the FastAPI *router* layer for auth — it defines the
+  /login, /logout, /verify, /me endpoints with signed session cookies.
+  It is NOT a duplicate of the other auth modules:
+    - backend/auth.py               → FastAPI dependency layer (require_permission, get_current_role)
+    - backend/routers/auth.py       → FastAPI router layer (this file: login, logout, verify, me)
+    - facp_distributed/security/auth.py → JWT-based auth for distributed FACP nodes
+  Each serves a distinct layer. Do NOT merge.
+
 
 SECURITY DESIGN (CRITICAL FIX):
   The API key is NEVER stored in the cookie. Instead, we generate a

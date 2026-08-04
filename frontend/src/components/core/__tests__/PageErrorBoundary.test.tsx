@@ -12,7 +12,7 @@ describe("PageErrorBoundary", () => {
 		expect(screen.getByText("Test content")).toBeInTheDocument();
 	});
 
-	it("renders error UI when child throws", () => {
+	it("renders ErrorRecoveryView when child throws", () => {
 		const ThrowError = () => {
 			throw new Error("Test error");
 		};
@@ -26,12 +26,14 @@ describe("PageErrorBoundary", () => {
 			</PageErrorBoundary>,
 		);
 
-		expect(screen.getByText(/retry/i)).toBeInTheDocument();
-		expect(screen.getByText(/TestPage Error/i)).toBeInTheDocument();
+		// ErrorRecoveryView shows "Retry Component" when reload is provided
+		expect(screen.getByText(/retry component/i)).toBeInTheDocument();
+		// ErrorRecoveryView shows the standard heading
+		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
 		spy.mockRestore();
 	});
 
-	it("shows page name in error message when provided", () => {
+	it("logs page name in componentDidCatch when provided", () => {
 		const ThrowError = () => {
 			throw new Error("Oops");
 		};
@@ -43,11 +45,18 @@ describe("PageErrorBoundary", () => {
 			</PageErrorBoundary>,
 		);
 
-		expect(screen.getByText("Dashboard Error")).toBeInTheDocument();
+		// pageName is logged in componentDidCatch
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining("Dashboard"),
+			expect.any(Error),
+			expect.any(Object),
+		);
+		// ErrorRecoveryView still renders the standard UI
+		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
 		spy.mockRestore();
 	});
 
-	it("shows generic error message when no page name", () => {
+	it("logs 'unknown' page name when no pageName prop", () => {
 		const ThrowError = () => {
 			throw new Error("Oops");
 		};
@@ -59,8 +68,14 @@ describe("PageErrorBoundary", () => {
 			</PageErrorBoundary>,
 		);
 
-		// Should show "This page Error" (default fallback)
-		expect(screen.getByText(/This page Error/i)).toBeInTheDocument();
+		// Falls back to "unknown" in the log message
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining("unknown"),
+			expect.any(Error),
+			expect.any(Object),
+		);
+		// ErrorRecoveryView still renders the standard UI
+		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
 		spy.mockRestore();
 	});
 });

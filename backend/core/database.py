@@ -5,6 +5,13 @@ The original backend.core.database implementation conflicted with the primary
 ``core.database`` module used throughout the codebase and tests. This shim
 loads the authoritative ``core.database`` module from the project root and
 exposes its public API, ensuring consistent behavior.
+
+DEPRECATED (Phase 5 dedup):
+  This module is a shim re-exporting core/database.py.
+  Prefer importing directly from ``core.database`` instead:
+      from core.database import UniversalDataModel  # canonical
+  This shim exists only for backward compat with ``backend.db_service.py``.
+  New code MUST NOT import from ``backend.core.database``.
 """
 
 import importlib.util

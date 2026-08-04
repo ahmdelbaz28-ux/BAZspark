@@ -37,6 +37,16 @@ DESIGN DECISIONS (V83 — Self-Criticism Hardening)
   violated Priority #5 (Determinism).
 - All type annotations use specific types, never ``Any``.
 
+DEDUP NOTE (Phase 5):
+--------------------
+  This is the CANONICAL domain model module (frozen dataclasses).
+  It is NOT a duplicate of backend/models.py — they serve different purposes:
+    - core/models.py          → Frozen dataclass domain models (this file:
+                                UniversalElement, Point3D, Geometry, etc.)
+    - backend/models.py       → Pydantic V2 REST API request/response models
+                                (Project, Device, Connection, Report, etc.)
+    - backend/core/models.py  → DEPRECATED shim re-exporting this file
+
 NEC/NFPA REFERENCES
 -------------------
 - Point3D coordinates are in METRES (SI) — consistent with IFC/BIM.

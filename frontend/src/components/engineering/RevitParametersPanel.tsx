@@ -33,7 +33,11 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                                         throw new Error("Failed to load parameters");
                                 }
                         } catch (error) {
-                                if (!cancelled) toast.error(`Error loading parameters: ${(error as Error).message}`);
+                                if (!cancelled) {
+                                        // Stale-while-revalidate: keep existing parameters on fetch failure
+                                        // instead of showing empty state. Show warning that data may be stale.
+                                        toast.warning(`Could not refresh parameters — showing cached data.`);
+                                }
                         } finally {
                                 if (!cancelled) setLoading(false);
                         }
@@ -43,8 +47,16 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                 };
         }, [elementId]);
 
+        // Optimistic update pattern: Exit editing mode immediately on save.
+        // If the backend PUT fails, deterministically rollback to the
+        // pre-edit state snapshot (previousParameters) and re-enter
+        // editing mode. This prevents UI/backend state drift.
         const handleSave = async () => {
+                // Snapshot current state for rollback
+                const previousParameters = { ...parameters };
                 setSaving(true);
+                // Optimistic: exit editing mode immediately (UI feels instant)
+                setIsEditing(false);
                 try {
                         const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
                         const res = await fetch(`${apiUrl}/elements/${elementId}/parameters`, {
@@ -57,9 +69,11 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                         });
                         if (!res.ok) throw new Error("Failed to save parameters");
                         toast.success("Parameters saved successfully");
-                        setIsEditing(false);
                 } catch (error) {
-                        toast.error(`Error saving parameters: ${(error as Error).message}`);
+                        // Deterministic rollback: revert to pre-edit state
+                        setParameters(previousParameters);
+                        setIsEditing(true);
+                        toast.error(`Error saving parameters: ${(error as Error).message}. Changes reverted.`);
                 } finally {
                         setSaving(false);
                 }

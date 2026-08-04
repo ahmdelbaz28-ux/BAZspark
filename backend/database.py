@@ -6,7 +6,6 @@ backend/database.py â€” Lightweight database layer for the Digital Twin API
 Supports two backends:
   - SQLite (default) â€” for single-instance development/deployment
   - PostgreSQL â€” for production, multi-replica, and horizontally-scaled deployments
-
 This is SEPARATE from core/database.py (UniversalDataModel) which handles
 BIM element persistence. This module provides simple CRUD tables for:
   - projects
@@ -18,6 +17,14 @@ BIM element persistence. This module provides simple CRUD tables for:
 
 SQLite uses WAL mode and thread-safe connection management.
 PostgreSQL uses psycopg2 with connection pooling.
+
+DEDUP NOTE (Phase 5):
+  This module is NOT a duplicate of core/database.py. They serve different purposes:
+    - backend/database.py  → REST API CRUD layer (projects, devices, connections)
+    - core/database.py     → UniversalDataModel BIM element persistence layer
+    - backend/core/database.py → shim re-exporting core/database.py (DEPRECATED)
+  Both this file and core/database.py are canonical in their own domains.
+  Do NOT merge them.
 """
 
 from __future__ import annotations

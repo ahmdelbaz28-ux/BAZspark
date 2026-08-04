@@ -1,3 +1,4 @@
+/** App navigation sidebar — routes and page links. Distinct from ProjectSidebar (project-scoped) and ui/sidebar (shadcn primitive). */
 import {
         AlertTriangle,
         ArrowRightLeft,

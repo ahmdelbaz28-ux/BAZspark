@@ -3,6 +3,13 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+/**
+ * RACE GUARD: This component uses local React state for detector positions.
+ * If WebSocket-driven live updates are added (e.g., real-time collaboration),
+ * they MUST go through useWebSocketStream to prevent state mutation during
+ * render and out-of-order message processing.
+ */
+
 // Define detector types
 export type DetectorType =
         | "smoke"

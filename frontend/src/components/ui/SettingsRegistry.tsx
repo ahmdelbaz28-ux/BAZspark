@@ -1,3 +1,8 @@
+/**
+ * UI-level settings registry — three-tier security architecture (runtime toggles, bootstrap config, secrets omitted).
+ * Distinct from pages/settings/SettingsRegistry (read-only env-var viewer).
+ * Neither component imports the other; they serve different sections of the settings UI.
+ */
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
 import { Label } from './label';

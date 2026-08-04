@@ -2,6 +2,13 @@ import type React from "react";
 import { useMemo, useRef, useState } from "react";
 import { actions, type CanvasElement, useStore } from "@/store/simpleStore";
 
+/**
+ * RACE GUARD: This component uses local React state for element positions.
+ * If WebSocket-driven live updates are added (e.g., real-time collaboration),
+ * they MUST go through useWebSocketStream to prevent state mutation during
+ * render and out-of-order message processing.
+ */
+
 export function InteractiveCanvas() {
         const canvasElements = useStore((s) => s.canvasElements);
         const selectedElementId = useStore((s) => s.selectedElementId);

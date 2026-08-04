@@ -1,3 +1,5 @@
+/** @internal Design prototype — excluded from production via PrototypeSwitcher feature flag */
+
 /**
  * VariantB.tsx — Minimal SaaS Login
  *

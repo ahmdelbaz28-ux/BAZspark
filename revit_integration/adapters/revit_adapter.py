@@ -4,6 +4,16 @@ ETAP-AI-WORK Revit Integration Adapters
 
 Adapters for translating between Revit and ETAP data structures.
 
+DEDUP NOTE (Phase 5):
+  This module is NOT a duplicate of backend/services/revit_adapter.py.
+  They serve different purposes:
+    - revit_integration/adapters/revit_adapter.py → ETAP integration adapters
+      (IRevitAdapter, RevitElementAdapter, ETAPDataAdapter, IFCAdapter, GeoJSONAdapter)
+      for converting Revit elements to DTOs and ETAP-compatible formats.
+    - backend/services/revit_adapter.py       → Backend service adapter (RevitAdapter)
+      for RevitService, handles simulation/API mode, wall creation, level/type lookups.
+  Do NOT merge them.
+
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
