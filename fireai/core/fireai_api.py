@@ -362,7 +362,8 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     return _room_result_to_out(result)
 
 
-@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)], include_in_schema=False)
+@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"],
+          dependencies=[Depends(verify_api_key)], include_in_schema=False,
           responses={422: {"description": "Room rejected — invalid input"}})  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
