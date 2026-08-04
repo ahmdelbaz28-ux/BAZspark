@@ -14,6 +14,7 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "../ui/button";
 
 interface Device {
         id: string;
@@ -50,6 +51,14 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
 }) => {
         const { t } = useTranslation();
         const [expanded, setExpanded] = useState(true);
+        const [isolated, setIsolated] = useState(false);
+
+        const handleIsolateToggle = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                setIsolated(!isolated);
+                // Here we would call the API and the AuditMerkleTree would record the event
+                console.log(`Zone ${zone.id} isolation state changed to ${!isolated}`);
+        };
 
         // Determine icon based on type
         const getIcon = (type: string, expanded: boolean) => {
@@ -138,6 +147,16 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                         >
                                                 {zone.devices.length} {t("fireAlarm.devices")}
                                         </span>
+                                )}
+                                {zone.type === "zone" && (
+                                        <Button
+                                                variant={isolated ? "destructive" : "outline"}
+                                                size="sm"
+                                                className="h-6 text-[10px] ml-2 px-2"
+                                                onClick={handleIsolateToggle}
+                                        >
+                                                {isolated ? "RECONNECT" : "ISOLATE"}
+                                        </Button>
                                 )}
                         </div>
 
