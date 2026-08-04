@@ -179,7 +179,7 @@ export function AutoCADPage() {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
                                                         <Power aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -236,7 +236,7 @@ export function AutoCADPage() {
                                         </CardContent>
                                 </Card>
 
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
                                                         <Activity aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -248,7 +248,7 @@ export function AutoCADPage() {
                                         </CardHeader>
                                         <CardContent>
                                                 {status ? (
-                                                        <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                        <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
                                                                 {JSON.stringify(status, null, 2)}
                                                         </pre>
                                                 ) : (
@@ -258,7 +258,7 @@ export function AutoCADPage() {
                                 </Card>
                         </div>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
                                                 <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -271,7 +271,7 @@ export function AutoCADPage() {
                                                         placeholder="/path/to/file.dwg"
                                                         value={filepath}
                                                         onChange={(e) => setFilepath(e.target.value)}
-                                                        className="bg-card border-border text-foreground"
+                                                        className="bg-card border-border text-foreground stagger-card"
                                                 />
                                                 <Button
                                                         onClick={handleReadDwg}

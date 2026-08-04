@@ -191,7 +191,7 @@ export function RevitPage() {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
                                                         <Power aria-hidden="true" className="h-5 w-5 text-primary" /> Connection
@@ -236,7 +236,7 @@ export function RevitPage() {
                                         </CardContent>
                                 </Card>
 
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
                                                         <Activity aria-hidden="true" className="h-5 w-5 text-primary" /> Status
@@ -247,7 +247,7 @@ export function RevitPage() {
                                         </CardHeader>
                                         <CardContent>
                                                 {status ? (
-                                                        <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                        <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
                                                                 {JSON.stringify(status, null, 2)}
                                                         </pre>
                                                 ) : (
@@ -257,7 +257,7 @@ export function RevitPage() {
                                 </Card>
                         </div>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
                                                 <FileText aria-hidden="true" className="h-5 w-5 text-primary" /> Read RVT File
@@ -269,7 +269,7 @@ export function RevitPage() {
                                                         placeholder="/path/to/file.rvt"
                                                         value={filepath}
                                                         onChange={(e) => setFilepath(e.target.value)}
-                                                        className="bg-card border-border text-foreground"
+                                                        className="bg-card border-border text-foreground stagger-card"
                                                 />
                                                 <Button
                                                         onClick={handleReadRvt}
@@ -290,7 +290,7 @@ export function RevitPage() {
                                 </Card>
 
                         {/* Revit API Search & NL Execute */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
                                                 <BookOpen aria-hidden="true" className="h-5 w-5 text-primary" /> API Search & Natural Language
@@ -321,7 +321,7 @@ export function RevitPage() {
                                                         placeholder="Search API docs..."
                                                         value={apiSearchQuery}
                                                         onChange={(e) => setApiSearchQuery(e.target.value)}
-                                                        className="bg-card border-border text-foreground"
+                                                        className="bg-card border-border text-foreground stagger-card"
                                                 />
                                                 <Button
                                                         onClick={async () => {
@@ -358,7 +358,7 @@ export function RevitPage() {
                                                 </Button>
                                         </div>
                                         {apiSearchResult && (
-                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
                                                         {JSON.stringify(apiSearchResult, null, 2)}
                                                 </pre>
                                         )}
@@ -367,7 +367,7 @@ export function RevitPage() {
                                                         placeholder="Natural language command..."
                                                         value={nlCommand}
                                                         onChange={(e) => setNlCommand(e.target.value)}
-                                                        className="bg-card border-border text-foreground"
+                                                        className="bg-card border-border text-foreground stagger-card"
                                                 />
                                                 <Button
                                                         onClick={async () => {
@@ -387,7 +387,7 @@ export function RevitPage() {
                                                 </Button>
                                         </div>
                                         {nlResult && (
-                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
                                                         {JSON.stringify(nlResult, null, 2)}
                                                 </pre>
                                         )}
@@ -395,7 +395,7 @@ export function RevitPage() {
                         </Card>
 
                         {/* Revit Integration (revit_api.py) */}
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
                                                 <Building2 aria-hidden="true" className="h-5 w-5 text-primary" /> Revit Integration (Cloud Sync)
@@ -410,7 +410,7 @@ export function RevitPage() {
                                                         placeholder="Project ID"
                                                         value={integrationProjectId}
                                                         onChange={(e) => setIntegrationProjectId(e.target.value)}
-                                                        className="bg-card border-border text-foreground"
+                                                        className="bg-card border-border text-foreground stagger-card"
                                                 />
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -469,7 +469,7 @@ export function RevitPage() {
                                                 </Button>
                                         </div>
                                         {integrationResult && (
-                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
                                                         {JSON.stringify(integrationResult, null, 2)}
                                                 </pre>
                                         )}

@@ -39,7 +39,7 @@ export function NotFoundPage() {
 					<Button
 						variant="outline"
 						onClick={() => navigate(-1)}
-						className="border-border text-foreground/90 hover:bg-card"
+						className="border-border text-foreground/90 hover:bg-card stagger-card"
 					>
 						<ArrowLeft aria-hidden="true" className="h-4 w-4 mr-2" />
 						Go Back

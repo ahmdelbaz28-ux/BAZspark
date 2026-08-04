@@ -412,7 +412,7 @@ export function MultiDBPage() {
             const Icon = db.icon;
             const isHealthy = health?.[db.key] !== false;
             return (
-              <Card key={db.key} className="border-border bg-card">
+              <Card key={db.key} className="border-border bg-card stagger-card">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <Icon aria-hidden="true" className={`h-5 w-5 ${db.color}`} />
@@ -445,7 +445,7 @@ export function MultiDBPage() {
 
         {/* Database Tools Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-card border border-border flex-wrap">
+          <TabsList className="bg-card border border-border flex-wrap stagger-card">
             <TabsTrigger value="health" className="data-[state=active]:bg-secondary data-[state=active]:text-foreground">
               <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
               Health

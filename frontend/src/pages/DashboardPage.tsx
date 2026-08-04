@@ -1,14 +1,15 @@
-
 import { useMemo, useState } from "react";
 import {
         Activity,
+        AlertTriangle,
         Calculator,
         CheckCircle2,
         Clock,
+        Cpu,
         Database,
         FolderKanban,
         Server,
-        Cpu,
+        XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -65,12 +66,8 @@ import { useDevices, useHealth, useProjects } from "@/hooks/useApiQuery";
 export function DashboardPage() {
         const { t } = useTranslation();
         const navigate = useNavigate();
-        // Phase 13 Round 2 (VLM): ACK state for the trouble banner. A real FACP
-        // requires explicit acknowledgment of trouble — the buzzer silences but
-        // the amber LED stays on until the fault clears. We model the same here:
-        // ACK hides the banner, but if the disconnect persists the banner should
-        // reappear on next data refresh. For now this is a UX-level ack.
         const [troubleAcked, setTroubleAcked] = useState(false);
+
         const {
                 data: health,
                 loading: healthLoading,

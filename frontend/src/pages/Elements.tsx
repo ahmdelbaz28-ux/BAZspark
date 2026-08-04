@@ -114,7 +114,7 @@ function Elements() {
                                                 setTypeFilter(e.target.value);
                                                 setPage(1);
                                         }}
-                                        className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+                                        className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none stagger-card"
                                 >
                                         <option value="">{t("elements.allTypes")}</option>
                                         {ELEMENT_TYPES.map((type) => (
@@ -154,7 +154,7 @@ function Elements() {
                         {/* Table */}
                         {data && !isLoading && (
                                 <>
-                                        <div className="bg-card border border-border rounded-md overflow-hidden">
+                                        <div className="bg-card border border-border rounded-md overflow-hidden stagger-card">
                                                 <div className="overflow-x-auto">
                                                         <table
                                                                 className="w-full text-sm"
@@ -350,7 +350,7 @@ function Elements() {
                         {/* Delete Confirmation Modal */}
                         {deleteTarget && (
                                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                                        <div className="bg-card border border-border rounded-md max-w-md w-full p-6">
+                                        <div className="bg-card border border-border rounded-md max-w-md w-full p-6 stagger-card">
                                                 <h3 className="text-lg font-semibold text-white mb-2">
                                                         {t("elements.deleteElement")}
                                                 </h3>
@@ -435,7 +435,7 @@ function CreateElementModal({
 
         return (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                        <div className="bg-card border border-border rounded-md max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="bg-card border border-border rounded-md max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto custom-scrollbar stagger-card">
                                 <h3 className="text-lg font-semibold text-white mb-4">
                                         {t("elements.createElement")}
                                 </h3>
@@ -458,7 +458,7 @@ function CreateElementModal({
                                                 <Input
                                                         value={name}
                                                         onChange={(e) => setName(e.target.value)}
-                                                        className="bg-card border-border text-white"
+                                                        className="bg-card border-border text-white stagger-card"
                                                         placeholder={t("elements.elementNamePlaceholder")}
                                                 />
                                         </div>
@@ -468,10 +468,10 @@ function CreateElementModal({
                                                         {t("elements.type")} *
                                                 </label>
                                                 <Select value={elementType} onValueChange={setElementType}>
-                                                        <SelectTrigger className="bg-card border-border text-white">
+                                                        <SelectTrigger className="bg-card border-border text-white stagger-card">
                                                                 <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-card border-border text-white">
+                                                        <SelectContent className="bg-card border-border text-white stagger-card">
                                                                 {ELEMENT_TYPES.map((type) => (
                                                                         <SelectItem key={type.value} value={type.value}>
                                                                                 {t(type.labelKey)}
@@ -490,7 +490,7 @@ function CreateElementModal({
                                                                 type="number"
                                                                 value={height}
                                                                 onChange={(e) => setHeight(e.target.value)}
-                                                                className="bg-card border-border text-white"
+                                                                className="bg-card border-border text-white stagger-card"
                                                                 placeholder="m"
                                                         />
                                                 </div>
@@ -502,7 +502,7 @@ function CreateElementModal({
                                                                 type="number"
                                                                 value={width}
                                                                 onChange={(e) => setWidth(e.target.value)}
-                                                                className="bg-card border-border text-white"
+                                                                className="bg-card border-border text-white stagger-card"
                                                                 placeholder="m"
                                                         />
                                                 </div>
@@ -516,7 +516,7 @@ function CreateElementModal({
                                                         <Input
                                                                 value={material}
                                                                 onChange={(e) => setMaterial(e.target.value)}
-                                                                className="bg-card border-border text-white"
+                                                                className="bg-card border-border text-white stagger-card"
                                                                 placeholder={t("elements.materialPlaceholder")}
                                                         />
                                                 </div>
@@ -527,7 +527,7 @@ function CreateElementModal({
                                                         <Input
                                                                 value={fireRating}
                                                                 onChange={(e) => setFireRating(e.target.value)}
-                                                                className="bg-card border-border text-white"
+                                                                className="bg-card border-border text-white stagger-card"
                                                                 placeholder={t("elements.fireRatingPlaceholder")}
                                                         />
                                                 </div>
@@ -541,7 +541,7 @@ function CreateElementModal({
                                                         value={description}
                                                         onChange={(e) => setDescription(e.target.value)}
                                                         rows={2}
-                                                        className="bg-card border-border text-white resize-none"
+                                                        className="bg-card border-border text-white resize-none stagger-card"
                                                         placeholder={t("elements.descriptionPlaceholder")}
                                                 />
                                         </div>

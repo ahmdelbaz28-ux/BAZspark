@@ -326,7 +326,7 @@ async def upload_file(request: Request, file = File(...)) -> dict[str, Any]:  # 
     return {"filename": filename, "size_bytes": len(content), "status": "accepted"}
 
 
-@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])  # NOSONAR - python:S8409
+@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)], include_in_schema=False)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     try:
@@ -362,7 +362,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     return _room_result_to_out(result)
 
 
-@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)],
+@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)], include_in_schema=False)
           responses={422: {"description": "Room rejected — invalid input"}})  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
@@ -481,7 +481,7 @@ async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
     }
 
 
-@app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)])
+@app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)], include_in_schema=False)
 async def get_audit_trail_v10():
     """Get audit trail from FireAISystem."""
     system = _get_fireai_system()

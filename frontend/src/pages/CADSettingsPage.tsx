@@ -43,6 +43,7 @@ import {
         SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RevitFamilyBrowser } from "@/components/engineering/RevitFamilyBrowser";
 
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
 let _cachedCadSettings: Record<string, unknown> | null = null;
@@ -309,7 +310,7 @@ export function CADSettingsPage() {
 
                                 {/* Main Tabs */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="bg-card border border-border">
+                                        <TabsList className="bg-card border border-border stagger-card">
                                                 <TabsTrigger
                                                         value="autocad"
                                                         className="data-[state=active]:bg-secondary"
@@ -336,7 +337,7 @@ export function CADSettingsPage() {
                                         {/* AutoCAD Tab */}
                                         <TabsContent value="autocad" className="space-y-6">
                                                 {/* Connection Status */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
@@ -346,7 +347,7 @@ export function CADSettingsPage() {
                                                                         <Button
                                                                                 variant="outline"
                                                                                 size="sm"
-                                                                                className="border-border text-foreground/90 hover:bg-card"
+                                                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                 onClick={checkAutoCADConnection}
                                                                                 disabled={checkingAcad}
                                                                         >
@@ -398,7 +399,7 @@ export function CADSettingsPage() {
                                                 </Card>
 
                                                 {/* AutoCAD Configuration */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Settings aria-hidden="true" className="h-5 w-5 text-info" />
@@ -416,11 +417,11 @@ export function CADSettingsPage() {
                                                                                         value={acadPath}
                                                                                         onChange={(e) => setAcadPath(e.target.value)}
                                                                                         placeholder="C:\Program Files\Autodesk\AutoCAD 2024"
-                                                                                        className="bg-card border-border text-foreground flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1 stagger-card"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                         onClick={() => {
                                                                                                         // V194 (TD-3) FIX: Use hidden file input to let the user select the
                                                                                                         // AutoCAD executable. Browsers cannot return full paths for
@@ -453,7 +454,7 @@ export function CADSettingsPage() {
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">Version</Label>
                                                                                 <Select value={acadVersion} onValueChange={setAcadVersion}>
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -469,7 +470,7 @@ export function CADSettingsPage() {
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">Default Units</Label>
                                                                                 <Select value={acadUnits} onValueChange={setAcadUnits}>
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -489,11 +490,11 @@ export function CADSettingsPage() {
                                                                                         value={acadTemplate}
                                                                                         onChange={(e) => setAcadTemplate(e.target.value)}
                                                                                         placeholder="C:\Templates\architectural.dwt"
-                                                                                        className="bg-card border-border text-foreground flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1 stagger-card"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                         onClick={() => {
                                                                                                 // V247 FIX: Use hidden file input (was "not implemented")
                                                                                                 const input = document.createElement("input");
@@ -530,7 +531,7 @@ export function CADSettingsPage() {
                                         {/* Revit Tab */}
                                         <TabsContent value="revit" className="space-y-6">
                                                 {/* Connection Status */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
@@ -540,7 +541,7 @@ export function CADSettingsPage() {
                                                                         <Button
                                                                                 variant="outline"
                                                                                 size="sm"
-                                                                                className="border-border text-foreground/90 hover:bg-card"
+                                                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                 onClick={checkRevitConnection}
                                                                                 disabled={checkingRevit}
                                                                         >
@@ -594,7 +595,7 @@ export function CADSettingsPage() {
                                                 </Card>
 
                                                 {/* Revit Configuration */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Wrench aria-hidden="true" className="h-5 w-5 text-info" />
@@ -612,11 +613,11 @@ export function CADSettingsPage() {
                                                                                         value={revitPath}
                                                                                         onChange={(e) => setRevitPath(e.target.value)}
                                                                                         placeholder="C:\Program Files\Autodesk\Revit 2024"
-                                                                                        className="bg-card border-border text-foreground flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1 stagger-card"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                         onClick={() => {
                                                                                                 // V247 FIX: Use hidden file input (was "not implemented")
                                                                                                 const input = document.createElement("input");
@@ -647,7 +648,7 @@ export function CADSettingsPage() {
                                                                                         value={revitVersion}
                                                                                         onValueChange={setRevitVersion}
                                                                                 >
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -663,7 +664,7 @@ export function CADSettingsPage() {
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">Default Units</Label>
                                                                                 <Select value={revitUnits} onValueChange={setRevitUnits}>
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -683,11 +684,11 @@ export function CADSettingsPage() {
                                                                                         value={revitTemplate}
                                                                                         onChange={(e) => setRevitTemplate(e.target.value)}
                                                                                         placeholder="C:\Templates\Architectural-Template.rte"
-                                                                                        className="bg-card border-border text-foreground flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1 stagger-card"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                         onClick={() => {
                                                                                                 // V247 FIX: Use hidden file input (was "not implemented")
                                                                                                 const input = document.createElement("input");
@@ -711,20 +712,23 @@ export function CADSettingsPage() {
                                                                         </p>
                                                                 </div>
 
-                                                                <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
-                                                                        onClick={saveRevitSettings}
-                                                                >
-                                                                        Save Revit Settings
-                                                                </Button>
-                                                        </CardContent>
-                                                </Card>
-                                        </TabsContent>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                                <Button
+                                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                                        onClick={saveRevitSettings}
+                                                                                >
+                                                                                        Save Revit Settings
+                                                                                </Button>
+                                                                                <RevitFamilyBrowser />
+                                                                        </div>
+                                                                </CardContent>
+                                                        </Card>
+                                                </TabsContent>
 
                                         {/* Cloud Integration Tab */}
                                         <TabsContent value="cloud" className="space-y-6">
                                                 {/* Speckle Configuration */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Settings aria-hidden="true" className="h-5 w-5 text-info" />
@@ -741,7 +745,7 @@ export function CADSettingsPage() {
                                                                                 value={speckleServer}
                                                                                 onChange={(e) => setSpeckleServer(e.target.value)}
                                                                                 placeholder="https://speckle.xyz"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -751,7 +755,7 @@ export function CADSettingsPage() {
                                                                                 value={speckleToken}
                                                                                 onChange={(e) => setSpeckleToken(e.target.value)}
                                                                                 placeholder="Paste your Speckle access token here (session-only — NOT saved)"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                         <p className="text-xs text-amber-500">
                                                                                 V284 SECURITY: Token is session-only and never written to
@@ -765,14 +769,14 @@ export function CADSettingsPage() {
                                                                                 value={speckleStreamId}
                                                                                 onChange={(e) => setSpeckleStreamId(e.target.value)}
                                                                                 placeholder="e.g. 7a92cfb38f"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                 </div>
                                                         </CardContent>
                                                 </Card>
 
                                                 {/* Autodesk Platform Services Configuration */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Wrench aria-hidden="true" className="h-5 w-5 text-info" />
@@ -789,7 +793,7 @@ export function CADSettingsPage() {
                                                                                 value={apsClientId}
                                                                                 onChange={(e) => setApsClientId(e.target.value)}
                                                                                 placeholder="Your APS Client ID"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -799,7 +803,7 @@ export function CADSettingsPage() {
                                                                                 value={apsClientSecret}
                                                                                 onChange={(e) => setApsClientSecret(e.target.value)}
                                                                                 placeholder="Your APS Client Secret (session-only — NOT saved)"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                         <p className="text-xs text-amber-500">
                                                                                 V284 SECURITY: Secret is session-only and never written to
@@ -813,7 +817,7 @@ export function CADSettingsPage() {
                                                                                 value={apsActivityId}
                                                                                 onChange={(e) => setApsActivityId(e.target.value)}
                                                                                 placeholder="e.g. BazSparkAutoCADBridge.DrawLayout"
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                         />
                                                                 </div>
 

@@ -296,7 +296,7 @@ export function DigitalTwinPage() {
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                 onClick={fetchVersionHistory}
                                         >
                                                 <History aria-hidden="true" className="h-4 w-4 mr-2" />
@@ -306,7 +306,7 @@ export function DigitalTwinPage() {
 
                                 {/* Main Tabs */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="bg-card border border-border">
+                                        <TabsList className="bg-card border border-border stagger-card">
                                                 <TabsTrigger
                                                         value="convert"
                                                         className="data-[state=active]:bg-secondary"
@@ -333,7 +333,7 @@ export function DigitalTwinPage() {
                                         {/* Convert Tab */}
                                         <TabsContent value="convert" className="space-y-6">
                                                 {/* File Upload */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <FileUp aria-hidden="true" className="h-5 w-5 text-info" />
@@ -392,7 +392,7 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Conversion Action */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Start Conversion
@@ -423,7 +423,7 @@ export function DigitalTwinPage() {
                                                 {/* Conversion Result */}
                                                 {conversionResult && (
                                                         <Card
-                                                                className={`border-border bg-card ${conversionResult.success ? "border-emerald-500/50" : "border-slate-500/50"}`}
+                                                                className={`border-border bg-card ${conversionResult.success ? "border-emerald-500/50" : "border-slate-500/50"} stagger-card`}
                                                         >
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
@@ -509,7 +509,7 @@ export function DigitalTwinPage() {
                                         {/* Settings Tab */}
                                         <TabsContent value="settings" className="space-y-6">
                                                 {/* Layer Mapping */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Layer to Category Mapping
@@ -532,7 +532,7 @@ export function DigitalTwinPage() {
                                                                                                 newMapping[e.target.value] = category;
                                                                                                 setLayerMapping(newMapping);
                                                                                         }}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                         placeholder="AutoCAD Layer"
                                                                                 />
                                                                                 <Input
@@ -543,7 +543,7 @@ export function DigitalTwinPage() {
                                                                                                         [layer]: e.target.value,
                                                                                                 });
                                                                                         }}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                         placeholder="Revit Category"
                                                                                 />
                                                                         </div>
@@ -564,7 +564,7 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Block to Family Mapping */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Block to Family Mapping
@@ -587,7 +587,7 @@ export function DigitalTwinPage() {
                                                                                                 newMapping[e.target.value] = family;
                                                                                                 setBlockMapping(newMapping);
                                                                                         }}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                         placeholder="AutoCAD Block"
                                                                                 />
                                                                                 <Input
@@ -598,7 +598,7 @@ export function DigitalTwinPage() {
                                                                                                         [block]: e.target.value,
                                                                                                 });
                                                                                         }}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                         placeholder="Revit Family"
                                                                                 />
                                                                         </div>
@@ -607,7 +607,7 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Conversion Settings */}
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Conversion Settings
@@ -620,7 +620,7 @@ export function DigitalTwinPage() {
                                                                                 <Input
                                                                                         value={defaultLevel}
                                                                                         onChange={(e) => setDefaultLevel(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -631,13 +631,13 @@ export function DigitalTwinPage() {
                                                                                         onChange={(e) =>
                                                                                                 setLevelHeight(Number.parseInt(e.target.value, 10))
                                                                                         }
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">Source Units</Label>
                                                                                 <Select value={sourceUnits} onValueChange={setSourceUnits}>
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -651,7 +651,7 @@ export function DigitalTwinPage() {
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">Target Units</Label>
                                                                                 <Select value={targetUnits} onValueChange={setTargetUnits}>
-                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -675,7 +675,7 @@ export function DigitalTwinPage() {
 
                                         {/* History Tab */}
                                         <TabsContent value="history">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <History aria-hidden="true" className="h-5 w-5 text-info" />
@@ -722,7 +722,7 @@ export function DigitalTwinPage() {
                                                                                                         <Button
                                                                                                                 variant="outline"
                                                                                                                 size="sm"
-                                                                                                                className="border-border text-foreground/90 hover:bg-card"
+                                                                                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                                                                 onClick={() => handleRollback(version.version_id)}
                                                                                                         >
                                                                                                                 <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />

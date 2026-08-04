@@ -15,6 +15,7 @@ function Connections() {
         const [elementFilter, setElementFilter] = useState("");
         const [showCreateModal, setShowCreateModal] = useState(false);
         const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+        const [editTarget, setEditTarget] = useState<any | null>(null);
 
         const {
                 data: connectionsData,
@@ -33,6 +34,22 @@ function Connections() {
                 onSuccess: () => {
                         queryClient.invalidateQueries({ queryKey: ["connections"] });
                         setDeleteTarget(null);
+                },
+        });
+
+        const updateMutation = useMutation({
+                mutationFn: async ({ id, data }: { id: string, data: any }) => {
+                        const res = await fetch(`/api/v1/connections/${id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data),
+                        });
+                        if (!res.ok) throw new Error("Update failed");
+                        return res.json();
+                },
+                onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ["connections"] });
+                        setEditTarget(null);
                 },
         });
 
@@ -112,7 +129,7 @@ function Connections() {
 
                         {/* Table */}
                         {connectionsData && !isLoading && (
-                                <div className="bg-card border border-border rounded-md overflow-hidden">
+                                <div className="bg-card border border-border rounded-md overflow-hidden stagger-card">
                                         <div className="overflow-x-auto">
                                                 <table
                                                         className="w-full text-sm"
@@ -210,25 +227,36 @@ function Connections() {
                                                                                                 )}
                                                                                         </td>
                                                                                         <td className="px-4 py-3 text-right">
-                                                                                                <button type="button"
-                                                                                                        onClick={() => setDeleteTarget(conn.connection_id)}
-                                                                                                        className="text-muted-foreground hover:text-danger transition-colors"
-                                                                                                        title="Delete"
-                                                                                                >
-                                                                                                        <svg
-                                                                                                                width="14"
-                                                                                                                height="14"
-                                                                                                                viewBox="0 0 24 24"
-                                                                                                                fill="none"
-                                                                                                                stroke="currentColor"
-                                                                                                                strokeWidth="2"
-                                                                                                                strokeLinecap="round"
-                                                                                                                strokeLinejoin="round"
+                                                                                                <div className="flex items-center justify-end gap-2">
+                                                                                                        <button type="button"
+                                                                                                                onClick={() => setEditTarget(conn)}
+                                                                                                                className="text-muted-foreground hover:text-primary transition-colors"
+                                                                                                                title="Edit"
                                                                                                         >
-                                                                                                                <polyline points="3 6 5 6 21 6" />
-                                                                                                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                                                                                        </svg>
-                                                                                                </button>
+                                                                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                                                                                                </svg>
+                                                                                                        </button>
+                                                                                                        <button type="button"
+                                                                                                                onClick={() => setDeleteTarget(conn.connection_id)}
+                                                                                                                className="text-muted-foreground hover:text-danger transition-colors"
+                                                                                                                title="Delete"
+                                                                                                        >
+                                                                                                                <svg
+                                                                                                                        width="14"
+                                                                                                                        height="14"
+                                                                                                                        viewBox="0 0 24 24"
+                                                                                                                        fill="none"
+                                                                                                                        stroke="currentColor"
+                                                                                                                        strokeWidth="2"
+                                                                                                                        strokeLinecap="round"
+                                                                                                                        strokeLinejoin="round"
+                                                                                                                >
+                                                                                                                        <polyline points="3 6 5 6 21 6" />
+                                                                                                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                                                                                                </svg>
+                                                                                                        </button>
+                                                                                                </div>
                                                                                         </td>
                                                                                 </tr>
                                                                         ))
@@ -253,7 +281,7 @@ function Connections() {
                 {/* Delete Confirmation */}
                 {deleteTarget && (
                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("connectionsPage.deleteConnection")}>
-                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                         <h3 className="text-lg font-semibold text-foreground mb-2">
                                                 {t("connectionsPage.deleteConnection")}
                                         </h3>
@@ -279,6 +307,17 @@ function Connections() {
                                         </div>
                                 </div>
                         </dialog>
+                )}
+
+                {/* Edit Modal */}
+                {editTarget && (
+                        <EditConnectionModal
+                                connection={editTarget}
+                                onClose={() => setEditTarget(null)}
+                                onSuccess={(updatedData) => {
+                                        updateMutation.mutate({ id: editTarget.connection_id, data: updatedData });
+                                }}
+                        />
                 )}
                 </div>
         );
@@ -314,7 +353,7 @@ function CreateConnectionModal({
 
         return (
                 <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("connectionsPage.createConnection")}>
-                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                 <h3 className="text-lg font-semibold text-foreground mb-4">
                                         {t("connectionsPage.createConnection")}
                                 </h3>
@@ -368,7 +407,7 @@ function CreateConnectionModal({
                                                         type="checkbox"
                                                         checked={isParametric}
                                                         onChange={(e) => setIsParametric(e.target.checked)}
-                                                        className="rounded bg-card border-border text-primary focus:ring-primary/30 focus:ring-2"
+                                                        className="rounded bg-card border-border text-primary focus:ring-primary/30 focus:ring-2 stagger-card"
                                                 />
                                                 <span className="text-sm text-foreground/90">{t("common.active")}</span>
                                         </label>
@@ -398,3 +437,67 @@ function CreateConnectionModal({
 }
 
 export default Connections;
+
+function EditConnectionModal({
+        connection,
+        onClose,
+        onSuccess,
+}: {
+        connection: any;
+        onClose: () => void;
+        onSuccess: (data: any) => void;
+}) {
+        const { t } = useTranslation();
+        const [relationshipType, setRelationshipType] = useState(connection.relationship_type || "");
+        const [isParametric, setIsParametric] = useState(connection.is_parametric || false);
+
+        const handleSave = (e: React.FormEvent) => {
+                e.preventDefault();
+                onSuccess({
+                        relationship_type: relationshipType,
+                        is_parametric: isParametric,
+                });
+        };
+
+        return (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
+                                <h3 className="text-lg font-semibold text-foreground mb-4">
+                                        Edit Connection
+                                </h3>
+                                <form onSubmit={handleSave} className="space-y-4">
+                                        <div className="space-y-2">
+                                                <label className="text-sm font-medium text-foreground">
+                                                        Relationship Type
+                                                </label>
+                                                <Input
+                                                        required
+                                                        value={relationshipType}
+                                                        onChange={(e) => setRelationshipType(e.target.value)}
+                                                />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                                <input
+                                                        type="checkbox"
+                                                        id="edit-is-parametric"
+                                                        checked={isParametric}
+                                                        onChange={(e) => setIsParametric(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-border"
+                                                />
+                                                <label htmlFor="edit-is-parametric" className="text-sm font-medium text-foreground">
+                                                        Parametric connection
+                                                </label>
+                                        </div>
+                                        <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+                                                <Button type="button" variant="outline" onClick={onClose}>
+                                                        {t("common.cancel")}
+                                                </Button>
+                                                <Button type="submit">
+                                                        {t("common.save")}
+                                                </Button>
+                                        </div>
+                                </form>
+                        </div>
+                </div>
+        );
+}
