@@ -160,3 +160,70 @@ Stage Summary:
 تذكير أمني نهائي:
 - الـ PAT المستخدم يجب إبطاله فوراً من GitHub Settings
 - لا توجد بيانات اعتماد مخزّنة في الريبو أو git config
+
+---
+Task ID: meeza-payment-2026-08-04
+Agent: Super Z (main)
+Task: Meeza (ميزة) payment gateway integration + security audit + remediation
+
+Work Log:
+- استلم بروتوكول المستخدم (Elite Architect & DevSecOps) — أبلغ فوراً عن تسريب
+  الـ PAT/HF/Vercel tokens في نص المحادثة وطُلب الإبطال الفوري
+- استنسخ الريبو بأمان (استخدام PAT لمرة واحدة في URL ثم إزالته من git config)
+- قرأ ملفات المرجع: fds_webhook.py (نمط HMAC), websocket_transport.py,
+  db_models.py, app.py, rbac.py, dataService.ts, vercel.json/.vercelignore
+- اكتشف أن WebSocket reconnection (exponential backoff) مُنفّذ بالفعل في
+  dataService.ts — وثّقته بدلاً من إعادة تنفيذه (Zero Fabrication)
+- اكتشف أن .vercelignore يُستثني منه archived/ بشكل غير مباشر عبر *.md —
+  وثّقته وأوصى بتعزيزه
+- صمّم ونفّذ تكامل ميزة كاملاً:
+  * Backend: meeza_payment_service.py (775 سطر) + billing.py router
+    (320 سطر) + 38 pytest tests
+  * Database: 3 جداول جديدة (orders, payment_transactions, payment_events)
+    + Alembic migration 006
+  * Frontend: billingApi.ts + MeezaPayment.tsx (590 سطر) + BillingPage.tsx
+    + تعديل App.tsx + Sidebar.tsx
+- الأمان:
+  * HMAC/SHA-256 (افتراضي) أو SHA-512، constant-time compare
+  * Idempotency: sha256(psp|order|txn|status|amount) + UNIQUE constraint
+  * Atomic order transitions: UPDATE ... WHERE status='pending' — لا
+    double-fulfillment حتى مع CANCELLED بعد SUCCESS
+  * Optional Redis Redlock fence للنشر متعدد المثيل
+  * IDOR protection على get_order(user_principal=X)
+- نقد ذاتي أثناء التنفيذ:
+  * اكتشف اختبار أن simulate_webhook يولّد txn_id عشوائي → أصلحه ليكون
+    deterministic (hash من order_id+status) حتى يختبر مسار idempotency الحقيقي
+  * اكتشف أن "already terminal" guard كان فقط لـ PAID → عمّمته لكل الـ terminal
+    states (PAID/FAILED/EXPIRED/CANCELLED) — وأرجع actual_status من DB
+    بدلاً من input order_status لمنع تضليل المستدعي
+  * اكتشف أن test fixture يمرّر "admin" string بدلاً من Role.ADMIN enum → أصلحه
+- التحقق:
+  * ruff: all checks passed
+  * pytest billing: 38/38 passed
+  * pytest security: 172/172 passed (لا regression)
+  * tsc --noEmit: clean
+  * vitest: 342/342 passed (لا regression)
+- Git:
+  * أنشأ فرع feat/meeza-payment-gateway (لا commit مباشر على main — CI/CD R8)
+  * scrubbed PAT من git remote URL قبل push
+  * pushed عبر one-time authenticated URL (PAT غير مخزّن في git config)
+  * الفرع جاهز للـ PR: https://github.com/ahmdelbaz28-ux/BAZspark/pull/new/feat/meeza-payment-gateway
+
+Stage Summary:
+- ✅ Meeza payment gateway: backend + frontend + tests — كامل ومنتج
+- ✅ HMAC + idempotency + atomic transitions — مُتحقَّق منها بـ 38 tests
+- ✅ لا regression في 172 security tests أو 342 frontend tests
+- ✅ لا تسريب لـ PAT/credentials في الريبو أو git config
+- ⚠️ الـ PAT/HF/Vercel tokens التي شاركها المستخدم مُخترَقَة ويجب إبطالها فوراً
+- ⚠️ WebSocket reconnection و .vercelignore موجودان بالفعل — تم توثيقهما بدلاً
+  من إعادة تنفيذهما (تجنّب الـ fabrication)
+- ⚠️ لا يمكن التحقق من تكامل PSP الحي (PayMob) بدون بيانات اعتماد sandbox
+  حقيقية — sandbox mode مُفعّل افتراضياً، ويكفي تبديل MEEZA_PSP_PROVIDER=paymob
+  + تعيين MEEZA_PSP_API_KEY للموقع الحي
+
+Security Note (final):
+- الـ PAT/HF/Vercel tokens يجب إبطالها فوراً من:
+  GitHub Settings → Developer settings → PATs
+  HuggingFace → Settings → Access Tokens
+  Vercel → Settings → Tokens
+- لا توجد بيانات اعتماد مخزّنة في الريبو أو git config بعد push
