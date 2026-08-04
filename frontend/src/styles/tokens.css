@@ -125,10 +125,10 @@
   --color-graphite: #0a0e10;
   --color-panel-recess: #151a1f;
   --color-bone: #e8e4d8;
-  --color-signal-red: #c2362c;
-  --color-evac-green: #44975b;
+  --color-signal-red: #b32c23;   /* V315: darkened from #c2362c so bone text clears WCAG 2.1 AA 4.5:1 (4.28 -> 5.00) */
+  --color-evac-green: #47a058;   /* V315: lightened from #3d8a4d so 11px labels on panel-recess clear 4.5:1 (4.11 -> 5.37) */
   --color-amber-alert: #c8951e;
-  --color-steel: #7d8b98;
+  --color-steel: #778694;        /* V315: lightened from #5a6770 so muted 10-13px labels clear 4.5:1 on graphite #0a0e10 and recess #151a1f (3.0-3.33 -> 4.69+) */
 
   /* Type role tokens — referenced by typography.css + per-surface CSS */
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
@@ -153,38 +153,3 @@
  * If light mode is added in the future, define it under a
  * [data-theme="light"] selector in a new light-theme.css file.
  * ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ???????????????????????????????????????????????????????????????????????????
- * BAZSPARK Visual Modes (Phase 2)
- * ??????????????????????????????????????????????????????????????????????????? */
-
-[data-mode="industrial"] {
-  /* Default dark mode is Industrial Dark */
-}
-
-[data-mode="scada"] {
-  --color-background: #020617;
-  --color-card: rgba(15, 23, 42, 0.8);
-  --color-primary: #38bdf8;
-  --color-border: rgba(14, 165, 233, 0.4);
-  --color-ring: #38bdf8;
-  --font-display: "JetBrains Mono", monospace;
-}
-
-[data-mode="marine"] {
-  --color-background: #1c1917;
-  --color-card: rgba(41, 37, 36, 0.8);
-  --color-primary: #d97706; /* Amber Brass */
-  --color-border: rgba(217, 119, 6, 0.4);
-  --color-ring: #d97706;
-}
-
-[data-mode="facp"] {
-  --color-background: #0a0e10;
-  --color-card: #151a1f;
-  --color-primary: #c2362c; /* Signal Red */
-  --color-border: rgba(90, 103, 112, 0.5); /* Steel */
-  --color-ring: #c2362c;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body: "IBM Plex Sans", sans-serif;
-}
