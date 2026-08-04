@@ -22,6 +22,12 @@
         }
 }
 
+@layer components {
+	button, input, select, textarea {
+		@apply min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none transition-all;
+	}
+}
+
 /* Technical utility classes */
 .bg-glass {
         background-color: rgba(15, 23, 42, 0.95);

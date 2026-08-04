@@ -160,7 +160,7 @@ export function RevitCreatePage() {
 			</div>
 
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<TabsList className="bg-card border border-border flex-wrap">
+				<TabsList className="bg-card border border-border flex-wrap stagger-card">
 					<TabsTrigger
 						value="wall"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
@@ -200,7 +200,7 @@ export function RevitCreatePage() {
 				</TabsList>
 
 				<TabsContent value="wall">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Wall</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -267,7 +267,7 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="floor">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Floor</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -318,7 +318,7 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="column">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Column</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -375,7 +375,7 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="beam">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Beam</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -434,7 +434,7 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="door">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Door</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -492,7 +492,7 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="window">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Create Window</CardTitle>
 							<CardDescription className="text-muted-foreground">

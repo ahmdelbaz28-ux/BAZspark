@@ -129,7 +129,7 @@ function Connections() {
 
                         {/* Table */}
                         {connectionsData && !isLoading && (
-                                <div className="bg-card border border-border rounded-md overflow-hidden">
+                                <div className="bg-card border border-border rounded-md overflow-hidden stagger-card">
                                         <div className="overflow-x-auto">
                                                 <table
                                                         className="w-full text-sm"
@@ -281,7 +281,7 @@ function Connections() {
                 {/* Delete Confirmation */}
                 {deleteTarget && (
                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("connectionsPage.deleteConnection")}>
-                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                         <h3 className="text-lg font-semibold text-foreground mb-2">
                                                 {t("connectionsPage.deleteConnection")}
                                         </h3>
@@ -353,7 +353,7 @@ function CreateConnectionModal({
 
         return (
                 <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("connectionsPage.createConnection")}>
-                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                 <h3 className="text-lg font-semibold text-foreground mb-4">
                                         {t("connectionsPage.createConnection")}
                                 </h3>
@@ -407,7 +407,7 @@ function CreateConnectionModal({
                                                         type="checkbox"
                                                         checked={isParametric}
                                                         onChange={(e) => setIsParametric(e.target.checked)}
-                                                        className="rounded bg-card border-border text-primary focus:ring-primary/30 focus:ring-2"
+                                                        className="rounded bg-card border-border text-primary focus:ring-primary/30 focus:ring-2 stagger-card"
                                                 />
                                                 <span className="text-sm text-foreground/90">{t("common.active")}</span>
                                         </label>
@@ -461,7 +461,7 @@ function EditConnectionModal({
 
         return (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                        <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                 <h3 className="text-lg font-semibold text-foreground mb-4">
                                         Edit Connection
                                 </h3>

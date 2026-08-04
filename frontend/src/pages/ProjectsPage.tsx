@@ -179,7 +179,7 @@ export function ProjectsPage() {
 
                                 {/* Create Project Form */}
                                 {showCreateForm && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("projects.createProject")}
@@ -196,7 +196,7 @@ export function ProjectsPage() {
                                                                                 setNewProject((p) => ({ ...p, name: e.target.value }))
                                                                         }
                                                                         placeholder={t("projects.projectName")}
-                                                                        className="bg-card border-border text-foreground"
+                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                 />
                                                         </div>
                                                         <div className="space-y-2">
@@ -212,7 +212,7 @@ export function ProjectsPage() {
                                                                                 }))
                                                                         }
                                                                         placeholder={t("projects.description")}
-                                                                        className="bg-card border-border text-foreground"
+                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                 />
                                                         </div>
                                                         <div className="flex justify-end gap-3 pt-2">
@@ -248,10 +248,10 @@ export function ProjectsPage() {
                                 {/* Filters */}
                                 <div className="flex flex-wrap items-center gap-3">
                                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                                <SelectTrigger className="w-[180px] bg-card border-border text-white" aria-label={t("projects.allStatuses", "Filter by status")}>
+                                                <SelectTrigger className="w-[180px] bg-card border-border text-white stagger-card" aria-label={t("projects.allStatuses", "Filter by status")}>
                                                         <SelectValue placeholder={t("projects.allStatuses")} />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-card border-border text-white">
+                                                <SelectContent className="bg-card border-border text-white stagger-card">
                                                         <SelectItem value="all">{t("projects.allStatuses")}</SelectItem>
                                                         <SelectItem value="active">{t("projects.active")}</SelectItem>
                                                         <SelectItem value="inactive">{t("projects.inactive")}</SelectItem>
@@ -261,7 +261,7 @@ export function ProjectsPage() {
                                         </Select>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                 onClick={() => refetch()}
                                         >
                                                 <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -284,7 +284,7 @@ export function ProjectsPage() {
                                 {projectsLoading && (
                                         <div className="space-y-4">
                                                 {["skeleton-0", "skeleton-1", "skeleton-2"].map((id) => (
-                                                        <Card key={id} className="border-border bg-card">
+                                                        <Card key={id} className="border-border bg-card stagger-card">
                                                                 <CardHeader className="pb-3">
                                                                         <div className="flex items-center justify-between">
                                                                                 <div>
@@ -337,7 +337,7 @@ export function ProjectsPage() {
                                                         {filteredProjects.map((project: Project) => (
                                                                 <Card
                                                                         key={project.id}
-                                                                        className="border-border bg-card"
+                                                                        className="border-border bg-card stagger-card"
                                                                 >
                                                                         <CardHeader className="pb-3">
                                                                                 <div className="flex items-start justify-between">
@@ -500,7 +500,7 @@ export function ProjectsPage() {
                                 {/* Sync Confirmation Modal */}
                                 {syncTarget && (
                                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.sync")}>
-                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
+                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl stagger-card">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.sync")}
                                                         </h3>
@@ -537,7 +537,7 @@ export function ProjectsPage() {
                                 {/* Delete Confirmation Modal */}
                                 {deleteTarget && (
                                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.deleteProject")}>
-                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
+                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl stagger-card">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.deleteProject")}
                                                         </h3>

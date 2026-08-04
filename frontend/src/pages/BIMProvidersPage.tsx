@@ -98,7 +98,7 @@ export function BIMProvidersPage() {
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                 onClick={handleListProviders}
                                                 disabled={loading}
                                         >
@@ -112,7 +112,7 @@ export function BIMProvidersPage() {
                                 </div>
 
                                 {/* Provider List */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                         <Building2 aria-hidden="true" className="h-5 w-5 text-info" />
@@ -150,7 +150,7 @@ export function BIMProvidersPage() {
                                                                 {providers.map((provider) => (
                                                                         <div
                                                                                 key={provider}
-                                                                                className="flex items-center justify-between px-4 py-3 rounded-lg bg-card border border-border"
+                                                                                className="flex items-center justify-between px-4 py-3 rounded-lg bg-card border border-border stagger-card"
                                                                         >
                                                                                 <div className="flex items-center gap-3">
                                                                                         <Building2
@@ -180,7 +180,7 @@ export function BIMProvidersPage() {
                                 </Card>
 
                                 {/* Provider Health */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                         <HeartPulse aria-hidden="true" className="h-5 w-5 text-info" />
@@ -194,7 +194,7 @@ export function BIMProvidersPage() {
                                                 <div className="flex items-center gap-4 mb-4">
                                                         <Button
                                                                 variant="outline"
-                                                                className="border-border text-foreground/90 hover:bg-card"
+                                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                                 onClick={handleHealthCheck}
                                                                 disabled={healthLoading}
                                                         >
@@ -207,7 +207,7 @@ export function BIMProvidersPage() {
                                                         </Button>
                                                 </div>
                                                 {healthData && (
-                                                        <div className="p-4 rounded-lg bg-card border border-border">
+                                                        <div className="p-4 rounded-lg bg-card border border-border stagger-card">
                                                                 <div className="flex items-center gap-2 mb-2">
                                                                         {healthData.healthy ? (
                                                                                 <>
@@ -232,7 +232,7 @@ export function BIMProvidersPage() {
                                 <Separator className="bg-border" />
 
                                 {/* Extract Rooms */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                         <Download aria-hidden="true" className="h-5 w-5 text-info" />
@@ -252,7 +252,7 @@ export function BIMProvidersPage() {
                                                                 placeholder="Path or URL to BIM model (IFC, DXF, DWG, RVT)"
                                                                 value={extractSource}
                                                                 onChange={(e) => setExtractSource(e.target.value)}
-                                                                className="bg-card border-border text-foreground"
+                                                                className="bg-card border-border text-foreground stagger-card"
                                                         />
                                                         <p className="text-xs text-muted-foreground">
                                                                 Leave empty to use the provider's default source. Supported formats:
@@ -261,7 +261,7 @@ export function BIMProvidersPage() {
                                                 </div>
                                                 <Button
                                                         variant="outline"
-                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                         onClick={handleExtractRooms}
                                                         disabled={extractLoading}
                                                 >
@@ -287,7 +287,7 @@ export function BIMProvidersPage() {
                                                                                 {rooms.map((room, idx) => (
                                                                                         <div
                                                                                                 key={(room.room_id as string) || `room-${idx}`}
-                                                                                                className="p-3 rounded-lg bg-card border border-border text-sm"
+                                                                                                className="p-3 rounded-lg bg-card border border-border text-sm stagger-card"
                                                                                         >
                                                                                                 <div className="flex items-center justify-between mb-1">
                                                                                                         <span className="font-medium text-foreground">

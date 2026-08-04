@@ -94,7 +94,7 @@ export function RevitElementsPage() {
                                         <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" /> Refresh
                                 </Button>
                         </div>
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle className="text-foreground">
                                                 Elements ({elements.length})

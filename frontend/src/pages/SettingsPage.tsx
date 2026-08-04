@@ -338,7 +338,7 @@ export function SettingsPage() {
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                 onClick={() => refetchHealth()}
                                         >
                                                 <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -347,7 +347,7 @@ export function SettingsPage() {
                                 </div>
 
                                 {/* System Health */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                         <Activity aria-hidden="true" className="h-5 w-5 text-info" />
@@ -408,7 +408,7 @@ export function SettingsPage() {
                                                 </div>
                                                 <Button
                                                         variant="outline"
-                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                        className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                         onClick={() => navigate("/settings/database")}
                                                 >
                                                         <Database aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -419,7 +419,7 @@ export function SettingsPage() {
                                 </Card>
 
                                 {/* Report Generator Quick Access */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground">
                                                         {t("settings.advancedReportGenerator")}
@@ -452,7 +452,7 @@ export function SettingsPage() {
 
                                 {/* Settings Tabs */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="bg-card border border-border">
+                                        <TabsList className="bg-card border border-border stagger-card">
                                                 <TabsTrigger
                                                         value="general"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
@@ -511,7 +511,7 @@ export function SettingsPage() {
 
                                         {/* General Settings */}
                                         <TabsContent value="general">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         {t("settings.general")}
@@ -530,7 +530,7 @@ export function SettingsPage() {
                                                                                         aria-label={t("settings.theme")}
                                                                                         value={theme}
                                                                                         onChange={(e) => setTheme(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="light">{t("settings.light")}</option>
                                                                                         <option value="dark">{t("settings.dark")}</option>
@@ -545,7 +545,7 @@ export function SettingsPage() {
                                                                                         aria-label={t("settings.language")}
                                                                                         value={language}
                                                                                         onChange={(e) => setLanguage(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="en">English</option>
                                                                                         <option value="ar">العربية</option>
@@ -585,7 +585,7 @@ export function SettingsPage() {
 
                                         {/* Security Settings */}
                                         <TabsContent value="security">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         {t("settings.security")}
@@ -623,7 +623,7 @@ export function SettingsPage() {
                                         <TabsContent value="security-config">
                                                 <div className="space-y-4">
                                                         {/* GAP-H3: LLM Healing Toggle */}
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground">
                                                                                 {t("fireai.settings.llmHealing")}
@@ -658,7 +658,7 @@ export function SettingsPage() {
                                                         </Card>
 
                                                         {/* GAP-H4: Secret Key Rotation */}
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground">
                                                                                 {t("fireai.settings.keyRotation")}
@@ -692,7 +692,7 @@ export function SettingsPage() {
                                                         </Card>
 
                                                         {/* GAP-H5: Vision API Key Management */}
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground">
                                                                                 {t("fireai.settings.visionApiKey")}
@@ -787,7 +787,7 @@ export function SettingsPage() {
                                                         </Card>
 
                                                         {/* GAP-H6: Admin Token Management */}
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground">
                                                                                 {t("fireai.settings.adminToken")}
@@ -824,7 +824,7 @@ export function SettingsPage() {
 
                                         {/* API Settings */}
                                         <TabsContent value="api">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         {t("settings.api")}
@@ -845,7 +845,7 @@ export function SettingsPage() {
                                                                                         onChange={(e) =>
                                                                                                 setApiTimeout(Number.parseInt(e.target.value, 10))
                                                                                         }
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.apiTimeoutDescription")}
@@ -870,7 +870,7 @@ export function SettingsPage() {
                                                                                         onChange={(e) =>
                                                                                                 setRetryAttempts(Number.parseInt(e.target.value, 10))
                                                                                         }
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.retryAttemptsDescription")}
@@ -891,7 +891,7 @@ export function SettingsPage() {
 
                                         {/* Report Settings */}
                                         <TabsContent value="reports">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         {t("settings.reports")}
@@ -926,7 +926,7 @@ export function SettingsPage() {
                                                                                         aria-label={t("settings.reportFormat")}
                                                                                         value={reportFormat}
                                                                                         onChange={(e) => setReportFormat(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="pdf">PDF</option>
                                                                                         <option value="json">JSON</option>
@@ -954,7 +954,7 @@ export function SettingsPage() {
                                                                                         aria-label={t("settings.reportQuality")}
                                                                                         value={reportQuality}
                                                                                         onChange={(e) => setReportQuality(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="low">Low (Fast)</option>
                                                                                         <option value="medium">Medium</option>
@@ -979,7 +979,7 @@ export function SettingsPage() {
 
                                         {/* Feature Flags */}
                                         <TabsContent value="feature-flags">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Activity aria-hidden="true" className="h-5 w-5 text-info" />
@@ -1041,7 +1041,7 @@ export function SettingsPage() {
 
                                         {/* LLM Configuration */}
                                         <TabsContent value="llm">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         LLM Provider Configuration
@@ -1083,7 +1083,7 @@ export function SettingsPage() {
 
                                         {/* Security / Akamai Configuration */}
                                         <TabsContent value="security-config">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Security & CDN Configuration
@@ -1132,7 +1132,7 @@ export function SettingsPage() {
 
                                         {/* Observability / Langfuse Configuration */}
                                         <TabsContent value="observability">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Observability Configuration
@@ -1181,7 +1181,7 @@ export function SettingsPage() {
 
                                         {/* Pipeline Configuration */}
                                         <TabsContent value="pipeline">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground">
                                                                         Pipeline Tuning

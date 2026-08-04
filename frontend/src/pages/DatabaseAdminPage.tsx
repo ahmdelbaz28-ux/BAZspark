@@ -224,7 +224,7 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
         {/* Database Health Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* PostgreSQL */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card stagger-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Database aria-hidden="true" className="h-5 w-5 text-primary" />
@@ -263,7 +263,7 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
           </Card>
 
           {/* Redis */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card stagger-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Server aria-hidden="true" className="h-5 w-5 text-orange-400" />
@@ -295,7 +295,7 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
           </Card>
 
           {/* Neo4j */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card stagger-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Share2 aria-hidden="true" className="h-5 w-5 text-emerald-400" />
@@ -327,7 +327,7 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
           </Card>
 
           {/* Qdrant */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card stagger-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <Layers aria-hidden="true" className="h-5 w-5 text-violet-400" />
@@ -363,7 +363,7 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
 
         {/* Database Tools Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-card border border-border">
+          <TabsList className="bg-card border border-border stagger-card">
             <TabsTrigger
               value="redis"
               className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"

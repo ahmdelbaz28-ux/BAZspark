@@ -284,7 +284,7 @@ export function FDSSimulationPage() {
                   value={fdsInput}
                   onChange={(e) => setFdsInput(e.target.value)}
                   placeholder="Paste FDS input file content here..."
-                  className="font-mono text-xs min-h-[160px] bg-card border-border text-foreground"
+                  className="font-mono text-xs min-h-[160px] bg-card border-border text-foreground stagger-card"
                   rows={8}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -439,7 +439,7 @@ export function FDSSimulationPage() {
               <Textarea
                 value={smokeStateJson}
                 onChange={(e) => setSmokeStateJson(e.target.value)}
-                className="font-mono text-xs min-h-[100px] bg-card border-border text-foreground"
+                className="font-mono text-xs min-h-[100px] bg-card border-border text-foreground stagger-card"
                 rows={4}
               />
             </div>
@@ -542,7 +542,7 @@ export function FDSSimulationPage() {
                 {jobs.map((job, i) => (
                   <div
                     key={job.job_id || i}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 cursor-pointer hover:bg-card/80 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 cursor-pointer hover:bg-card/80 transition-colors stagger-card"
                     onClick={() => {
                       setStatusJobId(job.job_id || "");
                       setSelectedJob(job);

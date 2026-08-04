@@ -597,7 +597,7 @@ export function ReportsPage() {
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
                                                 onClick={() => refetchReports()}
                                         >
                                                 <Clock aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -617,7 +617,7 @@ export function ReportsPage() {
                                 )}
 
                                 {/* Report Generation Card */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground">
                                                         {t("reports.generate")}
@@ -633,10 +633,10 @@ export function ReportsPage() {
                                                                         {t("reports.reportType")}
                                                                 </Label>
                                                                 <Select value={reportType} onValueChange={setReportType}>
-                                                                        <SelectTrigger className="bg-card border-border text-foreground" aria-label="Select option">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label="Select option">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="bg-card border-border">
+                                                                        <SelectContent className="bg-card border-border stagger-card">
                                                                                 {/* V214 FIX: Values must match backend report_type strings exactly.
                                                                                     Backend (reports.py:645-651) accepts: voltage_drop, nfpa72_coverage,
                                                                                     nfpa72_battery, cable_sizing. Anything else falls through to generic
@@ -672,10 +672,10 @@ export function ReportsPage() {
                                                                                 setExecParams((p) => ({ ...p, kernel_coverage: v }))
                                                                         }
                                                                 >
-                                                                        <SelectTrigger className="bg-card border-border text-foreground" aria-label="Select option">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label="Select option">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="bg-card border-border">
+                                                                        <SelectContent className="bg-card border-border stagger-card">
                                                                                 <SelectItem value="minimal">Minimal Coverage</SelectItem>
                                                                                 <SelectItem value="standard">Standard Coverage</SelectItem>
                                                                                 <SelectItem value="full">Full Coverage</SelectItem>
@@ -697,7 +697,7 @@ export function ReportsPage() {
                                                                                                                                                 deterministic_analysis: e.target.checked,
                                                                                                                                         }))
                                                                                                                                 }
-                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4 stagger-card"
                                                                                                                         />
                                                                                                                         Deterministic Analysis
                                                                                                                 </Label>
@@ -713,7 +713,7 @@ export function ReportsPage() {
                                                                                                                                                 nfpa_compliance: e.target.checked,
                                                                                                                                         }))
                                                                                                                                 }
-                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4 stagger-card"
                                                                                                                         />
                                                                                                                         NFPA Compliance
                                                                                                                 </Label>
@@ -773,10 +773,10 @@ export function ReportsPage() {
                                                                                                                         NFPA Edition
                                                                                                                 </Label>
                                                                                                                 <Select value={ahjNfpaEdition} onValueChange={setAhjNfpaEdition}>
-                                                                                                                        <SelectTrigger className="mt-1 bg-card border-border text-foreground" aria-label="Select option">
+                                                                                                                        <SelectTrigger className="mt-1 bg-card border-border text-foreground stagger-card" aria-label="Select option">
                                                                                                                                 <SelectValue />
                                                                                                                         </SelectTrigger>
-                                                                                                                        <SelectContent className="bg-card border-border">
+                                                                                                                        <SelectContent className="bg-card border-border stagger-card">
                                                                                                                                 <SelectItem value="2022">NFPA 72 (2022)</SelectItem>
                                                                                                                                 <SelectItem value="2019">NFPA 72 (2019)</SelectItem>
                                                                                                                                 <SelectItem value="2016">NFPA 72 (2016)</SelectItem>
@@ -836,7 +836,7 @@ export function ReportsPage() {
                                 )}
 
                                 {/* Battery Calculation Report Preview */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <div className="flex items-center justify-between">
                                                         <CardTitle className="text-lg text-foreground">
@@ -897,7 +897,7 @@ export function ReportsPage() {
                                 </Card>
 
                                 {/* Coverage Analysis Report Preview */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <div className="flex items-center justify-between">
                                                         <CardTitle className="text-lg text-foreground">
@@ -956,7 +956,7 @@ export function ReportsPage() {
                                 </Card>
 
                                 {/* Report History */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground">
                                                         {t("reports.history")}

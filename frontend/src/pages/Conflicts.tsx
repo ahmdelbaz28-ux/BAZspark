@@ -129,7 +129,7 @@ function Conflicts() {
                         {/* Summary cards */}
                         {conflictsData && !isLoading && (
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="bg-card border border-border rounded-md p-4">
+                                <div className="bg-card border border-border rounded-md p-4 stagger-card">
                                         <p className="text-2xl font-bold text-foreground">
                                                 {conflictsData.total}
                                         </p>
@@ -137,7 +137,7 @@ function Conflicts() {
                                                         {t("conflicts.totalConflicts")}
                                                 </p>
                                         </div>
-                                        <div className="bg-card border border-amber-500/20 rounded-md p-4">
+                                        <div className="bg-card border border-amber-500/20 rounded-md p-4 stagger-card">
                                                 <p className="text-2xl font-bold text-warning">
                                                         {unresolvedCount}
                                                 </p>
@@ -145,7 +145,7 @@ function Conflicts() {
                                                         {t("conflicts.unresolved")}
                                                 </p>
                                         </div>
-                                        <div className="bg-card border border-emerald-500/20 rounded-md p-4">
+                                        <div className="bg-card border border-emerald-500/20 rounded-md p-4 stagger-card">
                                                 <p className="text-2xl font-bold text-success">
                                                         {resolvedCount}
                                                 </p>
@@ -156,7 +156,7 @@ function Conflicts() {
 
                         {/* Table */}
                         {conflictsData && !isLoading && (
-                                <div className="bg-card border border-border rounded-md overflow-hidden">
+                                <div className="bg-card border border-border rounded-md overflow-hidden stagger-card">
                                         <div className="overflow-x-auto">
                                                 <table className="w-full text-sm" aria-label={t("conflicts.title")}>
                                                         <thead>
@@ -311,7 +311,7 @@ function Conflicts() {
                 {/* Resolve Modal */}
                 {resolveTarget && (
                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("conflicts.resolveConflict")}>
-                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+                                <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 stagger-card">
                                         <h3 className="text-lg font-semibold text-foreground mb-2">
                                                 {t("conflicts.resolveConflict")}
                                         </h3>

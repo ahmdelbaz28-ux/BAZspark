@@ -119,7 +119,7 @@ export function ExportsPage() {
                                 </p>
                         </div>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle>Select Project</CardTitle>
                                         <CardDescription>Choose which project to export</CardDescription>
@@ -127,7 +127,7 @@ export function ExportsPage() {
                                 <CardContent>
                                         <Label>Project</Label>
                                         <Select value={projectId} onValueChange={setSelectedProject}>
-											<SelectTrigger className="bg-card border-border text-foreground">
+											<SelectTrigger className="bg-card border-border text-foreground stagger-card">
                                                         <SelectValue placeholder="Select a project" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -143,7 +143,7 @@ export function ExportsPage() {
                                 </CardContent>
                         </Card>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <CardTitle>Export Formats</CardTitle>
                                         <CardDescription>Each format produces a real file with project data</CardDescription>

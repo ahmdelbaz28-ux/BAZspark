@@ -187,7 +187,7 @@ function ElementDetail() {
 									type="text"
 									value={editName}
 									onChange={(e) => setEditName(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all stagger-card"
 								/>
 							</div>
 							<div>
@@ -198,7 +198,7 @@ function ElementDetail() {
 									type="text"
 									value={editMaterial}
 									onChange={(e) => setEditMaterial(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all stagger-card"
 								/>
 							</div>
 							<div>
@@ -209,7 +209,7 @@ function ElementDetail() {
 									type="text"
 									value={editFireRating}
 									onChange={(e) => setEditFireRating(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all stagger-card"
 								/>
 							</div>
 							<div>
@@ -220,7 +220,7 @@ function ElementDetail() {
 									type="text"
 									value={editDescription}
 									onChange={(e) => setEditDescription(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all stagger-card"
 								/>
 							</div>
 						</div>
@@ -339,7 +339,7 @@ function ElementDetail() {
 								value={`${element.geometry.points.length} points`}
 							/>
 							{element.geometry.points.length > 0 && (
-								<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3">
+								<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3 stagger-card">
 									<pre className="text-xs text-muted-foreground">
 										{JSON.stringify(element.geometry.points, null, 2)}
 									</pre>

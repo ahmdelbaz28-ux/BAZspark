@@ -370,7 +370,7 @@ export function EngineeringPage() {
 
                                 {/* Voltage Drop Calculator */}
                                 {activeTab === "voltage-drop" && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Zap aria-hidden="true" className="h-5 w-5" />
@@ -395,7 +395,7 @@ export function EngineeringPage() {
                                                                                                 current: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="A"
                                                                         />
                                                                 </div>
@@ -412,7 +412,7 @@ export function EngineeringPage() {
                                                                                                 length: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="m"
                                                                         />
                                                                 </div>
@@ -429,7 +429,7 @@ export function EngineeringPage() {
                                                                                                 cableSize: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="mm²"
                                                                         />
                                                                 </div>
@@ -446,7 +446,7 @@ export function EngineeringPage() {
                                                                                                 voltage: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="V"
                                                                         />
                                                                 </div>
@@ -463,10 +463,10 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.material", "Material")}>
+                                                                                <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label={t("engineering.material", "Material")}>
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
-                                                                                <SelectContent className="bg-card border-border">
+                                                                                <SelectContent className="bg-card border-border stagger-card">
                                                                                         <SelectItem value="cu">
                                                                                                 {t("engineering.copper")}
                                                                                         </SelectItem>
@@ -553,7 +553,7 @@ export function EngineeringPage() {
 
                                 {/* Cable Sizing Calculator */}
                                 {activeTab === "cable-sizing" && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Cable aria-hidden="true" className="h-5 w-5" />
@@ -578,7 +578,7 @@ export function EngineeringPage() {
                                                                                                 loadCurrent: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="A"
                                                                         />
                                                                 </div>
@@ -595,7 +595,7 @@ export function EngineeringPage() {
                                                                                                 length: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="m"
                                                                         />
                                                                 </div>
@@ -612,7 +612,7 @@ export function EngineeringPage() {
                                                                                                 ambientTemp: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="°C"
                                                                         />
                                                                 </div>
@@ -629,10 +629,10 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.installationMethod", "Installation method")}>
+                                                                                <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label={t("engineering.installationMethod", "Installation method")}>
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
-                                                                                <SelectContent className="bg-card border-border">
+                                                                                <SelectContent className="bg-card border-border stagger-card">
                                                                                         <SelectItem value="free-air">
                                                                                                 {t("engineering.freeAir")}
                                                                                         </SelectItem>
@@ -719,7 +719,7 @@ export function EngineeringPage() {
 
                                 {/* Battery Calculation */}
                                 {activeTab === "battery-calc" && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Battery aria-hidden="true" className="h-5 w-5" />
@@ -744,7 +744,7 @@ export function EngineeringPage() {
                                                                                                 standbyDevices: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="#"
                                                                         />
                                                                 </div>
@@ -761,7 +761,7 @@ export function EngineeringPage() {
                                                                                                 standbyCurrent: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="mA"
                                                                         />
                                                                 </div>
@@ -778,7 +778,7 @@ export function EngineeringPage() {
                                                                                                 alarmDevices: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="#"
                                                                         />
                                                                 </div>
@@ -795,7 +795,7 @@ export function EngineeringPage() {
                                                                                                 alarmCurrent: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="mA"
                                                                         />
                                                                 </div>
@@ -812,7 +812,7 @@ export function EngineeringPage() {
                                                                                                 standbyHours: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="hours"
                                                                         />
                                                                 </div>
@@ -829,7 +829,7 @@ export function EngineeringPage() {
                                                                                                 alarmMinutes: e.target.value,
                                                                                         }))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground stagger-card"
                                                                                 placeholder="minutes"
                                                                         />
                                                                 </div>
@@ -906,7 +906,7 @@ export function EngineeringPage() {
 
                                 {/* Room Analysis Tab */}
                                 {activeTab === "room-analysis" && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Flame aria-hidden="true" className="h-5 w-5" />
@@ -941,7 +941,7 @@ export function EngineeringPage() {
 
                                 {/* Integration Pipeline Tab */}
                                 {activeTab === "integration" && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Network aria-hidden="true" className="h-5 w-5" />
