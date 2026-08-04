@@ -686,42 +686,51 @@ class DatabaseService:
 
         return Geometry(location=location)
 
-    def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _merge_properties(self, existing_props: Any, update_props: Any) -> dict[str, Any]:
+        """Merge updated property values with existing element properties."""
+        props_dict = existing_props.to_dict() if existing_props else {}
+        for field_name, value in update_props.model_dump(exclude_unset=True).items():
+            if value is not None:
+                if hasattr(value, 'value'):
+                    props_dict[field_name] = value.value
+                else:
+                    props_dict[field_name] = value
+        return props_dict
+
+    def _build_geometry_update(self, geometry: Any) -> dict[str, Any]:
+        """Convert a geometry update object to a dict suitable for persistence."""
+        return {
+            "points": [{"x": p.x, "y": p.y, "z": p.z} for p in geometry.points],
+            "polyline_closed": geometry.polyline_closed,
+        }
+
+    def _build_element_updates(self, element: UniversalElement, update_data: ElementUpdate) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        """Build the updates dict for an element update."""
+        updates: dict[str, Any] = {}
+
+        if update_data.properties:
+            updates["properties"] = self._merge_properties(element.properties, update_data.properties)
+
+        if update_data.geometry:
+            updates["geometry"] = self._build_geometry_update(update_data.geometry)
+
+        if update_data.source_file is not None:
+            updates["source_file"] = update_data.source_file
+        if update_data.last_modified_by is not None:
+            updates["last_modified_by"] = update_data.last_modified_by
+        if update_data.is_deleted is not None:
+            updates["is_deleted"] = update_data.is_deleted
+
+        return updates
+
+    def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:
         """Update an element."""
         with self._service_lock:
             element = self._data_model.get_element(element_id)
             if element is None:
                 return None
 
-            updates: dict[str, Any] = {}
-
-            if update_data.properties:
-                # Merge with existing properties
-                existing_props = element.properties
-                props_dict = existing_props.to_dict() if existing_props else {}
-
-                for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
-                    if value is not None:
-                        # Convert enum to string value
-                        if hasattr(value, 'value'):
-                            props_dict[field_name] = value.value
-                        else:
-                            props_dict[field_name] = value
-
-                updates["properties"] = props_dict
-
-            if update_data.geometry:
-                updates["geometry"] = {
-                    "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
-                    "polyline_closed": update_data.geometry.polyline_closed,
-                }
-
-            if update_data.source_file is not None:
-                updates["source_file"] = update_data.source_file
-            if update_data.last_modified_by is not None:
-                updates["last_modified_by"] = update_data.last_modified_by
-            if update_data.is_deleted is not None:
-                updates["is_deleted"] = update_data.is_deleted
+            updates = self._build_element_updates(element, update_data)
 
             # Get change source for audit trail
             source = ChangeSource.MANUAL
@@ -842,19 +851,36 @@ class DatabaseService:
             project_id=project_id,
         )
 
+    @staticmethod
+    def _sort_by_name(element: UniversalElement) -> str:
+        return element.properties.name or "" if element.properties else ""
+
+    @staticmethod
+    def _sort_by_element_type(element: UniversalElement) -> str:
+        if not element.properties:
+            return ""
+        etype = element.properties.element_type
+        return etype.value if hasattr(etype, 'value') else str(etype)
+
+    @staticmethod
+    def _sort_by_created(element: UniversalElement) -> str:
+        return element.created_timestamp.isoformat() if element.created_timestamp else ""
+
+    @staticmethod
+    def _sort_by_modified(element: UniversalElement) -> str:
+        return element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else ""
+
+    @staticmethod
+    def _sort_by_version(element: UniversalElement) -> Any:
+        return element.version
+
+    _SORT_KEY_DISPATCH: dict[str, Any] = {}
+
     def _get_sort_value(self, element: UniversalElement, sort_key: str) -> Any:
-        """Get a sort value from an element."""
-        if sort_key == "name" and element.properties:
-            return element.properties.name or ""
-        if sort_key == "element_type" and element.properties:
-            etype = element.properties.element_type
-            return etype.value if hasattr(etype, 'value') else str(etype)
-        if sort_key == "created_timestamp" and element.created_timestamp:
-            return element.created_timestamp.isoformat()
-        if sort_key == "last_modified_timestamp" and element.last_modified_timestamp:
-            return element.last_modified_timestamp.isoformat()
-        if sort_key == "version":
-            return element.version
+        """Get a sort value from an element using a class-level dispatch table."""
+        sorter = self._SORT_KEY_DISPATCH.get(sort_key)
+        if sorter is not None:
+            return sorter(element)
         return ""
 
     def _associate_element_with_project(self, element_id: str, project_id: str) -> None:
@@ -1492,7 +1518,7 @@ class DatabaseService:
                 "projects": projects,
                 "elements": exported_elements,
                 "connections": connections,
-                "conflicts": [c.to_dict() for c in self._data_model.conflicts.values()],
+                "conflicts": [c.to_dict() for c in self._data_model.detect_conflicts()],
                 "statistics": self._data_model.get_statistics(),
             }
 
@@ -1517,6 +1543,15 @@ class DatabaseService:
                 except Exception as e:
                     logger.debug("Failed to close DatabaseService during reset: %s", e)
                 cls._instance = None
+
+
+DatabaseService._SORT_KEY_DISPATCH = {
+    "name": DatabaseService._sort_by_name,
+    "element_type": DatabaseService._sort_by_element_type,
+    "created_timestamp": DatabaseService._sort_by_created,
+    "last_modified_timestamp": DatabaseService._sort_by_modified,
+    "version": DatabaseService._sort_by_version,
+}
 
 
 def get_db_service() -> DatabaseService:
