@@ -1,12 +1,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { RevitParametersPanel } from "@/components/engineering/RevitParametersPanel";
 import { api } from "@/services/api";
 import type { ElementUpdate } from "@/types";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 function ElementDetail() {
 	const { t } = useTranslation();
@@ -19,6 +21,15 @@ function ElementDetail() {
 	const [editFireRating, setEditFireRating] = useState("");
 	const [editDescription, setEditDescription] = useState("");
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useGSAP(() => {
+		gsap.fromTo(
+			".stagger-card",
+			{ y: 20, opacity: 0 },
+			{ y: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: "power2.out" }
+		);
+	}, { scope: containerRef });
 
 	const {
 		data: element,
@@ -105,9 +116,9 @@ function ElementDetail() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6" ref={containerRef}>
 			{/* Breadcrumb */}
-			<div className="flex items-center gap-2 text-sm">
+			<div className="flex items-center gap-2 text-sm stagger-card">
 				<Link
 					to="/elements"
 					className="text-muted-foreground hover:text-white transition-colors"
@@ -121,7 +132,7 @@ function ElementDetail() {
 			</div>
 
 			{/* Header */}
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 stagger-card">
 				<div>
 					<h1 className="text-2xl font-bold text-white">
 						{element.properties?.name ?? "Unnamed Element"}
@@ -132,14 +143,14 @@ function ElementDetail() {
 				</div>
 				<div className="flex gap-2">
 					<button type="button" onClick={startEditing}
-					className="px-4 py-2 bg-secondary hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+					className="px-4 py-2 min-h-[44px] bg-secondary hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
 				>
 						Edit
 					</button>
 					<button
 						type="button" onClick={() => setShowDeleteConfirm(true)}
 						disabled={deleteMutation.isPending}
-						className="px-4 py-2 bg-danger/10 hover:bg-danger text-danger hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+						className="px-4 py-2 min-h-[44px] bg-danger/10 hover:bg-danger text-danger hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 focus:ring-2 focus:ring-danger focus:outline-none"
 						aria-label={t("common.delete")}
 					>
 						{deleteMutation.isPending ? "Deleting…" : t("common.delete")}
@@ -147,8 +158,13 @@ function ElementDetail() {
 				</div>
 			</div>
 
+			{/* Bento Grid Layout */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* Main Column */}
+				<div className="lg:col-span-2 space-y-6">
+					
 			{/* Properties */}
-			<div className="bg-card border border-border rounded-md p-6">
+			<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
 				<h2 className="text-lg font-semibold text-white mb-4">Properties</h2>
 
 				{isEditing ? (
@@ -171,7 +187,7 @@ function ElementDetail() {
 									type="text"
 									value={editName}
 									onChange={(e) => setEditName(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
 								/>
 							</div>
 							<div>
@@ -182,7 +198,7 @@ function ElementDetail() {
 									type="text"
 									value={editMaterial}
 									onChange={(e) => setEditMaterial(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
 								/>
 							</div>
 							<div>
@@ -193,7 +209,7 @@ function ElementDetail() {
 									type="text"
 									value={editFireRating}
 									onChange={(e) => setEditFireRating(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
 								/>
 							</div>
 							<div>
@@ -204,14 +220,14 @@ function ElementDetail() {
 									type="text"
 									value={editDescription}
 									onChange={(e) => setEditDescription(e.target.value)}
-									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-primary focus:outline-none transition-all"
 								/>
 							</div>
 						</div>
 						<div className="flex justify-end gap-3">
 							<button
 							type="button" onClick={() => setIsEditing(false)}
-							className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
+							className="px-4 py-2 min-h-[44px] text-sm text-foreground/90 hover:text-white transition-colors focus:ring-2 focus:ring-primary focus:outline-none rounded-lg"
 						>
 							Cancel
 						</button>
@@ -227,7 +243,7 @@ function ElementDetail() {
 									});
 								}}
 								disabled={updateMutation.isPending}
-								className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+								className="px-4 py-2 min-h-[44px] bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background focus:outline-none"
 							>
 								{updateMutation.isPending ? "Saving…" : "Save Changes"}
 							</button>
@@ -301,7 +317,7 @@ function ElementDetail() {
 			</div>
 
 			{/* Geometry */}
-			<div className="bg-card border border-border rounded-md p-6">
+			<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
 				<h2 className="text-lg font-semibold text-white mb-4">Geometry</h2>
 				{element.geometry ? (
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -336,8 +352,20 @@ function ElementDetail() {
 				)}
 			</div>
 
+			{/* Revit Parameters */}
+			<div className="stagger-card">
+				{element.revit_element_id && (
+					<RevitParametersPanel elementId={id!} />
+				)}
+			</div>
+
+			</div>{/* End Main Column */}
+
+			{/* Sidebar Column */}
+			<div className="lg:col-span-1 space-y-6">
+
 			{/* Timestamps */}
-			<div className="bg-card border border-border rounded-md p-6">
+			<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
 				<h2 className="text-lg font-semibold text-white mb-4">Timestamps</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					<PropertyRow
@@ -360,13 +388,8 @@ function ElementDetail() {
 				</div>
 			</div>
 
-			{/* Revit Parameters */}
-			{element.revit_element_id && (
-				<RevitParametersPanel elementId={id!} />
-			)}
-
 			{/* Connections */}
-			<div className="bg-card border border-border rounded-md p-6">
+			<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
 				<h2 className="text-lg font-semibold text-white mb-4">
 					Connections ({connections.length})
 				</h2>
@@ -398,6 +421,9 @@ function ElementDetail() {
 					<p className="text-muted-foreground text-sm">No connections found</p>
 				)}
 			</div>
+
+			</div>{/* End Sidebar Column */}
+			</div>{/* End Bento Grid */}
 
 			{/* Accessible Delete Confirmation Dialog */}
 			<ConfirmDialog
