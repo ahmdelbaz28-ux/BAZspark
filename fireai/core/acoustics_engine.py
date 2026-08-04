@@ -1,5 +1,5 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 """
 acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
 ======================================================================
@@ -571,7 +571,7 @@ class AcousticsEngine:
         barriers: list[Barrier] | None = None,
         mode: str = "public",
         room_absorption_m2: float | None = None,
-        _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        _room_volume_m3: float | None = None,  # NOSONAR:S1172: parameter retained for API stability
     ) -> AcousticCoverageResult:
         """
         Verify NFPA 72 §18.4 audible notification coverage.
@@ -689,37 +689,8 @@ class AcousticsEngine:
         # ── Aggregate NFPA 72 compliance ─────────────────────────────
         _min_above_ambient, _absolute_min, nfpa_section = AUDIBLE_REQUIREMENTS[mode]
 
-        violations: list[str] = []
-        for v in room_result.violations:
-            # RoomAcousticResult.violations are dicts with 'message' key
-            if isinstance(v, dict):
-                violations.append(str(v.get("message", v)))
-            else:
-                violations.append(str(v))
-
-        # Additional validation: sleeping-area absolute minimum
-        if mode == "sleeping" and room_result.worst_point_spl < NFPA72_SLEEPING_ABSOLUTE_MIN_DBA:
-            violations.append(
-                f"Sleeping area SPL {room_result.worst_point_spl:.1f} dBA "
-                f"is below the absolute minimum "
-                f"{NFPA72_SLEEPING_ABSOLUTE_MIN_DBA:.0f} dBA required by "
-                f"NFPA 72 §18.4.2."
-            )
-
-        # Maximum level check (may already be in room_result.violations
-        # but we verify explicitly for the unified result)
-        if room_result.worst_point_spl > NFPA72_MAX_DBA:
-            violations.append(
-                f"Sound level {room_result.worst_point_spl:.1f} dBA "
-                f"exceeds maximum {NFPA72_MAX_DBA:.0f} dBA per "
-                f"NFPA 72 §18.4.1.2."
-            )
-
-        # Collect all referenced NFPA 72 sections
-        nfpa_sections = [nfpa_section, "§18.4.1.2"]
-        if mode == "sleeping":
-            nfpa_sections.append("§18.4.2")
-
+        violations = self._build_violations(room_result, mode)
+        nfpa_sections = self._build_nfpa_sections(nfpa_section, mode)
         compliant = room_result.compliant and len(violations) == 0
 
         result = AcousticCoverageResult(
@@ -750,11 +721,51 @@ class AcousticsEngine:
 
         return result
 
+    def _build_violations(
+        self,
+        room_result: RoomAcousticResult,
+        mode: str,
+    ) -> list[str]:
+        """Aggregate NFPA 72 compliance violations from a room result."""
+        violations: list[str] = []
+        for v in room_result.violations:
+            # RoomAcousticResult.violations are dicts with 'message' key
+            if isinstance(v, dict):
+                violations.append(str(v.get("message", v)))
+            else:
+                violations.append(str(v))
+
+        # Additional validation: sleeping-area absolute minimum
+        if mode == "sleeping" and room_result.worst_point_spl < NFPA72_SLEEPING_ABSOLUTE_MIN_DBA:
+            violations.append(
+                f"Sleeping area SPL {room_result.worst_point_spl:.1f} dBA "
+                f"is below the absolute minimum "
+                f"{NFPA72_SLEEPING_ABSOLUTE_MIN_DBA:.0f} dBA required by "
+                f"NFPA 72 §18.4.2."
+            )
+
+        # Maximum level check (may already be in room_result.violations
+        # but we verify explicitly for the unified result)
+        if room_result.worst_point_spl > NFPA72_MAX_DBA:
+            violations.append(
+                f"Sound level {room_result.worst_point_spl:.1f} dBA "
+                f"exceeds maximum {NFPA72_MAX_DBA:.0f} dBA per "
+                f"NFPA 72 §18.4.1.2."
+            )
+        return violations
+
+    def _build_nfpa_sections(self, nfpa_section: str, mode: str) -> list[str]:
+        """Collect all referenced NFPA 72 sections for the result."""
+        nfpa_sections = [nfpa_section, "§18.4.1.2"]
+        if mode == "sleeping":
+            nfpa_sections.append("§18.4.2")
+        return nfpa_sections
+
     # ------------------------------------------------------------------
     # ISA-TR84.00.07 — UGLD Ray Trace (Single Sensor)
     # ------------------------------------------------------------------
 
-    def ugld_raytrace(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_raytrace(  # NOSONAR:S3776 — cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_point: tuple[float, float, float],
         sensor_point: tuple[float, float, float],
@@ -988,7 +999,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — Multi-Sensor UGLD Coverage
     # ------------------------------------------------------------------
 
-    def ugld_multi_sensor_coverage(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_multi_sensor_coverage(  # NOSONAR:S3776 — cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_points: list[tuple[float, float, float]],
         sensor_points: list[tuple[float, float, float]],
