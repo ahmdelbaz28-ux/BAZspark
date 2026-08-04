@@ -23,9 +23,15 @@
 }
 
 @layer components {
-	button, input, select, textarea {
-		@apply min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none transition-all;
-	}
+        button, input, select, textarea {
+                min-height: 44px;
+                outline: none;
+                transition: all 0.2s ease;
+        }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+                outline: 2px solid rgba(34, 211, 238, 0.6);
+                outline-offset: 2px;
+        }
 }
 
 /* Technical utility classes */
