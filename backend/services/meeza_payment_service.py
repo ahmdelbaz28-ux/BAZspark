@@ -81,6 +81,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+# SonarCloud S1192: avoid duplicating this literal across _paymob_checkout
+_JSON_CONTENT_TYPE = "application/json"
+
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -661,7 +664,7 @@ def initiate_checkout(
         # caller can configure a supported provider.
         if cfg.psp_name == PSPName.PAYMOB:
             checkout_url, psp_order_id, psp_payment_key, raw = _paymob_checkout(
-                cfg, order, txn_id, billing_data or {},
+                cfg, order, billing_data or {},
             )
             method = "iframe"
         else:
@@ -701,7 +704,6 @@ def initiate_checkout(
 def _paymob_checkout(
     cfg: MeezaConfig,
     order: Dict[str, Any],
-    txn_id: str,
     billing_data: Dict[str, Any],
 ) -> Tuple[str, str, str, Dict[str, Any]]:
     """PayMob-specific checkout flow. Returns (iframe_url, psp_order_id,
@@ -719,7 +721,7 @@ def _paymob_checkout(
     auth_req = urllib.request.Request(
         f"{base}/auth/tokens",
         data=json.dumps({"api_key": cfg.api_key}).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(auth_req, timeout=10) as resp:  # nosec: B310 — verified URL
@@ -738,7 +740,7 @@ def _paymob_checkout(
             "merchant_order_id": order["id"],
             "items": [],
         }).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(order_req, timeout=10) as resp:  # nosec: B310
@@ -772,7 +774,7 @@ def _paymob_checkout(
             "integration_id": int(os.getenv("MEEZA_PAYMOB_INTEGRATION_ID", "0")),
             "lock_order_when_paid": "true",
         }).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(pay_req, timeout=10) as resp:  # nosec: B310
@@ -786,6 +788,60 @@ def _paymob_checkout(
         "payment_key_prefix": payment_key[:8] + "...",
         "iframe_url_prefix": iframe_url[:60] + "...",
     }
+
+
+def _extract_webhook_fields(
+    payload_parsed: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Extract standard fields from a Meeza/PayMob webhook payload.
+
+    Tolerates both nested (``{obj: {...}}``) and flat shapes. Returns a dict
+    with merchant_order_id, psp_txn_id, amount_cents, and the boolean flags
+    success / pending / is_voided / is_refunded / expired_flag.
+    """
+    obj = payload_parsed.get("obj") or payload_parsed  # tolerate flat shape
+    psp_order = obj.get("order") or {}
+    # NOTE: psp_order.get("id") is the PSP-side numeric order id. We don't
+    # store it here — it was already persisted on the payment_transactions
+    # row when /checkout was called. We only need merchant_order_id (our
+    # own order id) to locate the order.
+    merchant_order_id = (
+        psp_order.get("merchant_order_id")
+        or payload_parsed.get("merchant_order_id")
+        or ""
+    )
+    return {
+        "merchant_order_id": merchant_order_id,
+        "psp_txn_id": str(obj.get("id") or payload_parsed.get("txn_id") or ""),
+        "amount_cents": int(
+            obj.get("amount_cents") or payload_parsed.get("amount_cents") or 0
+        ),
+        "success_flag": bool(obj.get("success")),
+        "pending_flag": bool(obj.get("pending")),
+        "is_voided": bool(obj.get("is_voided") or obj.get("voided")),
+        "is_refunded": bool(obj.get("is_refunded") or obj.get("refunded")),
+        "expired_flag": bool(obj.get("expired") or payload_parsed.get("expired")),
+    }
+
+
+def _map_psp_flags_to_status(
+    fields: Dict[str, Any],
+) -> Tuple[TxnStatus, str]:
+    """Map PSP boolean flags to (TxnStatus, order_status) pair.
+
+    Order of precedence: refund > void > expired > success > pending > failed.
+    """
+    if fields["is_refunded"]:
+        return TxnStatus.FAILED, OrderStatus.REFUNDED.value
+    if fields["is_voided"]:
+        return TxnStatus.CANCELLED, OrderStatus.CANCELLED.value
+    if fields["expired_flag"]:
+        return TxnStatus.EXPIRED, OrderStatus.EXPIRED.value
+    if fields["success_flag"] and not fields["pending_flag"]:
+        return TxnStatus.SUCCESS, OrderStatus.PAID.value
+    if fields["pending_flag"]:
+        return TxnStatus.PENDING, OrderStatus.PENDING.value
+    return TxnStatus.FAILED, OrderStatus.FAILED.value
 
 
 def handle_meeza_webhook(
@@ -831,58 +887,16 @@ def handle_meeza_webhook(
             logger.warning("Meeza Payment: webhook rejected — invalid JSON (%s)", exc)
             return {"status": "rejected", "http_status": 400, "reason": "invalid_json"}
 
-    # 3. Extract standard fields. PayMob sends:
-    #    {
-    #      "type": "TRANSACTION", "obj": {
-    #        "order": {"id": 12345, "merchant_order_id": "..."},
-    #        "id": 67890, "success": true, "pending": false,
-    #        "amount_cents": 50000, "currency": "EGP",
-    #        "data": {"txn_response_code": "...", "meeza_card_type": "..."},
-    #        "is_standalone_payment": true, "source_data": {"sub_type": "meeza"}
-    #      }
-    #    }
-    obj = payload_parsed.get("obj") or payload_parsed  # tolerate flat shape
-    psp_order = obj.get("order") or {}
-    # NOTE: psp_order.get("id") is the PSP-side numeric order id. We don't
-    # store it here — it was already persisted on the payment_transactions
-    # row when /checkout was called. We only need merchant_order_id (our
-    # own order id) to locate the order.
-    merchant_order_id = (
-        psp_order.get("merchant_order_id")
-        or payload_parsed.get("merchant_order_id")
-        or ""
-    )
-    psp_txn_id = str(obj.get("id") or payload_parsed.get("txn_id") or "")
-    amount_cents = int(obj.get("amount_cents") or payload_parsed.get("amount_cents") or 0)
-    success_flag = bool(obj.get("success"))
-    pending_flag = bool(obj.get("pending"))
-    is_voided = bool(obj.get("is_voided") or obj.get("voided"))
-    is_refunded = bool(obj.get("is_refunded") or obj.get("refunded"))
-    expired_flag = bool(obj.get("expired") or payload_parsed.get("expired"))
-
+    # 3. Extract standard fields (PayMob nested shape or flat).
+    fields = _extract_webhook_fields(payload_parsed)
+    merchant_order_id = fields["merchant_order_id"]
     if not merchant_order_id:
         logger.warning("Meeza Payment: webhook rejected — no merchant_order_id")
         return {"status": "rejected", "http_status": 400, "reason": "missing_order_id"}
 
-    # Map PSP flags → our TxnStatus
-    if is_refunded:
-        txn_status = TxnStatus.FAILED  # refund tracked separately; txn itself terminates as failed
-        order_status = OrderStatus.REFUNDED.value
-    elif is_voided:
-        txn_status = TxnStatus.CANCELLED
-        order_status = OrderStatus.CANCELLED.value
-    elif expired_flag:
-        txn_status = TxnStatus.EXPIRED
-        order_status = OrderStatus.EXPIRED.value
-    elif success_flag and not pending_flag:
-        txn_status = TxnStatus.SUCCESS
-        order_status = OrderStatus.PAID.value
-    elif pending_flag:
-        txn_status = TxnStatus.PENDING
-        order_status = OrderStatus.PENDING.value
-    else:
-        txn_status = TxnStatus.FAILED
-        order_status = OrderStatus.FAILED.value
+    psp_txn_id = fields["psp_txn_id"]
+    amount_cents = fields["amount_cents"]
+    txn_status, order_status = _map_psp_flags_to_status(fields)
 
     idem_key = derive_idempotency_key(
         psp_name=cfg.psp_name.value,
@@ -894,11 +908,43 @@ def handle_meeza_webhook(
     event_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     raw_json = json.dumps(payload_parsed, separators=(",", ":"))
+    sig_truncated = signature_header[:128] if signature_header else ""
 
-    # 4. Redlock fence (best-effort)
+    # 4-8. Persistence + atomic transitions inside the Redlock fence
+    return _persist_webhook_event(
+        cfg=cfg,
+        merchant_order_id=merchant_order_id,
+        txn_status=txn_status,
+        order_status=order_status,
+        idem_key=idem_key,
+        event_id=event_id,
+        now=now,
+        raw_json=raw_json,
+        sig_truncated=sig_truncated,
+    )
+
+
+def _persist_webhook_event(
+    *,
+    cfg: MeezaConfig,
+    merchant_order_id: str,
+    txn_status: TxnStatus,
+    order_status: str,
+    idem_key: str,
+    event_id: str,
+    now: str,
+    raw_json: str,
+    sig_truncated: str,
+) -> Dict[str, Any]:
+    """Insert the webhook event, link the transaction, and apply the atomic
+    order status transition. Extracted from `handle_meeza_webhook` to keep
+    cognitive complexity below the SonarCloud S3776 threshold (15).
+
+    Returns the webhook result dict (processed / duplicate / order_already_terminal).
+    """
     with _RedlockFence(f"order:{merchant_order_id}", ttl_ms=5000):
-        # 5. Idempotent event insert — UNIQUE constraint guards duplicates
         with _get_conn() as conn:
+            # 5. Idempotent event insert — UNIQUE constraint guards duplicates
             try:
                 conn.execute(
                     """
@@ -910,7 +956,7 @@ def handle_meeza_webhook(
                     """,
                     (event_id, merchant_order_id, txn_status.value,
                      cfg.psp_name.value, idem_key, raw_json,
-                     signature_header[:128] if signature_header else "", now),
+                     sig_truncated, now),
                 )
             except sqlite3.IntegrityError:
                 # Duplicate — already processed. Return cached success.
@@ -937,9 +983,7 @@ def handle_meeza_webhook(
                     "UPDATE payment_events SET transaction_id = ? WHERE id = ?",
                     (txn_id_internal, event_id),
                 )
-
-            # 7. Update transaction status (atomic — only if not already terminal)
-            if txn_id_internal:
+                # 7. Update transaction status (atomic — only if not terminal)
                 conn.execute(
                     """
                     UPDATE payment_transactions
@@ -949,71 +993,101 @@ def handle_meeza_webhook(
                     """,
                     (txn_status.value, now,
                      now if txn_status == TxnStatus.SUCCESS else None,
-                     raw_json,
-                     signature_header[:128] if signature_header else "",
-                     txn_id_internal),
+                     raw_json, sig_truncated, txn_id_internal),
                 )
 
             # 8. Atomic order status transition.
-            #    Critical: `status = 'pending'` in the WHERE clause ensures only
-            #    the first terminal-status webhook flips the order. Subsequent
-            #    webhooks for the same order (e.g. duplicate SUCCESS) hit the
-            #    idempotency guard above; this UPDATE is a second layer of
-            #    protection against double-fulfillment for edge cases like
-            #    a SUCCESS arriving milliseconds before a CANCELLED.
-            if order_status in (
-                OrderStatus.PAID.value, OrderStatus.FAILED.value,
-                OrderStatus.EXPIRED.value, OrderStatus.CANCELLED.value,
-            ):
-                cursor = conn.execute(
-                    """
-                    UPDATE orders
-                       SET status = ?, updated_at = ?,
-                           paid_at = CASE WHEN ? = 'paid' THEN ? ELSE paid_at END
-                     WHERE id = ? AND status = 'pending'
-                    """,
-                    (order_status, now, order_status,
-                     now if order_status == OrderStatus.PAID.value else None,
-                     merchant_order_id),
-                )
-                rows_affected = cursor.rowcount
-                if rows_affected == 0:
-                    # Order was already in a terminal state (paid/failed/etc).
-                    # The WHERE clause `status='pending'` matched 0 rows, so the
-                    # status was NOT overwritten. This is the second layer of
-                    # idempotency beyond the payment_events.idempotency_key
-                    # UNIQUE constraint. It guards against edge cases like a
-                    # delayed CANCELLED arriving after a SUCCESS.
-                    actual = conn.execute(
-                        "SELECT status FROM orders WHERE id = ?",
-                        (merchant_order_id,),
-                    ).fetchone()
-                    actual_status = actual["status"] if actual else "unknown"
-                    logger.info(
-                        "Meeza Payment: order %s already in terminal state '%s' — "
-                        "incoming %s webhook did NOT flip it (idempotent guard)",
-                        merchant_order_id[:8], actual_status, order_status,
-                    )
-                    return {
-                        "status": "duplicate",
-                        "http_status": 200,
-                        "order_id": merchant_order_id,
-                        "transaction_status": txn_status.value,
-                        # Return the ACTUAL DB status, not the input — so the
-                        # caller knows the truth, not what the PSP claimed.
-                        "order_status": actual_status,
-                        "idempotency_key": idem_key,
-                        "reason": "order_already_terminal",
-                    }
-                elif rows_affected == 1 and order_status == OrderStatus.PAID.value:
-                    # Fulfillment hook — extend here for subscription grants,
-                    # license activations, etc. Kept as a no-op log for now.
-                    logger.info(
-                        "Meeza Payment: order %s FULFILLED (paid) — "
-                        "trigger subscription grant here",
-                        merchant_order_id[:8],
-                    )
+            return _apply_order_status_transition(
+                conn=conn,
+                merchant_order_id=merchant_order_id,
+                txn_status=txn_status,
+                order_status=order_status,
+                idem_key=idem_key,
+                now=now,
+            )
 
+
+def _apply_order_status_transition(
+    *,
+    conn: sqlite3.Connection,
+    merchant_order_id: str,
+    txn_status: TxnStatus,
+    order_status: str,
+    idem_key: str,
+    now: str,
+) -> Dict[str, Any]:
+    """Atomically flip the order status from 'pending' to the terminal
+    state. Returns the appropriate webhook result.
+
+    Critical: `status = 'pending'` in the WHERE clause ensures only the
+    first terminal-status webhook flips the order. Subsequent webhooks
+    for the same order (e.g. duplicate SUCCESS) hit the idempotency guard
+    above; this UPDATE is a second layer of protection against
+    double-fulfillment for edge cases like a SUCCESS arriving
+    milliseconds before a CANCELLED.
+    """
+    if order_status not in (
+        OrderStatus.PAID.value, OrderStatus.FAILED.value,
+        OrderStatus.EXPIRED.value, OrderStatus.CANCELLED.value,
+    ):
+        # PENDING / REFUNDED — no order transition, just log and return
+        logger.info(
+            "Meeza Payment: webhook processed (order=%s, txn_status=%s, "
+            "order_status=%s, idem=%s...)",
+            merchant_order_id[:8], txn_status.value, order_status, idem_key[:8],
+        )
+        return {
+            "status": "processed",
+            "http_status": 200,
+            "order_id": merchant_order_id,
+            "transaction_status": txn_status.value,
+            "order_status": order_status,
+            "idempotency_key": idem_key,
+        }
+
+    cursor = conn.execute(
+        """
+        UPDATE orders
+           SET status = ?, updated_at = ?,
+               paid_at = CASE WHEN ? = 'paid' THEN ? ELSE paid_at END
+         WHERE id = ? AND status = 'pending'
+        """,
+        (order_status, now, order_status,
+         now if order_status == OrderStatus.PAID.value else None,
+         merchant_order_id),
+    )
+    rows_affected = cursor.rowcount
+    if rows_affected == 0:
+        # Order was already in a terminal state. The WHERE clause `status='pending'`
+        # matched 0 rows so the status was NOT overwritten. Return the ACTUAL
+        # DB status so the caller knows the truth.
+        actual = conn.execute(
+            "SELECT status FROM orders WHERE id = ?",
+            (merchant_order_id,),
+        ).fetchone()
+        actual_status = actual["status"] if actual else "unknown"
+        logger.info(
+            "Meeza Payment: order %s already in terminal state '%s' — "
+            "incoming %s webhook did NOT flip it (idempotent guard)",
+            merchant_order_id[:8], actual_status, order_status,
+        )
+        return {
+            "status": "duplicate",
+            "http_status": 200,
+            "order_id": merchant_order_id,
+            "transaction_status": txn_status.value,
+            "order_status": actual_status,
+            "idempotency_key": idem_key,
+            "reason": "order_already_terminal",
+        }
+    if order_status == OrderStatus.PAID.value:
+        # Fulfillment hook — extend here for subscription grants, license
+        # activations, etc. Kept as a no-op log for now.
+        logger.info(
+            "Meeza Payment: order %s FULFILLED (paid) — "
+            "trigger subscription grant here",
+            merchant_order_id[:8],
+        )
     logger.info(
         "Meeza Payment: webhook processed (order=%s, txn_status=%s, "
         "order_status=%s, idem=%s...)",

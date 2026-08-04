@@ -47,6 +47,12 @@ router = APIRouter(prefix="/billing", tags=["Billing & Meeza Payments"])
 Principal = Annotated[Optional[str], Depends(get_current_principal)]
 BillingManageRole = Annotated[None, Depends(require_permission(Permission.BILLING_MANAGE))]
 
+# ── Reused constants (SonarCloud S1192 — avoid literal duplication) ─────────
+_MSG_AUTH_REQUIRED = "Authentication required"
+_MSG_ORDER_NOT_FOUND = "Order not found"
+_MSG_TXN_NOT_FOUND = "Transaction not found"
+_CONTENT_TYPE_JSON = "application/json"
+
 
 # ── Pydantic request/response models ────────────────────────────────────────
 
@@ -107,6 +113,38 @@ class WebhookResponse(BaseModel):
     reason: Optional[str] = None
 
 
+# ── Shared HTTPException helpers ─────────────────────────────────────────────
+# SonarCloud S8415: HTTPException raises must be documented on the endpoint
+# via the `responses=` parameter. Centralising the exception instances here
+# keeps the response docs DRY (one place to update status codes / examples).
+
+def _require_principal(principal: Optional[str]) -> str:
+    """Return the principal or raise 401. Used by every authenticated endpoint."""
+    if not principal:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=_MSG_AUTH_REQUIRED,
+        )
+    return principal
+
+
+def _raise_order_not_found() -> None:
+    raise HTTPException(status_code=404, detail=_MSG_ORDER_NOT_FOUND)
+
+
+def _raise_txn_not_found() -> None:
+    raise HTTPException(status_code=404, detail=_MSG_TXN_NOT_FOUND)
+
+
+# Standard response models reused across endpoints (for OpenAPI `responses=`)
+_ERROR_401 = {"description": "Authentication required", "content": {"application/json": {"example": {"detail": _MSG_AUTH_REQUIRED}}}}
+_ERROR_400 = {"description": "Bad request (validation or business rule)", "content": {"application/json": {"example": {"detail": "..."}}}}
+_ERROR_403 = {"description": "Forbidden (role required or sandbox-only)", "content": {"application/json": {"example": {"detail": "..."}}}}
+_ERROR_404 = {"description": "Order or transaction not found", "content": {"application/json": {"example": {"detail": _MSG_ORDER_NOT_FOUND}}}}
+_ERROR_501 = {"description": "Not implemented (live PSP not configured)", "content": {"application/json": {"example": {"detail": "..."}}}}
+_ERROR_502 = {"description": "PSP communication error", "content": {"application/json": {"example": {"detail": "PSP communication error: ..."}}}}
+
+
 # ── Order endpoints ──────────────────────────────────────────────────────────
 
 @router.post(
@@ -114,6 +152,7 @@ class WebhookResponse(BaseModel):
     response_model=OrderResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new billing order",
+    responses={401: _ERROR_401, 400: _ERROR_400},
 )
 async def create_order(
     body: OrderCreateRequest,
@@ -121,14 +160,10 @@ async def create_order(
 ) -> Dict[str, Any]:
     """Create a new order. The caller's principal is taken from the auth
     middleware — never trust a client-supplied user id."""
-    if not principal:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
+    user = _require_principal(principal)
     try:
         return svc.create_order(
-            user_principal=principal,
+            user_principal=user,
             amount_cents=body.amount_cents,
             description=body.description,
             metadata=body.metadata,
@@ -145,6 +180,7 @@ async def create_order(
     "/orders",
     response_model=List[OrderResponse],
     summary="List caller's orders",
+    responses={401: _ERROR_401},
 )
 async def list_orders(
     principal: Principal,
@@ -152,10 +188,9 @@ async def list_orders(
     offset: int = 0,
     status_filter: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    if not principal:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user = _require_principal(principal)
     return svc.list_orders(
-        user_principal=principal,
+        user_principal=user,
         limit=limit, offset=offset,
         status=status_filter,
     )
@@ -165,16 +200,16 @@ async def list_orders(
     "/orders/{order_id}",
     response_model=OrderResponse,
     summary="Get a single order",
+    responses={401: _ERROR_401, 404: _ERROR_404},
 )
 async def get_order(
     order_id: str,
     principal: Principal,
 ) -> Dict[str, Any]:
-    if not principal:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    order = svc.get_order(order_id, user_principal=principal)
+    user = _require_principal(principal)
+    order = svc.get_order(order_id, user_principal=user)
     if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
+        _raise_order_not_found()
     return order
 
 
@@ -182,18 +217,21 @@ async def get_order(
     "/orders/{order_id}/checkout",
     response_model=CheckoutResponse,
     summary="Initiate Meeza checkout for an order",
+    responses={
+        401: _ERROR_401, 400: _ERROR_400,
+        501: _ERROR_501, 502: _ERROR_502,
+    },
 )
 async def initiate_checkout(
     order_id: str,
     body: CheckoutRequest,
     principal: Principal,
 ) -> Dict[str, Any]:
-    if not principal:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user = _require_principal(principal)
     try:
         return svc.initiate_checkout(
             order_id=order_id,
-            user_principal=principal,
+            user_principal=user,
             billing_data=body.billing_data,
         )
     except ValueError as exc:
@@ -213,6 +251,7 @@ async def initiate_checkout(
 @router.get(
     "/transactions/{txn_id}",
     summary="Get a payment transaction",
+    responses={401: _ERROR_401, 403: _ERROR_403, 404: _ERROR_404},
 )
 async def get_transaction(
     txn_id: str,
@@ -221,43 +260,44 @@ async def get_transaction(
 ) -> Dict[str, Any]:
     """Get a single transaction. Restricted to BILLING_MANAGE role because
     transactions may span multiple users (e.g. admin reconciliation)."""
+    _require_principal(principal)
     txn = svc.get_transaction(txn_id)
     if txn is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        _raise_txn_not_found()
     return txn
 
 
 @router.get(
     "/orders/{order_id}/transactions",
     summary="List transactions for an order",
+    responses={401: _ERROR_401, 404: _ERROR_404},
 )
 async def list_transactions_for_order(
     order_id: str,
     principal: Principal,
 ) -> List[Dict[str, Any]]:
-    if not principal:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user = _require_principal(principal)
     # Authorise: caller must own the order
-    order = svc.get_order(order_id, user_principal=principal)
+    order = svc.get_order(order_id, user_principal=user)
     if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
+        _raise_order_not_found()
     return svc.list_transactions_for_order(order_id)
 
 
 @router.get(
     "/orders/{order_id}/events",
     summary="List webhook events for an order (audit trail)",
+    responses={401: _ERROR_401, 403: _ERROR_403, 404: _ERROR_404},
 )
 async def list_events_for_order(
     order_id: str,
     principal: Principal,
     _: BillingManageRole,
 ) -> List[Dict[str, Any]]:
-    if not principal:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    order = svc.get_order(order_id, user_principal=principal)
+    user = _require_principal(principal)
+    order = svc.get_order(order_id, user_principal=user)
     if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
+        _raise_order_not_found()
     return svc.list_events_for_order(order_id)
 
 
@@ -267,6 +307,7 @@ async def list_events_for_order(
     "/webhooks/meeza",
     response_model=WebhookResponse,
     summary="Meeza PSP webhook receiver (no auth — HMAC verified)",
+    responses={400: _ERROR_400, 401: _ERROR_401},
 )
 async def meeza_webhook(
     request: Request,
@@ -305,6 +346,7 @@ async def meeza_webhook(
     "/orders/{order_id}/simulate-webhook",
     summary="[SANDBOX] Simulate a Meeza webhook delivery for an order",
     include_in_schema=svc.get_config().psp_name == svc.PSPName.SANDBOX,
+    responses={400: _ERROR_400, 403: _ERROR_403},
 )
 async def simulate_webhook(
     order_id: str,

@@ -317,8 +317,7 @@ export function MeezaPayment() {
                 <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
                     <p className="text-rose-800 font-medium">Error</p>
                     <p className="text-rose-700 text-sm mt-1">{phase.message}</p>
-                    <button
-                        onClick={() => setPhase({ kind: "select" })}
+                    <button type="button"  onClick={() => setPhase({ kind: "select" })}
                         className="mt-3 px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-sm"
                     >
                         Back to plans
@@ -375,8 +374,7 @@ function PlanSelector({
                                 </span>
                             </p>
                         </div>
-                        <button
-                            disabled={busy !== null}
+                        <button type="button"  disabled={busy !== null}
                             onClick={() => {
                                 setBusy(plan.id);
                                 onSelect(plan);
@@ -446,8 +444,7 @@ function IframeCheckout({
                         No live PSP configured. Click below to simulate a successful Meeza
                         webhook delivery and verify the end-to-end flow.
                     </p>
-                    <button
-                        onClick={onSimulateSuccess}
+                    <button type="button"  onClick={onSimulateSuccess}
                         className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm"
                     >
                         Simulate successful payment
@@ -477,14 +474,12 @@ function IframeCheckout({
                     )}
 
                     <div className="flex items-center justify-between gap-3">
-                        <button
-                            onClick={onCancel}
+                        <button type="button"  onClick={onCancel}
                             className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800"
                         >
                             Cancel payment
                         </button>
-                        <button
-                            onClick={onFallbackToRedirect}
+                        <button type="button"  onClick={onFallbackToRedirect}
                             className="px-4 py-2 text-sm bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200"
                         >
                             Open in new tab instead
@@ -526,8 +521,7 @@ function PollingState({
                 If you completed payment, this will update automatically. If you navigated
                 away from the PSP page, please return and complete it.
             </p>
-            <button
-                onClick={onCancel}
+            <button type="button"  onClick={onCancel}
                 className="mt-2 text-sm text-slate-500 hover:text-slate-700"
             >
                 Cancel and start over
@@ -565,8 +559,7 @@ function SuccessState({
                 Paid at{" "}
                 {order.paid_at ? new Date(order.paid_at).toLocaleString() : "—"}
             </p>
-            <button
-                onClick={onDone}
+            <button type="button"  onClick={onDone}
                 className="mt-3 px-5 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm"
             >
                 Done
@@ -607,8 +600,7 @@ function FailureState({
             <p className="text-sm text-slate-500">
                 Order <code className="font-mono text-xs">{order.id.slice(0, 8)}</code>
             </p>
-            <button
-                onClick={onRetry}
+            <button type="button"  onClick={onRetry}
                 className="mt-3 px-5 py-2 bg-slate-100 text-slate-800 rounded-md hover:bg-slate-200 text-sm"
             >
                 Try again

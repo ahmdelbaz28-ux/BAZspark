@@ -41,7 +41,7 @@ export function BillingPage() {
                     <div className="p-4 bg-white border border-slate-200 rounded-lg">
                         <h3 className="font-semibold text-slate-700 mb-1">Atomic transitions</h3>
                         <p>
-                            Order status changes are guarded by atomic SQL UPDATEs with a
+                            Order status changes are guarded by atomic SQL UPDATEs with a{" "}
                             <code className="px-1">status = 'pending'</code> filter — only
                             the first terminal webhook flips the order.
                         </p>
