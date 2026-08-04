@@ -306,7 +306,7 @@ _REDIS_CLIENT = None
 _REDIS_CLIENT_LOCK = threading.Lock()
 
 
-def _get_redis_client() -> Optional["redis.Redis"]:
+def _get_redis_client() -> Any:
     """Return a Redis client if REDIS_URL is set and redis-py is installed.
 
     Returns None otherwise. The caller must handle the None case gracefully
