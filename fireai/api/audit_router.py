@@ -1,5 +1,7 @@
+from typing import Any, Dict, List
+
 from fastapi import APIRouter
-from typing import Dict, Any, List
+
 from fireai.audit.merkle import get_audit_tree
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
