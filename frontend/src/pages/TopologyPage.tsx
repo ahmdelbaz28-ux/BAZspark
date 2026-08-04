@@ -216,7 +216,7 @@ export function TopologyPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-card border border-border">
+          <TabsList className="bg-card border border-border stagger-card">
             <TabsTrigger
               value="elements"
               className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"

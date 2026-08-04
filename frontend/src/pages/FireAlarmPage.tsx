@@ -388,9 +388,9 @@ export function FireAlarmPage() {
                         aria-label={t("fireAlarm.dashboard")}
                 >
                         {/* Zone Navigator - Left sidebar */}
-                        <div className="w-64 h-full bg-card border-r border-border p-2">
+                        <div className="w-64 h-full bg-card border-r border-border p-2 stagger-card">
                                 {zonesLoading ? (
-                                        <Skeleton className="h-full w-full bg-card" />
+                                        <Skeleton className="h-full w-full bg-card stagger-card" />
                                 ) : (
                                         <ZoneNavigator
                                                 zones={zones}
@@ -404,7 +404,7 @@ export function FireAlarmPage() {
                         {/* Main Content Area */}
                         <div className="flex-1 flex flex-col">
                                 {/* Top Toolbar */}
-                                <div className="h-14 flex items-center px-4 border-b border-border bg-card">
+                                <div className="h-14 flex items-center px-4 border-b border-border bg-card stagger-card">
                                         <h1 className="text-lg font-semibold text-foreground">
                                                 {t("fireAlarm.designer")}
                                         </h1>
@@ -502,11 +502,11 @@ export function FireAlarmPage() {
                                         </div>
 
                                         {/* Symbol Library - Right sidebar */}
-                                        <div className="w-80 border-l border-border p-4 bg-card">
+                                        <div className="w-80 border-l border-border p-4 bg-card stagger-card">
                                                 <SymbolLibrary />
 
                                                 <div className="mt-6">
-                                                        <Card className="border-border bg-card">
+                                                        <Card className="border-border bg-card stagger-card">
                                                                 <CardHeader>
                                                                         <div className="flex items-center justify-between">
                                                                                 <CardTitle className="text-lg text-foreground">

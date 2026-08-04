@@ -147,7 +147,7 @@ export function IFC43MappingPage() {
                                 </div>
 
                                 <Tabs defaultValue="detector">
-                                        <TabsList className="bg-card border border-border">
+                                        <TabsList className="bg-card border border-border stagger-card">
                                                 <TabsTrigger
                                                         value="detector"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
@@ -166,7 +166,7 @@ export function IFC43MappingPage() {
 
                                         {/* Map Detector Tab */}
                                         <TabsContent value="detector">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Target aria-hidden="true" className="h-5 w-5 text-info" />
@@ -185,7 +185,7 @@ export function IFC43MappingPage() {
                                                                                         placeholder="DET-001"
                                                                                         value={deviceId}
                                                                                         onChange={(e) => setDeviceId(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -193,7 +193,7 @@ export function IFC43MappingPage() {
                                                                                 <select
                                                                                         value={detectorType}
                                                                                         onChange={(e) => setDetectorType(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="smoke">Smoke</option>
                                                                                         <option value="heat">Heat</option>
@@ -210,7 +210,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.1"
                                                                                         value={posX}
                                                                                         onChange={(e) => setPosX(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -220,7 +220,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.1"
                                                                                         value={posY}
                                                                                         onChange={(e) => setPosY(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -230,7 +230,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.1"
                                                                                         value={posZ}
                                                                                         onChange={(e) => setPosZ(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -240,7 +240,7 @@ export function IFC43MappingPage() {
                                                                                         placeholder="UNASSIGNED"
                                                                                         value={roomId}
                                                                                         onChange={(e) => setRoomId(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -252,7 +252,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.01"
                                                                                         value={coverageRadius}
                                                                                         onChange={(e) => setCoverageRadius(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -262,7 +262,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.1"
                                                                                         value={spacing}
                                                                                         onChange={(e) => setSpacing(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -274,7 +274,7 @@ export function IFC43MappingPage() {
                                                                                         step="0.1"
                                                                                         value={ceilingHeight}
                                                                                         onChange={(e) => setCeilingHeight(e.target.value)}
-                                                                                        className="bg-card border-border text-foreground"
+                                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -284,7 +284,7 @@ export function IFC43MappingPage() {
                                                                                 <select
                                                                                         value={occupancyType}
                                                                                         onChange={(e) => setOccupancyType(e.target.value)}
-                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
+                                                                                        className="w-full bg-card border border-border rounded px-3 py-2 text-foreground stagger-card"
                                                                                 >
                                                                                         <option value="office">Office</option>
                                                                                         <option value="assembly">Assembly</option>
@@ -312,7 +312,7 @@ export function IFC43MappingPage() {
                                                                 </div>
 
                                                                 {detectorResult && (
-                                                                        <div className="p-4 rounded-lg bg-card border border-border">
+                                                                        <div className="p-4 rounded-lg bg-card border border-border stagger-card">
                                                                                 <div className="flex items-center gap-2 mb-2">
                                                                                         <CheckCircle2
                                                                                                 aria-hidden="true"
@@ -333,7 +333,7 @@ export function IFC43MappingPage() {
 
                                         {/* Map Project Tab */}
                                         <TabsContent value="project">
-                                                <Card className="border-border bg-card">
+                                                <Card className="border-border bg-card stagger-card">
                                                         <CardHeader className="pb-3">
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                         <Building2 aria-hidden="true" className="h-5 w-5 text-info" />
@@ -351,7 +351,7 @@ export function IFC43MappingPage() {
                                                                         <Textarea
                                                                                 value={projectJson}
                                                                                 onChange={(e) => setProjectJson(e.target.value)}
-                                                                                className="min-h-[200px] bg-card border-border text-foreground font-mono text-xs"
+                                                                                className="min-h-[200px] bg-card border-border text-foreground font-mono text-xs stagger-card"
                                                                                 placeholder='{"project_name": "...", "building_name": "...", "rooms": [...], "detectors": [...]}'
                                                                         />
                                                                         <p className="text-xs text-muted-foreground">
@@ -375,7 +375,7 @@ export function IFC43MappingPage() {
                                                                 </div>
 
                                                                 {projectResult && (
-                                                                        <div className="p-4 rounded-lg bg-card border border-border">
+                                                                        <div className="p-4 rounded-lg bg-card border border-border stagger-card">
                                                                                 <div className="flex items-center gap-2 mb-2">
                                                                                         <CheckCircle2
                                                                                                 aria-hidden="true"
@@ -426,7 +426,7 @@ export function IFC43MappingPage() {
                                 <Separator className="bg-border" />
 
                                 {/* Info card */}
-                                <Card className="border-border bg-card">
+                                <Card className="border-border bg-card stagger-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground">
                                                         About IFC 4.3 ADD2

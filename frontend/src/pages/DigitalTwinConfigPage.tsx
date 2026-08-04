@@ -44,7 +44,7 @@ export function DigitalTwinConfigPage() {
 					await digitalTwinApi.setConfig(config);
 				}}
 			/>
-			<Card className="border-border bg-card">
+			<Card className="border-border bg-card stagger-card">
 				<CardHeader>
 					<CardTitle className="text-foreground">
 						Available Mappings ({mappings.length})

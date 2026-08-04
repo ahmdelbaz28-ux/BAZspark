@@ -141,45 +141,46 @@ export const DevicesPage: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="p-6 max-w-6xl mx-auto space-y-5">
+        {/* FACP Page Header */}
+        <div className="facp-page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <Cpu className="h-6 w-6 text-cyan-400" />
-              Devices
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Cpu aria-hidden="true" style={{ color: "var(--color-primary)" }} className="h-5 w-5" />
+              <h1 className="facp-page-title">Devices</h1>
+            </div>
+            <p className="facp-page-count">
               {isLoading
-                ? "Loading devices..."
-                : `${total} fire alarm device${total !== 1 ? "s" : ""}`}
+                ? "Loading…"
+                : `${total} fire alarm device${total !== 1 ? "s" : ""} registered`}
             </p>
           </div>
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="facp-btn facp-btn--primary"
+            aria-label="Add new fire alarm device"
           >
-            <Plus className="h-4 w-4" />
+            <Plus aria-hidden="true" className="h-4 w-4" />
             Add Device
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Filter Bar */}
+        <div className="facp-filter-bar">
           <select
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
+            className="facp-select"
+            style={{ minWidth: "140px", flex: "0 0 auto" }}
+            aria-label="Filter by device type"
           >
             <option value="">All Types</option>
             {DEVICE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t.replace(/_/g, " ")}
-              </option>
+              <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
             ))}
           </select>
           <select
@@ -188,158 +189,161 @@ export const DevicesPage: React.FC = () => {
               setCategoryFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
+            className="facp-select"
+            style={{ minWidth: "130px", flex: "0 0 auto" }}
+            aria-label="Filter by device category"
           >
             <option value="">All Categories</option>
             {DEVICE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c.charAt(0).toUpperCase() + c.slice(1)}
-              </option>
+              <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
             ))}
           </select>
           {(typeFilter || categoryFilter) && (
             <button
               type="button"
-              onClick={() => {
-                setTypeFilter("");
-                setCategoryFilter("");
-                setPage(1);
-              }}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              onClick={() => { setTypeFilter(""); setCategoryFilter(""); setPage(1); }}
+              className="facp-btn facp-btn--ghost"
+              aria-label="Clear all filters"
             >
-              ✕ Clear filters
+              ✕ Clear
             </button>
           )}
         </div>
 
         {/* Error */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-            <p className="text-red-400 text-sm">Failed to load devices</p>
+          <div
+            className="facp-panel"
+            role="alert"
+            style={{ borderLeft: "4px solid var(--color-signal-red)", padding: "1rem 1.25rem" }}
+          >
+            <span className="facp-badge facp-badge--error">Error</span>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "var(--color-bone)", marginLeft: "0.5rem" }}>
+              Failed to load devices. Check your connection.
+            </span>
           </div>
         )}
 
         {/* Loading */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
+            <Loader2 aria-hidden="true" style={{ color: "var(--color-primary)" }} className="h-8 w-8 animate-spin" />
           </div>
         )}
 
         {/* Device Table */}
         {!isLoading && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700 bg-slate-800/80">
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Name</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Type</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Category</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Load</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Voltage</th>
-                    <th className="text-right text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {devices.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center">
-                        <Cpu className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                        <p className="text-slate-400">No devices found</p>
-                        <p className="text-xs text-slate-500 mt-1">
+          <div className="facp-table-wrap">
+            <table className="facp-table" aria-label="Fire alarm devices">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Load</th>
+                  <th scope="col">Voltage</th>
+                  <th scope="col" style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {devices.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 0 }}>
+                      <div className="facp-empty">
+                        <Cpu aria-hidden="true" className="facp-empty-icon h-10 w-10" />
+                        <p className="facp-empty-title">No devices registered</p>
+                        <p className="facp-empty-desc">
                           {typeFilter || categoryFilter
-                            ? "Try changing your filters"
-                            : "Add your first fire alarm device"}
+                            ? "No devices match the current filters. Try adjusting or clearing them."
+                            : "Add your first fire alarm device to begin coverage calculations."}
                         </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  devices.map((device: Device) => (
+                    <tr key={device.id}>
+                      <td>
+                        <span className="facp-table-name">{device.name}</span>
+                        <div className="facp-table-id">{device.id.slice(0, 8)}&hellip;</div>
+                      </td>
+                      <td>
+                        <span className="facp-type-chip">
+                          {device.type.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontFamily: "var(--font-data)", fontSize: "0.7rem", color: "var(--color-steel)", letterSpacing: "0.05em" }}>
+                          {device.category.charAt(0).toUpperCase() + device.category.slice(1)}
+                        </span>
+                      </td>
+                      <td className="facp-table-num">
+                        {device.load != null ? `${device.load.toFixed(3)} A` : "—"}
+                      </td>
+                      <td className="facp-table-num">
+                        {device.voltage != null ? `${device.voltage} V` : "—"}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setViewTarget(device)}
+                            className="facp-btn facp-btn--ghost facp-btn--icon"
+                            title="View Details"
+                            aria-label={`View details for ${device.name}`}
+                          >
+                            <Eye aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditTarget(device)}
+                            className="facp-btn facp-btn--ghost facp-btn--icon"
+                            title="Edit"
+                            aria-label={`Edit ${device.name}`}
+                          >
+                            <Pencil aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(device)}
+                            className="facp-btn facp-btn--danger facp-btn--icon"
+                            title="Delete"
+                            aria-label={`Delete ${device.name}`}
+                          >
+                            <Trash2 aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    devices.map((device: Device) => (
-                      <tr
-                        key={device.id}
-                        className="hover:bg-slate-700/20 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <span className="text-slate-100 font-medium">
-                            {device.name}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300">
-                            {device.type.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-500">
-                            {device.category.charAt(0).toUpperCase() + device.category.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-slate-300">
-                          {device.load != null ? `${device.load.toFixed(3)} A` : "—"}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-slate-300">
-                          {device.voltage != null ? `${device.voltage} V` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setViewTarget(device)}
-                              className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditTarget(device)}
-                              className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(device)}
-                              className="p-1.5 text-slate-500 hover:text-red-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
+          <div className="facp-pagination">
+            <span>Page {page} of {totalPages} &bull; {total} devices</span>
+            <div className="facp-pagination-btns">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                className="facp-btn facp-btn--ghost"
+                aria-label="Previous page"
               >
-                Previous
+                &larr; Prev
               </button>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                className="facp-btn facp-btn--ghost"
+                aria-label="Next page"
               >
-                Next
+                Next &rarr;
               </button>
             </div>
           </div>

@@ -217,7 +217,7 @@ export function ApiKeysPage() {
                                 </p>
                         </div>
 
-                        <Card className="border-border bg-card">
+                        <Card className="border-border bg-card stagger-card">
                                 <CardHeader>
                                         <div className="flex items-center justify-between">
                                                 <div>

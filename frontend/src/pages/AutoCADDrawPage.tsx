@@ -129,7 +129,7 @@ export function AutoCADDrawPage() {
 			</div>
 
 			<Tabs value={activeTool} onValueChange={setActiveTool}>
-				<TabsList className="bg-card border border-border">
+				<TabsList className="bg-card border border-border stagger-card">
 					<TabsTrigger
 						value="line"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
@@ -157,7 +157,7 @@ export function AutoCADDrawPage() {
 				</TabsList>
 
 				<TabsContent value="line">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Draw Line</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -172,7 +172,7 @@ export function AutoCADDrawPage() {
 										placeholder="0,0,0"
 										value={lineStart}
 										onChange={(e) => setLineStart(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 								<div>
@@ -181,7 +181,7 @@ export function AutoCADDrawPage() {
 										placeholder="100,0,0"
 										value={lineEnd}
 										onChange={(e) => setLineEnd(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 							</div>
@@ -191,7 +191,7 @@ export function AutoCADDrawPage() {
 									placeholder="Walls"
 									value={lineLayer}
 									onChange={(e) => setLineLayer(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<Button
@@ -211,7 +211,7 @@ export function AutoCADDrawPage() {
 				</TabsContent>
 
 				<TabsContent value="polyline">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Draw Polyline</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -227,7 +227,7 @@ export function AutoCADDrawPage() {
 									placeholder="0,0,0; 100,0,0; 100,50,0"
 									value={polyPoints}
 									onChange={(e) => setPolyPoints(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<div>
@@ -236,7 +236,7 @@ export function AutoCADDrawPage() {
 									placeholder="Boundary"
 									value={polyLayer}
 									onChange={(e) => setPolyLayer(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<Button
@@ -256,7 +256,7 @@ export function AutoCADDrawPage() {
 				</TabsContent>
 
 				<TabsContent value="circle">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Draw Circle</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -271,7 +271,7 @@ export function AutoCADDrawPage() {
 										placeholder="50,50,0"
 										value={circleCenter}
 										onChange={(e) => setCircleCenter(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 								<div>
@@ -280,7 +280,7 @@ export function AutoCADDrawPage() {
 										placeholder="25"
 										value={circleRadius}
 										onChange={(e) => setCircleRadius(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 							</div>
@@ -290,7 +290,7 @@ export function AutoCADDrawPage() {
 									placeholder="Annotations"
 									value={circleLayer}
 									onChange={(e) => setCircleLayer(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<Button
@@ -310,7 +310,7 @@ export function AutoCADDrawPage() {
 				</TabsContent>
 
 				<TabsContent value="text">
-					<Card className="border-border bg-card">
+					<Card className="border-border bg-card stagger-card">
 						<CardHeader>
 							<CardTitle className="text-foreground">Draw Text</CardTitle>
 							<CardDescription className="text-muted-foreground">
@@ -326,7 +326,7 @@ export function AutoCADDrawPage() {
 									placeholder="10,10,0"
 									value={textPoint}
 									onChange={(e) => setTextPoint(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<div>
@@ -335,7 +335,7 @@ export function AutoCADDrawPage() {
 									placeholder="Room 101"
 									value={textContent}
 									onChange={(e) => setTextContent(e.target.value)}
-									className="bg-card border-border text-foreground"
+									className="bg-card border-border text-foreground stagger-card"
 								/>
 							</div>
 							<div className="grid grid-cols-2 gap-3">
@@ -345,7 +345,7 @@ export function AutoCADDrawPage() {
 										placeholder="2.5"
 										value={textHeight}
 										onChange={(e) => setTextHeight(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 								<div>
@@ -354,7 +354,7 @@ export function AutoCADDrawPage() {
 										placeholder="Labels"
 										value={textLayer}
 										onChange={(e) => setTextLayer(e.target.value)}
-										className="bg-card border-border text-foreground"
+										className="bg-card border-border text-foreground stagger-card"
 									/>
 								</div>
 							</div>

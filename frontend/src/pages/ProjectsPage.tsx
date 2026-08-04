@@ -156,30 +156,27 @@ export function ProjectsPage() {
 
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("projects.title")}>
-                        <div className="p-6 max-w-4xl mx-auto space-y-6">
-                                {/* Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="p-6 max-w-4xl mx-auto space-y-5">
+                                {/* FACP Page Header */}
+                                <div className="facp-page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                         <div>
-                                                <h1 className="text-2xl font-bold text-foreground">
-                                                        {t("projects.title")}
-                                                </h1>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                        {t("projects.subtitle")}
-                                                </p>
+                                                <h1 className="facp-page-title">{t("projects.title")}</h1>
+                                                <p className="facp-page-subtitle">{t("projects.subtitle")}</p>
                                         </div>
-                                                                        <Button
-                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-                                                                                data-testid="create-project-btn"
-                                                                                onClick={() => setShowCreateForm(true)}
-                                                                        >
-                                                                                <FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
-                                                                                {t("projects.newProject")}
-                                                                        </Button>
+                                        <button
+                                                type="button"
+                                                className="facp-btn facp-btn--primary"
+                                                data-testid="create-project-btn"
+                                                onClick={() => setShowCreateForm(true)}
+                                        >
+                                                <FolderPlus aria-hidden="true" className="h-4 w-4" />
+                                                {t("projects.newProject")}
+                                        </button>
                                 </div>
 
                                 {/* Create Project Form */}
                                 {showCreateForm && (
-                                        <Card className="border-border bg-card">
+                                        <Card className="border-border bg-card stagger-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground">
                                                                 {t("projects.createProject")}
@@ -196,7 +193,7 @@ export function ProjectsPage() {
                                                                                 setNewProject((p) => ({ ...p, name: e.target.value }))
                                                                         }
                                                                         placeholder={t("projects.projectName")}
-                                                                        className="bg-card border-border text-foreground"
+                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                 />
                                                         </div>
                                                         <div className="space-y-2">
@@ -212,7 +209,7 @@ export function ProjectsPage() {
                                                                                 }))
                                                                         }
                                                                         placeholder={t("projects.description")}
-                                                                        className="bg-card border-border text-foreground"
+                                                                        className="bg-card border-border text-foreground stagger-card"
                                                                 />
                                                         </div>
                                                         <div className="flex justify-end gap-3 pt-2">
@@ -245,28 +242,30 @@ export function ProjectsPage() {
                                         </Card>
                                 )}
 
-                                {/* Filters */}
-                                <div className="flex flex-wrap items-center gap-3">
-                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                                <SelectTrigger className="w-[180px] bg-card border-border text-white" aria-label={t("projects.allStatuses", "Filter by status")}>
-                                                        <SelectValue placeholder={t("projects.allStatuses")} />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-card border-border text-white">
-                                                        <SelectItem value="all">{t("projects.allStatuses")}</SelectItem>
-                                                        <SelectItem value="active">{t("projects.active")}</SelectItem>
-                                                        <SelectItem value="inactive">{t("projects.inactive")}</SelectItem>
-                                                        <SelectItem value="draft">{t("projects.draft")}</SelectItem>
-                                                        <SelectItem value="archived">{t("projects.archived")}</SelectItem>
-                                                </SelectContent>
-                                        </Select>
-                                        <Button
-                                                variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
-                                                onClick={() => refetch()}
+                                {/* Filter Bar */}
+                                <div className="facp-filter-bar">
+                                        <select
+                                                value={statusFilter}
+                                                onChange={(e) => setStatusFilter(e.target.value)}
+                                                className="facp-select"
+                                                style={{ minWidth: "160px", flex: "0 0 auto" }}
+                                                aria-label={t("projects.allStatuses", "Filter by status")}
                                         >
-                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                <option value="all">{t("projects.allStatuses")}</option>
+                                                <option value="active">{t("projects.active")}</option>
+                                                <option value="inactive">{t("projects.inactive")}</option>
+                                                <option value="draft">{t("projects.draft")}</option>
+                                                <option value="archived">{t("projects.archived")}</option>
+                                        </select>
+                                        <button
+                                                type="button"
+                                                className="facp-btn facp-btn--ghost"
+                                                onClick={() => refetch()}
+                                                aria-label={t("projects.refresh")}
+                                        >
+                                                <RefreshCw aria-hidden="true" className="h-4 w-4" />
                                                 {t("projects.refresh")}
-                                        </Button>
+                                        </button>
                                 </div>
 
                                 {/* Error */}
@@ -284,7 +283,7 @@ export function ProjectsPage() {
                                 {projectsLoading && (
                                         <div className="space-y-4">
                                                 {["skeleton-0", "skeleton-1", "skeleton-2"].map((id) => (
-                                                        <Card key={id} className="border-border bg-card">
+                                                        <Card key={id} className="border-border bg-card stagger-card">
                                                                 <CardHeader className="pb-3">
                                                                         <div className="flex items-center justify-between">
                                                                                 <div>
@@ -333,174 +332,155 @@ export function ProjectsPage() {
                                 {!projectsLoading &&
                                         filteredProjects &&
                                         filteredProjects.length > 0 && (
-                                                <div className="space-y-4">
-                                                        {filteredProjects.map((project: Project) => (
-                                                                <Card
-                                                                        key={project.id}
-                                                                        className="border-border bg-card"
-                                                                >
-                                                                        <CardHeader className="pb-3">
-                                                                                <div className="flex items-start justify-between">
-                                                                                        <div>
-                                                                                                <CardTitle className="text-lg text-foreground">
-                                                                                                        {project.name}
-                                                                                                </CardTitle>
-                                                                                                <CardDescription className="text-muted-foreground mt-1">
-                                                                                                        {project.description || t("common.noData")}
-                                                                                                </CardDescription>
+                                                <div className="space-y-3">
+                                                        {filteredProjects.map((project: Project) => {
+                                                                const cardMod =
+                                                                        project.status === "active" ? "facp-card--active"
+                                                                        : project.status === "draft" ? "facp-card--warning"
+                                                                        : project.status === "archived" ? "facp-card--neutral"
+                                                                        : "";
+                                                                const badgeMod =
+                                                                        project.status === "active" ? "facp-badge--active"
+                                                                        : project.status === "draft" ? "facp-badge--pending"
+                                                                        : project.status === "archived" ? "facp-badge--neutral"
+                                                                        : "facp-badge--inactive";
+                                                                return (
+                                                                <div key={project.id} className={`facp-card ${cardMod}`}>
+                                                                        {/* Card Header */}
+                                                                        <div className="flex items-start justify-between gap-3">
+                                                                                <div className="flex-1 min-w-0">
+                                                                                        <div className="facp-card-id">
+                                                                                                PRJ-{project.id.slice(0, 8).toUpperCase()}
                                                                                         </div>
-                                                                                        <Badge
-                                                                                                variant={
-                                                                                                        project.status === "active"
-                                                                                                                ? "default"
-                                                                                                                : project.status === "draft"  // NOSONAR: typescript:S3358
-                                                                                                                        ? "secondary"
-                                                                                                                        : project.status === "archived"  // NOSONAR: typescript:S3358
-                                                                                                                                ? "outline"
-                                                                                                                                : "destructive"
+                                                                                        <h2 className="facp-card-title truncate">{project.name}</h2>
+                                                                                        <p className="facp-card-meta">
+                                                                                                {project.description || t("common.noData")}
+                                                                                        </p>
+                                                                                </div>
+                                                                                <span className={`facp-badge ${badgeMod} flex-shrink-0`}>
+                                                                                        {project.status === "active" ? t("projects.active")
+                                                                                                : project.status === "draft" ? t("projects.draft") // NOSONAR: typescript:S3358
+                                                                                                : project.status === "archived" ? t("projects.archived") // NOSONAR: typescript:S3358
+                                                                                                : t("projects.inactive")}
+                                                                                </span>
+                                                                        </div>
+
+                                                                        {/* Meta row */}
+                                                                        <div className="facp-card-actions" style={{ flexWrap: "wrap" }}>
+                                                                                <div className="flex flex-wrap items-center gap-4 flex-1" style={{ fontFamily: "var(--font-data)", fontSize: "0.7rem", color: "var(--color-steel)", letterSpacing: "0.04em" }}>
+                                                                                        <span className="flex items-center gap-1">
+                                                                                                <User aria-hidden="true" className="h-3.5 w-3.5" />
+                                                                                                {project.author}
+                                                                                        </span>
+                                                                                        <span className="flex items-center gap-1">
+                                                                                                <Clock aria-hidden="true" className="h-3.5 w-3.5" />
+                                                                                                {new Date(project.createdAt).toLocaleDateString()}
+                                                                                        </span>
+                                                                                        <span style={{ color: "var(--color-bone)" }}>
+                                                                                                {project.deviceCount} devices
+                                                                                        </span>
+                                                                                        <span>
+                                                                                                {project.connectionCount} connections
+                                                                                        </span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                                        <button
+                                                                                                type="button"
+                                                                                                className="facp-btn facp-btn--ghost facp-btn--icon"
+                                                                                                onClick={() => setSyncTarget(project)}
+                                                                                                title={t("projects.sync")}
+                                                                                                aria-label={`Sync ${project.name}`}
+                                                                                        >
+                                                                                                {syncing && syncTarget?.id === project.id ? (
+                                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                                                                                                ) : (
+                                                                                                        <RefreshCw aria-hidden="true" className="h-4 w-4" />
+                                                                                                )}
+                                                                                        </button>
+                                                                                        <button
+                                                                                                type="button"
+                                                                                                className="facp-btn facp-btn--ghost facp-btn--icon"
+                                                                                                onClick={() => { window.location.hash = `/projects/${project.id}`; }}
+                                                                                                title={t("common.view")}
+                                                                                                aria-label={`View ${project.name}`}
+                                                                                        >
+                                                                                                <Eye aria-hidden="true" className="h-4 w-4" />
+                                                                                        </button>
+                                                                                        <button
+                                                                                                type="button"
+                                                                                                className="facp-btn facp-btn--danger facp-btn--icon"
+                                                                                                onClick={() => setDeleteTarget(project)}
+                                                                                                title={t("common.delete")}
+                                                                                                aria-label={`Delete ${project.name}`}
+                                                                                        >
+                                                                                                <Trash2 aria-hidden="true" className="h-4 w-4" />
+                                                                                        </button>
+                                                                                </div>
+                                                                        </div>
+
+                                                                        {/* Export row */}
+                                                                        <div className="flex flex-wrap gap-1.5" style={{ borderTop: "1px solid rgba(90,103,112,0.2)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
+                                                                                <button
+                                                                                        type="button"
+                                                                                        className="facp-btn facp-btn--ghost"
+                                                                                        style={{ fontSize: "0.65rem" }}
+                                                                                        onClick={async () => {
+                                                                                                try {
+                                                                                                        await apiCall(`/projects/${project.id}/export/dxf`);
+                                                                                                        toast.success("DXF exported");
+                                                                                                } catch (err) {
+                                                                                                        toast.error(`DXF export failed: ${err instanceof Error ? err.message : "Unknown"}`);
                                                                                                 }
-                                                                                                className={
-                                                                                                        project.status === "active"
-                                                                                                                ? "bg-success/10 text-success border-success/30"
-                                                                                                                : project.status === "draft"  // NOSONAR: typescript:S3358
-                                                                                                                        ? "bg-warning/10 text-warning border-warning/30"
-                                                                                                                        : "bg-slate-600/20 text-muted-foreground border-border/30"
+                                                                                        }}
+                                                                                >
+                                                                                        <FileCode2 aria-hidden="true" className="h-3.5 w-3.5" />
+                                                                                        DXF
+                                                                                </button>
+                                                                                <button
+                                                                                        type="button"
+                                                                                        className="facp-btn facp-btn--ghost"
+                                                                                        style={{ fontSize: "0.65rem" }}
+                                                                                        onClick={async () => {
+                                                                                                try {
+                                                                                                        await apiCall(`/projects/${project.id}/export/revit`);
+                                                                                                        toast.success("Revit exported");
+                                                                                                } catch (err) {
+                                                                                                        toast.error(`Revit export failed: ${err instanceof Error ? err.message : "Unknown"}`);
                                                                                                 }
-                                                                                        >
-                                                                                                {project.status === "active"
-                                                                                                        ? t("projects.active")
-                                                                                                        : project.status === "draft"  // NOSONAR: typescript:S3358
-                                                                                                                ? t("projects.draft")
-                                                                                                                : project.status === "archived"  // NOSONAR: typescript:S3358
-                                                                                                                        ? t("projects.archived")
-                                                                                                                        : t("projects.inactive")}
-                                                                                        </Badge>
-                                                                                </div>
-                                                                        </CardHeader>
-                                                                        <CardContent>
-                                                                                <div className="flex items-center justify-between">
-                                                                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                                                                                <div className="flex items-center gap-1">
-                                                                                                        <User aria-hidden="true" className="h-4 w-4" />
-                                                                                                        {project.author}
-                                                                                                </div>
-                                                                                                <div className="flex items-center gap-1">
-                                                                                                        <Clock aria-hidden="true" className="h-4 w-4" />
-                                                                                                        {new Date(project.createdAt).toLocaleDateString()}
-                                                                                                </div>
-                                                                                                <div className="flex items-center gap-1">
-                                                                                                        <div className="w-4 h-4">
-                                                                                                                <svg
-                                                                                                                        viewBox="0 0 24 24"
-                                                                                                                        fill="none"
-                                                                                                                        stroke="currentColor"
-                                                                                                                        strokeWidth="2"
-                                                                                                                        className="w-4 h-4"
-                                                                                                                >
-                                                                                                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                                                                                                </svg>
-                                                                                                        </div>
-                                                                                                        {project.deviceCount} {t("projects.devices")}
-                                                                                                </div>
-                                                                                                <div className="flex items-center gap-1">
-                                                                                                        <LinkIcon className="h-4 w-4" />
-                                                                                                        {project.connectionCount} {t("projects.connections")}
-                                                                                                </div>
-                                                                                        </div>
-                                                                                        <div className="flex gap-2">
-                                                                                                <Button
-                                                                                                        variant="outline"
-                                                                                                        size="sm"
-                                                                                                        className="border-border text-foreground/90"
-                                                                                                        onClick={() => setSyncTarget(project)}
-                                                                                                >
-                                                                                                        {syncing && syncTarget?.id === project.id ? (
-                                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                                                                                                        ) : (
-                                                                                                                <RefreshCw aria-hidden="true" className="h-4 w-4" />
-                                                                                                        )}
-                                                                                                </Button>
-                                                                                                <Button
-                                                                                                        variant="outline"
-                                                                                                        size="sm"
-                                                                                                        className="border-border text-foreground/90"
-                                                                                                        onClick={() => {
-                                                                                                                window.location.hash = `/projects/${project.id}`;
-                                                                                                        }}
-                                                                                                >
-                                                                                                        <Eye aria-hidden="true" className="h-4 w-4" />
-                                                                                                </Button>
-                                                                                                <Button
-                                                                                                        variant="outline"
-                                                                                                        size="sm"
-                                                                                                        className="border-border text-foreground/90"
-                                                                                                        onClick={() => setDeleteTarget(project)}
-                                                                                                >
-                                                                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
-                                                                                                </Button>
-                                                                                        </div>
-                                                                                </div>
-                                                                                {/* Export Buttons */}
-                                                                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-                                                                                        <Button
-                                                                                                variant="outline"
-                                                                                                size="sm"
-                                                                                                className="border-border text-foreground/90"
-                                                                                                onClick={async () => {
-                                                                                                        try {
-                                                                                                                await apiCall(`/projects/${project.id}/export/dxf`);
-                                                                                                                toast.success("DXF exported");
-                                                                                                        } catch (err) {
-                                                                                                                toast.error(`DXF export failed: ${err instanceof Error ? err.message : "Unknown"}`);
-                                                                                                        }
-                                                                                                }}
-                                                                                        >
-                                                                                                <FileCode2 aria-hidden="true" className="h-4 w-4" />
-                                                                                                Export DXF
-                                                                                        </Button>
-                                                                                        <Button
-                                                                                                variant="outline"
-                                                                                                size="sm"
-                                                                                                className="border-border text-foreground/90"
-                                                                                                onClick={async () => {
-                                                                                                        try {
-                                                                                                                await apiCall(`/projects/${project.id}/export/revit`);
-                                                                                                                toast.success("Revit exported");
-                                                                                                        } catch (err) {
-                                                                                                                toast.error(`Revit export failed: ${err instanceof Error ? err.message : "Unknown"}`);
-                                                                                                        }
-                                                                                                }}
-                                                                                        >
-                                                                                                <Download aria-hidden="true" className="h-4 w-4" />
-                                                                                                Export Revit
-                                                                                        </Button>
-                                                                                        <Button
-                                                                                                variant="outline"
-                                                                                                size="sm"
-                                                                                                className="border-border text-foreground/90"
-                                                                                                onClick={async () => {
-                                                                                                        try {
-                                                                                                                await apiCall(`/projects/${project.id}/export/ifc`);
-                                                                                                                toast.success("IFC exported");
-                                                                                                        } catch (err) {
-                                                                                                                toast.error(`IFC export failed: ${err instanceof Error ? err.message : "Unknown"}`);
-                                                                                                        }
-                                                                                                }}
-                                                                                        >
-                                                                                                <Box aria-hidden="true" className="h-4 w-4" />
-                                                                                                Export IFC
-                                                                                        </Button>
-                                                                                </div>
-                                                                        </CardContent>
-                                                                </Card>
-                                                        ))}
+                                                                                        }}
+                                                                                >
+                                                                                        <Download aria-hidden="true" className="h-3.5 w-3.5" />
+                                                                                        Revit
+                                                                                </button>
+                                                                                <button
+                                                                                        type="button"
+                                                                                        className="facp-btn facp-btn--ghost"
+                                                                                        style={{ fontSize: "0.65rem" }}
+                                                                                        onClick={async () => {
+                                                                                                try {
+                                                                                                        await apiCall(`/projects/${project.id}/export/ifc`);
+                                                                                                        toast.success("IFC exported");
+                                                                                                } catch (err) {
+                                                                                                        toast.error(`IFC export failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                                }
+                                                                                        }}
+                                                                                >
+                                                                                        <Box aria-hidden="true" className="h-3.5 w-3.5" />
+                                                                                        IFC
+                                                                                </button>
+                                                                        </div>
+                                                                </div>
+                                                                );
+                                                        })}
+
                                                 </div>
                                         )}
+
 
                                 {/* Sync Confirmation Modal */}
                                 {syncTarget && (
                                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.sync")}>
-                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
+                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl stagger-card">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.sync")}
                                                         </h3>
@@ -537,7 +517,7 @@ export function ProjectsPage() {
                                 {/* Delete Confirmation Modal */}
                                 {deleteTarget && (
                                         <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.deleteProject")}>
-                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
+                                                <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl stagger-card">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.deleteProject")}
                                                         </h3>
