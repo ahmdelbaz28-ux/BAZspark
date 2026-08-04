@@ -59,11 +59,7 @@ const PageLoader = () => (
         </div>
 );
 
-const FireAlarmDesigner = lazy(() =>
-        import("./components/mockups/engineering/FireAlarmDesigner").then((m) => ({
-                default: m.FireAlarmDesigner,
-        })),
-);
+
 const ApiKeysPage = lazy(() =>
         import("./pages/ApiKeysPage").then((m) => ({ default: m.ApiKeysPage })),
 );
@@ -401,12 +397,7 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/settings/database", element: <DatabaseAdminPage />, requiredRole: "admin" },
                 { path: "/digital-twin", element: <DigitalTwinPage /> },
                 { path: "/fire-alarm", element: <FireAlarmPage /> },
-                { path: "/fire-alarm/designer", element: <FireAlarmDesigner /> },
-                // V140 FIX: Add missing routes that Sidebar links to
-                {
-                        path: "/fire-alarm-designer",
-                        element: <Navigate to="/fire-alarm/designer" />,
-                },
+
                 { path: "/elements", element: <Elements /> },
                 { path: "/elements/:elementId", element: <ElementDetail /> },
                 { path: "/connections", element: <Connections /> },
