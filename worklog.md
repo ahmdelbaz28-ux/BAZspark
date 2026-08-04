@@ -63,3 +63,39 @@ M-4 RETRACTED: "18-24 unfixed CVEs in pinned cryptography/pyjwt/python-multipart
 PHASE5-M4-M5-REWORD-L1-L2-L3 round because it duplicated the C-1 RESOLVED
 state. It is documented here for traceability and must NOT appear as an active
 claim in the MEDIUM ISSUES verdict.
+
+---
+Task ID: merge-all-2026-08-04
+Agent: Super Z (main)
+Task: دمج جميع الفروع المتبقية في BAZspark وفق بروتوكول resolving-merge-conflicts
+
+Work Log:
+- استنسخ الريبو بأمان مع إزالة الـ PAT من إعدادات git بعد الاستنساخ
+- تحميل المهارة resolving-merge-conflicts من قائمة المهارات المحلية
+- تحليل حالة 19 فرعاً (main + 18 فرع)
+- تحديد أن 12 فرعاً مُدمجة بالفعل في merge/all-branches-final
+- إنشاء فرع العمل merge/security-merge-all-2026-08-04 من merge/all-branches-final
+- دمج feat/audit-ui-integration (تعارضان: settings_router.py + package-lock.json)
+- دمج feature/engineering-identity (تعارضان: DashboardPage + EngineeringPage)
+- feature/ui-coverage-completion, feature/ui-ux-global-rollout,
+  feature/ui-ux-pro-max-element-detail: أصبحت مُدمجة تلقائياً عبر engineering-identity
+- دمج fix/ci-green-main (6 تعارضات: pyproject, requirements, tokens.css,
+  dashboard.css, login.css, FDSSimulationPage.tsx)
+- تشغيل TypeScript typecheck ( نجاح exit 0)
+- تشغيل ruff check (إصلاح 21 خطأ تلقائياً + bare except → except Exception)
+- تشغيل python -m py_compile (نجاح)
+- دفع فرع merge/security-merge-all-2026-04 إلى الأصل
+- تنظيف آثار الـ PAT (لا توجد بيانات اعتماد مخزنة، لا token في URL)
+
+Stage Summary:
+- 18/18 فرعاً مُدمج بالكامل في merge/security-merge-all-2026-08-04
+- القرارات الأمنية الرئيسية:
+  * الحفاظ على cryptography>=50.0.0,<51.0.0 (لإصلاح CVE-2026-69247)
+  * تطبيق WCAG 2.1 AA tokens (#b32c23, #47a058, #778694)
+  * الحفاظ على fast-uri 3.1.5 (إصلاح أمني سابق)
+  * إصلاح bare except في audit_ui.py (E722)
+- فرع العمل جاهز للمراجعة: https://github.com/ahmdelbaz28-ux/BAZspark/pull/new/merge/security-merge-all-2026-08-04
+
+Security Note:
+- الـ PAT الذي شاركه المستخدم في رسالته يُعتبر مُخترقاً ويجب إبطاله فوراً من
+  GitHub Settings → Developer settings → Personal access tokens
