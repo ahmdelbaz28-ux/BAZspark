@@ -17,6 +17,8 @@ import "./i18n";
 // values for the same variables.
 import "./styles/tokens.css";
 import "./index.css";
+import "./styles/facp-pages.css";
+
 
 // ── React Query Client ────────────────────────────────────────────────────
 const queryClient = new QueryClient({
