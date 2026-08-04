@@ -2,6 +2,7 @@
 /**
  * EngineeringPage.tsx - Fire Alarm Electrical Calculations
  *
+ * Frontend-design skill applied (2026-08-04)
  * V140 Phase 5: Connected to real QOMN API endpoints. Falls back to local
  * calculation when API is unavailable (offline mode).
  */
@@ -261,8 +262,8 @@ export function EngineeringPage() {
                         absolute: localVDrop.absolute,
                         source: "Local fallback (unaudited)" as const,
                   };
-        const cableResult = calculateCableSizing();
-        const batteryResult = calculateBatteryRequirements();
+        const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
+        const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
 
         // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props.
         // React Compiler: removed manual useMemo — the Compiler auto-memoizes this
@@ -305,15 +306,33 @@ export function EngineeringPage() {
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+                                <div
+                        className="flex flex-wrap gap-2 border-b border-border pb-2"
+                        role="tablist"
+                        aria-label={t("engineering.title")}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                                const tabs = ["voltage-drop", "cable-sizing", "battery-calc", "room-analysis", "integration"];
+                                const idx = tabs.indexOf(activeTab);
+                                if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                                        e.preventDefault();
+                                        setActiveTab(tabs[(idx + 1) % tabs.length]);
+                                } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                                        e.preventDefault();
+                                        setActiveTab(tabs[(idx - 1 + tabs.length) % tabs.length]);
+                                }
+                        }}
+                >
                                         <Button
                                                 variant={activeTab === "voltage-drop" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "voltage-drop"
-                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("voltage-drop")}
+                                        role="tab"
+                                        aria-selected={activeTab === "voltage-drop"}
+                                        aria-controls="panel-voltage-drop"
                                         >
                                                 <Zap aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.voltageDrop")}
@@ -322,10 +341,13 @@ export function EngineeringPage() {
                                                 variant={activeTab === "cable-sizing" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "cable-sizing"
-                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("cable-sizing")}
+                                        role="tab"
+                                        aria-selected={activeTab === "cable-sizing"}
+                                        aria-controls="panel-cable-sizing"
                                         >
                                                 <Cable aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.cableSizing")}
@@ -334,10 +356,13 @@ export function EngineeringPage() {
                                                 variant={activeTab === "battery-calc" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "battery-calc"
-                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("battery-calc")}
+                                        role="tab"
+                                        aria-selected={activeTab === "battery-calc"}
+                                        aria-controls="panel-battery-calc"
                                         >
                                                 <Battery aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.batteryCalculation")}
@@ -346,10 +371,13 @@ export function EngineeringPage() {
                                                 variant={activeTab === "room-analysis" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "room-analysis"
-                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("room-analysis")}
+                                        role="tab"
+                                        aria-selected={activeTab === "room-analysis"}
+                                        aria-controls="panel-room-analysis"
                                         >
                                                 <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("fireai.room.title")}
@@ -358,10 +386,13 @@ export function EngineeringPage() {
                                                 variant={activeTab === "integration" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "integration"
-                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground border-none"
                                                                 : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("integration")}
+                                        role="tab"
+                                        aria-selected={activeTab === "integration"}
+                                        aria-controls="panel-integration"
                                         >
                                                 <Network aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("fireai.integration.title")}
@@ -370,7 +401,7 @@ export function EngineeringPage() {
 
                                 {/* Voltage Drop Calculator */}
                                 {activeTab === "voltage-drop" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-voltage-drop" role="tabpanel" aria-label={t("engineering.voltageDrop")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Zap aria-hidden="true" className="h-5 w-5" />
@@ -463,7 +494,7 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.material", "Material")}>
+                                                                                <SelectTrigger className="bg-card border-border text-foreground">
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
                                                                                 <SelectContent className="bg-card border-border">
@@ -499,7 +530,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.percentage")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {vDropResult.percentage}%
                                                                                                 </span>
                                                                                         </div>
@@ -507,7 +538,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.absolute")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {vDropResult.absolute}V
                                                                                                 </span>
                                                                                         </div>
@@ -515,35 +546,64 @@ export function EngineeringPage() {
                                                                         </CardContent>
                                                                 </Card>
 
-                                                                <Card className="border-border bg-muted/50">
-                                                                        <CardHeader>
-                                                                                <CardTitle className="text-foreground text-sm">
+                                                                {/* ═══ COMPLIANCE VERDICT — Signature element (frontend-design skill) ═══
+                                                                         * The single most important output: "Is this compliant?"
+                                                                         * Enlarged from a small Badge to a prominent banner.
+                                                                         * In a fire alarm system, the compliance answer
+                                                                         * MUST be impossible to overlook.
+                                                                         * ═══════════════════════════════════════════════════ */}
+                                                                <Card className={`border-border border-l-4 ${
+                                                                        vDropResult.percentage < 3
+                                                                                ? "border-l-success/60 bg-success/5"
+                                                                                : vDropResult.percentage < 5
+                                                                                        ? "border-l-warning/60 bg-warning/5"
+                                                                                        : "border-l-danger/60 bg-danger/5"
+                                                                }`}>
+                                                                        <CardHeader className="pb-2">
+                                                                                <CardTitle className="text-foreground text-sm uppercase tracking-wider">
                                                                                         {t("engineering.status")}
                                                                                 </CardTitle>
                                                                         </CardHeader>
                                                                         <CardContent>
-                                                                                <Badge
-                                                                                        variant={
+                                                                                <div className="flex items-center gap-3">
+                                                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                                                                                                 vDropResult.percentage < 3
-                                                                                                        ? "default"
+                                                                                                        ? "bg-success/10"
                                                                                                         : vDropResult.percentage < 5
-                                                                                                                ? "secondary"
-                                                                                                                : "destructive"
-                                                                                        }
-                                                                                        className={
-                                                                                                vDropResult.percentage < 3
-                                                                                                        ? "bg-success/10 text-success border-success/30"
-                                                                                                        : vDropResult.percentage < 5
-                                                                                                                ? "bg-warning/10 text-warning border-warning/30"
-                                                                                                                : "bg-danger/10 text-danger border-danger/30"
-                                                                                        }
-                                                                                >
-                                                                                        {vDropResult.percentage < 3
-                                                                                                ? t("engineering.suitable")
-                                                                                                : vDropResult.percentage < 5
-                                                                                                        ? t("engineering.acceptable")
-                                                                                                        : t("engineering.excessive")}
-                                                                                </Badge>
+                                                                                                                ? "bg-warning/10"
+                                                                                                                : "bg-danger/10"
+                                                                                        }`}>
+                                                                                                <CheckCircle2 aria-hidden="true" className={`h-6 w-6 ${
+                                                                                                        vDropResult.percentage < 3
+                                                                                                                ? "text-success"
+                                                                                                                : vDropResult.percentage < 5
+                                                                                                                        ? "text-warning"
+                                                                                                                        : "text-danger"
+                                                                                                }`} />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                                <div className={`text-xl font-bold font-mono-num ${
+                                                                                                        vDropResult.percentage < 3
+                                                                                                                ? "text-success"
+                                                                                                                : vDropResult.percentage < 5
+                                                                                                                        ? "text-warning"
+                                                                                                                        : "text-danger"
+                                                                                                }`}>
+                                                                                                        {vDropResult.percentage < 3
+                                                                                                                ? t("engineering.suitable")
+                                                                                                                : vDropResult.percentage < 5
+                                                                                                                        ? t("engineering.acceptable")
+                                                                                                                        : t("engineering.excessive")}
+                                                                                                </div>
+                                                                                                <div className="text-sm text-muted-foreground">
+                                                                                                        {vDropResult.percentage < 3
+                                                                                                                ? t("engineering.voltageDropCompliant")
+                                                                                                                : vDropResult.percentage < 5
+                                                                                                                        ? t("engineering.voltageDropMarginal")
+                                                                                                                        : t("engineering.voltageDropNonCompliant")}
+                                                                                                </div>
+                                                                                        </div>
+                                                                                </div>
                                                                         </CardContent>
                                                                 </Card>
                                                         </div>
@@ -553,7 +613,7 @@ export function EngineeringPage() {
 
                                 {/* Cable Sizing Calculator */}
                                 {activeTab === "cable-sizing" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-cable-sizing" role="tabpanel" aria-label={t("engineering.cableSizing")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Cable aria-hidden="true" className="h-5 w-5" />
@@ -629,7 +689,7 @@ export function EngineeringPage() {
                                                                                         }))
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-card border-border text-foreground" aria-label={t("engineering.installationMethod", "Installation method")}>
+                                                                                <SelectTrigger className="bg-card border-border text-foreground">
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
                                                                                 <SelectContent className="bg-card border-border">
@@ -668,7 +728,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.recommendedSize")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {cableResult.recommendedSize} mm²
                                                                                                 </span>
                                                                                         </div>
@@ -676,7 +736,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.baseAmpacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {cableResult.baseAmpacity} A
                                                                                                 </span>
                                                                                         </div>
@@ -684,7 +744,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.deratingFactor")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {cableResult.deratingFactor}
                                                                                                 </span>
                                                                                         </div>
@@ -692,7 +752,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.finalAmpacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {cableResult.finalAmpacity} A
                                                                                                 </span>
                                                                                         </div>
@@ -719,7 +779,7 @@ export function EngineeringPage() {
 
                                 {/* Battery Calculation */}
                                 {activeTab === "battery-calc" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-battery-calc" role="tabpanel" aria-label={t("engineering.batteryCalculation")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Battery aria-hidden="true" className="h-5 w-5" />
@@ -856,7 +916,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.totalStandbyCurrent")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {batteryResult.totalStandbyCurrent} mA
                                                                                                 </span>
                                                                                         </div>
@@ -864,7 +924,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.totalAlarmCurrent")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {batteryResult.totalAlarmCurrent} mA
                                                                                                 </span>
                                                                                         </div>
@@ -872,7 +932,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.requiredCapacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {batteryResult.requiredCapacity} Ah
                                                                                                 </span>
                                                                                         </div>
@@ -892,7 +952,7 @@ export function EngineeringPage() {
                                                                                                 <span className="text-muted-foreground">
                                                                                                         {t("engineering.recommendedBattery")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-foreground">
+                                                                                                <span className="font-mono-num text-foreground">
                                                                                                         {batteryResult.recommendedBattery}
                                                                                                 </span>
                                                                                         </div>
@@ -906,7 +966,7 @@ export function EngineeringPage() {
 
                                 {/* Room Analysis Tab */}
                                 {activeTab === "room-analysis" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-room-analysis" role="tabpanel" aria-label={t("fireai.room.title")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Flame aria-hidden="true" className="h-5 w-5" />
@@ -941,7 +1001,7 @@ export function EngineeringPage() {
 
                                 {/* Integration Pipeline Tab */}
                                 {activeTab === "integration" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-integration" role="tabpanel" aria-label={t("fireai.integration.title")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Network aria-hidden="true" className="h-5 w-5" />
