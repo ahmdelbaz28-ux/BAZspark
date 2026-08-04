@@ -153,6 +153,7 @@ from fireai.api.settings_router import router as settings_router
 app.include_router(settings_router, dependencies=[Depends(verify_api_key)])
 
 from fireai.api.audit_router import router as audit_router
+
 app.include_router(audit_router, dependencies=[Depends(verify_api_key)])
 
 # ============================================================================
