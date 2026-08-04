@@ -40,9 +40,10 @@ celery>=5.2.0,<6.0.0
 # ── Auth & Security ──────────────────────────────────────────────────────────
 # V163 FIX: cryptography pinned >=48.0.1 to fix 5 HIGH CVEs (PYSEC-2026-35,
 # GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf).
+# V314 FIX: bump upper bound to <51 so CVE-2026-69247 (fixed in 50.0.0) is installable.
 pyjwt[crypto]>=2.13.0,<3.0.0  # V163 RESTORE: was reverted to 2.9.0 by 9da220d2 with false 'Python 3.8' justification
 passlib[bcrypt]>=1.7.0,<2.0.0
-cryptography>=50.0.0,<51.0.0  # V296 FIX: bump past CVE-2026-69247 (GHSA-g6cj-pr64-35w5, fix=50.0.0); V163 had fixed 5 HIGH CVEs (was 43.0.0)
+cryptography>=50.0.0,<51.0.0  # V163 RESTORE (was 43.0.0, reverted by 9da220d2 w/ false 'Python 3.8' justification); V296/V314 bump past CVE-2026-69247 (fix=50.0.0, GHSA-g6cj-pr64-35w5); upper bound <51 from V314
 
 # ── Networking ───────────────────────────────────────────────────────────────
 requests>=2.30.0,<3.0.0
