@@ -42,6 +42,7 @@ import {
         RotateCcw,
         Database,
         Cog,
+        CreditCard,
     } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
@@ -537,6 +538,12 @@ const navGroups: NavGroup[] = [
                                 icon: Settings,
                                 path: "/settings",
                                 dataOnboarding: "nav-settings",
+                        },
+                        {
+                                labelKey: "nav.billing",
+                                defaultLabel: "Billing & Meeza",
+                                icon: CreditCard,
+                                path: "/billing",
                         },
                         {
                                 labelKey: "nav.advancedSettings",
