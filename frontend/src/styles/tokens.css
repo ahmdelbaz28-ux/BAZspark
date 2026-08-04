@@ -126,9 +126,9 @@
   --color-panel-recess: #151a1f;
   --color-bone: #e8e4d8;
   --color-signal-red: #c2362c;
-  --color-evac-green: #3d8a4d;
+  --color-evac-green: #44975b;
   --color-amber-alert: #c8951e;
-  --color-steel: #5a6770;
+  --color-steel: #7d8b98;
 
   /* Type role tokens — referenced by typography.css + per-surface CSS */
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
