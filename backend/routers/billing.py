@@ -137,12 +137,12 @@ def _raise_txn_not_found() -> None:
 
 
 # Standard response models reused across endpoints (for OpenAPI `responses=`)
-_ERROR_401 = {"description": "Authentication required", "content": {"application/json": {"example": {"detail": _MSG_AUTH_REQUIRED}}}}
-_ERROR_400 = {"description": "Bad request (validation or business rule)", "content": {"application/json": {"example": {"detail": "..."}}}}
-_ERROR_403 = {"description": "Forbidden (role required or sandbox-only)", "content": {"application/json": {"example": {"detail": "..."}}}}
-_ERROR_404 = {"description": "Order or transaction not found", "content": {"application/json": {"example": {"detail": _MSG_ORDER_NOT_FOUND}}}}
-_ERROR_501 = {"description": "Not implemented (live PSP not configured)", "content": {"application/json": {"example": {"detail": "..."}}}}
-_ERROR_502 = {"description": "PSP communication error", "content": {"application/json": {"example": {"detail": "PSP communication error: ..."}}}}
+_ERROR_401 = {"description": "Authentication required", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_AUTH_REQUIRED}}}}
+_ERROR_400 = {"description": "Bad request (validation or business rule)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
+_ERROR_403 = {"description": "Forbidden (role required or sandbox-only)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
+_ERROR_404 = {"description": "Order or transaction not found", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_ORDER_NOT_FOUND}}}}
+_ERROR_501 = {"description": "Not implemented (live PSP not configured)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
+_ERROR_502 = {"description": "PSP communication error", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "PSP communication error: ..."}}}}
 
 
 # ── Order endpoints ──────────────────────────────────────────────────────────

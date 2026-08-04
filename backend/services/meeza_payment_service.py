@@ -543,7 +543,10 @@ def create_order(
 
     logger.info(
         "Meeza Payment: order created (user=%s, amount=%d %s)",
-        user_principal[:8], amount_cents, currency or cfg.currency,
+        # SonarCloud S5145: do not log user-controlled data verbatim. Log
+        # only a short prefix as a correlation aid.
+        (user_principal[:4] + "...") if user_principal else "",
+        amount_cents, currency or cfg.currency,
     )
     return {
         "id": order_id,
@@ -690,7 +693,9 @@ def initiate_checkout(
 
     logger.info(
         "Meeza Payment: checkout initiated (order=%s, txn=%s, method=%s)",
-        order_id[:8], txn_id[:8], method,
+        # SonarCloud S5145: order_id is user-influenced (uuid). Log a short
+        # prefix only — sufficient for correlation, not for reconstruction.
+        order_id[:4] + "...", (txn_id[:4] + "...") if txn_id else "", method,
     )
     return {
         "order_id": order_id,

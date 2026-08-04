@@ -26,7 +26,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
     CheckoutResult,
     Order,
-    TxnStatus,
     createOrder,
     formatAmount,
     getOrder,
@@ -333,10 +332,10 @@ export function MeezaPayment() {
 function PlanSelector({
     plans,
     onSelect,
-}: {
+}: Readonly<{
     plans: MeezaPlan[];
     onSelect: (plan: MeezaPlan) => void;
-}) {
+}>) {
     const [busy, setBusy] = useState<string | null>(null);
     return (
         <div className="space-y-3">
@@ -406,13 +405,13 @@ function IframeCheckout({
     onFallbackToRedirect,
     onCancel,
     onSimulateSuccess,
-}: {
+}: Readonly<{
     checkout: CheckoutResult;
     order: Order;
     onFallbackToRedirect: () => void;
     onCancel: () => void;
     onSimulateSuccess: () => void;
-}) {
+}>) {
     const [iframeFailed, setIframeFailed] = useState(false);
     const isSandbox = checkout.method === "sandbox";
 
@@ -493,7 +492,7 @@ function IframeCheckout({
 
 // ── Other state subcomponents ───────────────────────────────────────────────
 
-function LoadingState({ label }: { label: string }) {
+function LoadingState({ label }: Readonly<{ label: string }>) {
     return (
         <div className="py-12 flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
@@ -505,10 +504,10 @@ function LoadingState({ label }: { label: string }) {
 function PollingState({
     order,
     onCancel,
-}: {
+}: Readonly<{
     order: Order;
     onCancel: () => void;
-}) {
+}>) {
     return (
         <div className="py-12 flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
@@ -533,10 +532,10 @@ function PollingState({
 function SuccessState({
     order,
     onDone,
-}: {
+}: Readonly<{
     order: Order;
     onDone: () => void;
-}) {
+}>) {
     return (
         <div className="py-10 flex flex-col items-center gap-3">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -572,11 +571,11 @@ function FailureState({
     order,
     reason,
     onRetry,
-}: {
+}: Readonly<{
     order: Order;
     reason?: string;
     onRetry: () => void;
-}) {
+}>) {
     const label = orderStatusLabel(order.status);
     return (
         <div className="py-10 flex flex-col items-center gap-3">
@@ -610,4 +609,5 @@ function FailureState({
 }
 
 // Re-export TxnStatus so consumers can use this as a single entry point
-export type { TxnStatus };
+// (SonarCloud S7763: prefer `export…from` for re-exports.)
+export type { TxnStatus } from "../../services/billingApi";

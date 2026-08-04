@@ -21,7 +21,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -330,14 +329,11 @@ def test_config_from_env_sandbox_default():
     assert cfg.currency == "EGP"
 
 
-def test_config_invalid_provider_falls_back_to_sandbox():
+def test_config_invalid_provider_falls_back_to_sandbox(monkeypatch):
     from backend.services.meeza_payment_service import MeezaConfig
-    os.environ["MEEZA_PSP_PROVIDER"] = "invalid-provider"
-    try:
-        cfg = MeezaConfig.from_env()
-        assert cfg.psp_name.value == "sandbox"
-    finally:
-        del os.environ["MEEZA_PSP_PROVIDER"]
+    monkeypatch.setenv("MEEZA_PSP_PROVIDER", "invalid-provider")
+    cfg = MeezaConfig.from_env()
+    assert cfg.psp_name.value == "sandbox"
 
 
 # ── Service: transaction listing ─────────────────────────────────────────────
