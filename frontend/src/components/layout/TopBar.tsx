@@ -1,4 +1,4 @@
-/** Primary application top bar — connection status, search, help, settings, theme toggle, language, and user menu. Distinct from core/Header (deprecated placeholder). */
+/** Primary application top bar — connection status, search, help, settings, theme toggle, language, and user menu. (core/Header was removed in V235 cleanup — dead code.) */
 import { Globe, HelpCircle, Search, Settings, Sun, Moon } from "lucide-react";
 import type React from "react";
 import { memo, useEffect, useRef, useState } from "react";

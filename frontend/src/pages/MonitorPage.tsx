@@ -3,9 +3,15 @@
  *
  * V217: New page — 6 backend endpoints now have UI.
  * Health, metrics, engine status, agent activity, security alerts.
+ *
+ * V235: Real-time streaming via useWebSocketStream.
+ * When the backend sends sequenced WebSocket messages on the "monitor" channel,
+ * they are batched (50ms), validated by monotonic sequence lock, and applied
+ * to the corresponding state slices. REST buttons remain as fallback
+ * (stale-while-revalidate pattern).
  */
-import { useState } from "react";
-import { Activity, AlertCircle, Clock, Cpu, Loader2, ShieldAlert, Bell } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Activity, AlertCircle, Clock, Cpu, Loader2, ShieldAlert, Bell, Wifi, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +23,19 @@ import {
 } from "@/components/ui/card";
 import { monitorApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocketStream, type StreamMessage } from "@/hooks/useWebSocketStream";
+
+/**
+ * Derive the WebSocket URL from VITE_WS_URL or VITE_API_URL.
+ * Mirrors the pattern used in dataService.ts and digitalTwinApi.ts.
+ */
+function getMonitorWsUrl(): string {
+        const envWs = import.meta.env.VITE_WS_URL;
+        if (envWs) return envWs;
+        const apiBase = import.meta.env.VITE_API_URL || "/api/v1";
+        // Replace http(s) with ws(s) and /api prefix with /ws
+        return apiBase.replace(/^http/, "ws").replace(/\/api\/v\d+/, "/ws") + "/monitor";
+}
 
 export function MonitorPage() {
         const { toast } = useToast();
@@ -29,6 +48,7 @@ export function MonitorPage() {
         const [alerts, setAlerts] = useState<unknown[]>([]);
         const [uptime, setUptime] = useState<Record<string, unknown> | null>(null);
 
+        // ---- REST handlers (defined first so gap-resync can reference them) ----
         const handleHealth = async () => {
                 setLoading(true);
                 try {
@@ -60,6 +80,62 @@ export function MonitorPage() {
                         setLoading(false);
                 }
         };
+
+        // ---- Real-time WebSocket streaming ----
+        // Batch handler: routes sequenced messages to the correct state slice
+        // based on the message `type` field from the backend.
+        const handleStreamBatch = useCallback((messages: StreamMessage[]) => {
+                for (const msg of messages) {
+                        switch (msg.type) {
+                                case "health":
+                                        setHealth(msg.data as Record<string, unknown>);
+                                        break;
+                                case "engine_status":
+                                        setEngineStatus(msg.data as Record<string, unknown>);
+                                        break;
+                                case "agent_activity": {
+                                        const activities = (msg.data as { activities?: unknown[] }).activities;
+                                        if (activities) setAgentActivity(activities);
+                                        break;
+                                }
+                                case "security_alerts": {
+                                        const newAlerts = (msg.data as { alerts?: unknown[] }).alerts;
+                                        if (newAlerts) setSecurityAlerts(newAlerts);
+                                        break;
+                                }
+                                case "metrics":
+                                        setMetrics(msg.data as string);
+                                        break;
+                                case "alerts": {
+                                        const sysAlerts = (msg.data as { alerts?: unknown[] }).alerts;
+                                        if (sysAlerts) setAlerts(sysAlerts);
+                                        break;
+                                }
+                                case "uptime":
+                                        setUptime(msg.data as Record<string, unknown>);
+                                        break;
+                                default:
+                                        // Unknown message type — ignore gracefully
+                                        break;
+                        }
+                }
+        }, []);
+
+        const handleStreamGap = useCallback(() => {
+                // On gap detection, trigger a full REST resync (stale-while-revalidate)
+                void handleHealth();
+                void handleEngineStatus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- handleHealth/handleEngineStatus are stable async fns
+        }, []);
+
+        const { connected: wsConnected, discardedCount } = useWebSocketStream({
+                url: getMonitorWsUrl(),
+                onBatch: handleStreamBatch,
+                onGap: handleStreamGap,
+                onError: () => {
+                        /* REST fallback remains available — no toast spam on WS failure */
+                },
+        });
 
         const handleAgentActivity = async () => {
                 setLoading(true);
@@ -144,14 +220,34 @@ export function MonitorPage() {
         return (
                 <div className="flex-1 overflow-auto">
                         <div className="p-6 max-w-5xl mx-auto space-y-6">
-                                <div>
-                                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                        <Activity aria-hidden="true" className="h-5 w-5 text-primary" />
-                                        System Monitor
-                                </h1>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                                Engine health · Agent activity · Security alerts · Prometheus metrics
-                                        </p>
+                                <div className="flex items-center justify-between">
+                                        <div>
+                                                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                                                        <Activity aria-hidden="true" className="h-5 w-5 text-primary" />
+                                                        System Monitor
+                                                </h1>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                        Engine health · Agent activity · Security alerts · Prometheus metrics
+                                                </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                                {wsConnected ? (
+                                                        <Badge variant="default" className="gap-1">
+                                                                <Wifi aria-hidden="true" className="h-3 w-3" />
+                                                                Live
+                                                        </Badge>
+                                                ) : (
+                                                        <Badge variant="secondary" className="gap-1">
+                                                                <WifiOff aria-hidden="true" className="h-3 w-3" />
+                                                                Offline
+                                                        </Badge>
+                                                )}
+                                                {discardedCount > 0 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                                {discardedCount} discarded
+                                                        </Badge>
+                                                )}
+                                        </div>
                                 </div>
 
                                 {/* Quick Actions */}
