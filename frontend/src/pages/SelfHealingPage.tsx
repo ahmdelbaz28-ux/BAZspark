@@ -178,6 +178,15 @@ export function SelfHealingPage() {
         const cfg = health?.config;
         const chainValid = audit?.chain_integrity?.valid;
 
+        // Circuit breaker state description - extracted to avoid nested ternary (S3358)
+        const cbStateDescription = cb?.state === "CLOSED"
+                ? "System operating normally — all computation methods active"
+                : cb?.state === "OPEN"
+                        ? "System in fallback mode — all methods returning safe defaults. Investigate root cause then reset."
+                        : cb?.state === "HALF_OPEN"
+                                ? "System in recovery mode — probing with limited requests to test if root cause is resolved"
+                                : "Unknown state";
+
         return (
                 <div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
                         {/* Header */}
@@ -225,9 +234,7 @@ export function SelfHealingPage() {
                                                         Circuit Breaker: {cb.state}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                        {cb.state === "CLOSED" && "System operating normally — all computation methods active"}
-                                                        {cb.state === "OPEN" && "System in fallback mode — all methods returning safe defaults. Investigate root cause then reset."}
-                                                        {cb.state === "HALF_OPEN" && "System in recovery mode — probing with limited requests to test if root cause is resolved"}
+                                                        {cbStateDescription}
                                                 </p>
                                         </div>
                                 </div>

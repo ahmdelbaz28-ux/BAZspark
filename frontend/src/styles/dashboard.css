@@ -156,7 +156,7 @@
 .dashboard-stat-desc {
         font-family: var(--font-body);
         font-size: 0.75rem;
-        color: rgba(232, 228, 216, 0.45);
+        color: rgba(232, 228, 216, 0.58);
 }
 
 /* Stat number — was text-3xl font-bold text-foreground font-mono-num.

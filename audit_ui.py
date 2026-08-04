@@ -25,11 +25,11 @@ def get_all_routes():
 
 if __name__ == "__main__":
     routes = get_all_routes()
-    
+
     # We will search the frontend files for substrings of the paths
     unmapped = []
     mapped = []
-    
+
     # Pre-read all frontend code to speed up searching
     frontend_code = ""
     for root, _, files in os.walk(FRONTEND_DIR):
@@ -39,29 +39,25 @@ if __name__ == "__main__":
                 try:
                     with open(filepath, 'r', encoding='utf-8') as f:
                         frontend_code += f.read() + "\n"
-                except:
+                except Exception:
                     pass
-                    
+
     for method, path, filepath in routes:
         # Convert path /api/v1/monitor/health to search terms
         search_path = re.sub(r'\{[^}]+\}', '', path) # remove path params
         parts = [p for p in search_path.split('/') if p]
-        
+
         is_mapped = False
         if len(parts) > 0:
             search_str = "/".join(parts)
-            if search_str in frontend_code:
+            if search_str in frontend_code or (len(parts) >= 2 and "/".join(parts[-2:]) in frontend_code) or (len(parts) == 1 and f"/{parts[0]}" in frontend_code):
                 is_mapped = True
-            elif len(parts) >= 2 and "/".join(parts[-2:]) in frontend_code:
-                is_mapped = True
-            elif len(parts) == 1 and f"/{parts[0]}" in frontend_code:
-                is_mapped = True
-        
+
         if is_mapped:
             mapped.append((method, path, filepath))
         else:
             unmapped.append((method, path, filepath))
-            
+
     # Output markdown report
     with open('ui_coverage_report.md', 'w', encoding='utf-8') as f:
         f.write("# UI Coverage Report\n\n")
@@ -70,13 +66,13 @@ if __name__ == "__main__":
         f.write(f"Total Missing UI Features: {len(unmapped)}\n")
         if len(routes) > 0:
             f.write(f"Coverage Percentage: {(len(mapped)/len(routes))*100:.2f}%\n\n")
-        
+
         f.write("## ❌ Missing UI Coverage (Orphan Backend Endpoints)\n\n")
         f.write("| Method | Endpoint | Backend Location |\n")
         f.write("|--------|----------|------------------|\n")
         for m, p, loc in sorted(unmapped, key=lambda x: x[1]):
             f.write(f"| {m} | `{p}` | {loc} |\n")
-            
+
         f.write("\n## ✅ Mapped Features\n\n")
         f.write("| Method | Endpoint | Backend Location |\n")
         f.write("|--------|----------|------------------|\n")

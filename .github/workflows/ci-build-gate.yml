@@ -17,12 +17,16 @@ on:
       - 'frontend/**'
       - 'backend/**'
       - '.github/workflows/ci-build-gate.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/deploy.yml'
   push:
     branches: [main]
     paths:
       - 'frontend/**'
       - 'backend/**'
       - '.github/workflows/ci-build-gate.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:

@@ -177,9 +177,9 @@ export const EngineeringCopilotPage: React.FC = () => {
         entity_type: entityForm.entity_type,
         description: entityForm.description,
         coordinates: {
-          x: parseFloat(entityForm.x) || 0,
-          y: parseFloat(entityForm.y) || 0,
-          z: parseFloat(entityForm.z) || 0,
+          x: Number.parseFloat(entityForm.x) || 0,
+          y: Number.parseFloat(entityForm.y) || 0,
+          z: Number.parseFloat(entityForm.z) || 0,
         },
         properties: {},
       });

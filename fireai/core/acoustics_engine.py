@@ -1,5 +1,5 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 """
 acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
 ======================================================================
@@ -571,7 +571,7 @@ class AcousticsEngine:
         barriers: list[Barrier] | None = None,
         mode: str = "public",
         room_absorption_m2: float | None = None,
-        _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        _room_volume_m3: float | None = None,  # NOSONAR:S1172: parameter retained for API stability
     ) -> AcousticCoverageResult:
         """
         Verify NFPA 72 §18.4 audible notification coverage.
@@ -784,7 +784,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — UGLD Ray Trace (Single Sensor)
     # ------------------------------------------------------------------
 
-    def ugld_raytrace(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_raytrace(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_point: tuple[float, float, float],
         sensor_point: tuple[float, float, float],
@@ -1018,7 +1018,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — Multi-Sensor UGLD Coverage
     # ------------------------------------------------------------------
 
-    def ugld_multi_sensor_coverage(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_multi_sensor_coverage(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_points: list[tuple[float, float, float]],
         sensor_points: list[tuple[float, float, float]],

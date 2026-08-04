@@ -100,9 +100,8 @@ export const DWGPage: React.FC = () => {
         </div>
 
         {/* Upload Zone */}
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label="Upload DWG or DXF file"
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -147,7 +146,7 @@ export const DWGPage: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Error */}
         {error && (

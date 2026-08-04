@@ -1,8 +1,9 @@
 import hashlib
 import hmac
 import json
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List
+
 
 class MerkleNode:
     def __init__(self, data: Dict[str, Any], previous_hash: str = "GENESIS"):
@@ -22,7 +23,7 @@ class MerkleNode:
             },
             sort_keys=True
         ).encode('utf-8')
-        
+
         # In a real enterprise system, a secret key would be used for HMAC.
         # Here we use a generic secret for the sake of the structural implementation.
         secret = b"bazspark-audit-secret-key-12345"
@@ -31,7 +32,7 @@ class MerkleNode:
 class AuditMerkleTree:
     """
     Append-only Merkle tree structure for cryptographic audit trails.
-    Compliant with the 14 UI coverage rules (specifically the requirement 
+    Compliant with the 14 UI coverage rules (specifically the requirement
     for verifiable, tamper-evident audit logs).
     """
     def __init__(self):
@@ -56,19 +57,19 @@ class AuditMerkleTree:
         """
         if not self.nodes:
             return True
-            
+
         for i in range(1, len(self.nodes)):
             current = self.nodes[i]
             previous = self.nodes[i-1]
-            
+
             # Check linkage
             if current.previous_hash != previous.hash:
                 return False
-                
+
             # Check internal hash calculation
             if current.hash != current._calculate_hash():
                 return False
-                
+
         return True
 
     def get_chain(self) -> List[Dict[str, Any]]:

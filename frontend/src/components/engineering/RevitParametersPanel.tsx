@@ -14,28 +14,33 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
         const [saving, setSaving] = useState(false);
         const [isEditing, setIsEditing] = useState(false);
 
-        const loadParameters = async () => {
-                setLoading(true);
-                try {
-                        const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
-                        const res = await fetch(`${apiUrl}/elements/${elementId}/parameters`, {
-                                credentials: "same-origin",
-                        });
-                        if (res.ok) {
-                                const data = await res.json();
-                                setParameters(data.parameters || data || {});
-                        } else if (res.status !== 404) {
-                                throw new Error("Failed to load parameters");
-                        }
-                } catch (error) {
-                        toast.error(`Error loading parameters: ${(error as Error).message}`);
-                } finally {
-                        setLoading(false);
-                }
-        };
-
         useEffect(() => {
-                loadParameters();
+                // Avoid calling setState synchronously inside the effect body;
+                // wrap in an async IIFE so the effect itself returns void.
+                let cancelled = false;
+                (async () => {
+                        setLoading(true);
+                        try {
+                                const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
+                                const res = await fetch(`${apiUrl}/elements/${elementId}/parameters`, {
+                                        credentials: "same-origin",
+                                });
+                                if (cancelled) return;
+                                if (res.ok) {
+                                        const data = await res.json();
+                                        if (!cancelled) setParameters(data.parameters || data || {});
+                                } else if (res.status !== 404) {
+                                        throw new Error("Failed to load parameters");
+                                }
+                        } catch (error) {
+                                if (!cancelled) toast.error(`Error loading parameters: ${(error as Error).message}`);
+                        } finally {
+                                if (!cancelled) setLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
         }, [elementId]);
 
         const handleSave = async () => {
@@ -135,7 +140,7 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                                                         )}
                                                 </div>
                                         ))}
-                                        
+
                                         {isEditing && (
                                                 <Button variant="outline" size="sm" className="w-full mt-2" onClick={addParam}>
                                                         <Plus className="h-4 w-4 mr-2" /> Add Parameter

@@ -1,5 +1,5 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 """
 backend/services/revit_service.py — Revit Integration Service.
 =============================================================
@@ -470,7 +470,7 @@ class RevitService:
             logger.exception("Disconnect error: %s", e)
             return False
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_element_data(self, element) -> Dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
@@ -813,7 +813,7 @@ class RevitService:
                                 # (not silently ignored).
                                 cat = elem.get("category", "").lower()
                                 if cat == "walls":
-                                    self.create_wall(  # NOSONAR — S930: level accepted by RevitService.create_wall(self, start_point, end_point, height, level, wall_type)
+                                    self.create_wall(  # NOSONAR:S930: level accepted by RevitService.create_wall(self, start_point, end_point, height, level, wall_type)
                                         start_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[0],
                                         end_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[1],
                                         level=elem.get("level", _DEFAULT_LEVEL),
@@ -986,7 +986,7 @@ class RevitService:
             logger.info("Real wall creation not implemented in adapter stub.")
             return result.get("id")
 
-    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = _DEFAULT_LEVEL,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = _DEFAULT_LEVEL,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
                      floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:
         """
         Create a floor in the active Revit document.
@@ -1140,7 +1140,7 @@ class RevitService:
             logger.exception("Error creating floor: %s", e)
             return None
 
-    def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
                       level: str = _DEFAULT_LEVEL, column_type: str = "M_Columns",
                       location_point: Optional[List[float]] = None) -> Optional[str]:
         """
@@ -1421,7 +1421,7 @@ class RevitService:
     def get_elements(
         self,
         category: Optional[str] = None,
-        element_class: Optional[str] = None  # NOSONAR — S1172: accepted for API stability; Revit element class filter flows here for FilteredElementCollector queries
+        element_class: Optional[str] = None  # NOSONAR:S1172: accepted for API stability; Revit element class filter flows here for FilteredElementCollector queries
     ) -> List[Dict[str, Any]]:
         """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
@@ -1676,13 +1676,13 @@ class RevitService:
         Does NOT generate a fake UUID.
         """
         # The caller should pass a window family_type (e.g. "M_Fixed").
-        return self.create_door(host_wall_id, location_point, family_type, level)  # NOSONAR — S930: level is 4th positional param of RevitService.create_door
+        return self.create_door(host_wall_id, location_point, family_type, level)  # NOSONAR:S930: level is 4th positional param of RevitService.create_door
 
     # the modern, simulation-aware implementation defined earlier in this class.
     # The legacy impl required `self._connected == True`; the modern impl always
     # returns a UUID. See the long comment above `create_door` for full context.
 
-    def create_beam(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def create_beam(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         start_point: List[float],
         end_point: List[float],
@@ -1814,7 +1814,7 @@ class RevitService:
         family_name: str,
         category: str,
         location_point: List[float],
-        level: Optional[str] = None,  # NOSONAR — S1172: accepted for API stability; Revit level name flows here for family instance placement
+        level: Optional[str] = None,  # NOSONAR:S1172: accepted for API stability; Revit level name flows here for family instance placement
         parameters: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
@@ -2041,7 +2041,7 @@ class RevitService:
             tx.Start()
             try:
                 # ViewPlan.Create for floor plans; falls back to View.Create
-                if view_type.lower() in ("floor plan", "floor_plan", "plan"):  # NOSONAR: S3923 branches intentionally identical  # NOSONAR — S7632: test function documented via class name / module path
+                if view_type.lower() in ("floor plan", "floor_plan", "plan"):  # NOSONAR:S3923 branches intentionally identical  # NOSONAR:S7632: test function documented via class name / module path
                     new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
                 else:
                     # Other view types: requires ViewFamilyType lookup.
@@ -2204,7 +2204,7 @@ class RevitService:
 
         return []
 
-    def load_family(self, family_path: str, _category: Optional[str] = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def load_family(self, family_path: str, _category: Optional[str] = None) -> bool:  # NOSONAR:S1172: parameter retained for API stability
         """Load a family (.rfa) into the project."""
         if not self._connected:
             return False
@@ -2254,7 +2254,7 @@ class RevitService:
             logger.exception("Failed to load API data: %s", e)
             return False
 
-    def search_api_data(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def search_api_data(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         keyword: Optional[str] = None,
         api_name: Optional[str] = None,
@@ -2349,7 +2349,7 @@ class RevitService:
     # AI COMMAND EXECUTION
     # =========================================================================
 
-    def execute_ai_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def execute_ai_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Execute a natural language command from AI agent."""
         command = command.lower()
 
@@ -2367,7 +2367,7 @@ class RevitService:
                 points = context.get("points", [[0, 0, 0], [5000, 0, 0]])
                 level = self._extract_level(command) or _DEFAULT_LEVEL
 
-                element_id = self.create_wall(points[0], points[1], level=level)  # NOSONAR — S930: level accepted by RevitService.create_wall
+                element_id = self.create_wall(points[0], points[1], level=level)  # NOSONAR:S930: level accepted by RevitService.create_wall
 
                 result = {
                     "success": element_id is not None,
@@ -2500,7 +2500,7 @@ class RevitService:
                         logger.debug(_EXC_MSG, exc_info=True)
         return None
 
-    def _get_family_symbol(self, _category: str, symbol_name: str):  # NOSONAR — S1172: parameter retained for API stability
+    def _get_family_symbol(self, _category: str, symbol_name: str):  # NOSONAR:S1172: parameter retained for API stability
         """Get FamilySymbol - similar to RevitJumper pattern."""
         if not self._revit_doc:
             return None
@@ -2520,7 +2520,7 @@ class RevitService:
             pvp = ParameterValueProvider(param_id)
             equals = FilterStringEquals()
             rule = FilterStringRule(pvp, equals, symbol_name, False)
-            filter = ElementParameterFilter(rule)  # NOSONAR — S5806: type check acceptable
+            filter = ElementParameterFilter(rule)  # NOSONAR:S5806: type check acceptable
 
             collector = FilteredElementCollector(self._revit_doc)
             collector.OfClass(FamilySymbol).WhereElementIsElementType().WherePasses(filter)
@@ -2655,7 +2655,7 @@ class RevitService:
                 return elem
         return None
 
-    def _get__wall_center(self, _wall: Dict) -> List[float]:  # NOSONAR — S1172: parameter retained for API stability
+    def _get__wall_center(self, _wall: Dict) -> List[float]:  # NOSONAR:S1172: parameter retained for API stability
         """Get center point of a wall."""
         return [2500, 0, 0]
 

@@ -1,5 +1,5 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 from __future__ import annotations
 
 """
@@ -1142,7 +1142,7 @@ def compute_hash(data: Any) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
     safe_minimum: float = 0.0,
     default_value: Any = None,
     conservative_estimate: Any = 1.0,
@@ -1926,7 +1926,7 @@ def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
     Computes required operating pressure: P = (Q / K)^2
     Citing: NFPA 13 Section 23.4.4.
     """
-    if k_factor == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+    if k_factor == 0.0:  # NOSONAR:S1244: import retained for re-export / API surface
         raise ZeroDivisionError("K-Factor cannot be zero under active calculations.")
     return (flow_gpm / k_factor) ** 2
 
