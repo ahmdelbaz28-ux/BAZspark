@@ -541,12 +541,12 @@ def create_order(
              now, now, expires_iso),
         )
 
+    # SonarCloud S5145: do not log user-controlled data — even truncated.
+    # Use a short SHA-256 prefix as a non-reversible correlation id.
+    user_hash = hashlib.sha256(user_principal.encode("utf-8")).hexdigest()[:8] if user_principal else ""
     logger.info(
-        "Meeza Payment: order created (user=%s, amount=%d %s)",
-        # SonarCloud S5145: do not log user-controlled data verbatim. Log
-        # only a short prefix as a correlation aid.
-        (user_principal[:4] + "...") if user_principal else "",
-        amount_cents, currency or cfg.currency,
+        "Meeza Payment: order created (user_sha=%s, amount=%d %s)",
+        user_hash, amount_cents, currency or cfg.currency,
     )
     return {
         "id": order_id,
@@ -691,11 +691,13 @@ def initiate_checkout(
              now, now),
         )
 
+    # SonarCloud S5145: do not log user-controlled data — even truncated.
+    # Use a short SHA-256 prefix as a non-reversible correlation id.
+    order_hash = hashlib.sha256(order_id.encode("utf-8")).hexdigest()[:8]
+    txn_hash = hashlib.sha256(txn_id.encode("utf-8")).hexdigest()[:8] if txn_id else ""
     logger.info(
-        "Meeza Payment: checkout initiated (order=%s, txn=%s, method=%s)",
-        # SonarCloud S5145: order_id is user-influenced (uuid). Log a short
-        # prefix only — sufficient for correlation, not for reconstruction.
-        order_id[:4] + "...", (txn_id[:4] + "...") if txn_id else "", method,
+        "Meeza Payment: checkout initiated (order_sha=%s, txn_sha=%s, method=%s)",
+        order_hash, txn_hash, method,
     )
     return {
         "order_id": order_id,
