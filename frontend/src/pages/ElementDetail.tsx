@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { RevitParametersPanel } from "@/components/engineering/RevitParametersPanel";
 import { api } from "@/services/api";
 import type { ElementUpdate } from "@/types";
 
@@ -358,6 +359,11 @@ function ElementDetail() {
 					<PropertyRow label="Modified By" value={element.last_modified_by} />
 				</div>
 			</div>
+
+			{/* Revit Parameters */}
+			{element.revit_element_id && (
+				<RevitParametersPanel elementId={id!} />
+			)}
 
 			{/* Connections */}
 			<div className="bg-card border border-border rounded-md p-6">

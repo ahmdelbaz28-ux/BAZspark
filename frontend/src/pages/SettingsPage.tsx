@@ -173,7 +173,11 @@ export function SettingsPage() {
         const [saveStatus, setSaveStatus] = useState<string | null>(null);
         const [settingsUpdateStatus, setSettingsUpdateStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
         const [securityActionStatus, setSecurityActionStatus] = useState<Record<string, "loading" | "success" | "error">>({});
-        const [visionKeyName, setVisionKeyName] = useState("");
+        
+        const [visionKeyInput, setVisionKeyInput] = useState("");
+        const [visionKeyDesc, setVisionKeyDesc] = useState("");
+        const [visionKeys, setVisionKeys] = useState<any[]>([]);
+        const [visionKeysLoading, setVisionKeysLoading] = useState(false);
 
         const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -206,6 +210,27 @@ export function SettingsPage() {
                         });
                 });
         }, [API_BASE]);
+
+        // Fetch Vision API keys when security-config tab is active
+        useEffect(() => {
+                const fetchKeys = async () => {
+                        setVisionKeysLoading(true);
+                        try {
+                                const res = await fetch(`${API_BASE}/settings/keys/openai`, { credentials: "same-origin" });
+                                if (res.ok) {
+                                        const data = await res.json();
+                                        setVisionKeys(data);
+                                }
+                        } catch {
+                                // Ignore network errors
+                        } finally {
+                                setVisionKeysLoading(false);
+                        }
+                };
+                if (activeTab === "security-config") {
+                        fetchKeys();
+                }
+        }, [API_BASE, activeTab]);
 
         const persistSettings = (key: string, value: Record<string, unknown>) => {
                 try {
@@ -678,14 +703,24 @@ export function SettingsPage() {
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
                                                                         <div className="flex gap-2">
-                                                                                <Input placeholder={t("fireai.settings.keyName")} className="flex-1" value={visionKeyName} onChange={(e) => setVisionKeyName(e.target.value)} />
-                                                                                <Button disabled={securityActionStatus["addKey"] === "loading" || !visionKeyName.trim()} onClick={async () => {
+                                                                                <Input type="password" placeholder="sk-..." className="flex-1" value={visionKeyInput} onChange={(e) => setVisionKeyInput(e.target.value)} />
+                                                                                <Input placeholder="Description (optional)" className="w-1/3" value={visionKeyDesc} onChange={(e) => setVisionKeyDesc(e.target.value)} />
+                                                                                <Button disabled={securityActionStatus["addKey"] === "loading" || !visionKeyInput.trim()} onClick={async () => {
                                                                                         setSecurityActionStatus((prev) => ({ ...prev, addKey: "loading" }));
                                                                                         try {
-                                                                                                const res = await fetch(`${API_BASE}/settings/keys/openai`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ name: visionKeyName.trim() }) });
+                                                                                                const res = await fetch(`${API_BASE}/settings/keys/openai`, { 
+                                                                                                        method: "POST", 
+                                                                                                        headers: { "Content-Type": "application/json" }, 
+                                                                                                        credentials: "same-origin", 
+                                                                                                        body: JSON.stringify({ api_key: visionKeyInput.trim(), description: visionKeyDesc.trim() }) 
+                                                                                                });
                                                                                                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                                                                                                setVisionKeyName("");
+                                                                                                setVisionKeyInput("");
+                                                                                                setVisionKeyDesc("");
                                                                                                 setSecurityActionStatus((prev) => ({ ...prev, addKey: "success" }));
+                                                                                                // Re-fetch keys
+                                                                                                const listRes = await fetch(`${API_BASE}/settings/keys/openai`, { credentials: "same-origin" });
+                                                                                                if (listRes.ok) setVisionKeys(await listRes.json());
                                                                                         } catch {
                                                                                                 setSecurityActionStatus((prev) => ({ ...prev, addKey: "error" }));
                                                                                         }
@@ -695,8 +730,58 @@ export function SettingsPage() {
                                                                         </div>
                                                                         {securityActionStatus["addKey"] === "success" && <div className="text-sm text-emerald-600 dark:text-emerald-400">{t("fireai.settings.addKey")} — success</div>}
                                                                         {securityActionStatus["addKey"] === "error" && <div className="text-sm text-red-600 dark:text-red-400">Error adding key</div>}
-                                                                        <div className="text-sm text-muted-foreground">
-                                                                                {t("fireai.settings.maskedKey")}: ****-****-****-****
+                                                                        
+                                                                        <div className="space-y-2 mt-4">
+                                                                                {visionKeysLoading ? (
+                                                                                        <div className="text-sm text-muted-foreground">Loading keys...</div>
+                                                                                ) : visionKeys.length === 0 ? (
+                                                                                        <div className="text-sm text-muted-foreground">No active keys.</div>
+                                                                                ) : (
+                                                                                        visionKeys.map(key => (
+                                                                                                <div key={key.id} className="flex flex-col p-3 rounded-lg border border-border bg-slate-900/50 gap-2">
+                                                                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                                                                <div className="space-y-1">
+                                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                                <span className="font-mono text-sm">{key.masked_key}</span>
+                                                                                                                                {key.is_active && <Badge variant="outline" className="text-emerald-500 border-emerald-500">Active</Badge>}
+                                                                                                                        </div>
+                                                                                                                        {key.description && <p className="text-xs text-slate-400">{key.description}</p>}
+                                                                                                                </div>
+                                                                                                                <div className="flex items-center gap-2">
+                                                                                                                        <Button size="sm" variant="outline" disabled={securityActionStatus[`test-${key.id}`] === "loading"} onClick={async () => {
+                                                                                                                                setSecurityActionStatus((prev) => ({ ...prev, [`test-${key.id}`]: "loading" }));
+                                                                                                                                try {
+                                                                                                                                        const res = await fetch(`${API_BASE}/settings/keys/openai/${key.id}/test`, { method: "POST", credentials: "same-origin" });
+                                                                                                                                        const data = await res.json();
+                                                                                                                                        if (res.ok && data.ok) {
+                                                                                                                                                setSecurityActionStatus((prev) => ({ ...prev, [`test-${key.id}`]: "success" }));
+                                                                                                                                        } else {
+                                                                                                                                                setSecurityActionStatus((prev) => ({ ...prev, [`test-${key.id}`]: "error" }));
+                                                                                                                                        }
+                                                                                                                                } catch {
+                                                                                                                                        setSecurityActionStatus((prev) => ({ ...prev, [`test-${key.id}`]: "error" }));
+                                                                                                                                }
+                                                                                                                        }}>
+                                                                                                                                {securityActionStatus[`test-${key.id}`] === "loading" ? "Testing..." : "Test Connection"}
+                                                                                                                        </Button>
+                                                                                                                        <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-950/30" onClick={async () => {
+                                                                                                                                if (!confirm("Delete this key?")) return;
+                                                                                                                                try {
+                                                                                                                                        await fetch(`${API_BASE}/settings/keys/openai/${key.id}`, { method: "DELETE", credentials: "same-origin" });
+                                                                                                                                        setVisionKeys(keys => keys.filter(k => k.id !== key.id));
+                                                                                                                                } catch (e) {
+                                                                                                                                        console.error(e);
+                                                                                                                                }
+                                                                                                                        }}>
+                                                                                                                                Delete
+                                                                                                                        </Button>
+                                                                                                                </div>
+                                                                                                        </div>
+                                                                                                        {securityActionStatus[`test-${key.id}`] === "success" && <div className="text-xs text-emerald-500">Test passed successfully</div>}
+                                                                                                        {securityActionStatus[`test-${key.id}`] === "error" && <div className="text-xs text-red-500">Test failed</div>}
+                                                                                                </div>
+                                                                                        ))
+                                                                                )}
                                                                         </div>
                                                                 </CardContent>
                                                         </Card>

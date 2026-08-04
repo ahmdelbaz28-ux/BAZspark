@@ -43,6 +43,7 @@ import {
         SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RevitFamilyBrowser } from "@/components/engineering/RevitFamilyBrowser";
 
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
 let _cachedCadSettings: Record<string, unknown> | null = null;
@@ -711,15 +712,18 @@ export function CADSettingsPage() {
                                                                         </p>
                                                                 </div>
 
-                                                                <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
-                                                                        onClick={saveRevitSettings}
-                                                                >
-                                                                        Save Revit Settings
-                                                                </Button>
-                                                        </CardContent>
-                                                </Card>
-                                        </TabsContent>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                                <Button
+                                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                                        onClick={saveRevitSettings}
+                                                                                >
+                                                                                        Save Revit Settings
+                                                                                </Button>
+                                                                                <RevitFamilyBrowser />
+                                                                        </div>
+                                                                </CardContent>
+                                                        </Card>
+                                                </TabsContent>
 
                                         {/* Cloud Integration Tab */}
                                         <TabsContent value="cloud" className="space-y-6">
