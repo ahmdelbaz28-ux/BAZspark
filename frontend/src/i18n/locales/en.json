@@ -1073,7 +1073,8 @@
     "signalLost": "Signal Lost",
     "allPointsNormal": "All Points Normal",
     "supervisoryStatus": "Supervisory Status",
-    "systemSupervising": "System supervising all connected devices"
+    "systemSupervising": "System supervising all connected devices",
+    "signalLostDescription": "Supervisory signal interrupted — verify backend connection"
   },
   "projects": {
     "title": "Projects",

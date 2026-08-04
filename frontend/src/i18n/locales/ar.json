@@ -962,7 +962,8 @@
                 "signalLost": "فقدان الإشارة",
                 "allPointsNormal": "جميع النقاط سليمة",
                 "supervisoryStatus": "حالة الإشراف",
-                "systemSupervising": "النظام يشرف على جميع الأجهزة المتصلة"
+                "systemSupervising": "النظام يشرف على جميع الأجهزة المتصلة",
+                "signalLostDescription": "انقطعت إشارة الإشراف — تحقق من اتصال الخلفية"
         },
         "projects": {
                 "title": "المشاريع",

@@ -50,24 +50,24 @@ vi.mock("react-router", () => ({
 import { DashboardPage } from "../DashboardPage";
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
 describe("DashboardPage", () => {
@@ -75,8 +75,9 @@ describe("DashboardPage", () => {
                 vi.clearAllMocks();
         });
 
-        it("renders dashboard title", () => {
+        it("renders dashboard eyebrow label", () => {
                 render(<DashboardPage />);
+                // The page title "Dashboard" is now an h5 eyebrow, not the h1 hero
                 expect(screen.getByText("dashboard.title")).toBeInTheDocument();
         });
 
@@ -92,9 +93,9 @@ describe("DashboardPage", () => {
 
         it("shows backend connection status", () => {
                 render(<DashboardPage />);
-                // V140 FIX: The page uses 'dashboard.connected' (not 'dashboard.healthy')
-                // when health status is connected.
-                expect(screen.getByText("dashboard.connected")).toBeInTheDocument();
+                // Frontend-design skill: The hero shows supervising/signalLost status
+                // When connected, the hero displays 'dashboard.supervising'
+                expect(screen.getByText("dashboard.supervising")).toBeInTheDocument();
         });
 
         it("renders refresh and new project buttons", () => {

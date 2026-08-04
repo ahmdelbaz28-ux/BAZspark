@@ -97,7 +97,8 @@
                 opacity: 1 !important;
         }
 
-        .heartbeat-pulse {
+        .heartbeat-pulse,
+        .heartbeat-pulse-trouble {
                 animation: none !important;
         }
 }
@@ -146,4 +147,26 @@
 
 .heartbeat-pulse {
         animation: heartbeat 2s var(--ease-micro) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Supervisory trouble pulse — amber, slightly faster (1.5s)
+ *
+ * Per NFPA 72: Trouble conditions are distinct from alarm conditions.
+ * This pulse conveys "attention needed" without alarm-level urgency.
+ * Respects reduced-motion above.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@keyframes heartbeat-trouble {
+        0%, 100% {
+                opacity: 0.5;
+                transform: scale(1);
+        }
+        50% {
+                opacity: 0.15;
+                transform: scale(1.12);
+        }
+}
+
+.heartbeat-pulse-trouble {
+        animation: heartbeat-trouble 1.5s var(--ease-micro) infinite;
 }

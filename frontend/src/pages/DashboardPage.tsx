@@ -24,7 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDevices, useHealth, useProjects } from "@/hooks/useApiQuery";
 
 /**
- * DashboardPage — Frontend-design skill applied (2026-08-04)
+ * DashboardPage — Frontend-design skill applied (2026-08-04, revised)
  *
  * DESIGN RATIONALE (frontend-design skill, 2-pass process):
  *
@@ -152,38 +152,51 @@ export function DashboardPage() {
                                                 <div className="flex items-center gap-5 min-w-0">
                                                         {/* System Heartbeat Ring */}
                                                         <div
-                                                                className="shrink-0 relative w-14 h-14 flex items-center justify-center"
+                                                                className="shrink-0 relative w-20 h-20 flex items-center justify-center"
                                                                 role="img"
                                                                 aria-label={connected ? t("dashboard.supervising") : t("dashboard.signalLost")}
                                                         >
-                                                                {/* Outer pulse ring — only when connected */}
+                                                                {/* Outer pulse ring — connected: calm green supervisory pulse */}
                                                                 {connected && (
                                                                         <div className="absolute inset-0 rounded-full border-2 border-success/40 heartbeat-pulse" />
                                                                 )}
+                                                                {/* Disconnected: amber trouble pulse — NFPA 72 trouble condition */}
+                                                                {!connected && (
+                                                                        <div className="absolute inset-0 rounded-full border-2 border-warning/50 heartbeat-pulse-trouble" />
+                                                                )}
                                                                 {/* Inner solid ring */}
-                                                                <div className={`relative w-10 h-10 rounded-full border-2 flex items-center justify-center ${
+                                                                <div className={`relative w-14 h-14 rounded-full border-2 flex items-center justify-center transition-colors duration-300 ${
                                                                         connected
                                                                                 ? "border-success bg-success/10"
-                                                                                : "border-muted-foreground/30 bg-muted"
+                                                                                : "border-warning/60 bg-warning/10"
                                                                 }`}>
                                                                         <CheckCircle2
                                                                                 aria-hidden="true"
-                                                                                className={`h-5 w-5 ${connected ? "text-success" : "text-muted-foreground/50"}`}
+                                                                                className={`h-6 w-6 transition-colors duration-300 ${connected ? "text-success" : "text-warning"}`}
                                                                         />
                                                                 </div>
                                                         </div>
 
                                                         <div className="min-w-0">
+                                                                {/* Eyebrow — page label (h5: uppercase, small, muted) */}
+                                                                <h5 id="dashboard-hero-eyebrow" className="mb-1">
+                                                                {t("dashboard.title")}
+                                                                </h5>
+                                                                {/* Hero — system status IS the thesis (frontend-design skill)
+                                                                         * The most important fact: is the system supervising?
+                                                                         * Color: success when supervising, warning when signal lost. */}
                                                                 <h1
                                                                         id="dashboard-hero-title"
-                                                                        className="text-2xl font-bold tracking-tight text-foreground"
+                                                                        className={`text-2xl font-bold tracking-tight transition-colors duration-300 ${
+                                                                                connected ? "text-success" : "text-warning"
+                                                                        }`}
                                                                 >
-                                                                        {t("dashboard.title")}
+                                                                        {connected ? t("dashboard.supervising") : t("dashboard.signalLost")}
                                                                 </h1>
                                                                 <p className="text-sm text-muted-foreground mt-0.5">
                                                                         {connected
                                                                                 ? t("dashboard.systemSupervising")
-                                                                                : t("dashboard.signalLost")
+                                                                                : t("dashboard.signalLostDescription")
                                                                         }
                                                                 </p>
                                                         </div>
@@ -212,8 +225,9 @@ export function DashboardPage() {
                                                 {/* Projects Card */}
                                                 <Card
                                                         {...stagger(0)}
-                                                        className="border-border bg-card card-hover cursor-pointer"
+                                                        className="border-border bg-card card-hover cursor-pointer focus-ring"
                                                         onClick={() => navigate("/projects")}
+                                                        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/projects"); } }}
                                                         role="button"
                                                         tabIndex={0}
                                                 >
@@ -242,8 +256,9 @@ export function DashboardPage() {
                                                 {/* Active Projects Card */}
                                                 <Card
                                                         {...stagger(1)}
-                                                        className="border-border bg-card card-hover cursor-pointer"
+                                                        className="border-border bg-card card-hover cursor-pointer focus-ring"
                                                         onClick={() => navigate("/projects")}
+                                                        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/projects"); } }}
                                                         role="button"
                                                         tabIndex={0}
                                                 >
@@ -272,8 +287,9 @@ export function DashboardPage() {
                                                 {/* Total Devices Card */}
                                                 <Card
                                                         {...stagger(2)}
-                                                        className="border-border bg-card card-hover cursor-pointer"
+                                                        className="border-border bg-card card-hover cursor-pointer focus-ring"
                                                         onClick={() => navigate("/devices")}
+                                                        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/devices"); } }}
                                                         role="button"
                                                         tabIndex={0}
                                                 >
@@ -308,7 +324,12 @@ export function DashboardPage() {
                                  * the system isn't monitoring), we say "All Points Normal"
                                  * when there are no issues. This is the FACP convention.
                                  * ══════════════════════════════════════════════════════════════ */}
-                                <Card className="border-border bg-card dashboard-stagger-in" style={{ "--stagger-index": 3 } as React.CSSProperties}>
+                                <Card
+					className={`border-border bg-card dashboard-stagger-in border-l-4 ${
+						warningDevices === 0 && dangerDevices === 0 ? "border-l-success/60" : "border-l-warning/60"
+					}`}
+					style={{ "--stagger-index": 3 } as React.CSSProperties}
+				>
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                                                         {t("dashboard.supervisoryStatus")}
