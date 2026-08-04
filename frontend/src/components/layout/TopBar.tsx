@@ -91,7 +91,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         </span>
                                 </div>
 
-                                <div className="shell-separator" role="separator" aria-orientation="vertical" />
+                                <hr className="shell-separator" aria-orientation="vertical" />
 
                                 {/* Action buttons */}
                                 <button
@@ -180,7 +180,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         )}
                                 </div>
 
-                                <div className="shell-separator" role="separator" aria-orientation="vertical" />
+                                <hr className="shell-separator" aria-orientation="vertical" />
 
                                 <UserMenu />
                         </header>

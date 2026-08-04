@@ -275,35 +275,39 @@ export function FACPPage() {
                                                                         </span>
                                                                 </div>
                                                                 <div className="space-y-3">
-                                                                        <div className="facp-util-row">
+                                                                         <div className="facp-util-row">
                                                                                 <span className="facp-util-label">Capacity Utilization</span>
                                                                                 <span className="facp-util-value">
                                                                                         {(capacityUtil * 100).toFixed(1)}%
                                                                                 </span>
-                                                                                <div className="facp-util-bar" role="progressbar"
-                                                                                        aria-valuenow={Math.round(capacityUtil * 100)}
-                                                                                        aria-valuemin={0} aria-valuemax={100}
-                                                                                        aria-label="Capacity utilization">
+                                                                                <progress
+                                                                                        className="facp-util-bar"
+                                                                                        value={Math.round(capacityUtil * 100)}
+                                                                                        max={100}
+                                                                                        aria-label="Capacity utilization"
+                                                                                >
                                                                                         <div
                                                                                                 className={`facp-util-bar-fill ${utilClass(capacityUtil)}`}
                                                                                                 style={{ width: `${Math.min(100, capacityUtil * 100)}%` }}
                                                                                         />
-                                                                                </div>
+                                                                                </progress>
                                                                         </div>
                                                                         <div className="facp-util-row">
                                                                                 <span className="facp-util-label">NAC Utilization</span>
                                                                                 <span className="facp-util-value">
                                                                                         {(nacUtil * 100).toFixed(1)}%
                                                                                 </span>
-                                                                                <div className="facp-util-bar" role="progressbar"
-                                                                                        aria-valuenow={Math.round(nacUtil * 100)}
-                                                                                        aria-valuemin={0} aria-valuemax={100}
-                                                                                        aria-label="NAC utilization">
+                                                                                <progress
+                                                                                        className="facp-util-bar"
+                                                                                        value={Math.round(nacUtil * 100)}
+                                                                                        max={100}
+                                                                                        aria-label="NAC utilization"
+                                                                                >
                                                                                         <div
                                                                                                 className={`facp-util-bar-fill ${utilClass(nacUtil)}`}
                                                                                                 style={{ width: `${Math.min(100, nacUtil * 100)}%` }}
                                                                                         />
-                                                                                </div>
+                                                                                </progress>
                                                                         </div>
                                                                         <div className="facp-util-row">
                                                                                 <span className="facp-util-label">Battery Size</span>
@@ -343,12 +347,12 @@ export function FACPPage() {
                                                 </div>
                                                 <div className="facp-card-content">
                                                         <div className="space-y-0">
-                                                                {panels.map((p, i) => {
+                                                                {panels.map((p) => {
                                                                         const panel = p as { model: string; manufacturer: string; device_capacity?: number; points_capacity?: number; points?: number; nac_capacity?: number };
                                                                         const devCap = panel.device_capacity ?? panel.points_capacity ?? panel.points ?? 0;
                                                                         const nacCap = panel.nac_capacity ?? 0;
                                                                         return (
-                                                                                <div key={i} className="facp-panel-row">
+                                                                                <div key={`${panel.manufacturer}-${panel.model}`} className="facp-panel-row">
                                                                                         <span className="facp-panel-model">{panel.model}</span>
                                                                                         <span className="facp-panel-manufacturer">{panel.manufacturer}</span>
                                                                                         <span className="facp-panel-capacity">

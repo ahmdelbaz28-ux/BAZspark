@@ -20,7 +20,7 @@ import {
   Clock,
   Info,
 } from "lucide-react";
-import { syncApi, fullApi } from "@/services/fullApi";
+import { syncApi } from "@/services/fullApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 

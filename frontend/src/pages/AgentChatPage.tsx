@@ -56,6 +56,11 @@ export function AgentChatPage() {
 
   const isConnected = !loading && !error;
 
+  // Status bar helpers - extracted to avoid nested ternaries (S3358)
+  const statusTextClass = isConnected ? 'text-emerald-500' : error ? 'text-destructive' : 'text-muted-foreground';
+  const statusDotClass = `w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : error ? 'bg-destructive' : 'bg-muted-foreground animate-pulse'}`;
+  const statusText = loading ? 'Connecting...' : error ? 'Offline' : 'Connected';
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
@@ -228,9 +233,9 @@ export function AgentChatPage() {
           <span className="flex items-center gap-1"><Cpu className="w-3 h-3" /> Expert Mode</span>
           <span className="flex items-center gap-1"><Server className="w-3 h-3" /> Current Project</span>
         </div>
-        <div className={`flex items-center gap-1 ${isConnected ? 'text-emerald-500' : error ? 'text-destructive' : 'text-muted-foreground'}`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : error ? 'bg-destructive' : 'bg-muted-foreground animate-pulse'}`}></div>
-          {loading ? 'Connecting...' : error ? 'Offline' : 'Connected'}
+        <div className={`flex items-center gap-1 ${statusTextClass}`}>
+          <div className={statusDotClass}></div>
+          {statusText}
         </div>
       </div>
     </div>

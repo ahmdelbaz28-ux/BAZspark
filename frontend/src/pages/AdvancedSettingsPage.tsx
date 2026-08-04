@@ -83,8 +83,6 @@ export const AdvancedSettingsPage: React.FC = () => {
   const [adminTokenRotating, setAdminTokenRotating] = useState(false);
   const [adminMessage, setAdminMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
-
   const fetchConfig = useCallback(async () => {
     setLoading(true);
     setError(null);

@@ -25,7 +25,7 @@ const StatusBar: React.FC<StatusBarProps> = memo(({
 		>
 			<span className="shell-version">BAZSPARK {APP_VERSION}</span>
 
-			<div className="shell-statusbar-separator" role="separator" aria-orientation="vertical" />
+<hr className="shell-statusbar-separator" aria-orientation="vertical" />
 
 			<span
 				className="shell-backend-url truncate max-w-[40vw] tabular-nums"
@@ -35,7 +35,7 @@ const StatusBar: React.FC<StatusBarProps> = memo(({
 				{backendUrl}
 			</span>
 
-			<div className="shell-statusbar-separator" role="separator" aria-orientation="vertical" />
+<hr className="shell-statusbar-separator" aria-orientation="vertical" />
 
 			<span className="shell-env capitalize" aria-label={`Environment: ${environment}`}>
 				{environment}

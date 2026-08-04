@@ -111,8 +111,8 @@ type Tab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct" | "gu
 /*  SHARED PRIMITIVES                                          */
 /* ---------------------------------------------------------- */
 
-const FieldLabel: React.FC<{ children: React.ReactNode; unit?: string }> = ({ children, unit }) => (
-  <label className="flex items-baseline justify-between mb-1.5">
+const FieldLabel: React.FC<{ children: React.ReactNode; unit?: string; htmlFor?: string }> = ({ children, unit, htmlFor }) => (
+  <label htmlFor={htmlFor} className="flex items-baseline justify-between mb-1.5">
     <span className="text-[11px] font-medium text-[#6a6a80] uppercase tracking-wider">{children}</span>
     {unit && <span className="text-[10px] text-[#3a3a50] font-mono">{unit}</span>}
   </label>
@@ -124,8 +124,10 @@ const NumInput: React.FC<{
   min?: number;
   max?: number;
   step?: number;
-}> = ({ value, onChange, min, max, step = 1 }) => (
+  id: string;
+}> = ({ value, onChange, min, max, step = 1, id }) => (
   <input
+    id={id}
     type="number"
     value={value}
     min={min}
@@ -140,8 +142,10 @@ const SelectInput: React.FC<{
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-}> = ({ value, onChange, options }) => (
+  id: string;
+}> = ({ value, onChange, options, id }) => (
   <select
+    id={id}
     value={value}
     onChange={e => onChange(e.target.value)}
     className="baz-input text-[13px]"
@@ -225,16 +229,16 @@ const SmokeCalculator: React.FC = () => {
     <div className="space-y-6 anim-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <FieldLabel unit="sq ft">Room Area</FieldLabel>
-          <NumInput value={roomArea} onChange={setRoomArea} min={100} max={50000} step={50} />
+          <FieldLabel htmlFor="smoke-room-area" unit="sq ft">Room Area</FieldLabel>
+          <NumInput id="smoke-room-area" value={roomArea} onChange={setRoomArea} min={100} max={50000} step={50} />
         </div>
         <div>
-          <FieldLabel unit="ft">Ceiling Height</FieldLabel>
-          <NumInput value={ceilingHeight} onChange={setCeilingHeight} min={6} max={80} step={0.5} />
+          <FieldLabel htmlFor="smoke-ceiling-height" unit="ft">Ceiling Height</FieldLabel>
+          <NumInput id="smoke-ceiling-height" value={ceilingHeight} onChange={setCeilingHeight} min={6} max={80} step={0.5} />
         </div>
         <div>
-          <FieldLabel>Detector Type</FieldLabel>
-          <SelectInput value={detectorType} onChange={setDetectorType} options={[
+          <FieldLabel htmlFor="smoke-detector-type">Detector Type</FieldLabel>
+          <SelectInput id="smoke-detector-type" value={detectorType} onChange={setDetectorType} options={[
             { value: "standard", label: "Standard" },
             { value: "rated",    label: "High Ceiling Rated" },
             { value: "beam",     label: "Beam Type" },
@@ -303,20 +307,20 @@ const BatteryCalculator: React.FC = () => {
     <div className="space-y-6 anim-fade-in">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <FieldLabel>Device Count</FieldLabel>
-          <NumInput value={deviceCount} onChange={setDeviceCount} min={1} max={500} />
+          <FieldLabel htmlFor="battery-device-count">Device Count</FieldLabel>
+          <NumInput id="battery-device-count" value={deviceCount} onChange={setDeviceCount} min={1} max={500} />
         </div>
         <div>
-          <FieldLabel unit="mA">Current Draw</FieldLabel>
-          <NumInput value={currentDraw} onChange={setCurrentDraw} min={0.1} max={50} step={0.1} />
+          <FieldLabel htmlFor="battery-current-draw" unit="mA">Current Draw</FieldLabel>
+          <NumInput id="battery-current-draw" value={currentDraw} onChange={setCurrentDraw} min={0.1} max={50} step={0.1} />
         </div>
         <div>
-          <FieldLabel unit="h">Standby Hours</FieldLabel>
-          <NumInput value={standbyHours} onChange={setStandbyHours} min={4} max={96} />
+          <FieldLabel htmlFor="battery-standby-hours" unit="h">Standby Hours</FieldLabel>
+          <NumInput id="battery-standby-hours" value={standbyHours} onChange={setStandbyHours} min={4} max={96} />
         </div>
         <div>
-          <FieldLabel unit="min">Alarm Duration</FieldLabel>
-          <NumInput value={alarmMinutes} onChange={setAlarmMinutes} min={1} max={60} />
+          <FieldLabel htmlFor="battery-alarm-minutes" unit="min">Alarm Duration</FieldLabel>
+          <NumInput id="battery-alarm-minutes" value={alarmMinutes} onChange={setAlarmMinutes} min={1} max={60} />
         </div>
       </div>
 
@@ -382,12 +386,12 @@ const VoltageDropCalculator: React.FC = () => {
     <div className="space-y-6 anim-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <FieldLabel unit="ft">Wire Length</FieldLabel>
-          <NumInput value={wireLength} onChange={setWireLength} min={1} max={5000} step={10} />
+          <FieldLabel htmlFor="voltage-wire-length" unit="ft">Wire Length</FieldLabel>
+          <NumInput id="voltage-wire-length" value={wireLength} onChange={setWireLength} min={1} max={5000} step={10} />
         </div>
         <div>
-          <FieldLabel unit="AWG">Wire Gauge</FieldLabel>
-          <SelectInput value={String(wireGauge)} onChange={v => setWireGauge(Number(v))} options={[
+          <FieldLabel htmlFor="voltage-wire-gauge" unit="AWG">Wire Gauge</FieldLabel>
+          <SelectInput id="voltage-wire-gauge" value={String(wireGauge)} onChange={v => setWireGauge(Number(v))} options={[
             { value: "8",  label: "#8 AWG" },
             { value: "10", label: "#10 AWG" },
             { value: "12", label: "#12 AWG" },
@@ -395,8 +399,8 @@ const VoltageDropCalculator: React.FC = () => {
           ]} />
         </div>
         <div>
-          <FieldLabel unit="A">Current</FieldLabel>
-          <NumInput value={current} onChange={setCurrent} min={0.1} max={100} step={0.5} />
+          <FieldLabel htmlFor="voltage-current" unit="A">Current</FieldLabel>
+          <NumInput id="voltage-current" value={current} onChange={setCurrent} min={0.1} max={100} step={0.5} />
         </div>
       </div>
 
@@ -496,12 +500,12 @@ const HeatSpacingCalculator: React.FC = () => {
     <div className="space-y-6 anim-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <FieldLabel unit="ft">Ceiling Height</FieldLabel>
-          <NumInput value={ceilingHeight} onChange={setCeilingHeight} min={6} max={30} step={0.5} />
+          <FieldLabel htmlFor="heat-ceiling-height" unit="ft">Ceiling Height</FieldLabel>
+          <NumInput id="heat-ceiling-height" value={ceilingHeight} onChange={setCeilingHeight} min={6} max={30} step={0.5} />
         </div>
         <div>
-          <FieldLabel unit="sq ft">Coverage Area per Detector</FieldLabel>
-          <NumInput value={areaPerDetector} onChange={setAreaPerDetector} min={100} max={2500} step={50} />
+          <FieldLabel htmlFor="heat-area-per-detector" unit="sq ft">Coverage Area per Detector</FieldLabel>
+          <NumInput id="heat-area-per-detector" value={areaPerDetector} onChange={setAreaPerDetector} min={100} max={2500} step={50} />
         </div>
       </div>
 
@@ -559,8 +563,8 @@ const DuctDetectorSection: React.FC = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <FieldLabel unit="m">Duct Width</FieldLabel>
-          <NumInput value={ductWidth} onChange={setDuctWidth} min={0.1} max={10} step={0.1} />
+          <FieldLabel htmlFor="duct-width" unit="m">Duct Width</FieldLabel>
+          <NumInput id="duct-width" value={ductWidth} onChange={setDuctWidth} min={0.1} max={10} step={0.1} />
         </div>
       </div>
       <button
@@ -796,8 +800,9 @@ const PlaceDetectorsSection: React.FC = () => {
         <h3 className="baz-label mb-4">Place Detectors (POST /qomn/place-detectors)</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="baz-label text-[10px]">Room Area (m²)</label>
+            <label htmlFor="place-room-area" className="baz-label text-[10px]">Room Area (m²)</label>
             <input
+              id="place-room-area"
               type="number"
               value={roomArea}
               onChange={e => setRoomArea(Number(e.target.value))}
@@ -806,8 +811,9 @@ const PlaceDetectorsSection: React.FC = () => {
             />
           </div>
           <div>
-            <label className="baz-label text-[10px]">Ceiling Height (m)</label>
+            <label htmlFor="place-ceiling-height" className="baz-label text-[10px]">Ceiling Height (m)</label>
             <input
+              id="place-ceiling-height"
               type="number"
               value={ceilingHeight}
               onChange={e => setCeilingHeight(Number(e.target.value))}
@@ -817,8 +823,9 @@ const PlaceDetectorsSection: React.FC = () => {
             />
           </div>
           <div>
-            <label className="baz-label text-[10px]">Detector Type</label>
+            <label htmlFor="place-detector-type" className="baz-label text-[10px]">Detector Type</label>
             <select
+              id="place-detector-type"
               value={detectorType}
               onChange={e => setDetectorType(e.target.value)}
               className="baz-input"
@@ -856,7 +863,7 @@ const PlaceDetectorsSection: React.FC = () => {
         </p>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="baz-label text-[10px]">Speaker Rated SPL (dBA @ 3m)</label>
+            <label htmlFor="acoustics-speaker-spl" className="baz-label text-[10px]">Speaker Rated SPL (dBA @ 3m)</label>
             <input
               type="number"
               defaultValue={95}
@@ -865,7 +872,7 @@ const PlaceDetectorsSection: React.FC = () => {
             />
           </div>
           <div>
-            <label className="baz-label text-[10px]">Check Point Distance (m)</label>
+            <label htmlFor="acoustics-checkpoint-dist" className="baz-label text-[10px]">Check Point Distance (m)</label>
             <input
               type="number"
               defaultValue={5.0}
@@ -874,7 +881,7 @@ const PlaceDetectorsSection: React.FC = () => {
             />
           </div>
           <div>
-            <label className="baz-label text-[10px]">Audible Mode</label>
+            <label htmlFor="acoustics-mode" className="baz-label text-[10px]">Audible Mode</label>
             <select id="acoustics-mode" className="baz-input" defaultValue="public">
               <option value="public">Public Mode (§18.4.3)</option>
               <option value="private">Private Mode (§18.4.4)</option>

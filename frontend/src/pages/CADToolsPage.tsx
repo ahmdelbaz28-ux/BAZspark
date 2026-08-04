@@ -248,7 +248,7 @@ export const CADToolsPage: React.FC = () => {
   const drawCircleMutation = useMutation({
     mutationFn: async () => {
       const [cx, cy] = circleCenter.split(",").map(Number);
-      return cadApi.drawCircle({ center_x: cx, center_y: cy, radius: parseFloat(circleRadius) || 1, layer: circleLayer }) as Promise<DrawResult>;
+      return cadApi.drawCircle({ center_x: cx, center_y: cy, radius: Number.parseFloat(circleRadius) || 1, layer: circleLayer }) as Promise<DrawResult>;
     },
   });
 
@@ -256,7 +256,7 @@ export const CADToolsPage: React.FC = () => {
   const drawTextMutation = useMutation({
     mutationFn: async () => {
       const [ix, iy] = textInsertion.split(",").map(Number);
-      return cadApi.drawText({ x: ix, y: iy, text: textContent, height: parseFloat(textHeight) || 0.2, layer: textLayer }) as Promise<DrawResult>;
+      return cadApi.drawText({ x: ix, y: iy, text: textContent, height: Number.parseFloat(textHeight) || 0.2, layer: textLayer }) as Promise<DrawResult>;
     },
   });
 

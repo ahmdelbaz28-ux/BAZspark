@@ -530,7 +530,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
   const [x, setX] = useState(String(device?.x ?? 0));
   const [y, setY] = useState(String(device?.y ?? 0));
   const [z, setZ] = useState(String(device?.z ?? 0));
-  const [rotation, setRotation] = useState(String(device?.rotation ?? 0));
+  const [rotation] = useState(String(device?.rotation ?? 0));
   const [voltage, setVoltage] = useState(String(device?.voltage ?? 0));
   const [current, setCurrent] = useState(String(device?.current ?? 0));
   const [load, setLoad] = useState(String(device?.load ?? 0));

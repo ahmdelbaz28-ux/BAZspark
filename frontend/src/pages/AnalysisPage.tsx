@@ -21,7 +21,7 @@ import {
   CheckCircle2,
   FlaskConical,
 } from "lucide-react";
-import { analyzeApi, apiCall } from "@/services/fullApi";
+import { analyzeApi } from "@/services/fullApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -88,10 +88,10 @@ export const AnalysisPage: React.FC = () => {
   const batteryMutation = useMutation({
     mutationFn: async () => {
       return analyzeApi.battery({
-        standby_load_a: parseFloat(batteryLoad) || 0,
+        standby_load_a: Number.parseFloat(batteryLoad) || 0,
         alarm_load_a: 0,
         standby_hours: 24,
-        alarm_minutes: parseFloat(batteryMinutes) || 0,
+        alarm_minutes: Number.parseFloat(batteryMinutes) || 0,
       }) as Promise<BatteryResult>;
     },
   });
@@ -99,8 +99,8 @@ export const AnalysisPage: React.FC = () => {
   const voltageMutation = useMutation({
     mutationFn: async () => {
       return analyzeApi.voltage({
-        current_a: parseFloat(voltageCurrent) || 0,
-        length_m: parseFloat(voltageLength) || 0,
+        current_a: Number.parseFloat(voltageCurrent) || 0,
+        length_m: Number.parseFloat(voltageLength) || 0,
         awg_gauge: voltageWire,
       }) as Promise<VoltageResult>;
     },
