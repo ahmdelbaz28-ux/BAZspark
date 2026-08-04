@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any
 import json
 import os
-from fireai.core.contracts import get_feature_flags, FeatureFlag, DEFAULT_FEATURE_FLAGS
+from typing import Dict
+
+from fastapi import APIRouter, HTTPException
+
+from fireai.core.contracts import DEFAULT_FEATURE_FLAGS, get_feature_flags
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -19,17 +21,17 @@ async def update_feature_flags(flags: Dict[str, bool]):
     In a real deployment, this should persist to the SQLite DB or write to .env.
     """
     current_flags = get_feature_flags()
-    
+
     # Validate the keys
-    for key in flags.keys():
+    for key in flags:
         if key not in DEFAULT_FEATURE_FLAGS:
             raise HTTPException(status_code=400, detail=f"Invalid feature flag: {key}")
-            
+
     current_flags.update(flags)
-    
+
     # For now, we update the process environment so get_feature_flags picks it up immediately.
     os.environ["FIREAI_FEATURE_FLAGS"] = json.dumps(current_flags)
-    
+
     # Also write to a local .env override file for persistence across reboots.
     try:
         with open("feature_flags.json", "w") as f:
@@ -37,7 +39,7 @@ async def update_feature_flags(flags: Dict[str, bool]):
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Failed to persist flags: {e}")
-        
+
     return {"status": "success", "flags": current_flags}
 
 @router.get("/config")
