@@ -332,6 +332,7 @@ export function EngineeringPage() {
                                                 onClick={() => setActiveTab("voltage-drop")}
                                         role="tab"
                                         aria-selected={activeTab === "voltage-drop"}
+                                        aria-controls="panel-voltage-drop"
                                         >
                                                 <Zap aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.voltageDrop")}
@@ -346,6 +347,7 @@ export function EngineeringPage() {
                                                 onClick={() => setActiveTab("cable-sizing")}
                                         role="tab"
                                         aria-selected={activeTab === "cable-sizing"}
+                                        aria-controls="panel-cable-sizing"
                                         >
                                                 <Cable aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.cableSizing")}
@@ -360,6 +362,7 @@ export function EngineeringPage() {
                                                 onClick={() => setActiveTab("battery-calc")}
                                         role="tab"
                                         aria-selected={activeTab === "battery-calc"}
+                                        aria-controls="panel-battery-calc"
                                         >
                                                 <Battery aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.batteryCalculation")}
@@ -374,6 +377,7 @@ export function EngineeringPage() {
                                                 onClick={() => setActiveTab("room-analysis")}
                                         role="tab"
                                         aria-selected={activeTab === "room-analysis"}
+                                        aria-controls="panel-room-analysis"
                                         >
                                                 <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("fireai.room.title")}
@@ -388,6 +392,7 @@ export function EngineeringPage() {
                                                 onClick={() => setActiveTab("integration")}
                                         role="tab"
                                         aria-selected={activeTab === "integration"}
+                                        aria-controls="panel-integration"
                                         >
                                                 <Network aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("fireai.integration.title")}
@@ -396,7 +401,7 @@ export function EngineeringPage() {
 
                                 {/* Voltage Drop Calculator */}
                                 {activeTab === "voltage-drop" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-voltage-drop" role="tabpanel" aria-label={t("engineering.voltageDrop")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Zap aria-hidden="true" className="h-5 w-5" />
@@ -608,7 +613,7 @@ export function EngineeringPage() {
 
                                 {/* Cable Sizing Calculator */}
                                 {activeTab === "cable-sizing" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-cable-sizing" role="tabpanel" aria-label={t("engineering.cableSizing")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Cable aria-hidden="true" className="h-5 w-5" />
@@ -774,7 +779,7 @@ export function EngineeringPage() {
 
                                 {/* Battery Calculation */}
                                 {activeTab === "battery-calc" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-battery-calc" role="tabpanel" aria-label={t("engineering.batteryCalculation")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Battery aria-hidden="true" className="h-5 w-5" />
@@ -961,7 +966,7 @@ export function EngineeringPage() {
 
                                 {/* Room Analysis Tab */}
                                 {activeTab === "room-analysis" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-room-analysis" role="tabpanel" aria-label={t("fireai.room.title")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Flame aria-hidden="true" className="h-5 w-5" />
@@ -996,7 +1001,7 @@ export function EngineeringPage() {
 
                                 {/* Integration Pipeline Tab */}
                                 {activeTab === "integration" && (
-                                        <Card className="border-border bg-card">
+                                        <Card id="panel-integration" role="tabpanel" aria-label={t("fireai.integration.title")} className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Network aria-hidden="true" className="h-5 w-5" />
