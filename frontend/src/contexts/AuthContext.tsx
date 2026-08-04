@@ -187,6 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         localStorage.removeItem("fireai_firealarm_detectors");
                         localStorage.removeItem("nexus_imported_dxf");
                         localStorage.removeItem("onboarding-completed");
+                        // Visual mode preference (ThemeProvider) — cleared on logout
+                        // to avoid carrying UI state across users. ThemeProvider
+                        // re-initializes it to "industrial" as the default.
+                        localStorage.removeItem("bazspark-visual-mode");
                         // fireai_settings_* uses a dynamic suffix — clear all matching keys
                         const keysToRemove: string[] = [];
                         for (let i = 0; i < localStorage.length; i++) {

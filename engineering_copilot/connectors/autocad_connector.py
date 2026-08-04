@@ -27,9 +27,9 @@ if HAS_CLR:
         clr.AddReference("acdbmgd")
         clr.AddReference("acmgd")
         clr.AddReference("accoremgd")
-    except ImportError:
+    except Exception:
         # Mock for testing outside AutoCAD
-        pass
+        HAS_CLR = False
 
 if HAS_CLR:
     try:
@@ -39,7 +39,7 @@ if HAS_CLR:
         from Autodesk.AutoCAD.Geometry import *  # noqa: S2208
         from Autodesk.AutoCAD.Runtime import *  # noqa: S2208
         from System import IntPtr
-    except ImportError:
+    except Exception:
         # Mock classes when not in AutoCAD environment
         Application = None
         Database = None

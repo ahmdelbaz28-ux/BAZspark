@@ -22,7 +22,7 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 
-from fireai.core.base_types import ConduitType, FittingType, Point3D
+from fireai.core.base_types import ConduitType, FittingType, Point3D, Result
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TradeSize — nominal pipe/conduit sizes

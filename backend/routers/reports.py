@@ -17,14 +17,16 @@ LIFE-SAFETY NOTE: Report results are used for regulatory compliance.
 All calculations must be traceable and verifiable.
 """
 
+
+
 import io
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Set
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Body
 from fastapi.responses import StreamingResponse
 
 try:
@@ -66,7 +68,7 @@ def _verify_project(project_id: str) -> None:
 
 def _compute_voltage_drop_for_circuit(
     conn: dict, from_dev: dict, to_dev: dict, qomn_available: bool
-) -> tuple[dict, str]:
+) -> Tuple[dict, str]:
     """Compute voltage-drop fields for a single circuit.
 
     Returns ``(circuit, status)`` where status is one of:
@@ -548,7 +550,7 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     }
 
 
-def _verify_cable_ampacity(conn: dict, to_dev: dict, nec_table: dict) -> tuple[dict, str]:
+def _verify_cable_ampacity(conn: dict, to_dev: dict, nec_table: dict) -> Tuple[dict, str]:
     """Verify NEC ampacity for a single cable connection.
 
     Returns ``(fields, status)`` where status is one of:
@@ -804,7 +806,7 @@ async def list_reports(
     "", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
 )
 @limiter.limit("30/minute")
-async def generate_report(request: Request, project_id: str, input_data: GenerateReportInput):
+async def generate_report(request: Request, project_id: str, input_data: GenerateReportInput = Body(..., embed=False)):
     """Generate a new engineering report."""
     _verify_project(project_id)
     db = get_db()
@@ -875,7 +877,7 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
     dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))],
 )
 @limiter.limit("30/minute")
-async def generate_global_report(request: Request, input_data: GenerateReportInput):
+async def generate_global_report(request: Request, input_data: GenerateReportInput = Body(..., embed=False)):
     """Generate a report globally using the first available project for compatibility."""
     db = get_db()
     projects = db.list_projects(page=1, limit=1)

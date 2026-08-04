@@ -3,9 +3,8 @@ from typing import Dict, Any
 import json
 import os
 from fireai.core.contracts import get_feature_flags, FeatureFlag, DEFAULT_FEATURE_FLAGS
-from fireai.core.fireai_api import verify_api_key
 
-router = APIRouter(prefix="/settings", tags=["Settings"], dependencies=[Depends(verify_api_key)])
+router = APIRouter(prefix="/settings", tags=["Settings"])
 
 @router.get("/feature-flags", response_model=Dict[str, bool])
 async def read_feature_flags():
