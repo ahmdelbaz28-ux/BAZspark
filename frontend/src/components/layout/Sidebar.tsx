@@ -59,7 +59,7 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/facp": () => import("@/pages/FACPPage"),
         "/marine": () => import("@/pages/MarinePage"),
         "/mining": () => import("@/pages/MiningPage"),
-        "/fire-alarm/designer": () => import("@/components/mockups/engineering/FireAlarmDesigner"),
+
         "/autocad": () => import("@/pages/AutoCADPage"),
         "/autocad/draw": () => import("@/pages/AutoCADDrawPage"),
         "/revit": () => import("@/pages/RevitPage"),
@@ -257,13 +257,7 @@ const navGroups: NavGroup[] = [
                                 icon: Layers,
                                 path: "/revit/elements",
                         },
-                        {
-                                labelKey: "nav.fireAlarmDesigner",
-                                defaultLabel: "Fire Alarm Designer",
-                                icon: Siren,
-                                path: "/fire-alarm/designer",
-                                dataOnboarding: "nav-fire-alarm-designer",
-                        },
+
                         {
                                 labelKey: "nav.digitalTwin",
                                 defaultLabel: "Digital Twin",
