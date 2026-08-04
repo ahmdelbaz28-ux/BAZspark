@@ -1,5 +1,5 @@
 # File-level issue suppression removed per AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
 """
 backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================
@@ -94,7 +94,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
     """
     # Validate filename at source to prevent path traversal
     if not re.match(r'^[a-zA-Z0-9._\- ]{1,255}$', filename):
-        raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
+        raise HTTPException(  # NOSONAR:S8415: endpoint error handling is intentional(
             status_code=400,
             detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed."
         )
@@ -112,7 +112,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
     # though the string starts with "/tmp/uploads". This eliminates
     # the suffix-attack vulnerability that startswith() had.
     if not resolved.is_relative_to(abs_upload):
-        raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR — S8415: endpoint error handling is intentional
+        raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR:S8415: endpoint error handling is intentional
     return str(resolved)
 
 
@@ -266,7 +266,7 @@ async def convert_files(
         )
 
         if conversion_type not in _VALID_CONVERSION_TYPES:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
                 status_code=400,
                 detail=f"Invalid conversion type: {conversion_type}",
             )
@@ -277,7 +277,7 @@ async def convert_files(
             source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
             # Create the dummy source file if it doesn't exist
             if not os.path.exists(source_filepath):
-                import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+                import anyio  # NOSONAR:S7493 sync file I/O acceptable for small config reads  # NOSONAR:S7632: test function documented via class name / module path
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
         else:
@@ -308,7 +308,7 @@ async def convert_files(
                 target_filepath,
             )
         else:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
                 status_code=400,
                 detail=f"Invalid conversion type: {conversion_type}",
             )
@@ -341,7 +341,7 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
     dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
 )
 @limiter.limit("10/minute")  # V243: Rate limit expensive upload+convert
-async def upload_and_convert(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
     service: DigitalTwinServiceDep,
     request: Request,  # V243: Required by slowapi rate limiter
     file: UploadFile = File(...),
@@ -432,7 +432,7 @@ async def upload_and_convert(  # NOSONAR — S3776: cognitive complexity is inhe
                 os.remove(source_path)
             except OSError:
                 pass
-            raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
+            raise HTTPException(  # NOSONAR:S8415: endpoint error handling is intentional(
                 status_code=413,
                 detail=(
                     f"File too large. Maximum upload size is "
@@ -514,7 +514,7 @@ async def configure_conversion(
                 success=True,
                 message="Configuration updated successfully",
             )
-        raise HTTPException(status_code=500, detail="Failed to save configuration")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(status_code=500, detail="Failed to save configuration")  # NOSONAR:S8415: assignment kept for readability / debuggability
     except HTTPException:
         raise
     except Exception as e:
@@ -618,7 +618,7 @@ async def update_single_mapping(
                 "message": f"Mapping updated: {request.layer} -> {request.category} ({request.direction})",
                 "mapping": {request.layer: request.category},
             }
-        raise HTTPException(status_code=500, detail="Failed to update mapping")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(status_code=500, detail="Failed to update mapping")  # NOSONAR:S8415: assignment kept for readability / debuggability
     except HTTPException:
         raise
     except Exception as e:

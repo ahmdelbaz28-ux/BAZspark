@@ -135,7 +135,7 @@ def _audit_log(
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception as e:
-        logging.exception("Failed to write audit log: %s", e)  # NOSONAR — S8572: logging.exception is appropriate here
+        logging.exception("Failed to write audit log: %s", e)  # NOSONAR:S8572: logging.exception is appropriate here
 
 
 def _sanitize_log_detail(detail: str) -> str:
@@ -176,7 +176,7 @@ def _verify_master_token(provided: Optional[str]) -> bool:
 
 
 # ═══ FastAPI Dependency ═══════════════════════════════════════════════════
-async def require_master_admin(  # NOSONAR — S7503: async required by FastAPI Depends injection contract
+async def require_master_admin(  # NOSONAR:S7503: async required by FastAPI Depends injection contract
     request: Request,
     x_master_admin_token: Optional[str] = Header(None, alias="X-Master-Admin-Token"),
 ) -> str:
@@ -221,7 +221,7 @@ async def require_master_admin(  # NOSONAR — S7503: async required by FastAPI 
     return ip
 
 
-async def audit_operation(  # NOSONAR — S7503: async required by FastAPI Depends injection contract
+async def audit_operation(  # NOSONAR:S7503: async required by FastAPI Depends injection contract
     ip: str,
     operation: str,
     success: bool,

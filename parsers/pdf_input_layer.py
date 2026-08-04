@@ -354,7 +354,7 @@ class PDFInputLayer:
 
         return None
 
-    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:  # NOSONAR — S3776: PDF room extraction must handle many layout patterns
+    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:  # NOSONAR:S3776: PDF room extraction must handle many layout patterns
         rooms = []
         text = page.get_text()
         text_lower = text.lower()

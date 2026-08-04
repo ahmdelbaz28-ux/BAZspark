@@ -49,7 +49,12 @@ import logging
 import os
 import re
 import secrets
-from typing import Annotated, Any
+from typing import Any
+
+try:
+    from typing import Annotated
+except ImportError:  # Python < 3.9
+    from typing_extensions import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
