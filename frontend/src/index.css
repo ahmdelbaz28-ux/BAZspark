@@ -68,20 +68,8 @@ body {
    so if JS fails or the component is removed, the native cursor remains usable.
    Input/textarea keep text cursor for usability. */
 @media (min-width: 1024px) {
-        html.cursor-active body {
-                cursor: none;
-        }
-        html.cursor-active a,
-        html.cursor-active button,
-        html.cursor-active [role="button"],
-        html.cursor-active select {
-                cursor: none;
-        }
-        /* Keep text caret visible in form fields for usability */
-        html.cursor-active input,
-        html.cursor-active textarea {
-                cursor: text;
-        }
+        /* UI/UX Pro Max: Native cursor restored for better UX.
+           The trailing glow effect sits behind the native cursor. */
 }
 
 #root {
@@ -369,37 +357,29 @@ label {
         }
 }
 
-/* ── Magnetic cursor ────────────────────────────────────────────────── */
+/* ── Magnetic cursor (Trailing Glow) ────────────────────────────────── */
 .magnetic-cursor {
         position: fixed;
         top: 0;
         left: 0;
         pointer-events: none;
         z-index: 9999;
-        mix-blend-mode: difference;
         will-change: transform;
 }
 
 .magnetic-cursor-dot {
-        width: 8px;
-        height: 8px;
+        width: 120px;
+        height: 120px;
         border-radius: 50%;
-        background: #22d3ee;
-        transition: width 200ms var(--ease-micro), height 200ms var(--ease-micro), background 200ms var(--ease-micro);
+        background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0) 70%);
+        transform: translate(-50%, -50%);
+        transition: width 200ms var(--ease-micro), height 200ms var(--ease-micro);
 }
 
 .magnetic-cursor.hovering-button .magnetic-cursor-dot {
-        width: 60px;
-        height: 60px;
-        background: rgba(34, 211, 238, 0.1);
-        border: 1px solid rgba(34, 211, 238, 0.5);
-}
-
-.magnetic-cursor.hovering-text .magnetic-cursor-dot {
-        width: 2px;
-        height: 24px;
-        border-radius: 1px;
-        background: #22d3ee;
+        width: 160px;
+        height: 160px;
+        background: radial-gradient(circle, rgba(34, 211, 238, 0.25) 0%, rgba(34, 211, 238, 0) 70%);
 }
 
 /* ── Icon stroke ────────────────────────────────────────────────────── */

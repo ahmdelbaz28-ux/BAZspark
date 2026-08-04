@@ -480,72 +480,84 @@ export function EngineeringPage() {
 
                                                         <Separator />
 
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <Card className="border-border bg-muted/50">
-                                                                        <CardHeader>
-                                                                                <div className="flex items-center justify-between">
-                                                                                        <CardTitle className="text-foreground text-sm">
-                                                                                                {t("engineering.results")}
-                                                                                        </CardTitle>
-                                                                                        <ExplainButton
-                                                                                                calculationType="voltage_drop"  // NOSONAR: typescript:S3358
-                                                                                                result={voltageDropResultProp}  // NOSONAR: typescript:S3358
-                                                                                        />
-                                                                                </div>
-                                                                        </CardHeader>
-                                                                        <CardContent>
-                                                                                <div className="space-y-2">
-                                                                                        <div className="flex justify-between">
-                                                                                                <span className="text-muted-foreground">
-                                                                                                        {t("engineering.percentage")}
-                                                                                                </span>
-                                                                                                <span className="font-mono text-foreground">
-                                                                                                        {vDropResult.percentage}%
-                                                                                                </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between">
-                                                                                                <span className="text-muted-foreground">
-                                                                                                        {t("engineering.absolute")}
-                                                                                                </span>
-                                                                                                <span className="font-mono text-foreground">
-                                                                                                        {vDropResult.absolute}V
-                                                                                                </span>
-                                                                                        </div>
-                                                                                </div>
-                                                                        </CardContent>
-                                                                </Card>
+                                                        {/* Terminal-style Engineering Output Panel */}
+                                                        <div
+                                                                style={{
+                                                                        background: "var(--color-graphite)",
+                                                                        border: "1px solid rgba(90,103,112,0.35)",
+                                                                        borderLeft: `4px solid ${vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)"}`,
+                                                                        borderRadius: "2px",
+                                                                        padding: "1rem 1.25rem",
+                                                                }}
+                                                        >
+                                                                {/* Terminal header */}
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                        <div style={{ fontFamily: "var(--font-data)", fontSize: "0.7rem", letterSpacing: "0.1em", color: "var(--color-steel)", textTransform: "uppercase" }}>
+                                                                                VOLTAGE DROP ANALYSIS
+                                                                        </div>
+                                                                        <ExplainButton
+                                                                                calculationType="voltage_drop"  // NOSONAR: typescript:S3358
+                                                                                result={voltageDropResultProp}  // NOSONAR: typescript:S3358
+                                                                        />
+                                                                </div>
 
-                                                                <Card className="border-border bg-muted/50">
-                                                                        <CardHeader>
-                                                                                <CardTitle className="text-foreground text-sm">
-                                                                                        {t("engineering.status")}
-                                                                                </CardTitle>
-                                                                        </CardHeader>
-                                                                        <CardContent>
-                                                                                <Badge
-                                                                                        variant={
-                                                                                                vDropResult.percentage < 3
-                                                                                                        ? "default"
-                                                                                                        : vDropResult.percentage < 5
-                                                                                                                ? "secondary"
-                                                                                                                : "destructive"
-                                                                                        }
-                                                                                        className={
-                                                                                                vDropResult.percentage < 3
-                                                                                                        ? "bg-success/10 text-success border-success/30"
-                                                                                                        : vDropResult.percentage < 5
-                                                                                                                ? "bg-warning/10 text-warning border-warning/30"
-                                                                                                                : "bg-danger/10 text-danger border-danger/30"
-                                                                                        }
-                                                                                >
-                                                                                        {vDropResult.percentage < 3
-                                                                                                ? t("engineering.suitable")
-                                                                                                : vDropResult.percentage < 5
-                                                                                                        ? t("engineering.acceptable")
-                                                                                                        : t("engineering.excessive")}
-                                                                                </Badge>
-                                                                        </CardContent>
-                                                                </Card>
+                                                                {/* Input echo */}
+                                                                <div className="mb-3" style={{ fontFamily: "var(--font-data)", fontSize: "0.75rem", color: "var(--color-steel)" }}>
+                                                                        INPUT:&nbsp;
+                                                                        <span style={{ color: "var(--color-bone)" }}>
+                                                                                I = {voltageDropInputs.current || "—"}A &nbsp;/&nbsp;
+                                                                                L = {voltageDropInputs.length || "—"}m &nbsp;/&nbsp;
+                                                                                {voltageDropInputs.material.toUpperCase()} {voltageDropInputs.cableSize || "—"}mm²
+                                                                        </span>
+                                                                </div>
+
+                                                                {/* Result divider */}
+                                                                <div style={{ borderTop: "1px solid rgba(90,103,112,0.3)", marginBottom: "0.75rem" }} />
+
+                                                                {/* Result row */}
+                                                                <div className="flex flex-wrap items-center gap-6">
+                                                                        <div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Drop (V)</div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "1.5rem", fontWeight: 700, color: "var(--color-bone)", lineHeight: 1.1 }}>
+                                                                                        {vDropResult.absolute}V
+                                                                                </div>
+                                                                        </div>
+                                                                        <div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Drop (%)</div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "1.5rem", fontWeight: 700, color: vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)", lineHeight: 1.1 }}>
+                                                                                        {vDropResult.percentage}%
+                                                                                </div>
+                                                                        </div>
+                                                                        <div style={{ marginInlineStart: "auto" }}>
+                                                                                <span style={{
+                                                                                        fontFamily: "var(--font-data)",
+                                                                                        fontSize: "0.7rem",
+                                                                                        fontWeight: 600,
+                                                                                        letterSpacing: "0.08em",
+                                                                                        textTransform: "uppercase",
+                                                                                        padding: "0.2rem 0.6rem",
+                                                                                        borderRadius: "2px",
+                                                                                        border: `1px solid ${vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)"}`,
+                                                                                        color: vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)",
+                                                                                }}>
+                                                                                        {vDropResult.percentage < 3 ? "✓ COMPLIANT" : vDropResult.percentage < 5 ? "⚠ MARGINAL" : "✕ NON-COMPLIANT"}
+                                                                                </span>
+                                                                        </div>
+                                                                </div>
+
+                                                                {/* Audit footer */}
+                                                                {"nec_section" in vDropResult && (
+                                                                        <div style={{ borderTop: "1px solid rgba(90,103,112,0.2)", marginTop: "0.75rem", paddingTop: "0.5rem", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                                                                                <span style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.04em" }}>
+                                                                                        REF: {vDropResult.nec_section}
+                                                                                </span>
+                                                                                {"computation_hash" in vDropResult && (
+                                                                                        <span style={{ fontFamily: "var(--font-data)", fontSize: "0.6rem", color: "rgba(90,103,112,0.6)", letterSpacing: "0.04em" }} title="Audit Reference Hash">
+                                                                                                AUDIT: {vDropResult.computation_hash?.slice(0, 16)}…
+                                                                                        </span>
+                                                                                )}
+                                                                        </div>
+                                                                )}
                                                         </div>
                                                 </CardContent>
                                         </Card>
