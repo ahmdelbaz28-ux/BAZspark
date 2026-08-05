@@ -204,9 +204,7 @@ async def _wait_for_pong(pong_flag: dict[str, bool], timeout: float) -> bool:
 
 async def _check_api_key_revoked(websocket: WebSocket, api_key: str) -> bool:
     """Re-authenticate API key; close socket and return True if revoked."""
-    if not api_key:
-        return False
-    if await _revalidate_api_key(api_key):
+    if not api_key or await _revalidate_api_key(api_key):
         return False
     logger.warning(
         "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
@@ -226,11 +224,16 @@ async def _handle_pong_timeout(
         "Agent WebSocket heartbeat timeout: no pong within %ss — terminating connection",
         WS_HEARTBEAT_TIMEOUT_SECONDS,
     )
+    await _safe_close_websocket(websocket, code=4008)
+    return True
+
+
+async def _safe_close_websocket(websocket: WebSocket, code: int) -> None:
+    """Safely close a websocket connection, suppressing any exceptions."""
     try:
-        await websocket.close(code=4008)
+        await websocket.close(code=code)
     except Exception:
         pass
-    return True
 
 
 def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[str, bool], Callable[[], Coroutine[Any, Any, None]]]:
@@ -246,7 +249,6 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
     async def _ping_cycle() -> None:
         while True:
             await asyncio.sleep(WS_PING_INTERVAL_SECONDS)
-            # Re-authenticate API key on every heartbeat cycle to prevent session hijacking
             if await _check_api_key_revoked(websocket, api_key):
                 return
 
@@ -254,10 +256,10 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
             try:
                 await websocket.send_json({"type": "ping"})
             except Exception:
-                return  # connection already dead — let message loop handle it
+                return
 
             if await _handle_pong_timeout(websocket, _pong_received):
-                return  # signal to caller that we closed
+                return
 
     return _pong_received, _ping_cycle
 

@@ -115,7 +115,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--etap-text-muted);
+  color: var(--etap-text-secondary);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;

@@ -480,7 +480,7 @@ export function EngineeringPage() {
                                                                                                 value={voltageDropInputs.material}
                                                                                                 onValueChange={(v) => setVoltageDropInputs((p) => ({ ...p, material: v }))}
                                                                                         >
-                                                                                                <SelectTrigger className="etap-input">
+                                                                                                <SelectTrigger aria-label={t("engineering.material")} className="etap-input">
                                                                                                         <SelectValue />
                                                                                                 </SelectTrigger>
                                                                                                 <SelectContent>
@@ -691,7 +691,7 @@ export function EngineeringPage() {
                                                                                                 value={cableSizingInputs.installationMethod}
                                                                                                 onValueChange={(v) => setCableSizingInputs((p) => ({ ...p, installationMethod: v }))}
                                                                                         >
-                                                                                                <SelectTrigger className="etap-input">
+                                                                                                <SelectTrigger aria-label={t("engineering.installationMethod")} className="etap-input">
                                                                                                         <SelectValue />
                                                                                                 </SelectTrigger>
                                                                                                 <SelectContent>
