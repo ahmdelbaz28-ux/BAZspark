@@ -27,11 +27,25 @@ interface ContextualHelpButtonProps {
         label?: string;
 }
 
+function useSafeLocation() {
+        try {
+                return useLocation();
+        } catch {
+                return {
+                        pathname: typeof window !== "undefined" ? window.location.pathname : "/",
+                        search: "",
+                        hash: "",
+                        state: null,
+                        key: "default",
+                };
+        }
+}
+
 export function ContextualHelpButton({
         route,
         label,
 }: ContextualHelpButtonProps) {
-        const location = useLocation();
+        const location = useSafeLocation();
         const { i18n } = useTranslation();
         const currentRoute = route || location.pathname;
 

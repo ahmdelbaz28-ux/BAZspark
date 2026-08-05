@@ -23,6 +23,7 @@ What this file does:
 from __future__ import annotations
 
 import contextlib
+import logging
 import math
 import random
 import statistics
@@ -30,6 +31,8 @@ import threading
 import time
 from dataclasses import dataclass
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Failure models (was in accuracy_engine/core/monte_carlo/failure_models.py)
