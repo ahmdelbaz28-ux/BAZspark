@@ -27,6 +27,7 @@ import math
 import random
 import statistics
 import threading
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -122,7 +123,12 @@ class DetectorReliabilitySimulator:
         R_sq = coverage_radius**2  # NOSONAR - python:S117
         n_pts = len(grid_pts)
 
+        t0 = time.perf_counter()
         for _trial in range(self.n_trials):
+            if time.perf_counter() - t0 > 10.0:  # 10s hard execution limit cap
+                logger.warning("Monte Carlo simulation capped at 10.0s time limit (completed %d trials)", len(coverage_results))
+                break
+
             # Randomly fail detectors
             active = [det for det in detectors if self._rng.random() > p_fail and self._rng.random() > p_blind]
 

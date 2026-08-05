@@ -380,17 +380,19 @@ class StreamingDXFParser:
                     gc = lines[j].strip()
                     gv = lines[j + 1].strip()
                     try:
-                        if gc == "10":
-                            x1 = float(gv) * s
-                        elif gc == "20":
-                            y1 = float(gv) * s
-                        elif gc == "11":
-                            x2 = float(gv) * s
-                        elif gc == "21":
-                            y2 = float(gv) * s
+                        fval = float(gv) * s
+                        if math.isfinite(fval) and -1e7 <= fval <= 1e7:
+                            if gc == "10":
+                                x1 = fval
+                            elif gc == "20":
+                                y1 = fval
+                            elif gc == "11":
+                                x2 = fval
+                            elif gc == "21":
+                                y2 = fval
                         elif gc == "0":
                             break  # Next entity
-                    except ValueError:
+                    except (ValueError, OverflowError):
                         pass
                     j += 2
 
@@ -408,19 +410,21 @@ class StreamingDXFParser:
                     gc = lines[j].strip()
                     gv = lines[j + 1].strip()
                     try:
-                        if gc == "10":
-                            if cx is not None and cy is not None:
-                                verts.append((cx, cy))
-                            cx = float(gv) * s
-                            cy = None
-                        elif gc == "20":
-                            cy = float(gv) * s
-                            if cx is not None:
-                                verts.append((cx, cy))
-                                cx = cy = None
+                        fval = float(gv) * s
+                        if math.isfinite(fval) and -1e7 <= fval <= 1e7:
+                            if gc == "10":
+                                if cx is not None and cy is not None:
+                                    verts.append((cx, cy))
+                                cx = fval
+                                cy = None
+                            elif gc == "20":
+                                cy = fval
+                                if cx is not None:
+                                    verts.append((cx, cy))
+                                    cx = cy = None
                         elif gc == "0":
                             break
-                    except ValueError:
+                    except (ValueError, OverflowError):
                         pass
                     j += 2
 

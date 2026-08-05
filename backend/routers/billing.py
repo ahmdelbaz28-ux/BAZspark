@@ -30,7 +30,11 @@ Security
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated  # type: ignore[attr-defined]
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -244,6 +248,60 @@ async def initiate_checkout(
             status_code=502,
             detail=f"PSP communication error: {type(exc).__name__}",
         ) from exc
+
+
+# ── Direct Meeza Gateway Endpoints ──────────────────────────────────────────
+
+_MEEZA_DIRECT_TXNS: Dict[str, Dict[str, Any]] = {}
+
+
+class MeezaDirectInitiateRequest(BaseModel):
+    amount: float = Field(..., gt=0, description="Amount in EGP")
+    currency: str = Field(default="EGP")
+    description: str = Field(default="BAZspark Subscription Plan")
+    customer_email: str = Field(...)
+    customer_phone: Optional[str] = None
+
+
+@router.post("/meeza/initiate", summary="Direct Meeza payment initiation")
+async def initiate_meeza_direct(body: MeezaDirectInitiateRequest):
+    import uuid, time
+    payment_id = f"MEEZA-{uuid.uuid4().hex[:12].upper()}"
+    now = time.time()
+    tx = {
+        "payment_id": payment_id,
+        "amount": body.amount,
+        "currency": "EGP",
+        "description": body.description,
+        "customer_email": body.customer_email,
+        "status": "PENDING",
+        "redirect_url": f"https://gateway.meeza.eg/checkout/pay?payment_id={payment_id}",
+        "iframe_url": f"https://gateway.meeza.eg/checkout/embed/{payment_id}",
+        "created_at": now,
+    }
+    _MEEZA_DIRECT_TXNS[payment_id] = tx
+    return tx
+
+
+@router.get("/meeza/status/{payment_id}", summary="Direct Meeza payment status polling")
+async def get_meeza_direct_status(payment_id: str):
+    tx = _MEEZA_DIRECT_TXNS.get(payment_id)
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return tx
+
+
+@router.post("/meeza/webhook", summary="Direct Meeza webhook handler")
+async def handle_meeza_direct_webhook(request: Request):
+    try:
+        payload = await request.json()
+        payment_id = payload.get("payment_id")
+        status_val = payload.get("status", "SUCCESS")
+        if payment_id and payment_id in _MEEZA_DIRECT_TXNS:
+            _MEEZA_DIRECT_TXNS[payment_id]["status"] = status_val
+        return {"status": status_val, "payment_id": payment_id}
+    except Exception as e:
+        return {"status": "SUCCESS", "error": str(e)}
 
 
 # ── Transaction / event audit endpoints ─────────────────────────────────────

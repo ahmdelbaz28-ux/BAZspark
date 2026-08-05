@@ -160,8 +160,26 @@ def _cleanup_agent(websocket: WebSocket, agent_type: str) -> None:
     agent_locks.pop(ws_id, None)
 
 
+_seen_agent_nonces: set[str] = set()
+
+
+def _validate_agent_nonce(msg: dict) -> bool:
+    """Validate frame nonce to prevent WebSocket frame hijacking and replay attacks."""
+    nonce = msg.get("nonce")
+    if nonce:
+        if nonce in _seen_agent_nonces:
+            logger.warning("Replay attack blocked for agent WS: nonce=%s", nonce)
+            return False
+        _seen_agent_nonces.add(nonce)
+        if len(_seen_agent_nonces) > 5000:
+            _seen_agent_nonces.clear()
+    return True
+
+
 async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
     """Dispatch a single decoded agent message."""
+    if not _validate_agent_nonce(msg):
+        return
     msg_type = msg.get("type")
     if msg_type == "response":
         cmd_id = msg.get("id")

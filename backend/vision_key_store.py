@@ -54,10 +54,11 @@ import logging
 import os
 import secrets
 import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
 # AES-256-GCM via cryptography.hazmat — provides authenticated encryption
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -257,6 +258,30 @@ def decrypt_key(encrypted: str) -> str:
     return plaintext_bytes.decode("utf-8")
 
 
+def wipe_memory(buf: bytearray) -> None:
+    """
+    Overwrites all bytes in a mutable bytearray buffer with 0x00
+    to wipe sensitive API/Vision key material from memory immediately post-invocation.
+    """
+    if isinstance(buf, bytearray):
+        for i in range(len(buf)):
+            buf[i] = 0
+
+
+@contextmanager
+def secure_key_context(encrypted_key: str) -> Generator[bytearray, None, None]:
+    """
+    Context manager that decrypts an encrypted Vision key into a mutable bytearray,
+    yields it for invocation, and automatically zeroizes (wipes) the memory buffer upon exit.
+    """
+    plaintext_str = decrypt_key(encrypted_key)
+    key_buffer = bytearray(plaintext_str.encode("utf-8"))
+    try:
+        yield key_buffer
+    finally:
+        wipe_memory(key_buffer)
+
+
 # ── Masking ──────────────────────────────────────────────────────────────────
 
 
@@ -317,5 +342,7 @@ __all__ = [
     "decrypt_key",
     "encrypt_key",
     "mask_key",
+    "secure_key_context",
     "utc_now_iso",
+    "wipe_memory",
 ]

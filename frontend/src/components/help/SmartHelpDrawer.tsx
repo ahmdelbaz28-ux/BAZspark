@@ -1,17 +1,34 @@
 /**
- * SmartHelpDrawer.tsx — Legacy stub (V140 Phase 7)
+ * SmartHelpDrawer.tsx — Backward-compatible wrapper component
  *
- * Replaced by GlobalHelpDrawer.tsx. Kept as stub for backward compat.
- * Accepts all legacy props but renders nothing.
+ * Merged into GlobalHelpDrawer.tsx. Delegates all props and renders GlobalHelpDrawer.
  */
-interface SmartHelpDrawerProps {
+import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
+import type { HelpTopicId } from "@/help/types";
+
+export interface SmartHelpDrawerProps {
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
-	initialContextId?: string;
+	initialTopicId?: HelpTopicId | null;
+	initialContextId?: string | null;
 	initialSearch?: string;
 	[key: string]: unknown;
 }
 
-export function SmartHelpDrawer(_props: SmartHelpDrawerProps) {
-	return null;
+export function SmartHelpDrawer({
+	open = false,
+	onOpenChange = () => {},
+	initialTopicId,
+	initialContextId,
+}: SmartHelpDrawerProps) {
+	const activeTopic = (initialTopicId || initialContextId) as HelpTopicId | undefined;
+	return (
+		<GlobalHelpDrawer
+			open={open}
+			onOpenChange={onOpenChange}
+			initialTopicId={activeTopic}
+		/>
+	);
 }
+
+export { GlobalHelpDrawer as HelpDrawer };
