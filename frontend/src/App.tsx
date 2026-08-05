@@ -240,6 +240,10 @@ const AuditTrailPage = lazy(() =>
 const BMSPage = lazy(() =>
     import("./pages/BMSPage").then((m) => ({ default: m.BMSPage })),
 );
+// Meeza (ميزة) payment gateway — billing & subscriptions page.
+const BillingPage = lazy(() =>
+    import("./pages/BillingPage").then((m) => ({ default: m.BillingPage })),
+);
 const CADToolsPage = lazy(() =>
     import("./pages/CADToolsPage").then((m) => ({ default: m.CADToolsPage })),
 );
@@ -395,6 +399,8 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/settings", element: <SettingsPage /> },
                 { path: "/settings/cad", element: <CADSettingsPage /> },
                 { path: "/settings/database", element: <DatabaseAdminPage />, requiredRole: "admin" },
+                // Meeza payment gateway — billing & subscriptions
+                { path: "/billing", element: <BillingPage /> },
                 { path: "/digital-twin", element: <DigitalTwinPage /> },
                 { path: "/fire-alarm", element: <FireAlarmPage /> },
 

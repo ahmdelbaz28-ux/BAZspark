@@ -683,6 +683,26 @@ def _register_v2_router() -> None:
 
 _register_v2_router()
 
+# ── Meeza (ميزة) Payment Gateway router ──────────────────────────────────
+# Mounted at /api/v1/billing. Provides:
+#   POST /orders                              — create a new billing order
+#   GET  /orders                              — list caller's orders
+#   GET  /orders/{order_id}                   — get a single order
+#   POST /orders/{order_id}/checkout          — initiate Meeza checkout
+#   GET  /transactions/{txn_id}               — get a transaction (admin)
+#   GET  /orders/{order_id}/transactions      — list transactions for order
+#   GET  /orders/{order_id}/events            — webhook audit trail (admin)
+#   POST /webhooks/meeza                      — Meeza PSP webhook (HMAC-verified)
+#   POST /orders/{order_id}/simulate-webhook  — sandbox-only test endpoint
+try:
+    from backend.routers.billing import router as billing_router
+    app.include_router(billing_router, prefix="/api/v1", tags=["Billing & Meeza Payments"])
+    logger.info("Billing & Meeza payment router mounted at /api/v1/billing")
+except ImportError as e:
+    logger.warning("Billing router skipped (optional dependency missing): %s", e)
+except Exception as e:
+    logger.warning("Billing router registration failed: %s", e)
+
 # This function was defined but NEVER called — meaning CSRF protection
 # was completely disabled in production despite the code existing.
 # Frontend was fetching CSRF tokens (wasting requests) and backend was

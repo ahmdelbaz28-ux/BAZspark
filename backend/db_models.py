@@ -255,3 +255,108 @@ class AuditLog(Base):
         Index("idx_audit_log_entity", "entity_type", "entity_id"),
         Index("idx_audit_log_action", "action"),
     )
+
+
+# ── Billing & Meeza Payment models ──────────────────────────────────────────
+# Added for Meeza (ميزة) payment gateway integration. See
+# backend/services/meeza_payment_service.py for runtime CRUD (raw SQL) and
+# backend/routers/billing.py for the FastAPI endpoints.
+
+class Order(Base):
+    """A billing order. Created by the caller, paid via a Meeza transaction."""
+
+    __tablename__ = "orders"
+
+    id = Column(String, primary_key=True)
+    user_principal = Column(String, nullable=False)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String, nullable=False, server_default="EGP")
+    status = Column(
+        String,
+        nullable=False,
+        server_default="pending",
+    )
+    description = Column(String, nullable=False, server_default="")
+    metadata = Column(Text, nullable=False, server_default="{}")
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True))
+    paid_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending','paid','failed','expired','cancelled','refunded')",
+            name="ck_orders_status",
+        ),
+        Index("idx_orders_user", "user_principal"),
+        Index("idx_orders_status", "status"),
+        Index("idx_orders_created", "created_at"),
+    )
+
+    transactions = relationship(
+        "PaymentTransaction", back_populates="order", cascade="all, delete-orphan"
+    )
+
+
+class PaymentTransaction(Base):
+    """A single payment attempt for an order. Multiple transactions may exist
+    per order (e.g. a failed attempt followed by a successful one)."""
+
+    __tablename__ = "payment_transactions"
+
+    id = Column(String, primary_key=True)
+    order_id = Column(String, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    psp_name = Column(String, nullable=False)
+    psp_order_id = Column(String)
+    psp_payment_key = Column(String)
+    psp_txn_id = Column(String)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String, nullable=False, server_default="EGP")
+    status = Column(String, nullable=False, server_default="PENDING")
+    idempotency_key = Column(String, nullable=False, unique=True)
+    raw_payload = Column(Text, nullable=False, server_default="{}")
+    hmac_signature = Column(String)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('PENDING','SUCCESS','FAILED','EXPIRED','CANCELLED')",
+            name="ck_payment_transactions_status",
+        ),
+        Index("idx_txn_order", "order_id"),
+        Index("idx_txn_status", "status"),
+        Index("idx_txn_psp", "psp_txn_id"),
+    )
+
+    order = relationship("Order", back_populates="transactions")
+    events = relationship(
+        "PaymentEvent", back_populates="transaction", cascade="all, delete-orphan"
+    )
+
+
+class PaymentEvent(Base):
+    """A webhook event received from the PSP. Idempotent by `idempotency_key`."""
+
+    __tablename__ = "payment_events"
+
+    id = Column(String, primary_key=True)
+    transaction_id = Column(
+        String, ForeignKey("payment_transactions.id", ondelete="SET NULL")
+    )
+    order_id = Column(String, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String, nullable=False)
+    psp_name = Column(String, nullable=False)
+    idempotency_key = Column(String, nullable=False, unique=True)
+    raw_payload = Column(Text, nullable=False, server_default="{}")
+    hmac_signature = Column(String)
+    processed_at = Column(DateTime(timezone=True), nullable=False)
+    response_code = Column(Integer, nullable=False, server_default="200")
+
+    __table_args__ = (
+        Index("idx_evt_order", "order_id"),
+        Index("idx_evt_idem", "idempotency_key"),
+    )
+
+    transaction = relationship("PaymentTransaction", back_populates="events")
