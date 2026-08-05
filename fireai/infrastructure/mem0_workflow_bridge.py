@@ -120,6 +120,12 @@ def _room_query(room: dict[str, Any]) -> list[str]:
         return []
     combined = f"{occupancy} {room_name}".lower()
 
+    queries: list[str] = _build_room_queries(combined, occupancy, room_name)
+    return queries
+
+
+def _build_room_queries(combined: str, occupancy: str, room_name: str) -> list[str]:
+    """Build room-specific search queries based on room type."""
     queries: list[str] = []
     # Kitchen-specific heat detector rule (NFPA 72 §17.6.4)
     if "kitchen" in combined:
@@ -255,6 +261,73 @@ def _search_query(
     return hints, len(response.results)
 
 
+def _get_memory_service(started: float) -> tuple[Any, MemoryEnrichmentResult | None]:
+    """Initialize memory service or return empty result on failure."""
+    try:
+        from backend.services.memory_service import get_memory_service
+    except ImportError as exc:  # pragma: no cover - backend unavailable
+        logger.debug("mem0_workflow_bridge: backend not importable (%s)", exc)
+        return None, _empty_result(started, error="memory_service_unavailable")
+
+    service = get_memory_service()
+    if not service.is_initialized:
+        logger.debug(
+            "mem0_workflow_bridge: MemoryService not initialized — "
+            "returning zero hints (fail-safe)."
+        )
+        return None, _empty_result(started, error="memory_service_not_initialized")
+    return service, None
+
+
+def _process_search_results(
+    queries: list[str],
+    service: Any,
+    engineer_id: str,
+    workflow_id: str,
+) -> tuple[list[MemoryHint], int]:
+    """Process search queries and collect hints."""
+    hints: list[MemoryHint] = []
+    total_searched = 0
+
+    for query in queries:
+        query_hints, query_searched = _search_query(
+            service, query, engineer_id, workflow_id
+        )
+        hints.extend(query_hints)
+        total_searched += query_searched
+
+        # Stop early once we have a healthy context budget.
+        if len(hints) >= _MAX_HINTS:
+            break
+
+    return hints, total_searched
+
+
+def _log_enrichment_results(
+    hints: list[MemoryHint],
+    total_searched: int,
+    started: float,
+    engineer_id: str,
+    workflow_id: str,
+) -> MemoryEnrichmentResult:
+    """Log and return enrichment results."""
+    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    logger.info(
+        "mem0_workflow_bridge: %d hints from %d memories in %.1fms "
+        "(engineer=%s, workflow=%s)",
+        len(hints),
+        total_searched,
+        elapsed_ms,
+        engineer_id,
+        workflow_id,
+    )
+    return MemoryEnrichmentResult(
+        hints=hints,
+        total_memories_searched=total_searched,
+        enrichment_time_ms=elapsed_ms,
+    )
+
+
 def enrich_with_memory_context(
     rooms: list[dict[str, Any]],
     workflow_id: str,
@@ -273,50 +346,14 @@ def enrich_with_memory_context(
     if not queries:
         return _empty_result(started)
 
-    try:
-        from backend.services.memory_service import get_memory_service
-    except ImportError as exc:  # pragma: no cover - backend unavailable
-        logger.debug("mem0_workflow_bridge: backend not importable (%s)", exc)
-        return _empty_result(started, error="memory_service_unavailable")
+    service, error_result = _get_memory_service(started)
+    if error_result:
+        return error_result
 
-    service = get_memory_service()
-    if not service.is_initialized:
-        logger.debug(
-            "mem0_workflow_bridge: MemoryService not initialized — "
-            "returning zero hints (fail-safe)."
-        )
-        return _empty_result(started, error="memory_service_not_initialized")
-
-    hints: list[MemoryHint] = []
-    total_searched = 0
-
-    for query in queries:
-        query_hints, query_searched = _search_query(
-            service, query, engineer_id, workflow_id
-        )
-        hints.extend(query_hints)
-        total_searched += query_searched
-
-        # Stop early once we have a healthy context budget.
-        if len(hints) >= _MAX_HINTS:
-            break
-
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
-    logger.info(
-        "mem0_workflow_bridge: %d hints from %d memories in %.1fms "
-        "(engineer=%s, workflow=%s)",
-        len(hints),
-        total_searched,
-        elapsed_ms,
-        engineer_id,
-        workflow_id,
+    hints, total_searched = _process_search_results(
+        queries, service, engineer_id, workflow_id
     )
-
-    return MemoryEnrichmentResult(
-        hints=hints,
-        total_memories_searched=total_searched,
-        enrichment_time_ms=elapsed_ms,
-    )
+    return _log_enrichment_results(hints, total_searched, started, engineer_id, workflow_id)
 
 
 __all__ = [
