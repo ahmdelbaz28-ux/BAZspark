@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
+
 try:
     from typing import Annotated
 except ImportError:
@@ -265,7 +266,8 @@ class MeezaDirectInitiateRequest(BaseModel):
 
 @router.post("/meeza/initiate", summary="Direct Meeza payment initiation")
 async def initiate_meeza_direct(body: MeezaDirectInitiateRequest):
-    import uuid, time
+    import time
+    import uuid
     payment_id = f"MEEZA-{uuid.uuid4().hex[:12].upper()}"
     now = time.time()
     tx = {

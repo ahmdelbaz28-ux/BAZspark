@@ -15,35 +15,33 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import math
-import time
+
 import pytest
 from fastapi.testclient import TestClient
 
-# 1. CAD Parser Bounds & Sanitization
-from fireai.core.streaming_dwg_parser import StreamingDXFParser, StreamedRoom
-
-# 2. Vision Key Store Wiping
-from backend.vision_key_store import (
-    encrypt_key,
-    decrypt_key,
-    wipe_memory,
-    secure_key_context,
-)
-
-# 3. WebSocket Anti-Replay
-from fireai.core.websocket_manager import ConnectionManager
-
-# 4. Solver Timeout Caps
-from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss, FluidType
-from fireai.core.hydraulic_solver import calculate_friction_loss
-from fireai.core.monte_carlo_pipeline import DetectorReliabilitySimulator
+# 6. Meeza Billing Router
+from backend.app import app
 
 # 5. Dual-DB Saga Rollback
 from backend.multi_db_service import atomic_multi_db_transaction
 
-# 6. Meeza Billing Router
-from backend.app import app
+# 2. Vision Key Store Wiping
+from backend.vision_key_store import (
+    decrypt_key,
+    encrypt_key,
+    secure_key_context,
+)
+
+# 4. Solver Timeout Caps
+from fireai.core.darcy_weisbach_solver import FluidType, calculate_darcy_weisbach_friction_loss
+from fireai.core.hydraulic_solver import calculate_friction_loss
+from fireai.core.monte_carlo_pipeline import DetectorReliabilitySimulator
+
+# 1. CAD Parser Bounds & Sanitization
+from fireai.core.streaming_dwg_parser import StreamingDXFParser
+
+# 3. WebSocket Anti-Replay
+from fireai.core.websocket_manager import ConnectionManager
 
 
 def test_cad_parser_bounds_and_sanitization():
@@ -133,11 +131,14 @@ def test_dual_db_saga_rollback():
     def rollback_step2():
         compensated.append("step2")
 
-    with pytest.raises(RuntimeError):
+    def _run_failing_saga():
         with atomic_multi_db_transaction() as saga:
             saga.add_compensation(rollback_step1)
             saga.add_compensation(rollback_step2)
             raise RuntimeError("Simulated failure in multi-db sync")
+
+    with pytest.raises(RuntimeError):
+        _run_failing_saga()
 
     # Saga rollbacks must be executed in reverse order (step2 then step1)
     assert compensated == ["step2", "step1"]

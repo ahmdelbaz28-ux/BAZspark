@@ -105,7 +105,7 @@ jobs:
             const deadline = Date.now() + 15 * 60 * 1000;
 
             while (Date.now() < deadline) {
-              const { data: statuses } = await github.rest.repos.listCommitStatuses({ owner, repo, ref });
+              const { data: statuses } = await github.rest.repos.listCommitStatusesForRef({ owner, repo, ref });
               const { data: checkRuns } = await github.rest.checks.listForRef({ owner, repo, ref });
 
               const pendingStatuses = statuses.filter(s => s.state === 'pending');

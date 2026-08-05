@@ -40,12 +40,26 @@ interface GlobalHelpDrawerProps {
         initialTopicId?: HelpTopicId | null;
 }
 
+function useSafeLocation() {
+        try {
+                return useLocation();
+        } catch {
+                return {
+                        pathname: typeof window !== "undefined" ? window.location.pathname : "/",
+                        search: "",
+                        hash: "",
+                        state: null,
+                        key: "default",
+                };
+        }
+}
+
 export function GlobalHelpDrawer({
         open,
         onOpenChange,
         initialTopicId,
 }: GlobalHelpDrawerProps) {
-        const location = useLocation();
+        const location = useSafeLocation();
         const { i18n } = useTranslation();
         const isAr = i18n.language === "ar";
         const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
