@@ -772,6 +772,7 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
     Per agent.md: "NOT an AI - this is a deterministic calculator."
     """
     from adapters.pdf_to_rooms_adapter import select_safe_detector_type
+    from fireai.core.contracts import Room
 
     rooms = state.get("rooms", [])
     memory_context = state.get("memory_context", {})
@@ -808,8 +809,17 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
             warnings.append("UNKNOWN occupancy — no detectors placed. MANUAL REVIEW REQUIRED.")
             rooms_failing += 1
         else:
+            # Cross the canonical seam: map the pipeline's raw dict shape to a
+            # canonical fireai.core.contracts.Room (boundary mapping), so the
+            # adapter decides on the same typed Room the engine uses.
             try:
-                detector = select_safe_detector_type(room_name, occupancy_type)
+                detector = select_safe_detector_type(
+                    Room(
+                        name=room_name,
+                        occupancy_type=occupancy_type,
+                        area_sqm=area_sqm,
+                    )
+                )
                 detector_type = detector.name
 
                 if detector_type.startswith("SMOKE"):
@@ -851,6 +861,14 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
                         memory_suggestions_used += 1
 
             except Exception as e:
+                # Explicit error path — never a silent per-room AttributeError.
+                # Log server-side AND surface in the report so a failing room
+                # can never be mistaken for a compliant one.
+                logger.error(
+                    "Detector selection failed for room %r "
+                    "(occupancy=%r, area=%.1f): %s",
+                    room_name, occupancy_type, area_sqm, e,
+                )
                 detector_type = "ERROR"
                 detector_count = 0
                 coverage_pct = 0.0

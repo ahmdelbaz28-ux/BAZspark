@@ -163,6 +163,36 @@ class RoomSpecificationContract:
         return d
 
 
+@dataclass(frozen=True)
+class Room:
+    """
+    Canonical room record on the ``fireai.core`` seam.
+
+    Single source of truth for the room's engineering-relevant data
+    (name, occupancy class, floor area). Other subsystems that define
+    their own room models become boundary mappers that produce/consume
+    this type at the seam.
+
+    SAFETY: ``occupancy_type`` drives detector selection — an unknown
+    occupancy must be treated as requiring MANUAL REVIEW downstream,
+    never as a default smoke placement.
+
+    Fields:
+        name: Room name/label.
+        occupancy_type: Occupancy classification (e.g. "kitchen",
+            "business", "unknown").
+        area_sqm: Floor area in square metres.
+        polygon: Optional opaque geometry carrier (e.g. a shapely
+            Polygon). Shape is adapter-specific; the canonical contract
+            treats it as an opaque geometry token.
+    """
+
+    name: str = ""
+    occupancy_type: str = "unknown"
+    area_sqm: float = 0.0
+    polygon: Any = None
+
+
 # ============================================================================
 # DetectorPlacement → Analyzer Service Output
 # ============================================================================
@@ -700,6 +730,7 @@ __all__ = [
     "OccupancyCategory",
     "ParsedDrawingContract",
     "PathwaySurvivabilityLevel",
+    "Room",
     "RoomSpecificationContract",
     "get_feature_flags",
     "is_feature_enabled",

@@ -18,6 +18,7 @@ Test categories:
    9. WorkflowService — __init__, create_workflow, status, approve, reject, audit
 """
 
+import math
 import os
 import sys
 
@@ -48,6 +49,7 @@ from backend.services.workflow_service import (
     _log_transition,
     build_fireai_workflow,
     node_initialize,
+    node_nfpa_analysis,
     node_parse,
     should_proceed_after_parse,
     should_proceed_after_review,
@@ -439,6 +441,62 @@ class TestNodeParse:
 
         assert result["parse_success"] is False
         assert any("Parse error" in w for w in result.get("parse_warnings", []))
+
+
+# ── 6b. node_nfpa_analysis() — REAL detector seam, not mocked ────────────────
+
+class TestNodeNfpaAnalysisRealDetectorSeam:
+    """
+    Crosses the REAL call shape of select_safe_detector_type:
+    room dicts in pipeline state → canonical Room → typed DetectorType.
+
+    The old implementation passed two strings into a function expecting a
+    Room object and the broad except swallowed the resulting AttributeError
+    — every room silently flagged ERROR with zero detectors. These tests
+    assert the seam produces actual HEAT/SMOKE results, never ERROR.
+    """
+
+    @pytest.fixture
+    def state_with_rooms(self, sample_state) -> PipelineState:
+        sample_state["rooms"] = [
+            {"name": "Kitchen", "area_sqm": 30.0, "occupancy_type": "kitchen"},
+            {"name": "Office", "area_sqm": 50.0, "occupancy_type": "business"},
+        ]
+        return sample_state
+
+    def test_kitchen_gets_heat_detectors_not_error(self, state_with_rooms):
+        result = node_nfpa_analysis(state_with_rooms)
+        nfpa = {r["name"]: r for r in result["nfpa_results"]}
+        assert nfpa["Kitchen"]["detector_type"] == "HEAT"
+        assert nfpa["Kitchen"]["detector_count"] == max(1, math.ceil(30.0 / 20.0))
+        assert nfpa["Kitchen"]["is_flagged"] is False
+        assert not any("Analysis error" in w for w in nfpa["Kitchen"]["warnings"])
+
+    def test_office_gets_smoke_detectors_not_error(self, state_with_rooms):
+        result = node_nfpa_analysis(state_with_rooms)
+        nfpa = {r["name"]: r for r in result["nfpa_results"]}
+        assert nfpa["Office"]["detector_type"] == "SMOKE"
+        assert nfpa["Office"]["detector_count"] == max(1, math.ceil(50.0 / 9.0))
+        assert nfpa["Office"]["is_flagged"] is False
+        assert not any("Analysis error" in w for w in nfpa["Office"]["warnings"])
+
+    def test_no_room_flags_error(self, state_with_rooms):
+        result = node_nfpa_analysis(state_with_rooms)
+        assert all(
+            r["detector_type"] != "ERROR" for r in result["nfpa_results"]
+        )
+        assert result["nfpa_compliant"] is True
+
+    def test_unknown_occupancy_still_flagged_for_manual_review(self, sample_state):
+        sample_state["rooms"] = [
+            {"name": "Mystery", "area_sqm": 25.0, "occupancy_type": "unknown"},
+        ]
+        result = node_nfpa_analysis(sample_state)
+        nfpa = result["nfpa_results"][0]
+        assert nfpa["detector_type"] == "UNKNOWN"
+        assert nfpa["detector_count"] == 0
+        assert nfpa["is_flagged"] is True
+        assert any("MANUAL REVIEW" in w for w in nfpa["warnings"])
 
 
 # ── 7. Conditional Edge Functions ─────────────────────────────────────────────
