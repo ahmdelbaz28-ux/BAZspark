@@ -106,12 +106,18 @@ def _safe_resolve_upload_path(filename: str) -> str:
     abs_upload = Path(os.path.abspath(upload_dir))
     resolved = Path(os.path.abspath(os.path.join(upload_dir, filename)))
 
-    # M-5 FIX: Use Path.is_relative_to() instead of str.startswith().
-    # is_relative_to() correctly handles directory boundaries —
+    # M-5 FIX: Use Path.is_relative_to() (with Python 3.8 relative_to fallback)
+    # instead of str.startswith(). correctly handles directory boundaries —
     # /tmp/uploads_evil/file is NOT relative to /tmp/uploads, even
     # though the string starts with "/tmp/uploads". This eliminates
     # the suffix-attack vulnerability that startswith() had.
-    if not resolved.is_relative_to(abs_upload):
+    try:
+        if hasattr(resolved, "is_relative_to"):
+            if not resolved.is_relative_to(abs_upload):
+                raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR:S8415: endpoint error handling is intentional
+        else:
+            resolved.relative_to(abs_upload)
+    except ValueError:
         raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR:S8415: endpoint error handling is intentional
     return str(resolved)
 
@@ -221,6 +227,27 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 _VALID_CONVERSION_TYPES = ("autocad_to_revit", "revit_to_autocad")
 
+# VERIFY-001 FIX: format values flow into os.path.join() as file extensions,
+# so they must be restricted to safe file-extension characters (no path
+# separators, no traversal, no NUL bytes).
+_SAFE_FORMAT_RE = re.compile(r"^[a-zA-Z0-9._-]{1,32}$")
+
+
+def _validate_conversion_format(
+    fmt: Optional[str], field: str, default: str
+) -> str:
+    """Validate a conversion format string before it is used in a file path."""
+    value = (fmt or default).strip()
+    if _SAFE_FORMAT_RE.fullmatch(value) is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid {field}: only letters, numbers, dots, hyphens, and "
+                "underscores are allowed (max 32 characters)."
+            ),
+        )
+    return value
+
 
 def _resolve_conversion_type(
     conversion_type: Optional[str],
@@ -317,8 +344,16 @@ async def convert_files(
     """Perform bidirectional CAD/BIM conversion."""
     try:
         # Resolve formats and path defaults
-        source_format = request.sourceFormat or "dwg"
-        target_format = request.targetFormat or "rvt"
+        # VERIFY-001 FIX: sourceFormat/targetFormat are URL-supplied free-form
+        # strings that previously reached os.path.join() unvalidated — a value
+        # like "../" or "../../" could escape the temp dir. Validate against a
+        # strict whitelist BEFORE any path construction.
+        source_format = _validate_conversion_format(
+            request.sourceFormat, "sourceFormat", "dwg"
+        )
+        target_format = _validate_conversion_format(
+            request.targetFormat, "targetFormat", "rvt"
+        )
 
         conversion_type = _resolve_conversion_type(
             request.conversion_type, source_format, target_format,
