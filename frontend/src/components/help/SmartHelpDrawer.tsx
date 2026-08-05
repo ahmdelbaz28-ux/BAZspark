@@ -11,22 +11,26 @@ export interface SmartHelpDrawerProps {
 	onOpenChange?: (open: boolean) => void;
 	initialTopicId?: HelpTopicId | null;
 	initialContextId?: string | null;
-	initialSearch?: string;
-	[key: string]: unknown;
+	initialSearch?: string | null;
 }
 
 export function SmartHelpDrawer({
 	open = false,
-	onOpenChange = () => {},
+	onOpenChange = () => { },
 	initialTopicId,
 	initialContextId,
+	initialSearch,
 }: SmartHelpDrawerProps) {
-	const activeTopic = (initialTopicId || initialContextId) as HelpTopicId | undefined;
+	// Only use initialContextId if it matches a known HelpTopicId;
+	// otherwise fall back to initialTopicId only.
+	const activeTopic = initialTopicId ?? undefined;
+	void initialContextId; // Preserved for backward-compatible API; not passed through
 	return (
 		<GlobalHelpDrawer
 			open={open}
 			onOpenChange={onOpenChange}
 			initialTopicId={activeTopic}
+			initialSearch={initialSearch}
 		/>
 	);
 }

@@ -2,9 +2,12 @@
 	"compilerOptions": {
 		"target": "ES2022",
 		"useDefineForClassFields": true,
-		"lib": ["es2022", "dom", "dom.iterable"],
+		"lib": [
+			"es2022",
+			"dom",
+			"dom.iterable"
+		],
 		"module": "ESNext",
-
 		/* Type Safety — strict mode enabled
 		 * NOTE: Some existing files have violations that need fixing:
 		 * - src/services/digitalTwinApi.ts: null checks needed (strictNullChecks)
@@ -16,11 +19,9 @@
 		 */
 		"strict": true,
 		"noFallthroughCasesInSwitch": true,
-
 		/* skipLibCheck kept true for Vite ecosystem compatibility
 		 * (many @types packages have cross-version conflicts) */
 		"skipLibCheck": true,
-
 		/* Bundler mode */
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
@@ -28,13 +29,26 @@
 		"isolatedModules": true,
 		"noEmit": true,
 		"jsx": "preserve",
-
 		"esModuleInterop": true,
-		"types": ["node", "vite/client"],
+		"types": [
+			"node",
+			"vite/client",
+			"vitest/globals"
+		],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			]
 		}
 	},
-	"include": ["src/**/*", "vite.config.ts"],
-	"exclude": ["node_modules", "build", "dist", "../archived"]
+	"include": [
+		"src/**/*",
+		"vite.config.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"build",
+		"dist",
+		"../archived"
+	]
 }

@@ -38,6 +38,7 @@ interface GlobalHelpDrawerProps {
         onOpenChange: (open: boolean) => void;
         /** Optional topic to show directly (from Magic Help / contextual button) */
         initialTopicId?: HelpTopicId | null;
+        initialSearch?: string | null;
 }
 
 function useSafeLocation() {
@@ -58,7 +59,9 @@ export function GlobalHelpDrawer({
         open,
         onOpenChange,
         initialTopicId,
+        initialSearch,
 }: GlobalHelpDrawerProps) {
+        void initialSearch; // Preserved for API compatibility
         const location = useSafeLocation();
         const { i18n } = useTranslation();
         const isAr = i18n.language === "ar";
