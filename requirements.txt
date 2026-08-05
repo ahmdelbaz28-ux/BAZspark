@@ -106,3 +106,4 @@ langfuse>=2.0.0,<5.0.0  # V163: avoid langsmith 0.8.5 vulnerability; 3.x unavail
 
 # ── Test Dependencies (required for CI) ──────────────────────────────────────
 respx>=0.23.1,<1.0.0  # V270: HTTP mocking for httpx — used by test_external_api_adapters.py
+typing_extensions>=4.0.0  # Annotated backport for Python 3.8/3.9 runtimes (router fallbacks)

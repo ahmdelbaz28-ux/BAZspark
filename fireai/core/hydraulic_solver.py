@@ -162,7 +162,12 @@ def calculate_friction_loss(
     """
     Calculate friction loss in a pipe segment using the Hazen-Williams formula.
     """
-    cache_key = f"{flow_rate_gpm:.4f}:{friction_factor_c:.2f}:{internal_diameter_inches:.4f}:{pipe_length_feet:.4f}"
+    # V257 FIX: cache key must preserve double precision. The old key truncated
+    # inputs to 4/2 decimals, so e.g. d=2.067 and d=2.06700001 collided to the
+    # same key and the second call returned the cached first result — making
+    # precision differences undetectable (and silently wrong for near-equal
+    # inputs). Use repr() so the key is lossless.
+    cache_key = f"{flow_rate_gpm!r}:{friction_factor_c!r}:{internal_diameter_inches!r}:{pipe_length_feet!r}"
     cached_val = _get_cached_hw(cache_key)
     if cached_val is not None:
         return cached_val

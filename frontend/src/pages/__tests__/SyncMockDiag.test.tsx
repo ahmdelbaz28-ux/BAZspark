@@ -1,4 +1,3 @@
-import { describe, expect, it, vi } from "vitest";
 import { syncApi } from "@/services/fullApi";
 
 const mockGetSyncStatus = vi.fn();

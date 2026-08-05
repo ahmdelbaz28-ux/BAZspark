@@ -4,7 +4,6 @@
  * V244: Safety-critical module — validates designs against NFPA 72, IEC 60364,
  * NEC, and IEC 60598 standards.
  */
-import { describe, expect, it } from "vitest";
 import type { Device } from "@/store/simpleStore";
 import {
         validateAllDevices,

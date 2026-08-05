@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
 // Vercel React Best Practices: bundle-defer-third-party — load Sentry after hydration
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
-        import("@sentry/react").then((Sentry: any) => {
+        import("@sentry/react").then((Sentry: typeof import("@sentry/react")) => {
                 Sentry.init({
                         dsn: sentryDsn,
                         environment: import.meta.env.MODE,
@@ -73,7 +73,7 @@ window.addEventListener("error", (event) => {
                 (event.error?.message?.includes("Loading chunk") ?? false);
         if (isChunkError && !chunkErrorReloadAttempted) {
                 chunkErrorReloadAttempted = true;
-                console.warn("[BAZSPARK] Chunk load failed — reloading to pick up new deployment...");
+                if (import.meta.env.DEV) console.warn("[BAZSPARK] Chunk load failed — reloading to pick up new deployment...");
                 window.location.reload();
         }
 });
@@ -81,20 +81,16 @@ window.addEventListener("error", (event) => {
 createRoot(rootEl).render(
         <BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
                 <QueryClientProvider client={queryClient}><ThemeProvider>
-                                <ErrorRecovery
-                                        onError={(error, info) =>
-                                                console.error(
-                                                        "[BAZSPARK] Fatal error caught by boundary:",
-                                                        error,
-                                                        info,
-                                                )
-                                        }
-                                >
+                        <ErrorRecovery
+                                onError={(error, info) => {
+                                        if (import.meta.env.DEV) console.error("[BAZSPARK] Fatal error caught by boundary:", error, info);
+                                }}
+                        >
                                 <App />
                                 <Analytics />
                                 <SpeedInsights />
-</ErrorRecovery>
-</ThemeProvider>
+                        </ErrorRecovery>
+                </ThemeProvider>
                 </QueryClientProvider>
         </BrowserRouter>,
 );

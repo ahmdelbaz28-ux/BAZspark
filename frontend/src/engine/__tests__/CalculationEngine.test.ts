@@ -3,7 +3,6 @@
  * Verifies that all formulas produce correct results per IEC/NEC standards
  */
 
-import { describe, expect, it } from "vitest";
 import {
 	calculateCableSizing,
 	calculateEarthFaultLoop,

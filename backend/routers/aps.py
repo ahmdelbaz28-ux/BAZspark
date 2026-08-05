@@ -9,7 +9,12 @@ Exposes endpoints to:
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Dict
+from typing import Any, Dict
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field

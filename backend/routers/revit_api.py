@@ -10,7 +10,12 @@ import logging
 import os
 import tempfile
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 from fastapi import (
     APIRouter,

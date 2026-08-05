@@ -215,13 +215,12 @@ export function ReportsPage() {
                 }
         };
 
-        // V246 SAFETY FIX: The following data is SAMPLE DATA for demonstration only.
+        // V246 SAFETY FIX: sampleDevices is SAMPLE DATA for the battery preview only.
         // It does NOT represent real project calculations. A prominent warning banner
         // is displayed above the calculation cards to prevent engineers from using
         // these values for real system design.
-        // FIXME(v2.0): Fetch real device/room/detector data from the project API
-        // and display real calculations. Until then, the SAMPLE DATA banner MUST
-        // remain visible.
+        // V256 FIX: Coverage NEVER uses sample data — it always uses real project
+        // rooms/detectors (empty input → honest zeros, never fabricated percentages).
         const sampleDevices = [
                 {
                         id: "dev-1",
@@ -257,101 +256,14 @@ export function ReportsPage() {
                 },
         ];
 
-        // Define the Room type to match the expected interface
-        interface Room {
-                id: string;
-                name: string;
-                width: number;
-                length: number;
-                height: number;
-                ceilingType: "flat" | "sloped" | "coffered";
-                occupancy: string;
-        }
 
-        const sampleRooms: Room[] = [
-                {
-                        id: "rm-1",
-                        name: "Main Lobby",
-                        width: 15,
-                        length: 20,
-                        height: 3.5,
-                        ceilingType: "flat",
-                        occupancy: "high",
-                },
-                {
-                        id: "rm-2",
-                        name: "Conference Room A",
-                        width: 8,
-                        length: 10,
-                        height: 3.2,
-                        ceilingType: "flat",
-                        occupancy: "medium",
-                },
-                {
-                        id: "rm-3",
-                        name: "Electrical Room",
-                        width: 6,
-                        length: 8,
-                        height: 3.0,
-                        ceilingType: "flat",
-                        occupancy: "low",
-                },
-        ];
 
-        // Define the Detector type to match the expected interface
-        interface Detector {
-                id: string;
-                roomId: string;
-                type: "smoke" | "heat" | "rate-of-rise" | "flame-detector";
-                x: number;
-                y: number;
-                coverageRadius: number;
-                sensitivity: "high" | "standard" | "low";
-        }
-
-        const sampleDetectors: Detector[] = [
-                {
-                        id: "det-1",
-                        roomId: "rm-1",
-                        type: "smoke",
-                        x: 5,
-                        y: 5,
-                        coverageRadius: 6.37,
-                        sensitivity: "standard",
-                },
-                {
-                        id: "det-2",
-                        roomId: "rm-1",
-                        type: "smoke",
-                        x: 10,
-                        y: 5,
-                        coverageRadius: 6.37,
-                        sensitivity: "standard",
-                },
-                {
-                        id: "det-3",
-                        roomId: "rm-2",
-                        type: "smoke",
-                        x: 3,
-                        y: 3,
-                        coverageRadius: 6.37,
-                        sensitivity: "standard",
-                },
-                {
-                        id: "det-4",
-                        roomId: "rm-3",
-                        type: "heat",
-                        x: 2,
-                        y: 2,
-                        coverageRadius: 4.27,
-                        sensitivity: "standard",
-                },
-        ];
-
-        // V255 SAFETY FIX: Coverage calculation now uses REAL project data.
-        // Previously used hardcoded sampleRooms (3 fake rooms) and sampleDetectors
-        // (4 fake detectors). In a fire alarm system, showing fake 100% coverage
-        // could lead engineers to believe their system is compliant when it's not.
+        // V255/V256 SAFETY FIX: Coverage calculation uses ONLY real project data.
+        // V255 replaced hardcoded sampleRooms/sampleDetectors with real elements.
+        // V256 removed the sample fallback entirely: when no real rooms/detectors
+        // exist, calculateCoverage receives empty arrays and returns honest zeros
+        // (never fabricated 100% coverage). Fake coverage in a fire alarm system
+        // could lead engineers to believe a non-compliant system is compliant.
         // This is a life-safety issue — fake coverage = potential fatalities.
         const realCoverageRooms = realElements
                 .filter((el) => {
@@ -391,10 +303,9 @@ export function ReportsPage() {
                         };
                 });
         const hasRealCoverageData = realCoverageRooms.length > 0 || realCoverageDetectors.length > 0;
-        const coverageCalculation = calculateCoverage(
-                hasRealCoverageData ? realCoverageRooms : sampleRooms,
-                hasRealCoverageData ? realCoverageDetectors : sampleDetectors,
-        );
+        // V256 FIX: NEVER fall back to sample rooms/detectors for coverage.
+        // Life-safety: a fake 100% coverage number must never be shown.
+        const coverageCalculation = calculateCoverage(realCoverageRooms, realCoverageDetectors);
 
         const batteryCalculation = calculateBatteryRequirements({
                 devices: hasRealBatteryData ? realBatteryDevices : sampleDevices,
@@ -403,7 +314,10 @@ export function ReportsPage() {
                 safetyFactor: 1.2,
         });
 
-        // V255: Banner shows when EITHER battery OR coverage uses sample data.
+        // V256: Banner shows when EITHER calculation lacks real data.
+        // - Battery may fall back to sample devices (hasRealBatteryData false).
+        // - Coverage NEVER uses sample data — it shows honest zeros when no
+        //   real rooms/detectors exist (hasRealCoverageData false).
         // Both must have real data for the banner to hide.
         const isSampleData = !hasRealBatteryData || !hasRealCoverageData;
 
@@ -822,14 +736,16 @@ export function ReportsPage() {
                                                 <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div>
                                                         <div className="font-semibold text-amber-600 dark:text-amber-400">
-                                                                SAMPLE DATA — Not Real Calculations
+                                                                NO REAL PROJECT DATA — Not Real Calculations
                                                         </div>
                                                         <div className="text-sm text-amber-200 mt-1">
-                                                                The battery and coverage calculations below use hardcoded sample
-                                                                data for demonstration only. They do NOT reflect your actual
-                                                                project. Do NOT use these values for real system design or AHJ
-                                                                submittals. Connect a real project and use the AHJ Submittal
-                                                                button above to generate a compliance document with real data.
+                                                                These calculations do not reflect your actual project: the battery
+                                                                preview may use hardcoded sample devices, and the coverage preview
+                                                                shows zeroed values when no real room/detector data is loaded.
+                                                                Coverage is never computed from fabricated rooms or detectors.
+                                                                Do NOT use these values for real system design or AHJ submittals.
+                                                                Connect a real project and use the AHJ Submittal button above to
+                                                                generate a compliance document with real data.
                                                         </div>
                                                 </div>
                                         </div>

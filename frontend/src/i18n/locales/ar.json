@@ -1309,7 +1309,9 @@
     "typeEquipment": "معدات",
     "typeMechanical": "ميكانيكي",
     "typeElectrical": "كهربائي",
-    "typeUnknown": "غير معروف"
+    "typeUnknown": "غير معروف",
+    "backToElements": "العودة إلى العناصر",
+    "notFound": "العنصر غير موجود"
   },
   "conflicts": {
     "title": "التعارضات",
@@ -1443,7 +1445,7 @@
     "back": "العودة إلى العناصر",
     "properties": "الخصائص",
     "geometry": "الهندسة",
-    "connections": "التوصيلات",
+    "connections": "التوصيلات ({{count}})",
     "version": "الإصدار",
     "created": "تم الإنشاء",
     "modified": "تم التعديل",
@@ -1461,7 +1463,24 @@
     "edit": "تعديل",
     "delete": "حذف",
     "loading": "جاري تحميل العنصر…",
-    "notFound": "العنصر غير موجود"
+    "notFound": "العنصر غير موجود",
+    "nfpa101Compliant": "NFPA 101 ✓",
+    "dataIncomplete": "بيانات غير مكتملة",
+    "unnamedElement": "عنصر بدون اسم",
+    "updateFailed": "فشل التحديث",
+    "layer": "الطبقة",
+    "revitCategory": "فئة ريفيت",
+    "sourceFile": "الملف المصدر",
+    "autocadHandle": "مقبض أوتوكاد",
+    "revitElementId": "معرف عنصر ريفيت",
+    "perimeter": "المحيط",
+    "closedPolyline": "مضلع مغلق",
+    "pointsCount": "{{count}} نقاط",
+    "noGeometryData": "لا توجد بيانات هندسية متاحة",
+    "timestamps": "الطوابع الزمنية",
+    "lastModified": "آخر تعديل",
+    "modifiedBy": "تم التعديل بواسطة",
+    "noConnections": "لا توجد توصيلات"
   },
   "ai": {
     "title": "اسأل المساعد الذكي",

@@ -127,20 +127,30 @@ def _room_query(room: dict[str, Any]) -> list[str]:
 def _build_room_queries(combined: str, occupancy: str, room_name: str) -> list[str]:
     """Build room-specific search queries based on room type."""
     queries: list[str] = []
+
     # Kitchen-specific heat detector rule (NFPA 72 §17.6.4)
-    if "kitchen" in combined:
+    if _is_kitchen(combined):
         queries.append("NFPA 72 17.6.4 heat detector kitchen fire alarm requirement")
+
     # Hazardous-area IEC 60079 for electrical/mechanical rooms
-    if any(
-        kw in combined
-        for kw in ("electrical", "mechanical", "hazardous", "generator")
-    ):
+    if _is_hazardous_area(combined):
         queries.append("IEC 60079 hazardous area fire alarm detector selection")
 
     queries.append(
         f"{occupancy or room_name} fire alarm detector placement patterns NFPA 72"
     )
     return queries
+
+
+def _is_kitchen(combined: str) -> bool:
+    """Check if the room is a kitchen."""
+    return "kitchen" in combined
+
+
+def _is_hazardous_area(combined: str) -> bool:
+    """Check if the room is a hazardous area."""
+    hazardous_keywords = ("electrical", "mechanical", "hazardous", "generator")
+    return any(kw in combined for kw in hazardous_keywords)
 
 
 def _region_queries(env_context: dict[str, Any]) -> list[str]:
@@ -192,11 +202,18 @@ def _build_queries(
     """Build the search query list per the documented strategy (capped)."""
     queries: list[str] = []
     # 1. Per-room occupancy patterns
-    for room in rooms[:_MAX_QUERIES]:
-        queries.extend(_room_query(room))
+    queries.extend(_build_room_queries_list(rooms))
     # 4. Regional standards (Gulf Civil Defense codes)
     queries.extend(_region_queries(env_context))
     return _dedupe_queries(queries)
+
+
+def _build_room_queries_list(rooms: list[dict[str, Any]]) -> list[str]:
+    """Build queries for all rooms up to the maximum limit."""
+    queries: list[str] = []
+    for room in rooms[:_MAX_QUERIES]:
+        queries.extend(_room_query(room))
+    return queries
 
 
 # ── Enrichment entrypoint ────────────────────────────────────────────────────

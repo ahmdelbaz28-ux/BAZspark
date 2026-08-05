@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,9 @@ export function MeezaPaymentModal({
   open,
   onOpenChange,
   amountEgp = 499,
-  planName = "الخطة الاحترافية (Professional Plan)",
+  planName,
 }: MeezaPaymentModalProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export function MeezaPaymentModal({
   const handleInitiate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      setErrorMsg("يرجى إدخال البريد الإلكتروني (Email is required)");
+      setErrorMsg(t("billing.meeza.emailRequired"));
       return;
     }
     setLoading(true);
@@ -60,7 +62,7 @@ export function MeezaPaymentModal({
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || "فشل إنشاء جلسة الدفع عبر ميزة");
+        throw new Error(err.detail || t("billing.meeza.initiateFailed"));
       }
 
       const data = await res.json();
@@ -71,7 +73,7 @@ export function MeezaPaymentModal({
       });
       setStatus("INITIATED");
     } catch (err: unknown) {
-      setErrorMsg((err as Error).message);
+      setErrorMsg(err instanceof Error ? err.message : String(err));
       setStatus("FAILED");
     } finally {
       setLoading(false);
@@ -80,14 +82,14 @@ export function MeezaPaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dir-rtl text_right">
+      <DialogContent className="sm:max-w-md text-right" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <CreditCard className="h-6 w-6 text-emerald-600" />
-            الدفع عبر كارت ميزة المحلي (Meeza)
+            {t("billing.meeza.title")}
           </DialogTitle>
           <DialogDescription>
-            شبكة ميزة القومية للمدفوعات — الدفع المباشر بالجنيه المصري (EGP)
+            {t("billing.meeza.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -95,14 +97,14 @@ export function MeezaPaymentModal({
           <form onSubmit={handleInitiate} className="space-y-4 py-2">
             <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 border border-emerald-200 dark:border-emerald-800 text-sm">
               <div className="flex justify-between font-semibold text-emerald-900 dark:text-emerald-200">
-                <span>المبلغ المطلوب:</span>
-                <span>{amountEgp} ج.م</span>
+                <span>{t("billing.meeza.amountDue")}:</span>
+                <span>{amountEgp} {t("billing.meeza.egp")}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{planName}</p>
+              {planName && <p className="text-xs text-muted-foreground mt-1">{planName}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meeza-email">البريد الإلكتروني *</Label>
+              <Label htmlFor="meeza-email">{t("billing.meeza.email")} *</Label>
               <Input
                 id="meeza-email"
                 type="email"
@@ -114,7 +116,7 @@ export function MeezaPaymentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meeza-phone">رقم الموبايل (اختياري)</Label>
+              <Label htmlFor="meeza-phone">{t("billing.meeza.phoneOptional")}</Label>
               <Input
                 id="meeza-phone"
                 type="tel"
@@ -133,7 +135,7 @@ export function MeezaPaymentModal({
 
             <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold" disabled={loading}>
               {loading ? <Loader2 className="animate-spin h-4 w-4 ml-2" /> : null}
-              تأكيد وبدء الدفع عبر كارت ميزة
+              {t("billing.meeza.confirmPay")}
             </Button>
           </form>
         )}
@@ -143,9 +145,9 @@ export function MeezaPaymentModal({
             <div className="flex justify-center">
               <CheckCircle2 className="h-12 w-12 text-emerald-500" />
             </div>
-            <h3 className="font-semibold text-lg">تم تجهيز بوابة ميزة للدفع</h3>
+            <h3 className="font-semibold text-lg">{t("billing.meeza.gatewayReady")}</h3>
             <p className="text-sm text-muted-foreground">
-              معرف المعاملة: <code className="bg-muted px-1 py-0.5 rounded text-xs">{paymentData.payment_id}</code>
+              {t("billing.meeza.transactionId")}: <code className="bg-muted px-1 py-0.5 rounded text-xs">{paymentData.payment_id}</code>
             </p>
 
             <div className="pt-2 space-y-2">
@@ -155,12 +157,12 @@ export function MeezaPaymentModal({
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors"
               >
-                انتقال إلى صفحة الدفع الآمنة (Meeza Gateway)
+                {t("billing.meeza.goToGateway")}
                 <ExternalLink className="h-4 w-4" />
               </a>
 
               <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
-                إغلاق النافذة (متابعة الدفع في التبويب الجديد)
+                {t("billing.meeza.closeContinue")}
               </Button>
             </div>
           </div>
@@ -169,10 +171,10 @@ export function MeezaPaymentModal({
         {status === "FAILED" && (
           <div className="space-y-4 py-3 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <h3 className="font-semibold text-lg text-red-600">تعذر بدء عملية الدفع</h3>
+            <h3 className="font-semibold text-lg text-red-600">{t("billing.meeza.paymentFailed")}</h3>
             <p className="text-sm text-muted-foreground">{errorMsg}</p>
             <Button variant="outline" className="w-full" onClick={() => setStatus("IDLE")}>
-              إعادة المحاولة
+              {t("billing.meeza.retry")}
             </Button>
           </div>
         )}

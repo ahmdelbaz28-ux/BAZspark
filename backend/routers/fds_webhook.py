@@ -13,7 +13,12 @@ Handles:
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any, Dict, Optional
+from typing import Any, Dict, Optional
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field

@@ -15,7 +15,12 @@ multiple database technologies.
 """
 
 import logging
-from typing import Annotated, Dict, List, Optional
+from typing import Dict, List, Optional
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

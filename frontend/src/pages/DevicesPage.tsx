@@ -7,6 +7,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, Plus, Trash2, Pencil, Cpu, Eye } from "lucide-react";
 import digitalTwinApi, {
   type Device,
@@ -57,6 +58,7 @@ const LOAD_UNITS = ["A", "mA", "W"] as const;
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
 export const DevicesPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState("");
@@ -86,7 +88,7 @@ export const DevicesPage: React.FC = () => {
 
   // Fetch devices — waits for projectId to resolve before calling project-scoped API
   const { data, isLoading, error } = useQuery({
-    queryKey: ["devices", projectId || "global", page, typeFilter, categoryFilter],
+    queryKey: ["devices", projectId || "global", page],
     queryFn: async () => {
       // Try project-scoped endpoint first
       if (projectId) {
@@ -120,17 +122,24 @@ export const DevicesPage: React.FC = () => {
     enabled: true,
   });
 
-  const devices = data?.data ?? [];
+  const allDevices = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? Math.ceil(total / PAGE_SIZE);
+
+  // Apply client-side filters (typeFilter/categoryFilter are not supported by the API)
+  const devices = allDevices.filter((device: Device) => {
+    if (typeFilter && device.type !== typeFilter) return false;
+    if (categoryFilter && device.category !== categoryFilter) return false;
+    return true;
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (device: Device) => {
       const pid = device.projectId || projectId;
-      if (!pid) throw new Error("No project available for device operations");
+      if (!pid) throw new Error(t("devices.noProjectError"));
       const res = await digitalTwinApi.deleteDevice(pid, device.id);
-      if (!res.success) throw new Error(res.error || "Delete failed");
+      if (!res.success) throw new Error(res.error || t("devices.deleteFailed"));
       return res;
     },
     onSuccess: () => {
@@ -147,12 +156,12 @@ export const DevicesPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
               <Cpu className="h-6 w-6 text-cyan-400" />
-              Devices
+              {t("devices.title")}
             </h1>
             <p className="text-slate-400 text-sm mt-1">
               {isLoading
-                ? "Loading devices..."
-                : `${total} fire alarm device${total !== 1 ? "s" : ""}`}
+                ? t("devices.loading")
+                : t("devices.deviceCount", { count: total })}
             </p>
           </div>
           <button
@@ -161,7 +170,7 @@ export const DevicesPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Add Device
+            {t("devices.addDevice")}
           </button>
         </div>
 
@@ -173,12 +182,13 @@ export const DevicesPage: React.FC = () => {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
+            aria-label={t("devices.filterByType")}
             className="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
           >
-            <option value="">All Types</option>
-            {DEVICE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t.replace(/_/g, " ")}
+            <option value="">{t("devices.allTypes")}</option>
+            {DEVICE_TYPES.map((dt) => (
+              <option key={dt} value={dt}>
+                {dt.replace(/_/g, " ")}
               </option>
             ))}
           </select>
@@ -188,9 +198,10 @@ export const DevicesPage: React.FC = () => {
               setCategoryFilter(e.target.value);
               setPage(1);
             }}
+            aria-label={t("devices.filterByCategory")}
             className="bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:border-cyan-500 focus:outline-none"
           >
-            <option value="">All Categories</option>
+            <option value="">{t("devices.allCategories")}</option>
             {DEVICE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c.charAt(0).toUpperCase() + c.slice(1)}
@@ -207,7 +218,7 @@ export const DevicesPage: React.FC = () => {
               }}
               className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
             >
-              ✕ Clear filters
+              ✕ {t("devices.clearFilters")}
             </button>
           )}
         </div>
@@ -215,7 +226,7 @@ export const DevicesPage: React.FC = () => {
         {/* Error */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-            <p className="text-red-400 text-sm">Failed to load devices</p>
+            <p className="text-red-400 text-sm">{t("devices.loadFailed")}</p>
           </div>
         )}
 
@@ -233,12 +244,12 @@ export const DevicesPage: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-700 bg-slate-800/80">
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Name</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Type</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Category</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Load</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Voltage</th>
-                    <th className="text-right text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Actions</th>
+                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colName")}</th>
+                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colType")}</th>
+                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colCategory")}</th>
+                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colLoad")}</th>
+                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colVoltage")}</th>
+                    <th className="text-right text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">{t("devices.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
@@ -246,11 +257,11 @@ export const DevicesPage: React.FC = () => {
                     <tr>
                       <td colSpan={6} className="py-12 text-center">
                         <Cpu className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                        <p className="text-slate-400">No devices found</p>
+                        <p className="text-slate-400">{t("devices.noDevices")}</p>
                         <p className="text-xs text-slate-500 mt-1">
                           {typeFilter || categoryFilter
-                            ? "Try changing your filters"
-                            : "Add your first fire alarm device"}
+                            ? t("devices.tryChangingFilters")
+                            : t("devices.addFirstDevice")}
                         </p>
                       </td>
                     </tr>
@@ -287,7 +298,8 @@ export const DevicesPage: React.FC = () => {
                               type="button"
                               onClick={() => setViewTarget(device)}
                               className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="View Details"
+                              title={t("devices.viewDetails")}
+                              aria-label={t("devices.viewDetails")}
                             >
                               <Eye className="h-4 w-4" />
                             </button>
@@ -295,7 +307,8 @@ export const DevicesPage: React.FC = () => {
                               type="button"
                               onClick={() => setEditTarget(device)}
                               className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="Edit"
+                              title={t("devices.edit")}
+                              aria-label={t("devices.edit")}
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -303,7 +316,8 @@ export const DevicesPage: React.FC = () => {
                               type="button"
                               onClick={() => setDeleteTarget(device)}
                               className="p-1.5 text-slate-500 hover:text-red-400 transition-colors rounded hover:bg-slate-700/50"
-                              title="Delete"
+                              title={t("devices.delete")}
+                              aria-label={t("devices.delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -322,7 +336,7 @@ export const DevicesPage: React.FC = () => {
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Page {page} of {totalPages}
+              {t("devices.pageOf", { page, totalPages })}
             </p>
             <div className="flex gap-2">
               <button
@@ -331,7 +345,7 @@ export const DevicesPage: React.FC = () => {
                 disabled={page <= 1}
                 className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
               >
-                Previous
+                {t("devices.previous")}
               </button>
               <button
                 type="button"
@@ -339,7 +353,7 @@ export const DevicesPage: React.FC = () => {
                 disabled={page >= totalPages}
                 className="px-3 py-1.5 bg-slate-700 text-slate-200 text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
               >
-                Next
+                {t("devices.next")}
               </button>
             </div>
           </div>
@@ -383,22 +397,25 @@ export const DevicesPage: React.FC = () => {
 
         {/* Delete Confirmation */}
         {deleteTarget && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+          >
             <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold text-slate-100 mb-2">
-                Delete Device
+              <h3 id="delete-dialog-title" className="text-lg font-semibold text-slate-100 mb-2">
+                {t("devices.deleteDevice")}
               </h3>
               <p className="text-slate-400 text-sm mb-4">
-                Are you sure you want to delete{" "}
-                <span className="text-slate-200 font-medium">{deleteTarget.name}</span>?
-                This action affects coverage calculations and cannot be undone.
+                {t("devices.deleteConfirm", { name: deleteTarget.name })}
               </p>
               {deleteMutation.isError && (
                 <p className="text-red-400 text-sm mb-3">
-                  Delete failed:{" "}
+                  {t("devices.deleteFailed")}:{" "}
                   {deleteMutation.error instanceof Error
                     ? deleteMutation.error.message
-                    : "Unknown error"}
+                    : t("devices.unknownError")}
                 </p>
               )}
               <div className="flex justify-end gap-3">
@@ -407,7 +424,7 @@ export const DevicesPage: React.FC = () => {
                   onClick={() => setDeleteTarget(null)}
                   className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
                 >
-                  Cancel
+                  {t("devices.cancel")}
                 </button>
                 <button
                   type="button"
@@ -415,7 +432,7 @@ export const DevicesPage: React.FC = () => {
                   disabled={deleteMutation.isPending}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
                 >
-                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                  {deleteMutation.isPending ? t("devices.deleting") : t("devices.delete")}
                 </button>
               </div>
             </div>
@@ -435,11 +452,12 @@ interface DeviceDetailModalProps {
 }
 
 function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProps) {
+  const { t } = useTranslation();
   const { data: detailData, isLoading, error } = useQuery({
     queryKey: ["device", projectId, device.id],
     queryFn: async () => {
       const res = await digitalTwinApi.getDevice(projectId, device.id);
-      if (!res.success) throw new Error(res.error || "Failed to load device details");
+      if (!res.success) throw new Error(res.error || t("devices.detailLoadFailed"));
       return res.data;
     },
   });
@@ -447,60 +465,66 @@ function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProp
   const fullDevice = detailData || device;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="view-dialog-title"
+    >
       <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white"
+          aria-label={t("devices.close")}
         >
           ✕
         </button>
-        <h3 className="text-xl font-bold text-slate-100 mb-4">{fullDevice.name}</h3>
+        <h3 id="view-dialog-title" className="text-xl font-bold text-slate-100 mb-4">{fullDevice.name}</h3>
 
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="animate-spin text-cyan-400" /></div>
         ) : error ? (
-          <p className="text-red-400">Error loading details</p>
+          <p className="text-red-400">{t("devices.detailLoadFailed")}</p>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-slate-400">Type</p>
+                <p className="text-xs text-slate-400">{t("devices.colType")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.type.replace(/_/g, " ")}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Category</p>
+                <p className="text-xs text-slate-400">{t("devices.colCategory")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.category}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Location (X, Y, Z)</p>
+                <p className="text-xs text-slate-400">{t("devices.locationXYZ")}</p>
                 <p className="text-sm text-slate-200">{`${fullDevice.x}, ${fullDevice.y}, ${fullDevice.z}`}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Rotation</p>
+                <p className="text-xs text-slate-400">{t("devices.rotation")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.rotation}°</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Voltage</p>
+                <p className="text-xs text-slate-400">{t("devices.colVoltage")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.voltage} V</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Current / Load</p>
+                <p className="text-xs text-slate-400">{t("devices.currentLoad")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.current} A / {fullDevice.load} A</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Created At</p>
+                <p className="text-xs text-slate-400">{t("devices.createdAt")}</p>
                 <p className="text-sm text-slate-200">{new Date(fullDevice.createdAt).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Updated At</p>
+                <p className="text-xs text-slate-400">{t("devices.updatedAt")}</p>
                 <p className="text-sm text-slate-200">{new Date(fullDevice.updatedAt).toLocaleString()}</p>
               </div>
             </div>
-            
+
             {fullDevice.properties && Object.keys(fullDevice.properties).length > 0 && (
               <div className="mt-4 border-t border-slate-700 pt-4">
-                <p className="text-xs font-semibold text-slate-400 mb-2">Extended Properties</p>
+                <p className="text-xs font-semibold text-slate-400 mb-2">{t("devices.extendedProperties")}</p>
                 <pre className="bg-slate-900 p-3 rounded-lg text-xs text-slate-300 overflow-auto max-h-32">
                   {JSON.stringify(fullDevice.properties, null, 2)}
                 </pre>
@@ -524,13 +548,14 @@ interface DeviceFormModalProps {
 }
 
 function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: DeviceFormModalProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(device?.name ?? "");
   const [type, setType] = useState(device?.type ?? "smoke_detector");
   const [category, setCategory] = useState(device?.category ?? "detection");
   const [x, setX] = useState(String(device?.x ?? 0));
   const [y, setY] = useState(String(device?.y ?? 0));
   const [z, setZ] = useState(String(device?.z ?? 0));
-  const [rotation] = useState(String(device?.rotation ?? 0));
+  const rotation = String(device?.rotation ?? 0);
   const [voltage, setVoltage] = useState(String(device?.voltage ?? 0));
   const [current, setCurrent] = useState(String(device?.current ?? 0));
   const [load, setLoad] = useState(String(device?.load ?? 0));
@@ -539,7 +564,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
   const mutation = useMutation({
     mutationFn: async () => {
       const pid = device?.projectId || projectId;
-      if (!pid) throw new Error("No project available for device operations");
+      if (!pid) throw new Error(t("devices.noProjectError"));
 
       const common = {
         name,
@@ -561,12 +586,13 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
           properties: {},
         };
         const res = await digitalTwinApi.createDevice(pid, input);
-        if (!res.success) throw new Error(res.error || "Create failed");
+        if (!res.success) throw new Error(res.error || t("devices.createFailed"));
         return res;
       } else {
+        if (!device) throw new Error(t("devices.noDeviceForEdit"));
         const input: UpdateDeviceInput = common;
-        const res = await digitalTwinApi.updateDevice(pid, device!.id, input);
-        if (!res.success) throw new Error(res.error || "Update failed");
+        const res = await digitalTwinApi.updateDevice(pid, device.id, input);
+        if (!res.success) throw new Error(res.error || t("devices.updateFailed"));
         return res;
       }
     },
@@ -574,10 +600,15 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
   });
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="form-dialog-title"
+    >
       <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">
-          {mode === "create" ? "Add New Device" : `Edit: ${device?.name}`}
+        <h3 id="form-dialog-title" className="text-lg font-semibold text-slate-100 mb-4">
+          {mode === "create" ? t("devices.addNewDevice") : t("devices.editDevice", { name: device?.name })}
         </h3>
 
         {mutation.isError && (
@@ -585,7 +616,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
             <p className="text-red-400 text-sm">
               {mutation.error instanceof Error
                 ? mutation.error.message
-                : "Operation failed"}
+                : t("devices.operationFailed")}
             </p>
           </div>
         )}
@@ -593,34 +624,34 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
         <div className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">{t("devices.fieldName")} *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:border-cyan-500 focus:outline-none"
-              placeholder="e.g., SD-101"
+              placeholder={t("devices.namePlaceholder")}
             />
           </div>
 
           {/* Type & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Type *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">{t("devices.colType")} *</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:border-cyan-500 focus:outline-none"
               >
-                {DEVICE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t.replace(/_/g, " ")}
+                {DEVICE_TYPES.map((dt) => (
+                  <option key={dt} value={dt}>
+                    {dt.replace(/_/g, " ")}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">{t("devices.colCategory")}</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -637,7 +668,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
 
           {/* Position */}
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Position</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">{t("devices.position")}</p>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-slate-500 mb-1">X</label>
@@ -674,10 +705,10 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
 
           {/* Electrical Parameters */}
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Electrical</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">{t("devices.electrical")}</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Voltage (V)</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("devices.voltageV")}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -688,7 +719,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Current (A)</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("devices.currentA")}</label>
                 <input
                   type="number"
                   step="0.001"
@@ -701,7 +732,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Load</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("devices.colLoad")}</label>
                 <input
                   type="number"
                   step="0.001"
@@ -712,7 +743,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Load Unit</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("devices.loadUnit")}</label>
                 <select
                   value={loadUnit}
                   onChange={(e) => setLoadUnit(e.target.value as "A" | "mA" | "W")}
@@ -734,7 +765,7 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
             onClick={onClose}
             className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
           >
-            Cancel
+            {t("devices.cancel")}
           </button>
           <button
             type="button"
@@ -743,10 +774,10 @@ function DeviceFormModal({ mode, device, projectId, onClose, onSuccess }: Device
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {mutation.isPending
-              ? "Saving..."
+              ? t("devices.saving")
               : mode === "create"
-                ? "Create Device"
-                : "Save Changes"}
+                ? t("devices.createDevice")
+                : t("devices.saveChanges")}
           </button>
         </div>
       </div>

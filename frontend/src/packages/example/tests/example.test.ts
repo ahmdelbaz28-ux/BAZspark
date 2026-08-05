@@ -5,7 +5,6 @@
  * This file imports `../index` (the entry point), never `../lib/impl`.
  */
 
-import { describe, it, expect } from "vitest";
 import { greet } from "../index";
 
 describe("example package", () => {

@@ -194,8 +194,13 @@ export function calculateCoverage(
         const totalDetectors = detectors.length;
         const passedRooms = roomResults.filter((r) => r.pass).length;
         const failedRooms = roomResults.filter((r) => !r.pass).length;
+        // V256 FIX: Guard division by zero — with no rooms, coverage is 0%
+        // (honest zero, never NaN). Fake coverage percentages on a fire alarm
+        // system are a life-safety hazard.
         const overallCoverage =
-                roomResults.reduce((sum, r) => sum + r.coveragePercentage, 0) / totalRooms;
+                totalRooms > 0
+                        ? roomResults.reduce((sum, r) => sum + r.coveragePercentage, 0) / totalRooms
+                        : 0;
 
         return {
                 summary: {

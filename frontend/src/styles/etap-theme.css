@@ -40,6 +40,7 @@
   background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), transparent);
   position: relative;
 }
+
 .etap-header::after {
   content: "";
   position: absolute;
@@ -57,6 +58,7 @@
   text-transform: uppercase;
   font-size: 1.25rem;
 }
+
 .etap-subtitle {
   color: var(--etap-text-secondary);
   font-size: 0.9rem;
@@ -77,28 +79,39 @@
   border: 1px solid var(--etap-border-default);
   background: var(--etap-bg-tertiary);
 }
+
 .etap-status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--etap-text-muted);
 }
+
 .etap-status-pill[data-status="connected"] .etap-status-dot {
   background: var(--etap-success);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
+
 .etap-status-pill[data-status="connecting"] .etap-status-dot {
   background: var(--etap-warning);
   animation: etap-blink 1s step-end infinite;
 }
+
 .etap-status-pill[data-status="error"] .etap-status-dot {
   background: var(--etap-danger);
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
 @keyframes etap-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* ── Tabs — terminal/engineering style ─────────────────────────────────── */
@@ -108,6 +121,7 @@
   border-bottom: 1px solid var(--etap-border-default);
   background: var(--etap-bg-secondary);
 }
+
 .etap-tab {
   position: relative;
   padding: 0.75rem 1.25rem;
@@ -122,13 +136,16 @@
   cursor: pointer;
   transition: color 200ms ease, border-color 200ms ease;
 }
+
 .etap-tab:hover {
   color: var(--etap-text-secondary);
 }
+
 .etap-tab[aria-selected="true"] {
   color: var(--etap-accent);
   border-bottom-color: var(--etap-accent);
 }
+
 .etap-tab:focus-visible {
   outline: 2px solid var(--etap-accent);
   outline-offset: 2px;
@@ -141,11 +158,13 @@
   border-radius: var(--etap-radius-lg);
   overflow: hidden;
 }
+
 .etap-panel-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--etap-border-subtle);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
 }
+
 .etap-panel-title {
   font-family: var(--etap-font-mono);
   font-size: 0.85rem;
@@ -156,14 +175,17 @@
   align-items: center;
   gap: 0.6rem;
 }
+
 .etap-panel-title-icon {
   color: var(--etap-accent);
 }
+
 .etap-panel-description {
   color: var(--etap-text-muted);
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
+
 .etap-panel-body {
   padding: 1.25rem;
 }
@@ -174,6 +196,7 @@
   flex-direction: column;
   gap: 0.4rem;
 }
+
 .etap-label {
   font-family: var(--etap-font-mono);
   font-size: 0.75rem;
@@ -181,6 +204,7 @@
   text-transform: uppercase;
   color: var(--etap-text-secondary);
 }
+
 .etap-input {
   background: var(--etap-bg-primary);
   border: 1px solid var(--etap-border-default);
@@ -191,11 +215,13 @@
   font-size: 0.9rem;
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
+
 .etap-input:focus {
   outline: none;
   border-color: var(--etap-accent);
   box-shadow: 0 0 0 3px var(--etap-accent-muted), 0 0 12px var(--etap-accent-glow);
 }
+
 .etap-input::placeholder {
   color: var(--etap-text-muted);
   opacity: 0.7;
@@ -217,9 +243,11 @@
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 200ms ease, background 200ms ease;
 }
+
 .etap-btn:active {
   transform: translateY(1px);
 }
+
 .etap-btn:focus-visible {
   outline: 2px solid var(--etap-accent);
   outline-offset: 2px;
@@ -231,6 +259,7 @@
   border-color: var(--etap-accent);
   box-shadow: 0 0 16px var(--etap-accent-glow);
 }
+
 .etap-btn-primary:hover:not(:disabled) {
   background: #fbbf24;
   box-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
@@ -241,6 +270,7 @@
   color: var(--etap-text-primary);
   border-color: var(--etap-border-strong);
 }
+
 .etap-btn-secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.25);
@@ -251,6 +281,7 @@
   color: var(--etap-danger);
   border-color: rgba(239, 68, 68, 0.35);
 }
+
 .etap-btn-danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.6);
@@ -272,10 +303,12 @@
   cursor: pointer;
   transition: background 200ms ease, border-color 200ms ease;
 }
+
 .etap-toggle[aria-checked="true"] {
   background: var(--etap-accent-muted);
   border-color: var(--etap-accent);
 }
+
 .etap-toggle::after {
   content: "";
   position: absolute;
@@ -287,6 +320,7 @@
   background: var(--etap-text-muted);
   transition: transform 200ms ease, background 200ms ease;
 }
+
 .etap-toggle[aria-checked="true"]::after {
   transform: translateX(20px);
   background: var(--etap-accent);
@@ -298,6 +332,7 @@
   border-collapse: collapse;
   font-size: 0.85rem;
 }
+
 .etap-table th {
   font-family: var(--etap-font-mono);
   font-size: 0.7rem;
@@ -309,6 +344,7 @@
   text-align: left;
   border-bottom: 1px solid var(--etap-border-default);
 }
+
 .etap-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--etap-border-subtle);
@@ -316,6 +352,7 @@
   font-family: var(--etap-font-mono);
   font-size: 0.8rem;
 }
+
 .etap-table tbody tr:hover td {
   background: rgba(255, 255, 255, 0.02);
 }
@@ -335,16 +372,19 @@
   background: var(--etap-bg-tertiary);
   color: var(--etap-text-secondary);
 }
+
 .etap-badge-success {
   background: rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
   border-color: rgba(16, 185, 129, 0.3);
 }
+
 .etap-badge-warning {
   background: rgba(245, 158, 11, 0.15);
   color: #fcd34d;
   border-color: rgba(245, 158, 11, 0.3);
 }
+
 .etap-badge-danger {
   background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
@@ -362,11 +402,13 @@
   background: var(--etap-bg-tertiary);
   font-size: 0.9rem;
 }
+
 .etap-alert-success {
   border-color: rgba(16, 185, 129, 0.3);
   background: rgba(16, 185, 129, 0.08);
   color: #6ee7b7;
 }
+
 .etap-alert-error {
   border-color: rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);
@@ -381,6 +423,7 @@
   opacity: 0.35;
   overflow: hidden;
 }
+
 .etap-circuit-line {
   position: absolute;
   background: linear-gradient(90deg, transparent, var(--etap-accent-glow), transparent);
@@ -388,13 +431,30 @@
   width: 100%;
   animation: etap-circuit-sweep 8s linear infinite;
 }
-.etap-circuit-line:nth-child(1) { top: 20%; animation-delay: 0s; }
-.etap-circuit-line:nth-child(2) { top: 50%; animation-delay: 2.5s; }
-.etap-circuit-line:nth-child(3) { top: 80%; animation-delay: 5s; }
+
+.etap-circuit-line:nth-child(1) {
+  top: 20%;
+  animation-delay: 0s;
+}
+
+.etap-circuit-line:nth-child(2) {
+  top: 50%;
+  animation-delay: 2.5s;
+}
+
+.etap-circuit-line:nth-child(3) {
+  top: 80%;
+  animation-delay: 5s;
+}
 
 @keyframes etap-circuit-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* ── Section divider ───────────────────────────────────────────────────── */
@@ -410,15 +470,50 @@
   .etap-tabs {
     overflow-x: auto;
   }
+
   .etap-tab {
     white-space: nowrap;
   }
 }
 
+/* ── Engineering page keyframes ────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes verdictPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* ── Reduced motion ────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+
   .etap-circuit-line,
   .etap-status-pill[data-status="connecting"] .etap-status-dot {
     animation: none;
+  }
+
+  /* Disable engineering page tab/verdict animations */
+  [class*="fadeInUp"],
+  [class*="verdictPulse"] {
+    animation: none !important;
   }
 }

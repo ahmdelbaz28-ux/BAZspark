@@ -152,7 +152,11 @@ def _load_master_key() -> bytes:  # NOSONAR — S3776: key loading must try mult
         default_path = Path(os.environ.get("FIREAI_VISION_KEY_FILE", _MASTER_KEY_FILE_DEFAULT)).resolve()
         try:
             if default_path.exists():
-                raw = default_path.read_bytes().strip()
+                # NOTE: don't strip() — the auto-generated key is raw binary
+                # (token_bytes(32)); strip() would corrupt keys that happen to
+                # start/end with whitespace bytes (\v, \t, \n ...), silently
+                # deriving a different key via SHA-256 below.
+                raw = default_path.read_bytes()
                 if len(raw) >= _KEY_LEN:
                     _MASTER_KEY = _normalize_master_key(raw)
                     logger.info("Vision key master loaded from default file %s", default_path)
@@ -173,7 +177,7 @@ def _load_master_key() -> bytes:  # NOSONAR — S3776: key loading must try mult
                 return _MASTER_KEY
             except FileExistsError:
                 # Another process created the file between our check and open.
-                raw = default_path.read_bytes().strip()
+                raw = default_path.read_bytes()
                 if len(raw) >= _KEY_LEN:
                     _MASTER_KEY = _normalize_master_key(raw)
                     logger.info("Vision key master reused (race avoided) at %s", default_path)

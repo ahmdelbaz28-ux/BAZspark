@@ -242,7 +242,11 @@ def _read_server_secret_retry(path: Path, attempts: int = 40, delay: float = 0.1
     """
     for _ in range(attempts):
         if path.exists():
-            candidate = path.read_bytes().strip()
+            # NOTE: do NOT strip() — the secret is stored as raw binary
+            # (secrets.token_bytes(32)). strip() would remove leading/trailing
+            # whitespace bytes (\v, \t, \n, ...) from the payload itself,
+            # shrinking it below 32 bytes and making it look "invalid" forever.
+            candidate = path.read_bytes()
             if len(candidate) >= 32:
                 return candidate
         time.sleep(delay)

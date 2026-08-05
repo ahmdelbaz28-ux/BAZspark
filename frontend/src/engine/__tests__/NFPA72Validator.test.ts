@@ -11,7 +11,6 @@
  *   - Coverage requirements by occupancy hazard level
  *   - Edge cases: empty designs, missing rooms, invalid heights
  */
-import { describe, expect, it } from "vitest";
 import {
         getNFPAReference,
         validateNFPA72Compliance,

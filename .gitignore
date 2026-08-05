@@ -166,6 +166,7 @@ skills/ppt/scripts/tectonic
 .env.*.local
 # Virtual environments
 .venv/
+.venv312/
 # IDE files
 *~
 .project

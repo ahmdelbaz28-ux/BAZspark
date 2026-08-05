@@ -1,6 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-
 // Mock react-i18next to return keys as display text
 vi.mock("react-i18next", () => ({
         useTranslation: () => ({

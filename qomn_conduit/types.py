@@ -22,7 +22,10 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 
-from fireai.core.base_types import ConduitType, FittingType, Point3D, Result
+from fireai.core.base_types import ConduitType, FittingType, Point3D
+from fireai.core.base_types import (
+    Result as Result,  # noqa: F401 — re-exported for qomn_conduit.types.Result consumers (catalog.py)
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TradeSize — nominal pipe/conduit sizes

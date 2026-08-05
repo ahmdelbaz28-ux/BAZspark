@@ -30,8 +30,8 @@
  *  - #12: Fixed import path ../styles/etap-theme.css
  */
 
-import { Battery, Cable, Zap, Flame, Network, CheckCircle2, AlertTriangle, ShieldCheck, FileText } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Battery, Cable, Zap, Flame, Network, CheckCircle2, AlertTriangle, ShieldCheck, FileText, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Button } from "@/components/ui/button";
@@ -109,8 +109,8 @@ export function EngineeringPage() {
                 doorHolder: true, ductDetector: true, supervision: true, notification: true,
         });
 
-        const [_apiLoading, setApiLoading] = useState(false);  // NOSONAR: typescript:S6754
-        const [_apiError, setApiError] = useState<string | null>(null);  // NOSONAR: typescript:S6754
+        const [apiLoading, setApiLoading] = useState(false);
+        const [apiError, setApiError] = useState<string | null>(null);
         const [apiResult, setApiResult] = useState<{
                 voltage_drop_v: number;
                 drop_pct: number;
@@ -245,7 +245,7 @@ export function EngineeringPage() {
         }, [batteryCalcInputs]);
 
         // ── Merged results: API primary, local fallback ────────────────────
-        const localVDrop = calculateVoltageDropLocal();
+        const localVDrop = useMemo(() => calculateVoltageDropLocal(), [voltageDropInputs]);
         const vDropResult = apiResult
                 ? {
                         percentage: apiResult.drop_pct,
@@ -254,16 +254,17 @@ export function EngineeringPage() {
                         computation_hash: apiResult.computation_hash,
                         is_compliant: apiResult.is_compliant,
                         source: "QOMN API (audited)" as const,
-                  }
+                }
                 : {
                         percentage: localVDrop.percentage,
                         absolute: localVDrop.absolute,
                         source: "Local fallback (unaudited)" as const,
-                  };
+                };
 
-        // FIX #11: Removed redundant useMemo — callbacks already memoized
-        const cableResult = calculateCableSizing();
-        const batteryResult = calculateBatteryRequirements();
+        // FIX #11 corrected: useCallback memoizes the function reference, not the result.
+        // useMemo is needed to avoid recalculating on every render.
+        const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
+        const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
 
         // Props for ExplainButton
         const voltageDropResultProp = {
@@ -394,9 +395,8 @@ export function EngineeringPage() {
                                                 <button
                                                         key={tab}
                                                         id={`tab-${tab}`}
-                                                        className={`etap-tab transition-colors duration-200 ${
-                                                                activeTab === tab ? "text-[var(--etap-accent)] border-b-[var(--etap-accent)]" : ""
-                                                        }`}
+                                                        className={`etap-tab transition-colors duration-200 ${activeTab === tab ? "text-[var(--etap-accent)] border-b-[var(--etap-accent)]" : ""
+                                                                }`}
                                                         role="tab"
                                                         aria-selected={activeTab === tab}
                                                         aria-controls={`panel-${tab}`}
@@ -510,6 +510,17 @@ export function EngineeringPage() {
                                                                                         </div>
                                                                                 </div>
                                                                                 <div className="etap-panel-body space-y-3">
+                                                                                        {apiLoading && (
+                                                                                                <div className="flex items-center gap-2 text-sm text-[var(--etap-text-muted)]">
+                                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                        {t("engineering.calculating")}
+                                                                                                </div>
+                                                                                        )}
+                                                                                        {apiError && (
+                                                                                                <div className="text-sm text-[var(--etap-danger)]">
+                                                                                                        {apiError}
+                                                                                                </div>
+                                                                                        )}
                                                                                         <div className="flex justify-between items-baseline">
                                                                                                 <span className="etap-label">{t("engineering.percentage")}</span>
                                                                                                 <span className="font-mono-num text-lg text-[var(--etap-text-primary)]">
@@ -544,11 +555,10 @@ export function EngineeringPage() {
                                                                                                 )}
                                                                                                 <div className="flex justify-between items-baseline">
                                                                                                         <span className="etap-label">{t("engineering.auditHash")}</span>
-                                                                                                        <span className={`font-mono-num text-xs ${
-                                                                                                                vDropResult.source.includes("audited")
-                                                                                                                        ? "text-[var(--etap-success)]"
-                                                                                                                        : "text-[var(--etap-warning)]"
-                                                                                                        }`}>
+                                                                                                        <span className={`font-mono-num text-xs ${vDropResult.source.includes("audited")
+                                                                                                                ? "text-[var(--etap-success)]"
+                                                                                                                : "text-[var(--etap-warning)]"
+                                                                                                                }`}>
                                                                                                                 {vDropResult.source.includes("audited")
                                                                                                                         ? t("engineering.audited")
                                                                                                                         : t("engineering.unaudited")}
@@ -560,26 +570,23 @@ export function EngineeringPage() {
 
                                                                         {/* ═══ SIGNATURE: Compliance Verdict Banner ═══ */}
                                                                         <div
-                                                                                className={`lg:col-span-3 etap-panel overflow-hidden transition-all duration-300 ${
-                                                                                        complianceFlash ? "animate-[verdictPulse_0.6s_ease-out]" : ""
-                                                                                } ${
-                                                                                        complianceLevel === "suitable"
+                                                                                className={`lg:col-span-3 etap-panel overflow-hidden transition-all duration-300 ${complianceFlash ? "animate-[verdictPulse_0.6s_ease-out]" : ""
+                                                                                        } ${complianceLevel === "suitable"
                                                                                                 ? "border-l-4 border-l-[var(--etap-success)]"
                                                                                                 : complianceLevel === "acceptable"
                                                                                                         ? "border-l-4 border-l-[var(--etap-warning)]"
                                                                                                         : "border-l-4 border-l-[var(--etap-danger)]"
-                                                                                }`}
+                                                                                        }`}
                                                                                 role="alert"
                                                                                 aria-live="assertive"
                                                                                 aria-atomic="true"
                                                                         >
-                                                                                <div className={`p-5 h-full flex flex-col justify-center ${
-                                                                                        complianceLevel === "suitable"
-                                                                                                ? "bg-[rgba(16,185,129,0.08)]"
-                                                                                                : complianceLevel === "acceptable"
-                                                                                                        ? "bg-[rgba(245,158,11,0.08)]"
-                                                                                                        : "bg-[rgba(239,68,68,0.12)]"
-                                                                                }`}>
+                                                                                <div className={`p-5 h-full flex flex-col justify-center ${complianceLevel === "suitable"
+                                                                                        ? "bg-[rgba(16,185,129,0.08)]"
+                                                                                        : complianceLevel === "acceptable"
+                                                                                                ? "bg-[rgba(245,158,11,0.08)]"
+                                                                                                : "bg-[rgba(239,68,68,0.12)]"
+                                                                                        }`}>
                                                                                         {/* Status icon + label row */}
                                                                                         <div className="flex items-center gap-3 mb-2">
                                                                                                 {complianceLevel === "excessive" ? (
@@ -595,13 +602,12 @@ export function EngineeringPage() {
                                                                                         </div>
 
                                                                                         {/* LARGE verdict text — the hero answer */}
-                                                                                        <div className={`font-mono-num font-bold text-3xl leading-tight tracking-tight mb-1 ${
-                                                                                                complianceLevel === "suitable"
-                                                                                                        ? "text-[var(--etap-success)]"
-                                                                                                        : complianceLevel === "acceptable"
-                                                                                                                ? "text-[var(--etap-warning)]"
-                                                                                                                : "text-[var(--etap-danger)]"
-                                                                                        }`}>
+                                                                                        <div className={`font-mono-num font-bold text-3xl leading-tight tracking-tight mb-1 ${complianceLevel === "suitable"
+                                                                                                ? "text-[var(--etap-success)]"
+                                                                                                : complianceLevel === "acceptable"
+                                                                                                        ? "text-[var(--etap-warning)]"
+                                                                                                        : "text-[var(--etap-danger)]"
+                                                                                                }`}>
                                                                                                 {complianceLevel === "suitable"
                                                                                                         ? t("engineering.suitable")
                                                                                                         : complianceLevel === "acceptable"
@@ -750,13 +756,12 @@ export function EngineeringPage() {
                                                                         </div>
 
                                                                         {/* FIX #3: Cable sizing compliance with real logic */}
-                                                                        <div className={`etap-panel overflow-hidden border-l-4 ${
-                                                                                cableComplianceLevel === "suitable"
-                                                                                        ? "border-l-[var(--etap-success)] bg-[rgba(16,185,129,0.06)]"
-                                                                                        : cableComplianceLevel === "acceptable"
-                                                                                                ? "border-l-[var(--etap-warning)] bg-[rgba(245,158,11,0.06)]"
-                                                                                                : "border-l-[var(--etap-danger)] bg-[rgba(239,68,68,0.08)]"
-                                                                        }`}>
+                                                                        <div className={`etap-panel overflow-hidden border-l-4 ${cableComplianceLevel === "suitable"
+                                                                                ? "border-l-[var(--etap-success)] bg-[rgba(16,185,129,0.06)]"
+                                                                                : cableComplianceLevel === "acceptable"
+                                                                                        ? "border-l-[var(--etap-warning)] bg-[rgba(245,158,11,0.06)]"
+                                                                                        : "border-l-[var(--etap-danger)] bg-[rgba(239,68,68,0.08)]"
+                                                                                }`}>
                                                                                 <div className="p-5 h-full flex flex-col justify-center">
                                                                                         <div className="flex items-center gap-3 mb-2">
                                                                                                 {cableComplianceLevel === "excessive" ? (
@@ -768,13 +773,12 @@ export function EngineeringPage() {
                                                                                                 )}
                                                                                                 <span className="etap-label">{t("engineering.status")}</span>
                                                                                         </div>
-                                                                                        <div className={`font-mono-num font-bold text-2xl mb-1 ${
-                                                                                                cableComplianceLevel === "suitable"
-                                                                                                        ? "text-[var(--etap-success)]"
-                                                                                                        : cableComplianceLevel === "acceptable"
-                                                                                                                ? "text-[var(--etap-warning)]"
-                                                                                                                : "text-[var(--etap-danger)]"
-                                                                                        }`}>
+                                                                                        <div className={`font-mono-num font-bold text-2xl mb-1 ${cableComplianceLevel === "suitable"
+                                                                                                ? "text-[var(--etap-success)]"
+                                                                                                : cableComplianceLevel === "acceptable"
+                                                                                                        ? "text-[var(--etap-warning)]"
+                                                                                                        : "text-[var(--etap-danger)]"
+                                                                                                }`}>
                                                                                                 {cableComplianceLevel === "suitable"
                                                                                                         ? t("engineering.suitable")
                                                                                                         : cableComplianceLevel === "acceptable"
@@ -1000,11 +1004,10 @@ export function EngineeringPage() {
                                                                                         <button
                                                                                                 key={key}
                                                                                                 type="button"
-                                                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--etap-radius)] border transition-colors duration-150 cursor-pointer ${
-                                                                                                        integrationToggles[key]
-                                                                                                                ? "bg-[var(--etap-bg-primary)] border-[var(--etap-border-default)]"
-                                                                                                                : "bg-[rgba(239,68,68,0.06)] border-[rgba(239,68,68,0.2)]"
-                                                                                                }`}
+                                                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--etap-radius)] border transition-colors duration-150 cursor-pointer ${integrationToggles[key]
+                                                                                                        ? "bg-[var(--etap-bg-primary)] border-[var(--etap-border-default)]"
+                                                                                                        : "bg-[rgba(239,68,68,0.06)] border-[rgba(239,68,68,0.2)]"
+                                                                                                        }`}
                                                                                                 onClick={() => setIntegrationToggles((p) => ({ ...p, [key]: !p[key] }))}
                                                                                                 aria-pressed={integrationToggles[key]}
                                                                                         >
@@ -1013,9 +1016,8 @@ export function EngineeringPage() {
                                                                                                 ) : (
                                                                                                         <AlertTriangle aria-hidden="true" className="h-4 w-4 text-[var(--etap-danger)]" />
                                                                                                 )}
-                                                                                                <span className={`font-mono-num text-sm ${
-                                                                                                        integrationToggles[key] ? "text-[var(--etap-text-secondary)]" : "text-[var(--etap-danger)]"
-                                                                                                }`}>
+                                                                                                <span className={`font-mono-num text-sm ${integrationToggles[key] ? "text-[var(--etap-text-secondary)]" : "text-[var(--etap-danger)]"
+                                                                                                        }`}>
                                                                                                         {label}
                                                                                                 </span>
                                                                                         </button>
@@ -1037,24 +1039,6 @@ export function EngineeringPage() {
                                 </div>
                         </div>
 
-                        {/* ── Scoped keyframes with prefers-reduced-motion (FIX #6) ──── */}
-                        <style>{`
-                                @keyframes fadeInUp {
-                                        from { opacity: 0; transform: translateY(8px); }
-                                        to { opacity: 1; transform: translateY(0); }
-                                }
-                                @keyframes verdictPulse {
-                                        0% { transform: scale(1); }
-                                        30% { transform: scale(1.02); }
-                                        100% { transform: scale(1); }
-                                }
-                                @media (prefers-reduced-motion: reduce) {
-                                        .animate-\\[fadeInUp_0\\.3s_var\\(--ease-entrance\\)\\],
-                                        .animate-\\[verdictPulse_0\\.6s_ease-out\\] {
-                                                animation: none !important;
-                                        }
-                                }
-                        `}</style>
                 </div>
         );
 }

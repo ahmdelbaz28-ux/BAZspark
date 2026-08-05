@@ -2,7 +2,6 @@
  * NotFoundPage.test.tsx — Unit tests for the 404 page (V193 R13).
  */
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
 import { NotFoundPage } from "../NotFoundPage";
 

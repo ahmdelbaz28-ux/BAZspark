@@ -3,7 +3,6 @@
  *
  * V244: Safety-critical module — calculates battery capacity per NFPA 72 §27.6.2.
  */
-import { describe, expect, it } from "vitest";
 import {
         calculateBatteryRequirements,
         generateBatteryReport,

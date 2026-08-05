@@ -3,7 +3,6 @@
  *
  * V244: Safety-critical module — calculates detector coverage per NFPA 72.
  */
-import { describe, expect, it } from "vitest";
 import {
         calculateCoverage,
         calculateRoomCoverage,
@@ -92,7 +91,35 @@ describe("CoverageEngine", () => {
                 it("should handle empty rooms list gracefully", () => {
                         const result = calculateCoverage([], []);
                         expect(result.summary.totalRooms).toBe(0);
+                        expect(result.summary.totalDetectors).toBe(0);
+                        expect(result.summary.coveragePercentage).toBe(0);
+                        expect(Number.isNaN(result.summary.coveragePercentage)).toBe(false);
                         expect(result.roomResults).toEqual([]);
+                });
+
+                it("should never fabricate coverage from empty input (life-safety)", () => {
+                        // V256: A fire alarm system must never show fake coverage.
+                        // Empty rooms/detectors must yield honest zeros, not a
+                        // fabricated 100% or NaN.
+                        const noRooms = calculateCoverage([], []);
+                        expect(noRooms.summary.coveragePercentage).toBe(0);
+                        expect(noRooms.summary.passedRooms).toBe(0);
+                        expect(noRooms.summary.failedRooms).toBe(0);
+
+                        const detectorsWithoutRooms = calculateCoverage([], [
+                                {
+                                        id: "det-x",
+                                        roomId: "rm-none",
+                                        type: "smoke",
+                                        x: 5,
+                                        y: 5,
+                                        coverageRadius: 6.37,
+                                        sensitivity: "standard",
+                                },
+                        ]);
+                        expect(detectorsWithoutRooms.summary.totalRooms).toBe(0);
+                        expect(detectorsWithoutRooms.summary.coveragePercentage).toBe(0);
+                        expect(Number.isNaN(detectorsWithoutRooms.summary.coveragePercentage)).toBe(false);
                 });
         });
 

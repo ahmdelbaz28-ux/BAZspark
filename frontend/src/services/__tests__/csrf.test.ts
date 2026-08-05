@@ -4,7 +4,6 @@
  * Tests the caching, force-refresh, and invalidation logic without
  * hitting the network (fetch is mocked).
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getCachedCsrfToken,
 	getCsrfToken,
