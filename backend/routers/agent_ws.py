@@ -140,7 +140,26 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
 
 
 def _register_agent(websocket: WebSocket, agent_type: str) -> None:
-    """Register an active agent connection."""
+    """Register an active agent connection.
+
+    VERIFY-003 FIX: only ONE agent is kept per type — a new connection
+    atomically replaces any prior one. Previously a rogue socket that
+    registered ahead of the real desktop agent stayed in ``active_agents``
+    and ``send_agent_command`` dispatched to ``agents[0]``, letting the
+    rogue agent intercept commands (and, by guessing command ids, resolve
+    the real agent's response futures). With newest-wins registration the
+    attacker-controlled socket is torn down the moment the real agent
+    connects.
+    """
+    for existing in list(active_agents.get(agent_type, [])):
+        if existing is websocket:
+            continue
+        logger.warning(
+            "Replacing existing agent connection for type=%s "
+            "(newest connection wins)",
+            agent_type,
+        )
+        _cleanup_agent(existing, agent_type)
     active_agents.setdefault(agent_type, []).append(websocket)
 
 
@@ -180,15 +199,26 @@ async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
     """Dispatch a single decoded agent message."""
     if not _validate_agent_nonce(msg):
         return
+
     msg_type = msg.get("type")
     if msg_type == "response":
-        cmd_id = msg.get("id")
-        payload = msg.get("payload")
-        future = agent_response_futures.get(cmd_id)
-        if future is not None:
-            future.set_result(payload)
+        await _handle_response_message(msg)
     elif msg_type == "ping":
-        await websocket.send_json({"type": "pong"})
+        await _handle_ping_message(websocket)
+
+
+async def _handle_response_message(msg: dict) -> None:
+    """Handle a response message from the agent."""
+    cmd_id = msg.get("id")
+    payload = msg.get("payload")
+    future = agent_response_futures.get(cmd_id)
+    if future is not None:
+        future.set_result(payload)
+
+
+async def _handle_ping_message(websocket: WebSocket) -> None:
+    """Handle a ping message from the agent."""
+    await websocket.send_json({"type": "pong"})
 
 
 WS_HEARTBEAT_TIMEOUT_SECONDS = 30.0
@@ -342,6 +372,11 @@ async def send_agent_command(
 ) -> Any:
     """
     Send a command to the active agent and await the response.
+
+    VERIFY-003 FIX: ``_register_agent`` enforces a single active agent per
+    type (newest wins), so ``agents[0]`` here is always the most recently
+    authenticated connection — a stale/rogue socket cannot sit ahead of the
+    real agent in the registry and intercept commands.
     """
     agents = active_agents.get(agent_type, [])
     if not agents:

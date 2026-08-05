@@ -191,8 +191,8 @@
         "children": []
       },
       {
-        "name": "Security: Inject Akamai-Internal header (origin verification)",
-        "comments": "Critical: inject a shared secret that backend/akamai_middleware.py verifies to prevent direct origin access. Rotate quarterly.",
+        "name": "Security: Inject X-Akamai-Origin-Token header (origin verification)",
+        "comments": "Critical: inject a shared secret that backend/akamai_middleware.py verifies to prevent direct origin access. Header name must match the verify-origin EdgeWorker and backend/akamai_middleware.py. Rotate quarterly.",
         "criteria": [
           {
             "name": "requestType",
@@ -207,7 +207,7 @@
             "name": "modifyHeader",
             "options": {
               "action": "ADD",
-              "headerName": "Akamai-Internal",
+              "headerName": "X-Akamai-Origin-Token",
               "headerValue": "{AKAMAI_ORIGIN_TOKEN}",
               "avoidDuplicateHeaders": false,
               "newHeaderValue": ""

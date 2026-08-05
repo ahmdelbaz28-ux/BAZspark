@@ -12,7 +12,7 @@ Akamai configuration templates in `deploy/akamai/`.
 The middleware performs six safety-critical functions:
 
 1. **Origin verification** — Ensures incoming requests transited Akamai
-   (header `Akamai-Internal`) when AKAMAI_REQUIRE_ORIGIN_TOKEN is set.
+   (header `X-Akamai-Origin-Token`) when AKAMAI_REQUIRE_ORIGIN_TOKEN is set.
    Prevents direct origin access bypassing WAF/Bot rules.
 
 2. **True-Client-IP trust** — Replaces untrusted `X-Forwarded-For` chains
@@ -78,6 +78,10 @@ logger = logging.getLogger(__name__)
 
 # Header names are case-insensitive per RFC 7230 §3.2; ASGI scope stores
 # them as lower-case bytes. We define them once to avoid repeated .encode().
+# VULN-003 FIX: the header must match what deploy/akamai/edgeworkers/
+# verify-origin/main.js actually injects (X-Akamai-Origin-Token). The legacy
+# "akamai-internal" name is still accepted for backward compatibility.
+_HDR_AKAMAI_ORIGIN_TOKEN = b"x-akamai-origin-token"
 _HDR_AKAMAI_INTERNAL = b"akamai-internal"
 _HDR_TRUE_CLIENT_IP = b"true-client-ip"
 _HDR_X_FORWARDED_FOR = b"x-forwarded-for"
@@ -279,23 +283,28 @@ class AkamaiIntegrationMiddleware:
         await self.app(scope, receive, send_wrapper)
 
     async def _check_origin_token(self, scope: Scope, send: Send) -> bool:
-        """Verify Akamai-Internal token; return False if request was blocked.
+        """Verify the Akamai origin token; return False if request was blocked.
 
         Returns True to continue processing, False if a 403 was sent (prod)
         or if no token check is configured. The token is checked against a
         shared secret rotated periodically. Akamai sets this header via an
-        EdgeWorker or Request Header Modification rule in Property Manager.
+        EdgeWorker or Request Header Modification rule in Property Manager —
+        specifically `X-Akamai-Origin-Token` injected by
+        `deploy/akamai/edgeworkers/verify-origin/main.js`. The legacy
+        `Akamai-Internal` header is accepted as a backward-compatible alias.
         """
         if not self.config.require_origin_token:
             return True
-        akamai_internal = _get_header(scope, _HDR_AKAMAI_INTERNAL)
-        if hmac.compare_digest(akamai_internal, self.config.require_origin_token):
+        origin_token = _get_header(scope, _HDR_AKAMAI_ORIGIN_TOKEN)
+        if not origin_token:
+            origin_token = _get_header(scope, _HDR_AKAMAI_INTERNAL)
+        if hmac.compare_digest(origin_token, self.config.require_origin_token):
             return True
         # Fail-safe: log CRITICAL and block in production.
         # In dev/test (FIREAI_ENV != production), allow passthrough.
         if self.config.production_mode:
             logger.critical(
-                "Direct origin access blocked (no/invalid Akamai-Internal token). "
+                "Direct origin access blocked (no/invalid Akamai origin token). "
                 "path=%s, true_client_ip=%s",
                 scope.get("path", ""),
                 _get_header(scope, _HDR_TRUE_CLIENT_IP),
@@ -303,7 +312,7 @@ class AkamaiIntegrationMiddleware:
             await self._send_forbidden(send, "Direct origin access forbidden")
             return False
         logger.warning(
-            "Missing Akamai-Internal token in non-production env (allowed). "
+            "Missing Akamai origin token in non-production env (allowed). "
             "path=%s",
             scope.get("path", ""),
         )

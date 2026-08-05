@@ -7,6 +7,23 @@
 import { saveAs } from "file-saver";
 import { useCallback, useState } from "react";
 
+/**
+ * VERIFY-005 FIX: escape every dynamic value interpolated into the HTML / PDF
+ * report exports. Report names, summaries, table cells, warnings and
+ * recommendations are user- or CAD-derived strings; inserted unescaped they
+ * could carry markup/scripts into a downloaded .html file (stored/export XSS
+ * when the file is later opened).
+ */
+function escapeHtml(value: unknown): string {
+        const text = String(value ?? "");
+        return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+}
+
 export type ReportType =
         | "LOAD_CALCULATION"
         | "VOLTAGE_DROP"
@@ -1550,19 +1567,19 @@ export function exportReport(  // NOSONAR — S3776: multi-format export must ha
                         break;
                 }
                 case "html": {
-                        let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
+                        let html = `<!DOCTYPE html><html><head><title>${escapeHtml(report.name)}</title>`;
                         html +=
                                 "<style>body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}h1{color:#1a56db}h2{color:#333;margin-top:30px}.warning{color:#475569}.summary{background:#f0f9ff;padding:20px;border-radius:8px}</style>";
                         html += "</head><body>";
-                        html += `<h1>${report.name}</h1>`;
-                        html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;
+                        html += `<h1>${escapeHtml(report.name)}</h1>`;
+                        html += `<p>Generated: ${escapeHtml(report.timestamp.toLocaleString())}</p>`;
                         html +=
                                 '<div class="summary"><h2>Summary</h2><p>' +
-                                report.summary +
+                                escapeHtml(report.summary) +
                                 "</p></div>";
 
                         for (const section of report.sections) {
-                                html += `<h2>${section.title}</h2>`;
+                                html += `<h2>${escapeHtml(section.title)}</h2>`;
                                 if (
                                         section.type === "table" &&
                                         section.headers &&
@@ -1570,32 +1587,32 @@ export function exportReport(  // NOSONAR — S3776: multi-format export must ha
                                 ) {
                                         html +=
                                                 "<table><tr>" +
-                                                section.headers.map((h) => `<th>${h}</th>`).join("") +
+                                                section.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("") +
                                                 "</tr>";
                                         for (const row of section.data) {
                                                 html +=
                                                         "<tr>" +
                                                         (Array.isArray(row)
-                                                                ? row.map((c) => `<td>${c}</td>`).join("")
-                                                                : `<td>${row}</td>`) +
+                                                                ? row.map((c) => `<td>${escapeHtml(c)}</td>`).join("")
+                                                                : `<td>${escapeHtml(row)}</td>`) +
                                                         "</tr>";
                                         }
                                         html += "</table>";
                                 } else if (section.type === "text") {
-                                        html += `<pre>${String(section.data)}</pre>`;
+                                        html += `<pre>${escapeHtml(String(section.data))}</pre>`;
                                 }
                         }
 
                         if (report.warnings.length > 0) {
                                 html +=
                                         '<h2 class="warning">Warnings</h2><ul>' +
-                                        report.warnings.map((w) => `<li>${w}</li>`).join("") +
+                                        report.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("") +
                                         "</ul>";
                         }
                         if (report.recommendations.length > 0) {
                                 html +=
                                         "<h2>Recommendations</h2><ul>" +
-                                        report.recommendations.map((r) => `<li>${r}</li>`).join("") +
+                                        report.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("") +
                                         "</ul>";
                         }
 
@@ -1629,19 +1646,19 @@ export function exportReport(  // NOSONAR — S3776: multi-format export must ha
                         break;
                 }
                 case "pdf": {
-                        let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
+                        let html = `<!DOCTYPE html><html><head><title>${escapeHtml(report.name)}</title>`;
                         html +=
                                 "<style>@media print{body{margin:0}}body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}h1{color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:10px}h2{color:#333;margin-top:30px;page-break-after:avoid}.warning{color:#475569}.summary{background:#f0f9ff;padding:20px;border-radius:8px;margin:20px 0}.page-break{page-break-before:always}</style>";
                         html += "</head><body>";
-                        html += `<h1>${report.name}</h1>`;
-                        html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;
+                        html += `<h1>${escapeHtml(report.name)}</h1>`;
+                        html += `<p>Generated: ${escapeHtml(report.timestamp.toLocaleString())}</p>`;
                         html +=
                                 '<div class="summary"><h2>Summary</h2><p>' +
-                                report.summary +
+                                escapeHtml(report.summary) +
                                 "</p></div>";
 
                         for (const section of report.sections) {
-                                html += `<h2>${section.title}</h2>`;
+                                html += `<h2>${escapeHtml(section.title)}</h2>`;
                                 if (
                                         section.type === "table" &&
                                         section.headers &&
@@ -1649,32 +1666,32 @@ export function exportReport(  // NOSONAR — S3776: multi-format export must ha
                                 ) {
                                         html +=
                                                 "<table><tr>" +
-                                                section.headers.map((h) => `<th>${h}</th>`).join("") +
+                                                section.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("") +
                                                 "</tr>";
                                         for (const row of section.data) {
                                                 html +=
                                                         "<tr>" +
                                                         (Array.isArray(row)
-                                                                ? row.map((c) => `<td>${c}</td>`).join("")
-                                                                : `<td>${row}</td>`) +
+                                                                ? row.map((c) => `<td>${escapeHtml(c)}</td>`).join("")
+                                                                : `<td>${escapeHtml(row)}</td>`) +
                                                         "</tr>";
                                         }
                                         html += "</table>";
                                 } else if (section.type === "text") {
-                                        html += `<pre>${String(section.data)}</pre>`;
+                                        html += `<pre>${escapeHtml(String(section.data))}</pre>`;
                                 }
                         }
 
                         if (report.warnings.length > 0) {
                                 html +=
                                         '<div class="page-break"><h2 class="warning">Warnings</h2><ul>' +
-                                        report.warnings.map((w) => `<li>${w}</li>`).join("") +
+                                        report.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("") +
                                         "</ul></div>";
                         }
                         if (report.recommendations.length > 0) {
                                 html +=
                                         "<h2>Recommendations</h2><ul>" +
-                                        report.recommendations.map((r) => `<li>${r}</li>`).join("") +
+                                        report.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("") +
                                         "</ul>";
                         }
 

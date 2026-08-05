@@ -180,10 +180,25 @@ class TestOriginVerification:
         monkeypatch.setenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "secret-123")
         monkeypatch.setenv("FIREAI_ENV", "production")
         client = TestClient(_build_app())
-        resp = client.get("/api/health", headers={"Akamai-Internal": "wrong-secret"})
+        resp = client.get(
+            "/api/health",
+            headers={"X-Akamai-Origin-Token": "wrong-secret"},
+        )
         assert resp.status_code == 403
 
     def test_production_allows_correct_token(self, monkeypatch):
+        monkeypatch.setenv("AKAMAI_ENABLED", "true")
+        monkeypatch.setenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "secret-123")
+        monkeypatch.setenv("FIREAI_ENV", "production")
+        client = TestClient(_build_app())
+        resp = client.get(
+            "/api/health",
+            headers={"X-Akamai-Origin-Token": "secret-123"},
+        )
+        assert resp.status_code == 200
+
+    def test_production_allows_legacy_internal_header(self, monkeypatch):
+        """Backward compat: the legacy Akamai-Internal header still works."""
         monkeypatch.setenv("AKAMAI_ENABLED", "true")
         monkeypatch.setenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "secret-123")
         monkeypatch.setenv("FIREAI_ENV", "production")
@@ -309,13 +324,13 @@ if __name__ == "__main__":
     app = _build_app()
     client = TestClient(app)
 
-    print("Test 1: Direct origin access blocked (no Akamai-Internal header)")
+    print("Test 1: Direct origin access blocked (no X-Akamai-Origin-Token header)")
     resp = client.get("/api/health")
     assert resp.status_code == 403, f"Expected 403, got {resp.status_code}"
     print(f"  ✓ HTTP {resp.status_code} — blocked")
 
-    print("Test 2: With valid Akamai-Internal header, request passes")
-    resp = client.get("/api/health", headers={"Akamai-Internal": "test-secret"})
+    print("Test 2: With valid X-Akamai-Origin-Token header, request passes")
+    resp = client.get("/api/health", headers={"X-Akamai-Origin-Token": "test-secret"})
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
     print(f"  ✓ HTTP {resp.status_code} — passed")
 
@@ -323,7 +338,7 @@ if __name__ == "__main__":
     resp = client.get(
         "/api/health",
         headers={
-            "Akamai-Internal": "test-secret",
+            "X-Akamai-Origin-Token": "test-secret",
             "X-Forwarded-For": _TEST_IP_PRIVATE,
             "True-Client-IP": _TEST_IP_AKAMAI,
         },

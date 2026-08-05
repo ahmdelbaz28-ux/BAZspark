@@ -48,6 +48,7 @@ Compliance: agent.md ANTI-DECEPTION — every claim verified by tests.
 
 import hashlib
 import logging
+import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -211,6 +212,36 @@ def _record_failed_attempt(client_ip: str) -> None:
     _session_store.add_failed_attempt(client_ip)
 
 
+def _effective_client_ip(request: Request) -> str:
+    """Return the real client IP, trusting proxy headers only from known proxies.
+
+    VULN-002 FIX: previously the bucket was keyed on ``request.client.host``
+    — the TCP peer. Behind a reverse proxy (nginx in the docker stack) every
+    client shares that peer IP, so 5 failed attempts from one attacker locked
+    out ALL users for the window. We now resolve the effective client IP the
+    same way ``backend/admin_protection._get_client_ip`` does:
+      - Cloudflare/Akamai client-IP headers are trusted (set at the edge).
+      - ``X-Forwarded-For`` is spoofable, so it is only honored when the TCP
+        peer is a configured trusted proxy, and we take the LAST entry (the
+        value the proxy appended from ``$remote_addr``, not client-supplied).
+      - Otherwise fall back to the TCP peer.
+    """
+    for header in ("cf-connecting-ip", "akamai-client-ip"):
+        ip = request.headers.get(header)
+        if ip:
+            return ip.strip()
+
+    trusted = [p.strip() for p in os.environ.get("TRUSTED_PROXIES", "").split(",") if p.strip()]
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded and trusted and request.client:
+        if request.client.host in trusted:
+            last = forwarded.split(",")[-1].strip()
+            if last:
+                return last
+
+    return request.client.host if request.client else "unknown"
+
+
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -226,20 +257,27 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     The server maintains a mapping (session_id_hash → role, expiry) that
     can be revoked instantly via /logout.
     """
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = _effective_client_ip(request)
 
-    # Rate limit check
-    if not _check_rate_limit(client_ip):
+    from backend.auth_utils import validate_api_key_credential
+    from backend.rbac import Role
+
+    api_key = body.api_key.strip() if body.api_key else ""
+    # Per-credential rate-limit bucket: prevents an attacker from brute-forcing
+    # one key from many IPs, AND prevents garbage attempts at random keys from
+    # filling the shared IP bucket (each credential is its own bucket).
+    credential_key = _hash_secret(api_key) if api_key else ""
+
+    # Rate limit check — BOTH buckets must be under the limit (VULN-002).
+    ip_allowed = _check_rate_limit(client_ip)
+    cred_allowed = (not credential_key) or _check_rate_limit(f"cred:{credential_key}")
+    if not ip_allowed or not cred_allowed:
         logger.warning("Rate limit exceeded for login attempts from %s", client_ip[:45])
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=429,
             detail="Too many failed login attempts. Try again in 5 minutes.",
         )
 
-    from backend.auth_utils import validate_api_key_credential
-    from backend.rbac import Role
-
-    api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
         # S-05 FIX (Engineering Review): the dev-mode username/password fallback
         # was a backdoor — in any environment where FIREAI_ENV=development, ANY
@@ -265,6 +303,8 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     if role is None:
         _record_failed_attempt(client_ip)
+        if credential_key:
+            _record_failed_attempt(f"cred:{credential_key}")
         _current_attempts = len(_session_store.get_failed_attempts(client_ip))
         logger.warning(
             "Failed login attempt from %s (attempt %d/%d)",
@@ -335,8 +375,10 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     response.headers["Set-Cookie"] = "; ".join(cookie_parts)
     response.headers["Cache-Control"] = "no-store"
 
-    # Clear failed attempts on successful login
-    _session_store.clear_failed_attempts(client_ip)
+    # Clear failed attempts on successful login — resets BOTH the IP bucket
+    # and the per-credential bucket (V257 FIX: cred buckets were never cleared,
+    # so a key that failed before a successful login stayed rate-limited).
+    _session_store.clear_all_failed_attempts()
 
     logger.info("Successful login, role=%s, ip=%s", role.value, client_ip)
     return response

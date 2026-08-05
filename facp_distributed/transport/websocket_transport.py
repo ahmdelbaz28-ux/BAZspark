@@ -9,11 +9,16 @@ SECURITY NOTE (M-2 fix):
     logged at startup to make this visible. For any deployment where
     the WebSocket port is reachable from untrusted networks, auth_token
     MUST be set.
+  - VERIFY-002 fix: `start()` now FAILS CLOSED when auth_token=None — the
+    server refuses to bind until auth_token is set, unless the operator
+    explicitly opts out via FACP_ALLOW_UNAUTHENTICATED=1 (trusted
+    dev/test networks only).
 """
 import asyncio
 import hmac
 import json
 import logging
+import os
 import threading
 import time
 from typing import Any, Dict, Optional, Set
@@ -198,6 +203,22 @@ class WebSocketTransport(TransportLayer):
 
     def start(self):
         """Start WebSocket server in a separate thread"""
+        # VERIFY-002 FIX: fail closed instead of fail open. auth_token=None was
+        # documented as "trusted internal networks only", but a listener bound
+        # to 0.0.0.0 with authentication disabled is remotely exploitable if
+        # the port is reachable at all. We now REFUSE to bind until auth_token
+        # is set, unless the operator explicitly opts out via
+        # FACP_ALLOW_UNAUTHENTICATED=1 (trusted dev/test networks only).
+        if self.auth_token is None and os.environ.get(
+            "FACP_ALLOW_UNAUTHENTICATED", ""
+        ).strip().lower() not in ("1", "true", "yes", "on"):
+            raise ValueError(
+                "Refusing to start WebSocketTransport without auth_token. "
+                "Authentication is required for any network-exposed deployment. "
+                "Set auth_token explicitly, or set FACP_ALLOW_UNAUTHENTICATED=1 "
+                "for trusted dev/test networks only."
+            )
+
         def run_server():
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)

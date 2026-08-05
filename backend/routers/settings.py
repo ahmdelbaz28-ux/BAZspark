@@ -37,10 +37,13 @@ when no key is available or when the stored key fails at runtime.
 
 
 
+import ipaddress
 import logging
 import re
+import socket
 import uuid
 from typing import Dict, List, Optional
+from urllib.parse import urlsplit
 
 try:
     from typing import Annotated
@@ -83,7 +86,7 @@ router = APIRouter(prefix="/settings/keys", tags=["settings"])
 
 
 # ── V151.1 Audit logging helper ──────────────────────────────────────────────
-def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
+def _safe_log_fragment(value: Optional[str], max_len: int = 64) -> str:
     """Sanitize user-controlled strings for safe inclusion in log output.
 
     Strips control characters (including newlines used for log forging) and
@@ -96,7 +99,7 @@ def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
     return cleaned[:max_len]
 
 
-def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict | None = None) -> None:
+def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: Optional[dict] = None) -> None:
     """
     Record a Vision API Keys event in the AuditStore for compliance traceability.
 
@@ -169,6 +172,77 @@ def _validate_provider(provider: str) -> str:
             detail=f"Unsupported provider '{provider}'. Supported: {', '.join(SUPPORTED_PROVIDERS.keys())}",
         )
     return normalized
+
+
+# VULN-001 FIX: base_url is user/URL-supplied and was previously persisted and
+# used verbatim (e.g. by the /test endpoint, which attached the DECRYPTED API
+# key as a Bearer token to an httpx GET). A crafted base_url could point at an
+# internal service / cloud metadata endpoint (SSRF) and exfiltrate the stored
+# provider key. base_url is now validated at BOTH store time and test time:
+#   - https-only scheme
+#   - no embedded credentials
+#   - host resolves (or is) a PUBLIC IP only — private/loopback/link-local/
+#     multicast/reserved/unspecified addresses are rejected
+def _validate_base_url(base_url: str) -> str:
+    """Validate a user-supplied provider base_url to prevent SSRF + key exfiltration.
+
+    Empty values are allowed (the provider default is used). Raises HTTP 400
+    for anything that is not an https URL to a public host.
+    """
+    value = (base_url or "").strip()
+    if not value:
+        return value
+
+    parts = urlsplit(value)
+    if parts.scheme.lower() != "https":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="base_url must use https.",
+        )
+    host = parts.hostname
+    if not host:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="base_url must include a hostname.",
+        )
+    if parts.username is not None or parts.password is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="base_url must not contain embedded credentials.",
+        )
+
+    _reject_non_public_host(host)
+    return value
+
+
+def _reject_non_public_host(host: str) -> None:
+    """Reject hostnames/IPs that resolve to internal or reserved addresses."""
+    try:
+        candidates = {ipaddress.ip_address(host)}
+    except ValueError:
+        try:
+            candidates = {
+                ipaddress.ip_address(info[4][0])
+                for info in socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
+            }
+        except OSError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="base_url host could not be resolved.",
+            )
+    for addr in candidates:
+        if (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_multicast
+            or addr.is_reserved
+            or addr.is_unspecified
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="base_url must resolve to a public address.",
+            )
 
 
 class OpenAIKeyRequest(BaseModel):
@@ -391,6 +465,9 @@ async def store_provider_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"base_url is required for provider '{provider}' (no default configured).",
         )
+    # VULN-001 FIX: validate before persistence so crafted values never reach
+    # the DB, the /test endpoint, or the live provider clients.
+    base_url = _validate_base_url(base_url)
     if not model_name.isprintable():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -734,7 +811,10 @@ async def test_provider_key(
     masked = row["masked_key"]
     prov_config = SUPPORTED_PROVIDERS.get(provider, {})
     default_base = prov_config.get("default_base_url", "https://api.openai.com/v1")
-    base_url = (row["base_url"] or default_base).rstrip("/")
+    # VULN-001 FIX: re-validate the stored base_url at test time (defense in
+    # depth — old rows may predate store-time validation). The decrypted key is
+    # only ever attached to a validated public https endpoint.
+    base_url = _validate_base_url((row["base_url"] or default_base).rstrip("/"))
     test_path = prov_config.get("test_path", _MODELS_PATH)
 
     # V152: skip test if key is expired

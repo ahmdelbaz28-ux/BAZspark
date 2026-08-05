@@ -242,6 +242,20 @@ class GraphRAGEngine:
     # Layer 1+2: Store text as vector (semantic search)
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _sanitize_knowledge_text(text: str, max_chars: int = 50000) -> str:
+        """Strip control characters and cap length before indexing.
+
+        VERIFY-004 hardening: knowledge text is attacker-supplied (any user
+        with CALCULATION_EXECUTE can POST to /api/v2/graphrag/knowledge).
+        Control characters are stripped to prevent log/terminal injection and
+        to keep stored content parseable; length is capped at the API limit so
+        the Neo4j graph / vector store cannot be flooded with oversized or
+        runaway documents.
+        """
+        cleaned = "".join(ch for ch in text if ch.isprintable() or ch in "\n\r\t")
+        return cleaned[:max_chars]
+
     def save_to_memory(self, text: str) -> bool:
         """
         Store a text chunk in the vector store for semantic search.
@@ -258,6 +272,7 @@ class GraphRAGEngine:
             return False
 
         try:
+            text = self._sanitize_knowledge_text(text)
             self._vector_store.add_texts([text])
             logger.info("GraphRAG: Stored text chunk (%d chars)", len(text))
             return True
@@ -295,6 +310,7 @@ class GraphRAGEngine:
         try:
             from langchain_core.documents import Document
 
+            text = self._sanitize_knowledge_text(text)
             docs = [Document(page_content=text)]
             graph_documents = self._transformer.convert_to_graph_documents(docs)
             self._graph.add_graph_documents(graph_documents)

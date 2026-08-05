@@ -86,7 +86,11 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
                                         const safeColor = color
                                                 ? color.toString().replace(/[^a-zA-Z0-9#%(),. -]/g, "")
                                                 : null;
-                                        return safeColor ? `  --color-${key}: ${safeColor};` : null;
+                                        // VERIFY-005 hardening: config keys are interpolated into
+                                        // cssText (fed to dangerouslySetInnerHTML below) — restrict
+                                        // to identifier characters so a key can never break out.
+                                        const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, "");
+                                        return safeColor ? `  --color-${safeKey}: ${safeColor};` : null;
                                 })
                                 .filter(Boolean)
                                 .join("\n");
