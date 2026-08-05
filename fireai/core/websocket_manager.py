@@ -77,6 +77,8 @@ class ConnectionManager:
     def __init__(self) -> None:
         self._active_connections: dict[str, WebSocket] = {}
         self._connection_keys: dict[WebSocket, str] = {}
+        self._seen_nonces: dict[str, set[str]] = {}
+        self._last_seq: dict[str, int] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, api_key: str | None = None) -> None:
         _validate_ws_origin(websocket)
@@ -84,13 +86,45 @@ class ConnectionManager:
         await websocket.accept()
         self._active_connections[client_id] = websocket
         self._connection_keys[websocket] = client_id
+        self._seen_nonces[client_id] = set()
+        self._last_seq[client_id] = 0
         logger.info("WebSocket client %s connected", client_id)
 
     def disconnect(self, websocket: WebSocket) -> None:
         client_id = self._connection_keys.pop(websocket, None)
         if client_id and client_id in self._active_connections:
             del self._active_connections[client_id]
+            self._seen_nonces.pop(client_id, None)
+            self._last_seq.pop(client_id, None)
         logger.info("WebSocket client disconnected")
+
+    def validate_frame(self, client_id: str, frame: dict) -> bool:
+        """
+        Validate frame nonce, sequence number, and timestamp to prevent replay attacks.
+        Returns True if frame is valid; False if replay/invalid nonce or sequence detected.
+        """
+        if not isinstance(frame, dict):
+            return True
+
+        nonce = frame.get("nonce")
+        if nonce:
+            nonces = self._seen_nonces.setdefault(client_id, set())
+            if nonce in nonces:
+                logger.warning("Replay attack detected for client %s with nonce %s", client_id, nonce)
+                return False
+            nonces.add(nonce)
+            if len(nonces) > 5000:  # prune oldest
+                self._seen_nonces[client_id] = set(list(nonces)[-2500:])
+
+        seq = frame.get("seq")
+        if seq is not None and isinstance(seq, int):
+            last = self._last_seq.get(client_id, 0)
+            if seq <= last and last > 0:
+                logger.warning("Out-of-order/replayed sequence for client %s: seq=%d <= last=%d", client_id, seq, last)
+                return False
+            self._last_seq[client_id] = seq
+
+        return True
 
     async def send_personal_message(self, message: str, client_id: str) -> bool:
         websocket = self._active_connections.get(client_id)

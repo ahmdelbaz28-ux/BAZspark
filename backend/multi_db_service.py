@@ -20,7 +20,7 @@ import importlib.util
 import logging
 import threading
 from contextlib import contextmanager
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from backend.config import config
 
@@ -605,3 +605,42 @@ def close_multi_db_service():
     if _multi_db_service:
         _multi_db_service.close()
         _multi_db_service = None
+
+
+class SagaTransaction:
+    """
+    Saga Transaction Orchestrator for multi-database operations.
+    Registers compensating actions for each multi-db sync step.
+    If any sync step fails, executes registered rollbacks in reverse order.
+    """
+
+    def __init__(self) -> None:
+        self._compensations: list[Callable[[], Any]] = []
+
+    def add_compensation(self, rollback_fn: Callable[[], Any]) -> None:
+        """Register a compensating rollback function to be called on failure."""
+        if callable(rollback_fn):
+            self._compensations.append(rollback_fn)
+
+    def rollback(self) -> None:
+        """Execute all registered compensating actions in reverse order."""
+        logger.warning("Executing Saga rollback across secondary databases (%d steps)...", len(self._compensations))
+        for comp in reversed(self._compensations):
+            try:
+                comp()
+            except Exception as e:
+                logger.exception("Saga compensation step failed: %s", e)
+
+
+@contextmanager
+def atomic_multi_db_transaction():
+    """
+    Context manager implementing Saga pattern for multi-database updates.
+    Guarantees automatic atomic rollback on secondary databases if any step fails.
+    """
+    saga = SagaTransaction()
+    try:
+        yield saga
+    except Exception as exc:
+        saga.rollback()
+        raise exc

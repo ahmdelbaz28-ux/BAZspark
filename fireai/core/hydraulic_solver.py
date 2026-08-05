@@ -124,12 +124,48 @@ SCHEDULE_40_INTERNAL_DIAMETERS: dict[str, float] = {
 # HAZEN-WILLIAMS FRICTION LOSS CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_SOLVER_HW_CACHE: dict[str, float] = {}
+
+
+def _get_cached_hw(cache_key: str) -> float | None:
+    try:
+        from backend.multi_db_service import get_multi_db_service
+        service = get_multi_db_service()
+        if service._redis_client:
+            val = service._redis_client.get(f"solver:hw:{cache_key}")
+            if val is not None:
+                return float(val)
+    except Exception:
+        pass
+    return _SOLVER_HW_CACHE.get(cache_key)
+
+
+def _set_cached_hw(cache_key: str, value: float) -> None:
+    try:
+        from backend.multi_db_service import get_multi_db_service
+        service = get_multi_db_service()
+        if service._redis_client:
+            service._redis_client.setex(f"solver:hw:{cache_key}", 3600, str(value))
+    except Exception:
+        pass
+    if len(_SOLVER_HW_CACHE) > 10000:
+        _SOLVER_HW_CACHE.clear()
+    _SOLVER_HW_CACHE[cache_key] = value
+
+
 def calculate_friction_loss(
     flow_rate_gpm: float,
     friction_factor_c: float,
     internal_diameter_inches: float,
     pipe_length_feet: float,
 ) -> float:
+    """
+    Calculate friction loss in a pipe segment using the Hazen-Williams formula.
+    """
+    cache_key = f"{flow_rate_gpm:.4f}:{friction_factor_c:.2f}:{internal_diameter_inches:.4f}:{pipe_length_feet:.4f}"
+    cached_val = _get_cached_hw(cache_key)
+    if cached_val is not None:
+        return cached_val
     """
     Calculate total friction loss in a pipe segment using Hazen-Williams.
 
@@ -254,6 +290,7 @@ def calculate_friction_loss(
         f"p={friction_loss_per_foot:.6f} psi/ft, total={total_loss:.4f} psi"
     )
 
+    _set_cached_hw(cache_key, total_loss)
     return total_loss
 
 

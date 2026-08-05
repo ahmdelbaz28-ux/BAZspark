@@ -84,6 +84,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -479,7 +480,12 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
     #   - NaN propagates to head_loss, pressure_loss (all NaN)
     #   - NaN < 0 is False, so sanity checks don't catch it
     # Now we break early if any intermediate value is non-finite.
+    t0 = time.perf_counter()
     for _iteration in range(COLEBROOK_MAX_ITERATIONS):
+        if time.perf_counter() - t0 > 10.0:  # 10s hard execution limit cap
+            logger.warning("Colebrook-White solver execution budget (10s) exceeded")
+            break
+
         if not math.isfinite(f) or f <= 0:
             break
 

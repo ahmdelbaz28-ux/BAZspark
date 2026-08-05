@@ -1,9 +1,4 @@
-# File-level suppression removed per audit (V143 hardening).
-# Per-line justified suppressions (e.g., '# noqa: S3776 ...') are preserved.
-"""
-pdf_parser.py — FireAI PDF Floor Plan Parser
-Extracts fire alarm device locations from PDF drawings.
-"""
+from __future__ import annotations
 
 import logging
 import os

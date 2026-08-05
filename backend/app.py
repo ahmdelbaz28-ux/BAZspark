@@ -570,6 +570,7 @@ for _router_name in (
     # was mistaken about Uptime and Region services — both already wired
     # through monitor.py and environment.py respectively.
     "experimental_services",  # V270: /api/v1/experimental/{features,ocr,scan-to-bim,speckle}
+    "billing",       # Meeza Payment Gateway (شبكة ميزة) — /api/v1/billing/meeza/*
 ):
     _safe_include_router(_router_name)
 
