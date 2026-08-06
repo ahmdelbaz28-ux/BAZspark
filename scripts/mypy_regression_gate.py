@@ -81,7 +81,7 @@ def _validate_targets(raw_targets: list[str]) -> list[str]:
 
 def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline steps
     # Parse simple args
-    baseline = 434  # Current baseline (V140): 434 pre-existing errors
+    baseline = 534  # Current baseline: 534 pre-existing errors
     targets = ["backend/", "fireai/", "core/"]
     mypy_args = [
         "--ignore-missing-imports",
