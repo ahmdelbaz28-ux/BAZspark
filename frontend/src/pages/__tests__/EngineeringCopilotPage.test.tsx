@@ -7,7 +7,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { EngineeringCopilotPage } from "../EngineeringCopilotPage";
 
 // JSDOM doesn't implement scrollIntoView
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -39,6 +38,8 @@ vi.mock("lucide-react", async (importOriginal) => {
 	}
 	return mocked;
 });
+
+import { EngineeringCopilotPage } from "../EngineeringCopilotPage";
 
 // Mock the fullApi module so we control the chat function directly
 // without going through the real apiCall/fetchWithRetry/CSRF pipeline.
@@ -76,10 +77,7 @@ function renderPage() {
 }
 
 function findSendButton(): HTMLElement | undefined {
-  const buttons = screen.getAllByRole("button");
-  return buttons.find(
-    (btn) => btn.querySelector('[data-testid="icon-send"]')
-  );
+  return screen.queryByRole("button", { name: "Send" }) ?? undefined;
 }
 
 describe("EngineeringCopilotPage", () => {

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 // Mock react-i18next to return keys as display text
 vi.mock("react-i18next", () => ({
         useTranslation: () => ({
@@ -39,12 +40,6 @@ vi.mock("@/hooks/useApiQuery", () => ({
         }),
 }));
 
-// Mock react-router
-vi.mock("react-router", () => ({
-        NavLink: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
-        useNavigate: () => vi.fn(),
-}));
-
 import { DashboardPage } from "../DashboardPage";
 
 vi.mock("lucide-react", async (importOriginal) => {
@@ -74,13 +69,21 @@ describe("DashboardPage", () => {
         });
 
         it("renders dashboard eyebrow label", () => {
-                render(<DashboardPage />);
+                render(
+                        <MemoryRouter>
+                                <DashboardPage />
+                        </MemoryRouter>
+                );
                 // The page title "Dashboard" is now an h5 eyebrow, not the h1 hero
                 expect(screen.getByText("dashboard.title")).toBeInTheDocument();
         });
 
         it("displays statistics cards", () => {
-                render(<DashboardPage />);
+                render(
+                        <MemoryRouter>
+                                <DashboardPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: 'dashboard.projects' appears twice (stat card + active projects label)
                 // so use getAllByText. Other keys appear once.
                 expect(
@@ -90,14 +93,22 @@ describe("DashboardPage", () => {
         });
 
         it("shows backend connection status", () => {
-                render(<DashboardPage />);
+                render(
+                        <MemoryRouter>
+                                <DashboardPage />
+                        </MemoryRouter>
+                );
                 // Frontend-design skill: The hero shows supervising/signalLost status
                 // When connected, the hero displays 'dashboard.supervising'
                 expect(screen.getByText("dashboard.supervising")).toBeInTheDocument();
         });
 
         it("renders refresh and new project buttons", () => {
-                render(<DashboardPage />);
+                render(
+                        <MemoryRouter>
+                                <DashboardPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: The page uses 'dashboard.refresh' (not 'common.refresh')
                 expect(screen.getByText("dashboard.refresh")).toBeInTheDocument();
                 // The new project button — check for the key

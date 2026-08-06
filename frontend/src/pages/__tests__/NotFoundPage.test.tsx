@@ -1,8 +1,8 @@
 /**
  * NotFoundPage.test.tsx — Unit tests for the 404 page (V193 R13).
  */
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { NotFoundPage } from "../NotFoundPage";
 
 vi.mock("lucide-react", async (importOriginal) => {
@@ -24,16 +24,6 @@ vi.mock("lucide-react", async (importOriginal) => {
 		}
 	}
 	return mocked;
-});
-
-// Mock useNavigate
-const mockNavigate = vi.fn();
-vi.mock("react-router", async () => {
-        const actual = await vi.importActual<typeof import("react-router")>("react-router");
-        return {
-                ...actual,
-                useNavigate: () => mockNavigate,
-        };
 });
 
 describe("NotFoundPage", () => {
@@ -77,11 +67,15 @@ describe("NotFoundPage", () => {
 
         it("navigates to dashboard when the button is clicked", () => {
                 render(
-                        <MemoryRouter>
-                                <NotFoundPage />
+                        <MemoryRouter initialEntries={["/missing"]}>
+                                <Routes>
+                                        <Route path="/missing" element={<NotFoundPage />} />
+                                        <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+                                </Routes>
                         </MemoryRouter>,
                 );
-                screen.getByRole("button", { name: /back to dashboard/i }).click();
-                expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+                const button = screen.getByRole("button", { name: /back to dashboard/i });
+                fireEvent.click(button);
+                expect(screen.getByText("Dashboard Page")).toBeInTheDocument();
         });
 });

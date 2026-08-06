@@ -7,18 +7,85 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router";
 import { DevicesPage } from "../DevicesPage";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-// Mock react-i18next (same pattern as DashboardPage.test.tsx)
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: "en", changeLanguage: vi.fn() },
-  }),
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
-}));
+// Mock react-i18next
+vi.mock("react-i18next", () => {
+  const i18nMap: Record<string, string> = {
+    "devices.title": "Devices",
+    "devices.addDevice": "Add Device",
+    "devices.filterByType": "Filter by type",
+    "devices.filterByCategory": "Filter by category",
+    "devices.allTypes": "All Types",
+    "devices.allCategories": "All Categories",
+    "devices.clearFilters": "Clear filters",
+    "devices.loadFailed": "Failed to load devices",
+    "devices.loading": "Loading devices...",
+    "devices.colName": "Name",
+    "devices.colType": "Type",
+    "devices.colCategory": "Category",
+    "devices.colLoad": "Load",
+    "devices.colVoltage": "Voltage",
+    "devices.colActions": "Actions",
+    "devices.noDevices": "No devices found",
+    "devices.tryChangingFilters": "Try changing your filters",
+    "devices.addFirstDevice": "Add your first fire alarm device",
+    "devices.viewDetails": "View Details",
+    "devices.edit": "Edit",
+    "devices.delete": "Delete",
+    "devices.previous": "Previous",
+    "devices.next": "Next",
+    "devices.addNewDevice": "Add New Device",
+    "devices.deleteDevice": "Delete Device",
+    "devices.deleteConfirm": "Are you sure you want to delete",
+    "devices.deleteFailed": "Failed to delete device",
+    "devices.unknownError": "Unknown error",
+    "devices.deleting": "Deleting...",
+    "devices.cancel": "Cancel",
+    "devices.detailLoadFailed": "Failed to load device details",
+    "devices.close": "Close",
+    "devices.fieldName": "Name",
+    "devices.namePlaceholder": "e.g., SD-101",
+    "devices.position": "Position",
+    "devices.electrical": "Electrical Parameters",
+    "devices.voltageV": "Voltage (V)",
+    "devices.currentA": "Current (A)",
+    "devices.loadUnit": "Load Unit",
+    "devices.saving": "Saving...",
+    "devices.createDevice": "Create Device",
+    "devices.saveChanges": "Save Changes",
+  };
+  return {
+    useTranslation: () => ({
+      t: (key: string, options?: any) => {
+        if (key === "devices.deviceCount") {
+          const cnt = typeof options === "object" ? options.count : options;
+          return `${cnt} fire alarm devices`;
+        }
+        if (key === "devices.editDevice") {
+          const name = options?.name ?? "";
+          return name ? `Edit: ${name}` : "Edit Device";
+        }
+        if (key === "devices.pageOf") {
+          const page = options?.page ?? 1;
+          const totalPages = options?.totalPages ?? 1;
+          return `Page ${page} of ${totalPages}`;
+        }
+        if (i18nMap[key]) return i18nMap[key];
+        if (typeof options === "string") return options;
+        if (typeof options === "object" && options !== null && "defaultValue" in options) {
+          return options.defaultValue;
+        }
+        return key;
+      },
+      i18n: { language: "en", changeLanguage: vi.fn() },
+    }),
+    initReactI18next: { type: "3rdParty", init: vi.fn() },
+  };
+});
 
 // Mock lucide-react icons (prevent rendering issues in test)
 vi.mock("lucide-react", async (importOriginal) => {
@@ -142,7 +209,9 @@ function createTestQueryClient() {
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = createTestQueryClient();
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -637,7 +706,7 @@ describe("DevicesPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Previous")).toBeInTheDocument();
       expect(screen.getByText("Next")).toBeInTheDocument();
-      expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument();
+      expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
     });
   });
 
@@ -666,3 +735,4 @@ describe("DevicesPage", () => {
     });
   });
 });
+

@@ -521,6 +521,7 @@ export const EngineeringCopilotPage: React.FC = () => {
             />
             <button
               type="button"
+              aria-label="Send"
               onClick={handleSend}
               disabled={!input.trim() || chatMutation.isPending}
               className="p-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-lg transition-colors flex-shrink-0"

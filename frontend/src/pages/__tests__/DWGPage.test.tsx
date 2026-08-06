@@ -226,11 +226,8 @@ describe("DWGPage", () => {
     });
 
     // Click the X button to dismiss
-    const xButtons = screen.getAllByRole("button");
-    const closeBtn = xButtons.find((btn) =>
-      btn.querySelector('[data-testid="icon-x"]')
-    );
-    if (closeBtn) await userEvent.click(closeBtn);
+    const closeBtn = screen.getByRole("button", { name: "Close" });
+    await userEvent.click(closeBtn);
 
     await waitFor(() => {
       expect(

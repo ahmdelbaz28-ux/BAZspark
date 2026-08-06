@@ -7,7 +7,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { APSPage } from "../APSPage";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -38,6 +37,8 @@ vi.mock("lucide-react", async (importOriginal) => {
         return mocked;
 });
 
+import { APSPage } from "../APSPage";
+
 // Mock the fullApi module so we control apsApi directly
 // without going through the real apiCall/fetchWithRetry/CSRF pipeline.
 const mockApsProcess = vi.fn();
@@ -66,7 +67,7 @@ function renderPage() {
 function findSubmitButton(): HTMLElement | undefined {
   const buttons = screen.getAllByRole("button");
   return buttons.find(
-    (btn) => btn.querySelector('[data-testid="icon-send"]')
+    (btn) => btn.textContent?.includes("Submit WorkItem")
   );
 }
 

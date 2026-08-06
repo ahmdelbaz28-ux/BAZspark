@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 // Mock react-i18next to return keys as display text
 vi.mock("react-i18next", () => ({
         useTranslation: () => ({
@@ -48,11 +49,6 @@ vi.mock("@/hooks/useApiQuery", () => ({
         }),
 }));
 
-// Mock react-router
-vi.mock("react-router", () => ({
-        useNavigate: () => vi.fn(),
-}));
-
 import { SettingsPage } from "../SettingsPage";
 
 vi.mock("lucide-react", async (importOriginal) => {
@@ -83,13 +79,21 @@ describe("SettingsPage", () => {
         });
 
         it("renders settings form", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 expect(screen.getByText("settings.title")).toBeInTheDocument();
                 expect(screen.getByText("settings.subtitle")).toBeInTheDocument();
         });
 
         it("has API key input field", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: The Settings page uses a tabbed interface. The General tab
                 // has theme/language inputs. Check that the General tab renders.
                 expect(screen.getByText("settings.theme")).toBeInTheDocument();
@@ -97,7 +101,11 @@ describe("SettingsPage", () => {
         });
 
         it("has API base URL input field", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: The page has an API configuration tab.
                 // Check the tab trigger is present.
                 const apiTab = screen.getByText("settings.api");
@@ -105,7 +113,11 @@ describe("SettingsPage", () => {
         });
 
         it("renders configuration sections", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: Tab labels appear in both the TabsList trigger AND the
                 // CardTitle of the active tab content. Use getAllByText for keys that
                 // may appear multiple times.
@@ -124,13 +136,21 @@ describe("SettingsPage", () => {
         });
 
         it("has test connection button", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: The refresh button is on the settings page header.
                 expect(screen.getByText("common.refresh")).toBeInTheDocument();
         });
 
         it("shows default API URL as /api/v1", () => {
-                render(<SettingsPage />);
+                render(
+                        <MemoryRouter>
+                                <SettingsPage />
+                        </MemoryRouter>
+                );
                 // V140 FIX: The settings page shows system health info when connected.
                 // Check for the system health label.
                 expect(screen.getByText("settings.systemHealth")).toBeInTheDocument();

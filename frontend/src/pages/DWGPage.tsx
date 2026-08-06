@@ -158,6 +158,7 @@ export const DWGPage: React.FC = () => {
             </div>
             <button
               type="button"
+              aria-label="Close"
               onClick={resetForm}
               className="text-red-400 hover:text-red-300"
             >
