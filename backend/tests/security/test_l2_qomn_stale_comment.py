@@ -194,10 +194,8 @@ def test_l2_actual_code_still_uses_72_ah():
     source = QOMN_KERNEL_PY.read_text(encoding="utf-8")
 
     pattern = re.compile(
-        r'@_healing_wrapper\s*\(\s*'
-        r'safe_result\s*=\s*\{[^}]*?"required_ah"\s*:\s*'
-        r'(\d+(?:\.\d+)?)',
-        re.MULTILINE | re.DOTALL,
+        r'@_healing_wrapper\s*\([\s\S]*?["\']required_ah["\']\s*:\s*(\d+(?:\.\d+)?)',
+        re.MULTILINE,
     )
     m = pattern.search(source)
     assert m, (

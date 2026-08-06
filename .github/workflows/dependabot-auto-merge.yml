@@ -100,32 +100,46 @@ jobs:
         timeout-minutes: 15
         with:
           script: |
-            const ref = context.payload.pull_request.head.sha;
+            const pr = context.payload.pull_request;
+            if (!pr || !pr.head || !pr.head.sha) {
+              console.log('No PR head SHA found in payload - skipping auto-merge evaluator');
+              core.setOutput('ready', 'false');
+              return;
+            }
+
+            const ref = pr.head.sha;
             const { owner, repo } = context.repo;
             const deadline = Date.now() + 15 * 60 * 1000;
 
             while (Date.now() < deadline) {
-              const { data: statuses } = await github.rest.repos.listCommitStatusesForRef({ owner, repo, ref });
-              const { data: checkRuns } = await github.rest.checks.listForRef({ owner, repo, ref });
+              try {
+                const { data: statuses } = await github.rest.repos.listCommitStatusesForRef({ owner, repo, ref });
+                const { data: checkRuns } = await github.rest.checks.listForRef({ owner, repo, ref });
 
-              const pendingStatuses = statuses.filter(s => s.state === 'pending');
-              const pendingChecks = checkRuns.check_runs.filter(c =>
-                c.status !== 'completed' && c.name !== 'Dependabot Auto-Merge Evaluator'
-              );
+                const statusList = Array.isArray(statuses) ? statuses : [];
+                const checkList = Array.isArray(checkRuns?.check_runs) ? checkRuns.check_runs : [];
 
-              console.log(`pending statuses=${pendingStatuses.length}, pending checks=${pendingChecks.length}`);
+                const pendingStatuses = statusList.filter(s => s.state === 'pending');
+                const pendingChecks = checkList.filter(c =>
+                  c.status !== 'completed' && c.name !== 'Dependabot Auto-Merge Evaluator'
+                );
 
-              if (pendingStatuses.length === 0 && pendingChecks.length === 0) {
-                const allOk =
-                  statuses.every(s => s.state === 'success') &&
-                  checkRuns.check_runs.every(c =>
-                    c.status !== 'completed' ||
-                    c.name === 'Dependabot Auto-Merge Evaluator' ||
-                    c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
-                  );
-                core.setOutput('ready', allOk ? 'true' : 'false');
-                console.log(allOk ? 'All required checks passed' : 'Some checks failed - skip auto-merge');
-                return;
+                console.log(`pending statuses=${pendingStatuses.length}, pending checks=${pendingChecks.length}`);
+
+                if (pendingStatuses.length === 0 && pendingChecks.length === 0) {
+                  const allOk =
+                    statusList.every(s => s.state === 'success') &&
+                    checkList.every(c =>
+                      c.status !== 'completed' ||
+                      c.name === 'Dependabot Auto-Merge Evaluator' ||
+                      c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
+                    );
+                  core.setOutput('ready', allOk ? 'true' : 'false');
+                  console.log(allOk ? 'All required checks passed' : 'Some checks failed - skip auto-merge');
+                  return;
+                }
+              } catch (err) {
+                console.error(`Octokit API error while polling checks: ${err?.message || err}`);
               }
 
               await new Promise(r => setTimeout(r, 15000));

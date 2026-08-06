@@ -9,6 +9,8 @@ LAYER NOTE (Phase 5 dedup):
                                       TokenManager, AuthProvider with RS256/HS256 signing)
   Each serves a distinct layer. Do NOT merge.
 """
+from __future__ import annotations
+
 import hashlib
 import os
 import secrets
