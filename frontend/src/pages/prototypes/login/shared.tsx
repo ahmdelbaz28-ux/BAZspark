@@ -6,8 +6,11 @@
  * remember checkbox, and language toggle.
  */
 
+import { useEffect, useCallback } from "react";
+
 import {
         AlertCircle,
+        BookOpen,
         Eye,
         EyeOff,
         Globe,
@@ -348,10 +351,28 @@ interface SupportModalProps {
 }
 
 export function SupportModal({ t, showSupportModal, setShowSupportModal }: SupportModalProps) {
+        const backdropRef = useCallback((node: HTMLDivElement | null) => {
+                if (!node) return;
+                const handler = (e: MouseEvent) => {
+                        if (e.target === node) setShowSupportModal(false);
+                };
+                node.addEventListener("click", handler);
+        }, [setShowSupportModal]);
+
+        useEffect(() => {
+                if (!showSupportModal) return;
+                const handler = (e: KeyboardEvent) => {
+                        if (e.key === "Escape") setShowSupportModal(false);
+                };
+                window.addEventListener("keydown", handler);
+                return () => window.removeEventListener("keydown", handler);
+        }, [showSupportModal, setShowSupportModal]);
+
         return (
                 <AnimatePresence>
                         {showSupportModal && (
                                 <div
+                                        ref={backdropRef}
                                         style={{
                                                 position: "fixed",
                                                 inset: 0,
@@ -427,6 +448,14 @@ export function SupportModal({ t, showSupportModal, setShowSupportModal }: Suppo
                                                         <div>{t.supportEmail}</div>
                                                         <div style={{ marginTop: "0.25rem" }}>Standard Format: BS-XXXX-XXXX-XXXX-XXXX</div>
                                                 </div>
+                                                <Button
+                                                        type="button"
+                                                        onClick={() => setShowSupportModal(false)}
+                                                        className="w-full bg-slate-700/50 hover:bg-slate-600/60 text-slate-300 hover:text-white text-xs h-9 tracking-wide flex items-center justify-center gap-2 border border-slate-600/40 mb-3"
+                                                >
+                                                        <BookOpen aria-hidden="true" style={{ width: "0.875rem", height: "0.875rem" }} />
+                                                        {t.supportDocsBtn}
+                                                </Button>
                                                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                                                         <Button
                                                                 type="button"
@@ -458,10 +487,28 @@ export function RequestAccessModal({
         setShowRequestModal,
         handleAutoFillTestKey,
 }: RequestAccessModalProps) {
+        const backdropRef = useCallback((node: HTMLDivElement | null) => {
+                if (!node) return;
+                const handler = (e: MouseEvent) => {
+                        if (e.target === node) setShowRequestModal(false);
+                };
+                node.addEventListener("click", handler);
+        }, [setShowRequestModal]);
+
+        useEffect(() => {
+                if (!showRequestModal) return;
+                const handler = (e: KeyboardEvent) => {
+                        if (e.key === "Escape") setShowRequestModal(false);
+                };
+                window.addEventListener("keydown", handler);
+                return () => window.removeEventListener("keydown", handler);
+        }, [showRequestModal, setShowRequestModal]);
+
         return (
                 <AnimatePresence>
                         {showRequestModal && (
                                 <div
+                                        ref={backdropRef}
                                         style={{
                                                 position: "fixed",
                                                 inset: 0,
