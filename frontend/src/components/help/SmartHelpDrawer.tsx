@@ -1,10 +1,9 @@
-/**
- * SmartHelpDrawer.tsx — Backward-compatible wrapper component
- *
- * Merged into GlobalHelpDrawer.tsx. Delegates all props and renders GlobalHelpDrawer.
- */
-import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
+import { lazy, Suspense } from "react";
 import type { HelpTopicId } from "@/help/types";
+
+const GlobalHelpDrawerLazy = lazy(() =>
+	import("@/components/shared/GlobalHelpDrawer").then((m) => ({ default: m.GlobalHelpDrawer }))
+);
 
 export interface SmartHelpDrawerProps {
 	open?: boolean;
@@ -21,18 +20,18 @@ export function SmartHelpDrawer({
 	initialContextId,
 	initialSearch,
 }: SmartHelpDrawerProps) {
-	// Only use initialContextId if it matches a known HelpTopicId;
-	// otherwise fall back to initialTopicId only.
 	const activeTopic = initialTopicId ?? undefined;
 	void initialContextId; // Preserved for backward-compatible API; not passed through
+	if (!open) return null;
 	return (
-		<GlobalHelpDrawer
-			open={open}
-			onOpenChange={onOpenChange}
-			initialTopicId={activeTopic}
-			initialSearch={initialSearch}
-		/>
+		<Suspense fallback={null}>
+			<GlobalHelpDrawerLazy
+				open={open}
+				onOpenChange={onOpenChange}
+				initialTopicId={activeTopic}
+				initialSearch={initialSearch}
+			/>
+		</Suspense>
 	);
 }
 
-export { GlobalHelpDrawer as HelpDrawer };
