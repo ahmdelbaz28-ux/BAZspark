@@ -78,10 +78,6 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                         setSaving(false);
                 }
         };
-                } finally {
-                        setSaving(false);
-                }
-        };
 
         const updateParam = (key: string, value: string) => {
                 setParameters(prev => ({ ...prev, [key]: value }));

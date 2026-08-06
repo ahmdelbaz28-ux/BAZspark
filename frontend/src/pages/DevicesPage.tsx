@@ -525,44 +525,6 @@ function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProp
             {fullDevice.properties && Object.keys(fullDevice.properties).length > 0 && (
               <div className="mt-4 border-t border-slate-700 pt-4">
                 <p className="text-xs font-semibold text-slate-400 mb-2">{t("devices.extendedProperties")}</p>
-=======
-                <p className="text-xs text-slate-400">Type</p>
-                <p className="text-sm text-slate-200">{fullDevice.type.replace(/_/g, " ")}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Category</p>
-                <p className="text-sm text-slate-200">{fullDevice.category}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Location (X, Y, Z)</p>
-                <p className="text-sm text-slate-200">{`${fullDevice.x}, ${fullDevice.y}, ${fullDevice.z}`}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Rotation</p>
-                <p className="text-sm text-slate-200">{fullDevice.rotation}°</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Voltage</p>
-                <p className="text-sm text-slate-200">{fullDevice.voltage} V</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Current / Load</p>
-                <p className="text-sm text-slate-200">{fullDevice.current} A / {fullDevice.load} A</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Created At</p>
-                <p className="text-sm text-slate-200">{new Date(fullDevice.createdAt).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Updated At</p>
-                <p className="text-sm text-slate-200">{new Date(fullDevice.updatedAt).toLocaleString()}</p>
-              </div>
-            </div>
-            
-            {fullDevice.properties && Object.keys(fullDevice.properties).length > 0 && (
-              <div className="mt-4 border-t border-slate-700 pt-4">
-                <p className="text-xs font-semibold text-slate-400 mb-2">Extended Properties</p>
->>>>>>> feature/engineering-identity
                 <pre className="bg-slate-900 p-3 rounded-lg text-xs text-slate-300 overflow-auto max-h-32">
                   {JSON.stringify(fullDevice.properties, null, 2)}
                 </pre>
