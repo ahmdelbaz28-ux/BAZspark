@@ -252,13 +252,7 @@ async def _wait_for_pong(pong_flag: dict[str, bool], timeout: float) -> bool:
 
 async def _check_api_key_revoked(websocket: WebSocket, api_key: str) -> bool:
     """Re-authenticate API key; close socket and return True if revoked."""
-<<<<<<< HEAD
     if not api_key or await _revalidate_api_key(api_key):
-=======
-    if not api_key:
-        return False
-    if await _revalidate_api_key(api_key):
->>>>>>> feature/engineering-identity
         return False
     logger.warning(
         "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"

@@ -539,7 +539,6 @@ export function FDSSimulationPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-<<<<<<< HEAD
                 {jobs.map((job, i) => {
                   const handleJobSelect = () => {
                     setStatusJobId(job.job_id || "");
@@ -548,21 +547,6 @@ export function FDSSimulationPage() {
 
                   return (
                     <div
-                      key={job.job_id || i}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 cursor-pointer hover:bg-card/80 transition-colors stagger-card"
-                      onClick={handleJobSelect}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleJobSelect();
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-=======
-                {jobs.map((job, i) => (
-                  <div
                     key={job.job_id || i}
                     className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 cursor-pointer hover:bg-card/80 transition-colors stagger-card"
                     onClick={() => {

@@ -408,7 +408,6 @@ export function EngineeringPage() {
                                         ))}
                                 </div>
 
-<<<<<<< HEAD
                                 {/* ── Tab Panels ─────────────────────────────────────────── */}
                                 <div className="space-y-6">
                                         {/* ══════════════════════════════════════════════════════════
@@ -1110,7 +1109,6 @@ export function EngineeringPage() {
                                                                                 </div>
                                                                         </div>
 
-<<<<<<< HEAD
                                                                         {/* FIX #3: Cable sizing compliance with real logic */}
                                                                         <div className={`etap-panel overflow-hidden border-l-4 ${cableComplianceLevel === "suitable"
                                                                                 ? "border-l-[var(--etap-success)] bg-[rgba(16,185,129,0.06)]"
@@ -1419,11 +1417,7 @@ export function EngineeringPage() {
                                                                                                 NFPA 72 §10.6.7.2.1 — {t("engineering.standbyAlarmDesc", { hours: batteryCalcInputs.standbyHours, minutes: batteryCalcInputs.alarmMinutes })}
                                                                                         </div>
                                                                                 </div>
-<<<<<<< HEAD
-=======
-                                                                        </CardContent>
-                                                                </Card>
-                                                        </div>
+                                                                                </div>
                                                 </CardContent>
                                         </Card>
                                 )}

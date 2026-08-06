@@ -35,23 +35,8 @@ The CUA loop (fireai/vision/cua_loop.py) independently falls back to OpenCV
 when no key is available or when the stored key fails at runtime.
 """
 
-<<<<<<< HEAD
-=======
-
->>>>>>> feature/engineering-identity
-
-import base64
-import ipaddress
-import logging
-import re
-import socket
-import uuid
-<<<<<<< HEAD
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
-=======
-from typing import Optional, Dict, List, Tuple, Set
->>>>>>> feature/engineering-identity
 
 try:
     from typing import Annotated
@@ -846,15 +831,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-<<<<<<< HEAD
-<<<<<<< HEAD
         logger.exception("Vision key test (decrypt) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
-=======
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
->>>>>>> fix/sonar-gate-security-reliability
-=======
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
->>>>>>> feature/engineering-identity
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -869,15 +846,7 @@ async def test_provider_key(
                 (utc_now_iso(), key_id),
             )
     except Exception as e:
-<<<<<<< HEAD
-<<<<<<< HEAD
         logger.debug("Failed to update last_used_at for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
-=======
-        logger.debug("Failed to update last_used_at for id=%s: %s", log_key_id[:36], type(e).__name__)
->>>>>>> fix/sonar-gate-security-reliability
-=======
-        logger.debug("Failed to update last_used_at for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
->>>>>>> feature/engineering-identity
 
     test_url = f"{base_url}{test_path}"
     try:
@@ -902,15 +871,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except httpx.HTTPError as e:
-<<<<<<< HEAD
-<<<<<<< HEAD
         logger.debug("Vision key test (network) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
-=======
-        logger.debug("Vision key test (network) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
->>>>>>> fix/sonar-gate-security-reliability
-=======
-        logger.debug("Vision key test (network) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
->>>>>>> feature/engineering-identity
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -918,15 +879,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
-<<<<<<< HEAD
-<<<<<<< HEAD
         logger.exception("Vision key test (unknown) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
-=======
-        logger.exception("Vision key test (unknown) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
->>>>>>> fix/sonar-gate-security-reliability
-=======
-        logger.exception("Vision key test (unknown) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
->>>>>>> feature/engineering-identity
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,

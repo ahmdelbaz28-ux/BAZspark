@@ -532,7 +532,6 @@ function ElementDetail() {
 							{deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
 						</button>
 					</div>
-<<<<<<< HEAD
 				</div>
 			</div>
 

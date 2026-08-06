@@ -365,14 +365,11 @@ async def convert_files(
                 detail=f"Invalid conversion type: {conversion_type}",
             )
 
-<<<<<<< HEAD
         # Refactored to helper functions (resolve-review-80) — preserves path
         # validation (validate_input_path/validate_output_path) and tempfile
         # fallback, while reducing cognitive complexity (Sonar S1192/S3776).
         # Trade-off: indirects logic to module-level helpers; net positive
         # because helpers are also unit-testable.
-=======
->>>>>>> feature/engineering-identity
         source_filepath = await _resolve_source_filepath(request, source_format)
         target_filepath = await _resolve_target_filepath(request, target_format)
 
