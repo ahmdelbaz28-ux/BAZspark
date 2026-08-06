@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Authentication System for Distributed FACP
 
 LAYER NOTE (Phase 5 dedup):
@@ -7,9 +9,8 @@ LAYER NOTE (Phase 5 dedup):
     - backend/routers/auth.py       → FastAPI router layer (login, logout, verify, me endpoints)
     - facp_distributed/security/auth.py → JWT-based auth for distributed FACP nodes (this file:
                                       TokenManager, AuthProvider with RS256/HS256 signing)
-  Each serves a distinct layer. Do NOT merge.
 """
-from __future__ import annotations
+
 
 import hashlib
 import os

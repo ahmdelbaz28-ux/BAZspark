@@ -1,10 +1,10 @@
 import json
 import os
-from typing import Any, Dict, List
+from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
-from fireai.core.contracts import DEFAULT_FEATURE_FLAGS, FeatureFlag, get_feature_flags
+from fireai.core.contracts import DEFAULT_FEATURE_FLAGS, get_feature_flags
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 

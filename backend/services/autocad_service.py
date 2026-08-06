@@ -224,7 +224,10 @@ class AutoCADService:
         try:
             if self.acad_app:
                 # Hide AutoCAD application if we launched it
-                self.acad_app.Visible = False
+                try:
+                    self.acad_app.Visible = False
+                except BaseException:
+                    pass
                 self.acad_app = None
 
             self.acad_doc = None

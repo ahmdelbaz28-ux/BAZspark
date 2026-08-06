@@ -600,19 +600,14 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # to eliminate divergent duplicate tables across the codebase.
 # Previously, this was imported via fireai.constants (which had its own duplicates).
 # Now imports directly from the authoritative nfpa72.py module.
+from fireai.constants.nec import (
+    NEC_AMPACITY_60C,
+)
 from fireai.constants.nfpa72 import (
     COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE,
 )
 from fireai.constants.nfpa72 import (
     DC_RETURN_PATH_FACTOR,
-)
-from fireai.constants.nec import (
-    NEC_AMPACITY_60C,
-    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
-)
-from fireai.constants.nec import (
-    NEC_AMPACITY_60C,
-    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
 )
 
 _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
@@ -1145,10 +1140,6 @@ def required_battery_capacity_ah(
 # AWG 18/16 are solid in Table 8; all others are stranded (Class B).
 # Ampacity sourced from fireai.constants.nec (single authoritative table).
 
-from fireai.constants.nec import (
-    NEC_AMPACITY_60C,
-    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
-)
 
 AWG_RESISTANCE_TABLE: dict[int, dict[str, float]] = {
     # AWG: {"ohm_per_1000ft": R_75, "ohm_per_m": R_75/304.8, "metric_mm2": area, "ampacity_75c": A}

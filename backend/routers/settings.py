@@ -41,7 +41,7 @@ import logging
 import re
 import socket
 import uuid
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional
 from urllib.parse import urlsplit
 
 try:

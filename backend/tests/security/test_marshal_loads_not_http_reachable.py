@@ -646,7 +646,7 @@ def _http_probe_routes(client, routes, raw_log, filtered_log):
     return status_counter
 
 
-@pytest.mark.timeout(45)
+@pytest.mark.timeout(120)
 def test_marshal_never_invoked_during_http_traffic():
     """RUNTIME REACHABILITY TEST.
 

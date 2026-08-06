@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # NOSONAR
 """Engine Worker for L3 in Distributed FACP System"""
 import logging

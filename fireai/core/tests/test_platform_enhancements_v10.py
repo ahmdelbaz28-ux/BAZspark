@@ -2,15 +2,14 @@
 test_platform_enhancements_v10.py — Verification unit tests for 10 platform enhancements.
 """
 
-import pytest
-from fireai.core.smoke_simulation_state import AutoMeshBoundaryGenerator
+from engineering_copilot.ai_agent.ai_agent import LocalCodeRAGRetriever
 from fireai.core.acoustic_calculator import generate_acoustic_heatmap_matrix
 from fireai.core.ahj_submittal_package import AHJSubmittalGenerator
-from fireai.core.hydraulic_solver import solve_hydraulics_from_revit
-from fireai.core.digital_twin_sync import DigitalTwinSync
 from fireai.core.digital_twin import DigitalTwin
+from fireai.core.digital_twin_sync import DigitalTwinSync
+from fireai.core.hydraulic_solver import solve_hydraulics_from_revit
 from fireai.core.pdf_report import generate_civil_defense_submittal_pdf
-from engineering_copilot.ai_agent.ai_agent import EngineeringIntentProcessor, AICopilot, LocalCodeRAGRetriever
+from fireai.core.smoke_simulation_state import AutoMeshBoundaryGenerator
 from marine.output import MarineClassificationReportGenerator
 
 

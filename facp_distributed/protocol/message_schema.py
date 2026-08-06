@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # NOSONAR
 """Enhanced FACP Message Schema for Distributed System"""
 import json

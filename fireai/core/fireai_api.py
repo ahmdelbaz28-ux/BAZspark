@@ -4,7 +4,8 @@
 """FireAI NFPA 72-2022 Design API — FastAPI application (V10)."""
 
 from __future__ import annotations
-__all__ = ['create_app', 'app']
+
+__all__ = ['app', 'create_app']
 
 __all__ = ['app', 'create_app']
 
@@ -150,9 +151,11 @@ async def verify_api_key(x_api_key: str = Header(...)) -> str:  # NOSONAR - pyth
     return x_api_key
 
 from fireai.api.settings_router import router as settings_router
+
 app.include_router(settings_router, dependencies=[Depends(verify_api_key)])
 
 from fireai.api.audit_router import router as audit_router
+
 app.include_router(audit_router, dependencies=[Depends(verify_api_key)])
 
 # ============================================================================
