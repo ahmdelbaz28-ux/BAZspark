@@ -35,6 +35,12 @@ The CUA loop (fireai/vision/cua_loop.py) independently falls back to OpenCV
 when no key is available or when the stored key fails at runtime.
 """
 
+import base64
+import ipaddress
+import logging
+import re
+import socket
+import uuid
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
