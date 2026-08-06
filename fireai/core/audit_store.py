@@ -328,10 +328,19 @@ def _get_last_hash() -> str:
     """Get the current_hash of the last event, or GENESIS if empty."""
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT current_hash FROM audit_log ORDER BY id DESC LIMIT 1")
-    row = cursor.fetchone()
-    _release_connection(conn)
-    return row[0] if row else "GENESIS"
+    try:
+        cursor.execute("SELECT current_hash FROM audit_log ORDER BY id DESC LIMIT 1")
+        row = cursor.fetchone()
+        return row[0] if row else "GENESIS"
+    except sqlite3.OperationalError:
+        _release_connection(conn)
+        init_db()
+        return "GENESIS"
+    finally:
+        try:
+            _release_connection(conn)
+        except Exception:
+            pass
 
 
 # ============================================================================
