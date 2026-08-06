@@ -100,6 +100,12 @@ namespace BazSparkRevitBridge
                 // ── Door / Window insertion ──────────────────────────────────
                 "place_family_instance" => PlaceFamilyInstance(doc, uiApp, p),
 
+                // ── Conduit run creation ──────────────────────────────────────
+                "create_conduit_run" => CreateConduitRun(doc, p),
+
+                // ── Fire devices placement ───────────────────────────────────
+                "place_fire_devices" => PlaceFireDevices(doc, uiApp, p),
+
                 // ── Element deletion ─────────────────────────────────────────
                 "delete_element" => DeleteElement(doc, p),
 
@@ -207,28 +213,196 @@ namespace BazSparkRevitBridge
             return new { id = floor.Id.IntegerValue };
         }
 
+        private static bool LoadFamilySymbol(Document doc, string familyFilePath, string symbolName, out FamilySymbol? symbol)
+        {
+            symbol = null;
+            if (string.IsNullOrEmpty(familyFilePath) || !System.IO.File.Exists(familyFilePath))
+            {
+                return false;
+            }
+
+            using var tx = new Transaction(doc, "BazSpark: Load Family Symbol");
+            tx.Start();
+            bool loaded = doc.LoadFamilySymbol(familyFilePath, symbolName, out symbol);
+            if (!loaded)
+            {
+                if (doc.LoadFamily(familyFilePath, out Family family))
+                {
+                    foreach (ElementId symId in family.GetFamilySymbolIds())
+                    {
+                        var fs = doc.GetElement(symId) as FamilySymbol;
+                        if (fs != null && (string.Equals(fs.Name, symbolName, StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(symbolName)))
+                        {
+                            symbol = fs;
+                            break;
+                        }
+                    }
+                }
+            }
+            tx.Commit();
+            return symbol != null;
+        }
+
         private static object PlaceFamilyInstance(Document doc, UIApplication uiApp, JObject p)
         {
-            var familyName = p["family"]?.ToString() ?? "";
+            var familyName = p["family"]?.ToString() ?? p["family_name"]?.ToString() ?? "";
+            var symbolName = p["symbol"]?.ToString() ?? p["symbol_name"]?.ToString() ?? familyName;
+            var familyFilePath = p["family_file_path"]?.ToString() ?? p["family_path"]?.ToString() ?? "";
+
             var x = p["x"]?.Value<double>() ?? 0;
             var y = p["y"]?.Value<double>() ?? 0;
+            var z = p["z"]?.Value<double>() ?? 0;
             double mmToFt = 1.0 / 304.8;
 
             var symbol = new FilteredElementCollector(doc)
                 .OfClass(typeof(FamilySymbol))
                 .OfType<FamilySymbol>()
-                .FirstOrDefault(fs => fs.FamilyName.Contains(familyName))
-                ?? throw new InvalidOperationException($"Family '{familyName}' not found.");
+                .FirstOrDefault(fs =>
+                    (!string.IsNullOrEmpty(symbolName) && string.Equals(fs.Name, symbolName, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(familyName) && fs.FamilyName.IndexOf(familyName, StringComparison.OrdinalIgnoreCase) >= 0));
+
+            if (symbol == null && !string.IsNullOrEmpty(familyFilePath))
+            {
+                LoadFamilySymbol(doc, familyFilePath, symbolName, out symbol);
+            }
+
+            if (symbol == null)
+            {
+                throw new InvalidOperationException($"Family Symbol '{symbolName}' (Family: '{familyName}') not found or loaded.");
+            }
 
             using var tx = new Transaction(doc, "BazSpark: Place Family");
             tx.Start();
-            if (!symbol.IsActive) symbol.Activate();
+            if (!symbol.IsActive)
+            {
+                symbol.Activate();
+                doc.Regenerate();
+            }
+
             var inst = doc.Create.NewFamilyInstance(
-                new XYZ(x * mmToFt, y * mmToFt, 0),
+                new XYZ(x * mmToFt, y * mmToFt, z * mmToFt),
                 symbol,
                 Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+
+            var parameters = p["parameters"] as JObject;
+            if (parameters != null && inst != null)
+            {
+                foreach (var prop in parameters.Properties())
+                {
+                    var param = inst.LookupParameter(prop.Name);
+                    if (param != null && !param.IsReadOnly)
+                    {
+                        param.SetValueString(prop.Value?.ToString() ?? "");
+                    }
+                }
+            }
+
             tx.Commit();
-            return new { id = inst.Id.IntegerValue };
+            return new { id = inst.Id.IntegerValue, family = symbol.FamilyName, symbol = symbol.Name, success = true };
+        }
+
+        private static object CreateConduitRun(Document doc, JObject p)
+        {
+            double x1 = p["x1"]?.Value<double>() ?? 0;
+            double y1 = p["y1"]?.Value<double>() ?? 0;
+            double z1 = p["z1"]?.Value<double>() ?? 0;
+
+            double x2 = p["x2"]?.Value<double>() ?? 1000;
+            double y2 = p["y2"]?.Value<double>() ?? 0;
+            double z2 = p["z2"]?.Value<double>() ?? 0;
+
+            if (p["start_point"] is JArray startArr && startArr.Count >= 2)
+            {
+                x1 = startArr[0].Value<double>();
+                y1 = startArr[1].Value<double>();
+                z1 = startArr.Count >= 3 ? startArr[2].Value<double>() : 0;
+            }
+            if (p["end_point"] is JArray endArr && endArr.Count >= 2)
+            {
+                x2 = endArr[0].Value<double>();
+                y2 = endArr[1].Value<double>();
+                z2 = endArr.Count >= 3 ? endArr[2].Value<double>() : 0;
+            }
+
+            double diameterMm = p["diameter"]?.Value<double>() ?? p["diameter_mm"]?.Value<double>() ?? 20.0;
+            double mmToFt = 1.0 / 304.8;
+
+            XYZ startPt = new XYZ(x1 * mmToFt, y1 * mmToFt, z1 * mmToFt);
+            XYZ endPt = new XYZ(x2 * mmToFt, y2 * mmToFt, z2 * mmToFt);
+
+            ElementId levelId = new FilteredElementCollector(doc)
+                .OfClass(typeof(Level))
+                .FirstElementId();
+
+            if (p["level_id"] != null)
+            {
+                levelId = new ElementId(p["level_id"].Value<int>());
+            }
+
+            ElementId conduitTypeId = new FilteredElementCollector(doc)
+                .OfClass(typeof(Autodesk.Revit.DB.Electrical.ConduitType))
+                .FirstElementId();
+
+            using var tx = new Transaction(doc, "BazSpark: Create Conduit Run");
+            tx.Start();
+
+            var conduit = Autodesk.Revit.DB.Electrical.Conduit.Create(doc, conduitTypeId, startPt, endPt, levelId);
+            if (conduit == null)
+            {
+                throw new InvalidOperationException("Failed to create electrical conduit run.");
+            }
+
+            double diameterFt = diameterMm * mmToFt;
+            Parameter diamParam = conduit.get_Parameter(BuiltInParameter.RBS_CONDUIT_DIAMETER_PARAM)
+                                  ?? conduit.LookupParameter("Diameter")
+                                  ?? conduit.LookupParameter("Nominal Diameter");
+            if (diamParam != null && !diamParam.IsReadOnly)
+            {
+                diamParam.Set(diameterFt);
+            }
+
+            string systemType = p["system_type"]?.ToString() ?? "";
+            if (!string.IsNullOrEmpty(systemType))
+            {
+                Parameter sysParam = conduit.LookupParameter("System Type")
+                                     ?? conduit.LookupParameter("System Classification");
+                if (sysParam != null && !sysParam.IsReadOnly)
+                {
+                    sysParam.SetValueString(systemType);
+                }
+            }
+
+            tx.Commit();
+
+            return new
+            {
+                id = conduit.Id.IntegerValue,
+                length_mm = startPt.DistanceTo(endPt) * 304.8,
+                diameter_mm = diameterMm,
+                success = true
+            };
+        }
+
+        private static object PlaceFireDevices(Document doc, UIApplication uiApp, JObject p)
+        {
+            var devicesArray = p["devices"] as JArray;
+            var placedList = new List<object>();
+
+            if (devicesArray != null)
+            {
+                foreach (JObject devObj in devicesArray)
+                {
+                    var res = PlaceFamilyInstance(doc, uiApp, devObj);
+                    placedList.Add(res);
+                }
+            }
+            else
+            {
+                var res = PlaceFamilyInstance(doc, uiApp, p);
+                placedList.Add(res);
+            }
+
+            return new { count = placedList.Count, devices = placedList, success = true };
         }
 
         private static object DeleteElement(Document doc, JObject p)

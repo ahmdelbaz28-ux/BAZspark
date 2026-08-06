@@ -58,6 +58,10 @@ class TestV214AutoCADAddinProject:
         assert "DispatchCommand" in content
         assert "draw_polyline" in content
         assert "draw_circle" in content
+        assert "insert_block" in content
+        assert "get_block_attributes" in content
+        assert "query_elements" in content
+        assert "get_entity_info" in content
 
 
 class TestV214PythonAutoCADNamedPipeClient:

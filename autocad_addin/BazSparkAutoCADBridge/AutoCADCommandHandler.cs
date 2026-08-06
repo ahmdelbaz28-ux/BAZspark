@@ -23,6 +23,11 @@ namespace BazSparkAutoCADBridge
                 "draw_polyline" => DrawPolyline(doc, p),
                 "draw_circle" => DrawCircle(doc, p),
                 "draw_text" => DrawText(doc, p),
+                "insert_block" => InsertBlock(doc, p),
+                "insert_block_instance" => InsertBlock(doc, p),
+                "get_block_attributes" => GetBlockAttributes(doc, p),
+                "query_elements" => QueryElements(doc, p),
+                "get_entity_info" => GetEntityInfo(doc, p),
                 "delete_entity" => DeleteEntity(doc, p),
                 "modify_entity" => ModifyEntity(doc, p),
                 "save" => SaveDocument(doc),
@@ -220,6 +225,279 @@ namespace BazSparkAutoCADBridge
 
                 return new { handle = handleStr, updated = true };
             }
+        }
+
+        private static object InsertBlock(Document doc, JObject p)
+        {
+            string blockName = p["block_name"]?.ToString()
+                ?? p["name"]?.ToString()
+                ?? throw new ArgumentException("Block name ('block_name' or 'name') is required.");
+
+            Database db = doc.Database;
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+                if (!bt.Has(blockName))
+                {
+                    throw new InvalidOperationException($"Block definition '{blockName}' does not exist in document.");
+                }
+
+                BlockTableRecord modelSpace = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+                ObjectId blockDefId = bt[blockName];
+
+                Point3d insertPoint = GetPoint(p["insertion_point"] as JArray ?? p["position"] as JArray);
+
+                double rotation = 0.0;
+                if (p["rotation"] != null)
+                {
+                    rotation = p["rotation"].Value<double>();
+                }
+                else if (p["rotation_deg"] != null)
+                {
+                    rotation = p["rotation_deg"].Value<double>() * (Math.PI / 180.0);
+                }
+
+                double scaleX = p["scale_x"]?.Value<double>() ?? p["scale"]?.Value<double>() ?? 1.0;
+                double scaleY = p["scale_y"]?.Value<double>() ?? p["scale"]?.Value<double>() ?? 1.0;
+                double scaleZ = p["scale_z"]?.Value<double>() ?? p["scale"]?.Value<double>() ?? 1.0;
+
+                using (BlockReference blockRef = new BlockReference(insertPoint, blockDefId))
+                {
+                    blockRef.SetDatabaseDefaults();
+                    blockRef.ScaleFactors = new Scale3d(scaleX, scaleY, scaleZ);
+                    blockRef.Rotation = rotation;
+
+                    ApplyProperties(db, tr, blockRef, p);
+
+                    modelSpace.AppendEntity(blockRef);
+                    tr.AddNewlyCreatedDBObject(blockRef, true);
+
+                    // Process block attribute definitions
+                    BlockTableRecord blockDef = (BlockTableRecord)tr.GetObject(blockDefId, OpenMode.ForRead);
+                    JObject? attributesObj = p["attributes"] as JObject ?? p["attribute_values"] as JObject;
+
+                    if (blockDef.HasAttributeDefinitions)
+                    {
+                        foreach (ObjectId id in blockDef)
+                        {
+                            DBObject obj = tr.GetObject(id, OpenMode.ForRead);
+                            if (obj is AttributeDefinition attDef && !attDef.Constant)
+                            {
+                                using (AttributeReference attRef = new AttributeReference())
+                                {
+                                    attRef.SetAttributeFromBlock(attDef, blockRef.BlockTransform);
+                                    attRef.Position = attDef.Position.TransformBy(blockRef.BlockTransform);
+                                    attRef.Rotation = attDef.Rotation + rotation;
+
+                                    string tag = attDef.Tag;
+                                    if (attributesObj != null)
+                                    {
+                                        string? customVal = null;
+                                        foreach (var prop in attributesObj.Properties())
+                                        {
+                                            if (string.Equals(prop.Name, tag, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                customVal = prop.Value?.ToString();
+                                                break;
+                                            }
+                                        }
+
+                                        if (customVal != null)
+                                        {
+                                            attRef.TextString = customVal;
+                                        }
+                                        else
+                                        {
+                                            attRef.TextString = attDef.TextString;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        attRef.TextString = attDef.TextString;
+                                    }
+
+                                    blockRef.AttributeCollection.AppendAttribute(attRef);
+                                    tr.AddNewlyCreatedDBObject(attRef, true);
+                                }
+                            }
+                        }
+                    }
+
+                    tr.Commit();
+                    return new { handle = blockRef.Handle.ToString(), name = blockName, success = true };
+                }
+            }
+        }
+
+        private static object GetBlockAttributes(Document doc, JObject p)
+        {
+            string handleStr = p["handle"]?.ToString() ?? throw new ArgumentException("Entity handle required.");
+            Database db = doc.Database;
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                long ln = Convert.ToInt64(handleStr, 16);
+                Handle h = new Handle(ln);
+                ObjectId id = db.GetObjectId(false, h, 0);
+                DBObject obj = tr.GetObject(id, OpenMode.ForRead);
+
+                if (!(obj is BlockReference blockRef))
+                {
+                    throw new InvalidOperationException($"Entity handle '{handleStr}' is not a BlockReference.");
+                }
+
+                var attributesDict = new Dictionary<string, string>();
+                foreach (ObjectId attId in blockRef.AttributeCollection)
+                {
+                    DBObject attObj = tr.GetObject(attId, OpenMode.ForRead);
+                    if (attObj is AttributeReference attRef)
+                    {
+                        attributesDict[attRef.Tag] = attRef.TextString;
+                    }
+                }
+
+                var dynamicProps = new Dictionary<string, object>();
+                if (blockRef.IsDynamicBlock)
+                {
+                    DynamicBlockReferencePropertyCollection props = blockRef.DynamicBlockReferencePropertyCollection;
+                    foreach (DynamicBlockReferenceProperty prop in props)
+                    {
+                        if (prop.Value != null)
+                        {
+                            dynamicProps[prop.PropertyName] = prop.Value;
+                        }
+                    }
+                }
+
+                tr.Commit();
+                return new
+                {
+                    handle = handleStr,
+                    block_name = blockRef.Name,
+                    attributes = attributesDict,
+                    dynamic_properties = dynamicProps,
+                    success = true
+                };
+            }
+        }
+
+        private static object QueryElements(Document doc, JObject p)
+        {
+            Database db = doc.Database;
+            string? targetLayer = p["layer"]?.ToString();
+            int maxLimit = p["limit"]?.Value<int>() ?? 500;
+
+            var resultList = new List<object>();
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
+
+                foreach (ObjectId id in btr)
+                {
+                    if (resultList.Count >= maxLimit) break;
+                    try
+                    {
+                        Entity ent = (Entity)tr.GetObject(id, OpenMode.ForRead);
+                        if (targetLayer != null && !string.Equals(ent.Layer, targetLayer, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        resultList.Add(BuildEntitySummary(tr, ent));
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[QueryElements] Error reading object {id}: {ex.Message}");
+                    }
+                }
+                tr.Commit();
+            }
+
+            return new { count = resultList.Count, elements = resultList };
+        }
+
+        private static object GetEntityInfo(Document doc, JObject p)
+        {
+            string handleStr = p["handle"]?.ToString() ?? throw new ArgumentException("Entity handle required.");
+            Database db = doc.Database;
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                long ln = Convert.ToInt64(handleStr, 16);
+                Handle h = new Handle(ln);
+                ObjectId id = db.GetObjectId(false, h, 0);
+                Entity ent = (Entity)tr.GetObject(id, OpenMode.ForRead);
+
+                object summary = BuildEntitySummary(tr, ent);
+                tr.Commit();
+                return summary;
+            }
+        }
+
+        private static object BuildEntitySummary(Transaction tr, Entity ent)
+        {
+            string typeName = ent.GetRXClass().Name;
+            string handleStr = ent.Handle.ToString();
+            string layerStr = ent.Layer;
+
+            var attributesDict = new Dictionary<string, string>();
+            var dynamicProps = new Dictionary<string, object>();
+            string blockName = "";
+
+            if (ent is BlockReference blockRef)
+            {
+                blockName = blockRef.Name;
+                foreach (ObjectId attId in blockRef.AttributeCollection)
+                {
+                    DBObject attObj = tr.GetObject(attId, OpenMode.ForRead);
+                    if (attObj is AttributeReference attRef)
+                    {
+                        attributesDict[attRef.Tag] = attRef.TextString;
+                    }
+                }
+
+                if (blockRef.IsDynamicBlock)
+                {
+                    foreach (DynamicBlockReferenceProperty prop in blockRef.DynamicBlockReferencePropertyCollection)
+                    {
+                        if (prop.Value != null)
+                        {
+                            dynamicProps[prop.PropertyName] = prop.Value;
+                        }
+                    }
+                }
+            }
+
+            double[]? boundsMin = null;
+            double[]? boundsMax = null;
+            try
+            {
+                if (ent.Bounds.HasValue)
+                {
+                    Point3d minP = ent.Bounds.Value.MinPoint;
+                    Point3d maxP = ent.Bounds.Value.MaxPoint;
+                    boundsMin = new double[] { minP.X, minP.Y, minP.Z };
+                    boundsMax = new double[] { maxP.X, maxP.Y, maxP.Z };
+                }
+            }
+            catch
+            {
+                // Ignore bounds calculation issues for custom proxy objects
+            }
+
+            return new
+            {
+                handle = handleStr,
+                type = typeName,
+                layer = layerStr,
+                color = ent.ColorIndex,
+                block_name = blockName,
+                attributes = attributesDict,
+                dynamic_properties = dynamicProps,
+                bounds_min = boundsMin,
+                bounds_max = boundsMax
+            };
         }
 
         private static object SaveDocument(Document doc)
