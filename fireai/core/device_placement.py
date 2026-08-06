@@ -56,7 +56,6 @@ from fireai.core.contracts import (
 from fireai.core.qomn_kernel import (
     PhysicsGuardError,
     QOMNKernel,
-    compute_heat_detector_spacing,
     guard_ceiling_height_m,
 )
 
@@ -385,13 +384,27 @@ class DetectorPlacementEngine:
             # derivation per the NFPA contract.
             NFPA72_HEAT_MAX_AREA_M2 = 232.26  # NFPA 72-2022 §17.6.3.1 (2500 ft²)
             area_per_detector = min(room.area_m2, NFPA72_HEAT_MAX_AREA_M2)
-            spacing_result = compute_heat_detector_spacing(
+            spacing_result = self._kernel.heat_detector_spacing(
                 room.ceiling_height_m, area_per_detector
             )
             nfpa_refs.append("NFPA 72-2022 §17.6.3.1")
 
-        S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")
-        R = spacing_result.get("coverage_radius_m")
+        # Typed result access (deep-modules: no dict compat). Smoke results
+        # carry ``listed_spacing_m``/``wall_min_m``/``wall_max_m``; heat
+        # results carry ``spacing_m`` (no wall fields → S/2 default).
+        if room.detector_type in (
+            DetectorType.SMOKE,
+            DetectorType.DUCT,
+            DetectorType.BEAM,
+            DetectorType.ASPIRATING,
+            DetectorType.MULTI,
+        ):
+            S = spacing_result.listed_spacing_m
+            wall_offset = spacing_result.wall_max_m or spacing_result.wall_min_m or S / 2.0
+        else:
+            S = spacing_result.spacing_m
+            wall_offset = S / 2.0
+        R = spacing_result.coverage_radius_m
         # V65 FIX: Guard against S=0 or S=None → infinite loop in hex grid.
         # S=0 makes row_height=0, causing y+=0 infinite loop.
         # S=None causes TypeError. Both are catastrophic in a safety-critical system.
@@ -407,11 +420,7 @@ class DetectorPlacementEngine:
                 "coverage radius must be a positive finite number — cannot verify coverage without valid radius",
                 "NFPA 72 §17.7"
             )
-        # wall_offset: distance from wall for first/last detector row.
-        # Per NFPA 72 §17.6.3.1.1, max wall distance = S/2 (half the listed spacing).
-        # Per NFPA 72 §17.6.3.1.1, min wall distance = 4 inches (0.1016m, dead air space).
-        # The grid starts at wall_max_m from the wall (S/2), not wall_min_m (4 inches).
-        wall_offset = spacing_result.get("wall_max_m", spacing_result.get("wall_min_m", S / 2.0))
+        # wall_offset already selected per detector branch above.
 
         # ── Beam obstruction check ─────────────────────────────────────────────
         beam_sections = self._check_beam_obstructions(room, S)

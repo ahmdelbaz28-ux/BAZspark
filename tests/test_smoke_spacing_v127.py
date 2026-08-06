@@ -69,34 +69,34 @@ class TestV130FlatSpacing:
     def test_flat_spacing_at_all_table_heights(self, height):
         """Spacing must be 9.1m at ALL heights — flat per §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(height)
-        assert r["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3), (
+        assert r.listed_spacing_m == pytest.approx(9.10, abs=1e-3), (
             f"At h={height}m, expected S=9.1m (flat per §17.7.3.2.3), "
-            f"got S={r['listed_spacing_m']}m"
+            f"got S={r.listed_spacing_m}m"
         )
 
     def test_h_above_table_flat_spacing(self):
         """h=15.0m > 12.2m: Beyond NFPA table but still flat 9.1m."""
         r = compute_smoke_detector_spacing(15.0)
-        assert r["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3), (
+        assert r.listed_spacing_m == pytest.approx(9.10, abs=1e-3), (
             "Beyond table, spacing must still be 9.1m (flat per §17.7.3.2.3)"
         )
 
     def test_h_max_boundary_18_288m(self):
         """h=18.288m (60 ft): Maximum allowed by guard, flat 9.1m."""
         r = compute_smoke_detector_spacing(18.288)
-        assert r["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
+        assert r.listed_spacing_m == pytest.approx(9.10, abs=1e-3)
 
     def test_spacing_equals_max_at_all_heights(self):
         """All spacings must equal SMOKE_MAX_SPACING_M (9.10 m)."""
         for h in (1.0, 2.0, 3.0, 4.0, 6.0, 9.0, 12.0, 15.0, 18.0):
             r = compute_smoke_detector_spacing(h)
-            assert r["listed_spacing_m"] == pytest.approx(NFPA72_SMOKE_MAX_SPACING_M, abs=1e-3)
+            assert r.listed_spacing_m == pytest.approx(NFPA72_SMOKE_MAX_SPACING_M, abs=1e-3)
 
     def test_coverage_radius_is_6_37_at_all_heights(self):
         """Coverage radius = 0.7 × 9.1 = 6.37m at all heights."""
         for h in (3.0, 4.0, 5.0, 6.0, 9.0, 12.0, 15.0):
             r = compute_smoke_detector_spacing(h)
-            assert r["coverage_radius_m"] == pytest.approx(6.37, abs=1e-2)
+            assert r.coverage_radius_m == pytest.approx(6.37, abs=1e-2)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -108,12 +108,12 @@ class TestV130AuditNotice:
     def test_audit_notice_above_6_096m(self):
         """audit_notice appears for h > 6.096m (20 ft)."""
         r = compute_smoke_detector_spacing(10.0)
-        assert "audit_notice" in r, "audit_notice missing for h=10.0m > 6.096m"
+        assert r.audit_notice is not None, "audit_notice missing for h=10.0m > 6.096m"
 
     def test_no_audit_notice_below_6_096m(self):
         """No audit_notice for h <= 6.096m."""
         r = compute_smoke_detector_spacing(3.0)
-        assert "audit_notice" not in r, "audit_notice should not appear at h=3.0m"
+        assert r.audit_notice is None, "audit_notice should not appear at h=3.0m"
 
     def test_audit_notice_at_exactly_6_096m(self):
         """No audit_notice at exactly 6.096m (threshold is strict >)."""
@@ -122,26 +122,26 @@ class TestV130AuditNotice:
         # unless the condition is >=. Let's verify the actual behavior.
         # The advisory is for h > _SPOT_SMOKE_HIGH_CEILING_M which is 6.096.
         # So h=6.096 should NOT trigger (not strictly greater).
-        assert "audit_notice" not in r or r.get("audit_notice") is None
+        assert r.audit_notice is None or r.audit_notice is None
 
     def test_audit_notice_cites_nfpa_sections(self):
         """Audit notice must cite NFPA sections (§17.7.1.11, §17.7.4.6, §17.7.4.7)."""
         r = compute_smoke_detector_spacing(10.0)
-        notice = r.get("audit_notice", "")
+        notice = getattr(r, "audit_notice", "")
         assert "17.7.1.11" in notice, f"Missing §17.7.1.11 ref: {notice}"  # NOSONAR - python:S1313
         assert "17.7.4.6" in notice or "beam" in notice.lower(), f"Missing beam ref: {notice}"  # NOSONAR - python:S1313
 
     def test_audit_notice_confirms_flat_spacing(self):
         """Audit notice must confirm 9.1m flat spacing per §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(10.0)
-        notice = r.get("audit_notice", "")
+        notice = getattr(r, "audit_notice", "")
         assert "9.1m" in notice, f"Missing 9.1m confirmation: {notice}"
         assert "17.7.3.2.3" in notice, f"Missing §17.7.3.2.3 ref: {notice}"
 
     def test_audit_notice_cites_v130(self):
         """Audit notice must reference V130 correction."""
         r = compute_smoke_detector_spacing(10.0)
-        notice = r.get("audit_notice", "")
+        notice = getattr(r, "audit_notice", "")
         assert "V130" in notice, f"Missing V130 ref: {notice}"
 
     def test_runtime_warning_fires(self, caplog):
@@ -199,7 +199,7 @@ class TestSSoTConsistency:
         """Spacing at any height must equal SMOKE_MAX_SPACING_M."""
         for h in (2.0, 3.0, 5.0, 8.0, 12.0, 18.0):
             r = compute_smoke_detector_spacing(h)
-            assert r["listed_spacing_m"] == pytest.approx(SMOKE_MAX_SPACING_M, abs=1e-3)
+            assert r.listed_spacing_m == pytest.approx(SMOKE_MAX_SPACING_M, abs=1e-3)
 
 class TestTableLengthAndAlignment:
     def test_table_lengths_and_alignment(self):

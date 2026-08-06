@@ -301,7 +301,7 @@ NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
 # ohm/km at "75°C") were 1.1-3.2% BELOW the NEC published values, causing
 # underestimation of voltage drop — a life-safety hazard.
 # Now we store the 20°C reference values and apply temperature correction
-# in compute_voltage_drop() using R_T = R_20 * [1 + alpha*(T-20)].
+# in _compute_voltage_drop() using R_T = R_20 * [1 + alpha*(T-20)].
 
 # TIA-568, CCTV, and access control constants now imported from canonical source
 from fireai.constants import (
@@ -347,7 +347,7 @@ def _f64_hash(value: float) -> str:
     return hashlib.sha256(bits).hexdigest()[:16]
 
 
-def compute_smoke_detector_spacing(ceiling_height_m: float) -> SmokeSpacingResult:
+def _compute_smoke_detector_spacing(ceiling_height_m: float) -> SmokeSpacingResult:
     """
     Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
 
@@ -454,7 +454,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> SmokeSpacingResul
     return result
 
 
-def compute_heat_detector_spacing(
+def _compute_heat_detector_spacing(
     ceiling_height_m: float,
     area_per_detector_m2: float,
 ) -> HeatSpacingResult:
@@ -537,7 +537,7 @@ def compute_heat_detector_spacing(
     )
 
 
-def compute_battery_capacity_ah(
+def _compute_battery_capacity_ah(
     standby_load_a: float,
     alarm_load_a: float,
     *,
@@ -611,7 +611,7 @@ def compute_battery_capacity_ah(
     )
 
 
-def compute_voltage_drop(
+def _compute_voltage_drop(
     current_a: float,
     length_m: float,
     awg_gauge: str,
@@ -703,14 +703,14 @@ def compute_voltage_drop(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def validate_smoke_spacing_result(result: SmokeSpacingResult) -> SmokeSpacingResult:
+def _validate_smoke_spacing_result(result: SmokeSpacingResult) -> SmokeSpacingResult:
     """
     Validate computed smoke spacing against code limits.
 
     Source: NFPA 72-2022 §17.7.3.2.1
     """
-    S = result["listed_spacing_m"]
-    R = result["coverage_radius_m"]
+    S = result.listed_spacing_m
+    R = result.coverage_radius_m
 
     if not math.isfinite(S) or not math.isfinite(R):
         raise ComputationError("Smoke spacing produced NaN/Inf — reject all outputs")
@@ -720,42 +720,42 @@ def validate_smoke_spacing_result(result: SmokeSpacingResult) -> SmokeSpacingRes
         raise ValidationError(f"Computed spacing {S:.3f}m > NFPA 72 max {NFPA72_SMOKE_MAX_SPACING_M}m")
     if abs(R - 0.7 * S) > 1e-5:  # IEEE-754 rounding tolerance for intermediate operations
         raise ValidationError(f"Coverage radius {R:.6f}m ≠ 0.7 × {S:.6f}m = {0.7 * S:.6f}m — computation error")
-    result["layer3_validated"] = True
+    result.layer3_validated = True
     return result
 
 
-def validate_battery_result(result: BatteryCapacityResult) -> BatteryCapacityResult:
+def _validate_battery_result(result: BatteryCapacityResult) -> BatteryCapacityResult:
     """
     Validate battery calculation result.
 
     Source: NFPA 72-2022 §10.6.7.2.1
     """
-    ah = result["required_ah"]
+    ah = result.required_ah
     if not math.isfinite(ah) or ah <= 0:
         raise ComputationError(f"Battery result {ah}Ah is non-physical")
     # Sanity: result must be ≥ standby + alarm raw
-    if ah < result["ah_raw"] * 0.9:
-        raise ValidationError(f"Required Ah {ah:.4f} < raw Ah {result['ah_raw']:.4f} × 0.9 — computation error")
-    result["layer3_validated"] = True
+    if ah < result.ah_raw * 0.9:
+        raise ValidationError(f"Required Ah {ah:.4f} < raw Ah {result.ah_raw:.4f} × 0.9 — computation error")
+    result.layer3_validated = True
     return result
 
 
-def validate_voltage_drop_result(result: VoltageDropResult) -> VoltageDropResult:
+def _validate_voltage_drop_result(result: VoltageDropResult) -> VoltageDropResult:
     """
     Validate voltage drop result against physical and code limits.
 
     Source: NEC 2023 Chapter 9
     """
-    vd = result["voltage_drop_v"]
+    vd = result.voltage_drop_v
     if not math.isfinite(vd) or vd < 0:
         raise ComputationError(f"Voltage drop {vd}V is non-physical")
-    if vd >= result["supply_voltage_v"]:
-        raise ValidationError(f"Voltage drop {vd:.4f}V ≥ supply {result['supply_voltage_v']}V — no current would flow")
-    result["layer3_validated"] = True
+    if vd >= result.supply_voltage_v:
+        raise ValidationError(f"Voltage drop {vd:.4f}V ≥ supply {result.supply_voltage_v}V — no current would flow")
+    result.layer3_validated = True
     return result
 
 
-def validate_heat_spacing_result(result: HeatSpacingResult) -> HeatSpacingResult:
+def _validate_heat_spacing_result(result: HeatSpacingResult) -> HeatSpacingResult:
     """
     Validate computed heat detector spacing against code limits.
 
@@ -764,8 +764,8 @@ def validate_heat_spacing_result(result: HeatSpacingResult) -> HeatSpacingResult
 
     Source: NFPA 72-2022 §17.6.3.1
     """
-    S = result["spacing_m"]
-    R = result["coverage_radius_m"]
+    S = result.spacing_m
+    R = result.coverage_radius_m
 
     if not math.isfinite(S) or not math.isfinite(R):
         raise ComputationError("Heat spacing produced NaN/Inf — reject all outputs")
@@ -780,7 +780,7 @@ def validate_heat_spacing_result(result: HeatSpacingResult) -> HeatSpacingResult
         raise ValidationError(
             f"Coverage radius {R:.6f}m ≠ 0.7 × {S:.6f}m = {0.7 * S:.6f}m — computation error"
         )
-    result["layer3_validated"] = True
+    result.layer3_validated = True
     return result
 
 
@@ -911,119 +911,6 @@ class QOMNAuditLog:
 # QOMN KERNEL — Unified Interface
 # ═══════════════════════════════════════════════════════════════════════════════
 
-
-class QOMNKernel:
-    """
-    Main QOMN-FIRE Deterministic Engineering Kernel.
-
-    Orchestrates all five layers in sequence:
-      L0 → L1 → L2 → L3 → L4
-
-    All computation results are:
-      - Validated against physics and code bounds (L0, L3)
-      - Traceable to published standard (L1)
-      - Bit-exact and deterministic (L2)
-      - Permanently logged (L4)
-    """
-
-    def __init__(self) -> None:
-        self.audit = QOMNAuditLog()
-
-    def smoke_detector_spacing(self, ceiling_height_m: float) -> SmokeSpacingResult:
-        """Compute smoke detector spacing. Full L0→L1→L2→L3→L4 pipeline."""
-        result = compute_smoke_detector_spacing(ceiling_height_m)
-        result = validate_smoke_spacing_result(result)
-        self.audit.record(
-            "smoke_detector_spacing",
-            {"ceiling_height_m": ceiling_height_m},
-            result.nfpa_section,
-            result.to_dict(),
-            layer3_passed=True,
-        )
-        return result
-
-    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> HeatSpacingResult:
-        """
-        Compute heat detector spacing. Full L0→L4 pipeline.
-
-        V58 FIX (BUG #3): Now includes L3 validation before audit record.
-        Previously skipped validation entirely — no validate_heat_spacing_result()
-        function even existed.
-        """
-        result = compute_heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
-        result = validate_heat_spacing_result(result)
-        self.audit.record(
-            "heat_detector_spacing",
-            {"ceiling_height_m": ceiling_height_m, "area_m2": area_per_detector_m2},
-            result.nfpa_section,
-            result.to_dict(),
-            layer3_passed=True,
-        )
-        return result
-
-    def battery_capacity(
-        self,
-        standby_load_a: float,
-        alarm_load_a: float,
-        **kwargs,
-    ) -> BatteryCapacityResult:
-        """Compute battery capacity. Full L0→L4 pipeline."""
-        result = compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
-        result = validate_battery_result(result)
-        self.audit.record(
-            "battery_capacity",
-            {"standby_a": standby_load_a, "alarm_a": alarm_load_a},
-            result.nfpa_section,
-            result.to_dict(),
-            layer3_passed=True,
-        )
-        return result
-
-    def voltage_drop(
-        self,
-        current_a: float,
-        length_m: float,
-        awg_gauge: str,
-        supply_voltage_v: float = 24.0,
-        max_drop_pct: float = 10.0,
-    ) -> VoltageDropResult:
-        """Compute voltage drop. Full L0→L4 pipeline."""
-        result = compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
-        result = validate_voltage_drop_result(result)
-        self.audit.record(
-            "voltage_drop",
-            {"current_a": current_a, "length_m": length_m, "awg": awg_gauge},
-            result.nec_section,
-            result.to_dict(),
-            layer3_passed=True,
-        )
-        return result
-
-    def get_audit_log(self) -> dict[str, Any]:
-        """Export full audit log for AHJ review."""
-        return self.audit.export_json()
-
-    def verify_audit_integrity(self) -> bool:
-        """Verify audit log has not been tampered with."""
-        return self.audit.verify_chain_integrity()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# ═══════════════════════════════════════════════════════════════════════════════
-# The self-healing engine (@self_healing decorator) returns SafetyResult objects.
-# QOMNKernel methods return dicts. This wrapper bridges the two:
-#   1. Calls the original kernel method
-#   2. If it raises (PhysicsGuardError, ValueError, ZeroDivisionError, etc.),
-#      the self-healing decorator catches it and returns a SafetyResult
-#      with a healed value + audit trail
-#   3. The wrapper converts SafetyResult → dict for API compatibility
-#
-# CRITICAL: The self-healing wrapper is applied to the QOMNKernel CLASS METHODS
-# (not the raw compute_* functions) because the class methods include L3
-# validation + L4 audit logging. If we wrapped the raw functions, the L3/L4
-# pipeline would be bypassed on the healing path.
-# ═══════════════════════════════════════════════════════════════════════════════
-
 import functools
 import logging as _logging
 import os as _os
@@ -1032,9 +919,11 @@ _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Self-Healing machinery (merged into the single QOMNKernel class)
+# ═══════════════════════════════════════════════════════════════════════════════
 # C-01 FIX (Engineering Review): QOMNCalculationError
 # ═══════════════════════════════════════════════════════════════════════════════
-# The engineering review flagged the SelfHealingQOMNKernel fallbacks (battery=72 Ah,
+# The engineering review flagged the healing fallbacks (battery=72 Ah,
 # smoke_spacing=9.1m) as "fail-quiet-to-death" because a healed result is still
 # returned to the caller and may be silently treated as a valid design.
 #
@@ -1055,6 +944,10 @@ _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 #      can never silently accept a healed result as PROOF_VERIFIED.
 #   3. Provide an env override `QOMN_FAIL_LOUD=1` for production safety-critical
 #      deployments that want exceptions instead of fallbacks.
+#
+# V227 (deep-modules): The healing path returns the SAME typed result class the
+# method normally returns (never a dict, never a different type), with the
+# healing fields set — so callers and tests cross one typed seam.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -1063,7 +956,7 @@ class QOMNCalculationError(RuntimeError):
     Raised when a QOMNKernel life-safety calculation fails AND the caller has
     opted into fail-loud mode (`fail_loud=True` or `QOMN_FAIL_LOUD=1` env var).
 
-    In the default fail-safe mode the kernel returns a healed fallback dict
+    In the default fail-safe mode the kernel returns a healed fallback result
     tagged with `safety_tier="FALLBACK_USED"` instead of raising, so that
     downstream safety-tier classification forces FPE review.
     """
@@ -1085,24 +978,31 @@ def _fail_loud_enabled() -> bool:
 
 
 def _healing_wrapper(
-    safe_result: dict[str, Any] | None = None,
+    result_type: type[Any],
+    safe_fields: dict[str, Any] | None = None,
     safe_minimum: float = 0.0,
 ):
     """
     Decorator that wraps a QOMNKernel method with self-healing protection.
 
     If the method raises an exception, the self-healing engine catches it,
-    applies the appropriate tier of healing, and returns a fallback dict.
+    applies the appropriate tier of healing, and returns a fallback of the
+    SAME typed result class (``result_type``) with the healing fields set:
+
+      - ``is_healed=True``
+      - ``healing_tier=1``
+      - ``healing_error`` — the original exception message
+      - ``safety_tier="FALLBACK_USED"``
+      - ``requires_fpe_review=True``
 
     Args:
-        safe_result: Default dict to return on healing (if None, uses safe_minimum
-                     to construct a minimal valid result).
+        result_type: The result dataclass the wrapped method returns; the
+            fallback is constructed from this type (never a dict).
+        safe_fields: Default field values for the fallback result.
         safe_minimum: Float fallback value for numeric fields.
 
-    C-01 FIX: The healed fallback is now tagged with `safety_tier="FALLBACK_USED"`
-    and `requires_fpe_review=True` so downstream safety classification can never
-    silently accept it as a verified design. If `QOMN_FAIL_LOUD=1` is set in the
-    environment, a `QOMNCalculationError` is raised instead (fail-loud mode).
+    If `QOMN_FAIL_LOUD=1` is set in the environment, a `QOMNCalculationError`
+    is raised instead (fail-loud mode).
     """
     def decorator(method):
         @functools.wraps(method)
@@ -1135,27 +1035,30 @@ def _healing_wrapper(
                         error_type=type(exc).__name__
                     )
 
-                # Build safe fallback result
-                if safe_result is not None:
-                    fallback = safe_result.copy()
-                else:
-                    fallback = {
-                        "error": str(exc),
-                        "healed": True,
-                        "safe_minimum": safe_minimum,
-                        "original_exception": type(exc).__name__,
-                    }
+                # Build safe fallback result — SAME typed result class,
+                # never a dict (V227 deep-modules unification).
+                fallback_fields = dict(safe_fields or {})
+                fallback_fields.setdefault("computation_hash", "HEALED")
+                fallback = result_type(
+                    **fallback_fields,
+                    is_healed=True,
+                    healing_tier=1,
+                    healing_error=str(exc),
+                    safety_tier="FALLBACK_USED",
+                    requires_fpe_review=True,
+                    layer3_validated=False,
+                )  # type: ignore[call-arg]
 
                 # Log to audit trail
                 try:
                     before_hash = compute_hash({"args": str(args), "kwargs": str(kwargs)})
-                    after_hash = compute_hash(fallback)
+                    after_hash = compute_hash(fallback.to_dict())
                     global_audit_logger.log_event({
                         "function_name": f"QOMNKernel.{method.__name__}",
                         "error_type": type(exc).__name__,
                         "error_message": str(exc),
                         "tier_used": 1,
-                        "fix_applied": fallback,
+                        "fix_applied": fallback.to_dict(),
                         "verification_result": "HEALED_FALLBACK",
                         "before_hash": before_hash,
                         "after_hash": after_hash,
@@ -1166,26 +1069,15 @@ def _healing_wrapper(
                         "Failed to log healing event: %s", log_err
                     )
 
-                # Add healing metadata to the result
-                fallback["healed"] = True
-                fallback["healing_error"] = str(exc)
-                fallback["healing_tier"] = 1
-                # C-01 FIX: tag the fallback so downstream safety-tier classification
-                # can never silently accept a healed result as PROOF_VERIFIED.
-                # Any healed computation MUST be routed through FALLBACK_USED (Tier 3)
-                # which requires FPE review per fireai.core.safety_assurance.
-                fallback["safety_tier"] = "FALLBACK_USED"
-                fallback["requires_fpe_review"] = True
-                fallback["fail_safe_required"] = True
                 _healing_logger.warning(
-                    "Self-healing activated for %s: %s → fallback returned "
+                    "Self-healing activated for %s: %s → typed fallback returned "
                     "(safety_tier=FALLBACK_USED, requires_fpe_review=True)",
                     method.__name__, type(exc).__name__,
                 )
 
                 # C-01 FIX: optional fail-loud mode for safety-critical deployments.
                 if _fail_loud_enabled():
-                    raise QOMNCalculationError(method.__name__, exc, fallback) from exc
+                    raise QOMNCalculationError(method.__name__, exc, fallback.to_dict()) from exc
 
                 return fallback
 
@@ -1193,83 +1085,160 @@ def _healing_wrapper(
     return decorator
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Self-Healing Protected Kernel
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class SelfHealingQOMNKernel(QOMNKernel):
+class QOMNKernel:
     """
-    QOMNKernel with self-healing protection on all critical methods.
+    Main QOMN-FIRE Deterministic Engineering Kernel.
 
-    V214: This subclass wraps each computation method with the self-healing
-    decorator. If a computation raises (PhysicsGuardError, ValueError, etc.),
-    the healing engine:
-      1. Catches the exception
-      2. Registers with the circuit breaker (accumulates toward threshold)
-      3. Logs to the HMAC-signed audit trail
-      4. Returns a safe fallback dict with healing metadata
+    Orchestrates all five layers in sequence:
+      L0 → L1 → L2 → L3 → L4
 
-    The fallback includes:
-      - "healed": True (so callers know this is not a nominal result)
-      - "healing_error": the original exception message
-      - "healing_tier": 1 (Tier 1 = exception catch + safe fallback)
-      - "safe_minimum": the conservative value used
+    V227 (deep-modules): THE single kernel class. Healing is merged in
+    (the old ``SelfHealingQOMNKernel`` subclass is deleted). When a
+    computation raises, the healing path returns the SAME typed result
+    with ``is_healed=True`` / ``safety_tier="FALLBACK_USED"`` /
+    ``requires_fpe_review=True`` — never a dict, never a different type.
+    Routers, the facade, and the pipeline all cross this ONE seam.
+
+    All computation results are:
+      - Validated against physics and code bounds (L0, L3)
+      - Traceable to published standard (L1)
+      - Bit-exact and deterministic (L2)
+      - Permanently logged (L4)
     """
+
+    def __init__(self) -> None:
+        self.audit = QOMNAuditLog()
 
     @_healing_wrapper(
-        safe_result={
+        result_type=SmokeSpacingResult,
+        safe_fields={
+            "listed_spacing_m": 9.1,
+            "coverage_radius_m": 6.37,
+            "nfpa_section": "NFPA 72-2022 §17.7.3.2.3 (HEALED — flat 9.1m)",
+            "formula": "HEALED: smoke detector spacing could not be computed — flat 9.1m fallback applied",
+            "audit_notice": "HEALED: smoke detector spacing could not be computed — flat 9.1m fallback applied",
+        },
+        safe_minimum=9.1,
+    )
+    def smoke_detector_spacing(self, ceiling_height_m: float) -> SmokeSpacingResult:
+        """Compute smoke detector spacing. Full L0→L1→L2→L3→L4 pipeline."""
+        result = _compute_smoke_detector_spacing(ceiling_height_m)
+        result = _validate_smoke_spacing_result(result)
+        self.audit.record(
+            "smoke_detector_spacing",
+            {"ceiling_height_m": ceiling_height_m},
+            result.nfpa_section,
+            result.to_dict(),
+            layer3_passed=True,
+        )
+        return result
+
+    @_healing_wrapper(
+        result_type=HeatSpacingResult,
+        safe_fields={
+            "spacing_m": 6.1,
+            "coverage_radius_m": 4.27,
+            "nfpa_section": "NFPA 72-2022 §17.6.3.5.1 (HEALED — flat 6.1m)",
+            "formula": "HEALED: heat detector spacing could not be computed — flat 6.1m fallback applied",
+        },
+        safe_minimum=6.1,
+    )
+    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> HeatSpacingResult:
+        """
+        Compute heat detector spacing. Full L0→L4 pipeline.
+
+        V58 FIX (BUG #3): Now includes L3 validation before audit record.
+        Previously skipped validation entirely — no validate_heat_spacing_result
+        function even existed.
+        """
+        result = _compute_heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
+        result = _validate_heat_spacing_result(result)
+        self.audit.record(
+            "heat_detector_spacing",
+            {"ceiling_height_m": ceiling_height_m, "area_m2": area_per_detector_m2},
+            result.nfpa_section,
+            result.to_dict(),
+            layer3_passed=True,
+        )
+        return result
+
+    @_healing_wrapper(
+        result_type=BatteryCapacityResult,
+        safe_fields={
+            "required_ah": 72.0,
+            "formula": "HEALED: battery capacity could not be computed — safe fallback applied",
+            "nfpa_section": "NFPA 72-2022 §10.6.7.2.1 (HEALED)",
+        },
+        safe_minimum=72.0,
+    )
+    def battery_capacity(
+        self,
+        standby_load_a: float,
+        alarm_load_a: float,
+        **kwargs,
+    ) -> BatteryCapacityResult:
+        """Compute battery capacity. Full L0→L4 pipeline."""
+        result = _compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
+        result = _validate_battery_result(result)
+        self.audit.record(
+            "battery_capacity",
+            {"standby_a": standby_load_a, "alarm_a": alarm_load_a},
+            result.nfpa_section,
+            result.to_dict(),
+            layer3_passed=True,
+        )
+        return result
+
+    @_healing_wrapper(
+        result_type=VoltageDropResult,
+        safe_fields={
             "voltage_drop_v": 0.0,
             "drop_pct": 0.0,
             "is_compliant": False,
             "nec_section": "NEC 2023 Chapter 9, Table 8 (HEALED)",
             "formula": "HEALED: voltage drop could not be computed — safe fallback applied",
-            "computation_hash": "HEALED",
         },
         safe_minimum=0.0,
     )
-    def voltage_drop(self, current_a, length_m, awg_gauge,
-                     supply_voltage_v=24.0, max_drop_pct=10.0):
-        return super().voltage_drop(
-            current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct
+    def voltage_drop(
+        self,
+        current_a: float,
+        length_m: float,
+        awg_gauge: str,
+        supply_voltage_v: float = 24.0,
+        max_drop_pct: float = 10.0,
+    ) -> VoltageDropResult:
+        """Compute voltage drop. Full L0→L4 pipeline."""
+        result = _compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
+        result = _validate_voltage_drop_result(result)
+        self.audit.record(
+            "voltage_drop",
+            {"current_a": current_a, "length_m": length_m, "awg": awg_gauge},
+            result.nec_section,
+            result.to_dict(),
+            layer3_passed=True,
         )
+        return result
 
-    @_healing_wrapper(
-        safe_result={
-            "required_ah": 72.0,
-            "formula": "HEALED: battery capacity could not be computed — safe fallback applied",
-            "nfpa_section": "NFPA 72-2022 §10.6.7.2.1 (HEALED)",
-            "computation_hash": "HEALED",
-        },
-        safe_minimum=72.0,
-    )
-    def battery_capacity(self, standby_load_a, alarm_load_a, **kwargs):
-        return super().battery_capacity(standby_load_a, alarm_load_a, **kwargs)
+    def get_audit_log(self) -> dict[str, Any]:
+        """Export full audit log for AHJ review."""
+        return self.audit.export_json()
 
-    @_healing_wrapper(
-        safe_result={
-            "listed_spacing_m": 9.1,
-            "coverage_radius_m": 6.37,
-            "nfpa_table_ref": "NFPA 72-2022 §17.7.3.2.3 (HEALED — flat 9.1m)",
-            "computation_hash": "HEALED",
-            "audit_notice": "HEALED: smoke detector spacing could not be computed — flat 9.1m fallback applied",
-        },
-        safe_minimum=9.1,
-    )
-    def smoke_detector_spacing(self, ceiling_height_m):
-        return super().smoke_detector_spacing(ceiling_height_m)
-
-    @_healing_wrapper(
-        safe_result={
-            "listed_spacing_m": 6.1,
-            "coverage_radius_m": 4.27,
-            "nfpa_table_ref": "NFPA 72-2022 §17.6.3.5.1 (HEALED — flat 6.1m)",
-            "computation_hash": "HEALED",
-        },
-        safe_minimum=6.1,
-    )
-    def heat_detector_spacing(self, ceiling_height_m, area_per_detector_m2):
-        return super().heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
+    def verify_audit_integrity(self) -> bool:
+        """Verify audit log has not been tampered with."""
+        return self.audit.verify_chain_integrity()
 
 
-# Module-level default kernel instance — V214: uses SelfHealingQOMNKernel
-_default_kernel = SelfHealingQOMNKernel()
+# ═══════════════════════════════════════════════════════════════════════════════
+# Backward Compatibility & Public Function Seams
+# ═══════════════════════════════════════════════════════════════════════════════
+compute_smoke_detector_spacing = _compute_smoke_detector_spacing
+compute_heat_detector_spacing = _compute_heat_detector_spacing
+compute_battery_capacity_ah = _compute_battery_capacity_ah
+compute_voltage_drop = _compute_voltage_drop
+validate_smoke_spacing_result = _validate_smoke_spacing_result
+validate_heat_spacing_result = _validate_heat_spacing_result
+validate_battery_result = _validate_battery_result
+validate_voltage_drop_result = _validate_voltage_drop_result
+
+

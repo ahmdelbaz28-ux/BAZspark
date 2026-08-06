@@ -59,26 +59,25 @@ def standard_room():
 class TestQOMNKernelLayer0PhysicsGuards:
     """Layer 0 — Input Sanitization (QOMN §3 Layer 0)."""
 
-    def test_negative_ceiling_rejected(self, kernel):
-        """Negative ceiling height is physically impossible."""
-        from fireai.core.qomn_kernel import PhysicsGuardError
-        # Negative ceiling height is physically impossible (not a code limit)
-        # Error references "Physics" — correct per QOMN Layer 0
-        with pytest.raises(PhysicsGuardError):
-            kernel.smoke_detector_spacing(-1.0)
+    def test_negative_ceiling_heals_to_fallback(self, kernel):
+        """Negative ceiling height is physically impossible → healed fallback."""
+        result = kernel.smoke_detector_spacing(-1.0)
+        assert result.is_healed is True
+        assert result.safety_tier == "FALLBACK_USED"
+        assert result.requires_fpe_review is True
+        assert result.listed_spacing_m == pytest.approx(9.1)
 
-    def test_zero_ceiling_rejected(self, kernel):
-        """Zero ceiling height is physically impossible."""
-        from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):
-            kernel.smoke_detector_spacing(0.0)
+    def test_zero_ceiling_heals_to_fallback(self, kernel):
+        """Zero ceiling height is physically impossible → healed to fallback."""
+        result = kernel.smoke_detector_spacing(0.0)
+        assert result.is_healed is True
+        assert result.safety_tier == "FALLBACK_USED"
 
-    def test_ceiling_above_60ft_rejected(self, kernel):
+    def test_ceiling_above_60ft_heals_to_fallback(self, kernel):
         """Ceiling > 18.288m (60 ft) exceeds NFPA 72 §17.7.3.2.4 scope."""
-        from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError) as exc_info:
-            kernel.smoke_detector_spacing(20.0)
-        assert "18.288" in str(exc_info.value)
+        result = kernel.smoke_detector_spacing(20.0)
+        assert result.is_healed is True
+        assert "18.288" in result.healing_error
 
     def test_efficiency_over_100pct_rejected(self, kernel):
         """Efficiency > 1.0 violates conservation of energy."""
@@ -86,17 +85,17 @@ class TestQOMNKernelLayer0PhysicsGuards:
         with pytest.raises(PhysicsGuardError):
             guard_efficiency(1.01)
 
-    def test_nan_ceiling_rejected(self, kernel):
-        """NaN inputs are caught per IEEE-754-2008 §7."""
-        from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            kernel.smoke_detector_spacing(float("nan"))
+    def test_nan_ceiling_heals_to_fallback(self, kernel):
+        """NaN inputs are caught per IEEE-754-2008 §7 → healed."""
+        result = kernel.smoke_detector_spacing(float("nan"))
+        assert result.is_healed is True
+        assert result.safety_tier == "FALLBACK_USED"
 
-    def test_inf_ceiling_rejected(self, kernel):
-        """Inf inputs are caught per IEEE-754-2008 §7.4."""
-        from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            kernel.smoke_detector_spacing(float("inf"))
+    def test_inf_ceiling_heals_to_fallback(self, kernel):
+        """Inf inputs are caught per IEEE-754-2008 §7.4 → healed."""
+        result = kernel.smoke_detector_spacing(float("inf"))
+        assert result.is_healed is True
+        assert result.safety_tier == "FALLBACK_USED"
 
     def test_negative_area_rejected(self):
         """Negative area is physically impossible."""
@@ -123,34 +122,34 @@ class TestQOMNKernelLayer2Computation:
         fireai/constants/__init__.py:SMOKE_MAX_SPACING_M = 9.10.
         """
         r = kernel.smoke_detector_spacing(3.0)
-        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
-            f"Expected 9.10m per NFPA 72 §17.7.3.2.3.1, got {r['listed_spacing_m']}"
+        assert abs(r.listed_spacing_m - 9.10) < 1e-3, \
+            f"Expected 9.10m per NFPA 72 §17.7.3.2.3.1, got {r.listed_spacing_m}"
 
     def test_smoke_coverage_radius_factor(self, kernel):
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
         r = kernel.smoke_detector_spacing(3.0)
-        S = r["listed_spacing_m"]
-        R = r["coverage_radius_m"]
+        S = r.listed_spacing_m
+        R = r.coverage_radius_m
         assert abs(R - 0.7 * S) < 1e-4, f"R={R} ≠ 0.7×S={0.7*S}"
 
     def test_smoke_spacing_flat_at_all_heights(self, kernel):
         """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low  = kernel.smoke_detector_spacing(3.0)
         r_high = kernel.smoke_detector_spacing(9.0)
-        assert r_low["listed_spacing_m"] == r_high["listed_spacing_m"], \
+        assert r_low.listed_spacing_m == r_high.listed_spacing_m, \
             "V130: Spacing must be flat 9.1m at ALL heights per §17.7.3.2.3"
 
     def test_battery_golden(self, kernel):
         """GOLDEN TEST: Battery formula per NFPA 72 §10.6.7.2.1."""
         r = kernel.battery_capacity(0.5, 3.0)
         expected_ah = ((0.5 * 24.0 + 3.0 * (5.0/60.0)) / 0.80) * 1.25
-        assert abs(r["required_ah"] - expected_ah) < 1e-4, \
-            f"Expected {expected_ah:.4f}Ah, got {r['required_ah']}"
+        assert abs(r.required_ah - expected_ah) < 1e-4, \
+            f"Expected {expected_ah:.4f}Ah, got {r.required_ah}"
 
     def test_battery_installed_gte_required(self, kernel):
         """Installed battery must always ≥ required capacity."""
         r = kernel.battery_capacity(0.5, 3.0)
-        assert r.get("installed_ah", r["required_ah"]) >= r["required_ah"]
+        assert getattr(r, "installed_ah", r.required_ah) >= r.required_ah
 
     def test_voltage_drop_golden(self, kernel):
         """
@@ -167,13 +166,15 @@ class TestQOMNKernelLayer2Computation:
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
         # R_effective = R_20 × temp_correction = 8.470 × (1 + 0.00393×55) = 10.30 Ω/km
         expected = 2.0 * 2.5 * 100 * (8.470 * (1.0 + 0.00393 * 55.0) / 1000.0)
-        assert abs(r["voltage_drop_v"] - expected) < 1e-4, \
-            f"Expected {expected:.4f}V, got {r['voltage_drop_v']}"
+        assert abs(r.voltage_drop_v - expected) < 1e-4, \
+            f"Expected {expected:.4f}V, got {r.voltage_drop_v}"
 
-    def test_voltage_drop_invalid_gauge(self, kernel):
-        """Invalid AWG gauge raises ValueError (not silent)."""
-        with pytest.raises(ValueError):
-            kernel.voltage_drop(2.5, 100, "99", 24.0)
+    def test_voltage_drop_invalid_gauge_heals(self, kernel):
+        """Invalid AWG gauge is healed to a safe fallback (not silent)."""
+        result = kernel.voltage_drop(2.5, 100, "99", 24.0)
+        assert result.is_healed is True
+        assert result.voltage_drop_v == 0.0  # conservative fallback
+        assert result.is_compliant is False  # marked non-compliant
 
     def test_computation_hash_deterministic(self, kernel):
         """Same input → same computation hash on any run."""
@@ -181,7 +182,7 @@ class TestQOMNKernelLayer2Computation:
         k2 = QOMNKernel()
         r1 = kernel.smoke_detector_spacing(3.0)
         r2 = k2.smoke_detector_spacing(3.0)
-        assert r1["computation_hash"] == r2["computation_hash"], \
+        assert r1.computation_hash == r2.computation_hash, \
             "Computation hash must be deterministic (IEEE-754 bit-exact)"
 
 
@@ -191,12 +192,12 @@ class TestQOMNKernelLayer3Validation:
     def test_layer3_validated_flag_set(self, kernel):
         """Layer 3 validated flag must be True after successful computation."""
         r = kernel.battery_capacity(0.5, 3.0)
-        assert r.get("layer3_validated") is True
+        assert r.layer3_validated is True
 
     def test_voltage_drop_layer3_validated(self, kernel):
         """Voltage drop Layer 3 flag."""
         r = kernel.voltage_drop(2.5, 100, "14")
-        assert r.get("layer3_validated") is True
+        assert r.layer3_validated is True
 
 
 class TestQOMNKernelLayer4Audit:
@@ -474,7 +475,7 @@ class TestGoldenOutputs:
         at ALL ceiling heights.
         """
         r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3
+        assert abs(r.listed_spacing_m - 9.10) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
         """
@@ -484,14 +485,14 @@ class TestGoldenOutputs:
         at ALL ceiling heights.
         """
         r = kernel.smoke_detector_spacing(4.572)
-        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
-            f"Expected 9.10m flat per §17.7.3.2.3, got {r['listed_spacing_m']}"
+        assert abs(r.listed_spacing_m - 9.10) < 1e-3, \
+            f"Expected 9.10m flat per §17.7.3.2.3, got {r.listed_spacing_m}"
 
     def test_golden_battery_standard(self, kernel):
         """Battery: 0.5A×24h + 3.0A×5min / 0.80 × 1.25."""
         r = kernel.battery_capacity(0.5, 3.0)
         expected = ((0.5*24 + 3.0*(5/60)) / 0.80) * 1.25
-        assert abs(r["required_ah"] - expected) < 1e-4
+        assert abs(r.required_ah - expected) < 1e-4
 
     def test_golden_vdrop_awg14_100m(self, kernel):
         """
@@ -506,7 +507,7 @@ class TestGoldenOutputs:
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
         # R_effective = R_20 × temp_correction = 8.470 × (1 + 0.00393×55) = 10.30 Ω/km
         expected = 2.0 * 2.5 * 100 * (8.470 * (1.0 + 0.00393 * 55.0) / 1000.0)
-        assert abs(r["voltage_drop_v"] - expected) < 1e-4
+        assert abs(r.voltage_drop_v - expected) < 1e-4
 
     def test_deterministic_across_instances(self):
         """Two independent kernel instances produce identical hashes."""
@@ -514,4 +515,4 @@ class TestGoldenOutputs:
         k1, k2 = QOMNKernel(), QOMNKernel()
         r1 = k1.smoke_detector_spacing(3.5)
         r2 = k2.smoke_detector_spacing(3.5)
-        assert r1["computation_hash"] == r2["computation_hash"]
+        assert r1.computation_hash == r2.computation_hash

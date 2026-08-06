@@ -141,8 +141,8 @@ class TestSmokeDetectorSpacingCompliance:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert result['listed_spacing_m'] == 9.1, (  # NOSONAR — S1244: import retained for re-export / API surface
-            f"Smoke spacing at h=3.0m = {result['listed_spacing_m']}m, "
+        assert result.listed_spacing_m == 9.1, (  # NOSONAR — S1244: import retained for re-export / API surface
+            f"Smoke spacing at h=3.0m = {result.listed_spacing_m}m, "
             f"expected 9.1m per NFPA 72-2022 §17.7.3.2.3."
         )
 
@@ -160,7 +160,7 @@ class TestSmokeDetectorSpacingCompliance:
         # At h=10m (within table range), spacing should come from table
         # WITHOUT additional 1%/ft reduction
         result = compute_smoke_detector_spacing(10.0)
-        spacing = result['listed_spacing_m']
+        spacing = result.listed_spacing_m
 
         # The table value at h<=10.7m is 6.00m
         # If double-reduction bug exists, it would be 6.00 * (1 - 0.01*23.0) ≈ 4.62m
@@ -201,8 +201,8 @@ class TestSmokeDetectorSpacingCompliance:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        S = result['listed_spacing_m']
-        R = result['coverage_radius_m']
+        S = result.listed_spacing_m
+        R = result.coverage_radius_m
 
         assert abs(R - 0.7 * S) < 0.001, (
             f"R = {R}m ≠ 0.7 × S = {0.7 * S}m. NFPA 72 §17.7.4.2.3.1 "
@@ -811,8 +811,8 @@ class TestCoverageRadiusConsistency:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        S = result['listed_spacing_m']
-        R = result['coverage_radius_m']
+        S = result.listed_spacing_m
+        R = result.coverage_radius_m
 
         # R must be 0.7 × S = 0.7 × 9.1 = 6.37
         assert abs(R - 0.7 * S) < 0.01, (
@@ -994,11 +994,11 @@ class TestHighCeilingAuditNotices:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(7.0)
-        assert 'audit_notice' in result, (
+        assert result.audit_notice is not None, (
             "Missing audit_notice at h=7m. Per NFPA 72 §17.7.1.11, spot-type "
             "smoke detection is unreliable above 6.096m (20ft)."
         )
-        assert "stratification" in result['audit_notice'].lower() or "unreliable" in result['audit_notice'].lower(), (
+        assert "stratification" in result.audit_notice.lower() or "unreliable" in result.audit_notice.lower(), (
             "audit_notice must mention stratification or unreliability."
         )
 
@@ -1007,7 +1007,7 @@ class TestHighCeilingAuditNotices:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert 'audit_notice' not in result, (
+        assert result.audit_notice is None, (
             "audit_notice present at h=3.0m (within normal range). "
             "Stratification warning should only appear above 6.096m."
         )
@@ -1030,14 +1030,14 @@ class TestRegressionProtection:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert result['listed_spacing_m'] == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.listed_spacing_m == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_smoke_at_3m_radius_6_37(self):
         """Smoke coverage radius at h=3.0m = 6.37m."""
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert abs(result['coverage_radius_m'] - 6.37) < 0.01
+        assert abs(result.coverage_radius_m - 6.37) < 0.01
 
     def test_heat_at_3m_area_100(self):
         """Heat spacing at h=3.0m with area=100m² = 7.0m."""
@@ -1045,7 +1045,7 @@ class TestRegressionProtection:
 
         result = compute_heat_detector_spacing(3.0, 100.0)
         # S = 0.7 × √100 = 0.7 × 10 = 7.0m
-        assert abs(result['spacing_m'] - 7.0) < 0.01
+        assert abs(result.spacing_m - 7.0) < 0.01
 
     def test_battery_calculation_matches(self):
         """Battery calculation with known inputs produces expected output."""
@@ -1056,7 +1056,7 @@ class TestRegressionProtection:
         # Ah_alarm = 1.5 × (5/60) = 0.125
         # Ah_raw = 12.125
         # Ah_required = (12.125 / 0.80) × 1.25 = 18.9453
-        assert abs(result['required_ah'] - 18.9453) < 0.01
+        assert abs(result.required_ah - 18.9453) < 0.01
 
     def test_voltage_drop_calculation_matches(self):
         """Voltage drop with known inputs produces expected output.
@@ -1082,7 +1082,7 @@ class TestRegressionProtection:
         # R_20 = 8.470 Ω/km at 20°C per NEC 2023 Table 8 (STRANDED copper)
         # R_T = R_20 × [1 + α×(T-20)] = 8.470 × 1.21615 = 10.30 Ω/km at 75°C
         # V_drop = 2 × 1.0 × 100 × (10.30/1000) = 2.060V
-        assert abs(result['voltage_drop_v'] - 2.060) < 0.01
+        assert abs(result.voltage_drop_v - 2.060) < 0.01
 
 
 # ============================================================================

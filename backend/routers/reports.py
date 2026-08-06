@@ -114,9 +114,9 @@ def _compute_voltage_drop_for_circuit(
                 "skipped",
             )
 
-        from fireai.core.qomn_kernel import compute_voltage_drop
+        from fireai.core.qomn_kernel import QOMNKernel
 
-        result = compute_voltage_drop(
+        result = QOMNKernel().voltage_drop(
             current_a=current_a,
             length_m=length_m,
             awg_gauge=awg,
@@ -126,16 +126,16 @@ def _compute_voltage_drop_for_circuit(
         return (
             {
                 "awg_gauge": awg,
-                "voltage_drop_v": result["voltage_drop_v"],
-                "drop_pct": result["drop_pct"],
-                "is_compliant": result["is_compliant"],
-                "max_length_m": result["max_length_m"],
-                "nec_section": result["nec_section"],
-                "formula": result["formula"],
-                "computation_hash": result["computation_hash"],
+                "voltage_drop_v": result.voltage_drop_v,
+                "drop_pct": result.drop_pct,
+                "is_compliant": result.is_compliant,
+                "max_length_m": result.max_length_m,
+                "nec_section": result.nec_section,
+                "formula": result.formula,
+                "computation_hash": result.computation_hash,
                 "calculation": "computed",
             },
-            "computed" if result["is_compliant"] else "non_compliant",
+            "computed" if result.is_compliant else "non_compliant",
         )
     except Exception as calc_err:
         # compute_voltage_drop may raise PhysicsGuardError or
@@ -173,7 +173,7 @@ def _generate_voltage_drop_report(devices: list, connections: list, now: str) ->
     # Lazy import so the reports module still loads if qomn_kernel has a
     # heavy dependency that is unavailable in some environments.
     try:
-        from fireai.core.qomn_kernel import compute_voltage_drop  # noqa: F401
+        from fireai.core.qomn_kernel import QOMNKernel  # noqa: F401
 
         qomn_available = True
     except ImportError as ie:

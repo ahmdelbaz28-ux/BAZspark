@@ -53,29 +53,29 @@ class TestV130FlatSpacing:
     def test_flat_spacing_at_various_heights(self, height):
         """Spacing must be 9.1m at ALL heights — flat per §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(height)
-        assert r["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3), (
+        assert r.listed_spacing_m == pytest.approx(9.10, abs=1e-3), (
             f"At h={height}m, expected S=9.1m (flat per §17.7.3.2.3), "
-            f"got S={r['listed_spacing_m']}m"
+            f"got S={r.listed_spacing_m}m"
         )
 
     def test_coverage_radius(self):
         """Coverage radius = 0.7 × spacing per NFPA 72 §17.7.4.2.3.1."""
         for h in (3.0, 4.0, 5.0, 6.0, 9.0, 15.0):
             r = compute_smoke_detector_spacing(h)
-            assert r["coverage_radius_m"] == pytest.approx(
-                0.7 * r["listed_spacing_m"], rel=1e-4
+            assert r.coverage_radius_m == pytest.approx(
+                0.7 * r.listed_spacing_m, rel=1e-4
             )
 
     def test_nfpa_section_in_result(self):
         """The nfpa_section key must cite §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(3.0)
-        assert "NFPA 72" in r["nfpa_section"]
-        assert "17.7.3.2.3" in r["nfpa_section"]
+        assert "NFPA 72" in r.nfpa_section
+        assert "17.7.3.2.3" in r.nfpa_section
 
     def test_computation_hash_present(self):
         """Audit hash still computed."""
         r = compute_smoke_detector_spacing(3.0)
-        assert len(r["computation_hash"]) > 0
+        assert len(r.computation_hash) > 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -94,7 +94,7 @@ class TestV130AuditNotice:
         """
         for h in (1.0, 3.0, 4.0, 5.0, 6.0, 6.096):
             r = compute_smoke_detector_spacing(h)
-            assert "audit_notice" not in r, (
+            assert r.audit_notice is None, (
                 f"V120 Phase A regression: h={h}m unexpectedly carries "
                 f"audit_notice. This breaks dict-shape backward compat."
             )
@@ -103,16 +103,16 @@ class TestV130AuditNotice:
         """H > 6.096 m: dict MUST include audit_notice key."""
         for h in (6.1, 7.0, 9.0, 12.0, 15.0, 18.0):
             r = compute_smoke_detector_spacing(h)
-            assert "audit_notice" in r, (
+            assert r.audit_notice is not None, (
                 f"V120 Phase A failed: h={h}m missing audit_notice"
             )
-            assert isinstance(r["audit_notice"], str)
-            assert len(r["audit_notice"]) > 0
+            assert isinstance(r.audit_notice, str)
+            assert len(r.audit_notice) > 0
 
     def test_audit_notice_cites_stratification(self):
         """The notice must cite NFPA 72 §17.7.1.11 (stratification)."""
         r = compute_smoke_detector_spacing(10.0)
-        assert "17.7.1.11" in r["audit_notice"]  # NOSONAR - python:S1313
+        assert "17.7.1.11" in r.audit_notice  # NOSONAR - python:S1313
 
     def test_audit_notice_offers_alternatives(self):
         """
@@ -120,7 +120,7 @@ class TestV130AuditNotice:
         OR performance-based design — never leaving them without guidance.
         """
         r = compute_smoke_detector_spacing(10.0)
-        notice = r["audit_notice"].lower()
+        notice = r.audit_notice.lower()
         assert "beam" in notice
         assert "aspirating" in notice or "air-sampling" in notice
         assert "performance-based" in notice or "annex b" in notice
@@ -128,12 +128,12 @@ class TestV130AuditNotice:
     def test_audit_notice_references_v130_correction(self):
         """V130: The notice must reference the V130 correction (flat spacing)."""
         r = compute_smoke_detector_spacing(10.0)
-        assert "V130" in r["audit_notice"]
+        assert "V130" in r.audit_notice
 
     def test_audit_notice_confirms_flat_spacing(self):
         """V130: The notice must confirm 9.1m flat spacing per §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(10.0)
-        notice = r["audit_notice"]
+        notice = r.audit_notice
         assert "9.1m" in notice
         assert "17.7.3.2.3" in notice
 
@@ -144,8 +144,8 @@ class TestV130AuditNotice:
         """
         r_at = compute_smoke_detector_spacing(6.096)
         r_above = compute_smoke_detector_spacing(6.097)
-        assert "audit_notice" not in r_at
-        assert "audit_notice" in r_above
+        assert r_at.audit_notice is None
+        assert r_above.audit_notice is not None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -194,8 +194,8 @@ class TestV130WarningLog:
 
         try:
             r = compute_smoke_detector_spacing(10.0)
-            assert r["listed_spacing_m"] > 0
-            assert "audit_notice" in r
+            assert r.listed_spacing_m > 0
+            assert r.audit_notice is not None
         finally:
             monkeypatch.setattr(_real_logging, "getLogger", original_get_logger)
 

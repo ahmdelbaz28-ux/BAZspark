@@ -75,6 +75,13 @@ from fireai.core.qomn_kernel import (
     validate_voltage_drop_result,
 )
 
+from fireai.core.results import (
+    BatteryCapacityResult,
+    HeatSpacingResult,
+    SmokeSpacingResult,
+    VoltageDropResult,
+)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 0 — Physics Guard Tests
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -481,45 +488,45 @@ class TestComputeSmokeDetectorSpacing:
     def test_low_ceiling(self):
         """H ≤ 3.0m → S = 9.1m, R = 0.7 × 9.1 = 6.37m."""
         result = compute_smoke_detector_spacing(3.0)
-        assert result["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
-        assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.1, rel=0.01)
+        assert result.listed_spacing_m == pytest.approx(9.1, rel=0.01)
+        assert result.coverage_radius_m == pytest.approx(0.7 * 9.1, rel=0.01)
 
     # The V121 flat-only override was removed in favor of the canonical
     # height-adjusted spacing table from fireai/constants/__init__.py.
     def test_medium_ceiling(self):
         """V130 FIX: h=4.0m → FLAT 9.1m spacing per §17.7.3.2.3."""
         result = compute_smoke_detector_spacing(4.0)
-        assert result["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
+        assert result.listed_spacing_m == pytest.approx(9.10, abs=1e-3)
 
     def test_high_ceiling_flat_spacing(self):
         """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low = compute_smoke_detector_spacing(3.0)
         r_high = compute_smoke_detector_spacing(6.0)
-        assert r_high["listed_spacing_m"] == r_low["listed_spacing_m"]  # Both 9.1m
+        assert r_high.listed_spacing_m == r_low.listed_spacing_m  # Both 9.1m
 
     def test_coverage_radius_is_07_times_spacing(self):
         """NFPA 72 §17.7.4.2.3.1: R = 0.7 × S."""
         result = compute_smoke_detector_spacing(3.0)
-        assert result["coverage_radius_m"] == pytest.approx(
-            0.7 * result["listed_spacing_m"], rel=1e-4
+        assert result.coverage_radius_m == pytest.approx(
+            0.7 * result.listed_spacing_m, rel=1e-4
         )
 
     def test_nfpa_section_present(self):
         result = compute_smoke_detector_spacing(3.0)
-        assert "NFPA 72" in result["nfpa_section"]
+        assert "NFPA 72" in result.nfpa_section
 
     def test_computation_hash_present(self):
         result = compute_smoke_detector_spacing(3.0)
-        assert len(result["computation_hash"]) > 0
+        assert len(result.computation_hash) > 0
 
     def test_wall_distances(self):
         """Wall min = 0.1016m (4in dead air), Wall max = 0.5 × S per §17.6.3.1.1."""
         result = compute_smoke_detector_spacing(3.0)
         # wall_min_m: dead air space minimum (4 inches = 0.1016m)
-        assert result["wall_min_m"] == pytest.approx(0.1016, rel=1e-3)
+        assert result.wall_min_m == pytest.approx(0.1016, rel=1e-3)
         # wall_max_m: maximum wall distance = S/2 per §17.6.3.1.1
-        assert result["wall_max_m"] == pytest.approx(
-            0.5 * result["listed_spacing_m"], rel=1e-4
+        assert result.wall_max_m == pytest.approx(
+            0.5 * result.listed_spacing_m, rel=1e-4
         )
 
     def test_invalid_ceiling_height_raises(self):
@@ -538,13 +545,13 @@ class TestComputeHeatDetectorSpacing:
         """S = 0.7 × √A = 7.0m, within absolute max 15.24m (50ft)."""
         result = compute_heat_detector_spacing(3.0, 100.0)
         # 0.7 × √100 = 7.0m — within absolute max 15.24m
-        assert result["spacing_m"] == pytest.approx(7.0, rel=0.01)
+        assert result.spacing_m == pytest.approx(7.0, rel=0.01)
 
     def test_very_small_area_uncapped(self):
         """Small area where S = 0.7 × √A < 15.24m — no cap applied."""
         result = compute_heat_detector_spacing(3.0, 50.0)
         expected_s = 0.7 * math.sqrt(50.0)  # ≈4.95m — well below 15.24m cap
-        assert result["spacing_m"] == pytest.approx(expected_s, rel=0.01)
+        assert result.spacing_m == pytest.approx(expected_s, rel=0.01)
 
     def test_large_area_capped(self):
         """Very large area (>232.26 m²) rejected by PhysicsGuard."""
@@ -553,13 +560,13 @@ class TestComputeHeatDetectorSpacing:
 
     def test_coverage_radius(self):
         result = compute_heat_detector_spacing(3.0, 100.0)
-        assert result["coverage_radius_m"] == pytest.approx(
-            0.7 * result["spacing_m"], rel=1e-4
+        assert result.coverage_radius_m == pytest.approx(
+            0.7 * result.spacing_m, rel=1e-4
         )
 
     def test_is_within_max(self):
         result = compute_heat_detector_spacing(3.0, 50.0)
-        assert result["is_within_max"] is True
+        assert result.is_within_max is True
 
     def test_zero_area_rejected(self):
         with pytest.raises(PhysicsGuardError, match="> 0"):
@@ -584,21 +591,21 @@ class TestComputeBatteryCapacityAh:
         ah_alarm = 2.0 * (5.0 / 60.0)
         ah_raw = ah_standby + ah_alarm
         ah_required = (ah_raw / 0.80) * 1.25
-        assert result["required_ah"] == pytest.approx(ah_required, rel=0.01)
+        assert result.required_ah == pytest.approx(ah_required, rel=0.01)
 
     def test_standby_component(self):
         result = compute_battery_capacity_ah(1.0, 0.0)
-        assert result["ah_standby"] == pytest.approx(24.0)
+        assert result.ah_standby == pytest.approx(24.0)
 
     def test_alarm_component(self):
         result = compute_battery_capacity_ah(0.0, 1.0)
         expected_alarm = 1.0 * (5.0 / 60.0)
-        assert result["ah_alarm"] == pytest.approx(expected_alarm, rel=1e-4)
+        assert result.ah_alarm == pytest.approx(expected_alarm, rel=1e-4)
 
     def test_zero_currents(self):
         """Zero load → zero Ah (valid for pure standby-only check)."""
         result = compute_battery_capacity_ah(0.0, 0.0)
-        assert result["required_ah"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.required_ah == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_standby_rejected(self):
         with pytest.raises(PhysicsGuardError, match="negative"):
@@ -618,11 +625,11 @@ class TestComputeBatteryCapacityAh:
 
     def test_nfpa_section_present(self):
         result = compute_battery_capacity_ah(1.0, 2.0)
-        assert "NFPA 72" in result["nfpa_section"]
+        assert "NFPA 72" in result.nfpa_section
 
     def test_computation_hash_present(self):
         result = compute_battery_capacity_ah(1.0, 2.0)
-        assert len(result["computation_hash"]) > 0
+        assert len(result.computation_hash) > 0
 
 
 class TestComputeVoltageDrop:
@@ -640,7 +647,7 @@ class TestComputeVoltageDrop:
         temp_correction = 1.0 + 0.00393 * (75.0 - 20.0)  # 1.2163
         r_per_m = r_20_per_m * temp_correction
         expected = 2.0 * 1.0 * 100.0 * r_per_m
-        assert result["voltage_drop_v"] == pytest.approx(expected, rel=0.01)
+        assert result.voltage_drop_v == pytest.approx(expected, rel=0.01)
 
     def test_return_factor_of_two(self):
         """SAFETY: Factor of 2 for DC round-trip (supply + return)."""
@@ -650,25 +657,25 @@ class TestComputeVoltageDrop:
         r_per_m = r_20_per_m * temp_correction
         # Without ×2 factor would be:
         single = 1.0 * 100.0 * r_per_m
-        assert result["voltage_drop_v"] == pytest.approx(2.0 * single, rel=0.01)
+        assert result.voltage_drop_v == pytest.approx(2.0 * single, rel=0.01)
 
     def test_compliant_short_circuit(self):
         result = compute_voltage_drop(0.1, 10.0, "14")
-        assert result["is_compliant"] is True
-        assert result["drop_pct"] <= 10.0
+        assert result.is_compliant is True
+        assert result.drop_pct <= 10.0
 
     def test_non_compliant_long_circuit(self):
         result = compute_voltage_drop(2.0, 500.0, "18")
-        assert result["is_compliant"] is False
+        assert result.is_compliant is False
 
     def test_max_length_calculation(self):
         result = compute_voltage_drop(1.0, 100.0, "14")
-        assert result["max_length_m"] > 0
+        assert result.max_length_m > 0
 
     def test_zero_current_max_length(self):
         """Zero current → max_length is 0.0 (avoid div by zero)."""
         result = compute_voltage_drop(0.0, 100.0, "14")
-        assert result["max_length_m"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.max_length_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_current_rejected(self):
         with pytest.raises(PhysicsGuardError, match="negative"):
@@ -689,11 +696,11 @@ class TestComputeVoltageDrop:
     def test_gauge_stripping(self):
         """'AWG14' or ' awg 14 ' should resolve to '14'."""
         result = compute_voltage_drop(1.0, 100.0, "AWG14")
-        assert result["awg_gauge"] == "14"
+        assert result.awg_gauge == "14"
 
     def test_nec_section_present(self):
         result = compute_voltage_drop(1.0, 100.0, "14")
-        assert "NEC" in result["nec_section"]
+        assert "NEC" in result.nec_section
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -705,25 +712,25 @@ class TestValidateSmokeSpacingResult:
     def test_valid_result_passes(self):
         result = compute_smoke_detector_spacing(3.0)
         validated = validate_smoke_spacing_result(result)
-        assert validated["layer3_validated"] is True
+        assert validated.layer3_validated is True
 
     def test_non_finite_rejected(self):
-        result = {"listed_spacing_m": float("nan"), "coverage_radius_m": 6.4}
+        result = SmokeSpacingResult(listed_spacing_m=float("nan"), coverage_radius_m=6.4)
         with pytest.raises(ComputationError, match="NaN"):
             validate_smoke_spacing_result(result)
 
     def test_zero_spacing_rejected(self):
-        result = {"listed_spacing_m": 0.0, "coverage_radius_m": 0.0}
+        result = SmokeSpacingResult(listed_spacing_m=0.0, coverage_radius_m=0.0)
         with pytest.raises(ValidationError, match="≤ 0"):
             validate_smoke_spacing_result(result)
 
     def test_exceeds_max_rejected(self):
-        result = {"listed_spacing_m": 15.0, "coverage_radius_m": 10.5}
+        result = SmokeSpacingResult(listed_spacing_m=15.0, coverage_radius_m=10.5)
         with pytest.raises(ValidationError, match="NFPA 72 max"):
             validate_smoke_spacing_result(result)
 
     def test_radius_mismatch_rejected(self):
-        result = {"listed_spacing_m": 9.0, "coverage_radius_m": 5.0}
+        result = SmokeSpacingResult(listed_spacing_m=9.0, coverage_radius_m=5.0)
         with pytest.raises(ValidationError, match="0.7"):
             validate_smoke_spacing_result(result)
 
@@ -734,15 +741,15 @@ class TestValidateHeatSpacingResult:
     def test_valid_result_passes(self):
         result = compute_heat_detector_spacing(3.0, 100.0)
         validated = validate_heat_spacing_result(result)
-        assert validated["layer3_validated"] is True
+        assert validated.layer3_validated is True
 
     def test_nan_rejected(self):
-        result = {"spacing_m": float("nan"), "coverage_radius_m": 5.0}
+        result = HeatSpacingResult(spacing_m=float("nan"), coverage_radius_m=5.0)
         with pytest.raises(ComputationError, match="NaN"):
             validate_heat_spacing_result(result)
 
     def test_exceeds_max_rejected(self):
-        result = {"spacing_m": 20.0, "coverage_radius_m": 14.0}
+        result = HeatSpacingResult(spacing_m=20.0, coverage_radius_m=14.0)
         with pytest.raises(ValidationError, match="absolute max"):
             validate_heat_spacing_result(result)
 
@@ -751,20 +758,20 @@ class TestValidateBatteryResult:
     def test_valid_result_passes(self):
         result = compute_battery_capacity_ah(1.0, 2.0)
         validated = validate_battery_result(result)
-        assert validated["layer3_validated"] is True
+        assert validated.layer3_validated is True
 
     def test_zero_ah_rejected(self):
-        result = {"required_ah": 0.0, "ah_raw": 0.0}
+        result = BatteryCapacityResult(required_ah=0.0, ah_raw=0.0)
         with pytest.raises(ComputationError, match="non-physical"):
             validate_battery_result(result)
 
     def test_negative_ah_rejected(self):
-        result = {"required_ah": -1.0, "ah_raw": 1.0}
+        result = BatteryCapacityResult(required_ah=-1.0, ah_raw=1.0)
         with pytest.raises(ComputationError, match="non-physical"):
             validate_battery_result(result)
 
     def test_ah_less_than_raw_rejected(self):
-        result = {"required_ah": 0.1, "ah_raw": 100.0}
+        result = BatteryCapacityResult(required_ah=0.1, ah_raw=100.0)
         with pytest.raises(ValidationError, match="computation error"):
             validate_battery_result(result)
 
@@ -773,15 +780,15 @@ class TestValidateVoltageDropResult:
     def test_valid_result_passes(self):
         result = compute_voltage_drop(1.0, 100.0, "14")
         validated = validate_voltage_drop_result(result)
-        assert validated["layer3_validated"] is True
+        assert validated.layer3_validated is True
 
     def test_negative_drop_rejected(self):
-        result = {"voltage_drop_v": -1.0, "supply_voltage_v": 24.0}
+        result = VoltageDropResult(voltage_drop_v=-1.0, supply_voltage_v=24.0)
         with pytest.raises(ComputationError, match="non-physical"):
             validate_voltage_drop_result(result)
 
     def test_drop_exceeds_supply(self):
-        result = {"voltage_drop_v": 25.0, "supply_voltage_v": 24.0}
+        result = VoltageDropResult(voltage_drop_v=25.0, supply_voltage_v=24.0)
         with pytest.raises(ValidationError, match="no current would flow"):
             validate_voltage_drop_result(result)
 
@@ -884,26 +891,26 @@ class TestQOMNKernel:
     def test_smoke_detector_spacing(self):
         kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(3.0)
-        assert result["listed_spacing_m"] > 0
-        assert result["layer3_validated"] is True
+        assert result.listed_spacing_m > 0
+        assert result.layer3_validated is True
 
     def test_heat_detector_spacing(self):
         kernel = QOMNKernel()
         result = kernel.heat_detector_spacing(3.0, 100.0)
-        assert result["spacing_m"] > 0
-        assert result["layer3_validated"] is True
+        assert result.spacing_m > 0
+        assert result.layer3_validated is True
 
     def test_battery_capacity(self):
         kernel = QOMNKernel()
         result = kernel.battery_capacity(1.0, 2.0)
-        assert result["required_ah"] > 0
-        assert result["layer3_validated"] is True
+        assert result.required_ah > 0
+        assert result.layer3_validated is True
 
     def test_voltage_drop(self):
         kernel = QOMNKernel()
         result = kernel.voltage_drop(1.0, 100.0, "14")
-        assert result["voltage_drop_v"] > 0
-        assert result["layer3_validated"] is True
+        assert result.voltage_drop_v > 0
+        assert result.layer3_validated is True
 
     def test_audit_log_recorded(self):
         """V58 FIX (BUG #5): audit should record layer3_passed=True."""
@@ -928,10 +935,25 @@ class TestQOMNKernel:
         audit = kernel.get_audit_log()
         assert audit["total_entries"] == 4
 
-    def test_invalid_input_propagates(self):
-        """Invalid input raises PhysicsGuardError, not silent wrong answer."""
+    def test_invalid_input_heals_to_safe_fallback(self):
+        """Invalid input no longer raises — the unified kernel heals it into a
+        typed safe fallback (never a silent wrong answer)."""
         kernel = QOMNKernel()
-        with pytest.raises(PhysicsGuardError):
+        result = kernel.smoke_detector_spacing(25.0)  # > 18.288m
+        assert result.is_healed is True
+        assert result.healing_tier == 1
+        assert result.safety_tier == "FALLBACK_USED"
+        assert result.requires_fpe_review is True
+        assert result.listed_spacing_m == pytest.approx(9.1)  # safe fallback
+
+    def test_invalid_input_propagates_in_fail_loud_mode(self, monkeypatch):
+        """With QOMN_FAIL_LOUD=1, invalid input raises QOMNCalculationError
+        instead of healing — the fail-loud branch of the healing wrapper."""
+        from fireai.core.qomn_kernel import QOMNCalculationError
+
+        monkeypatch.setenv("QOMN_FAIL_LOUD", "1")
+        kernel = QOMNKernel()
+        with pytest.raises(QOMNCalculationError):
             kernel.smoke_detector_spacing(25.0)  # > 18.288m
 
 
@@ -947,11 +969,11 @@ class TestIntegrationScenarios:
         """Typical office: 3m ceiling, 100m² area."""
         kernel = QOMNKernel()
         smoke = kernel.smoke_detector_spacing(3.0)
-        assert smoke["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
+        assert smoke.listed_spacing_m == pytest.approx(9.1, rel=0.01)
         # Verify spacing and radius are reasonable for office use
-        assert smoke["coverage_radius_m"] > 5.0  # R ≈ 6.4m for 3m ceiling
+        assert smoke.coverage_radius_m > 5.0  # R ≈ 6.4m for 3m ceiling
         # Verify at least 1 detector needed for 100m²
-        coverage_area = smoke["coverage_radius_m"] ** 2 * math.pi
+        coverage_area = smoke.coverage_radius_m ** 2 * math.pi
         n_detectors = math.ceil(100.0 / coverage_area)
         assert n_detectors >= 1
 
@@ -961,15 +983,15 @@ class TestIntegrationScenarios:
         result = kernel.battery_capacity(2.0, 4.0)
         # Raw: 2×24 + 4×(5/60) = 48.333 Ah raw
         # Required: (48.333 / 0.80) × 1.25 = 75.52 Ah
-        assert result["required_ah"] > 70.0
+        assert result.required_ah > 70.0
 
     def test_long_nac_voltage_drop(self):
         """Long NAC: 2A, 300m, AWG14 — likely non-compliant."""
         kernel = QOMNKernel()
         result = kernel.voltage_drop(2.0, 300.0, "14")
         # V_drop = 2 × 2 × 300 × 0.00819 = 9.828V → 40.95% → non-compliant
-        assert result["drop_pct"] > 10.0
-        assert result["is_compliant"] is False
+        assert result.drop_pct > 10.0
+        assert result.is_compliant is False
 
     def test_full_office_project(self):
         """Complete project: smoke + battery + voltage drop + audit."""

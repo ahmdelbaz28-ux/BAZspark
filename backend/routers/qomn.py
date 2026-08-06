@@ -692,23 +692,21 @@ async def run_golden_tests(request: Request):
     Returns pass/fail for each golden test case.
     """
     try:
-        from fireai.core.qomn_kernel import (
-            compute_battery_capacity_ah,
-            compute_heat_detector_spacing,
-            compute_smoke_detector_spacing,
-            compute_voltage_drop,
-        )
+        from fireai.core.qomn_kernel import QOMNKernel
     except ImportError:
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
-                "detail": "The QOMN-FIRE engineering kernel functions are not available.",
+                "detail": "The QOMN-FIRE engineering kernel is not available.",
                 "missing_module": "fireai.core.qomn_kernel",
                 "action": "Install the fireai package. Check server logs for details.",
             },
         )
 
+    # Golden tests cross the AUDITED kernel seam (L0→L4), not the raw computes.
+    # This guarantees the self-check exercises the same path production uses.
+    kernel = QOMNKernel()
     results = []
     all_pass = True
 
@@ -728,36 +726,36 @@ async def run_golden_tests(request: Request):
 
     # Golden Test 1: V130 — Smoke spacing at h=3.048m (10 ft) → 9.10m flat
     # Per NFPA 72-2022 §17.7.3.2.3 (verbatim): "9.1 m" (NOT 9.144m conversion).
-    r1 = compute_smoke_detector_spacing(3.048)
+    r1 = kernel.smoke_detector_spacing(3.048)
     _test(
         "NFPA72_smoke_h10ft",
-        r1["listed_spacing_m"], 9.10, 0.001,
+        r1.listed_spacing_m, 9.10, 0.001,
         "NFPA 72-2022 §17.7.3.2.3 (flat 9.1m, NO height reduction)"
     )
 
     # Golden Test 2: Coverage radius = 0.7 × 9.10 = 6.37
     _test(
         "NFPA72_coverage_radius_factor",
-        r1["coverage_radius_m"], 0.7 * 9.10, 1e-9,
+        r1.coverage_radius_m, 0.7 * 9.10, 1e-9,
         "NFPA 72-2022 §17.7.4.2.3.1"
     )
 
     # Golden Test 3: Heat spacing S = 0.7 × √A for A = 50 m²
-    r3 = compute_heat_detector_spacing(3.0, 50.0)
+    r3 = kernel.heat_detector_spacing(3.0, 50.0)
     expected_heat = min(0.7 * (50.0 ** 0.5), 15.24)
     _test(
         "NFPA72_heat_spacing_50m2",
-        r3["spacing_m"], expected_heat, 1e-6,
+        r3.spacing_m, expected_heat, 1e-6,
         "NFPA 72-2022 §17.6.3.1"
     )
 
     # Golden Test 4: Battery — 0.5A standby 24h + 3.0A alarm 5min → check formula
     # V130: tolerance relaxed to 1e-2 to handle round() in kernel output.
-    r4 = compute_battery_capacity_ah(0.5, 3.0)
+    r4 = kernel.battery_capacity(0.5, 3.0)
     ah_manual = ((0.5 * 24 + 3.0 * (5/60)) / 0.80) * 1.25
     _test(
         "NFPA72_battery_capacity",
-        r4["required_ah"], ah_manual, 1e-2,
+        r4.required_ah, ah_manual, 1e-2,
         "NFPA 72-2022 §10.6.7.2.1"
     )
 
@@ -770,14 +768,14 @@ async def run_golden_tests(request: Request):
     # R_eff = 8.470 × (1 + 0.00393 × 55) = 8.470 × 1.21615 = 10.30 ohm/km
     # V_drop = 2 × 2.5 × 100 × (10.30/1000) = 5.150V
     from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as _NEC_TABLE8
-    r5 = compute_voltage_drop(2.5, 100, "14", 24.0)
+    r5 = kernel.voltage_drop(2.5, 100, "14", 24.0)
     r_20 = _NEC_TABLE8["14"]  # 8.470 Ω/km — canonical STRANDED @ 20°C
     alpha = 0.00393
     r_eff = r_20 * (1.0 + alpha * (75.0 - 20.0))  # = 10.30 Ω/km at 75°C
     expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)  # = 5.150V
     _test(
         "NEC_voltage_drop_AWG14_100m",
-        r5["voltage_drop_v"], expected_vd, 1e-3,
+        r5.voltage_drop_v, expected_vd, 1e-3,
         "NEC 2023 Chapter 9, Table 8 (STRANDED @ 20°C + 75°C correction)"
     )
 

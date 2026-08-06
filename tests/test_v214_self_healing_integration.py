@@ -25,7 +25,7 @@ os.environ.setdefault("QOMN_AUDIT_SECRET_KEY", "test_secret_key_for_v214_tests_3
 # Overriding it breaks the old test's file existence check.
 # The fixture below truncates the file between tests for isolation.
 
-from fireai.core.qomn_kernel import SelfHealingQOMNKernel
+from fireai.core.qomn_kernel import QOMNKernel
 
 
 @pytest.fixture(autouse=True)
@@ -78,27 +78,24 @@ class TestV214SelfHealingNormalOperation:
 
     def test_voltage_drop_normal(self):
         """Normal voltage drop computation should work without healing."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.voltage_drop(2.0, 30.0, "14", 24.0, 10.0)
-        assert "voltage_drop_v" in result
-        assert "healed" not in result or result.get("healed") is False
+        assert result.is_healed is False
         # V_drop = 2 × 2.0 × 30 × R_per_m for AWG 14
-        assert result["voltage_drop_v"] > 0
+        assert result.voltage_drop_v > 0
 
     def test_battery_capacity_normal(self):
         """Normal battery capacity computation should work without healing."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.battery_capacity(0.5, 3.0)
-        assert "required_ah" in result
-        assert "healed" not in result or result.get("healed") is False
-        assert result["required_ah"] > 0
+        assert result.is_healed is False
+        assert result.required_ah > 0
 
     def test_smoke_detector_spacing_normal(self):
         """Normal smoke detector spacing should work without healing."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(3.0)
-        assert "listed_spacing_m" in result
-        assert result["listed_spacing_m"] == 9.1  # NFPA 72 flat spacing  # NOSONAR: S1244 — float comparison in test
+        assert result.listed_spacing_m == 9.1  # NFPA 72 flat spacing  # NOSONAR: S1244 — float comparison in test
 
 
 class TestV214SelfHealingErrorRecovery:
@@ -106,46 +103,46 @@ class TestV214SelfHealingErrorRecovery:
 
     def test_voltage_drop_negative_current_heals(self):
         """Negative current should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
-        assert result.get("healed") is True
-        assert "healing_error" in result
-        assert result.get("healing_tier") == 1
-        assert result["voltage_drop_v"] == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
+        assert result.is_healed is True
+        assert result.healing_error is not None
+        assert result.healing_tier == 1
+        assert result.voltage_drop_v == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
 
     def test_voltage_drop_zero_length_heals(self):
         """Zero length should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.voltage_drop(2.0, 0.0, "14", 24.0, 10.0)
-        assert result.get("healed") is True
+        assert result.is_healed is True
 
     def test_voltage_drop_invalid_awg_heals(self):
         """Invalid AWG gauge should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.voltage_drop(2.0, 30.0, "INVALID_GAUGE", 24.0, 10.0)
-        assert result.get("healed") is True
-        assert "healing_error" in result
+        assert result.is_healed is True
+        assert result.healing_error is not None
 
     def test_battery_capacity_negative_load_heals(self):
         """Negative load should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
-        assert result.get("healed") is True
-        # Fallback is 72.0 Ah per @_healing_wrapper on SelfHealingQOMNKernel.battery_capacity
-        assert result["required_ah"] == 72.0  # NOSONAR: S1244 — float comparison in test
+        assert result.is_healed is True
+        # Fallback is 72.0 Ah per @_healing_wrapper on QOMNKernel.battery_capacity
+        assert result.required_ah == 72.0  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_zero_height_heals(self):
         """Zero ceiling height should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
-        assert result.get("healed") is True
-        assert result["listed_spacing_m"] == 9.1  # safe fallback (NFPA 72 flat)  # NOSONAR: S1244 — float comparison in test
+        assert result.is_healed is True
+        assert result.listed_spacing_m == 9.1  # safe fallback (NFPA 72 flat)  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_negative_height_heals(self):
         """Negative ceiling height should trigger healing, not crash."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(-5.0)
-        assert result.get("healed") is True
+        assert result.is_healed is True
 
 
 class TestV214SelfHealingAuditTrail:
@@ -155,7 +152,7 @@ class TestV214SelfHealingAuditTrail:
         """When healing activates, an audit event should be logged."""
         from fireai.core.qomn_self_healing_engine import global_audit_logger
 
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         # Trigger a healing event
         kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
 
@@ -169,7 +166,7 @@ class TestV214SelfHealingAuditTrail:
 
         global_circuit_breaker.reset()
 
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
 
         health = global_circuit_breaker.health()
@@ -190,12 +187,12 @@ class TestV214SelfHealingCircuitBreaker:
 
         global_circuit_breaker.reset()
 
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
 
         # Generate many errors to trip the breaker
         for _ in range(15):  # V216 FIX (S1481): unused loop index
             result = kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
-            if result.get("healing_tier") == 3 or "circuit" in str(result.get("healing_error", "")).lower():
+            if result.healing_tier == 3 or "circuit" in str(result.healing_error or "").lower():
                 break
 
         # The circuit breaker may or may not trip depending on threshold config.
@@ -203,7 +200,7 @@ class TestV214SelfHealingCircuitBreaker:
         # If it trips, that's good. If not, the threshold is high enough.
         # Either way, every call should return a result (not raise).
         assert result is not None
-        assert result.get("healed") is True
+        assert result.is_healed is True
 
         global_circuit_breaker.reset()
 
@@ -236,10 +233,10 @@ class TestV214SelfHealingFallbackQuality:
         """Voltage drop fallback should be 0.0 (conservative — no drop assumed).
         This is safe because it means the engineer will investigate manually.
         A non-zero fallback could mask a real problem."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
-        assert result["voltage_drop_v"] == 0.0  # NOSONAR: S1244 — float comparison in test
-        assert result["is_compliant"] is False  # Marked non-compliant
+        assert result.voltage_drop_v == 0.0  # NOSONAR: S1244 — float comparison in test
+        assert result.is_compliant is False  # Marked non-compliant
 
     def test_battery_fallback_is_seventy_two_ah(self):
         """Battery capacity fallback should be 72.0 Ah (NFPA 72 minimum).
@@ -247,24 +244,25 @@ class TestV214SelfHealingFallbackQuality:
         NFPA 72 §10.6.7.2.1, ensuring adequate backup power even when
         computation fails. 0 Ah would indicate 'unknown capacity' to
         downstream systems which could cause a different failure mode."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
-        # Fallback is 72.0 Ah per @_healing_wrapper on SelfHealingQOMNKernel.battery_capacity
-        assert result["required_ah"] == 72.0  # NOSONAR: S1244 — float comparison in test
+        # Fallback is 72.0 Ah per @_healing_wrapper on QOMNKernel.battery_capacity
+        assert result.required_ah == 72.0  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_spacing_fallback_is_9_1m(self):
         """Smoke detector spacing fallback should be 9.1m (NFPA 72 flat).
         This is the code-compliant default — using it ensures the system
         doesn't over-space detectors (which would leave gaps in coverage)."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
-        assert result["listed_spacing_m"] == 9.1  # NOSONAR: S1244 — float comparison in test
-        assert result["coverage_radius_m"] == 6.37  # 0.7 × 9.1  # NOSONAR: S1244 — float comparison in test
+        assert result.listed_spacing_m == 9.1  # NOSONAR: S1244 — float comparison in test
+        assert result.coverage_radius_m == 6.37  # 0.7 × 9.1  # NOSONAR: S1244 — float comparison in test
 
     def test_heat_spacing_fallback_is_6_1m(self):
         """Heat detector spacing fallback should be 6.1m (NFPA 72 standard).
         This is conservative — using it ensures adequate detector density."""
-        kernel = SelfHealingQOMNKernel()
+        kernel = QOMNKernel()
         result = kernel.heat_detector_spacing(0.0, 25.0)
-        assert result["listed_spacing_m"] == 6.1  # NOSONAR: S1244 — float comparison in test
-        assert result["coverage_radius_m"] == 4.27  # 0.7 × 6.1  # NOSONAR: S1244 — float comparison in test
+        assert result.spacing_m == 6.1  # NOSONAR: S1244 — float comparison in test
+        assert result.coverage_radius_m == 4.27  # 0.7 × 6.1  # NOSONAR: S1244 — float comparison in test
+

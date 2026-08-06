@@ -172,7 +172,7 @@ class TestRouterKernelContract:
         for awg in sorted(_NEC_TABLE8_VALID_AWG):
             r = VoltageDropRequest(current_a=1.0, length_m=100.0, awg_gauge=awg)
             result = compute_voltage_drop(1.0, 100.0, r.awg_gauge)
-            assert result["voltage_drop_v"] > 0, (
+            assert result.voltage_drop_v > 0, (
                 f"AWG {awg!r} passed router but kernel produced invalid result"
             )
 

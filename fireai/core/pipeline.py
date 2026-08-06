@@ -287,8 +287,8 @@ def _stage05_qomn_physics_guard(
 
         # QOMN spacing computation (L0→L1→L2→L3→L4)
         qomn_spacing = kernel.smoke_detector_spacing(ceiling_height_m)
-        qomn_radius = qomn_spacing["coverage_radius_m"]
-        qomn_s = qomn_spacing["listed_spacing_m"]
+        qomn_radius = qomn_spacing.coverage_radius_m
+        qomn_s = qomn_spacing.listed_spacing_m
 
         # Optional: battery via QOMN
         qomn_battery = None
@@ -315,8 +315,8 @@ def _stage05_qomn_physics_guard(
             "guard_errors": guard_errors,
             "qomn_spacing_m": qomn_s,
             "qomn_radius_m": qomn_radius,
-            "qomn_nfpa_section": qomn_spacing.get("nfpa_section", "NFPA 72-2022"),
-            "qomn_computation_hash": qomn_spacing.get("computation_hash", ""),
+            "qomn_nfpa_section": qomn_spacing.nfpa_section or "NFPA 72-2022",
+            "qomn_computation_hash": qomn_spacing.computation_hash,
             "qomn_battery": qomn_battery,
             "qomn_voltage": qomn_voltage,
             "audit_entries": audit_export.get("total_entries", 0),

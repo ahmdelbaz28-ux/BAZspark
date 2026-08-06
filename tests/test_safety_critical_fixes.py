@@ -130,11 +130,11 @@ class TestWallDistances:
     def test_compute_smoke_spacing_has_wall_distances(self):
         """compute_smoke_detector_spacing returns both wall_min_m and wall_max_m."""
         result = compute_smoke_detector_spacing(3.0)
-        assert "wall_min_m" in result
-        assert "wall_max_m" in result
+        assert result.wall_min_m is not None
+        assert result.wall_max_m is not None
         # wall_min_m = 0.1016m (dead air)
-        assert result["wall_min_m"] == pytest.approx(0.1016, rel=1e-3)
-        assert result["wall_max_m"] == pytest.approx(0.5 * result["listed_spacing_m"], rel=1e-4)
+        assert result.wall_min_m == pytest.approx(0.1016, rel=1e-3)
+        assert result.wall_max_m == pytest.approx(0.5 * result.listed_spacing_m, rel=1e-4)
 
     def test_calculate_max_wall_distance_is_s_over_2(self):
         """calculate_max_wall_distance returns S/2, NOT R=0.7×S."""

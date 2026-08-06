@@ -23,13 +23,13 @@ from fireai.core.results import (
 )
 
 if TYPE_CHECKING:
-    from fireai.core.qomn_kernel import SelfHealingQOMNKernel
+    from fireai.core.qomn_kernel import QOMNKernel
     from fireai.core.safety_assurance import SafetyTier
     from fireai.core.safety_audit_engine import AuditResult
 
 
 class Engine:
-    _kernel: SelfHealingQOMNKernel
+    _kernel: QOMNKernel
     """
     Engineering calculation facade.
 
@@ -45,8 +45,8 @@ class Engine:
     """
 
     def __init__(self) -> None:
-        from fireai.core.qomn_kernel import SelfHealingQOMNKernel
-        self._kernel = SelfHealingQOMNKernel()
+        from fireai.core.qomn_kernel import QOMNKernel
+        self._kernel = QOMNKernel()
 
     def smoke_spacing(self, ceiling_height_m: float) -> SmokeSpacingResult:
         """Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3."""

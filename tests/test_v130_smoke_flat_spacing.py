@@ -102,10 +102,10 @@ class TestQomnKernelSmokeFlatSpacing:
     ])
     def test_smoke_spacing_flat_at_all_heights(self, height):
         """Smoke detector spacing must be 9.1m at ALL valid ceiling heights."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
-        result = compute_smoke_detector_spacing(height)
-        assert result["listed_spacing_m"] == pytest.approx(9.1, abs=0.01), (
-            f"At h={height}m, spacing = {result['listed_spacing_m']}m, "
+        from fireai.core.qomn_kernel import QOMNKernel
+        result = QOMNKernel().smoke_detector_spacing(height)
+        assert result.listed_spacing_m == pytest.approx(9.1, abs=0.01), (
+            f"At h={height}m, spacing = {result.listed_spacing_m}m, "
             f"expected 9.1m (flat per §17.7.3.2.3)"
         )
 
@@ -114,44 +114,44 @@ class TestQomnKernelSmokeFlatSpacing:
     ])
     def test_smoke_coverage_radius_at_all_heights(self, height):
         """Coverage radius must be 0.7 × 9.1 = 6.37m at all heights."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
-        result = compute_smoke_detector_spacing(height)
-        assert result["coverage_radius_m"] == pytest.approx(6.37, abs=0.01), (
-            f"At h={height}m, radius = {result['coverage_radius_m']}m, "
+        from fireai.core.qomn_kernel import QOMNKernel
+        result = QOMNKernel().smoke_detector_spacing(height)
+        assert result.coverage_radius_m == pytest.approx(6.37, abs=0.01), (
+            f"At h={height}m, radius = {result.coverage_radius_m}m, "
             f"expected 6.37m (0.7 × 9.1)"
         )
 
     def test_high_ceiling_stratification_advisory(self):
         """Heights above 6.096m should include stratification advisory."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
+        from fireai.core.qomn_kernel import QOMNKernel
         # Above 20ft — advisory should be present
-        result = compute_smoke_detector_spacing(8.0)
-        assert "audit_notice" in result, "Stratification advisory missing for h>6.096m"
-        assert "stratification" in result["audit_notice"].lower() or "17.7.1.11" in result["audit_notice"]  # NOSONAR - python:S1313
-        assert "9.1m" in result["audit_notice"], "Advisory must confirm 9.1m flat spacing"
+        result = QOMNKernel().smoke_detector_spacing(8.0)
+        assert result.audit_notice is not None, "Stratification advisory missing for h>6.096m"
+        assert "stratification" in result.audit_notice.lower() or "17.7.1.11" in result.audit_notice  # NOSONAR - python:S1313
+        assert "9.1m" in result.audit_notice, "Advisory must confirm 9.1m flat spacing"
 
     def test_low_ceiling_no_advisory(self):
         """Heights at/below 6.096m should NOT have stratification advisory."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
-        result = compute_smoke_detector_spacing(3.0)
-        assert "audit_notice" not in result, (
+        from fireai.core.qomn_kernel import QOMNKernel
+        result = QOMNKernel().smoke_detector_spacing(3.0)
+        assert result.audit_notice is None, (
             "Stratification advisory should not appear at h<=6.096m"
         )
 
     def test_nfpa_section_ref_correct(self):
         """NFPA section reference must cite §17.7.3.2.3."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
-        result = compute_smoke_detector_spacing(3.0)
-        assert "17.7.3.2.3" in result["nfpa_section"], (
-            f"NFPA section should cite §17.7.3.2.3, got: {result['nfpa_section']}"
+        from fireai.core.qomn_kernel import QOMNKernel
+        result = QOMNKernel().smoke_detector_spacing(3.0)
+        assert "17.7.3.2.3" in result.nfpa_section, (
+            f"NFPA section should cite §17.7.3.2.3, got: {result.nfpa_section}"
         )
 
     def test_table_row_says_flat_spacing(self):
         """table_row_used must state flat spacing per §17.7.3.2.3."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing
-        result = compute_smoke_detector_spacing(5.0)
-        assert "flat" in result["table_row_used"].lower() or "17.7.3.2.3" in result["table_row_used"], (
-            f"table_row_used should mention flat spacing: {result['table_row_used']}"
+        from fireai.core.qomn_kernel import QOMNKernel
+        result = QOMNKernel().smoke_detector_spacing(5.0)
+        assert "flat" in result.table_row_used.lower() or "17.7.3.2.3" in result.table_row_used, (
+            f"table_row_used should mention flat spacing: {result.table_row_used}"
         )
 
 
@@ -357,3 +357,5 @@ class TestHeatSpacingStillReduced:
             assert spacings[i] < spacings[i-1], (
                 f"Heat spacing not decreasing: {spacings[i]} >= {spacings[i-1]}"
             )
+
+

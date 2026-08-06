@@ -1,73 +1,27 @@
 """
 fireai/core/results.py — Strongly typed computation result types.
 
-Provides dataclass-based result types with dict-like backward compatibility
-for all QOMN kernel computation functions. Each result type supports both
-attribute access (result.field) and dict-style access (result["field"]),
-enabling incremental migration from raw dicts to typed results.
+Provides dataclass-based result types for all QOMN kernel computation
+functions. Results are accessed via ATTRIBUTES only (``result.field``);
+the historical dict-style access (``result["field"]``) is gone — callers
+must migrate to attribute access (deep-modules doctrine: one typed
+interface, no compatibility mixins).
+
+Healing metadata is part of every result type: when the kernel's
+self-healing path activates, the same result type is returned with
+``is_healed=True``, ``safety_tier="FALLBACK_USED"`` and
+``requires_fpe_review=True`` so downstream safety classification can
+never silently accept a healed computation as PROOF_VERIFIED.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Iterator, Optional
-
-
-class _DictCompatMixin:
-    """Mixin providing dict-like access for dataclass instances."""
-
-    if TYPE_CHECKING:
-        __dataclass_fields__: ClassVar[Dict[str, Any]]
-
-    _extra: dict[str, Any] = field(default_factory=dict, repr=False)
-
-    def __getitem__(self, key: str) -> Any:
-        if key in self.__dataclass_fields__:
-            return getattr(self, key)
-        return self._extra[key]
-
-    def __setitem__(self, key: str, value: Any) -> None:
-        if key in self.__dataclass_fields__:
-            if hasattr(self.__dataclass_fields__[key], "frozen") and self.__dataclass_fields__[key].frozen:
-                raise TypeError(f"Cannot set frozen field '{key}'")
-            object.__setattr__(self, key, value)
-        else:
-            self._extra[key] = value
-
-    def __contains__(self, key: str) -> bool:
-        if key in self._extra:
-            return True
-        if key in self.__dataclass_fields__:
-            # Match old dict behaviour: optional fields only "contained" when set
-            val = getattr(self, key)
-            if val is not None:
-                return True
-            # Check if the default is None (optional field)
-            default = self.__dataclass_fields__[key].default
-            if default is not None:
-                return True
-            return False
-        return False
-
-    def get(self, key: str, default: Any = None) -> Any:
-        try:
-            return self[key]
-        except (KeyError, AttributeError):
-            return default
-
-    def keys(self) -> Iterator[str]:
-        yield from self.__dataclass_fields__
-        yield from self._extra
-
-    def to_dict(self) -> dict[str, Any]:
-        base = asdict(self)
-        base.pop("_extra", None)
-        base.update(self._extra)
-        return base
+from dataclasses import asdict, dataclass
+from typing import Any, Optional
 
 
 @dataclass
-class SmokeSpacingResult(_DictCompatMixin):
+class SmokeSpacingResult:
     listed_spacing_m: float = 0.0
     coverage_radius_m: float = 0.0
     wall_min_m: float = 0.0
@@ -79,11 +33,19 @@ class SmokeSpacingResult(_DictCompatMixin):
     computation_hash: str = ""
     audit_notice: Optional[str] = None
     layer3_validated: bool = False
-    _extra: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Healing metadata — set only on the self-healing fallback path.
+    is_healed: bool = False
+    healing_tier: int = 0
+    healing_error: Optional[str] = None
+    safety_tier: str = ""
+    requires_fpe_review: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
-class HeatSpacingResult(_DictCompatMixin):
+class HeatSpacingResult:
     spacing_m: float = 0.0
     coverage_radius_m: float = 0.0
     max_spacing_m: float = 0.0
@@ -92,11 +54,19 @@ class HeatSpacingResult(_DictCompatMixin):
     formula: str = ""
     computation_hash: str = ""
     layer3_validated: bool = False
-    _extra: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Healing metadata — set only on the self-healing fallback path.
+    is_healed: bool = False
+    healing_tier: int = 0
+    healing_error: Optional[str] = None
+    safety_tier: str = ""
+    requires_fpe_review: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
-class BatteryCapacityResult(_DictCompatMixin):
+class BatteryCapacityResult:
     standby_load_a: float = 0.0
     alarm_load_a: float = 0.0
     standby_hours: float = 24.0
@@ -111,11 +81,19 @@ class BatteryCapacityResult(_DictCompatMixin):
     formula: str = ""
     computation_hash: str = ""
     layer3_validated: bool = False
-    _extra: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Healing metadata — set only on the self-healing fallback path.
+    is_healed: bool = False
+    healing_tier: int = 0
+    healing_error: Optional[str] = None
+    safety_tier: str = ""
+    requires_fpe_review: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
-class VoltageDropResult(_DictCompatMixin):
+class VoltageDropResult:
     current_a: float = 0.0
     length_m: float = 0.0
     awg_gauge: str = ""
@@ -130,4 +108,12 @@ class VoltageDropResult(_DictCompatMixin):
     formula: str = ""
     computation_hash: str = ""
     layer3_validated: bool = False
-    _extra: dict[str, Any] = field(default_factory=dict, repr=False)
+    # Healing metadata — set only on the self-healing fallback path.
+    is_healed: bool = False
+    healing_tier: int = 0
+    healing_error: Optional[str] = None
+    safety_tier: str = ""
+    requires_fpe_review: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
