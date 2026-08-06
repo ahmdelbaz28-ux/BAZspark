@@ -128,26 +128,14 @@ _SOLVER_HW_CACHE: dict[str, float] = {}
 
 
 def _get_cached_hw(cache_key: str) -> float | None:
-    try:
-        from backend.multi_db_service import get_multi_db_service
-        service = get_multi_db_service()
-        if service._redis_client:
-            val = service._redis_client.get(f"solver:hw:{cache_key}")
-            if val is not None:
-                return float(val)
-    except Exception:
-        pass
+    # Phase 3: removed Redis back-import (fireai/core/ must not import backend/).
+    # In-memory cache is the authoritative fallback; Redis was a best-effort
+    # optimization that silently no-op'd via bare except in most environments.
     return _SOLVER_HW_CACHE.get(cache_key)
 
 
 def _set_cached_hw(cache_key: str, value: float) -> None:
-    try:
-        from backend.multi_db_service import get_multi_db_service
-        service = get_multi_db_service()
-        if service._redis_client:
-            service._redis_client.setex(f"solver:hw:{cache_key}", 3600, str(value))
-    except Exception:
-        pass
+    # Phase 3: removed Redis back-import (fireai/core/ must not import backend/).
     if len(_SOLVER_HW_CACHE) > 10000:
         _SOLVER_HW_CACHE.clear()
     _SOLVER_HW_CACHE[cache_key] = value
