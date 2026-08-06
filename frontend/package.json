@@ -1,6 +1,6 @@
 {
         "name": "bazspark",
-        "version": "1.55.0",
+        "version": "1.56.0",
         "type": "module",
         "private": true,
         "description": "BAZSpark — Safety-Critical Fire Alarm Engineering Platform",

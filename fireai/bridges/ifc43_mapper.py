@@ -385,7 +385,7 @@ class IFC43Mapper:
             "RunId": detector.get("run_id", ""),
             "EvidenceHash": detector.get("evidence_hash", ""),
             "AnalysisTimestamp": detector.get("analysis_timestamp", ""),
-            "PipelineVersion": detector.get("pipeline_version", "1.55.0"),
+            "PipelineVersion": detector.get("pipeline_version", "1.56.0"),
             "NFPAReference": detector.get("nfpa_reference", "NFPA 72-2022"),
         }
 

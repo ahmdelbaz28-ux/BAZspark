@@ -8,7 +8,7 @@ interface StatusBarProps {
 	environment: string;
 }
 
-const APP_VERSION = "v1.55.0";
+const APP_VERSION = "v1.56.0";
 
 const StatusBar: React.FC<StatusBarProps> = memo(({
 	backendUrl,

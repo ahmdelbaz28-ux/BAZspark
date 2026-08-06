@@ -68,7 +68,7 @@ The engine implements a five-layer QOMN-FIRE validation model. Each layer verifi
 - Layer 1: Deterministic spatial geometry and obstruction analysis
 - Layer 2: Electrical circuit voltage drop and battery sizing
 - Layer 3: Code compliance verification against NFPA 72 and IBC
-- Layer 4: HMAC-SHA256 Merkle tree signed audit log generation
+- Layer 4: HMAC-SHA256 signed SHA-256 hash-chain audit log generation (tamper-evident; RFC 3161 TSA optional for legal timestamping)
 
 ```
 Input Data ──► L0 Sanitization ──► L1 Geometry ──► L2 Electrical ──► L3 Code ──► L4 Audit
