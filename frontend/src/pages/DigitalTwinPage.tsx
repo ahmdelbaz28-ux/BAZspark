@@ -357,6 +357,7 @@ export function DigitalTwinPage() {
                                                         Bidirectional AutoCAD ↔ Revit conversion with semantic mapping
                                                 </p>
                                         </div>
+<<<<<<< HEAD
                                         <div className="flex items-center gap-2">
                                                 {wsConnected ? (
                                                         <Badge variant="default" className="gap-1">
@@ -378,6 +379,16 @@ export function DigitalTwinPage() {
                                                         Refresh History
                                                 </Button>
                                         </div>
+=======
+                                        <Button
+                                                variant="outline"
+                                                className="border-border text-foreground/90 hover:bg-card stagger-card"
+                                                onClick={fetchVersionHistory}
+                                        >
+                                                <History aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                Refresh History
+                                        </Button>
+>>>>>>> feature/engineering-identity
                                 </div>
 
                                 {/* Main Tabs */}

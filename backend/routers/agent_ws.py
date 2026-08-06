@@ -252,7 +252,13 @@ async def _wait_for_pong(pong_flag: dict[str, bool], timeout: float) -> bool:
 
 async def _check_api_key_revoked(websocket: WebSocket, api_key: str) -> bool:
     """Re-authenticate API key; close socket and return True if revoked."""
+<<<<<<< HEAD
     if not api_key or await _revalidate_api_key(api_key):
+=======
+    if not api_key:
+        return False
+    if await _revalidate_api_key(api_key):
+>>>>>>> feature/engineering-identity
         return False
     logger.warning(
         "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
@@ -297,6 +303,7 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
     async def _ping_cycle() -> None:
         while True:
             await asyncio.sleep(WS_PING_INTERVAL_SECONDS)
+            # Re-authenticate API key on every heartbeat cycle to prevent session hijacking
             if await _check_api_key_revoked(websocket, api_key):
                 return
 

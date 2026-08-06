@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
         Activity,
+        AlertTriangle,
         Calculator,
         CheckCircle2,
         Clock,
@@ -8,6 +9,7 @@ import {
         Database,
         FolderKanban,
         Server,
+        XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";

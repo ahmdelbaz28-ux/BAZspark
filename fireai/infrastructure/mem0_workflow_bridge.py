@@ -179,8 +179,6 @@ def _region_queries(env_context: dict[str, Any]) -> list[str]:
     if severe:
         queries.append("seismic bracing fire alarm equipment requirements")
     return queries
-
-
 def _dedupe_queries(queries: list[str]) -> list[str]:
     """Deduplicate, keep order, enforce cap."""
     seen: set[str] = set()
@@ -202,12 +200,18 @@ def _build_queries(
     """Build the search query list per the documented strategy (capped)."""
     queries: list[str] = []
     # 1. Per-room occupancy patterns
+<<<<<<< HEAD
     queries.extend(_build_room_queries_list(rooms))
+=======
+    for room in rooms[:_MAX_QUERIES]:
+        queries.extend(_room_query(room))
+>>>>>>> feature/engineering-identity
     # 4. Regional standards (Gulf Civil Defense codes)
     queries.extend(_region_queries(env_context))
     return _dedupe_queries(queries)
 
 
+<<<<<<< HEAD
 def _build_room_queries_list(rooms: list[dict[str, Any]]) -> list[str]:
     """Build queries for all rooms up to the maximum limit."""
     queries: list[str] = []
@@ -216,6 +220,8 @@ def _build_room_queries_list(rooms: list[dict[str, Any]]) -> list[str]:
     return queries
 
 
+=======
+>>>>>>> feature/engineering-identity
 # ── Enrichment entrypoint ────────────────────────────────────────────────────
 
 
@@ -278,6 +284,7 @@ def _search_query(
     return hints, len(response.results)
 
 
+<<<<<<< HEAD
 def _get_memory_service(started: float) -> tuple[Any, MemoryEnrichmentResult | None]:
     """Initialize memory service or return empty result on failure."""
     try:
@@ -345,6 +352,8 @@ def _log_enrichment_results(
     )
 
 
+=======
+>>>>>>> feature/engineering-identity
 def enrich_with_memory_context(
     rooms: list[dict[str, Any]],
     workflow_id: str,
@@ -363,12 +372,58 @@ def enrich_with_memory_context(
     if not queries:
         return _empty_result(started)
 
+<<<<<<< HEAD
     service, error_result = _get_memory_service(started)
     if error_result:
         return error_result
 
     hints, total_searched = _process_search_results(
         queries, service, engineer_id, workflow_id
+=======
+    try:
+        from backend.services.memory_service import get_memory_service
+    except ImportError as exc:  # pragma: no cover - backend unavailable
+        logger.debug("mem0_workflow_bridge: backend not importable (%s)", exc)
+        return _empty_result(started, error="memory_service_unavailable")
+
+    service = get_memory_service()
+    if not service.is_initialized:
+        logger.debug(
+            "mem0_workflow_bridge: MemoryService not initialized — "
+            "returning zero hints (fail-safe)."
+        )
+        return _empty_result(started, error="memory_service_not_initialized")
+
+    hints: list[MemoryHint] = []
+    total_searched = 0
+
+    for query in queries:
+        query_hints, query_searched = _search_query(
+            service, query, engineer_id, workflow_id
+        )
+        hints.extend(query_hints)
+        total_searched += query_searched
+
+        # Stop early once we have a healthy context budget.
+        if len(hints) >= _MAX_HINTS:
+            break
+
+    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    logger.info(
+        "mem0_workflow_bridge: %d hints from %d memories in %.1fms "
+        "(engineer=%s, workflow=%s)",
+        len(hints),
+        total_searched,
+        elapsed_ms,
+        engineer_id,
+        workflow_id,
+    )
+
+    return MemoryEnrichmentResult(
+        hints=hints,
+        total_memories_searched=total_searched,
+        enrichment_time_ms=elapsed_ms,
+>>>>>>> feature/engineering-identity
     )
     return _log_enrichment_results(hints, total_searched, started, engineer_id, workflow_id)
 

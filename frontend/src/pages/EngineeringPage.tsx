@@ -408,6 +408,7 @@ export function EngineeringPage() {
                                         ))}
                                 </div>
 
+<<<<<<< HEAD
                                 {/* ── Tab Panels ─────────────────────────────────────────── */}
                                 <div className="space-y-6">
                                         {/* ══════════════════════════════════════════════════════════
@@ -633,6 +634,360 @@ export function EngineeringPage() {
                                                                                         </div>
                                                                                 </div>
                                                                         </div>
+=======
+                                {/* Tabs */}
+                                <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+                                        <Button
+                                                variant={activeTab === "voltage-drop" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "voltage-drop"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("voltage-drop")}
+                                        >
+                                                <Zap aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("engineering.voltageDrop")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "cable-sizing" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "cable-sizing"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("cable-sizing")}
+                                        >
+                                                <Cable aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("engineering.cableSizing")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "battery-calc" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "battery-calc"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("battery-calc")}
+                                        >
+                                                <Battery aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("engineering.batteryCalculation")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "room-analysis" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "room-analysis"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("room-analysis")}
+                                        >
+                                                <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("fireai.room.title")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "integration" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "integration"
+                                                                ? "bg-danger hover:bg-danger/90 text-danger-foreground border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("integration")}
+                                        >
+                                                <Network aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("fireai.integration.title")}
+                                        </Button>
+                                </div>
+
+                                {/* Voltage Drop Calculator */}
+                                {activeTab === "voltage-drop" && (
+                                        <Card className="border-border bg-card stagger-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Zap aria-hidden="true" className="h-5 w-5" />
+                                                                {t("engineering.voltageDrop")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("engineering.voltageDropDesc")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.current")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={voltageDropInputs.current}
+                                                                                onChange={(e) =>
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                current: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="A"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.length")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={voltageDropInputs.length}
+                                                                                onChange={(e) =>
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                length: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="m"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.cableSize")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={voltageDropInputs.cableSize}
+                                                                                onChange={(e) =>
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                cableSize: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="mm²"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.voltage")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={voltageDropInputs.voltage}
+                                                                                onChange={(e) =>
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                voltage: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="V"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.material")}
+                                                                        </Label>
+                                                                        <Select
+                                                                                value={voltageDropInputs.material}
+                                                                                onValueChange={(v) =>
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                material: v,
+                                                                                        }))
+                                                                                }
+                                                                        >
+                                                                                <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label={t("engineering.material", "Material")}>
+                                                                                        <SelectValue />
+                                                                                </SelectTrigger>
+                                                                                <SelectContent className="bg-card border-border stagger-card">
+                                                                                        <SelectItem value="cu">
+                                                                                                {t("engineering.copper")}
+                                                                                        </SelectItem>
+                                                                                        <SelectItem value="al">
+                                                                                                {t("engineering.aluminum")}
+                                                                                        </SelectItem>
+                                                                                </SelectContent>
+                                                                        </Select>
+                                                                </div>
+                                                        </div>
+
+                                                        <Separator />
+
+                                                        {/* Terminal-style Engineering Output Panel */}
+                                                        <div
+                                                                style={{
+                                                                        background: "var(--color-graphite)",
+                                                                        border: "1px solid rgba(90,103,112,0.35)",
+                                                                        borderLeft: `4px solid ${vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)"}`,
+                                                                        borderRadius: "2px",
+                                                                        padding: "1rem 1.25rem",
+                                                                }}
+                                                        >
+                                                                {/* Terminal header */}
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                        <div style={{ fontFamily: "var(--font-data)", fontSize: "0.7rem", letterSpacing: "0.1em", color: "var(--color-steel)", textTransform: "uppercase" }}>
+                                                                                VOLTAGE DROP ANALYSIS
+                                                                        </div>
+                                                                        <ExplainButton
+                                                                                calculationType="voltage_drop"  // NOSONAR: typescript:S3358
+                                                                                result={voltageDropResultProp}  // NOSONAR: typescript:S3358
+                                                                        />
+                                                                </div>
+
+                                                                {/* Input echo */}
+                                                                <div className="mb-3" style={{ fontFamily: "var(--font-data)", fontSize: "0.75rem", color: "var(--color-steel)" }}>
+                                                                        INPUT:&nbsp;
+                                                                        <span style={{ color: "var(--color-bone)" }}>
+                                                                                I = {voltageDropInputs.current || "—"}A &nbsp;/&nbsp;
+                                                                                L = {voltageDropInputs.length || "—"}m &nbsp;/&nbsp;
+                                                                                {voltageDropInputs.material.toUpperCase()} {voltageDropInputs.cableSize || "—"}mm²
+                                                                        </span>
+                                                                </div>
+
+                                                                {/* Result divider */}
+                                                                <div style={{ borderTop: "1px solid rgba(90,103,112,0.3)", marginBottom: "0.75rem" }} />
+
+                                                                {/* Result row */}
+                                                                <div className="flex flex-wrap items-center gap-6">
+                                                                        <div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Drop (V)</div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "1.5rem", fontWeight: 700, color: "var(--color-bone)", lineHeight: 1.1 }}>
+                                                                                        {vDropResult.absolute}V
+                                                                                </div>
+                                                                        </div>
+                                                                        <div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Drop (%)</div>
+                                                                                <div style={{ fontFamily: "var(--font-data)", fontSize: "1.5rem", fontWeight: 700, color: vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)", lineHeight: 1.1 }}>
+                                                                                        {vDropResult.percentage}%
+                                                                                </div>
+                                                                        </div>
+                                                                        <div style={{ marginInlineStart: "auto" }}>
+                                                                                <span style={{
+                                                                                        fontFamily: "var(--font-data)",
+                                                                                        fontSize: "0.7rem",
+                                                                                        fontWeight: 600,
+                                                                                        letterSpacing: "0.08em",
+                                                                                        textTransform: "uppercase",
+                                                                                        padding: "0.2rem 0.6rem",
+                                                                                        borderRadius: "2px",
+                                                                                        border: `1px solid ${vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)"}`,
+                                                                                        color: vDropResult.percentage < 3 ? "var(--color-evac-green)" : vDropResult.percentage < 5 ? "var(--color-amber-alert)" : "var(--color-signal-red)",
+                                                                                }}>
+                                                                                        {vDropResult.percentage < 3 ? "✓ COMPLIANT" : vDropResult.percentage < 5 ? "⚠ MARGINAL" : "✕ NON-COMPLIANT"}
+                                                                                </span>
+                                                                        </div>
+                                                                </div>
+
+                                                                {/* Audit footer */}
+                                                                {"nec_section" in vDropResult && (
+                                                                        <div style={{ borderTop: "1px solid rgba(90,103,112,0.2)", marginTop: "0.75rem", paddingTop: "0.5rem", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                                                                                <span style={{ fontFamily: "var(--font-data)", fontSize: "0.65rem", color: "var(--color-steel)", letterSpacing: "0.04em" }}>
+                                                                                        REF: {vDropResult.nec_section}
+                                                                                </span>
+                                                                                {"computation_hash" in vDropResult && (
+                                                                                        <span style={{ fontFamily: "var(--font-data)", fontSize: "0.6rem", color: "rgba(90,103,112,0.6)", letterSpacing: "0.04em" }} title="Audit Reference Hash">
+                                                                                                AUDIT: {vDropResult.computation_hash?.slice(0, 16)}…
+                                                                                        </span>
+                                                                                )}
+                                                                        </div>
+                                                                )}
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Cable Sizing Calculator */}
+                                {activeTab === "cable-sizing" && (
+                                        <Card className="border-border bg-card stagger-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Cable aria-hidden="true" className="h-5 w-5" />
+                                                                {t("engineering.cableSizing")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("engineering.cableSizingDesc")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.loadCurrent")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={cableSizingInputs.loadCurrent}
+                                                                                onChange={(e) =>
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                loadCurrent: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="A"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.length")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={cableSizingInputs.length}
+                                                                                onChange={(e) =>
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                length: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="m"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.ambientTemp")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={cableSizingInputs.ambientTemp}
+                                                                                onChange={(e) =>
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                ambientTemp: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="°C"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.installationMethod")}
+                                                                        </Label>
+                                                                        <Select
+                                                                                value={cableSizingInputs.installationMethod}
+                                                                                onValueChange={(v) =>
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                installationMethod: v,
+                                                                                        }))
+                                                                                }
+                                                                        >
+                                                                                <SelectTrigger className="bg-card border-border text-foreground stagger-card" aria-label={t("engineering.installationMethod", "Installation method")}>
+                                                                                        <SelectValue />
+                                                                                </SelectTrigger>
+                                                                                <SelectContent className="bg-card border-border stagger-card">
+                                                                                        <SelectItem value="free-air">
+                                                                                                {t("engineering.freeAir")}
+                                                                                        </SelectItem>
+                                                                                        <SelectItem value="conduit">
+                                                                                                {t("engineering.conduit")}
+                                                                                        </SelectItem>
+                                                                                        <SelectItem value="trunking">
+                                                                                                {t("engineering.trunking")}
+                                                                                        </SelectItem>
+                                                                                </SelectContent>
+                                                                        </Select>
+>>>>>>> feature/engineering-identity
                                                                 </div>
                                                         )}
                                                 </div>
@@ -755,6 +1110,7 @@ export function EngineeringPage() {
                                                                                 </div>
                                                                         </div>
 
+<<<<<<< HEAD
                                                                         {/* FIX #3: Cable sizing compliance with real logic */}
                                                                         <div className={`etap-panel overflow-hidden border-l-4 ${cableComplianceLevel === "suitable"
                                                                                 ? "border-l-[var(--etap-success)] bg-[rgba(16,185,129,0.06)]"
@@ -792,6 +1148,156 @@ export function EngineeringPage() {
                                                                                                                 ? t("engineering.cableSizingMarginal")
                                                                                                                 : t("engineering.cableSizingNonCompliant")}
                                                                                         </div>
+=======
+                                                                <Card className="border-border bg-muted/50">
+                                                                        <CardHeader>
+                                                                                <CardTitle className="text-foreground text-sm">
+                                                                                        {t("engineering.status")}
+                                                                                </CardTitle>
+                                                                        </CardHeader>
+                                                                        <CardContent>
+                                                                                <Badge className="bg-success/10 text-success border-success/30">
+                                                                                        {t("engineering.suitable")}
+                                                                                </Badge>
+                                                                        </CardContent>
+                                                                </Card>
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Battery Calculation */}
+                                {activeTab === "battery-calc" && (
+                                        <Card className="border-border bg-card stagger-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Battery aria-hidden="true" className="h-5 w-5" />
+                                                                {t("engineering.batteryCalculation")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("engineering.batteryCalculationDesc")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.standbyDevices")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.standbyDevices}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                standbyDevices: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="#"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.standbyCurrent")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.standbyCurrent}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                standbyCurrent: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="mA"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.alarmDevices")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.alarmDevices}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                alarmDevices: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="#"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.alarmCurrent")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.alarmCurrent}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                alarmCurrent: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="mA"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.standbyHours")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.standbyHours}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                standbyHours: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="hours"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("engineering.alarmMinutes")}
+                                                                        </Label>
+                                                                        <Input
+                                                                                type="number"
+                                                                                value={batteryCalcInputs.alarmMinutes}
+                                                                                onChange={(e) =>
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
+                                                                                                alarmMinutes: e.target.value,
+                                                                                        }))
+                                                                                }
+                                                                                className="bg-card border-border text-foreground stagger-card"
+                                                                                placeholder="minutes"
+                                                                        />
+                                                                </div>
+                                                        </div>
+
+                                                        <Separator />
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <Card className="border-border bg-muted/50">
+                                                                        <CardHeader>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <CardTitle className="text-foreground text-sm">
+                                                                                                {t("engineering.results")}
+                                                                                        </CardTitle>
+                                                                                        <ExplainButton
+                                                                                                calculationType="battery_sizing"
+                                                                                                result={batteryResultProp}
+                                                                                        />
+>>>>>>> feature/engineering-identity
                                                                                 </div>
                                                                         </div>
                                                                 </div>
@@ -913,6 +1419,69 @@ export function EngineeringPage() {
                                                                                                 NFPA 72 §10.6.7.2.1 — {t("engineering.standbyAlarmDesc", { hours: batteryCalcInputs.standbyHours, minutes: batteryCalcInputs.alarmMinutes })}
                                                                                         </div>
                                                                                 </div>
+<<<<<<< HEAD
+=======
+                                                                        </CardContent>
+                                                                </Card>
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Room Analysis Tab */}
+                                {activeTab === "room-analysis" && (
+                                        <Card className="border-border bg-card stagger-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Flame aria-hidden="true" className="h-5 w-5" />
+                                                                {t("fireai.room.title")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("fireai.room.description")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="flex gap-4 items-end">
+                                                                <div className="flex-1 space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("fireai.room.selectProject")}
+                                                                        </Label>
+                                                                        <Input placeholder="Project ID" id="analyze-project-id" />
+                                                                </div>
+                                                                <Button onClick={async () => {
+                                                                        const projectId = (document.getElementById("analyze-project-id") as HTMLInputElement)?.value;
+                                                                        if (!projectId) return;
+                                                                        try {
+                                                                                await apiCall(`/analyze/projects/${projectId}/analyze/room`, { method: "POST" });
+                                                                        } catch { /* handled */ }
+                                                                }}>
+                                                                        <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                                        {t("fireai.room.analyze")}
+                                                                </Button>
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Integration Pipeline Tab */}
+                                {activeTab === "integration" && (
+                                        <Card className="border-border bg-card stagger-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Network aria-hidden="true" className="h-5 w-5" />
+                                                                {t("fireai.integration.title")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("fireai.integration.description")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                                {["fireAlarm", "sprinkler", "hvac", "elevator", "doorHolder", "ductDetector", "supervision", "notification"].map((sub) => (
+                                                                        <div key={sub} className="flex items-center gap-2 p-2 rounded bg-muted">
+                                                                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                                                                <span className="text-sm">{t(`fireai.integration.${sub}`)}</span>
+>>>>>>> feature/engineering-identity
                                                                         </div>
                                                                 </div>
                                                         )}

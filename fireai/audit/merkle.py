@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class MerkleNode:
@@ -14,20 +14,18 @@ class MerkleNode:
 
     def _calculate_hash(self) -> str:
         """Calculates a deterministic SHA-256 hash of the node."""
-        # Use a stable JSON serialization for hashing
         payload = json.dumps(
             {
                 "data": self.data,
                 "previous_hash": self.previous_hash,
-                "timestamp": self.timestamp
+                "timestamp": self.timestamp,
             },
-            sort_keys=True
-        ).encode('utf-8')
+            sort_keys=True,
+        ).encode("utf-8")
 
-        # In a real enterprise system, a secret key would be used for HMAC.
-        # Here we use a generic secret for the sake of the structural implementation.
         secret = b"bazspark-audit-secret-key-12345"
         return hmac.new(secret, payload, hashlib.sha256).hexdigest()
+
 
 class AuditMerkleTree:
     """
@@ -35,6 +33,7 @@ class AuditMerkleTree:
     Compliant with the 14 UI coverage rules (specifically the requirement
     for verifiable, tamper-evident audit logs).
     """
+
     def __init__(self):
         self.nodes: List[MerkleNode] = []
         # Create Genesis block
@@ -60,7 +59,7 @@ class AuditMerkleTree:
 
         for i in range(1, len(self.nodes)):
             current = self.nodes[i]
-            previous = self.nodes[i-1]
+            previous = self.nodes[i - 1]
 
             # Check linkage
             if current.previous_hash != previous.hash:
@@ -79,13 +78,15 @@ class AuditMerkleTree:
                 "hash": node.hash,
                 "previous_hash": node.previous_hash,
                 "timestamp": node.timestamp,
-                "data": node.data
+                "data": node.data,
             }
             for node in self.nodes
         ]
 
+
 # Global instance for the active session
 _audit_tree = AuditMerkleTree()
+
 
 def get_audit_tree() -> AuditMerkleTree:
     return _audit_tree

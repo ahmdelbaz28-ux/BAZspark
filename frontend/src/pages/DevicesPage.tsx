@@ -298,8 +298,12 @@ export const DevicesPage: React.FC = () => {
                               type="button"
                               onClick={() => setViewTarget(device)}
                               className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded hover:bg-slate-700/50"
+<<<<<<< HEAD
                               title={t("devices.viewDetails")}
                               aria-label={t("devices.viewDetails")}
+=======
+                              title="View Details"
+>>>>>>> feature/engineering-identity
                             >
                               <Eye className="h-4 w-4" />
                             </button>
@@ -452,12 +456,19 @@ interface DeviceDetailModalProps {
 }
 
 function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProps) {
+<<<<<<< HEAD
   const { t } = useTranslation();
+=======
+>>>>>>> feature/engineering-identity
   const { data: detailData, isLoading, error } = useQuery({
     queryKey: ["device", projectId, device.id],
     queryFn: async () => {
       const res = await digitalTwinApi.getDevice(projectId, device.id);
+<<<<<<< HEAD
       if (!res.success) throw new Error(res.error || t("devices.detailLoadFailed"));
+=======
+      if (!res.success) throw new Error(res.error || "Failed to load device details");
+>>>>>>> feature/engineering-identity
       return res.data;
     },
   });
@@ -465,30 +476,46 @@ function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProp
   const fullDevice = detailData || device;
 
   return (
+<<<<<<< HEAD
     <div
       className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="view-dialog-title"
     >
+=======
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+>>>>>>> feature/engineering-identity
       <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white"
+<<<<<<< HEAD
           aria-label={t("devices.close")}
         >
           ✕
         </button>
         <h3 id="view-dialog-title" className="text-xl font-bold text-slate-100 mb-4">{fullDevice.name}</h3>
+=======
+        >
+          ✕
+        </button>
+        <h3 className="text-xl font-bold text-slate-100 mb-4">{fullDevice.name}</h3>
+>>>>>>> feature/engineering-identity
 
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="animate-spin text-cyan-400" /></div>
         ) : error ? (
+<<<<<<< HEAD
           <p className="text-red-400">{t("devices.detailLoadFailed")}</p>
+=======
+          <p className="text-red-400">Error loading details</p>
+>>>>>>> feature/engineering-identity
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
+<<<<<<< HEAD
                 <p className="text-xs text-slate-400">{t("devices.colType")}</p>
                 <p className="text-sm text-slate-200">{fullDevice.type.replace(/_/g, " ")}</p>
               </div>
@@ -525,6 +552,44 @@ function DeviceDetailModal({ device, projectId, onClose }: DeviceDetailModalProp
             {fullDevice.properties && Object.keys(fullDevice.properties).length > 0 && (
               <div className="mt-4 border-t border-slate-700 pt-4">
                 <p className="text-xs font-semibold text-slate-400 mb-2">{t("devices.extendedProperties")}</p>
+=======
+                <p className="text-xs text-slate-400">Type</p>
+                <p className="text-sm text-slate-200">{fullDevice.type.replace(/_/g, " ")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Category</p>
+                <p className="text-sm text-slate-200">{fullDevice.category}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Location (X, Y, Z)</p>
+                <p className="text-sm text-slate-200">{`${fullDevice.x}, ${fullDevice.y}, ${fullDevice.z}`}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Rotation</p>
+                <p className="text-sm text-slate-200">{fullDevice.rotation}°</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Voltage</p>
+                <p className="text-sm text-slate-200">{fullDevice.voltage} V</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Current / Load</p>
+                <p className="text-sm text-slate-200">{fullDevice.current} A / {fullDevice.load} A</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Created At</p>
+                <p className="text-sm text-slate-200">{new Date(fullDevice.createdAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Updated At</p>
+                <p className="text-sm text-slate-200">{new Date(fullDevice.updatedAt).toLocaleString()}</p>
+              </div>
+            </div>
+            
+            {fullDevice.properties && Object.keys(fullDevice.properties).length > 0 && (
+              <div className="mt-4 border-t border-slate-700 pt-4">
+                <p className="text-xs font-semibold text-slate-400 mb-2">Extended Properties</p>
+>>>>>>> feature/engineering-identity
                 <pre className="bg-slate-900 p-3 rounded-lg text-xs text-slate-300 overflow-auto max-h-32">
                   {JSON.stringify(fullDevice.properties, null, 2)}
                 </pre>
