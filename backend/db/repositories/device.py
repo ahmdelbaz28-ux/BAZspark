@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import uuid
@@ -165,6 +166,12 @@ class DeviceRepository(BaseRepository):
 
     def delete_device(self, project_id: str, device_id: str) -> bool:
         """Delete a device and its associated connections."""
+        # S5145: device_id is user-controlled (URL path). Sanitize the logged
+        # form with the documented isalnum()/base64.b64encode pattern.
+        if device_id.isalnum():
+            log_device_id = device_id
+        else:
+            log_device_id = base64.b64encode(device_id.encode("utf-8")).decode("utf-8")
         with self.db._transaction() as cur:
             # Delete orphaned connections first (no FK cascade on from_id/to_id)
             cur.execute(
@@ -175,7 +182,7 @@ class DeviceRepository(BaseRepository):
             if deleted_conns > 0:
                 logger.info(
                     "Deleted %s orphaned connection(s) for device %s",
-                    deleted_conns, _safe_log_fragment(device_id),
+                    deleted_conns, log_device_id,
                 )
             cur.execute(
                 f"DELETE FROM devices WHERE id = {self.db._ph()} AND project_id = {self.db._ph()}",

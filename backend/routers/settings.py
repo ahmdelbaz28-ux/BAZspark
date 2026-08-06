@@ -36,7 +36,7 @@ when no key is available or when the stored key fails at runtime.
 """
 
 
-
+import base64
 import ipaddress
 import logging
 import re
@@ -786,6 +786,13 @@ async def test_provider_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid key id.",
         )
+    # S5145: key_id is user-controlled (URL path). Sanitize the logged form
+    # with the documented isalnum()/base64.b64encode pattern; the allowlist
+    # above already bounds the charset.
+    if key_id.isalnum():
+        log_key_id = key_id
+    else:
+        log_key_id = base64.b64encode(key_id.encode("utf-8")).decode("utf-8")
     _ensure_v152_columns()
     db = get_db()
     try:
@@ -831,7 +838,11 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
+<<<<<<< HEAD
         logger.exception("Vision key test (decrypt) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+=======
+        logger.exception("Vision key test (decrypt) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
+>>>>>>> fix/sonar-gate-security-reliability
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -846,7 +857,11 @@ async def test_provider_key(
                 (utc_now_iso(), key_id),
             )
     except Exception as e:
+<<<<<<< HEAD
         logger.debug("Failed to update last_used_at for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+=======
+        logger.debug("Failed to update last_used_at for id=%s: %s", log_key_id[:36], type(e).__name__)
+>>>>>>> fix/sonar-gate-security-reliability
 
     test_url = f"{base_url}{test_path}"
     try:
@@ -871,7 +886,11 @@ async def test_provider_key(
             masked_key=masked,
         )
     except httpx.HTTPError as e:
+<<<<<<< HEAD
         logger.debug("Vision key test (network) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+=======
+        logger.debug("Vision key test (network) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
+>>>>>>> fix/sonar-gate-security-reliability
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -879,7 +898,11 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
+<<<<<<< HEAD
         logger.exception("Vision key test (unknown) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+=======
+        logger.exception("Vision key test (unknown) failed for id=%s: %s", log_key_id[:36], type(e).__name__)
+>>>>>>> fix/sonar-gate-security-reliability
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,

@@ -83,6 +83,7 @@ Usage:
 
 from __future__ import annotations
 
+import base64
 import logging
 import math
 import re
@@ -770,13 +771,21 @@ class AcousticsEngine:
         if compliant:
             logger.info(
                 "check_coverage PASS: room=%s margin=%.1f dB",
+<<<<<<< HEAD
                 _safe_log_fragment(room_id),
+=======
+                log_room_id[:50],
+>>>>>>> fix/sonar-gate-security-reliability
                 result.margin_dba,
             )
         else:
             logger.warning(
                 "check_coverage FAIL: room=%s violations=%d",
+<<<<<<< HEAD
                 _safe_log_fragment(room_id),
+=======
+                log_room_id[:50],
+>>>>>>> fix/sonar-gate-security-reliability
                 len(violations),
             )
 
