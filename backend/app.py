@@ -468,30 +468,18 @@ app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1
 # with a warning instead of crashing the whole app.
 def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "") -> None:
     """
-    Import a router module and register it. Skip silently if unavailable.
+    Import a router module and register it. Fail fast on any error except
+    optional dependency missing (ImportError), which is logged as error and
+    skipped only for non-critical routers.
 
-    V193 (R2) FIX — ROOT CAUSE of silent auth-router failure:
-      Previously this function swallowed ALL exceptions (including
-      ValueError from session-secret validation) and only logged a
-      WARNING. When FIREAI_SESSION_SECRET was < 43 chars, the auth
-      router raised ValueError, was silently dropped, and all /auth/*
-      endpoints returned 404. The frontend couldn't authenticate and
-      the entire app was unusable — with NO visible error.
+    Critical routers (auth, api_keys) are never skipped — any exception
+    (including ImportError) is re-raised to abort startup.
 
-      Per agent.md Rule 1 (ABSOLUTE TRUTH) and Rule 13 (HONEST
-      SELF-ASSESSMENT), mission-critical routers (auth, api_keys)
-      MUST NOT be silently skipped. We now RE-RAISE for those, and
-      for everything else we still log+continue (graceful
-      degradation for optional routers like `workflow` which needs
-      langgraph).
-
-      The startup-time session-secret validation (below in this file)
-      is the PRIMARY defense — it hard-fails before the app starts
-      accepting requests. This re-raise is the SECONDARY defense in
-      case the secret check is bypassed.
+    For non-critical routers, only ImportError (missing optional dependency)
+    is caught and logged as ERROR with a clear message. All other exceptions
+    are re-raised (fail-fast).
     """
     # Mission-critical routers — failure to register is a launch blocker.
-    # Re-raise so the app crashes loudly instead of running in a broken state.
     CRITICAL_ROUTERS = frozenset({"auth", "api_keys"})
 
     try:
@@ -500,41 +488,33 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         if hasattr(mod, "router"):
             app.include_router(mod.router, prefix=prefix, tags=[tag or module_name.title()])
             logger.debug("Registered router: %s", module_name)
-        # Some routers define additional routers (e.g. analyze.project_router)
         if hasattr(mod, "project_router"):
             app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
             logger.debug("Registered project_router from: %s", module_name)
-        # backend.routers.sync) export a SEPARATE `ws_router` for WebSocket
-        # routes. WebSocket routes cannot share an APIRouter with HTTP routes
-        # that have a path prefix like "/projects/{project_id}/sync" because
-        # the prefix would be applied to the WebSocket path too, breaking the
-        # contract documented in sync.py ("/ws" at root, not "/api/v1/ws").
-        # The old _safe_include_router only registered `mod.router` and
-        # `mod.project_router`, silently dropping `ws_router` — so the /ws
-        # endpoint was unreachable and tests/test_sync_websocket.py failed
-        # with WebSocketDisconnect(1000). Registering ws_router WITHOUT a
-        # prefix preserves the documented "/ws" path.
         if hasattr(mod, "ws_router"):
             app.include_router(mod.ws_router, tags=[tag or module_name.title()])
             logger.debug("Registered ws_router from: %s (no prefix — preserves /ws root path)", module_name)
     except ImportError as e:
-        # Optional dependency missing (e.g. langgraph for workflow router).
-        # Safe to skip — feature is unavailable but app still works.
-        logger.warning("Router '%s' skipped (optional dependency missing): %s", module_name, e)
-    except Exception as e:
-        # Any other exception (ValueError, RuntimeError, etc.) on a
-        # CRITICAL router = launch blocker. Re-raise so the app fails fast.
+        # Optional dependency missing — log as ERROR with clear message.
+        logger.error(
+            "Optional dependency for router '%s' is missing: %s. "
+            "Router will not be available. Install the required dependency. "
+            "This is a hard requirement in production — see requirements.txt.",
+            module_name, e,
+            exc_info=True,
+        )
+        # Critical routers must never be skipped.
         if module_name in CRITICAL_ROUTERS:
-            logger.exception(
-                "CRITICAL router '%s' failed to register: %s — aborting startup. "
-                "This router is mission-critical; the app cannot function safely without it. "
-                "Fix the underlying issue (likely FIREAI_SESSION_SECRET is missing or too short — "
-                "minimum 43 chars / 256 bits).",
-                module_name, e,
-            )
             raise
-        # Non-critical router: log and continue (graceful degradation)
-        logger.warning("Router '%s' registration failed: %s", module_name, e)
+        # Non-critical router: explicitly skip (documented).
+    except Exception as e:
+        # Any other exception: fail fast.
+        logger.exception(
+            "Router '%s' registration failed with unexpected error: %s. "
+            "This is a launch blocker — fix the underlying issue.",
+            module_name, e,
+        )
+        raise
 
 # Register the missing routers. Order matters for route precedence, but
 # FastAPI raises on conflict, so duplicates are caught at startup.

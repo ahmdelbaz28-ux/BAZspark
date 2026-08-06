@@ -411,3 +411,29 @@ Stage Summary:
 - ⚠️ Full mypy error count still high; need to target the 17 new errors specifically.
 Files changed: 4 (added __init__.py)
 PR: https://github.com/ahmdelbaz28-ux/BAZspark/pull/329
+
+---
+
+Task ID: phase1-failfast-router-load
+Agent: Phase-1 Agent
+Task: Replace graceful-degrade router loading with fail-fast
+Work Log:
+- Identified _safe_include_router swallowing all exceptions (except ImportError) for non-critical routers, logging only WARNING
+- Rewrote _safe_include_router to fail fast on any exception except ImportError (missing optional dependency)
+- For ImportError on non-critical routers: log as ERROR with clear message and skip (explicitly documented)
+- Critical routers (auth, api_keys) never skip — any exception re-raised
+- Fixed missing imports in backend/routers/settings.py (logging, re, ipaddress, socket, uuid, base64) revealed by fail-fast
+- Tested app startup: `python3 -c "from backend.app import app; print('OK', len(app.routes), 'routes')"` succeeds
+- Workflow router missing langgraph logs ERROR and continues (non-critical)
+- Committed changes to branch fix/phase1-failfast-router-load
+- Pushed branch to origin
+- Created PR #328: https://github.com/ahmdelbaz28-ux/BAZspark/pull/328
+
+Stage Summary:
+- ✅ Graceful-degrade pattern eliminated, fail-fast enforced
+- ✅ PR #328 open and ready for review
+- ✅ No secrets leaked (checked git diff)
+- ✅ App starts without swallowing errors
+Files changed: 2
+Lines added: 34, removed: 48
+PR: https://github.com/ahmdelbaz28-ux/BAZspark/pull/328
