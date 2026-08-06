@@ -1477,7 +1477,6 @@ class DigitalTwinSync:
                 exc_info=True,
             )
 
-
     # ------------------------------------------------------------------
     # MQTT & BACnet/IP Protocol Handlers (WebSocket Live Streaming)
     # ------------------------------------------------------------------
@@ -1534,4 +1533,3 @@ class DigitalTwinSync:
             "broadcast_status": "SENT",
             "payload": event_data,
         }
-

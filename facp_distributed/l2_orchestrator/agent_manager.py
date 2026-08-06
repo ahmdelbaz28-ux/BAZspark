@@ -1,10 +1,13 @@
 # NOSONAR
 """Agent Manager for L2 Orchestrator in Distributed FACP System"""
+import logging
 import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
@@ -225,7 +228,7 @@ class ValidatorAgent(BaseAgent):
         method = request_data.get("method", "")
         params = request_data.get("params", {})
 
-        if method.startswith("validate.") or method.startswith("check."):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+        if method.startswith("validate.") or method.startswith("check."):
             # Validate the provided data
             target = params.get("payload", {}).get("target", {})
             validation_type = params.get("payload", {}).get("type", "generic")

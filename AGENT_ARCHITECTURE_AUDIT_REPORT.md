@@ -1,9 +1,9 @@
 # BAZspark Agent Architecture Audit Report
 
-**Date:** 2026-08-06  
-**Auditor:** Agent Architecture Audit (automated)  
-**Scope:** All AI agents and LLM-adjacent subsystems in BAZspark  
-**Framework:** 12-Layer Agent Stack  
+**Date:** 2026-08-06
+**Auditor:** Agent Architecture Audit (automated)
+**Scope:** All AI agents and LLM-adjacent subsystems in BAZspark
+**Framework:** 12-Layer Agent Stack
 
 ---
 

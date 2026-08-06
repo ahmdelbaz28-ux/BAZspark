@@ -143,7 +143,7 @@ def calculate_spl_at_distance(
     target_distance_m: float,
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
     room_absorption_m2: float | None = None,
-    room_volume_m3: float | None = None,  # NOSONAR — S1172: accepted for API stability; room volume flows here for reverberant-field SPL calculations
+    room_volume_m3: float | None = None,  # noqa: E501 - API compat
     include_reverberant_field: bool = True,
 ) -> SPLResult:
     """
@@ -390,7 +390,7 @@ def calculate_min_speakers_for_room(
             mode=mode,
             ref_distance_m=ref_distance_m,
             room_absorption_m2=room_absorption_m2,
-            room_volume_m3=room_length_m * room_width_m * room_height_m,  # NOSONAR — S930: room_volume_m3 accepted by check_audibility_compliance(source_dba, target_distance_m, ambient_dba, mode, ref_distance_m, room_absorption_m2, room_volume_m3)
+            room_volume_m3=room_length_m * room_width_m * room_height_m,
         )
 
         if result.compliant:
@@ -409,7 +409,7 @@ def calculate_min_speakers_for_room(
         mode=mode,
         ref_distance_m=ref_distance_m,
         room_absorption_m2=room_absorption_m2,
-        room_volume_m3=room_length_m * room_width_m * room_height_m,  # NOSONAR — S930: room_volume_m3 accepted by check_audibility_compliance
+        room_volume_m3=room_length_m * room_width_m * room_height_m,
     )
 
     return SpeakerPlacementResult(
@@ -970,4 +970,3 @@ __all__ = [
     "generate_acoustic_heatmap_matrix",
     "get_speaker_coverage_radius",
 ]
-

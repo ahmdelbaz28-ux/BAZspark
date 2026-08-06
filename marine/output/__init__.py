@@ -30,4 +30,3 @@ __all__ = [
     "generate_extinguishing_fat",
     "generate_full_bom",
 ]
-

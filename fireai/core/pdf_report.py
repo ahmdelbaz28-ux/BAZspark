@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import traceback
 from datetime import datetime, timezone
+from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -287,7 +288,7 @@ def _cover_page(report: BuildingReport) -> list:
 # -- 2. Building summary --
 
 
-def _building_summary(report: BuildingReport) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _building_summary(report: BuildingReport) -> list:
     elems = []
     elems.append(Paragraph("Building Summary", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -349,7 +350,7 @@ def _floor_tables(report: BuildingReport) -> list:
     elems.append(Paragraph("Per-Floor Room Details", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
-    headers = ["Room ID", "Name", "Dimensions (m)", "Detectors", "Coverage %", "Method", "Status"]  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    headers = ["Room ID", "Name", "Dimensions (m)", "Detectors", "Coverage %", "Method", "Status"]
     col_w = [2.8 * cm, 3.0 * cm, 3.2 * cm, 2.0 * cm, 2.2 * cm, 2.8 * cm, 2.0 * cm]
 
     for floor in report.floor_reports:
@@ -625,7 +626,7 @@ def generate_building_report(
             _logger.error("Path traversal / invalid output path detected in generate_pdf_report: %s", output_path)
             raise ValueError("Output path escapes file system restrictions")
     except Exception as e:
-        _logger.exception("Path validation failed: %s", e)  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        _logger.exception("Path validation failed: %s", e)
         raise ValueError(f"Invalid output path: {e}")
 
     try:
@@ -742,4 +743,3 @@ def generate_civil_defense_submittal_pdf(
             pass
 
     return txt_path
-

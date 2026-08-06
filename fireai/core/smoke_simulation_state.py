@@ -329,7 +329,7 @@ class SmokeSimulationState:
     fds_config: FDSIntegrationConfig | None = None
     fds_run_id: str | None = None
     last_updated: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
     validation_warning: str | None = PLACEHOLDER_VALIDATION_WARNING
 
@@ -658,7 +658,8 @@ class AutoMeshBoundaryGenerator:
             "&TIME T_END=600.0 /",
             "&MISC TMPA=20.0 /",
             f"&SURF ID='FIRE_BURNER', HRRPUA={self.default_hrr_kw:.1f}, COLOR='RED' /",
-            f"&OBST XB={max(0, fire_x - 0.5):.2f},{min(width_m, fire_x + 0.5):.2f},{max(0, fire_y - 0.5):.2f},{min(depth_m, fire_y + 0.5):.2f},0.0,{fire_z + 0.2:.2f}, SURF_ID='FIRE_BURNER' /",
+            f"&OBST XB={max(0, fire_x - 0.5):.2f},{min(width_m, fire_x + 0.5):.2f},{max(0, fire_y - 0.5):.2f},"
+            f"{min(depth_m, fire_y + 0.5):.2f},0.0,{fire_z + 0.2:.2f}, SURF_ID='FIRE_BURNER' /",
         ]
 
         # Add walls if provided
@@ -667,7 +668,9 @@ class AutoMeshBoundaryGenerator:
                 x1, x2 = w.get("x1", 0.0), w.get("x2", 0.0)
                 y1, y2 = w.get("y1", 0.0), w.get("y2", 0.0)
                 z1, z2 = w.get("z1", 0.0), w.get("z2", height_m)
-                lines.append(f"&OBST XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, COLOR='GRAY' /  ! Wall_{idx+1}")
+                lines.append(
+                    f"&OBST XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, COLOR='GRAY' /  ! Wall_{idx+1}"
+                )
 
         # Add doors / vents
         if doors:
@@ -675,11 +678,15 @@ class AutoMeshBoundaryGenerator:
                 x1, x2 = d.get("x1", 0.0), d.get("x2", 0.0)
                 y1, y2 = d.get("y1", 0.0), d.get("y2", 0.0)
                 z1, z2 = d.get("z1", 0.0), d.get("z2", 2.1)
-                lines.append(f"&VENT XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, SURF_ID='OPEN' /  ! Door_Vent_{idx+1}")
+                lines.append(
+                    f"&VENT XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, SURF_ID='OPEN' / ! V_{idx+1}"
+                )
 
         # Devices for smoke/temp sampling
         lines.append(f"&DEVC ID='THCP_EYE', QUANTITY='TEMPERATURE', XYZ={width_m/2.0:.2f},{depth_m/2.0:.2f},1.7 /")
-        lines.append(f"&DEVC ID='SOOT_EYE', QUANTITY='MASS FRACTION', SPEC_ID='SOOT', XYZ={width_m/2.0:.2f},{depth_m/2.0:.2f},1.7 /")
+        lines.append(
+            f"&DEVC ID='SOOT_EYE', QUANTITY='MASS FRACTION', SPEC_ID='SOOT', XYZ={width_m/2:.1f},{depth_m/2:.1f},1.7 /"
+        )
         lines.append("&TAIL /")
 
         fds_content = "\n".join(lines)
@@ -719,4 +726,3 @@ __all__ = [
     "SmokeSimulationState",
     "VisibilityGradient",
 ]
-

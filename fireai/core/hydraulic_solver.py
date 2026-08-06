@@ -51,6 +51,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +267,7 @@ def calculate_friction_loss(
             f"Hazen-Williams numerator overflow: 4.52 × {flow_rate_gpm}^{HW_EXPONENT}. "
             "Flow rate may be unreasonably large."
         )
-    if not math.isfinite(denominator) or denominator == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+    if not math.isfinite(denominator) or denominator == 0.0:
         raise ValueError(
             f"Hazen-Williams denominator invalid: C={friction_factor_c}^{HW_EXPONENT} "
             f"× d={internal_diameter_inches}^{DIAMETER_EXPONENT} = {denominator}. "
@@ -585,7 +586,8 @@ def extract_pipes_from_revit_elements(elements: list[dict[str, Any]]) -> list[di
 
         params = elem.get("parameters", {})
         length_ft = float(params.get("length_ft", elem.get("length_ft", 10.0)))
-        length_m = length_ft * 0.3048 if "length_ft" in params or "length_ft" in elem else float(params.get("length_m", 3.0))
+        has_ft = ("length_ft" in params or "length_ft" in elem)
+        length_m = length_ft * 0.3048 if has_ft else float(params.get("length_m", 3.0))
 
         # Size / diameter parsing (inches)
         size_in = float(params.get("diameter_in", params.get("size_in", 2.0)))
@@ -649,8 +651,6 @@ def solve_hydraulics_from_revit(
             "length_ft": pipe["length_ft"],
             "flow_gpm": pipe["flow_gpm"],
         })
-
-
     residual_pressure_psi = max(0.0, source_pressure_psi - total_friction_loss_psi)
     is_compliant = residual_pressure_psi >= MIN_SPRINKLER_PRESSURE_PSI
 
@@ -683,4 +683,3 @@ __all__ = [
     "validate_roughness_factor",
     "validate_sprinkler_compliance",
 ]
-

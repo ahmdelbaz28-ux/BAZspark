@@ -261,10 +261,10 @@ def generate_schedules(run: ConduitRun) -> dict[str, Any]:
 
 def _build_summary(run: ConduitRun) -> dict[str, Any]:
     """Build summary statistics for a ConduitRun."""
-    elbow_count   = sum(1 for f in run.fittings if f.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45))
+    elbow_count = sum(1 for f in run.fittings if f.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45))
     coupling_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.COUPLING)
-    pullbox_count  = sum(1 for f in run.fittings if f.fitting_type == FittingType.PULL_BOX)
-    total_weight   = sum(f.weight_kg for f in run.fittings)
+    pullbox_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.PULL_BOX)
+    total_weight = sum(f.weight_kg for f in run.fittings)
 
     return {
         "run_id":            run.run_id,
@@ -362,4 +362,3 @@ def export_astar_conduit_runs_for_revit(runs: list[ConduitRun]) -> str:
     }
     payload["sha256"] = _sha256(payload)
     return json.dumps(payload, indent=2)
-

@@ -468,7 +468,6 @@ class AHJSubmittalGenerator:
 
             results = [vd_dict]
 
-
         lines = ["VOLTAGE DROP CALCULATIONS\n", "NFPA 72 §10.14 & NEC Chapter 9 Table 8\n"]
         for i, vd in enumerate(results):
             cid = vd.get("circuit_id", f"Circuit {i + 1}")
@@ -504,7 +503,6 @@ class AHJSubmittalGenerator:
                 "aging_derating_factor": getattr(b_calc, "aging_derating", 1.25),
             }
 
-
         return (
             f"BATTERY CALCULATIONS & AGING DERATING\n"
             f"NFPA 72 §10.6.7 & IEEE 485\n\n"
@@ -515,7 +513,6 @@ class AHJSubmittalGenerator:
             f"Aging Derating Factor: {result.get('aging_derating_factor', 1.25):.2f}\n"
             f"Adequate Capacity: {'YES (COMPLIANT)' if result.get('is_adequate') else 'NO (NON-COMPLIANT)'}\n"
         )
-
 
     @staticmethod
     def _survivability_content(result: Any | None) -> str:
