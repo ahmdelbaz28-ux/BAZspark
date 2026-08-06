@@ -22,10 +22,14 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 
+<<<<<<< HEAD
 from fireai.core.base_types import ConduitType, FittingType, Point3D
 from fireai.core.base_types import (
     Result as Result,  # noqa: F401 — re-exported for qomn_conduit.types.Result consumers (catalog.py)
 )
+=======
+from fireai.core.base_types import ConduitType, FittingType, Point3D, Result
+>>>>>>> remotes/origin/fix/dependabot-automerge-ci-pipeline
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TradeSize — nominal pipe/conduit sizes
