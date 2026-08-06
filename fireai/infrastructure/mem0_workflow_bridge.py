@@ -120,8 +120,7 @@ def _room_query(room: dict[str, Any]) -> list[str]:
         return []
     combined = f"{occupancy} {room_name}".lower()
 
-    queries: list[str] = _build_room_queries(combined, occupancy, room_name)
-    return queries
+    return _build_room_queries(combined, occupancy, room_name)
 
 
 def _build_room_queries(combined: str, occupancy: str, room_name: str) -> list[str]:
@@ -151,6 +150,24 @@ def _is_hazardous_area(combined: str) -> bool:
     """Check if the room is a hazardous area."""
     hazardous_keywords = ("electrical", "mechanical", "hazardous", "generator")
     return any(kw in combined for kw in hazardous_keywords)
+
+
+def _get_gulf_state_queries(region: str) -> list[str]:
+    """Get queries for Gulf state regions."""
+    gulf_states = {
+        "gulf", "uae", "saudi", "ksa", "qatar", "kuwait", "oman", "bahrain"
+    }
+    if region in gulf_states:
+        return ["Civil Defense fire alarm code Gulf state requirements"]
+    return []
+
+
+def _get_seismic_queries(env_context: dict[str, Any]) -> list[str]:
+    """Get queries for seismic/severe weather conditions."""
+    severe = env_context.get("severe_weather_alerts") or env_context.get("severe_weather")
+    if severe:
+        return ["seismic bracing fire alarm equipment requirements"]
+    return []
 
 
 def _region_queries(env_context: dict[str, Any]) -> list[str]:
