@@ -1,16 +1,24 @@
-BAZSPARK End-to-End Production Validation Results
-==========================
-Validation Date: 2026-07-17
-Overall Status: PRODUCTION READY
-Tests Passed: 9/9
-
-Warnings:
-- Supabase URL unreachable (NEON fallback configured)
-- Server not running (expected in validation mode)
-
-Action Items Before Production:
-1. Rotate all credentials (see SECRETS_ROTATION_GUIDE.md)
-2. Replace Supabase project with valid URL
-3. Set CORS_ORIGINS to production domains
-4. Set FIREAI_ENV=production
-5. Start server and verify health endpoint
+BAZspark Production Validation Results — Real Snapshot
+Date: 2026-08-06
+Commit: a403828f
+Backend Tests (security + core):
+Collected: 1419
+Passed: 1405
+Failed: 2
+Skipped: 12
+Duration: 169s
+Backend Tests (full suite):
+Collected: 2069
+Passed: (full run pending)
+Failed: (full run pending)
+Skipped: (full run pending)
+Frontend Tests:
+Total: 343
+Passed: 343
+Failed: 0
+FireAI Core (NFPA 72 engine):
+Collected: (included in backend core)
+Passed: (included in backend core)
+Known Gaps (see verified_gaps.md):
+17 items remaining
+Status: NOT READY FOR PRODUCTION — Phase-1 in progress.
