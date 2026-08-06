@@ -501,9 +501,25 @@ def _make_sentinel(raw_log: list, filtered_log: list,
                     func_name: str):
     """Create a sentinel that records every call to a patched function.
 
-    The sentinel walks UP the call stack past mock/unittest/marshal
-    internals so the recorded (filename, lineno) is the APPLICATION
-    caller, not the patching machinery.
+    The sentinel walks the call stack past app/mock/unittest internals
+    so the recorded (filename, lineno) is the APPLICATION caller, not
+    the patching machinery.
+
+    IMPORTANT — importlib .pyc loading is excluded:
+      CPython's importlib._bootstrap_external reads/writes on-disk .pyc
+      bytecode caches via marshal.loads/dumps. Any LAZY import executed
+      from a route handler (e.g. `from fireai.core.device_placement
+      import ...` inside an endpoint function) therefore triggers
+      marshal.loads from a <frozen importlib._bootstrap_external>
+      frame, and — because frozen frames are skipped by the walker —
+      the sentinel would otherwise record the APPLICATION IMPORT LINE
+      as a "violation". Those calls are interpreter internals operating
+      on the module's own trusted bytecode cache, NOT the isolation.py
+      sandbox path the M-1 claim is about. We detect the importlib
+      pyc-read/write path in the walked chain and ignore it. Real
+      application-level marshal calls (the only thing Test 3 must
+      catch) never have importlib frames between the sentinel and the
+      recorded caller.
 
     Records into BOTH logs as tuples of (filename, lineno, func_name):
       - raw_log:     EVERY call, no filtering. Used by the meta-test
@@ -520,12 +536,23 @@ def _make_sentinel(raw_log: list, filtered_log: list,
         import inspect
         frame = inspect.currentframe().f_back
         skip_substrings = ("/marshal", "<frozen", "/mock", "/unittest")
+        # True when the call chain passes through importlib's .pyc
+        # read/write machinery (frozen or source form). See docstring
+        # above — such calls are interpreter internals, not application
+        # code paths, and must NOT be recorded as violations.
+        via_importlib_pyc = False
         while frame is not None:
             fn = frame.f_code.co_filename
             fn_posix = fn.replace(os.sep, "/")
+            if ("<frozen importlib" in fn_posix
+                    or "/importlib/_bootstrap" in fn_posix
+                    or fn_posix.endswith("/lib/importlib/_bootstrap.py")):
+                via_importlib_pyc = True
             if not any(s in fn_posix for s in skip_substrings):
                 break
             frame = frame.f_back
+        if frame is None or via_importlib_pyc:
+            return b""
         if frame is not None:
             fn = frame.f_code.co_filename
             ln = frame.f_lineno
