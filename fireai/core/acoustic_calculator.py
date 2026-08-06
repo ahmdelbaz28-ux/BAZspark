@@ -880,8 +880,8 @@ def generate_acoustic_heatmap_matrix(
     Reference: IEC 60268-16 (STI calculation) and NFPA 72 §18.4.
     """
     grid_step = max(0.2, grid_step_m)
-    cols = max(2, int(math.ceil(width_m / grid_step)))
-    rows = max(2, int(math.ceil(depth_m / grid_step)))
+    cols = max(2, math.ceil(width_m / grid_step))
+    rows = max(2, math.ceil(depth_m / grid_step))
 
     spl_matrix: list[list[float]] = []
     sti_matrix: list[list[float]] = []

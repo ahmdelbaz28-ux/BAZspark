@@ -641,9 +641,9 @@ class AutoMeshBoundaryGenerator:
         Generate complete .fds file content and mesh parameters.
         """
         dx = cell_size_m if cell_size_m and cell_size_m > 0 else self.default_cell_size_m
-        ijk_x = max(4, int(math.ceil(width_m / dx)))
-        ijk_y = max(4, int(math.ceil(depth_m / dx)))
-        ijk_z = max(4, int(math.ceil(height_m / dx)))
+        ijk_x = max(4, math.ceil(width_m / dx))
+        ijk_y = max(4, math.ceil(depth_m / dx))
+        ijk_z = max(4, math.ceil(height_m / dx))
 
         # Actual cell sizes
         cell_x = width_m / ijk_x

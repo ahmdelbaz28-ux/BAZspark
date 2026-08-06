@@ -100,16 +100,16 @@ def _validate_json_size_and_depth(
 # Common field factories
 # ============================================================================
 
-def common_name_field() -> Field:
+def common_name_field() -> Any:
     """Standard name field with null-byte sanitization."""
     return Field(min_length=1, max_length=255)
 
 
-def common_description_field() -> Field:
+def common_description_field() -> Any:
     """Standard description field with DoS protection."""
     return Field(default="", max_length=5000)
 
 
-def common_metadata_field() -> Field:
+def common_metadata_field() -> Any:
     """Standard metadata field with size/depth limits."""
     return Field(default=None, validate_default=True)

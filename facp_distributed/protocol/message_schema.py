@@ -101,7 +101,7 @@ class FACPRequest:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FACPRequest':
+    def from_dict(cls, data: Dict[str, Any]) -> FACPRequest:
         """Create request from dictionary"""
         return cls(
             id=data.get("id", str(uuid.uuid4())),
@@ -150,7 +150,7 @@ class FACPResponse:
         return response
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FACPResponse':
+    def from_dict(cls, data: Dict[str, Any]) -> FACPResponse:
         """Create response from dictionary"""
         return cls(
             id=data["id"],

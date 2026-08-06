@@ -380,6 +380,21 @@ class Conflict:
     resolved: bool = False
     timestamp: datetime | None = None
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dictionary for JSON export."""
+        return {
+            "conflict_id": self.conflict_id,
+            "element_id": self.element_id,
+            "conflict_type": self.conflict_type.value,
+            "source_a": self.source_a,
+            "source_b": self.source_b,
+            "change_a": self.change_a,
+            "change_b": self.change_b,
+            "resolution": self.resolution,
+            "resolved": self.resolved,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # UNIVERSAL ELEMENT

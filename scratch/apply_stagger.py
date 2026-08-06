@@ -1,6 +1,7 @@
 import os
 import re
 
+
 def process_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()

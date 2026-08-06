@@ -659,8 +659,15 @@ def get_events() -> list[dict[str, Any]]:
     """
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM audit_log ORDER BY id")
-    rows = cursor.fetchall()
+    try:
+        cursor.execute("SELECT * FROM audit_log ORDER BY id")
+        rows = cursor.fetchall()
+    except sqlite3.OperationalError:
+        _release_connection(conn)
+        global _db_initialized
+        _db_initialized = False
+        _init_database()
+        return []
     _release_connection(conn)
 
     events = []

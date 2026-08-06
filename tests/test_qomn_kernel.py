@@ -74,7 +74,6 @@ from fireai.core.qomn_kernel import (
     validate_smoke_spacing_result,
     validate_voltage_drop_result,
 )
-
 from fireai.core.results import (
     BatteryCapacityResult,
     HeatSpacingResult,

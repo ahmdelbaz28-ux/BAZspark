@@ -71,6 +71,8 @@ from typing import Any, NamedTuple, Protocol, runtime_checkable
 from core.models import (
     _ELEMENT_UPDATABLE_KEYS,
     ChangeSource,
+    Conflict,
+    ConflictType,
     ElementType,
     Geometry,
     Point3D,
@@ -93,7 +95,8 @@ class _ElementLike(Protocol):
     forcing a UniversalElement dependency.
     """
 
-    element_id: str
+    @property
+    def element_id(self) -> str: ...
 
     def to_dict(self) -> dict[str, Any]: ...
 
@@ -185,7 +188,7 @@ class UniversalDataModel:
             if db_dir:
                 os.makedirs(db_dir, exist_ok=True, mode=0o700)
 
-        self._conn = sqlite3.connect(
+        self._conn: sqlite3.Connection | _ClosedConnectionGuard = sqlite3.connect(
             db_path,
             check_same_thread=False,
             detect_types=sqlite3.PARSE_DECLTYPES,
@@ -671,7 +674,7 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error getting elements by project: %s", e)
                 return []
 
-    def detect_conflicts(self) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def detect_conflicts(self) -> list[Conflict]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Detect conflicts between elements from different sources.
 
@@ -679,18 +682,17 @@ class UniversalDataModel:
         overlapping geometry or conflicting properties from
         different ChangeSource origins.
         """
-        conflicts = []
+        conflicts: list[Conflict] = []
         with self._lock:
             try:
                 elements = self.get_all_elements(include_deleted=False)
                 # Simple conflict detection: find elements with same autocad_handle
                 # or overlapping coordinates from different sources
-                handle_map: dict[str, list] = {}
+                handle_map: dict[str, list[UniversalElement]] = {}
                 for elem in elements:
                     if elem.autocad_handle:
                         handle_map.setdefault(elem.autocad_handle, []).append(elem)
 
-                from core.models import Conflict, ConflictType
                 for handle, elems in handle_map.items():
                     if len(elems) > 1:
                         for i in range(len(elems) - 1):
@@ -763,7 +765,6 @@ class UniversalDataModel:
                 )
                 self._conn.commit()
 
-                from core.models import Conflict, ConflictType
                 return Conflict(
                     conflict_id=row["conflict_id"],
                     element_id=row["element_id"],

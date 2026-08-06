@@ -20,13 +20,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
-from fireai.core.contracts import DetectorType, Room
-
 from adapters.pdf_to_rooms_adapter import (
     extract_rooms_from_walls,
     select_safe_detector_type,
 )
-
+from fireai.core.contracts import DetectorType, Room
 
 # ── select_safe_detector_type — REAL caller shape (dict) ──────────────────────
 
@@ -153,7 +151,7 @@ class TestExtractRoomsFromWalls:
         assert report["status"] == "no_walls"
 
     def test_returns_canonical_room_instances(self):
-        shapely = pytest.importorskip("shapely")
+        pytest.importorskip("shapely")
         from shapely.geometry import LineString
 
         # A closed square loop of wall segments.
@@ -163,7 +161,7 @@ class TestExtractRoomsFromWalls:
             LineString([(10, 10), (0, 10)]),
             LineString([(0, 10), (0, 0)]),
         ]
-        rooms, report = extract_rooms_from_walls(walls)
+        rooms, _report = extract_rooms_from_walls(walls)
         assert len(rooms) >= 1
         room = rooms[0]
         assert isinstance(room, Room)
@@ -172,7 +170,7 @@ class TestExtractRoomsFromWalls:
         assert room.polygon is not None
 
     def test_open_loop_returns_no_closed_loops_status(self):
-        shapely = pytest.importorskip("shapely")
+        pytest.importorskip("shapely")
         from shapely.geometry import LineString
 
         walls = [

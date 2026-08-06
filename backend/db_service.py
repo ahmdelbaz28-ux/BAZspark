@@ -17,10 +17,10 @@ import os
 import sqlite3
 import threading
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
-from core.database import UniversalDataModel
 from backend.schemas import (
     ConflictResponse,
     ConnectionCreate,
@@ -36,6 +36,7 @@ from backend.schemas import (
     SemanticPropertiesResponse,
     StatisticsResponse,
 )
+from core.database import UniversalDataModel
 from core.models import (
     ChangeSource,
     Geometry,
@@ -118,6 +119,7 @@ class DatabaseService:
 
     _instance: DatabaseService | None = None
     _lock = threading.Lock()
+    _initialized: bool = False
 
     def __new__(cls, *args: Any, **kwargs: Any) -> DatabaseService:
         if cls._instance is None:
@@ -142,7 +144,7 @@ class DatabaseService:
             db_path = os.getenv("UDM_DB_PATH", os.path.join(db_dir, "udm_elements.db"))
 
         self._db_path = db_path
-        self._data_model = UniversalDataModel(db_path=db_path)
+        self._data_model: UniversalDataModel = UniversalDataModel(db_path=db_path)
         self._service_lock = threading.RLock()
 
         # Create projects table in the same SQLite database
@@ -178,13 +180,7 @@ class DatabaseService:
 
     @property
     def _db_conn(self) -> sqlite3.Connection:
-        """
-        Get database connection ONLY while holding the database lock.
-
-        CRITICAL FIX: Previous code accessed self._data_model._conn directly
-        without acquiring self._data_model._lock, creating a race condition
-        where two threads could execute SQL on the same sqlite3.Connection
-        simultaneously — risking database corruption and silent data loss.
+        """Get underlying connection for raw SQL execution.
 
         This property MUST only be used inside `with self._db_lock:` blocks.
         The `_db_lock` context manager enforces the lock ordering:
@@ -192,7 +188,7 @@ class DatabaseService:
 
         NEVER access self._data_model._conn outside of _db_lock or _safe_db_execute.
         """
-        return self._data_model._conn
+        return cast(sqlite3.Connection, self._data_model._conn)
 
     @property
     def _db_lock(self) -> threading.RLock:
@@ -489,7 +485,7 @@ class DatabaseService:
                 (element_id,),
             )
             row = cursor.fetchone()
-            return row[0] if row else None
+            return str(row[0]) if row and row[0] is not None else None
         except Exception:
             return None
 
@@ -556,7 +552,7 @@ class DatabaseService:
             geometry = None
             if element_data.geometry:
                 geometry = Geometry(
-                    points=[Point3D(x=p.x, y=p.y, z=p.z) for p in element_data.geometry.points],
+                    points=tuple(Point3D(x=p.x, y=p.y, z=p.z) for p in element_data.geometry.points),
                     polyline_closed=element_data.geometry.polyline_closed,
                 )
 
@@ -608,8 +604,8 @@ class DatabaseService:
             # Filter by element type
             if element_type:
                 elements = [
-                    e for e in elements
-                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) == element_type
+                    elem for elem in elements
+                    if elem.properties and (elem.properties.element_type.value if hasattr(elem.properties.element_type, 'value') else str(elem.properties.element_type)) == element_type
                 ]
 
             # Filter by project
@@ -627,20 +623,20 @@ class DatabaseService:
                         project_element_ids.add(row[0])
                 except Exception as e:
                     logger.debug("Failed to query element_projects for project filter: %s", e)
-                elements = [e for e in elements if e.element_id in project_element_ids]
+                elements = [elem for elem in elements if elem.element_id in project_element_ids]
 
             # Filter by deletion status
             if is_deleted is not None:
-                elements = [e for e in elements if e.is_deleted == is_deleted]
+                elements = [elem for elem in elements if elem.is_deleted == is_deleted]
             else:
                 # By default, exclude deleted elements
-                elements = [e for e in elements if not e.is_deleted]
+                elements = [elem for elem in elements if not elem.is_deleted]
 
             # Sort
             sort_key = _normalize_sort(sort_by)
             reverse = sort_order.lower() == "desc"
             elements.sort(
-                key=lambda e: self._get_sort_value(e, sort_key),
+                key=lambda elem: self._get_sort_value(elem, sort_key),
                 reverse=reverse,
             )
 
@@ -652,13 +648,13 @@ class DatabaseService:
             # instead of calling _get_element_project_id() per element in a loop.
             # Old: 1 + page_size queries (21 queries for page_size=20)
             # New: 1 query total (regardless of page_size)
-            element_ids = [e.element_id for e in paginated]
+            element_ids = [elem.element_id for elem in paginated]
             project_id_map = self._batch_get_element_project_ids(element_ids)
 
             result = []
-            for e in paginated:
-                pid = project_id_map.get(e.element_id)
-                result.append(self._element_to_response(e, pid))
+            for elem in paginated:
+                pid = project_id_map.get(elem.element_id)
+                result.append(self._element_to_response(elem, pid))
 
             return result, total
 
@@ -684,7 +680,7 @@ class DatabaseService:
             z=point_data.get("z", 0.0),
         )
 
-        return Geometry(location=location)
+        return Geometry(points=(location,))
 
     def _merge_properties(self, existing_props: Any, update_props: Any) -> dict[str, Any]:
         """Merge updated property values with existing element properties."""
@@ -773,7 +769,7 @@ class DatabaseService:
         """Lock for bridge operations. Always acquire before bridge_sql()."""
         return self._service_lock
 
-    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False):
+    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False) -> Any:
         """
         Execute raw SQL for bridge sync operations safely.
 
@@ -1263,8 +1259,6 @@ class DatabaseService:
                 to_element_id=data.to_element_id,
                 relationship_type=data.relationship_type,
                 metadata=data.metadata or {},
-                created_at="",
-                updated_at="",
             )
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -1281,8 +1275,8 @@ class DatabaseService:
                     element_id=c.element_id,
                     conflict_type=c.conflict_type.value,
                     timestamp=c.timestamp.isoformat() if c.timestamp else None,
-                    source_a=c.source_a.value,
-                    source_b=c.source_b.value,
+                    source_a=c.source_a.value if hasattr(c.source_a, 'value') else (str(c.source_a) if c.source_a is not None else None),
+                    source_b=c.source_b.value if hasattr(c.source_b, 'value') else (str(c.source_b) if c.source_b is not None else None),
                     change_a=c.change_a,
                     change_b=c.change_b,
                     resolution=c.resolution,
@@ -1294,7 +1288,7 @@ class DatabaseService:
     def _build_conflict_filters(self, resolved: bool | None, conflict_type: str | None) -> tuple[str, list]:
         """Build filters for listing conflicts."""
         conditions = ["1=1"]  # Base condition
-        params = []
+        params: list[Any] = []
 
         if resolved is not None:
             conditions.append("resolved=?")
@@ -1347,10 +1341,10 @@ class DatabaseService:
                     element_id=row[1],
                     conflict_type=row[2],
                     timestamp=row[3],
-                    source_a=json.loads(row[4]) if row[4] else {},
-                    source_b=json.loads(row[5]) if row[5] else {},
-                    change_a=json.loads(row[6]) if row[6] else {},
-                    change_b=json.loads(row[7]) if row[7] else {},
+                    source_a=row[4] if row[4] else None,
+                    source_b=row[5] if row[5] else None,
+                    change_a=json.loads(row[6]) if row[6] else None,
+                    change_b=json.loads(row[7]) if row[7] else None,
                     resolution=row[8],
                     resolved=bool(row[9]),
                 )
@@ -1358,22 +1352,22 @@ class DatabaseService:
 
             return conflicts, total_count
 
-    def _convert_conflict_to_response(self, result) -> ConflictResponse:
+    def _convert_conflict_to_response(self, result: Any) -> ConflictResponse:
         """Convert conflict result to response format."""
         # Extract values with defaults
         conflict_id = getattr(result, 'conflict_id', str(uuid.uuid4()))
         element_id = getattr(result, 'element_id', '')
         ct = getattr(result, 'conflict_type', 'UNKNOWN')
-        sa = getattr(result, 'source_a', {})
-        sb = getattr(result, 'source_b', {})
+        sa = getattr(result, 'source_a', None)
+        sb = getattr(result, 'source_b', None)
 
         return ConflictResponse(
             conflict_id=conflict_id,
             element_id=element_id,
-            conflict_type=ct,
-            timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),  # NOSONAR — S3358: nested ternary acceptable in this localized context
-            source_a=sa,
-            source_b=sb,
+            conflict_type=ct if isinstance(ct, str) else (ct.value if hasattr(ct, 'value') else str(ct)),
+            timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),
+            source_a=sa.value if hasattr(sa, 'value') else (str(sa) if sa is not None else None),
+            source_b=sb.value if hasattr(sb, 'value') else (str(sb) if sb is not None else None),
             change_a=result.change_a,
             change_b=result.change_b,
             resolution=result.resolution,
@@ -1518,7 +1512,7 @@ class DatabaseService:
                 "projects": projects,
                 "elements": exported_elements,
                 "connections": connections,
-                "conflicts": [c.to_dict() for c in self._data_model.detect_conflicts()],
+                "conflicts": [asdict(c) for c in self._data_model.detect_conflicts()],
                 "statistics": self._data_model.get_statistics(),
             }
 
