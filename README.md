@@ -15,7 +15,7 @@
 
 ## What is this?
 
-BAZspark automates fire alarm system design and compliance verification per **NFPA 72-2022** and **SOLAS Marine** standards. It runs deterministic voltage drop and battery capacity calculations, generates a Merkle-tree signed audit trail for every design decision, and bridges AutoCAD DWG to Revit BIM models — eliminating manual drafting errors from protection engineering workflows.
+BAZspark automates fire alarm system design and compliance verification per **NFPA 72-2022** and **SOLAS Marine** standards. It runs deterministic voltage drop and battery capacity calculations, generates a SHA-256 hash-chain audit trail with HMAC-SHA256 signatures for every design decision, and bridges AutoCAD DWG to Revit BIM models — eliminating manual drafting errors from protection engineering workflows. The audit trail is tamper-evident within a single system instance; for legally binding timestamping, integrate an RFC 3161 Trusted Timestamp Authority (see `fireai/core/audit_blockchain_bridge.py`).
 
 ---
 
@@ -70,7 +70,7 @@ graph LR
     API --> Store["PostgreSQL · SQLite WAL\nRedis · Qdrant Vector"]
     API --> Marine["marine/\nSOLAS · IEC 60092 · ISO 15370"]
     API --> Copilot["engineering_copilot/\nAI Agent · MCP Server"]
-    Calc --> Audit["Merkle Audit Trail\nHMAC-SHA256 Signatures"]
+    Calc --> Audit["SHA-256 Hash-Chain Audit Trail\nHMAC-SHA256 Signatures"]
     Twin --> Audit
 ```
 

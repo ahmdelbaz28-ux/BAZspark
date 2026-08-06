@@ -57,7 +57,7 @@ async def get_bootstrap_settings():
         "CORS_ALLOWED_ORIGINS": os.getenv("CORS_ALLOWED_ORIGINS", ""),
         "FIREAI_DWG_MAX_FILE_SIZE_BYTES": os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", "104857600"),
         "LANGFUSE_ENABLED": os.getenv("LANGFUSE_ENABLED", "true"),
-        "SYSTEM_VERSION": "1.55.0",
+        "SYSTEM_VERSION": "1.56.0",
         "BUILD_HASH": os.getenv("BUILD_HASH", "dev-build"),
     }
 

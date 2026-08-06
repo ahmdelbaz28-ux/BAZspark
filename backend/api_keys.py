@@ -21,9 +21,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Import bcrypt for stronger password hashing
-# "possibly unbound" when the import fails. All bcrypt usage is guarded by
-# the HAS_BCRYPT flag, so this is type-safe.
+# Import bcrypt for stronger API-key hashing.
+# V157 PHASE-0 FIX: bcrypt is now a HARD runtime dependency (see
+# requirements.txt + pyproject.toml). The previous silent fallback to
+# plain SHA-256 was unsafe in a safety-critical context — an attacker who
+# obtained the keys file could brute-force SHA-256 keys orders of magnitude
+# faster than bcrypt(cost=12) hashes. We still keep the runtime guard for
+# defensive depth (e.g. a broken environment), but log at ERROR level and
+# refuse to issue new bcrypt-dependent tokens when bcrypt is unavailable.
 bcrypt: Any = None
 try:
     import bcrypt as bcrypt_module
@@ -31,7 +36,13 @@ try:
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False
-    logging.warning("bcrypt not available - using SHA-256 for API key hashing (less secure)")
+    logging.error(
+        "bcrypt is not installed. BAZspark lists bcrypt>=4.0.0 as a HARD "
+        "dependency (requirements.txt + pyproject.toml). A missing bcrypt "
+        "module means the environment is broken — API key operations will "
+        "fall back to HMAC-SHA256 only (no slow KDF). Refusing to start "
+        "in production. Run: pip install 'bcrypt>=4.0.0,<6.0.0'."
+    )
 
 import contextlib
 

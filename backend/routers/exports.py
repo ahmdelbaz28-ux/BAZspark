@@ -80,7 +80,7 @@ def _write_project_sheet(wb, project, device_count, connection_count):
         ("Project Name", project.get("name", "")),
         ("Author", project.get("author", "")),
         ("Exported At (UTC)", datetime.now(timezone.utc).isoformat()),
-        ("Software", "FireAI / BAZSPARK v1.55.0 (V213)"),
+        ("Software", "FireAI / BAZSPARK v1.56.0 (V157)"),
         ("Device Count", device_count),
         ("Connection Count", connection_count),
         ("Standard", "NFPA 72-2022"),
@@ -204,7 +204,7 @@ def _generate_manifest_export(project, devices, connections, export_type, projec
             "/api/v1/exports (this endpoint, with exportType=excel)",
         ],
         "exportedAt": datetime.now(timezone.utc).isoformat(),
-        "software": "FireAI / BAZSPARK v1.55.0 (V213)",
+        "software": "FireAI / BAZSPARK v1.56.0 (V157)",
         "note": (
             f"exportType='{export_type}' is not a binary format. Use the "
             "availableEndpoints above to fetch a real DXF/Revit/IFC export, "
