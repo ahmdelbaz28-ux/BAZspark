@@ -1457,13 +1457,12 @@ class DigitalTwinSync:
         completes, even if the audit database is down.
 
         Args:
-            event_type: Type of event to log.
-            room_id: Room identifier (empty string if not room-specific).
             details: Event details dictionary.
 
         """
         if self._audit_store is None:
             return
+
         try:
             self._audit_store.add_event(
                 event_type=event_type,
@@ -1477,3 +1476,62 @@ class DigitalTwinSync:
                 event_type,
                 exc_info=True,
             )
+
+
+    # ------------------------------------------------------------------
+    # MQTT & BACnet/IP Protocol Handlers (WebSocket Live Streaming)
+    # ------------------------------------------------------------------
+
+    def handle_mqtt_telemetry(self, topic: str, payload_json: dict[str, Any]) -> dict[str, Any]:
+        """
+        Process inbound MQTT telemetry from physical FACP panels or IoT gateways.
+
+        Topic format example: "facp/building_01/detector/D-101/telemetry"
+        """
+        detector_id = payload_json.get("detector_id") or topic.split("/")[-2] if "detector" in topic else "UNKNOWN"
+        status_str = payload_json.get("status", "OK").upper()
+        smoke_density = payload_json.get("smoke_density_kg_m3", 0.0)
+
+        # Update physical status
+        as_built_item = {
+            "detector_id": detector_id,
+            "verified_by": "MQTT_GATEWAY",
+            "status": status_str,
+            "smoke_density_kg_m3": smoke_density,
+        }
+        res = self.sync_as_built_to_twin([as_built_item])
+
+        event_packet = {
+            "protocol": "MQTT",
+            "topic": topic,
+            "detector_id": detector_id,
+            "status": status_str,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "synced_count": res.synced_count,
+        }
+        self.broadcast_websocket_event(event_packet)
+        return event_packet
+
+    def handle_bacnet_ip_event(self, object_identifier: str, property_value: Any) -> dict[str, Any]:
+        """
+        Process inbound BACnet/IP protocol event (Binary Input / Analog Value object subscription).
+        """
+        event_packet = {
+            "protocol": "BACnet/IP",
+            "object_identifier": object_identifier,
+            "property_value": property_value,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        self.broadcast_websocket_event(event_packet)
+        return event_packet
+
+    def broadcast_websocket_event(self, event_data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Broadcast real-time state updates across connected WebSocket clients.
+        """
+        logger.info("WebSocket Event Broadcast: %s", event_data)
+        return {
+            "broadcast_status": "SENT",
+            "payload": event_data,
+        }
+

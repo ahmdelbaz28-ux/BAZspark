@@ -6,6 +6,7 @@ from marine.output.bom_generator import (
     generate_bom_from_extinguishing,
     generate_full_bom,
 )
+from marine.output.classification_reports import MarineClassificationReportGenerator
 from marine.output.commissioning_checklist import (
     COMMISSIONING_ITEMS,
     generate_commissioning_checklist,
@@ -20,6 +21,7 @@ __all__ = [
     "COMMISSIONING_ITEMS",
     "FAT_PROCEDURES",
     "BOMItem",
+    "MarineClassificationReportGenerator",
     "generate_bom_from_detectors",
     "generate_bom_from_divisions",
     "generate_bom_from_extinguishing",
@@ -28,3 +30,4 @@ __all__ = [
     "generate_extinguishing_fat",
     "generate_full_bom",
 ]
+

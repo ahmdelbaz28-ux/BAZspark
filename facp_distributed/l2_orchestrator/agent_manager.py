@@ -167,6 +167,55 @@ class ValidatorAgent(BaseAgent):
         super().__init__("validator_agent", "Validator Agent", "Handles validation and verification tasks")
         self.capabilities = ["validate.*", "check.*", "verify.*", "confirm.*"]
 
+    def _validate_target(self, target: Dict[str, Any], validation_type: str) -> Dict[str, Any]:
+        """F-03 FIX: Perform actual validation checks on the target data.
+
+        Returns a dict with:
+          - is_valid: whether the target passes all checks
+          - issues: list of issue descriptions
+          - compliance: whether NFPA 72 compliance checks pass
+          - accuracy: whether accuracy checks pass
+        """
+        issues: list[str] = []
+        compliance = True
+        accuracy = True
+
+        # Check 1: Target must have non-empty data
+        if not target:
+            issues.append("Empty target data — nothing to validate")
+            compliance = False
+            accuracy = False
+        else:
+            # Check 2: Numeric values must be non-negative
+            for key, value in target.items():
+                if isinstance(value, (int, float)) and value < 0:
+                    issues.append(f"Negative value for '{key}': {value}")
+                    compliance = False
+
+            # Check 3: Coverage/compliance fields must be within [0, 1] range
+            for field_name in ("coverage_pct", "compliance_rate", "accuracy", "confidence"):
+                if field_name in target:
+                    val = target[field_name]
+                    if isinstance(val, (int, float)) and not (0.0 <= val <= 1.0):
+                        issues.append(f"'{field_name}' out of [0, 1] range: {val}")
+                        accuracy = False
+
+            # Check 4: Required fields for compliance validation
+            if validation_type in ("compliance", "nfpa72", "fire_code"):
+                required_fields = {"coverage_pct", "detector_count"}
+                missing = required_fields - set(target.keys())
+                if missing:
+                    issues.append(f"Missing required fields for {validation_type}: {missing}")
+                    compliance = False
+
+        is_valid = len(issues) == 0
+        return {
+            "is_valid": is_valid,
+            "issues": issues,
+            "compliance": compliance,
+            "accuracy": accuracy,
+        }
+
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute validation task"""
         self.last_executed = time.time()
@@ -178,16 +227,29 @@ class ValidatorAgent(BaseAgent):
 
         if method.startswith("validate.") or method.startswith("check."):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             # Validate the provided data
-            params.get("payload", {}).get("target", {})
+            target = params.get("payload", {}).get("target", {})
             validation_type = params.get("payload", {}).get("type", "generic")
 
-            # Perform validation (simulated)
-            is_valid = True  # In real implementation, this would perform actual validation
+            # F-03 FIX: Perform actual validation instead of hardcoding True
+            validation = self._validate_target(target, validation_type)
+            is_valid = validation["is_valid"]
+            issues_found = len(validation["issues"])
+
+            if not is_valid:
+                logger.warning(
+                    "F-03: Validation FAILED for method=%s type=%s — %d issues: %s",
+                    method, validation_type, issues_found, validation["issues"],
+                )
+
             validation_result = {
                 "is_valid": is_valid,
                 "validation_type": validation_type,
-                "issues_found": 0,
-                "validation_details": {"compliance": True, "accuracy": True},
+                "issues_found": issues_found,
+                "issues": validation["issues"],
+                "validation_details": {
+                    "compliance": validation["compliance"],
+                    "accuracy": validation["accuracy"],
+                },
                 "validated_at": time.time()
             }
 

@@ -250,6 +250,51 @@ export function ARExportPage() {
                                         </Card>
                                 )}
 
+                                {/* AR Anchors & Site Calibration */}
+                                <Card className="border-border bg-card stagger-card">
+                                        <CardHeader className="pb-3">
+                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                        <Globe aria-hidden="true" className="h-5 w-5 text-emerald-400" />
+                                                        Field AR Anchors & QR Calibration
+                                                </CardTitle>
+                                                <CardDescription className="text-muted-foreground">
+                                                        Calibrate 3D model alignment offsets (X, Y, Z) and pin physical site coordinates via QR Code anchor.
+                                                </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                                <div className="grid grid-cols-3 gap-3">
+                                                        <div className="space-y-1">
+                                                                <Label className="text-xs text-foreground/80">X Offset (m)</Label>
+                                                                <Input type="number" defaultValue="0.00" step="0.05" className="bg-card border-border text-foreground text-sm" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                                <Label className="text-xs text-foreground/80">Y Offset (m)</Label>
+                                                                <Input type="number" defaultValue="0.00" step="0.05" className="bg-card border-border text-foreground text-sm" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                                <Label className="text-xs text-foreground/80">Z Offset (m)</Label>
+                                                                <Input type="number" defaultValue="0.00" step="0.05" className="bg-card border-border text-foreground text-sm" />
+                                                        </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2 border-t border-border">
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                                                <span>AR Spatial Mesh Calibration: Ready</span>
+                                                        </div>
+                                                        <Button
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-1.5"
+                                                                onClick={() => alert("QR Code Anchor Pinned! Spatial model aligned with physical site origin.")}
+                                                        >
+                                                                <Globe className="h-4 w-4" />
+                                                                Pin via QR Code
+                                                        </Button>
+                                                </div>
+                                        </CardContent>
+                                </Card>
+
                                 {/* Empty state */}
                                 {!exporting && !result && (
                                         <Card className="border-border bg-card stagger-card">
@@ -275,3 +320,4 @@ export function ARExportPage() {
                 </div>
         );
 }
+

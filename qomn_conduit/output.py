@@ -324,3 +324,42 @@ def _sha256(payload: dict[str, Any]) -> str:
     clean = {k: v for k, v in payload.items() if k != "sha256"}
     serialised = json.dumps(clean, sort_keys=True, ensure_ascii=True)
     return hashlib.sha256(serialised.encode("utf-8")).hexdigest()
+
+
+def export_astar_conduit_runs_for_revit(runs: list[ConduitRun]) -> str:
+    """
+    Export A* Router conduit paths to direct JSON payload for Revit Add-in IPC.
+
+    Structures 3D conduit segments, fittings, trade sizes, and coordinates
+    specifically for automatic Revit ConduitRun creation.
+    """
+    exported_runs = []
+    for run in runs:
+        revit_data = generate_revit_conduit(run)
+        waypoints = [_pt_to_m(seg.start) for seg in run.segments]
+        if run.segments:
+            waypoints.append(_pt_to_m(run.segments[-1].end))
+
+        exported_runs.append({
+            "run_id": run.run_id,
+            "conduit_type": run.conduit_type.value,
+            "trade_size": run.trade_size.value,
+            "family_name": _REVIT_FAMILY.get(run.conduit_type, "EMT Conduit"),
+            "waypoints_m": waypoints,
+            "revit_segments": revit_data["segments"],
+            "revit_fittings": revit_data["fittings"],
+            "total_length_m": round(run.total_length_m, 4),
+            "total_bends_deg": run.total_bends_deg,
+            "is_nec_compliant": run.is_nec_compliant,
+            "sha256": revit_data["sha256"],
+        })
+
+    payload = {
+        "version": "1.0",
+        "system": "QOMN Fire Alarm Conduit Network",
+        "conduit_runs_count": len(exported_runs),
+        "conduit_runs": exported_runs,
+    }
+    payload["sha256"] = _sha256(payload)
+    return json.dumps(payload, indent=2)
+

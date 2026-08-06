@@ -607,6 +607,101 @@ class SmokeSimulationState:
         return self.to_dict()
 
 
+class AutoMeshBoundaryGenerator:
+    """
+    Auto Mesh & Boundary Generator for NIST FDS Cloud Simulation.
+
+    Converts room dimensions, IFC space data, walls, and openings into a
+    ready-to-run FDS input file (.fds) with calculated mesh boundaries
+    and obstructions.
+
+    Reference: NIST FDS User Guide Chapter 6 (Grid & Geometry).
+    """
+
+    def __init__(
+        self,
+        default_cell_size_m: float = 0.1,
+        default_hrr_kw: float = 2500.0,
+    ) -> None:
+        self.default_cell_size_m = max(0.05, min(0.5, default_cell_size_m))
+        self.default_hrr_kw = default_hrr_kw
+
+    def generate_fds_script(
+        self,
+        room_id: str,
+        width_m: float,
+        depth_m: float,
+        height_m: float,
+        walls: list[dict[str, float]] | None = None,
+        doors: list[dict[str, float]] | None = None,
+        fire_location: tuple[float, float, float] | None = None,
+        cell_size_m: float | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate complete .fds file content and mesh parameters.
+        """
+        dx = cell_size_m if cell_size_m and cell_size_m > 0 else self.default_cell_size_m
+        ijk_x = max(4, int(math.ceil(width_m / dx)))
+        ijk_y = max(4, int(math.ceil(depth_m / dx)))
+        ijk_z = max(4, int(math.ceil(height_m / dx)))
+
+        # Actual cell sizes
+        cell_x = width_m / ijk_x
+        cell_y = depth_m / ijk_y
+        cell_z = height_m / ijk_z
+
+        fire_x, fire_y, fire_z = fire_location or (width_m / 2.0, depth_m / 2.0, 0.0)
+
+        lines = [
+            f"&HEAD CHID='{room_id}_smoke_sim', TITLE='NIST FDS Auto Mesh for {room_id}' /",
+            f"&MESH IJK={ijk_x},{ijk_y},{ijk_z}, XB=0.0,{width_m:.2f},0.0,{depth_m:.2f},0.0,{height_m:.2f} /",
+            "&TIME T_END=600.0 /",
+            "&MISC TMPA=20.0 /",
+            f"&SURF ID='FIRE_BURNER', HRRPUA={self.default_hrr_kw:.1f}, COLOR='RED' /",
+            f"&OBST XB={max(0, fire_x - 0.5):.2f},{min(width_m, fire_x + 0.5):.2f},{max(0, fire_y - 0.5):.2f},{min(depth_m, fire_y + 0.5):.2f},0.0,{fire_z + 0.2:.2f}, SURF_ID='FIRE_BURNER' /",
+        ]
+
+        # Add walls if provided
+        if walls:
+            for idx, w in enumerate(walls):
+                x1, x2 = w.get("x1", 0.0), w.get("x2", 0.0)
+                y1, y2 = w.get("y1", 0.0), w.get("y2", 0.0)
+                z1, z2 = w.get("z1", 0.0), w.get("z2", height_m)
+                lines.append(f"&OBST XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, COLOR='GRAY' /  ! Wall_{idx+1}")
+
+        # Add doors / vents
+        if doors:
+            for idx, d in enumerate(doors):
+                x1, x2 = d.get("x1", 0.0), d.get("x2", 0.0)
+                y1, y2 = d.get("y1", 0.0), d.get("y2", 0.0)
+                z1, z2 = d.get("z1", 0.0), d.get("z2", 2.1)
+                lines.append(f"&VENT XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, SURF_ID='OPEN' /  ! Door_Vent_{idx+1}")
+
+        # Devices for smoke/temp sampling
+        lines.append(f"&DEVC ID='THCP_EYE', QUANTITY='TEMPERATURE', XYZ={width_m/2.0:.2f},{depth_m/2.0:.2f},1.7 /")
+        lines.append(f"&DEVC ID='SOOT_EYE', QUANTITY='MASS FRACTION', SPEC_ID='SOOT', XYZ={width_m/2.0:.2f},{depth_m/2.0:.2f},1.7 /")
+        lines.append("&TAIL /")
+
+        fds_content = "\n".join(lines)
+
+        return {
+            "room_id": room_id,
+            "mesh_grid": {
+                "ijk_x": ijk_x,
+                "ijk_y": ijk_y,
+                "ijk_z": ijk_z,
+                "total_cells": ijk_x * ijk_y * ijk_z,
+                "cell_size_m": (round(cell_x, 4), round(cell_y, 4), round(cell_z, 4)),
+            },
+            "bounding_box": {
+                "x_min": 0.0, "x_max": width_m,
+                "y_min": 0.0, "y_max": depth_m,
+                "z_min": 0.0, "z_max": height_m,
+            },
+            "fds_script": fds_content,
+        }
+
+
 __all__ = [
     "DEFAULT_VISIBILITY_HEIGHTS_M",
     "EYE_LEVEL_ADULT_M",
@@ -617,9 +712,11 @@ __all__ = [
     "SOURCE_MANUAL",
     "SOURCE_PLACEHOLDER",
     "VISIBILITY_TENABILITY_THRESHOLD_M",
+    "AutoMeshBoundaryGenerator",
     "FDSIntegrationConfig",
     "SimulationStatus",
     "SmokeDensityPoint",
     "SmokeSimulationState",
     "VisibilityGradient",
 ]
+

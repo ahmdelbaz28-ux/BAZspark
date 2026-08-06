@@ -863,6 +863,93 @@ class AcousticSPLCalculator:
         )
 
 
+def generate_acoustic_heatmap_matrix(
+    width_m: float,
+    depth_m: float,
+    speakers: list[dict[str, float]],
+    ambient_dba: float = 55.0,
+    grid_step_m: float = 0.5,
+    height_m: float = 1.5,
+) -> dict[str, Any]:
+    """
+    Generate 2D Heatmap Matrix of SPL (dBA) and Speech Transmission Index (STI).
+
+    Calculates sound pressure decay and STI quality at uniform grid points
+    across room footprint.
+
+    Reference: IEC 60268-16 (STI calculation) and NFPA 72 §18.4.
+    """
+    grid_step = max(0.2, grid_step_m)
+    cols = max(2, int(math.ceil(width_m / grid_step)))
+    rows = max(2, int(math.ceil(depth_m / grid_step)))
+
+    spl_matrix: list[list[float]] = []
+    sti_matrix: list[list[float]] = []
+
+    min_spl = 999.0
+    max_spl = 0.0
+    min_sti = 1.0
+    max_sti = 0.0
+
+    for r in range(rows):
+        y = r * grid_step
+        spl_row: list[float] = []
+        sti_row: list[float] = []
+        for c in range(cols):
+            x = c * grid_step
+
+            # Calculate logarithmic sum of SPL from speakers
+            total_power_mW = 0.0
+            for spk in speakers:
+                sx = spk.get("x", width_m / 2.0)
+                sy = spk.get("y", depth_m / 2.0)
+                sz = spk.get("z", 3.0)
+                s_dba = spk.get("source_dba", 90.0)
+                ref_d = spk.get("ref_dist_m", DEFAULT_REF_DISTANCE_M)
+
+                dist = math.sqrt((x - sx) ** 2 + (y - sy) ** 2 + (height_m - sz) ** 2)
+                dist = max(0.5, dist)
+
+                pt_spl = s_dba - 20.0 * math.log10(dist / ref_d)
+                total_power_mW += 10.0 ** (pt_spl / 10.0)
+
+            combined_spl = 10.0 * math.log10(total_power_mW) if total_power_mW > 0 else ambient_dba
+            snr_db = combined_spl - ambient_dba
+
+            # IEC 60268-16 STI estimation from SNR
+            raw_sti = (snr_db + 15.0) / 30.0
+            sti = max(0.0, min(1.0, raw_sti))
+
+            spl_val = round(combined_spl, 1)
+            sti_val = round(sti, 2)
+
+            spl_row.append(spl_val)
+            sti_row.append(sti_val)
+
+            min_spl = min(min_spl, spl_val)
+            max_spl = max(max_spl, spl_val)
+            min_sti = min(min_sti, sti_val)
+            max_sti = max(max_sti, sti_val)
+
+        spl_matrix.append(spl_row)
+        sti_matrix.append(sti_row)
+
+    return {
+        "width_m": width_m,
+        "depth_m": depth_m,
+        "rows": rows,
+        "cols": cols,
+        "grid_step_m": grid_step,
+        "ambient_dba": ambient_dba,
+        "min_spl_dba": min_spl,
+        "max_spl_dba": max_spl,
+        "min_sti": min_sti,
+        "max_sti": max_sti,
+        "spl_matrix": spl_matrix,
+        "sti_matrix": sti_matrix,
+    }
+
+
 __all__ = [
     "AMBIENT_NOISE_LEVELS",
     "AUDIBLE_REQUIREMENTS",
@@ -880,5 +967,7 @@ __all__ = [
     "calculate_min_speakers_for_room",
     "calculate_spl_at_distance",
     "check_audibility_compliance",
+    "generate_acoustic_heatmap_matrix",
     "get_speaker_coverage_radius",
 ]
+

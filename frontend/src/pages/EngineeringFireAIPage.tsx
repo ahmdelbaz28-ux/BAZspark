@@ -69,6 +69,7 @@ export function EngineeringFireAIPage() {
                 <TabsList>
                     <TabsTrigger value="room-analysis">{t("fireai.roomAnalysis")}</TabsTrigger>
                     <TabsTrigger value="floor-analysis">{t("fireai.floorAnalysis")}</TabsTrigger>
+                    <TabsTrigger value="acoustic-heatmap">NFPA 72 Acoustic Heatmap</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="room-analysis" className="space-y-4">
@@ -154,7 +155,57 @@ export function EngineeringFireAIPage() {
                         </Card>
                     )}
                 </TabsContent>
+
+                <TabsContent value="acoustic-heatmap" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>NFPA 72 Acoustics dB Decay & Speech Intelligibility (STI) Matrix</CardTitle>
+                            <CardDescription>
+                                Visual 2D/3D acoustic attenuation matrix and speech transmission index visualization for notification devices.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 border rounded-lg bg-card space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-semibold text-sm">Acoustic Sound Field Matrix (10m x 10m Space)</h3>
+                                    <div className="flex items-center gap-3 text-xs">
+                                        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-500 rounded-full"></span> STI Excellent (&gt; 0.60)</span>
+                                        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-500 rounded-full"></span> STI Fair (0.45 - 0.60)</span>
+                                        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-rose-500 rounded-full"></span> STI Poor (&lt; 0.45)</span>
+                                    </div>
+                                </div>
+                                <div className="aspect-video w-full bg-slate-950 rounded-lg flex items-center justify-center p-6 border relative overflow-hidden">
+                                    <div className="grid grid-cols-10 gap-1.5 w-full max-w-lg aspect-square">
+                                        {Array.from({ length: 100 }).map((_, idx) => {
+                                            const row = Math.floor(idx / 10);
+                                            const col = idx % 10;
+                                            const dist = Math.sqrt((col - 4.5) ** 2 + (row - 4.5) ** 2);
+                                            const spl = Math.max(50, roundTo1(92 - dist * 4.5));
+                                            const sti = Math.max(0.2, roundTo1((spl - 55 + 15) / 30));
+                                            const color = sti >= 0.6 ? 'bg-emerald-600/80' : sti >= 0.45 ? 'bg-amber-500/80' : 'bg-rose-600/80';
+                                            return (
+                                                <div
+                                                    key={`heat-cell-${row}-${col}`}
+                                                    className={`${color} rounded flex flex-col items-center justify-center text-[10px] font-mono text-white p-1 hover:scale-110 transition-transform cursor-pointer shadow-sm`}
+                                                    title={`Grid (${col}, ${row}): ${spl} dBA | STI: ${sti}`}
+                                                >
+                                                    <span>{spl}dB</span>
+                                                    <span className="text-[8px] opacity-80">{sti}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
         </div>
     );
 }
+
+function roundTo1(num: number): number {
+    return Math.round(num * 10) / 10;
+}
+
