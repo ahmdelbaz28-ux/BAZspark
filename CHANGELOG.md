@@ -77,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Support for Python < 3.12
+- Removed agent.md (1.1 MB AI prompt) — internal prompt should not be in version control. If you need the prompt locally, copy it from your private prompt-store.
 
 ### Fixed
 - Memory leak in geometry processing

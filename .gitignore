@@ -334,3 +334,7 @@ audit_master.json
 /assets/
 /static/
 /404.html
+
+# AI prompt files — should never be committed to the repo
+/agent.md
+/agent_*.md
