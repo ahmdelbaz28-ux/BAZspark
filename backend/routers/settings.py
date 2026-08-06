@@ -35,6 +35,12 @@ The CUA loop (fireai/vision/cua_loop.py) independently falls back to OpenCV
 when no key is available or when the stored key fails at runtime.
 """
 
+import base64
+import ipaddress
+import logging
+import re
+import socket
+import uuid
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
@@ -786,6 +792,7 @@ async def test_provider_key(
         log_key_id = key_id
     else:
         log_key_id = base64.b64encode(key_id.encode("utf-8")).decode("utf-8")
+    logger.info("Testing vision API key (id=%s, provider=%s)", log_key_id, provider)
     _ensure_v152_columns()
     db = get_db()
     try:

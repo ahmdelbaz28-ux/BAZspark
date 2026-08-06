@@ -33,13 +33,13 @@ This guide provides step-by-step instructions for deploying the FireAI platform 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/ahmdelbaz28-ux/revit.git
-cd revit
+git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
+cd BAZspark
 ```
 
 ### 2. Copy Environment Template
 ```bash
-cp .env.sample .env
+cp .env.example .env
 ```
 
 ### 3. Configure Environment Variables
@@ -65,7 +65,7 @@ GEMINI_API_KEY=your_gemini_key_here
 LOG_LEVEL=INFO
 
 # Version Tag
-FIREAI_VERSION=1.55.0
+FIREAI_VERSION=1.56.0
 ```
 
 ## Docker Deployment

@@ -41,8 +41,14 @@ celery>=5.2.0,<6.0.0
 # V163 FIX: cryptography pinned >=50.0.0 to fix 6 HIGH CVEs (PYSEC-2026-35,
 # GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf,
 # CVE-2026-69247).
+# V157 PHASE-0 FIX: bcrypt promoted to a HARD runtime dependency. Previous
+# code fell back to plain SHA-256 hashing of API keys when bcrypt was
+# missing — a weaker KDF that is unsafe in a safety-critical context.
+# `passlib[bcrypt]` already pulled bcrypt transitively, but explicit pinning
+# guarantees it cannot be silently dropped by a resolver downgrade.
 pyjwt[crypto]>=2.13.0,<3.0.0  # V163 RESTORE: was reverted to 2.9.0 by 9da220d2 with false 'Python 3.8' justification
 passlib[bcrypt]>=1.7.0,<2.0.0
+bcrypt>=4.0.0,<6.0.0  # V157 PHASE-0: hard dep — fails fast if missing (no silent SHA-256 fallback)
 cryptography>=50.0.0,<51.0.0  # V163 RESTORE: was reverted to 43.0.0 by 9da220d2 with false 'Python 3.8' justification
 
 # ── Networking ───────────────────────────────────────────────────────────────
@@ -65,8 +71,13 @@ hypothesis>=6.82.0,<7.0.0
 # ── LangGraph (Workflow + Crash Recovery Checkpointing) ─────────────────────
 # V141.3: Upgraded to langgraph 1.x + langgraph-checkpoint-sqlite 3.x
 # (matches main). These versions resolve the is_alive() bug upstream.
-# langgraph>=1.0.10,<2.0.0  # disabled for Python 3.8
-# langgraph-checkpoint-sqlite>=3.0.1,<4.0.0  # disabled for Python 3.8
+# V157 PHASE-0 FIX: re-enabled in requirements.txt. The "disabled for
+# Python 3.8" comment was stale — pyproject.toml requires Python >=3.12
+# and CI runs on 3.12. The disabled state caused the workflow router to
+# silently fail to load at startup (see backend/app.py graceful-degrade
+# warning), breaking workflow features without any visible error.
+langgraph>=1.0.10,<2.0.0
+langgraph-checkpoint-sqlite>=3.0.1,<4.0.0
 
 # ── Parsing & Geometry (also in [parsing] extras in pyproject.toml) ─────────
 shapely>=2.0.0,<3.0.0

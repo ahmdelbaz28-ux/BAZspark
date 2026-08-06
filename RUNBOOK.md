@@ -49,7 +49,7 @@ Expected health status payload:
   "status": "ok",
   "database": "connected",
   "redis": "connected",
-  "version": "1.55.0"
+  "version": "1.56.0"
 }
 ```
 
