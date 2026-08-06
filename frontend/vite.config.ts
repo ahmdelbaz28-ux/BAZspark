@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { mockupPreviewPlugin } from "./mockupPreviewPlugin.ts";
+import { mockupPreviewPlugin } from "./mockupPreviewPlugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = process.env.PORT ? Number(process.env.PORT) : 5173;

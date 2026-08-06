@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import threading
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -87,33 +88,41 @@ class ToolSelector:
         self.db_path = db_path
         self._tools: dict[str, dict] = {}
         self._score_fns: dict[str, Callable] = {}
+        # V215 SAFETY FIX (F-01): SQLite connection is shared across
+        # calls. check_same_thread=False allows cross-thread use but provides
+        # NO serialization. A reentrant lock guards every DB operation to
+        # prevent "database is locked" errors and data races in threaded
+        # contexts (e.g. FastAPI, async pipelines). RLock allows nested
+        # method calls within the same thread to re-acquire safely.
+        self._lock = threading.RLock()
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
 
     def _create_tables(self) -> None:
-        cursor = self.conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tool_routing_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT NOT NULL,
-                selected_tool TEXT NOT NULL,
-                scores TEXT NOT NULL,
-                context TEXT NOT NULL,
-                timestamp TEXT NOT NULL
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tool_success_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tool_name TEXT NOT NULL,
-                task_type TEXT NOT NULL,
-                success INTEGER NOT NULL,
-                execution_time_ms REAL NOT NULL,
-                timestamp TEXT NOT NULL
-            )
-        """)
-        self.conn.commit()
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tool_routing_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id TEXT NOT NULL,
+                    selected_tool TEXT NOT NULL,
+                    scores TEXT NOT NULL,
+                    context TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tool_success_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tool_name TEXT NOT NULL,
+                    task_type TEXT NOT NULL,
+                    success INTEGER NOT NULL,
+                    execution_time_ms REAL NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            self.conn.commit()
 
     def register_tool(
         self,
@@ -142,22 +151,23 @@ class ToolSelector:
             return None
         best_tool = scored[0][0]
 
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO tool_routing_log
-            (task_id, selected_tool, scores, context, timestamp)
-            VALUES (?, ?, ?, ?, ?)
-        """,
-            (
-                task.task_id or str(uuid.uuid4()),
-                best_tool,
-                json.dumps([(name, round(s, 4)) for name, s in scored]),
-                json.dumps(asdict(context)),
-                datetime.now(timezone.utc).isoformat(),
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO tool_routing_log
+                (task_id, selected_tool, scores, context, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """,
+                (
+                    task.task_id or str(uuid.uuid4()),
+                    best_tool,
+                    json.dumps([(name, round(s, 4)) for name, s in scored]),
+                    json.dumps(asdict(context)),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            self.conn.commit()
 
         logger.info("Selected tool '%s' for task '%s' (score=%.4f)", best_tool, task.description, scored[0][1])
         return best_tool
@@ -184,28 +194,30 @@ class ToolSelector:
             matched = required & tool_caps
             directness = len(matched) / max(len(required), 1) if required else 0.5
 
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT AVG(success) as avg_success, COUNT(*) as cnt
-            FROM tool_success_history
-            WHERE tool_name = ?
-        """,
-            (name,),
-        )
-        hist_row = cursor.fetchone()
-        accuracy = float(hist_row["avg_success"]) if hist_row and hist_row["avg_success"] is not None else 0.5
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                SELECT AVG(success) as avg_success, COUNT(*) as cnt
+                FROM tool_success_history
+                WHERE tool_name = ?
+            """,
+                (name,),
+            )
+            hist_row = cursor.fetchone()
+            accuracy = float(hist_row["avg_success"]) if hist_row and hist_row["avg_success"] is not None else 0.5
 
-        cursor.execute(
-            """
-            SELECT AVG(execution_time_ms) as avg_time
-            FROM tool_success_history
-            WHERE tool_name = ?
-        """,
-            (name,),
-        )
-        perf_row = cursor.fetchone()
-        avg_time = perf_row["avg_time"] if perf_row and perf_row["avg_time"] is not None else 100.0
+            cursor.execute(
+                """
+                SELECT AVG(execution_time_ms) as avg_time
+                FROM tool_success_history
+                WHERE tool_name = ?
+            """,
+                (name,),
+            )
+            perf_row = cursor.fetchone()
+            avg_time = perf_row["avg_time"] if perf_row and perf_row["avg_time"] is not None else 100.0
+
         performance = max(0.0, 1.0 - avg_time / 10000.0)  # normalize: 10s = 0
 
         availability = 1.0
@@ -229,40 +241,42 @@ class ToolSelector:
         success: bool,
         execution_time_ms: float = 0.0,
     ) -> None:
-        cursor = self.conn.cursor()
-        task_type = task.description[:100]
-        cursor.execute(
-            """
-            INSERT INTO tool_success_history
-            (tool_name, task_type, success, execution_time_ms, timestamp)
-            VALUES (?, ?, ?, ?, ?)
-        """,
-            (
-                tool_name,
-                task_type,
-                1 if success else 0,
-                execution_time_ms,
-                datetime.now(timezone.utc).isoformat(),
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            cursor = self.conn.cursor()
+            task_type = task.description[:100]
+            cursor.execute(
+                """
+                INSERT INTO tool_success_history
+                (tool_name, task_type, success, execution_time_ms, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """,
+                (
+                    tool_name,
+                    task_type,
+                    1 if success else 0,
+                    execution_time_ms,
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            self.conn.commit()
         logger.info("Recorded result for tool '%s': success=%s (%.0fms)", tool_name, success, execution_time_ms)
 
     def get_tool_summary(self) -> dict[str, dict[str, Any]]:
         summary: dict[str, dict[str, Any]] = {}
         for name, info in self._tools.items():
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT COUNT(*) as runs,
-                       AVG(success) as success_rate,
-                       AVG(execution_time_ms) as avg_time
-                FROM tool_success_history
-                WHERE tool_name = ?
-            """,
-                (name,),
-            )
-            row = cursor.fetchone()
+            with self._lock:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) as runs,
+                           AVG(success) as success_rate,
+                           AVG(execution_time_ms) as avg_time
+                    FROM tool_success_history
+                    WHERE tool_name = ?
+                """,
+                    (name,),
+                )
+                row = cursor.fetchone()
             summary[name] = {
                 "capabilities": sorted(info["capabilities"]),
                 "runs": row["runs"] if row else 0,

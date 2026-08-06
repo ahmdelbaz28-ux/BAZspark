@@ -334,7 +334,14 @@ def _get_last_hash() -> str:
         return row[0] if row else "GENESIS"
     except sqlite3.OperationalError:
         _release_connection(conn)
-        init_db()
+        # The SELECT failed because the audit_log table is missing (e.g. it was
+        # dropped or corrupted AFTER this process initialized it). The
+        # _db_initialized fast-path flag is already True, so a plain call to
+        # _init_database() would no-op. Reset the flag so the schema is truly
+        # re-created, then restart the hash chain from GENESIS.
+        global _db_initialized
+        _db_initialized = False
+        _init_database()
         return "GENESIS"
     finally:
         try:

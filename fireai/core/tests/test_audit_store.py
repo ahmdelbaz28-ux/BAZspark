@@ -424,6 +424,37 @@ class TestGetLastHash:
         h = add_event("TEST", "R1", {"key": "val"})
         assert _get_last_hash() == h
 
+    def test_recovers_when_table_missing_after_init(self, hmac_key_env) -> None:
+        """
+        Regression: _get_last_hash must survive a missing audit_log table.
+
+        Commit a52c4255 added a recovery branch that called an undefined
+        init_db() (NameError). Verify the recovery re-creates the schema (even
+        though the _db_initialized fast-path flag is True) and restarts the
+        chain from GENESIS.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test_missing_table.db")
+            audit_mod.DATABASE_PATH = db_path
+            audit_mod._db_initialized = False
+            audit_mod._memory_conn = None
+            audit_mod._init_database()
+
+            # Simulate an external DROP TABLE AFTER initialization: the
+            # _db_initialized flag stays True (fast path would no-op).
+            conn = sqlite3.connect(db_path)
+            conn.execute("DROP TABLE audit_log")  # NOSONAR — S5610: intentional destructive test setup
+            conn.close()
+            audit_mod._db_initialized = True
+
+            # Must NOT raise NameError ('init_db'); must heal schema + GENESIS.
+            assert _get_last_hash() == "GENESIS"
+
+            # Schema is usable again: next event chains from GENESIS.
+            h = add_event("TEST", "R1", {"key": "val"})
+            assert _get_last_hash() == h
+            audit_mod._db_initialized = False
+
 
 # ---------------------------------------------------------------------------
 # add_event

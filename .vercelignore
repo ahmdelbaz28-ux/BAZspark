@@ -86,6 +86,5 @@ frontend/release/
 # Archived mockups & scratch (not needed for production build)
 archived/
 scratch/
-frontend/mockupPreviewPlugin.ts
 frontend/spy.mjs
 frontend/capture-screenshots.mjs
