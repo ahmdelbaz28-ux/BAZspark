@@ -391,3 +391,23 @@ Note on HF Space and Vercel:
   (c) الرموز أصلاً مخترَقة ويجب إبطالها قبل أي استخدام آخر
 - إذا أردت نشر التحديثات على HF Space أو Vercel، أخبرني بعد إبطال الرموز
   القديمة وإنشاء رموز جديدة.
+
+---
+Task ID: phase1-mypy-regression (partial)
+Agent: Phase-1 Agent
+Task: Fix mypy duplicate module errors (part of mypy regression reduction)
+Work Log:
+- Ran mypy on full codebase: found duplicate module errors for services/yolo/main.py, services/doctr/main.py, skills/skill_validator.py, scripts/local_agent.py
+- Added missing __init__.py files to services/yolo/, services/doctr/, skills/, scripts/ to make them proper packages
+- Committed changes to branch fix/phase1-mypy-regression
+- Pushed branch to origin
+- Created PR #329: https://github.com/ahmdelbaz28-ux/BAZspark/pull/329
+- Remaining mypy errors: 12133 (mostly no-untyped-def in tests). Need to focus on the 17 new errors vs baseline (979) per verified_gaps.md.
+
+Stage Summary:
+- ✅ Duplicate module errors resolved
+- ✅ PR #329 open and ready for review
+- ✅ No secrets leaked
+- ⚠️ Full mypy error count still high; need to target the 17 new errors specifically.
+Files changed: 4 (added __init__.py)
+PR: https://github.com/ahmdelbaz28-ux/BAZspark/pull/329
