@@ -107,6 +107,10 @@ def calculate_smoke_detector_spacing(
     """
     Calculate number of smoke detectors needed per NFPA 72 spacing.
 
+    Phase 2 DELEGATION: spacing value sourced from QOMNKernel.smoke_detector_spacing()
+    (canonical NFPA 72 table lookup via fireai.constants.nfpa72). Room-dimension
+    counting logic remains here; only the spacing lookup is delegated.
+
     Args:
         ceiling_spec: Ceiling specification
         room_width_m: Room width in meters
@@ -115,12 +119,10 @@ def calculate_smoke_detector_spacing(
         Tuple of (number_along_width, number_along_depth)
 
     """
-    radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)  # V9: safe fallback
-    # CRITICAL FIX: Use the listed spacing S, NOT max_coverage * 2.
-    # max_coverage is the extended coverage radius (5.5m at h=3.0m), NOT the spacing.
-    # Using 2×max_coverage = 11.0m exceeds the NFPA 72 listed spacing of 9.1m by 21%.
-    # The correct spacing S comes from calculate_max_spacing() which uses R/0.7.
-    spacing = radius / 0.7  # S = R / 0.7 (reverse of R = 0.7 × S)
+    # Phase 2: delegate spacing lookup to kernel (canonical table)
+    from fireai.core.qomn_kernel import QOMNKernel
+    kernel = QOMNKernel()
+    spacing = kernel.smoke_detector_spacing(ceiling_spec.height_m).listed_spacing_m
     # Number of detectors
     num_width = max(1, math.ceil(room_width_m / spacing))
     num_depth = max(1, math.ceil(room_depth_m / spacing))
@@ -437,10 +439,16 @@ def calculate_max_spacing(ceiling: CeilingSpec, _detector_type: DetectorType) ->
     """
     NFPA 72 §17.6.3 - spacing between detectors.
 
+    Phase 2 DELEGATION: spacing value sourced from QOMNKernel.smoke_detector_spacing()
+    (canonical NFPA 72 table lookup via fireai.constants.nfpa72). Sloped-ceiling
+    logic (taking min of low/high point spacings) remains here.
+
     CRITICAL FIX: This now returns the actual LISTED SPACING (S) from NFPA 72
     Table 17.6.3.1.1, NOT the coverage radius.  The old version incorrectly
     called get_smoke_detector_coverage_max() which returns a radius, not spacing.
     """
+    from fireai.core.qomn_kernel import QOMNKernel
+    kernel = QOMNKernel()
     # Use the module-level import (already imported from .nfpa72_models at top of file)
     # CRITICAL: Do NOT use bare import `from nfpa72_models import` here — that resolves
     # to the stale root-level copy which still has R=S/2 (4.55m) instead of R=0.7×S (6.37m).
@@ -448,13 +456,12 @@ def calculate_max_spacing(ceiling: CeilingSpec, _detector_type: DetectorType) ->
     low_height = getattr(ceiling, 'height_at_low_point_m', None)
     if low_height is None:
         low_height = getattr(ceiling, 'height_m', 3.0)  # Conservative default
-    radius = get_smoke_detector_radius_safe(low_height)
-    spacing = radius / 0.7  # Reverse R = 0.7 × S → S = R / 0.7
+    spacing = kernel.smoke_detector_spacing(low_height).listed_spacing_m
     if ceiling.is_sloped:
         high_height = getattr(ceiling, 'height_at_high_point_m', None)
         if high_height is not None:
-            radius_high = get_smoke_detector_radius_safe(high_height)
-            spacing = min(spacing, radius_high / 0.7)
+            spacing_high = kernel.smoke_detector_spacing(high_height).listed_spacing_m
+            spacing = min(spacing, spacing_high)
     return round(spacing, 3)
 
 
@@ -599,6 +606,14 @@ from fireai.constants.nfpa72 import (
 from fireai.constants.nfpa72 import (
     DC_RETURN_PATH_FACTOR,
 )
+from fireai.constants.nec import (
+    NEC_AMPACITY_60C,
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
+)
+from fireai.constants.nec import (
+    NEC_AMPACITY_60C,
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
+)
 
 _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
@@ -661,6 +676,12 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
 ) -> CoverageSpec:
     """
     Calculate coverage radius from ceiling height per NFPA 72 Table 17.6.3.1.1.
+
+    Phase 2 DELEGATION: smoke spacing sourced from QOMNKernel.smoke_detector_spacing()
+    (canonical NFPA 72 table lookup via fireai.constants.nfpa72). Heat spacing
+    remains local because the kernel uses S = 0.7 × √A (NFPA 72 §17.6.3.1)
+    while this function uses Table 17.6.3.5.1 height-adjusted values — different
+    authoritative sources.
 
     Higher ceilings produce SMALLER adjusted spacings (more detectors) because
     smoke disperses more before reaching the detector — NFPA 72 §17.6.3.1.1.
@@ -733,15 +754,35 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
             warning=warning,
         )
 
+    if detector_type.lower() == "smoke":
+        # Phase 2: delegate smoke spacing to kernel (canonical table lookup).
+        # Kernel and local table agree: flat 9.1m for all heights ≤ 12.2m.
+        from fireai.core.qomn_kernel import QOMNKernel
+        kernel = QOMNKernel()
+        result = kernel.smoke_detector_spacing(ceiling_height)
+        spacing = result.listed_spacing_m
+        radius = result.coverage_radius_m
+        wall_dist = result.wall_max_m
+        area = round(math.pi * radius ** 2, 2)
+        if ceiling_height > 9.1:
+            warning = "High-bay space — consider beam smoke detectors per NFPA 72 §17.7."
+        return CoverageSpec(
+            radius=radius,
+            height=ceiling_height,
+            detector_type=detector_type,
+            area=area,
+            spacing_max=spacing,
+            wall_distance_max=wall_dist,
+            warning=warning,
+        )
+
+    # Heat: keep local table lookup (Table 17.6.3.5.1).
+    # Kernel uses S = 0.7 × √A (§17.6.3.1), which differs from the table.
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
-            # NO height-based spacing reduction for smoke detectors.
-            # The 1%/ft reduction (Table 17.6.3.5.1) applies to HEAT detectors ONLY.
-            spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
-            radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
-            wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
-            if ceiling_height > 9.1:
-                warning = "High-bay space — consider beam smoke detectors per NFPA 72 §17.7."
+            spacing = heat_spacing
+            radius = round(0.7 * spacing, 2)
+            wall_dist = round(spacing / 2.0, 2)
             return CoverageSpec(
                 radius=radius,
                 height=ceiling_height,
@@ -753,7 +794,7 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
             )
 
     # exactly 12.2m — use last table entry
-    spacing = _NFPA72_SMOKE_SPACING_FALLBACK if detector_type.lower() == "smoke" else 3.70
+    spacing = 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(
@@ -1099,17 +1140,23 @@ def required_battery_capacity_ah(
 # ============================================================================
 # AWG WIRE GAUGE TABLES — NEC/NFPA 70
 # ============================================================================
-# Resistance values from NEC Chapter 9, Table 8 (copper at 75 °C).
-# Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe direction).
+# Resistance values from NEC Chapter 9, Table 8 (copper at 75 °C, stranded).
+# These are the LAW values tested by the suite; do NOT change them.
 # AWG 18/16 are solid in Table 8; all others are stranded (Class B).
+# Ampacity sourced from fireai.constants.nec (single authoritative table).
+
+from fireai.constants.nec import (
+    NEC_AMPACITY_60C,
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
+)
 
 AWG_RESISTANCE_TABLE: dict[int, dict[str, float]] = {
-    # AWG: {"ohm_per_1000ft": R, "ohm_per_m": R/304.8, "metric_mm2": area, "ampacity_75c": A}
-    18: {"ohm_per_1000ft": 7.770, "ohm_per_m": 0.02549, "metric_mm2": 0.823, "ampacity_75c": 14},
-    16: {"ohm_per_1000ft": 4.890, "ohm_per_m": 0.01604, "metric_mm2": 1.31,  "ampacity_75c": 18},
-    14: {"ohm_per_1000ft": 3.070, "ohm_per_m": 0.01007, "metric_mm2": 2.08,  "ampacity_75c": 20},
-    12: {"ohm_per_1000ft": 1.930, "ohm_per_m": 0.00633, "metric_mm2": 3.31,  "ampacity_75c": 25},
-    10: {"ohm_per_1000ft": 1.210, "ohm_per_m": 0.00397, "metric_mm2": 5.26,  "ampacity_75c": 35},
+    # AWG: {"ohm_per_1000ft": R_75, "ohm_per_m": R_75/304.8, "metric_mm2": area, "ampacity_75c": A}
+    18: {"ohm_per_1000ft": 7.770, "ohm_per_m": 0.02549, "metric_mm2": 0.823, "ampacity_75c": NEC_AMPACITY_60C.get("18", 14.0)},
+    16: {"ohm_per_1000ft": 4.890, "ohm_per_m": 0.01604, "metric_mm2": 1.31,  "ampacity_75c": NEC_AMPACITY_60C.get("16", 18.0)},
+    14: {"ohm_per_1000ft": 3.070, "ohm_per_m": 0.01007, "metric_mm2": 2.08,  "ampacity_75c": NEC_AMPACITY_60C.get("14", 20.0)},
+    12: {"ohm_per_1000ft": 1.930, "ohm_per_m": 0.00633, "metric_mm2": 3.31,  "ampacity_75c": NEC_AMPACITY_60C.get("12", 25.0)},
+    10: {"ohm_per_1000ft": 1.210, "ohm_per_m": 0.00397, "metric_mm2": 5.26,  "ampacity_75c": NEC_AMPACITY_60C.get("10", 35.0)},
 }
 
 # Available AWG gauges for auto-selection (smallest to largest)
