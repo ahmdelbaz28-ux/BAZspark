@@ -14,17 +14,17 @@ import { fullApi } from "../../services/fullApi";
 export class EngineeringRepository implements IEngineeringRepository {
         async calculateQOMN(params: QOMNCalculationRequest): Promise<QOMNCalculationResult> {
                 try {
-                        const res = await fullApi.qomnCalculate(params);
+                        const res = await fullApi.qomnCalculate(params as Record<string, unknown>);
                         if (res?.success) {
                                 return {
                                         success: true,
-                                        detectors_required: res.data?.detectors_required,
-                                        spacing_meters: res.data?.spacing_meters,
-                                        voltage_drop_volts: res.data?.voltage_drop_volts,
-                                        voltage_drop_pct: res.data?.voltage_drop_pct,
-                                        battery_capacity_ah: res.data?.battery_capacity_ah,
-                                        compliance_status: res.data?.compliance_status || "COMPLIANT",
-                                        recommendations: res.data?.recommendations || [],
+                                        detectors_required: res.data?.detectors_required as number | undefined,
+                                        spacing_meters: res.data?.spacing_meters as number | undefined,
+                                        voltage_drop_volts: res.data?.voltage_drop_volts as number | undefined,
+                                        voltage_drop_pct: res.data?.voltage_drop_pct as number | undefined,
+                                        battery_capacity_ah: res.data?.battery_capacity_ah as number | undefined,
+                                        compliance_status: res.data?.compliance_status as string || "COMPLIANT",
+                                        recommendations: (res.data?.recommendations as string[]) || [],
                                 };
                         }
                         return {

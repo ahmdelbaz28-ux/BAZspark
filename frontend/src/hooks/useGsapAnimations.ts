@@ -22,8 +22,11 @@ gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
 // ─── Optional Club GSAP Plugins (loaded dynamically if available) ──────────────────────────────────────────
 // NOSONAR - typescript:S6564: Club GSAP plugins have no published TS types; `any` is needed because
 // these are dynamically imported at runtime and passed to gsap.registerPlugin() which expects object types.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
 type SplitTextType = any;  // NOSONAR
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
 type DrawSVGPluginType = any;  // NOSONAR
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
 type CustomEaseType = any;  // NOSONAR
 
 let SplitText: SplitTextType | null = null;
@@ -247,7 +250,7 @@ export function useGsapScrollReveal(
     opacity = 0,
     scale = 1,
     duration = 1,
-    stagger = 0.1,
+    stagger: _stagger = 0.1,
     start = "top 85%",
     end = "bottom 20%",
     ease = "power4.out",

@@ -130,7 +130,7 @@ export function RevitParametersPanel({ elementId }: RevitParametersPanelProps) {
                                                                                 value={key}
                                                                                 onChange={(e) => {
                                                                                         const newKey = e.target.value;
-                                                                                        const { [key]: oldVal, ...rest } = parameters;
+                                                                                        const { [key]: _oldVal, ...rest } = parameters;
                                                                                         setParameters({ ...rest, [newKey]: value });
                                                                                 }}
                                                                                 className="flex-1 bg-card text-sm"

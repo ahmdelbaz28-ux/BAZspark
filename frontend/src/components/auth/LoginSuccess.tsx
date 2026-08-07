@@ -9,7 +9,7 @@ interface LoginSuccessProps {
   readonly variant?: "default" | "dark";
 }
 
-export function LoginSuccess({ accessGranted, sessionInitialized, redirecting, variant = "default" }: LoginSuccessProps) {
+export function LoginSuccess({ accessGranted, sessionInitialized, redirecting, variant: _variant = "default" }: LoginSuccessProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

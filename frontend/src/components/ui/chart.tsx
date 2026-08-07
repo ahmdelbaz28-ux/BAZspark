@@ -116,6 +116,7 @@ type ChartTooltipContentProps = Omit<
                 nameKey?: string;
                 labelKey?: string;
                 // Re-introduced for recharts 3.x compat — these are passed by recharts at runtime.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- recharts 3.x payload shape is dynamic and untyped
                 payload?: ReadonlyArray<any>;
                 label?: React.ReactNode;
                 active?: boolean;
@@ -274,6 +275,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 type ChartLegendContentProps = React.ComponentProps<"div"> & {
         hideIcon?: boolean;
         nameKey?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- recharts 3.x payload shape is dynamic and untyped
         payload?: ReadonlyArray<any>;
         verticalAlign?: "top" | "middle" | "bottom";
 };
@@ -299,14 +301,16 @@ const ChartLegendContent = React.forwardRef<HTMLDivElement, ChartLegendContentPr
                                 )}
                         >
                                 {payload
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- recharts payload items are dynamic
                                         .filter((item: any) => item.type !== "none")
-                                        .map((item: any, index: number) => {
-                                                const key = `${nameKey || item.dataKey || "value"}`;
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- recharts payload items are dynamic
+                                        .map((item: any, _index: number) => {
+                                                const key = `${nameKey || item.name || item.dataKey || "value"}`;
                                                 const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
                                                 return (
                                                         <div
-                                                                key={item.value}
+                                                                key={item.dataKey || item.name || _index}
                                                                 className={cn(
                                                                         "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
                                                                 )}

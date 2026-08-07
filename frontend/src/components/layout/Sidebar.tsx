@@ -12,7 +12,6 @@ import {
         ChevronLeft,
         ChevronRight,
         FileText,
-        Siren,
         FolderKanban,
         History,
         Layers,

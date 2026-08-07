@@ -8,7 +8,8 @@ interface AuditEvent {
   hash: string;
   previous_hash: string;
   timestamp: string;
-  data: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- d3 hierarchy requires any for dynamic node data
+  data: Record<string, any>;
 }
 
 export const AuditVisualizer: React.FC = () => {
@@ -43,11 +44,13 @@ export const AuditVisualizer: React.FC = () => {
     if (!chain.length || !svgRef.current || !wrapperRef.current) return;
 
     // Convert linear chain to hierarchy for D3
-    const hierarchyData: any = { ...chain[0], name: chain[0].data.event || 'GENESIS', children: [] };
+    /* eslint-disable @typescript-eslint/no-explicit-any -- d3.hierarchy datum must be any for dynamic property access */
+    const hierarchyData: Record<string, any> = { ...chain[0], name: (chain[0].data as Record<string, any>).event as string || 'GENESIS', children: [] as Record<string, any>[] };
     let current = hierarchyData;
     for (let i = 1; i < chain.length; i++) {
-      const nodeData = { ...chain[i], name: chain[i].data.event, children: [] };
-      current.children.push(nodeData);
+      const nodeData: Record<string, any> = { ...chain[i], name: (chain[i].data as Record<string, any>).event as string, children: [] as Record<string, any>[] };
+      (current.children as Record<string, any>[]).push(nodeData);
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       current = nodeData;
     }
 
@@ -68,17 +71,18 @@ export const AuditVisualizer: React.FC = () => {
         g.attr('transform', e.transform);
       });
       
-    svg.call(zoom as any);
+    svg.call(zoom as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void);
 
     // Tree layout (horizontal chain)
     // Note: tree() uses nodeSize to spread things out.
     // For a simple chain, d3.tree() is a bit overkill but satisfying visually.
     const tree = d3.tree().nodeSize([100, 200]);
     const root = d3.hierarchy(hierarchyData);
+    // @ts-expect-error -- d3.tree() return type has incompatible generics with d3.hierarchy() for any-typed data
     tree(root);
 
     // Swap x and y for horizontal layout
-    root.each((d: any) => {
+    root.each((d) => {
       const temp = d.x;
       d.x = d.y;
       d.y = temp;
@@ -92,15 +96,18 @@ export const AuditVisualizer: React.FC = () => {
       .attr('fill', 'none')
       .attr('stroke', 'hsl(var(--muted-foreground))')
       .attr('stroke-width', 2)
-      .attr('d', d3.linkHorizontal()
+      /* eslint-disable @typescript-eslint/no-explicit-any -- d3.linkHorizontal() typing is incompatible with d3.tree() output */
+      .attr('d', d3.linkHorizontal<any, any>()
         .x((d: any) => d.x)
-        .y((d: any) => d.y) as any);
+        .y((d: any) => d.y) as unknown as string);
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // Draw Nodes
     const node = g.selectAll('.node')
       .data(root.descendants())
       .join('g')
       .attr('class', 'node')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- d3 HierarchyNode generic typing
       .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 
     node.append('circle')
@@ -112,14 +119,16 @@ export const AuditVisualizer: React.FC = () => {
       .attr('text-anchor', 'middle')
       .attr('fill', 'currentColor')
       .attr('class', 'text-xs font-semibold')
-      .text((d: any) => d.data.name);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- d3 HierarchyNode generic typing
+      .text((d: any) => d.data.name as string);
       
     node.append('text')
       .attr('dy', 25)
       .attr('text-anchor', 'middle')
       .attr('fill', 'currentColor')
       .attr('class', 'text-[10px] opacity-70')
-      .text((d: any) => d.data.hash?.substring(0, 8));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- d3 HierarchyNode generic typing
+      .text((d: any) => (d.data.hash as string)?.substring(0, 8) ?? null);
 
   }, [chain, verifyStatus]);
 

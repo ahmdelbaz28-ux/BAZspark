@@ -149,7 +149,7 @@ export function EngineeringBackground() {
    GridFloor — 3D-perspective engineering grid (like AutoCAD viewport floor)
    ═══════════════════════════════════════════════════════════════════════════ */
 // NOSONAR — S6759: Props read-only pattern is intentional for performance in decorative components
-function GridFloor({ reducedMotion }: { reducedMotion: boolean }) {  // NOSONAR — S6759: Props read-only pattern intentional for decorative components
+function GridFloor({ reducedMotion: _reducedMotion }: { reducedMotion: boolean }) {  // NOSONAR — S6759: Props read-only pattern intentional for decorative components
         return (
                 <svg
                         className="absolute inset-0 w-full h-full"

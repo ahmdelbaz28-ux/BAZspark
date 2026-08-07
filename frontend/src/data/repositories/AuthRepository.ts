@@ -20,11 +20,11 @@ export class AuthRepository implements IAuthRepository {
                                         success: true,
                                         token: res.token,
                                         session: {
-                                                id: res.user?.id || "usr_default",
-                                                username: res.user?.username || credentials.username,
-                                                email: res.user?.email,
-                                                role: res.user?.role || "engineer",
-                                                permissions: res.user?.permissions || [],
+                                                id: res.user?.id as string || "usr_default",
+                                                username: res.user?.username as string || credentials.username,
+                                                email: res.user?.email as string | undefined,
+                                                role: res.user?.role as string || "engineer",
+                                                permissions: (res.user?.permissions as string[]) || [],
                                                 token: res.token,
                                         },
                                 };
@@ -55,11 +55,11 @@ export class AuthRepository implements IAuthRepository {
                         const res = await fullApi.getMe();
                         if (res?.data) {
                                 return {
-                                        id: res.data.id || "usr_current",
-                                        username: res.data.username || "User",
-                                        email: res.data.email,
-                                        role: res.data.role || "engineer",
-                                        permissions: res.data.permissions || [],
+                                        id: res.data.id as string || "usr_current",
+                                        username: res.data.username as string || "User",
+                                        email: res.data.email as string | undefined,
+                                        role: res.data.role as string || "engineer",
+                                        permissions: (res.data.permissions as string[]) || [],
                                 };
                         }
                         return null;
