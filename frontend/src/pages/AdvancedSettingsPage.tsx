@@ -32,11 +32,6 @@ interface EnvConfigData {
   categories: Record<string, ConfigCategory>;
 }
 
-interface EnvConfigResponse {
-  success: boolean;
-  data: EnvConfigData;
-}
-
 // ── Category Icons ──────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<string, { icon: string; description: string }> = {
@@ -305,14 +300,6 @@ export const AdvancedSettingsPage: React.FC = () => {
       setAdminMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to clear cache" });
     } finally { setCacheClearing(false); }
   }, [fetchCacheStats]);
-
-  const fetchFeatureFlagsCore = useCallback(async () => {
-    try {
-      const res = await adminApi.getFeatureFlags();
-      if (res.success && res.data) setFeatureFlags(res.data);
-    } catch { /* ignore */ }
-    finally { setFlagsLoading(false); }
-  }, []);
 
   const handleToggleFlag = useCallback(async (key: string, enabled: boolean) => {
     setFlagToggling(key);

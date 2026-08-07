@@ -192,10 +192,6 @@ export const EngineeringCopilotPage: React.FC = () => {
     }
   };
 
-  const COPILOT_API =
-  import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, "")}/engineering-copilot`
-    : "/engineering-copilot";
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

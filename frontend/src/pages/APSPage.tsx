@@ -18,10 +18,6 @@ import {
 } from "lucide-react";
 import { apsApi } from "@/services/fullApi";
 
-const APS_API = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace("/api/v1", "/api/v2")}/aps`
-  : "/api/v2/aps";
-
 interface ApsJob {
   work_item_id: string;
   input_urn: string;

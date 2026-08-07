@@ -62,7 +62,7 @@ async function buildSecureHeaders(): Promise<Record<string, string>> {
 }
 
 /** Execute a DELETE request for an API key and handle the response. */
-async function executeDeleteKey(keyHash: string, resolve: () => void, reject: (reason?: unknown) => void) {
+async function executeDeleteKey(keyHash: string, resolve: () => void, _reject: (reason?: unknown) => void) {
         const headers = await buildSecureHeaders();
         const resp = await fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers, credentials: "same-origin" });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

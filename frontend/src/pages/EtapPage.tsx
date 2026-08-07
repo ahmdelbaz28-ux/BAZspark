@@ -91,7 +91,7 @@ export function EtapPage() {
 
         // Logs
         const [logs, setLogs] = useState<EtapSyncLog[]>([]);
-        const [logsPage, setLogsPage] = useState(1); // NOSONAR: reserved for pagination
+        const [logsPage] = useState(1); // NOSONAR: reserved for pagination
 
         // UI state
         const [loading, setLoading] = useState<string | null>(null);

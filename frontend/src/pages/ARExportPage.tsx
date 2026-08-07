@@ -56,7 +56,7 @@ export function ARExportPage() {
                 }
         };
 
-        const handleDownload = (formatName: string, base64Content: string, sizeBytes: number) => {
+        const handleDownload = (formatName: string, base64Content: string, _sizeBytes: number) => {
                 try {
                         const byteChars = atob(base64Content);
                         const byteArrays: Uint8Array[] = [];

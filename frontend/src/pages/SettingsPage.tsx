@@ -176,7 +176,8 @@ export function SettingsPage() {
         
         const [visionKeyInput, setVisionKeyInput] = useState("");
         const [visionKeyDesc, setVisionKeyDesc] = useState("");
-        const [visionKeys, setVisionKeys] = useState<any[]>([]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API key data shape is dynamic from backend
+        const [visionKeys, setVisionKeys] = useState<Record<string, any>[]>([]);
         const [visionKeysLoading, setVisionKeysLoading] = useState(false);
 
         const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";

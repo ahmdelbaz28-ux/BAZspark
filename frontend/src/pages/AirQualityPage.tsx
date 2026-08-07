@@ -7,7 +7,7 @@
  * Backend: GET /environment/air-quality?lat=...&lon=...
  */
 import { useState } from "react";
-import { Thermometer, Search, Loader2, Wind, AlertTriangle, Info } from "lucide-react";
+import { Search, Loader2, Wind, AlertTriangle, Info } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 

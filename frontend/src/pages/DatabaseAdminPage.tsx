@@ -63,7 +63,6 @@ export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database 
 
   // Redis
   const [redisKey, setRedisKey] = useState("");
-  const [redisValue, setRedisValue] = useState(""); // NOSONAR: reserved for future Redis GET/SET UI
   const [redisResult, setRedisResult] = useState<string | null>(null);
   const [redisSetKey, setRedisSetKey] = useState("");
   const [redisSetValue, setRedisSetValue] = useState("");

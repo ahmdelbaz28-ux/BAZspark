@@ -5,7 +5,7 @@
  * GET /api/v1/monitor/security-alerts.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import { BellRing, Loader2, RefreshCw, AlertTriangle, Shield, Filter } from "lucide-react";
+import { BellRing, Loader2, RefreshCw, Shield, Filter } from "lucide-react";
 
 interface SecurityAlert {
   id: string;

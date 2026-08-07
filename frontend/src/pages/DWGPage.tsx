@@ -20,8 +20,6 @@ import {
 } from "lucide-react";
 import { dwgApi } from "@/services/fullApi";
 
-const PARSE_API = "/parse-dwg";
-
 interface ParseResult {
   success: boolean;
   source: string;

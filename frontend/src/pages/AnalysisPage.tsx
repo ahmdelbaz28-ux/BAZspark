@@ -25,8 +25,6 @@ import { analyzeApi } from "@/services/fullApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
-const PROJECT_BASE = API_BASE.replace("/api/v1", "");
-
 interface BatteryResult {
   success: boolean;
   data?: {

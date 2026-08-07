@@ -15,7 +15,8 @@ function Connections() {
         const [elementFilter, setElementFilter] = useState("");
         const [showCreateModal, setShowCreateModal] = useState(false);
         const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-        const [editTarget, setEditTarget] = useState<any | null>(null);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- UdmConnection type from API is dynamic
+        const [editTarget, setEditTarget] = useState<any>(null);
 
         const {
                 data: connectionsData,
@@ -38,7 +39,7 @@ function Connections() {
         });
 
         const updateMutation = useMutation({
-                mutationFn: async ({ id, data }: { id: string, data: any }) => {
+                mutationFn: async ({ id, data }: { id: string, data: Record<string, unknown> }) => {
                         const res = await fetch(`/api/v1/connections/${id}`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
@@ -443,9 +444,11 @@ function EditConnectionModal({
         onClose,
         onSuccess,
 }: {
+        /* eslint-disable @typescript-eslint/no-explicit-any -- connection data is dynamic from API */
         connection: any;
         onClose: () => void;
         onSuccess: (data: any) => void;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
 }) {
         const { t } = useTranslation();
         const [relationshipType, setRelationshipType] = useState(connection.relationship_type || "");

@@ -540,7 +540,7 @@ export function FDSSimulationPage() {
             <CardContent>
               <div className="space-y-2">
                 {jobs.map((job, i) => {
-                  const handleJobSelect = () => {
+                  const _handleJobSelect = () => {
                     setStatusJobId(job.job_id || "");
                     setSelectedJob(job);
                   };

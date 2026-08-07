@@ -30,7 +30,6 @@ import {
         Flame, Layers, Loader2, Server, Shield,
         ShieldCheck, Ship, Siren, Sliders, Sparkles, Zap,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CardDescription,
@@ -48,18 +47,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { marineApi, marineExtendedApi } from "@/services/fullApi";
 import "@/styles/marine.css";
-
-interface ShipForm {
-        project_id: string;
-        ship_name: string;
-        imo_number: string;
-        ship_type: string;
-        length_overall_m: string;
-        gross_tonnage: string;
-        passenger_capacity: string;
-        flag_state: string;
-        classification_society: string;
-}
 
 const SHIP_TYPES = [
         { value: "passenger", label: "Passenger Ship (SOLAS Reg. 2)" },
@@ -223,7 +210,7 @@ export function MarinePage() {  // NOSONAR — S3776: marine page must integrate
   const [simulatedCo2Discharging, setSimulatedCo2Discharging] = useState(false);
 
   // ── Vessel Specification Form (Split States) ───────────────────────────
-  const [projectId, setProjectId] = useState("SOLAS-V-8821"); // NOSONAR: setProjectId reserved for future edit
+  const [projectId] = useState("SOLAS-V-8821"); // NOSONAR: setProjectId reserved for future edit
   const [shipName, setShipName] = useState("MV Atlantic Fire Guardian");
   const [imoNumber, setImoNumber] = useState("9812401");
   const [shipType, setShipType] = useState("passenger");
@@ -238,17 +225,17 @@ export function MarinePage() {  // NOSONAR — S3776: marine page must integrate
   };
 
   // ── API Result States ───────────────────────────────────────────────────
-  const [standards, setStandards] = useState<Array<{ code: string; title: string; issuer: string }>>([]); // NOSONAR: standards reserved for display
-  const [fireClasses, setFireClasses] = useState<Array<{ class_name: string; insulation_minutes: number; description: string }>>([]); // NOSONAR: fireClasses reserved for display
+  const [, setStandards] = useState<Array<{ code: string; title: string; issuer: string }>>([]); // NOSONAR: standards reserved for display
+  const [, setFireClasses] = useState<Array<{ class_name: string; insulation_minutes: number; description: string }>>([]); // NOSONAR: fireClasses reserved for display
   const [validation, setValidation] = useState<Record<string, unknown> | null>(null);
   const [zones, setZones] = useState<Array<{ zone_id: string; name: string; area_m2: number; required_fire_class: string; deck?: string }>>([]);
   const [detection, setDetection] = useState<Record<string, unknown> | null>(null);
   const [extinguishing, setExtinguishing] = useState<Record<string, unknown> | null>(null);
-  const [divisions, setDivisions] = useState<Record<string, unknown> | null>(null); // NOSONAR: divisions reserved for display
+  const [, setDivisions] = useState<Record<string, unknown> | null>(null); // NOSONAR: divisions reserved for display
   const [alarmLogic, setAlarmLogic] = useState<Record<string, unknown> | null>(null);
   const [powerDesign, setPowerDesign] = useState<Record<string, unknown> | null>(null);
   const [scadaConfig, setScadaConfig] = useState<Record<string, unknown> | null>(null);
-  const [fullDesignResult, setFullDesignResult] = useState<Record<string, unknown> | null>(null); // NOSONAR: fullDesignResult reserved for display
+  const [, setFullDesignResult] = useState<Record<string, unknown> | null>(null); // NOSONAR: fullDesignResult reserved for display
 
   // ── Helper: Build Ship Payload (Memoized) ────────────────────────────
   const buildShipPayload = useMemo(
@@ -454,7 +441,7 @@ useEffect(() => {
                 }
         };
 
-        const handleGenerateDivisions = async () => { // NOSONAR: reserved for UI button
+        const _handleGenerateDivisions = async () => { // NOSONAR: reserved for UI button
                 setLoading("divisions");
                 try {
                         const res = await marineApi.generateDivisions(buildShipPayload());

@@ -217,21 +217,21 @@ export function FireAlarmPage() {
                 detectorsRef.current = detectors;
         });
 
-        const pushHistory = (snapshot: Detector[]) => {
+        const pushHistory = useCallback((snapshot: Detector[]) => {
                 setHistory((prev) => [...prev.slice(-19), snapshot]);
                 setRedoStack([]);
-        };
+        }, []);
 
         // V187: setDetectorsWithHistory captures the ACTUAL previous state using
         // the functional updater pattern, avoiding the stale closure bug.
-        const setDetectorsWithHistory = (
+        const setDetectorsWithHistory = useCallback((
                 next: Detector[] | ((prev: Detector[]) => Detector[]),
         ) => {
                 setDetectors((prev) => {
                         pushHistory(prev); // capture actual previous state, not stale closure
                         return typeof next === "function" ? next(prev) : next;
                 });
-        };
+        }, [pushHistory]);
 
         const handleUndo = () => {
                 setHistory((prevHistory) => {
@@ -355,7 +355,7 @@ export function FireAlarmPage() {
                         prev.map((det) => (det.id === updatedDevice.id ? { ...det, ...updatedDevice } : det)),
                 );
                 setShowProperties(false);
-        }, []);
+        }, [setDetectorsWithHistory]);
 
         const deviceStats = useMemo(() => {
                 let smoke = 0, heat = 0, pull = 0, normal = 0, warning = 0;

@@ -123,27 +123,7 @@ export function EngineeringPage() {
         const prevComplianceRef = useRef<ComplianceLevel | null>(null);
         const [complianceFlash, setComplianceFlash] = useState(false);
 
-        // ── Voltage Drop: Local fallback calculation ──────────────────────
-        const calculateVoltageDropLocal = () => {
-                const current = Number.parseFloat(voltageDropInputs.current);
-                const length = Number.parseFloat(voltageDropInputs.length);
-                const cableSize = Number.parseFloat(voltageDropInputs.cableSize);
-                const voltage = Number.parseFloat(voltageDropInputs.voltage);
-
-                if (Number.isNaN(current) || Number.isNaN(length) || Number.isNaN(cableSize) || Number.isNaN(voltage)) {
-                        return { percentage: 0, absolute: 0 };
-                }
-
-                const resistivity = voltageDropInputs.material === "cu" ? 0.0172 : 0.0282;
-                const resistance = (resistivity * length * 2) / cableSize;
-                const voltageDrop = current * resistance;
-                const percentage = (voltageDrop / voltage) * 100;
-
-                return {
-                        percentage: Number.parseFloat(percentage.toFixed(2)),
-                        absolute: Number.parseFloat(voltageDrop.toFixed(3)),
-                };
-        };
+        // ── Voltage Drop: Local fallback calculation (inlined in useMemo below) ──────
 
         // ── Voltage Drop: QOMN API call ────────────────────────────────────
         const calculateVoltageDropViaApi = async () => {
@@ -180,7 +160,7 @@ export function EngineeringPage() {
                 if (Number.isNaN(current) || Number.isNaN(length) || current <= 0 || length <= 0) return;
                 const timer = setTimeout(() => calculateVoltageDropViaApiRef.current(), 500);
                 return () => clearTimeout(timer);
-        }, [voltageDropInputs.current, voltageDropInputs.length]);
+        }, [voltageDropInputs]);
 
         // ── Cable Sizing ───────────────────────────────────────────────────
         const calculateCableSizing = useCallback(() => {
@@ -245,7 +225,27 @@ export function EngineeringPage() {
         }, [batteryCalcInputs]);
 
         // ── Merged results: API primary, local fallback ────────────────────
-        const localVDrop = useMemo(() => calculateVoltageDropLocal(), [voltageDropInputs]);
+        const { current: vCurrent, length: vLength, cableSize: vCableSize, voltage: vVoltage, material: vMaterial } = voltageDropInputs;
+        const localVDrop = useMemo(() => {
+                const current = Number.parseFloat(vCurrent);
+                const length = Number.parseFloat(vLength);
+                const cableSize = Number.parseFloat(vCableSize);
+                const voltage = Number.parseFloat(vVoltage);
+
+                if (Number.isNaN(current) || Number.isNaN(length) || Number.isNaN(cableSize) || Number.isNaN(voltage)) {
+                        return { percentage: 0, absolute: 0 };
+                }
+
+                const resistivity = vMaterial === "cu" ? 0.0172 : 0.0282;
+                const resistance = (resistivity * length * 2) / cableSize;
+                const voltageDrop = current * resistance;
+                const percentage = (voltageDrop / voltage) * 100;
+
+                return {
+                        percentage: Number.parseFloat(percentage.toFixed(2)),
+                        absolute: Number.parseFloat(voltageDrop.toFixed(3)),
+                };
+        }, [vCurrent, vLength, vCableSize, vVoltage, vMaterial]);
         const vDropResult = apiResult
                 ? {
                         percentage: apiResult.drop_pct,
