@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Save, CheckCircle2 } from 'lucide-react';
+import { Save, CheckCircle2 } from 'lucide-react';
 
 type FeatureFlags = Record<string, boolean>;
 

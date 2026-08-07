@@ -18,24 +18,24 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (_props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
 // Mock the fullApi module so we control syncApi.getSyncStatus/syncProject
@@ -71,12 +71,6 @@ const MOCK_SYNC_STATUS_SYNCED = {
   pendingChanges: 0,
   deviceCount: 24,
   connectionCount: 8,
-};
-
-const MOCK_SYNC_STATUS_SYNCING = {
-  status: "syncing",
-  lastSync: "2026-07-30T12:00:00Z",
-  pendingChanges: 0,
 };
 
 function createQueryClient() {

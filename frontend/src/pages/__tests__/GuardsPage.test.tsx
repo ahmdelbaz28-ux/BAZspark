@@ -20,7 +20,7 @@ vi.mock("lucide-react", async (importOriginal) => {
 	const actual = await importOriginal() as Record<string, unknown>;
 	// Create a simple mock component for each icon export
 	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
+		const Icon = (_props: Record<string, unknown>) => (
 			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
 		);
 		Icon.displayName = name;

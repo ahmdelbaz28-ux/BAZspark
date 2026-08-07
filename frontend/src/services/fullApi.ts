@@ -1345,9 +1345,11 @@ export const etapApi = {
 };
 
 export const fullApi = {
-        login: async (username: string, password?: string) => apiCall<{ success: boolean; token?: string; user?: any; message?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API user data shape is dynamic
+        login: async (username: string, password?: string) => apiCall<{ success: boolean; token?: string; user?: Record<string, any>; message?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
         logout: async () => apiCall<{ success: boolean }>("/auth/logout", { method: "POST" }),
-        getMe: async () => apiCall<{ data?: any }>("/auth/me"),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API user data shape is dynamic
+        getMe: async () => apiCall<{ data?: Record<string, any> }>("/auth/me"),
         verifyToken: async (token: string) => apiCall<{ success: boolean }>("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
         /**
          * qomnCalculate — V270 FIX (audit bug C-qomn-calculate).
@@ -1391,7 +1393,7 @@ export const fullApi = {
          * Callers MUST use the typed qomnApi methods (which take SI units
          * directly) or pass the SI-named fields explicitly.
          */
-        qomnCalculate: async (params: any): Promise<{ success: boolean; data?: any; message?: string }> => {
+        qomnCalculate: async (params: Record<string, unknown>): Promise<{ success: boolean; /* eslint-disable-line @typescript-eslint/no-explicit-any -- QOMN result shape varies by calc type */ data?: Record<string, any>; message?: string }> => {
                 // V271 FIX: guard against null/undefined params to prevent TypeError
                 // on property access. Returns structured failure instead of crashing.
                 if (params === null || params === undefined || typeof params !== "object") {
@@ -1421,13 +1423,13 @@ export const fullApi = {
 
                 // Route based on SI-named params (matches backend schemas exactly).
                 if (params.ceiling_height_m !== undefined) {
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/smoke-spacing", {
+                        return apiCall<{ success: boolean; /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any>; message?: string }>("/qomn/smoke-spacing", {
                                 method: "POST",
                                 body: JSON.stringify({ ceiling_height_m: Number(params.ceiling_height_m) }),
                         });
                 }
                 if (params.standby_load_a !== undefined || params.alarm_load_a !== undefined) {
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/battery", {
+                        return apiCall<{ success: boolean; /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any>; message?: string }>("/qomn/battery", {
                                 method: "POST",
                                 body: JSON.stringify({
                                         standby_load_a: Number(params.standby_load_a ?? 0),
@@ -1438,7 +1440,7 @@ export const fullApi = {
                         });
                 }
                 if (params.current_a !== undefined || params.length_m !== undefined) {
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/voltage-drop", {
+                        return apiCall<{ success: boolean; /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any>; message?: string }>("/qomn/voltage-drop", {
                                 method: "POST",
                                 body: JSON.stringify({
                                         current_a: Number(params.current_a ?? 0),
@@ -1457,9 +1459,9 @@ export const fullApi = {
                                 "or use qomnApi.smokeSpacing/battery/voltageDrop directly.",
                 };
         },
-        getEnvironmentalContext: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/context?lat=${lat}&lon=${lon}`),
-        getWeatherForecast: async (location: string) => apiCall<{ data?: any }>(`/environment/weather?location=${encodeURIComponent(location)}`),
-        getAirQualityData: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/air-quality?lat=${lat}&lon=${lon}`),
+        getEnvironmentalContext: async (lat: number, lon: number) => apiCall<{ /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any> }>(`/environment/context?lat=${lat}&lon=${lon}`),
+        getWeatherForecast: async (location: string) => apiCall<{ /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any> }>(`/environment/weather?location=${encodeURIComponent(location)}`),
+        getAirQualityData: async (lat: number, lon: number) => apiCall<{ /* eslint-disable-line @typescript-eslint/no-explicit-any */ data?: Record<string, any> }>(`/environment/air-quality?lat=${lat}&lon=${lon}`),
 };
 
 // ─── System Admin API (Cache, Feature Flags, Secret Rotation) ──────────────

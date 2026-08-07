@@ -60,7 +60,7 @@ vi.mock("react-i18next", () => {
   };
   return {
     useTranslation: () => ({
-      t: (key: string, options?: any) => {
+      t: (key: string, options?: Record<string, unknown>) => {
         if (key === "devices.deviceCount") {
           const cnt = typeof options === "object" ? options.count : options;
           return `${cnt} fire alarm devices`;
@@ -89,24 +89,24 @@ vi.mock("react-i18next", () => {
 
 // Mock lucide-react icons (prevent rendering issues in test)
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (_props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
 // Mock digitalTwinApi (the device CRUD service)
