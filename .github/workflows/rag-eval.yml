@@ -37,13 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    env:
-      # Set NVIDIA_API_KEY in GitHub Secrets for live RAGAS scoring.
-      # Without it, the driver falls back to mock accuracy scores.
-      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RAG_EVAL_JUDGE_MODEL: ${{ vars.RAG_EVAL_JUDGE_MODEL }}
-
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
@@ -75,6 +68,10 @@ jobs:
       # ── 6. Run evaluation ────────────────────────────────────────────────────
       - name: Run RAG evaluation
         id: rag_eval
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RAG_EVAL_JUDGE_MODEL: ${{ vars.RAG_EVAL_JUDGE_MODEL }}
         run: |
           DRY_RUN_FLAG=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
