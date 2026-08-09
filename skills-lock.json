@@ -61,6 +61,12 @@
       "skillPath": "skills/finding-duplicate-functions/SKILL.md",
       "computedHash": "1a4b8322c630677c1e3c934aba450ba5703fc1545769936ac1ddf6d828251fbc"
     },
+    "git-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "2607fc60629b82b257136dd2a7a373f0a4466c0b49df7746d845d59313c99b21"
+    },
     "grilling": {
       "source": "mattpocock/skills",
       "sourceType": "github",
