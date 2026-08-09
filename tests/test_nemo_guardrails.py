@@ -4,8 +4,8 @@ tests/test_nemo_guardrails.py — Tests for NeMo Guardrails Integration Service.
 """
 
 import pytest
+
 from fireai.infrastructure.nemo_guardrails_service import (
-    GuardrailViolation,
     NeMoGuardrailsService,
 )
 
@@ -45,7 +45,7 @@ class TestNeMoGuardrailsService:
     def test_excessive_voltage_drop_triggers_warning(self, service):
         query = "Is 15% voltage drop okay?"
         response = "The system has a voltage drop of 15.0% on the NAC circuit."
-        is_safe, violations, text = service.validate_llm_response(query, response)
+        is_safe, violations, _text = service.validate_llm_response(query, response)
         assert is_safe is True  # Warning level does not block critical safety
         assert len(violations) == 1
         assert violations[0].rule_id == "NFPA72-10.14"

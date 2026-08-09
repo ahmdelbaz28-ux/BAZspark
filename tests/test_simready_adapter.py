@@ -5,17 +5,14 @@ tests/test_simready_adapter.py — NVIDIA SimReady Adapter Unit Tests
 Tests for SimReadyAdapter and CAD-to-SimReady digital twin conversion pipeline.
 """
 
-import os
 import tempfile
 from pathlib import Path
-import pytest
 
+from backend.services.digital_twin_service import DigitalTwinService
 from backend.services.simready_adapter import (
     SimReadyAdapter,
     SimReadyPipelineConfig,
-    SimReadyPipelineResult,
 )
-from backend.services.digital_twin_service import DigitalTwinService
 
 
 class TestSimReadyAdapter:
