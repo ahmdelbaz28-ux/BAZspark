@@ -1,4 +1,3 @@
-
 import { AlertTriangle, CheckCircle2, Save, X, XCircle } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -62,7 +61,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 			device?.lastTestDate || new Date().toISOString().split("T")[0],
 	});
 
-	const handleChange = (field: keyof DeviceProperty, value: string | number | boolean) => {
+	const handleChange = (
+		field: keyof DeviceProperty,
+		value: string | number | boolean,
+	) => {
 		setEditedDevice((prev) => ({
 			...prev,
 			[field]: value,
@@ -102,7 +104,9 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 					</CardHeader>
 					<CardContent>
-						<p className="text-muted-foreground">{t("fireAlarm.selectDevice")}</p>
+						<p className="text-muted-foreground">
+							{t("fireAlarm.selectDevice")}
+						</p>
 					</CardContent>
 				</Card>
 			</div>
@@ -125,7 +129,9 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 				<CardContent>
 					<div className="space-y-4">
 						<div>
-							<Label className="text-foreground/90">{t("fireAlarm.address")}</Label>
+							<Label className="text-foreground/90">
+								{t("fireAlarm.address")}
+							</Label>
 							<Input
 								value={editedDevice.address || ""}
 								onChange={(e) => handleChange("address", e.target.value)}
@@ -135,7 +141,9 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-foreground/90">{t("fireAlarm.zone")}</Label>
+							<Label className="text-foreground/90">
+								{t("fireAlarm.zone")}
+							</Label>
 							<Input
 								value={editedDevice.zone || ""}
 								onChange={(e) => handleChange("zone", e.target.value)}
@@ -196,7 +204,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.heightAFF || ""}
 								onChange={(e) =>
-									handleChange("heightAFF", Number.parseFloat(e.target.value) || 0)
+									handleChange(
+										"heightAFF",
+										Number.parseFloat(e.target.value) || 0,
+									)
 								}
 								placeholder={t("fireAlarm.heightAffPlaceholder") || undefined}
 								className="bg-card border-border text-foreground"
@@ -218,7 +229,9 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-foreground/90">{t("fireAlarm.model")}</Label>
+							<Label className="text-foreground/90">
+								{t("fireAlarm.model")}
+							</Label>
 							<Input
 								value={editedDevice.modelNumber || ""}
 								onChange={(e) => handleChange("modelNumber", e.target.value)}
@@ -258,7 +271,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.coverageArea || ""}
 								onChange={(e) =>
-									handleChange("coverageArea", Number.parseFloat(e.target.value) || 0)
+									handleChange(
+										"coverageArea",
+										Number.parseFloat(e.target.value) || 0,
+									)
 								}
 								placeholder={
 									t("fireAlarm.coverageAreaPlaceholder") || undefined
@@ -268,14 +284,16 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-foreground/90">{t("fireAlarm.status")}</Label>
+							<Label className="text-foreground/90">
+								{t("fireAlarm.status")}
+							</Label>
 							<div className="flex items-center gap-2">
 								<Badge
 									variant="secondary"
 									className={
 										editedDevice.status === "normal"
 											? "bg-success/10 text-success border-success/30"
-											: editedDevice.status === "warning"  // NOSONAR: typescript:S3358
+											: editedDevice.status === "warning" // NOSONAR: typescript:S3358
 												? "bg-warning/10 text-warning border-warning/30"
 												: "bg-danger/10 text-danger border-danger/30"
 									}
@@ -284,7 +302,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 										<CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" />
 									)}
 									{editedDevice.status === "warning" && (
-										<AlertTriangle aria-hidden="true" className="h-3 w-3 mr-1" />
+										<AlertTriangle
+											aria-hidden="true"
+											className="h-3 w-3 mr-1"
+										/>
 									)}
 									{editedDevice.status === "fault" && (
 										<XCircle aria-hidden="true" className="h-3 w-3 mr-1" />

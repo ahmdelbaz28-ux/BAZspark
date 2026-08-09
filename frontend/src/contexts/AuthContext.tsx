@@ -1,4 +1,3 @@
-
 /**
  * AuthContext.tsx — Global authentication state for the entire app.
  *
@@ -17,218 +16,217 @@
  * "am I authenticated?" is to ask the backend via /auth/me.
  */
 import {
-        createContext,
-        useCallback,
-        useContext,
-        useEffect,
-        useMemo,
-        useRef,
-        useState,
-        type ReactNode,
+	createContext,
+	type ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
-import { getCurrentUser, login as apiLogin, logout as apiLogout } from "@/services/api";
-import { prefetchCsrfToken, invalidateCsrfToken } from "@/services/csrf";
+import {
+	login as apiLogin,
+	logout as apiLogout,
+	getCurrentUser,
+} from "@/services/api";
+import { invalidateCsrfToken, prefetchCsrfToken } from "@/services/csrf";
 
 interface AuthState {
-        isAuthenticated: boolean;
-        role: string | null;
-        loading: boolean; // true during initial /auth/me check
-        error: string | null;
+	isAuthenticated: boolean;
+	role: string | null;
+	loading: boolean; // true during initial /auth/me check
+	error: string | null;
 }
 
 interface AuthContextValue extends AuthState {
-        login: (apiKey: string) => Promise<{ role: string }>;
-        logout: () => Promise<void>;
-        refresh: () => Promise<void>;
+	login: (apiKey: string) => Promise<{ role: string }>;
+	logout: () => Promise<void>;
+	refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-        const [state, setState] = useState<AuthState>({
-                isAuthenticated: false,
-                role: null,
-                loading: true, // initial check on mount
-                error: null,
-        });
+	const [state, setState] = useState<AuthState>({
+		isAuthenticated: false,
+		role: null,
+		loading: true, // initial check on mount
+		error: null,
+	});
 
-        const refresh = useCallback(async () => {
-                try {
-                        const user = await getCurrentUser();
-                        if (user) {
-                                setState({
-                                        isAuthenticated: true,
-                                        role: user.role,
-                                        loading: false,
-                                        error: null,
-                                });
-                        } else {
-                                setState({
-                                        isAuthenticated: false,
-                                        role: null,
-                                        loading: false,
-                                        error: null,
-                                });
-                        }
-                } catch {
-                        setState({
-                                isAuthenticated: false,
-                                role: null,
-                                loading: false,
-                                error: "Session check failed",
-                        });
-                }
-        }, []);
+	const refresh = useCallback(async () => {
+		try {
+			const user = await getCurrentUser();
+			if (user) {
+				setState({
+					isAuthenticated: true,
+					role: user.role,
+					loading: false,
+					error: null,
+				});
+			} else {
+				setState({
+					isAuthenticated: false,
+					role: null,
+					loading: false,
+					error: null,
+				});
+			}
+		} catch {
+			setState({
+				isAuthenticated: false,
+				role: null,
+				loading: false,
+				error: "Session check failed",
+			});
+		}
+	}, []);
 
-        // Initial check on mount. Uses an inline async IIFE so every setState
-        // happens after the first `await` — this avoids react-hooks/set-state-in-effect
-        // (no synchronous setState in the effect body). `refresh` is still exposed
-        // via context for event handlers (window focus, login, logout).
-        useEffect(() => {
-                let cancelled = false;
-                (async () => {
-                        try {
-                                const user = await getCurrentUser();
-                                if (cancelled) return;
-                                if (user) {
-                                        setState({
-                                                isAuthenticated: true,
-                                                role: user.role,
-                                                loading: false,
-                                                error: null,
-                                        });
-                                } else {
-                                        setState({
-                                                isAuthenticated: false,
-                                                role: null,
-                                                loading: false,
-                                                error: null,
-                                        });
-                                }
-                        } catch {
-                                if (cancelled) return;
-                                setState({
-                                        isAuthenticated: false,
-                                        role: null,
-                                        loading: false,
-                                        error: "Session check failed",
-                                });
-                        }
-                })();
-                return () => {
-                        cancelled = true;
-                };
-        }, []);
+	// Initial check on mount. Uses an inline async IIFE so every setState
+	// happens after the first `await` — this avoids react-hooks/set-state-in-effect
+	// (no synchronous setState in the effect body). `refresh` is still exposed
+	// via context for event handlers (window focus, login, logout).
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const user = await getCurrentUser();
+				if (cancelled) return;
+				if (user) {
+					setState({
+						isAuthenticated: true,
+						role: user.role,
+						loading: false,
+						error: null,
+					});
+				} else {
+					setState({
+						isAuthenticated: false,
+						role: null,
+						loading: false,
+						error: null,
+					});
+				}
+			} catch {
+				if (cancelled) return;
+				setState({
+					isAuthenticated: false,
+					role: null,
+					loading: false,
+					error: "Session check failed",
+				});
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-        // Re-check on window focus (catches logout in another tab)
-        // Latest-ref pattern: keep ref in sync via effect (react-hooks/refs).
-        const isAuthRef = useRef(state.isAuthenticated);
-        useEffect(() => {
-                isAuthRef.current = state.isAuthenticated;
-        });
-        useEffect(() => {
-                const onFocus = () => {
-                        // Only re-check if we think we're authenticated (avoid spamming
-                        // /auth/me when not logged in — LoginPage handles that flow)
-                        if (isAuthRef.current) {
-                                refresh();
-                        }
-                };
-                globalThis.addEventListener("focus", onFocus);
-                return () => globalThis.removeEventListener("focus", onFocus);
-        }, [refresh]);
+	// Re-check on window focus (catches logout in another tab)
+	// Latest-ref pattern: keep ref in sync via effect (react-hooks/refs).
+	const isAuthRef = useRef(state.isAuthenticated);
+	useEffect(() => {
+		isAuthRef.current = state.isAuthenticated;
+	});
+	useEffect(() => {
+		const onFocus = () => {
+			// Only re-check if we think we're authenticated (avoid spamming
+			// /auth/me when not logged in — LoginPage handles that flow)
+			if (isAuthRef.current) {
+				refresh();
+			}
+		};
+		globalThis.addEventListener("focus", onFocus);
+		return () => globalThis.removeEventListener("focus", onFocus);
+	}, [refresh]);
 
-        const login = useCallback(
-                async (apiKey: string) => {
-                        const result = await apiLogin(apiKey);
-                        setState({
-                                isAuthenticated: true,
-                                role: result.role,
-                                loading: false,
-                                error: null,
-                        });
-                        // V193 (R5): Prefetch the CSRF token so it's ready for the first
-                        // mutation. Fire-and-forget — we don't block login on this.
-                        void prefetchCsrfToken();
-                        return result;
-                },
-                [],
-        );
+	const login = useCallback(async (apiKey: string) => {
+		const result = await apiLogin(apiKey);
+		setState({
+			isAuthenticated: true,
+			role: result.role,
+			loading: false,
+			error: null,
+		});
+		// V193 (R5): Prefetch the CSRF token so it's ready for the first
+		// mutation. Fire-and-forget — we don't block login on this.
+		void prefetchCsrfToken();
+		return result;
+	}, []);
 
-        const logout = useCallback(async () => {
-                try {
-                        await apiLogout();
-                } catch {
-                        // Best-effort — even if the server call fails, clear local state
-                }
-                // Clear any legacy sessionStorage key
-                try {
-                        sessionStorage.removeItem("fireai_settings");
-                } catch {
-                        // ignore
-                }
-                // M-6 FIX: Clear ALL app-set localStorage keys to prevent
-                // cross-user data leakage. Previously, only nexus_project_state
-                // and cad_settings were cleared — leaving digital_twin_settings,
-                // fireai_firealarm_detectors, nexus_imported_dxf, fireai_settings_*,
-                // and onboarding-completed behind. These keys contain user-specific
-                // project data that would load for a different user after logout.
-                //
-                // The full list was discovered by scanning frontend/src for every
-                // localStorage.setItem() call. If a new key is added in the future,
-                // it MUST be added to this list as well.
-                //
-                // NOTE: "dark" (theme preference) is intentionally NOT cleared —
-                // it's a UI preference, not user-specific data.
-                try {
-                        localStorage.removeItem("nexus_project_state");
-                        localStorage.removeItem("cad_settings");
-                        localStorage.removeItem("digital_twin_settings");
-                        localStorage.removeItem("fireai_firealarm_detectors");
-                        localStorage.removeItem("nexus_imported_dxf");
-                        localStorage.removeItem("onboarding-completed");
-                        // Visual mode preference (ThemeProvider) — cleared on logout
-                        // to avoid carrying UI state across users. ThemeProvider
-                        // re-initializes it to "industrial" as the default.
-                        localStorage.removeItem("bazspark-visual-mode");
-                        // fireai_settings_* uses a dynamic suffix — clear all matching keys
-                        const keysToRemove: string[] = [];
-                        for (let i = 0; i < localStorage.length; i++) {
-                                const key = localStorage.key(i);
-                                if (key?.startsWith("fireai_settings_")) {
-                                        keysToRemove.push(key);
-                                }
-                        }
-                        keysToRemove.forEach((key) => localStorage.removeItem(key));
-                } catch {
-                        // ignore
-                }
-                // V193 (R5): Invalidate the cached CSRF token on logout
-                invalidateCsrfToken();
-                setState({
-                        isAuthenticated: false,
-                        role: null,
-                        loading: false,
-                        error: null,
-                });
-        }, []);
+	const logout = useCallback(async () => {
+		try {
+			await apiLogout();
+		} catch {
+			// Best-effort — even if the server call fails, clear local state
+		}
+		// Clear any legacy sessionStorage key
+		try {
+			sessionStorage.removeItem("fireai_settings");
+		} catch {
+			// ignore
+		}
+		// M-6 FIX: Clear ALL app-set localStorage keys to prevent
+		// cross-user data leakage. Previously, only nexus_project_state
+		// and cad_settings were cleared — leaving digital_twin_settings,
+		// fireai_firealarm_detectors, nexus_imported_dxf, fireai_settings_*,
+		// and onboarding-completed behind. These keys contain user-specific
+		// project data that would load for a different user after logout.
+		//
+		// The full list was discovered by scanning frontend/src for every
+		// localStorage.setItem() call. If a new key is added in the future,
+		// it MUST be added to this list as well.
+		//
+		// NOTE: "dark" (theme preference) is intentionally NOT cleared —
+		// it's a UI preference, not user-specific data.
+		try {
+			localStorage.removeItem("nexus_project_state");
+			localStorage.removeItem("cad_settings");
+			localStorage.removeItem("digital_twin_settings");
+			localStorage.removeItem("fireai_firealarm_detectors");
+			localStorage.removeItem("nexus_imported_dxf");
+			localStorage.removeItem("onboarding-completed");
+			// Visual mode preference (ThemeProvider) — cleared on logout
+			// to avoid carrying UI state across users. ThemeProvider
+			// re-initializes it to "industrial" as the default.
+			localStorage.removeItem("bazspark-visual-mode");
+			// fireai_settings_* uses a dynamic suffix — clear all matching keys
+			const keysToRemove: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key?.startsWith("fireai_settings_")) {
+					keysToRemove.push(key);
+				}
+			}
+			keysToRemove.forEach((key) => localStorage.removeItem(key));
+		} catch {
+			// ignore
+		}
+		// V193 (R5): Invalidate the cached CSRF token on logout
+		invalidateCsrfToken();
+		setState({
+			isAuthenticated: false,
+			role: null,
+			loading: false,
+			error: null,
+		});
+	}, []);
 
-        const contextValue = useMemo(
-                () => ({ ...state, login, logout, refresh }),
-                [state, login, logout, refresh],
-        );
+	const contextValue = useMemo(
+		() => ({ ...state, login, logout, refresh }),
+		[state, login, logout, refresh],
+	);
 
-        return (
-                <AuthContext.Provider value={contextValue}>
-                        {children}
-                </AuthContext.Provider>
-        );
+	return (
+		<AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+	);
 }
 
 export function useAuth(): AuthContextValue {
-        const ctx = useContext(AuthContext);
-        if (!ctx) {
-                throw new Error("useAuth must be used within an AuthProvider");
-        }
-        return ctx;
+	const ctx = useContext(AuthContext);
+	if (!ctx) {
+		throw new Error("useAuth must be used within an AuthProvider");
+	}
+	return ctx;
 }

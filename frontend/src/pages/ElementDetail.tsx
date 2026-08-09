@@ -1,14 +1,13 @@
-
+import { useGSAP } from "@gsap/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import gsap from "gsap";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { RevitParametersPanel } from "@/components/engineering/RevitParametersPanel";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/services/api";
 import type { ElementUpdate } from "@/types";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 
 function ElementDetail() {
 	const { t } = useTranslation();
@@ -23,13 +22,16 @@ function ElementDetail() {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useGSAP(() => {
-		gsap.fromTo(
-			".stagger-card",
-			{ y: 20, opacity: 0 },
-			{ y: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: "power2.out" }
-		);
-	}, { scope: containerRef });
+	useGSAP(
+		() => {
+			gsap.fromTo(
+				".stagger-card",
+				{ y: 20, opacity: 0 },
+				{ y: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: "power2.out" },
+			);
+		},
+		{ scope: containerRef },
+	);
 
 	const {
 		data: element,
@@ -210,20 +212,42 @@ function ElementDetail() {
 						{/* Meta row */}
 						<div className="flex flex-wrap items-center gap-3 mt-1">
 							{element.properties?.element_type && (
-								<span style={{ fontFamily: "var(--font-data)", fontSize: "0.75rem", color: "var(--color-steel)", letterSpacing: "0.04em" }}>
+								<span
+									style={{
+										fontFamily: "var(--font-data)",
+										fontSize: "0.75rem",
+										color: "var(--color-steel)",
+										letterSpacing: "0.04em",
+									}}
+								>
 									{element.properties.element_type}
 								</span>
 							)}
 							{element.properties?.fire_rating && (
 								<>
 									<span style={{ color: "var(--color-steel)" }}>·</span>
-									<span style={{ fontFamily: "var(--font-data)", fontSize: "0.75rem", color: "var(--color-primary)", letterSpacing: "0.04em" }}>
-										{t("elementDetail.fireRating")}: {element.properties.fire_rating}
+									<span
+										style={{
+											fontFamily: "var(--font-data)",
+											fontSize: "0.75rem",
+											color: "var(--color-primary)",
+											letterSpacing: "0.04em",
+										}}
+									>
+										{t("elementDetail.fireRating")}:{" "}
+										{element.properties.fire_rating}
 									</span>
 								</>
 							)}
 							<span style={{ color: "var(--color-steel)" }}>·</span>
-							<span style={{ fontFamily: "var(--font-data)", fontSize: "0.75rem", color: "var(--color-steel)", letterSpacing: "0.04em" }}>
+							<span
+								style={{
+									fontFamily: "var(--font-data)",
+									fontSize: "0.75rem",
+									color: "var(--color-steel)",
+									letterSpacing: "0.04em",
+								}}
+							>
 								v{element.version}
 							</span>
 						</div>
@@ -264,7 +288,9 @@ function ElementDetail() {
 								borderRadius: "2px",
 							}}
 						>
-							{deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
+							{deleteMutation.isPending
+								? t("common.deleting")
+								: t("common.delete")}
 						</button>
 					</div>
 				</div>
@@ -274,10 +300,11 @@ function ElementDetail() {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Main Column */}
 				<div className="lg:col-span-2 space-y-6">
-
 					{/* Properties */}
 					<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
-						<h2 className="text-lg font-semibold text-white mb-4">{t("elementDetail.properties")}</h2>
+						<h2 className="text-lg font-semibold text-white mb-4">
+							{t("elementDetail.properties")}
+						</h2>
 
 						{isEditing ? (
 							<div className="space-y-4">
@@ -338,13 +365,15 @@ function ElementDetail() {
 								</div>
 								<div className="flex justify-end gap-3">
 									<button
-										type="button" onClick={() => setIsEditing(false)}
+										type="button"
+										onClick={() => setIsEditing(false)}
 										className="px-4 py-2 min-h-[44px] text-sm text-foreground/90 hover:text-white transition-colors focus:ring-2 focus:ring-primary focus:outline-none rounded-lg"
 									>
 										{t("common.cancel")}
 									</button>
 									<button
-										type="button" onClick={() => {
+										type="button"
+										onClick={() => {
 											updateMutation.mutate({
 												properties: {
 													name: editName,
@@ -357,7 +386,9 @@ function ElementDetail() {
 										disabled={updateMutation.isPending}
 										className="px-4 py-2 min-h-[44px] bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background focus:outline-none"
 									>
-										{updateMutation.isPending ? t("common.saving") : t("common.saveChanges")}
+										{updateMutation.isPending
+											? t("common.saving")
+											: t("common.saveChanges")}
 									</button>
 								</div>
 							</div>
@@ -367,7 +398,10 @@ function ElementDetail() {
 									label={t("elementDetail.type")}
 									value={element.properties?.element_type}
 								/>
-								<PropertyRow label={t("elementDetail.name")} value={element.properties?.name} />
+								<PropertyRow
+									label={t("elementDetail.name")}
+									value={element.properties?.name}
+								/>
 								<PropertyRow
 									label={t("elementDetail.description")}
 									value={element.properties?.description}
@@ -400,18 +434,24 @@ function ElementDetail() {
 									label={t("elementDetail.loadBearing")}
 									value={
 										element.properties?.load_bearing != null
-											? element.properties.load_bearing  // NOSONAR: typescript:S3358
+											? element.properties.load_bearing // NOSONAR: typescript:S3358
 												? t("common.yes")
 												: t("common.no")
 											: undefined
 									}
 								/>
-								<PropertyRow label={t("elementDetail.layer")} value={element.properties?.layer} />
+								<PropertyRow
+									label={t("elementDetail.layer")}
+									value={element.properties?.layer}
+								/>
 								<PropertyRow
 									label={t("elementDetail.revitCategory")}
 									value={element.properties?.revit_category}
 								/>
-								<PropertyRow label={t("elementDetail.sourceFile")} value={element.source_file} />
+								<PropertyRow
+									label={t("elementDetail.sourceFile")}
+									value={element.source_file}
+								/>
 								<PropertyRow
 									label={t("elementDetail.autocadHandle")}
 									value={element.autocad_handle}
@@ -430,7 +470,9 @@ function ElementDetail() {
 
 					{/* Geometry */}
 					<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
-						<h2 className="text-lg font-semibold text-white mb-4">{t("elementDetail.geometry")}</h2>
+						<h2 className="text-lg font-semibold text-white mb-4">
+							{t("elementDetail.geometry")}
+						</h2>
 						{element.geometry ? (
 							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 								<PropertyRow
@@ -443,12 +485,18 @@ function ElementDetail() {
 								/>
 								<PropertyRow
 									label={t("elementDetail.closedPolyline")}
-									value={element.geometry.polyline_closed ? t("common.yes") : t("common.no")}
+									value={
+										element.geometry.polyline_closed
+											? t("common.yes")
+											: t("common.no")
+									}
 								/>
 								<div className="sm:col-span-3">
 									<PropertyRow
 										label={t("elementDetail.points")}
-										value={t("elementDetail.pointsCount", { count: element.geometry.points.length })}
+										value={t("elementDetail.pointsCount", {
+											count: element.geometry.points.length,
+										})}
 									/>
 									{element.geometry.points.length > 0 && (
 										<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3 stagger-card">
@@ -460,7 +508,9 @@ function ElementDetail() {
 								</div>
 							</div>
 						) : (
-							<p className="text-muted-foreground text-sm">{t("elementDetail.noGeometryData")}</p>
+							<p className="text-muted-foreground text-sm">
+								{t("elementDetail.noGeometryData")}
+							</p>
 						)}
 					</div>
 
@@ -470,15 +520,16 @@ function ElementDetail() {
 							<RevitParametersPanel elementId={id!} />
 						)}
 					</div>
-
-				</div>{/* End Main Column */}
+				</div>
+				{/* End Main Column */}
 
 				{/* Sidebar Column */}
 				<div className="lg:col-span-1 space-y-6">
-
 					{/* Timestamps */}
 					<div className="bg-card border border-border rounded-xl shadow-sm p-6 stagger-card">
-						<h2 className="text-lg font-semibold text-white mb-4">{t("elementDetail.timestamps")}</h2>
+						<h2 className="text-lg font-semibold text-white mb-4">
+							{t("elementDetail.timestamps")}
+						</h2>
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 							<PropertyRow
 								label={t("elementDetail.created")}
@@ -496,7 +547,10 @@ function ElementDetail() {
 										: "—"
 								}
 							/>
-							<PropertyRow label={t("elementDetail.modifiedBy")} value={element.last_modified_by} />
+							<PropertyRow
+								label={t("elementDetail.modifiedBy")}
+								value={element.last_modified_by}
+							/>
 						</div>
 					</div>
 
@@ -530,12 +584,15 @@ function ElementDetail() {
 								))}
 							</div>
 						) : (
-							<p className="text-muted-foreground text-sm">{t("elementDetail.noConnections")}</p>
+							<p className="text-muted-foreground text-sm">
+								{t("elementDetail.noConnections")}
+							</p>
 						)}
 					</div>
-
-				</div>{/* End Sidebar Column */}
-			</div>{/* End Bento Grid */}
+				</div>
+				{/* End Sidebar Column */}
+			</div>
+			{/* End Bento Grid */}
 
 			{/* Accessible Delete Confirmation Dialog */}
 			<ConfirmDialog

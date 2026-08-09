@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
@@ -84,7 +83,7 @@ function Field({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
 	return (
-		<div  // NOSONAR: typescript:S6819
+		<div // NOSONAR: typescript:S6819
 			role="group"
 			data-slot="field"
 			data-orientation={orientation}
@@ -208,7 +207,11 @@ function FieldError({
 			<ul className="ml-4 flex list-disc flex-col gap-1">
 				{errors.map(
 					(error, index) =>
-						error?.message && <li key={`${index}-${error.message.substring(0, 20)}`}>{error.message}</li>,
+						error?.message && (
+							<li key={`${index}-${error.message.substring(0, 20)}`}>
+								{error.message}
+							</li>
+						),
 				)}
 			</ul>
 		);

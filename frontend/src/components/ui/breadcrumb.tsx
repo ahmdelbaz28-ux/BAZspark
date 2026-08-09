@@ -1,4 +1,3 @@
-
 import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import * as React from "react";
@@ -62,7 +61,7 @@ const BreadcrumbPage = React.forwardRef<
 	HTMLSpanElement,
 	React.ComponentPropsWithoutRef<"span">
 >(({ className, ...props }, ref) => (
-	<span  // NOSONAR: typescript:S6819
+	<span // NOSONAR: typescript:S6819
 		ref={ref}
 		role="link"
 		aria-disabled="true"
@@ -78,7 +77,7 @@ const BreadcrumbSeparator = ({
 	className,
 	...props
 }: React.ComponentProps<"li">) => (
-	<li  // NOSONAR: typescript:S6819
+	<li // NOSONAR: typescript:S6819
 		role="presentation"
 		aria-hidden="true"
 		className={cn("[&>svg]:w-3.5 [&>svg]:h-3.5", className)}
@@ -93,7 +92,7 @@ const BreadcrumbEllipsis = ({
 	className,
 	...props
 }: React.ComponentProps<"span">) => (
-	<span  // NOSONAR: typescript:S6819
+	<span // NOSONAR: typescript:S6819
 		role="presentation"
 		aria-hidden="true"
 		className={cn("flex h-9 w-9 items-center justify-center", className)}

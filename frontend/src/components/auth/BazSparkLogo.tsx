@@ -45,9 +45,9 @@ export function BazSparkLogo({
 				<defs>
 					{/* Flame Gradient */}
 					<linearGradient id="bazFlameGrad" x1="0" y1="1" x2="0" y2="0">
-						<stop offset="0%" stopColor="#be123c" />      {/* Rose 700 */}
-						<stop offset="40%" stopColor="#ef4444" />     {/* Red 500 */}
-						<stop offset="100%" stopColor="#f87171" />    {/* Red 400 */}
+						<stop offset="0%" stopColor="#be123c" /> {/* Rose 700 */}
+						<stop offset="40%" stopColor="#ef4444" /> {/* Red 500 */}
+						<stop offset="100%" stopColor="#f87171" /> {/* Red 400 */}
 					</linearGradient>
 
 					{/* Border Bracket Gradient */}
@@ -86,15 +86,32 @@ export function BazSparkLogo({
 				</defs>
 
 				{/* ═══ Corner brackets (Image 2 style border) ═══ */}
-				<g stroke="url(#bazBorderGrad)" strokeWidth="3" fill="none" strokeLinecap="round">
+				<g
+					stroke="url(#bazBorderGrad)"
+					strokeWidth="3"
+					fill="none"
+					strokeLinecap="round"
+				>
 					{/* Top-Left */}
-					<path className="gsap-bracket-path" d="M 38 12 H 25 A 13 13 0 0 0 12 25 V 38" />
+					<path
+						className="gsap-bracket-path"
+						d="M 38 12 H 25 A 13 13 0 0 0 12 25 V 38"
+					/>
 					{/* Top-Right */}
-					<path className="gsap-bracket-path" d="M 62 12 H 75 A 13 13 0 0 1 88 25 V 38" />
+					<path
+						className="gsap-bracket-path"
+						d="M 62 12 H 75 A 13 13 0 0 1 88 25 V 38"
+					/>
 					{/* Bottom-Right */}
-					<path className="gsap-bracket-path" d="M 88 62 V 75 A 13 13 0 0 1 75 88 H 62" />
+					<path
+						className="gsap-bracket-path"
+						d="M 88 62 V 75 A 13 13 0 0 1 75 88 H 62"
+					/>
 					{/* Bottom-Left */}
-					<path className="gsap-bracket-path" d="M 12 62 V 75 A 13 13 0 0 0 25 88 H 38" />
+					<path
+						className="gsap-bracket-path"
+						d="M 12 62 V 75 A 13 13 0 0 0 25 88 H 38"
+					/>
 				</g>
 
 				{/* ═══ Central Flame ═══ */}
@@ -112,23 +129,35 @@ export function BazSparkLogo({
 interface BazSparkWordmarkProps {
 	readonly size?: "sm" | "md" | "lg";
 	readonly className?: string;
-}	export function BazSparkWordmark({
-		size = "md",
-		className = "",
-	}: BazSparkWordmarkProps) {
-		// NOSONAR - typescript:S3358: Nested ternaries are intentional for size-based class selection
-		const titleSize = size === "sm" ? "text-lg" : size === "lg" ? "text-3xl" : "text-xl";  // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
-		const subSize = size === "sm" ? "text-[8px]" : size === "lg" ? "text-[11px]" : "text-[9px]";  // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
-		const tracking = size === "sm" ? "tracking-[0.15em]" : size === "lg" ? "tracking-[0.25em]" : "tracking-[0.2em]";  // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
+}
+export function BazSparkWordmark({
+	size = "md",
+	className = "",
+}: BazSparkWordmarkProps) {
+	// NOSONAR - typescript:S3358: Nested ternaries are intentional for size-based class selection
+	const titleSize =
+		size === "sm" ? "text-lg" : size === "lg" ? "text-3xl" : "text-xl"; // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
+	const subSize =
+		size === "sm" ? "text-[8px]" : size === "lg" ? "text-[11px]" : "text-[9px]"; // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
+	const tracking =
+		size === "sm"
+			? "tracking-[0.15em]"
+			: size === "lg"
+				? "tracking-[0.25em]"
+				: "tracking-[0.2em]"; // NOSONAR - typescript:S3358: nested ternary intentional for color mapping
 
 	return (
 		<div className={`flex flex-col select-none ${className}`}>
 			{/* "BAZSPARK" — Bold white */}
-			<span className={`font-extrabold text-white leading-none ${titleSize} tracking-wide`}>
+			<span
+				className={`font-extrabold text-white leading-none ${titleSize} tracking-wide`}
+			>
 				BAZSPARK
 			</span>
 			{/* "ENGINEERING INTELLIGENCE" — Subtitle */}
-			<span className={`text-slate-400 font-semibold uppercase ${subSize} ${tracking} mt-1.5`}>
+			<span
+				className={`text-slate-400 font-semibold uppercase ${subSize} ${tracking} mt-1.5`}
+			>
 				ENGINEERING INTELLIGENCE
 			</span>
 		</div>

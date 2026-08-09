@@ -67,7 +67,9 @@ function saveToLocalStorage(settings: UserSettings): void {
 		const SENSITIVE_KEYS = ["apiKey", "api_key", "password", "token", "secret"];
 		const safe: Record<string, unknown> = {};
 		for (const [k, v] of Object.entries(settings)) {
-			if (!SENSITIVE_KEYS.some((s) => k.toLowerCase().includes(s.toLowerCase()))) {
+			if (
+				!SENSITIVE_KEYS.some((s) => k.toLowerCase().includes(s.toLowerCase()))
+			) {
 				safe[k] = v;
 			}
 		}
@@ -109,7 +111,9 @@ export function useSettings() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+	const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">(
+		"idle",
+	);
 
 	// Load settings on mount — try backend first, fall back to localStorage
 	useEffect(() => {

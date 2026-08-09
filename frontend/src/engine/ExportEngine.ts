@@ -1,4 +1,3 @@
-
 /**
  * ExportEngine.ts - Professional Export Functions
  * Generates industry-standard Excel and DXF files
@@ -11,16 +10,16 @@ import { saveAs } from "file-saver";
 // ============================================================================
 
 import type {
-        BomSummary,
-        CableScheduleItem,
-        ConduitScheduleItem,
-        DeviceCountItem,
+	BomSummary,
+	CableScheduleItem,
+	ConduitScheduleItem,
+	DeviceCountItem,
 } from "./BomGenerator";
 
 export interface ExcelSheet {
-        name: string;
-        headers: string[];
-        data: (string | number)[][];
+	name: string;
+	headers: string[];
+	data: (string | number)[][];
 }
 
 // ============================================================================
@@ -32,95 +31,95 @@ export interface ExcelSheet {
  * Format compatible with Microsoft Excel (.xlsx)
  */
 export function exportBomToExcel(
-        cableSchedule: CableScheduleItem[],
-        deviceCounts: DeviceCountItem[],
-        conduitSchedule: ConduitScheduleItem[],
-        summary: BomSummary,
+	cableSchedule: CableScheduleItem[],
+	deviceCounts: DeviceCountItem[],
+	conduitSchedule: ConduitScheduleItem[],
+	summary: BomSummary,
 ): void {
-        const workbook = generateExcelWorkbook(
-                cableSchedule,
-                deviceCounts,
-                conduitSchedule,
-                summary,
-        );
-        downloadExcel(workbook);
+	const workbook = generateExcelWorkbook(
+		cableSchedule,
+		deviceCounts,
+		conduitSchedule,
+		summary,
+	);
+	downloadExcel(workbook);
 }
 
 function generateExcelWorkbook(
-        cableSchedule: CableScheduleItem[],
-        deviceCounts: DeviceCountItem[],
-        conduitSchedule: ConduitScheduleItem[],
-        summary: BomSummary,
+	cableSchedule: CableScheduleItem[],
+	deviceCounts: DeviceCountItem[],
+	conduitSchedule: ConduitScheduleItem[],
+	summary: BomSummary,
 ): Blob {
-        // Generate CSV format (compatible with Excel)
-        let csvContent = "";
+	// Generate CSV format (compatible with Excel)
+	let csvContent = "";
 
-        // === SUMMARY SHEET ===
-        csvContent += "BILL OF MATERIALS - SUMMARY\n";
-        csvContent += `Generated:,="${new Date().toISOString()}"\n`;
-        csvContent += "\n";
-        csvContent += "Description,Value,Unit\n";
-        csvContent += `Total Cables,${summary.totalCables},\n`;
-        csvContent += `Total Cable Length,${summary.totalCableLength},m\n`;
-        csvContent += `Total Conduits,${summary.totalConduits},\n`;
-        csvContent += `Total Devices,${summary.totalDevices},\n`;
-        csvContent += `Estimated Weight,${summary.estimatedWeight},kg\n`;
-        csvContent += `Estimated Cost,${summary.estimatedCost},EUR\n`;
-        csvContent += "\n\n";
+	// === SUMMARY SHEET ===
+	csvContent += "BILL OF MATERIALS - SUMMARY\n";
+	csvContent += `Generated:,="${new Date().toISOString()}"\n`;
+	csvContent += "\n";
+	csvContent += "Description,Value,Unit\n";
+	csvContent += `Total Cables,${summary.totalCables},\n`;
+	csvContent += `Total Cable Length,${summary.totalCableLength},m\n`;
+	csvContent += `Total Conduits,${summary.totalConduits},\n`;
+	csvContent += `Total Devices,${summary.totalDevices},\n`;
+	csvContent += `Estimated Weight,${summary.estimatedWeight},kg\n`;
+	csvContent += `Estimated Cost,${summary.estimatedCost},EUR\n`;
+	csvContent += "\n\n";
 
-        // === CABLE SCHEDULE SHEET ===
-        csvContent += "CABLE SCHEDULE\n";
-        csvContent +=
-                "ID,From,To,Length (m),Cross Section (mm²),Material,Type,Weight (kg),Cost (EUR),Route\n";
+	// === CABLE SCHEDULE SHEET ===
+	csvContent += "CABLE SCHEDULE\n";
+	csvContent +=
+		"ID,From,To,Length (m),Cross Section (mm²),Material,Type,Weight (kg),Cost (EUR),Route\n";
 
-        cableSchedule.forEach((cable) => {
-                csvContent += `${cable.id},${cable.from},${cable.to},${cable.length},${cable.crossSection},${cable.material},${cable.type},${cable.estimatedWeight},${cable.cost},"${cable.destination}"\n`;
-        });
+	cableSchedule.forEach((cable) => {
+		csvContent += `${cable.id},${cable.from},${cable.to},${cable.length},${cable.crossSection},${cable.material},${cable.type},${cable.estimatedWeight},${cable.cost},"${cable.destination}"\n`;
+	});
 
-        csvContent += "\n";
+	csvContent += "\n";
 
-        // Totals row
-        const _totalLength = cableSchedule.reduce((sum, c) => sum + c.length, 0);
-        const totalWeight = cableSchedule.reduce(
-                (sum, c) => sum + c.estimatedWeight,
-                0,
-        );
-        const totalCost = cableSchedule.reduce((sum, c) => sum + c.cost, 0);
+	// Totals row
+	const _totalLength = cableSchedule.reduce((sum, c) => sum + c.length, 0);
+	const totalWeight = cableSchedule.reduce(
+		(sum, c) => sum + c.estimatedWeight,
+		0,
+	);
+	const totalCost = cableSchedule.reduce((sum, c) => sum + c.cost, 0);
 
-        csvContent += `TOTAL,,,,,,${totalWeight.toFixed(2)},${totalCost.toFixed(2)}\n`;
-        csvContent += "\n\n";
+	csvContent += `TOTAL,,,,,,${totalWeight.toFixed(2)},${totalCost.toFixed(2)}\n`;
+	csvContent += "\n\n";
 
-        // === DEVICE COUNT SHEET ===
-        csvContent += "DEVICE COUNT\n";
-        csvContent +=
-                "Type,Category,Quantity,Avg Power (W),Total Power (W),Mounting\n";
+	// === DEVICE COUNT SHEET ===
+	csvContent += "DEVICE COUNT\n";
+	csvContent +=
+		"Type,Category,Quantity,Avg Power (W),Total Power (W),Mounting\n";
 
-        deviceCounts.forEach((device) => {
-                csvContent += `${device.type},${device.category},${device.count},${device.avgPower},${device.totalPower},${device.mounting}\n`;
-        });
+	deviceCounts.forEach((device) => {
+		csvContent += `${device.type},${device.category},${device.count},${device.avgPower},${device.totalPower},${device.mounting}\n`;
+	});
 
-        const totalDevices = deviceCounts.reduce((sum, d) => sum + d.count, 0);
-        const totalPower = deviceCounts.reduce((sum, d) => sum + d.totalPower, 0);
+	const totalDevices = deviceCounts.reduce((sum, d) => sum + d.count, 0);
+	const totalPower = deviceCounts.reduce((sum, d) => sum + d.totalPower, 0);
 
-        csvContent += `\nTOTAL,,${totalDevices},,${totalPower},\n`;
-        csvContent += "\n\n";
+	csvContent += `\nTOTAL,,${totalDevices},,${totalPower},\n`;
+	csvContent += "\n\n";
 
-        // === CONDUIT SCHEDULE SHEET ===
-        csvContent += "CONDUIT SCHEDULE\n";
-        csvContent += "ID,Size,Fill Ratio (%),Cables,Total Area (mm²),Recommended\n";
+	// === CONDUIT SCHEDULE SHEET ===
+	csvContent += "CONDUIT SCHEDULE\n";
+	csvContent += "ID,Size,Fill Ratio (%),Cables,Total Area (mm²),Recommended\n";
 
-        conduitSchedule.forEach((conduit) => {
-                csvContent += `${conduit.id},${conduit.size},${conduit.fillRatio},"${conduit.cables.join(", ")}",${conduit.totalCrossSection},"${conduit.recommendedSize}"\n`;
-        });
+	conduitSchedule.forEach((conduit) => {
+		csvContent += `${conduit.id},${conduit.size},${conduit.fillRatio},"${conduit.cables.join(", ")}",${conduit.totalCrossSection},"${conduit.recommendedSize}"\n`;
+	});
 
-        // Create Blob with BOM for Excel compatibility
-        const BOM = "\uFEFF";
-        return new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
+	// Create Blob with BOM for Excel compatibility
+	const BOM = "\uFEFF";
+	return new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
 }
 
 function downloadExcel(blob: Blob): void {
-        const timestamp = new Date().toISOString().split("T")[0];
-        saveAs(blob, `BOM_${timestamp}.csv`);
+	const timestamp = new Date().toISOString().split("T")[0];
+	saveAs(blob, `BOM_${timestamp}.csv`);
 }
 
 // ============================================================================
@@ -128,191 +127,191 @@ function downloadExcel(blob: Blob): void {
 // ============================================================================
 
 export interface DxfExportOptions {
-        scale: number; // pixels to mm
-        layerNames: {
-                cables: string;
-                devices: string;
-                conduits: string;
-                text: string;
-        };
-        colors: {
-                cables: number;
-                devices: number;
-                conduits: number;
-                text: number;
-        };
+	scale: number; // pixels to mm
+	layerNames: {
+		cables: string;
+		devices: string;
+		conduits: string;
+		text: string;
+	};
+	colors: {
+		cables: number;
+		devices: number;
+		conduits: number;
+		text: number;
+	};
 }
 
 const DEFAULT_DXF_OPTIONS: DxfExportOptions = {
-        scale: 10,
-        layerNames: {
-                cables: "CABLES",
-                devices: "DEVICES",
-                conduits: "CONDUITS",
-                text: "TEXT",
-        },
-        colors: {
-                cables: 1, // Red
-                devices: 3, // Green
-                conduits: 5, // Magenta
-                text: 7, // White
-        },
+	scale: 10,
+	layerNames: {
+		cables: "CABLES",
+		devices: "DEVICES",
+		conduits: "CONDUITS",
+		text: "TEXT",
+	},
+	colors: {
+		cables: 1, // Red
+		devices: 3, // Green
+		conduits: 5, // Magenta
+		text: 7, // White
+	},
 };
 
 /**
  * Export canvas to DXF format compatible with AutoCAD
  */
 export function exportToDxf(
-        devices: Array<{
-                id: string;
-                type: string;
-                x: number;
-                y: number;
-                voltage?: number;
-                load?: number;
-        }>,
-        connections: Array<{
-                id: string;
-                fromId: string;
-                toId: string;
-                current?: number;
-        }>,
-        options: Partial<DxfExportOptions> = {},
+	devices: Array<{
+		id: string;
+		type: string;
+		x: number;
+		y: number;
+		voltage?: number;
+		load?: number;
+	}>,
+	connections: Array<{
+		id: string;
+		fromId: string;
+		toId: string;
+		current?: number;
+	}>,
+	options: Partial<DxfExportOptions> = {},
 ): void {
-        const opts = { ...DEFAULT_DXF_OPTIONS, ...options };
-        const dxfContent = generateDxfContent(devices, connections, opts);
-        downloadDxf(dxfContent);
+	const opts = { ...DEFAULT_DXF_OPTIONS, ...options };
+	const dxfContent = generateDxfContent(devices, connections, opts);
+	downloadDxf(dxfContent);
 }
 
 function generateDxfContent(
-        devices: Array<{
-                id: string;
-                type: string;
-                x: number;
-                y: number;
-                voltage?: number;
-                load?: number;
-        }>,
-        connections: Array<{
-                id: string;
-                fromId: string;
-                toId: string;
-                current?: number;
-        }>,
-        options: DxfExportOptions,
+	devices: Array<{
+		id: string;
+		type: string;
+		x: number;
+		y: number;
+		voltage?: number;
+		load?: number;
+	}>,
+	connections: Array<{
+		id: string;
+		fromId: string;
+		toId: string;
+		current?: number;
+	}>,
+	options: DxfExportOptions,
 ): string {
-        let dxf = "";
+	let dxf = "";
 
-        // DXF Header
-        dxf += "0\nSECTION\n";
-        dxf += "2\nHEADER\n";
-        dxf += "9\n$ACADVER\n1\nAC1014\n"; // AutoCAD 2000 format
-        dxf += "9\n$INSUNITS\n70\n6\n"; // Meters
-        dxf += "0\nENDSEC\n";
+	// DXF Header
+	dxf += "0\nSECTION\n";
+	dxf += "2\nHEADER\n";
+	dxf += "9\n$ACADVER\n1\nAC1014\n"; // AutoCAD 2000 format
+	dxf += "9\n$INSUNITS\n70\n6\n"; // Meters
+	dxf += "0\nENDSEC\n";
 
-        // Tables section (layers)
-        dxf += "0\nSECTION\n";
-        dxf += "2\nTABLES\n";
+	// Tables section (layers)
+	dxf += "0\nSECTION\n";
+	dxf += "2\nTABLES\n";
 
-        // Layer table
-        dxf += "0\nTABLE\n";
-        dxf += "2\nLAYER\n";
-        dxf += "70\n4\n";
+	// Layer table
+	dxf += "0\nTABLE\n";
+	dxf += "2\nLAYER\n";
+	dxf += "70\n4\n";
 
-        // CABLES layer
-        dxf += "0\nLAYER\n";
-        dxf += `2\n${options.layerNames.cables}\n`;
-        dxf += "70\n0\n";
-        dxf += `62\n${options.colors.cables}\n`;
-        dxf += "6\nCONTINUOUS\n";
+	// CABLES layer
+	dxf += "0\nLAYER\n";
+	dxf += `2\n${options.layerNames.cables}\n`;
+	dxf += "70\n0\n";
+	dxf += `62\n${options.colors.cables}\n`;
+	dxf += "6\nCONTINUOUS\n";
 
-        // DEVICES layer
-        dxf += "0\nLAYER\n";
-        dxf += `2\n${options.layerNames.devices}\n`;
-        dxf += "70\n0\n";
-        dxf += `62\n${options.colors.devices}\n`;
-        dxf += "6\nCONTINUOUS\n";
+	// DEVICES layer
+	dxf += "0\nLAYER\n";
+	dxf += `2\n${options.layerNames.devices}\n`;
+	dxf += "70\n0\n";
+	dxf += `62\n${options.colors.devices}\n`;
+	dxf += "6\nCONTINUOUS\n";
 
-        // CONDUITS layer
-        dxf += "0\nLAYER\n";
-        dxf += `2\n${options.layerNames.conduits}\n`;
-        dxf += "70\n0\n";
-        dxf += `62\n${options.colors.conduits}\n`;
-        dxf += "6\nCONTINUOUS\n";
+	// CONDUITS layer
+	dxf += "0\nLAYER\n";
+	dxf += `2\n${options.layerNames.conduits}\n`;
+	dxf += "70\n0\n";
+	dxf += `62\n${options.colors.conduits}\n`;
+	dxf += "6\nCONTINUOUS\n";
 
-        // TEXT layer
-        dxf += "0\nLAYER\n";
-        dxf += `2\n${options.layerNames.text}\n`;
-        dxf += "70\n0\n";
-        dxf += `62\n${options.colors.text}\n`;
-        dxf += "6\nCONTINUOUS\n";
+	// TEXT layer
+	dxf += "0\nLAYER\n";
+	dxf += `2\n${options.layerNames.text}\n`;
+	dxf += "70\n0\n";
+	dxf += `62\n${options.colors.text}\n`;
+	dxf += "6\nCONTINUOUS\n";
 
-        dxf += "0\nENDTAB\n";
-        dxf += "0\nENDSEC\n";
+	dxf += "0\nENDTAB\n";
+	dxf += "0\nENDSEC\n";
 
-        // Entities section
-        dxf += "0\nSECTION\n";
-        dxf += "2\nENTITIES\n";
+	// Entities section
+	dxf += "0\nSECTION\n";
+	dxf += "2\nENTITIES\n";
 
-        // Draw devices as circles/blocks
-        devices.forEach((device, _index) => {
-                const x = device.x * options.scale;
-                const y = device.y * options.scale;
-                const radius = 50; // Fixed representation size
+	// Draw devices as circles/blocks
+	devices.forEach((device, _index) => {
+		const x = device.x * options.scale;
+		const y = device.y * options.scale;
+		const radius = 50; // Fixed representation size
 
-                // Device circle
-                dxf += "0\nCIRCLE\n";
-                dxf += `8\n${options.layerNames.devices}\n`;
-                dxf += `10\n${x.toFixed(4)}\n`;
-                dxf += `20\n${y.toFixed(4)}\n`;
-                dxf += "30\n0\n";
-                dxf += `40\n${radius}\n`;
+		// Device circle
+		dxf += "0\nCIRCLE\n";
+		dxf += `8\n${options.layerNames.devices}\n`;
+		dxf += `10\n${x.toFixed(4)}\n`;
+		dxf += `20\n${y.toFixed(4)}\n`;
+		dxf += "30\n0\n";
+		dxf += `40\n${radius}\n`;
 
-                // Device label
-                dxf += "0\nTEXT\n";
-                dxf += `8\n${options.layerNames.text}\n`;
-                dxf += `10\n${(x + radius + 10).toFixed(4)}\n`;
-                dxf += `20\n${y.toFixed(4)}\n`;
-                dxf += "30\n0\n";
-                dxf += "40\n20\n";
-                dxf += `1\n${device.type}\n`;
-        });
+		// Device label
+		dxf += "0\nTEXT\n";
+		dxf += `8\n${options.layerNames.text}\n`;
+		dxf += `10\n${(x + radius + 10).toFixed(4)}\n`;
+		dxf += `20\n${y.toFixed(4)}\n`;
+		dxf += "30\n0\n";
+		dxf += "40\n20\n";
+		dxf += `1\n${device.type}\n`;
+	});
 
-        // Draw connections as lines
-        connections.forEach((conn) => {
-                const fromDevice = devices.find((d) => d.id === conn.fromId);
-                const toDevice = devices.find((d) => d.id === conn.toId);
+	// Draw connections as lines
+	connections.forEach((conn) => {
+		const fromDevice = devices.find((d) => d.id === conn.fromId);
+		const toDevice = devices.find((d) => d.id === conn.toId);
 
-                if (fromDevice && toDevice) {
-                        const x1 = fromDevice.x * options.scale;
-                        const y1 = fromDevice.y * options.scale;
-                        const x2 = toDevice.x * options.scale;
-                        const y2 = toDevice.y * options.scale;
+		if (fromDevice && toDevice) {
+			const x1 = fromDevice.x * options.scale;
+			const y1 = fromDevice.y * options.scale;
+			const x2 = toDevice.x * options.scale;
+			const y2 = toDevice.y * options.scale;
 
-                        // Cable line
-                        dxf += "0\nLINE\n";
-                        dxf += `8\n${options.layerNames.cables}\n`;
-                        dxf += `10\n${x1.toFixed(4)}\n`;
-                        dxf += `20\n${y1.toFixed(4)}\n`;
-                        dxf += "30\n0\n";
-                        dxf += `11\n${x2.toFixed(4)}\n`;
-                        dxf += `21\n${y2.toFixed(4)}\n`;
-                        dxf += "31\n0\n";
-                }
-        });
+			// Cable line
+			dxf += "0\nLINE\n";
+			dxf += `8\n${options.layerNames.cables}\n`;
+			dxf += `10\n${x1.toFixed(4)}\n`;
+			dxf += `20\n${y1.toFixed(4)}\n`;
+			dxf += "30\n0\n";
+			dxf += `11\n${x2.toFixed(4)}\n`;
+			dxf += `21\n${y2.toFixed(4)}\n`;
+			dxf += "31\n0\n";
+		}
+	});
 
-        dxf += "0\nENDSEC\n";
+	dxf += "0\nENDSEC\n";
 
-        // End of file
-        dxf += "0\nEOF\n";
+	// End of file
+	dxf += "0\nEOF\n";
 
-        return dxf;
+	return dxf;
 }
 
 function downloadDxf(content: string): void {
-        const timestamp = new Date().toISOString().split("T")[0];
-        const blob = new Blob([content], { type: "application/dxf" });
-        saveAs(blob, `Project_${timestamp}.dxf`);
+	const timestamp = new Date().toISOString().split("T")[0];
+	const blob = new Blob([content], { type: "application/dxf" });
+	saveAs(blob, `Project_${timestamp}.dxf`);
 }
 
 // ============================================================================
@@ -320,18 +319,18 @@ function downloadDxf(content: string): void {
 // ============================================================================
 
 export interface PdfReportData {
-        projectName: string;
-        clientName: string;
-        engineerName: string;
-        date: string;
-        cableSchedule: CableScheduleItem[];
-        deviceCounts: DeviceCountItem[];
-        summary: BomSummary;
-        calculations?: {
-                voltageDrop?: number;
-                shortCircuit?: number;
-                cableSize?: number;
-        };
+	projectName: string;
+	clientName: string;
+	engineerName: string;
+	date: string;
+	cableSchedule: CableScheduleItem[];
+	deviceCounts: DeviceCountItem[];
+	summary: BomSummary;
+	calculations?: {
+		voltageDrop?: number;
+		shortCircuit?: number;
+		cableSize?: number;
+	};
 }
 
 /**
@@ -354,22 +353,22 @@ export interface PdfReportData {
  * input must be sanitized before display.
  */
 function escapeHtml(value: unknown): string {
-        if (value === null || value === undefined) return "";
-        const s = typeof value === "object" ? JSON.stringify(value) : String(value);
-        return s
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#39;");
+	if (value === null || value === undefined) return "";
+	const s = typeof value === "object" ? JSON.stringify(value) : String(value);
+	return s
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
 }
 
 /** Escape a value that is expected to be numeric. Coerces via Number() and
  * falls back to escapeHtml(String(value)) if the coercion yields NaN. */
 function escapeNumber(value: unknown): string {
-        const n = Number(value);
-        if (Number.isFinite(n)) return String(n);
-        return escapeHtml(value);
+	const n = Number(value);
+	if (Number.isFinite(n)) return String(n);
+	return escapeHtml(value);
 }
 
 /**
@@ -380,7 +379,7 @@ function escapeNumber(value: unknown): string {
  * CSS) is untouched — only dynamic content is sanitized.
  */
 export function exportToPdfReport(data: PdfReportData): string {
-        const html = `
+	const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -456,8 +455,8 @@ export function exportToPdfReport(data: PdfReportData): string {
     </thead>
     <tbody>
       ${data.cableSchedule
-                                .map(
-                                        (c) => `
+				.map(
+					(c) => `
         <tr>
           <td>${escapeHtml(c.id)}</td>
           <td>${escapeHtml(c.from)}</td>
@@ -469,8 +468,8 @@ export function exportToPdfReport(data: PdfReportData): string {
           <td>${escapeNumber(c.cost.toFixed(2))}</td>
         </tr>
       `,
-                                )
-                                .join("")}
+				)
+				.join("")}
     </tbody>
   </table>
 
@@ -488,8 +487,8 @@ export function exportToPdfReport(data: PdfReportData): string {
     </thead>
     <tbody>
       ${data.deviceCounts
-                                .map(
-                                        (d) => `
+				.map(
+					(d) => `
         <tr>
           <td>${escapeHtml(d.type)}</td>
           <td>${escapeHtml(d.category)}</td>
@@ -499,34 +498,42 @@ export function exportToPdfReport(data: PdfReportData): string {
           <td>${escapeHtml(d.mounting)}</td>
         </tr>
       `,
-                                )
-                                .join("")}
+				)
+				.join("")}
     </tbody>
   </table>
 
   ${
-                data.calculations
-                        ? (() => {
-                                const calcRows: string[] = [];
-                                if (data.calculations.voltageDrop !== undefined) {
-                                        calcRows.push(`<tr><td>Voltage Drop</td><td>${escapeNumber(data.calculations.voltageDrop)}%</td></tr>`);
-                                }
-                                if (data.calculations.shortCircuit !== undefined) {
-                                        calcRows.push(`<tr><td>Short Circuit Current</td><td>${escapeNumber(data.calculations.shortCircuit)} kA</td></tr>`);
-                                }
-                                if (data.calculations.cableSize !== undefined) {
-                                        calcRows.push(`<tr><td>Recommended Cable Size</td><td>${escapeHtml(data.calculations.cableSize)} mm²</td></tr>`);
-                                }
-                                return `
+		data.calculations
+			? (
+					() => {
+						const calcRows: string[] = [];
+						if (data.calculations.voltageDrop !== undefined) {
+							calcRows.push(
+								`<tr><td>Voltage Drop</td><td>${escapeNumber(data.calculations.voltageDrop)}%</td></tr>`,
+							);
+						}
+						if (data.calculations.shortCircuit !== undefined) {
+							calcRows.push(
+								`<tr><td>Short Circuit Current</td><td>${escapeNumber(data.calculations.shortCircuit)} kA</td></tr>`,
+							);
+						}
+						if (data.calculations.cableSize !== undefined) {
+							calcRows.push(
+								`<tr><td>Recommended Cable Size</td><td>${escapeHtml(data.calculations.cableSize)} mm²</td></tr>`,
+							);
+						}
+						return `
   <h2>Engineering Calculations</h2>
   <table>
     <tr><th>Parameter</th><th>Value</th></tr>
     ${calcRows.join("\n    ")}
   </table>
   `;
-                        })()
-                        : ""
-        }
+					}
+				)()
+			: ""
+	}
 
   <div class="footer">
     Generated by FIREAI Engineering System | Page 1 of 1
@@ -539,7 +546,7 @@ export function exportToPdfReport(data: PdfReportData): string {
 </html>
   `;
 
-        return html;
+	return html;
 }
 
 // ============================================================================
@@ -547,62 +554,62 @@ export function exportToPdfReport(data: PdfReportData): string {
 // ============================================================================
 
 export interface ProjectExport {
-        version: string;
-        exportedAt: string;
-        projectName: string;
-        devices: Array<{
-                id: string;
-                type: string;
-                x: number;
-                y: number;
-                voltage: number;
-                load: number;
-        }>;
-        connections: Array<{
-                id: string;
-                fromId: string;
-                toId: string;
-                current: number;
-        }>;
-        cableSchedule: CableScheduleItem[];
-        deviceCounts: DeviceCountItem[];
-        summary: BomSummary;
+	version: string;
+	exportedAt: string;
+	projectName: string;
+	devices: Array<{
+		id: string;
+		type: string;
+		x: number;
+		y: number;
+		voltage: number;
+		load: number;
+	}>;
+	connections: Array<{
+		id: string;
+		fromId: string;
+		toId: string;
+		current: number;
+	}>;
+	cableSchedule: CableScheduleItem[];
+	deviceCounts: DeviceCountItem[];
+	summary: BomSummary;
 }
 
 export function exportToJson(
-        projectName: string,
-        devices: Array<{
-                id: string;
-                type: string;
-                x: number;
-                y: number;
-                voltage: number;
-                load: number;
-        }>,
-        connections: Array<{
-                id: string;
-                fromId: string;
-                toId: string;
-                current: number;
-        }>,
-        cableSchedule: CableScheduleItem[],
-        deviceCounts: DeviceCountItem[],
-        summary: BomSummary,
+	projectName: string,
+	devices: Array<{
+		id: string;
+		type: string;
+		x: number;
+		y: number;
+		voltage: number;
+		load: number;
+	}>,
+	connections: Array<{
+		id: string;
+		fromId: string;
+		toId: string;
+		current: number;
+	}>,
+	cableSchedule: CableScheduleItem[],
+	deviceCounts: DeviceCountItem[],
+	summary: BomSummary,
 ): void {
-        const exportData: ProjectExport = {
-                version: "1.0.0",
-                exportedAt: new Date().toISOString(),
-                projectName,
-                devices,
-                connections,
-                cableSchedule,
-                deviceCounts,
-                summary,
-        };
+	const exportData: ProjectExport = {
+		version: "1.0.0",
+		exportedAt: new Date().toISOString(),
+		projectName,
+		devices,
+		connections,
+		cableSchedule,
+		deviceCounts,
+		summary,
+	};
 
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-                type: "application/json",
-        });
-        const timestamp = new Date().toISOString().split("T")[0];
-        saveAs(blob, `Project_${projectName}_${timestamp}.json`);
+	const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+		type: "application/json",
+	});
+	const timestamp = new Date().toISOString().split("T")[0];
+	saveAs(blob, `Project_${projectName}_${timestamp}.json`);
 }

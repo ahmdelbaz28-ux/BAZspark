@@ -1,4 +1,3 @@
-
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		<div  // NOSONAR: typescript:S6819
+		<div // NOSONAR: typescript:S6819
 			data-slot="input-group"
 			role="group"
 			className={cn(
@@ -58,7 +57,7 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
-		<div  // NOSONAR: typescript:S6847
+		<div // NOSONAR: typescript:S6847
 			tabIndex={0}
 			role="group"
 			data-slot="input-group-addon"
@@ -70,7 +69,12 @@ function InputGroupAddon({
 				}
 				e.currentTarget.parentElement?.querySelector("input")?.focus();
 			}}
-			onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.parentElement?.querySelector("input")?.focus(); } }}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					e.currentTarget.parentElement?.querySelector("input")?.focus();
+				}
+			}}
 			{...props}
 		/>
 	);
@@ -130,8 +134,10 @@ function InputGroupInput({
 	...props
 }: React.ComponentProps<"input">) {
 	return (
-		<Input data-slot="input-group-control"
-			autoComplete="off"  className={cn(
+		<Input
+			data-slot="input-group-control"
+			autoComplete="off"
+			className={cn(
 				"flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
 				className,
 			)}

@@ -4,8 +4,9 @@
  * V218: New page — 4 backend endpoints now have UI.
  * Ingest knowledge, ask questions (NL→Cypher→Neo4j), semantic search.
  */
+
+import { Activity, Loader2, Network, Search, Send, Upload } from "lucide-react";
 import { useState } from "react";
-import { Network, Loader2, Send, Search, Upload, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { v2Api } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
+import { v2Api } from "@/services/fullApi";
 
 export function GraphRAGPage() {
 	const { toast } = useToast();
@@ -46,7 +47,8 @@ export function GraphRAGPage() {
 		} catch (err) {
 			toast({
 				title: "Health Check Failed",
-				description: err instanceof Error ? err.message : "GraphRAG may not be configured",
+				description:
+					err instanceof Error ? err.message : "GraphRAG may not be configured",
 				variant: "destructive",
 			});
 		} finally {
@@ -64,7 +66,8 @@ export function GraphRAGPage() {
 		} catch (err) {
 			toast({
 				title: "Query Failed",
-				description: err instanceof Error ? err.message : "GraphRAG query failed",
+				description:
+					err instanceof Error ? err.message : "GraphRAG query failed",
 				variant: "destructive",
 			});
 		} finally {
@@ -129,7 +132,11 @@ export function GraphRAGPage() {
 				{/* Health Check */}
 				<div className="flex items-center gap-3">
 					<Button onClick={handleHealth} disabled={loading} variant="outline">
-						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
+						{loading ? (
+							<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+						) : (
+							<Activity aria-hidden="true" className="h-4 w-4" />
+						)}
 						Check Health
 					</Button>
 					{health && (
@@ -137,7 +144,11 @@ export function GraphRAGPage() {
 							{Object.entries(health).map(([key, val]) => (
 								<Badge
 									key={key}
-									variant={val === true || val === "connected" ? "default" : "secondary"}
+									variant={
+										val === true || val === "connected"
+											? "default"
+											: "secondary"
+									}
 									className="text-xs"
 								>
 									{key}: {String(val)}
@@ -152,7 +163,8 @@ export function GraphRAGPage() {
 					<CardHeader>
 						<CardTitle>Ask a Question</CardTitle>
 						<CardDescription>
-							Natural language query → LLM generates Cypher → Neo4j executes → LLM formulates answer
+							Natural language query → LLM generates Cypher → Neo4j executes →
+							LLM formulates answer
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -164,14 +176,26 @@ export function GraphRAGPage() {
 									placeholder="e.g., What rooms have insufficient detector coverage?"
 									onKeyDown={(e) => e.key === "Enter" && handleAsk()}
 								/>
-								<Button onClick={handleAsk} disabled={loading || !question.trim()}>
-									{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Send aria-hidden="true" className="h-4 w-4" />}
+								<Button
+									onClick={handleAsk}
+									disabled={loading || !question.trim()}
+								>
+									{loading ? (
+										<Loader2
+											aria-hidden="true"
+											className="h-4 w-4 animate-spin"
+										/>
+									) : (
+										<Send aria-hidden="true" className="h-4 w-4" />
+									)}
 									Ask
 								</Button>
 							</div>
 							{answer && (
 								<div className="space-y-2">
-									<Label className="text-xs text-muted-foreground">Answer</Label>
+									<Label className="text-xs text-muted-foreground">
+										Answer
+									</Label>
 									<pre className="text-sm font-mono bg-muted p-3 rounded-md overflow-auto max-h-60">
 										{JSON.stringify(answer, null, 2)}
 									</pre>
@@ -185,7 +209,9 @@ export function GraphRAGPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>Semantic Search</CardTitle>
-						<CardDescription>Fast vector similarity search (no LLM call)</CardDescription>
+						<CardDescription>
+							Fast vector similarity search (no LLM call)
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="flex gap-2 mb-4">
@@ -195,8 +221,19 @@ export function GraphRAGPage() {
 								placeholder="Search for rooms, devices, compliance..."
 								onKeyDown={(e) => e.key === "Enter" && handleSearch()}
 							/>
-							<Button onClick={handleSearch} disabled={loading || !searchQuery.trim()} variant="outline">
-								{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
+							<Button
+								onClick={handleSearch}
+								disabled={loading || !searchQuery.trim()}
+								variant="outline"
+							>
+								{loading ? (
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 animate-spin"
+									/>
+								) : (
+									<Search aria-hidden="true" className="h-4 w-4" />
+								)}
 								Search
 							</Button>
 						</div>
@@ -219,7 +256,8 @@ export function GraphRAGPage() {
 					<CardHeader>
 						<CardTitle>Ingest Knowledge</CardTitle>
 						<CardDescription>
-							Add engineering text — LLMGraphTransformer extracts entities & relationships
+							Add engineering text — LLMGraphTransformer extracts entities &
+							relationships
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -231,8 +269,18 @@ export function GraphRAGPage() {
 								rows={4}
 							/>
 							<div className="flex items-center gap-4">
-								<Button onClick={handleIngest} disabled={loading || !knowledgeText.trim()}>
-									{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Upload aria-hidden="true" className="h-4 w-4" />}
+								<Button
+									onClick={handleIngest}
+									disabled={loading || !knowledgeText.trim()}
+								>
+									{loading ? (
+										<Loader2
+											aria-hidden="true"
+											className="h-4 w-4 animate-spin"
+										/>
+									) : (
+										<Upload aria-hidden="true" className="h-4 w-4" />
+									)}
 									Ingest
 								</Button>
 								<Button

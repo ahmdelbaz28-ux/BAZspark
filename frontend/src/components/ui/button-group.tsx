@@ -1,4 +1,3 @@
-
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +26,7 @@ function ButtonGroup({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof buttonGroupVariants>) {
 	return (
-		<div  // NOSONAR: typescript:S6819
+		<div // NOSONAR: typescript:S6819
 			role="group"
 			data-slot="button-group"
 			data-orientation={orientation}

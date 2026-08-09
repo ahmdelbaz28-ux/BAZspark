@@ -96,30 +96,32 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-root::before,
 .sidebar-root::after {
-    content: "";
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%,
-        rgba(180, 188, 196, 0.45) 0%,
-        rgba(90, 103, 112, 0.28) 40%,
-        rgba(0, 0, 0, 0.5) 100%);
-    pointer-events: none;
-    z-index: 1;
+	content: "";
+	position: absolute;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: radial-gradient(
+		circle at 35% 35%,
+		rgba(180, 188, 196, 0.45) 0%,
+		rgba(90, 103, 112, 0.28) 40%,
+		rgba(0, 0, 0, 0.5) 100%
+	);
+	pointer-events: none;
+	z-index: 1;
 }
 .sidebar-root::before {
-    top: 6px;
-    left: 6px;
+	top: 6px;
+	left: 6px;
 }
 .sidebar-root::after {
-    bottom: 6px;
-    left: 6px;
+	bottom: 6px;
+	left: 6px;
 }
 [dir="rtl"] .sidebar-root::before,
 [dir="rtl"] .sidebar-root::after {
-    left: auto;
-    right: 6px;
+	left: auto;
+	right: 6px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -130,20 +132,20 @@
  * In RTL, the border mirrors to the left edge via [dir="rtl"].
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-root {
-    position: relative; /* needed for ::before/::after screw decorations */
-    background-color: var(--color-graphite);
-    border-right: 1px solid rgba(90, 103, 112, 0.28);
-    /* Phase 14 R3 fix: VLM said sidebar floats without a hard edge —
+	position: relative; /* needed for ::before/::after screw decorations */
+	background-color: var(--color-graphite);
+	border-right: 1px solid rgba(90, 103, 112, 0.28);
+	/* Phase 14 R3 fix: VLM said sidebar floats without a hard edge —
        real FACP panels have beveled chassis edges. Added inset
        box-shadow on the right edge (left edge in RTL) to simulate
        the metal bezel thickness. Reads as a milled side wall, not
        a flat rectangle. */
-    box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.5);
+	box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.5);
 }
 [dir="rtl"] .sidebar-root {
-    border-right: none;
-    border-left: 1px solid rgba(90, 103, 112, 0.28);
-    box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.5);
+	border-right: none;
+	border-left: 1px solid rgba(90, 103, 112, 0.28);
+	box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -155,15 +157,15 @@
  * silkscreened zone divider on a FACP faceplate.
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-group-divider {
-    /* Phase 14 R2 fix: VLM said 1px border-top looks printed. Switched
+	/* Phase 14 R2 fix: VLM said 1px border-top looks printed. Switched
        to inset box-shadow — reads as a laser-etched groove, not a
        drawn line. Two-tone: 1px dark below (the groove's lower wall)
        + 1px faint light above (the groove's upper lip catching light). */
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    box-shadow:
-        inset 0 1px 0 rgba(0, 0, 0, 0.5),
-        inset 0 2px 0 rgba(255, 255, 255, 0.03);
+	margin-top: 0.5rem;
+	padding-top: 0.5rem;
+	box-shadow:
+		inset 0 1px 0 rgba(0, 0, 0, 0.5),
+		inset 0 2px 0 rgba(255, 255, 255, 0.03);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -176,24 +178,24 @@
  * uppercase tracked label (FACP nameplate style).
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-brand {
-    border-bottom: 1px solid rgba(90, 103, 112, 0.28);
+	border-bottom: 1px solid rgba(90, 103, 112, 0.28);
 }
 .sidebar-brand-wordmark {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 0.9375rem;
-    letter-spacing: -0.01em;
-    color: var(--color-bone);
-    line-height: 1.2;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 0.9375rem;
+	letter-spacing: -0.01em;
+	color: var(--color-bone);
+	line-height: 1.2;
 }
 .sidebar-brand-subtitle {
-    font-family: var(--font-data);
-    font-weight: 500;
-    font-size: 0.625rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-steel);
-    margin-top: 0.125rem;
+	font-family: var(--font-data);
+	font-weight: 500;
+	font-size: 0.625rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-steel);
+	margin-top: 0.125rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -206,21 +208,21 @@
  * ("DETECTION", "NOTIFICATION", "ANNUNCIATOR", "SUPERVISORY").
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-group-label {
-    font-family: var(--font-data);
-    font-weight: 500;
-    font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-steel);
-    /* Phase 14 R3 fix: VLM said group labels look printed, not stamped.
+	font-family: var(--font-data);
+	font-weight: 500;
+	font-size: 0.625rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-steel);
+	/* Phase 14 R3 fix: VLM said group labels look printed, not stamped.
        Added subtle 1px dark text-shadow below — reads as debossed
        plastic, like silkscreened FACP cabinet section labels. Avoid
        the white highlight version (would look embossed, wrong
        direction for a recessed label). */
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
-    /* Slight top padding to separate groups — reads as cabinet section spacing. */
-    padding-top: 0.5rem;
-    padding-bottom: 0.25rem;
+	text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+	/* Slight top padding to separate groups — reads as cabinet section spacing. */
+	padding-top: 0.5rem;
+	padding-bottom: 0.25rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -250,140 +252,143 @@
  * right edge. The hover background and rounded corners are symmetric.
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-nav-item {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    /* Phase 14 R1 fix: VLM critique — spacing rhythm was too SaaS (generous
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	/* Phase 14 R1 fix: VLM critique — spacing rhythm was too SaaS (generous
        16px padding). Compressed to 0.4rem / 0.625rem to read as dense
        industrial control panel, not a Dribbble web app. */
-    padding: 0.4rem 0.625rem;
-    border: 1px solid transparent;
-    border-radius: 2px; /* industrial sharpness — matches login.css */
-    color: var(--color-steel);
-    background-color: transparent;
-    cursor: pointer;
-    transition: color 150ms var(--ease-out, ease-out),
-                background-color 150ms var(--ease-out, ease-out),
-                border-color 150ms var(--ease-out, ease-out);
+	padding: 0.4rem 0.625rem;
+	border: 1px solid transparent;
+	border-radius: 2px; /* industrial sharpness — matches login.css */
+	color: var(--color-steel);
+	background-color: transparent;
+	cursor: pointer;
+	transition:
+		color 150ms var(--ease-out, ease-out),
+		background-color 150ms var(--ease-out, ease-out),
+		border-color 150ms var(--ease-out, ease-out);
 }
 .sidebar-nav-item:hover {
-    /* Phase 14 R2 fix: VLM said flat hover bg reads as "cardboard cutout".
+	/* Phase 14 R2 fix: VLM said flat hover bg reads as "cardboard cutout".
        Added inset well depth — top highlight (1px white at 4% opacity,
        mimics light catching the top edge of a milled well) + bottom
        inset shadow (1px black at 60%, mimics the well's lower wall).
        Subtle, not aggressive — 2 shadows, not the 4-shadow stack VLM
        suggested (that would be kitsch per the skill's anti-skeuomorphism
        warning). The evac-green tint stays — reads as LED bleed. */
-    color: var(--color-bone);
-    background-color: rgba(61, 138, 77, 0.08);
-    border-color: rgba(90, 103, 112, 0.20);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.04),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+	color: var(--color-bone);
+	background-color: rgba(61, 138, 77, 0.08);
+	border-color: rgba(90, 103, 112, 0.2);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.04),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.6);
 }
 /* Hover LED — faint steel strip on the left edge. Reads as "selectable".
    Same light-pipe housing as the active LED, just dimmer. */
 .sidebar-nav-item:hover::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px;
-    height: 60%;
-    background-color: var(--color-steel);
-    border-radius: 0 1px 1px 0;
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 2px;
+	height: 60%;
+	background-color: var(--color-steel);
+	border-radius: 0 1px 1px 0;
 }
 [dir="rtl"] .sidebar-nav-item:hover::before {
-    left: auto;
-    right: 0;
-    border-radius: 1px 0 0 1px;
+	left: auto;
+	right: 0;
+	border-radius: 1px 0 0 1px;
 }
 
 /* ACTIVE — the signature LED strip */
 .sidebar-nav-item.active {
-    color: var(--color-bone);
-    /* Phase 14 R2 fix: deeper inset well on active — the LED strip
+	color: var(--color-bone);
+	/* Phase 14 R2 fix: deeper inset well on active — the LED strip
        illuminates the entire cavity, not just the strip itself.
        Inset shadow stack: top highlight (white 5% — LED bleed catches
        the top wall) + bottom+left dark shadow (the cavity walls).
        Reads as a recessed illuminated channel, not a flat pill. */
-    background-color: rgba(61, 138, 77, 0.04);
-    border-color: transparent;
-    box-shadow:
-        inset 0 1px 0 rgba(61, 138, 77, 0.18),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-        inset 1px 0 0 rgba(0, 0, 0, 0.4);
+	background-color: rgba(61, 138, 77, 0.04);
+	border-color: transparent;
+	box-shadow:
+		inset 0 1px 0 rgba(61, 138, 77, 0.18),
+		inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+		inset 1px 0 0 rgba(0, 0, 0, 0.4);
 }
 .sidebar-nav-item.active::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    /* Phase 14 R1 fix: VLM said 3px is too thin to read as a physical LED.
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	/* Phase 14 R1 fix: VLM said 3px is too thin to read as a physical LED.
        Bumped to 4px and rounded end-caps (already had border-radius).
        Real FACP LEDs are 3-5mm domes — 4px at this scale matches. */
-    width: 4px;
-    height: 70%;
-    background-color: var(--color-evac-green);
-    border-radius: 0 2px 2px 0;
-    /* Phase 14 R1 fix: VLM said glow is too weak. A real FACP LED bleeds
+	width: 4px;
+	height: 70%;
+	background-color: var(--color-evac-green);
+	border-radius: 0 2px 2px 0;
+	/* Phase 14 R1 fix: VLM said glow is too weak. A real FACP LED bleeds
        light onto the surrounding bezel. Bumped blur from 3px to 8px and
        spread from 1px to 2px. Opacity dropped slightly to 0.5 to keep
        it from looking neon. Reads as illuminated plastic, not a CSS
        box-shadow flex. */
-    box-shadow: 0 0 8px 2px rgba(61, 138, 77, 0.5);
+	box-shadow: 0 0 8px 2px rgba(61, 138, 77, 0.5);
 }
 [dir="rtl"] .sidebar-nav-item.active::before {
-    left: auto;
-    right: 0;
-    border-radius: 2px 0 0 2px;
+	left: auto;
+	right: 0;
+	border-radius: 2px 0 0 2px;
 }
 .sidebar-nav-item.active:hover {
-    /* Active + hover: keep the green LED, intensify the green tint slightly. */
-    background-color: rgba(61, 138, 77, 0.12);
+	/* Active + hover: keep the green LED, intensify the green tint slightly. */
+	background-color: rgba(61, 138, 77, 0.12);
 }
 
 /* Focus ring — evac-green, matches every other shell control. */
 .sidebar-nav-item:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-graphite),
-                0 0 0 4px var(--color-evac-green);
+	outline: none;
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
+		0 0 0 4px var(--color-evac-green);
 }
 
 /* Icon color — follows the text color, but active gets the evac-green
    "energized" treatment. */
 .sidebar-nav-icon {
-    color: var(--color-steel);
-    flex-shrink: 0;
-    /* Phase 14 R3 fix: VLM said icons look "vector perfect" / floating.
+	color: var(--color-steel);
+	flex-shrink: 0;
+	/* Phase 14 R3 fix: VLM said icons look "vector perfect" / floating.
        Reduced opacity to 0.7 (idle) + tiny 1px dark drop-shadow to
        make them feel embedded in the panel, not pasted on top.
        Active/hover states below restore full opacity + green tint. */
-    opacity: 0.7;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
-    transition: color 150ms var(--ease-out, ease-out),
-                opacity 150ms var(--ease-out, ease-out);
+	opacity: 0.7;
+	filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
+	transition:
+		color 150ms var(--ease-out, ease-out),
+		opacity 150ms var(--ease-out, ease-out);
 }
 .sidebar-nav-item:hover .sidebar-nav-icon {
-    color: var(--color-bone);
-    opacity: 1;
+	color: var(--color-bone);
+	opacity: 1;
 }
 .sidebar-nav-item.active .sidebar-nav-icon {
-    color: var(--color-evac-green); /* energized */
-    opacity: 1;
+	color: var(--color-evac-green); /* energized */
+	opacity: 1;
 }
 
 /* Label typography — slightly heavier than body, matches dashboard. */
 .sidebar-nav-label {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -398,15 +403,15 @@
  * provides the label.
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-root.collapsed .sidebar-nav-item {
-    justify-content: center;
-    padding: 0.5rem;
+	justify-content: center;
+	padding: 0.5rem;
 }
 /* In collapsed mode the hover LED would be hidden behind the icon —
    instead, intensify the active LED glow so it remains the primary
    signal. */
 .sidebar-root.collapsed .sidebar-nav-item.active::before {
-    height: 80%;
-    box-shadow: 0 0 4px 2px rgba(61, 138, 77, 0.7);
+	height: 80%;
+	box-shadow: 0 0 4px 2px rgba(61, 138, 77, 0.7);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -419,75 +424,79 @@
  * = physical depression).
  * ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar-footer {
-    border-top: 1px solid rgba(90, 103, 112, 0.28);
+	border-top: 1px solid rgba(90, 103, 112, 0.28);
 }
 .sidebar-about-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 0.75rem;
-    border: 1px solid transparent;
-    border-radius: 2px;
-    color: var(--color-steel);
-    background-color: transparent;
-    cursor: pointer;
-    transition: color 150ms var(--ease-out, ease-out),
-                background-color 150ms var(--ease-out, ease-out),
-                border-color 150ms var(--ease-out, ease-out);
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid transparent;
+	border-radius: 2px;
+	color: var(--color-steel);
+	background-color: transparent;
+	cursor: pointer;
+	transition:
+		color 150ms var(--ease-out, ease-out),
+		background-color 150ms var(--ease-out, ease-out),
+		border-color 150ms var(--ease-out, ease-out);
 }
 .sidebar-about-link:hover {
-    color: var(--color-bone);
-    background-color: var(--color-panel-recess);
-    border-color: rgba(90, 103, 112, 0.20);
+	color: var(--color-bone);
+	background-color: var(--color-panel-recess);
+	border-color: rgba(90, 103, 112, 0.2);
 }
 .sidebar-about-link:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-graphite),
-                0 0 0 4px var(--color-evac-green);
+	outline: none;
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
+		0 0 0 4px var(--color-evac-green);
 }
 .sidebar-about-icon {
-    color: var(--color-steel);
-    flex-shrink: 0;
+	color: var(--color-steel);
+	flex-shrink: 0;
 }
 .sidebar-about-link:hover .sidebar-about-icon {
-    color: var(--color-bone);
+	color: var(--color-bone);
 }
 
 /* Collapse toggle — membrane-switch affordance. The inset shadow on
    hover reads as a physical button depression (same treatment as the
    dashboard refresh button). Evac-green hover text = "go" affordance. */
 .sidebar-collapse-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 0.625rem;
-    border: 1px solid rgba(90, 103, 112, 0.20);
-    border-radius: 2px;
-    color: var(--color-steel);
-    background-color: transparent;
-    cursor: pointer;
-    margin-top: 0.25rem;
-    transition: color 150ms var(--ease-out, ease-out),
-                background-color 150ms var(--ease-out, ease-out),
-                border-color 150ms var(--ease-out, ease-out),
-                box-shadow 150ms var(--ease-out, ease-out);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 0.625rem;
+	border: 1px solid rgba(90, 103, 112, 0.2);
+	border-radius: 2px;
+	color: var(--color-steel);
+	background-color: transparent;
+	cursor: pointer;
+	margin-top: 0.25rem;
+	transition:
+		color 150ms var(--ease-out, ease-out),
+		background-color 150ms var(--ease-out, ease-out),
+		border-color 150ms var(--ease-out, ease-out),
+		box-shadow 150ms var(--ease-out, ease-out);
 }
 .sidebar-collapse-btn:hover {
-    color: var(--color-evac-green);
-    background-color: var(--color-panel-recess);
-    border-color: rgba(61, 138, 77, 0.40);
-    /* Membrane-press — inset shadow reads as a physical depression. */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+	color: var(--color-evac-green);
+	background-color: var(--color-panel-recess);
+	border-color: rgba(61, 138, 77, 0.4);
+	/* Membrane-press — inset shadow reads as a physical depression. */
+	box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .sidebar-collapse-btn:active {
-    /* Full depression on click. */
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
+	/* Full depression on click. */
+	box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
 }
 .sidebar-collapse-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-graphite),
-                0 0 0 4px var(--color-evac-green);
+	outline: none;
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
+		0 0 0 4px var(--color-evac-green);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -498,13 +507,13 @@
  * effectively instant for users who request reduced motion.
  * ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-    .sidebar-nav-item,
-    .sidebar-nav-icon,
-    .sidebar-about-link,
-    .sidebar-about-icon,
-    .sidebar-collapse-btn {
-        transition-duration: 0.01ms !important;
-    }
+	.sidebar-nav-item,
+	.sidebar-nav-icon,
+	.sidebar-about-link,
+	.sidebar-about-icon,
+	.sidebar-collapse-btn {
+		transition-duration: 0.01ms !important;
+	}
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -516,12 +525,12 @@
  * keyword for the active state.
  * ═══════════════════════════════════════════════════════════════════════════ */
 @media (forced-colors: active) {
-    .sidebar-nav-item.active::before {
-        forced-color-adjust: preserve;
-        background-color: Highlight;
-        box-shadow: none;
-    }
-    .sidebar-nav-item.active {
-        color: HighlightText;
-    }
+	.sidebar-nav-item.active::before {
+		forced-color-adjust: preserve;
+		background-color: Highlight;
+		box-shadow: none;
+	}
+	.sidebar-nav-item.active {
+		color: HighlightText;
+	}
 }

@@ -1,4 +1,3 @@
-
 /**
  * AutoCADDrawPage.tsx — Drawing tools for AutoCAD
  */
@@ -69,7 +68,10 @@ export function AutoCADDrawPage() {
 		setDrawing(true);
 		try {
 			const points = polyPoints.split(";").map((p) => parsePoint(p.trim()));
-			await autocadApi.drawPolyline({ vertices: points, layer: polyLayer || undefined });
+			await autocadApi.drawPolyline({
+				vertices: points,
+				layer: polyLayer || undefined,
+			});
 			toast.success("Polyline drawn");
 		} catch (err) {
 			toast.error(
@@ -200,7 +202,10 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : (
 									<Minus aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
@@ -245,7 +250,10 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : (
 									<Spline aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
@@ -299,7 +307,10 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : (
 									<Circle aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
@@ -364,7 +375,10 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : (
 									<Type aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}

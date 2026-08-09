@@ -20,83 +20,84 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Surfaces ─────────────────────────────────────────────────────────── */
-  --color-background: #070b12;          /* deep navy — pure void */
-  --color-foreground: #e8f0fe;          /* off-white at 95% */
-  --color-card: rgba(17, 24, 39, 0.6);  /* glassmorphism surface */
-  --color-card-foreground: #e8f0fe;
-  --color-popover: rgba(17, 24, 39, 0.8);
-  --color-popover-foreground: #e8f0fe;
+	/* ── Surfaces ─────────────────────────────────────────────────────────── */
+	--color-background: #070b12; /* deep navy — pure void */
+	--color-foreground: #e8f0fe; /* off-white at 95% */
+	--color-card: rgba(17, 24, 39, 0.6); /* glassmorphism surface */
+	--color-card-foreground: #e8f0fe;
+	--color-popover: rgba(17, 24, 39, 0.8);
+	--color-popover-foreground: #e8f0fe;
 
-  /* ── Brand ────────────────────────────────────────────────────────────── */
-  --color-primary: #22d3ee;             /* softer cyan-400 */
-  --color-primary-foreground: #070b12;
-  --color-secondary: rgba(255, 255, 255, 0.05);
-  --color-secondary-foreground: #e8f0fe;
-  --color-accent: #22d3ee;
-  --color-accent-foreground: #070b12;
+	/* ── Brand ────────────────────────────────────────────────────────────── */
+	--color-primary: #22d3ee; /* softer cyan-400 */
+	--color-primary-foreground: #070b12;
+	--color-secondary: rgba(255, 255, 255, 0.05);
+	--color-secondary-foreground: #e8f0fe;
+	--color-accent: #22d3ee;
+	--color-accent-foreground: #070b12;
 
-  /* ── Status ───────────────────────────────────────────────────────────── */
-  --color-success: #34d399;             /* emerald */
-  --color-warning: #fbbf24;             /* amber */
-  --color-danger: rgb(248, 113, 113);   /* red — ONLY for real errors */
-  --color-danger-foreground: #070b12;   /* dark text on danger bg (WCAG AA: 7.12:1) */
-  --color-destructive: rgb(248, 113, 113);
-  --color-destructive-foreground: #070b12;
-  --color-info: #22d3ee;                /* cyan */
+	/* ── Status ───────────────────────────────────────────────────────────── */
+	--color-success: #34d399; /* emerald */
+	--color-warning: #fbbf24; /* amber */
+	--color-danger: rgb(248, 113, 113); /* red — ONLY for real errors */
+	--color-danger-foreground: #070b12; /* dark text on danger bg (WCAG AA: 7.12:1) */
+	--color-destructive: rgb(248, 113, 113);
+	--color-destructive-foreground: #070b12;
+	--color-info: #22d3ee; /* cyan */
 
-  /* ── Structural ───────────────────────────────────────────────────────── */
-  --color-border: rgba(31, 45, 68, 0.5); /* muted navy hairline */
-  --color-input: rgba(31, 45, 68, 0.5);
-  --color-ring: #22d3ee;
-  --color-muted: rgba(255, 255, 255, 0.05);
-  --color-muted-foreground: #94a3b8;    /* slate at 60% */
-  --color-darker: #0a0e17;
+	/* ── Structural ───────────────────────────────────────────────────────── */
+	--color-border: rgba(31, 45, 68, 0.5); /* muted navy hairline */
+	--color-input: rgba(31, 45, 68, 0.5);
+	--color-ring: #22d3ee;
+	--color-muted: rgba(255, 255, 255, 0.05);
+	--color-muted-foreground: #94a3b8; /* slate at 60% */
+	--color-darker: #0a0e17;
 
-  /* ── Radius ───────────────────────────────────────────────────────────── */
-  --radius: 0.75rem;                    /* 12px */
-  --radius-sm: 0.5rem;                  /* 8px */
+	/* ── Radius ───────────────────────────────────────────────────────────── */
+	--radius: 0.75rem; /* 12px */
+	--radius-sm: 0.5rem; /* 8px */
 
-  /* ── Glassmorphism helpers ────────────────────────────────────────────── */
-  --glass-bg: rgba(17, 24, 39, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 20px;
+	/* ── Glassmorphism helpers ────────────────────────────────────────────── */
+	--glass-bg: rgba(17, 24, 39, 0.6);
+	--glass-border: rgba(255, 255, 255, 0.1);
+	--glass-blur: 20px;
 
-  /* ── Motion easings ───────────────────────────────────────────────────── */
-  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
+	/* ── Motion easings ───────────────────────────────────────────────────── */
+	--ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+	--ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* ── Focus rings (Phase 5.1 — UI/UX Pro Max audit) ───────────────────────
+	/* ── Focus rings (Phase 5.1 — UI/UX Pro Max audit) ───────────────────────
    * Ring color tuned for dark glass surfaces: cyan-400 with alpha so it
    * remains visible on both #070b12 bg and rgba(17,24,39,0.6) glass cards.
    * Offset color is the page background so the ring "floats" off the element.
    */
-  --ring-focus: 0 0 0 2px var(--color-background), 0 0 0 4px rgba(34, 211, 238, 0.6);
-  --ring-focus-offset: 2px;
+	--ring-focus:
+		0 0 0 2px var(--color-background), 0 0 0 4px rgba(34, 211, 238, 0.6);
+	--ring-focus-offset: 2px;
 
-  /* ── Spacing scale (4px base) ─────────────────────────────────────────── */
-  --space-1: 0.25rem;   /*  4px */
-  --space-2: 0.5rem;    /*  8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.25rem;   /* 20px */
-  --space-6: 1.5rem;    /* 24px */
-  --space-8: 2rem;      /* 32px */
-  --space-10: 2.5rem;   /* 40px */
-  --space-12: 3rem;     /* 48px */
+	/* ── Spacing scale (4px base) ─────────────────────────────────────────── */
+	--space-1: 0.25rem; /*  4px */
+	--space-2: 0.5rem; /*  8px */
+	--space-3: 0.75rem; /* 12px */
+	--space-4: 1rem; /* 16px */
+	--space-5: 1.25rem; /* 20px */
+	--space-6: 1.5rem; /* 24px */
+	--space-8: 2rem; /* 32px */
+	--space-10: 2.5rem; /* 40px */
+	--space-12: 3rem; /* 48px */
 
-  /* ── Type scale ───────────────────────────────────────────────────────── */
-  --text-xs: 0.75rem;     /* 12px */
-  --text-sm: 0.875rem;    /* 14px */
-  --text-base: 1rem;      /* 16px */
-  --text-lg: 1.125rem;    /* 18px */
-  --text-xl: 1.25rem;     /* 20px */
-  --text-2xl: 1.5rem;     /* 24px */
-  --text-3xl: 1.875rem;   /* 30px */
+	/* ── Type scale ───────────────────────────────────────────────────────── */
+	--text-xs: 0.75rem; /* 12px */
+	--text-sm: 0.875rem; /* 14px */
+	--text-base: 1rem; /* 16px */
+	--text-lg: 1.125rem; /* 18px */
+	--text-xl: 1.25rem; /* 20px */
+	--text-2xl: 1.5rem; /* 24px */
+	--text-3xl: 1.875rem; /* 30px */
 
-  /* ════════════════════════════════════════════════════════════════════════
+	/* ════════════════════════════════════════════════════════════════════════
    * FACP Industrial Identity tokens (Phase 12 — frontend-design skill)
    *
    * These tokens encode the visual vocabulary of a real NFPA 72 fire alarm
@@ -122,25 +123,25 @@
    * that explicitly adopt it) consumes these tokens. This keeps the change
    * scoped, reversible, and safe for the protected main branch.
    * ════════════════════════════════════════════════════════════════════════ */
-  --color-graphite: #0a0e10;
-  --color-panel-recess: #151a1f;
-  --color-bone: #e8e4d8;
-  --color-signal-red: #b32c23;   /* V315: darkened from #c2362c so bone text clears WCAG 2.1 AA 4.5:1 (4.28 -> 5.00) */
-  --color-evac-green: #47a058;   /* V315: lightened from #3d8a4d so 11px labels on panel-recess clear 4.5:1 (4.11 -> 5.37) */
-  --color-amber-alert: #c8951e;
-  --color-steel: #778694;        /* V315: lightened from #5a6770 so muted 10-13px labels clear 4.5:1 on graphite #0a0e10 and recess #151a1f (3.0-3.33 -> 4.69+) */
+	--color-graphite: #0a0e10;
+	--color-panel-recess: #151a1f;
+	--color-bone: #e8e4d8;
+	--color-signal-red: #b32c23; /* V315: darkened from #c2362c so bone text clears WCAG 2.1 AA 4.5:1 (4.28 -> 5.00) */
+	--color-evac-green: #47a058; /* V315: lightened from #3d8a4d so 11px labels on panel-recess clear 4.5:1 (4.11 -> 5.37) */
+	--color-amber-alert: #c8951e;
+	--color-steel: #778694; /* V315: lightened from #5a6770 so muted 10-13px labels clear 4.5:1 on graphite #0a0e10 and recess #151a1f (3.0-3.33 -> 4.69+) */
 
-  /* Type role tokens — referenced by typography.css + per-surface CSS */
-  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
-  --font-body: "IBM Plex Sans", "Inter", system-ui, -apple-system, sans-serif;
-  --font-data: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+	/* Type role tokens — referenced by typography.css + per-surface CSS */
+	--font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+	--font-body: "IBM Plex Sans", "Inter", system-ui, -apple-system, sans-serif;
+	--font-data: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
 
-  /* Alarm status bar — signature element timing.
+	/* Alarm status bar — signature element timing.
    * 1.6s = the cadence of a real FACP trouble LED (NFPA 72 §10.11 visible
    * signaling spec — slow enough to read as "attention", fast enough to
    * notice). The pulse is TWO-stroke (on-off-on-off) not a sine, matching
    * the panel hardware behavior. */
-  --alarm-pulse-duration: 1.6s;
+	--alarm-pulse-duration: 1.6s;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -159,32 +160,32 @@
  * ??????????????????????????????????????????????????????????????????????????? */
 
 [data-mode="industrial"] {
-  /* Default dark mode is Industrial Dark */
+	/* Default dark mode is Industrial Dark */
 }
 
 [data-mode="scada"] {
-  --color-background: #020617;
-  --color-card: rgba(15, 23, 42, 0.8);
-  --color-primary: #38bdf8;
-  --color-border: rgba(14, 165, 233, 0.4);
-  --color-ring: #38bdf8;
-  --font-display: "JetBrains Mono", monospace;
+	--color-background: #020617;
+	--color-card: rgba(15, 23, 42, 0.8);
+	--color-primary: #38bdf8;
+	--color-border: rgba(14, 165, 233, 0.4);
+	--color-ring: #38bdf8;
+	--font-display: "JetBrains Mono", monospace;
 }
 
 [data-mode="marine"] {
-  --color-background: #1c1917;
-  --color-card: rgba(41, 37, 36, 0.8);
-  --color-primary: #d97706; /* Amber Brass */
-  --color-border: rgba(217, 119, 6, 0.4);
-  --color-ring: #d97706;
+	--color-background: #1c1917;
+	--color-card: rgba(41, 37, 36, 0.8);
+	--color-primary: #d97706; /* Amber Brass */
+	--color-border: rgba(217, 119, 6, 0.4);
+	--color-ring: #d97706;
 }
 
 [data-mode="facp"] {
-  --color-background: #0a0e10;
-  --color-card: #151a1f;
-  --color-primary: #c2362c; /* Signal Red */
-  --color-border: rgba(90, 103, 112, 0.5); /* Steel */
-  --color-ring: #c2362c;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body: "IBM Plex Sans", sans-serif;
+	--color-background: #0a0e10;
+	--color-card: #151a1f;
+	--color-primary: #c2362c; /* Signal Red */
+	--color-border: rgba(90, 103, 112, 0.5); /* Steel */
+	--color-ring: #c2362c;
+	--font-display: "Space Grotesk", sans-serif;
+	--font-body: "IBM Plex Sans", sans-serif;
 }

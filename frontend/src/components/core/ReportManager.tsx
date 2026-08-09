@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/simpleStore";
 
@@ -89,7 +88,10 @@ export function ReportManager() {
 				) : (
 					<ul className="text-sm list-disc pl-5 space-y-1">
 						{report.conflicts.map((conf, i) => (
-							<li key={`${i}-${conf.substring(0, 20)}`} className="text-foreground">
+							<li
+								key={`${i}-${conf.substring(0, 20)}`}
+								className="text-foreground"
+							>
 								{conf}
 							</li>
 						))}

@@ -1,4 +1,3 @@
-
 import { ChevronDown, ChevronUp, Pin, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +26,16 @@ export function FloatingErrorLog() {
 
 	// SonarQube S3358: extract nested ternary into independent statements.
 	const panelHeight = isPinned || isExpanded ? "h-48" : "h-7";
-	const panelPosition = isPinned ? "relative" : "fixed bottom-6 left-0 right-0 z-50";
+	const panelPosition = isPinned
+		? "relative"
+		: "fixed bottom-6 left-0 right-0 z-50";
 
 	return (
 		<div
 			className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-[height,opacity] duration-300 ease-in-out shrink-0 overflow-hidden ${panelHeight} ${panelPosition}`}
 		>
 			{/* Header */}
-			<div  // NOSONAR: typescript:S6819
+			<div // NOSONAR: typescript:S6819
 				className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
 				role="button"
 				tabIndex={0}
@@ -67,7 +68,9 @@ export function FloatingErrorLog() {
 						variant="ghost"
 						size="icon"
 						className={`h-5 w-5 ${isPinned ? "text-primary" : "text-muted-foreground"}`}
-						onClick={(e) => {							e.stopPropagation();							setIsPinned(!isPinned);
+						onClick={(e) => {
+							e.stopPropagation();
+							setIsPinned(!isPinned);
 						}}
 					>
 						<Pin aria-hidden="true" className="h-3 w-3" />
@@ -76,7 +79,9 @@ export function FloatingErrorLog() {
 						variant="ghost"
 						size="icon"
 						className="h-5 w-5 text-muted-foreground hover:text-foreground"
-						onClick={(e) => {							e.stopPropagation();							handleClear();
+						onClick={(e) => {
+							e.stopPropagation();
+							handleClear();
 						}}
 					>
 						<Trash2 aria-hidden="true" className="h-3 w-3" />
@@ -102,7 +107,7 @@ export function FloatingErrorLog() {
 				<ScrollArea className="h-full w-full font-mono text-xs">
 					<div className="flex flex-col">
 						{errorLog.map((err) => (
-							<div  // NOSONAR: typescript:S6819
+							<div // NOSONAR: typescript:S6819
 								key={err.id}
 								className="flex items-center px-4 py-1.5 border-b border-border/30 hover:bg-muted/30 group bg-red-950/20 border-l-2 border-l-red-500 cursor-pointer"
 								role="button"
@@ -110,12 +115,12 @@ export function FloatingErrorLog() {
 								aria-label={`Focus element ${err.elementId ?? "unknown"}: ${err.message}`}
 								onClick={() => handleFocus(err.elementId)}
 								onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-											handleFocus(err.elementId);
-										}
-									}}
-								>
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										handleFocus(err.elementId);
+									}
+								}}
+							>
 								<div className="w-[80px] shrink-0 text-muted-foreground">
 									{new Date(err.timestamp).toLocaleTimeString()}
 								</div>

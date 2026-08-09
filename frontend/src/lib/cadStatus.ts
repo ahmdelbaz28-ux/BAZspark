@@ -12,9 +12,9 @@
  */
 
 interface CadStatusCallbacks {
-        setStatus: (s: Record<string, unknown> | null) => void;
-        setConnected: (c: boolean) => void;
-        setSimulationMode: (m: boolean) => void;
+	setStatus: (s: Record<string, unknown> | null) => void;
+	setConnected: (c: boolean) => void;
+	setSimulationMode: (m: boolean) => void;
 }
 
 /**
@@ -25,21 +25,21 @@ interface CadStatusCallbacks {
  * @param isCancelled - Optional cancellation check (returns true if the caller has unmounted / the effect has been cleaned up).
  */
 export async function checkCadStatus(
-        getStatus: () => Promise<unknown>,
-        callbacks: CadStatusCallbacks,
-        isCancelled: () => boolean = () => false,
+	getStatus: () => Promise<unknown>,
+	callbacks: CadStatusCallbacks,
+	isCancelled: () => boolean = () => false,
 ): Promise<void> {
-        try {
-                const s = await getStatus();
-                if (isCancelled()) return;
-                callbacks.setStatus(s as Record<string, unknown>);
-                callbacks.setConnected(true);
-                const sim = (s as Record<string, unknown>)?.simulation_mode;
-                callbacks.setSimulationMode(Boolean(sim));
-        } catch {
-                if (isCancelled()) return;
-                callbacks.setConnected(false);
-                callbacks.setStatus(null);
-                callbacks.setSimulationMode(false);
-        }
+	try {
+		const s = await getStatus();
+		if (isCancelled()) return;
+		callbacks.setStatus(s as Record<string, unknown>);
+		callbacks.setConnected(true);
+		const sim = (s as Record<string, unknown>)?.simulation_mode;
+		callbacks.setSimulationMode(Boolean(sim));
+	} catch {
+		if (isCancelled()) return;
+		callbacks.setConnected(false);
+		callbacks.setStatus(null);
+		callbacks.setSimulationMode(false);
+	}
 }

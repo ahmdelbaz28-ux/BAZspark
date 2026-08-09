@@ -1,4 +1,3 @@
-
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
@@ -7,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		<div  // NOSONAR: typescript:S6819
+		<div // NOSONAR: typescript:S6819
 			role="list"
 			data-slot="item-group"
 			className={cn("group/item-group flex flex-col", className)}

@@ -4,8 +4,10 @@
  * V217: New page — 11 backend endpoints now have UI.
  * Weather, geocode, elevation, air quality, severe weather, hazmat, region.
  */
+
+import { AlertTriangle, Cloud, Loader2, MapPin, Search } from "lucide-react";
 import { useState } from "react";
-import { Cloud, MapPin, AlertTriangle, Loader2, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -16,9 +18,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { environmentApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
+import { environmentApi } from "@/services/fullApi";
 
 export function EnvironmentPage() {
 	const { toast } = useToast();
@@ -27,11 +28,21 @@ export function EnvironmentPage() {
 	const [lat, setLat] = useState("40.7128");
 	const [lon, setLon] = useState("-74.0060");
 	const [weather, setWeather] = useState<Record<string, unknown> | null>(null);
-	const [elevation, setElevation] = useState<Record<string, unknown> | null>(null);
-	const [airQuality, setAirQuality] = useState<Record<string, unknown> | null>(null);
-	const [severeWeather, setSevereWeather] = useState<Record<string, unknown> | null>(null);
+	const [elevation, setElevation] = useState<Record<string, unknown> | null>(
+		null,
+	);
+	const [airQuality, setAirQuality] = useState<Record<string, unknown> | null>(
+		null,
+	);
+	const [severeWeather, setSevereWeather] = useState<Record<
+		string,
+		unknown
+	> | null>(null);
 	const [hazmatSubstance, setHazmatSubstance] = useState("gasoline");
-	const [hazmatResult, setHazmatResult] = useState<Record<string, unknown> | null>(null);
+	const [hazmatResult, setHazmatResult] = useState<Record<
+		string,
+		unknown
+	> | null>(null);
 	const [knownHazmat, setKnownHazmat] = useState<string[]>([]);
 
 	const handleGeocode = async () => {
@@ -40,7 +51,7 @@ export function EnvironmentPage() {
 			const res = await environmentApi.geocode(address);
 			const data = res as Record<string, unknown>;
 			if (data.latitude !== undefined) {
-				setLat(String(data.latitude));  // NOSONAR: typescript:S6551
+				setLat(String(data.latitude)); // NOSONAR: typescript:S6551
 				setLon(String(data.longitude));
 			}
 		} catch (err) {
@@ -57,7 +68,10 @@ export function EnvironmentPage() {
 	const handleWeather = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getWeather(Number.parseFloat(lat), Number.parseFloat(lon));
+			const res = await environmentApi.getWeather(
+				Number.parseFloat(lat),
+				Number.parseFloat(lon),
+			);
 			setWeather(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -73,7 +87,10 @@ export function EnvironmentPage() {
 	const handleElevation = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getElevation(Number.parseFloat(lat), Number.parseFloat(lon));
+			const res = await environmentApi.getElevation(
+				Number.parseFloat(lat),
+				Number.parseFloat(lon),
+			);
 			setElevation(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -89,7 +106,10 @@ export function EnvironmentPage() {
 	const handleAirQuality = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getAirQuality(Number.parseFloat(lat), Number.parseFloat(lon));
+			const res = await environmentApi.getAirQuality(
+				Number.parseFloat(lat),
+				Number.parseFloat(lon),
+			);
 			setAirQuality(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -105,7 +125,10 @@ export function EnvironmentPage() {
 	const handleSevereWeather = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getSevereWeather(Number.parseFloat(lat), Number.parseFloat(lon));
+			const res = await environmentApi.getSevereWeather(
+				Number.parseFloat(lat),
+				Number.parseFloat(lon),
+			);
 			setSevereWeather(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -166,7 +189,8 @@ export function EnvironmentPage() {
 						Environmental Context
 					</h1>
 					<p className="text-sm text-muted-foreground mt-1">
-						Weather · Elevation · Air Quality · Severe Weather · Hazmat — for site-specific fire protection design
+						Weather · Elevation · Air Quality · Severe Weather · Hazmat — for
+						site-specific fire protection design
 					</p>
 				</div>
 
@@ -174,7 +198,9 @@ export function EnvironmentPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>Location</CardTitle>
-						<CardDescription>Search by address or enter coordinates manually</CardDescription>
+						<CardDescription>
+							Search by address or enter coordinates manually
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -186,17 +212,32 @@ export function EnvironmentPage() {
 										onChange={(e) => setAddress(e.target.value)}
 										placeholder="123 Main St, New York, NY"
 									/>
-									<Button onClick={handleGeocode} disabled={loading} size="icon">
-										{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
+									<Button
+										onClick={handleGeocode}
+										disabled={loading}
+										size="icon"
+									>
+										{loading ? (
+											<Loader2
+												aria-hidden="true"
+												className="h-4 w-4 animate-spin"
+											/>
+										) : (
+											<Search aria-hidden="true" className="h-4 w-4" />
+										)}
 									</Button>
 								</div>
 							</div>
 							<div className="space-y-1.5">
-								<Label className="text-xs text-muted-foreground">Latitude</Label>
+								<Label className="text-xs text-muted-foreground">
+									Latitude
+								</Label>
 								<Input value={lat} onChange={(e) => setLat(e.target.value)} />
 							</div>
 							<div className="space-y-1.5">
-								<Label className="text-xs text-muted-foreground">Longitude</Label>
+								<Label className="text-xs text-muted-foreground">
+									Longitude
+								</Label>
 								<Input value={lon} onChange={(e) => setLon(e.target.value)} />
 							</div>
 						</div>
@@ -206,19 +247,47 @@ export function EnvironmentPage() {
 				{/* Quick Actions */}
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<Button onClick={handleWeather} disabled={loading} variant="outline">
-						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cloud aria-hidden="true" className="h-4 w-4" />}
+						{loading ? (
+							<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+						) : (
+							<Cloud aria-hidden="true" className="h-4 w-4" />
+						)}
 						Weather
 					</Button>
-					<Button onClick={handleElevation} disabled={loading} variant="outline">
-						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <MapPin aria-hidden="true" className="h-4 w-4" />}
+					<Button
+						onClick={handleElevation}
+						disabled={loading}
+						variant="outline"
+					>
+						{loading ? (
+							<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+						) : (
+							<MapPin aria-hidden="true" className="h-4 w-4" />
+						)}
 						Elevation
 					</Button>
-					<Button onClick={handleAirQuality} disabled={loading} variant="outline">
-						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cloud aria-hidden="true" className="h-4 w-4" />}
+					<Button
+						onClick={handleAirQuality}
+						disabled={loading}
+						variant="outline"
+					>
+						{loading ? (
+							<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+						) : (
+							<Cloud aria-hidden="true" className="h-4 w-4" />
+						)}
 						Air Quality
 					</Button>
-					<Button onClick={handleSevereWeather} disabled={loading} variant="outline">
-						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <AlertTriangle aria-hidden="true" className="h-4 w-4" />}
+					<Button
+						onClick={handleSevereWeather}
+						disabled={loading}
+						variant="outline"
+					>
+						{loading ? (
+							<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+						) : (
+							<AlertTriangle aria-hidden="true" className="h-4 w-4" />
+						)}
 						Severe Weather
 					</Button>
 				</div>
@@ -262,7 +331,10 @@ export function EnvironmentPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<AlertTriangle aria-hidden="true" className="h-4 w-4 text-warning" />
+									<AlertTriangle
+										aria-hidden="true"
+										className="h-4 w-4 text-warning"
+									/>
 									Severe Weather
 								</CardTitle>
 							</CardHeader>
@@ -276,7 +348,8 @@ export function EnvironmentPage() {
 					<CardHeader>
 						<CardTitle>Hazmat Lookup</CardTitle>
 						<CardDescription>
-							Search for hazardous material properties (NFPA 704, flash point, UN number)
+							Search for hazardous material properties (NFPA 704, flash point,
+							UN number)
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -287,10 +360,21 @@ export function EnvironmentPage() {
 								placeholder="gasoline, propane, ammonia..."
 							/>
 							<Button onClick={handleHazmat} disabled={loading}>
-								{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
+								{loading ? (
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 animate-spin"
+									/>
+								) : (
+									<Search aria-hidden="true" className="h-4 w-4" />
+								)}
 								Search
 							</Button>
-							<Button onClick={handleKnownHazmat} disabled={loading} variant="outline">
+							<Button
+								onClick={handleKnownHazmat}
+								disabled={loading}
+								variant="outline"
+							>
 								List Known
 							</Button>
 						</div>

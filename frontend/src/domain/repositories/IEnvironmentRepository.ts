@@ -30,7 +30,10 @@ export interface EnvironmentalContext {
 }
 
 export interface IEnvironmentRepository {
-	getEnvironmentalContext(lat: number, lon: number): Promise<EnvironmentalContext>;
+	getEnvironmentalContext(
+		lat: number,
+		lon: number,
+	): Promise<EnvironmentalContext>;
 	getWeatherForecast(location: string): Promise<Record<string, unknown>>;
 	getAirQualityData(lat: number, lon: number): Promise<Record<string, unknown>>;
 }

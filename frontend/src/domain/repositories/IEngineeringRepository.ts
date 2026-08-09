@@ -32,7 +32,20 @@ export interface QOMNCalculationResult {
 
 export interface IEngineeringRepository {
 	calculateQOMN(params: QOMNCalculationRequest): Promise<QOMNCalculationResult>;
-	calculateSmokeSpacing(length: number, width: number, height: number): Promise<QOMNCalculationResult>;
-	calculateBatteryBackup(loadAh: number, standbyHours: number, alarmMinutes: number): Promise<QOMNCalculationResult>;
-	calculateVoltageDrop(voltage: number, current: number, length: number, gauge: string): Promise<QOMNCalculationResult>;
+	calculateSmokeSpacing(
+		length: number,
+		width: number,
+		height: number,
+	): Promise<QOMNCalculationResult>;
+	calculateBatteryBackup(
+		loadAh: number,
+		standbyHours: number,
+		alarmMinutes: number,
+	): Promise<QOMNCalculationResult>;
+	calculateVoltageDrop(
+		voltage: number,
+		current: number,
+		length: number,
+		gauge: string,
+	): Promise<QOMNCalculationResult>;
 }

@@ -127,7 +127,8 @@
 	font-family: var(--font-data);
 	font-size: 0.875rem;
 	font-variant-numeric: tabular-nums;
-	transition: border-color 200ms var(--ease-micro),
+	transition:
+		border-color 200ms var(--ease-micro),
 		box-shadow 200ms var(--ease-micro);
 }
 .facp-input::placeholder {
@@ -141,7 +142,8 @@
 .facp-input:focus {
 	outline: none;
 	border-color: var(--color-evac-green);
-	box-shadow: 0 0 0 2px var(--color-graphite),
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
 		0 0 0 4px rgba(61, 138, 77, 0.45);
 }
 
@@ -161,7 +163,8 @@
 .facp-select-trigger[data-state="open"] {
 	outline: none;
 	border-color: var(--color-evac-green);
-	box-shadow: 0 0 0 2px var(--color-graphite),
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
 		0 0 0 4px rgba(61, 138, 77, 0.45);
 }
 
@@ -191,7 +194,8 @@
 	color: var(--color-graphite);
 	border: 1px solid var(--color-evac-green);
 	border-radius: 2px;
-	transition: background-color 200ms var(--ease-micro),
+	transition:
+		background-color 200ms var(--ease-micro),
 		border-color 200ms var(--ease-micro),
 		box-shadow 200ms var(--ease-micro);
 	cursor: pointer;
@@ -203,7 +207,8 @@
 }
 .facp-btn-primary:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--color-graphite),
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
 		0 0 0 4px rgba(61, 138, 77, 0.55);
 }
 .facp-btn-primary:disabled {
@@ -219,7 +224,8 @@
 	color: var(--color-bone);
 	border: 1px solid rgba(90, 103, 112, 0.45);
 	border-radius: 2px;
-	transition: color 200ms var(--ease-micro),
+	transition:
+		color 200ms var(--ease-micro),
 		background-color 200ms var(--ease-micro),
 		border-color 200ms var(--ease-micro),
 		box-shadow 200ms var(--ease-micro);
@@ -233,7 +239,8 @@
 }
 .facp-btn-outline:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--color-graphite),
+	box-shadow:
+		0 0 0 2px var(--color-graphite),
 		0 0 0 4px rgba(61, 138, 77, 0.45);
 }
 .facp-btn-outline:disabled {
@@ -314,9 +321,15 @@
 	height: 100%;
 	transition: width 400ms var(--ease-entrance);
 }
-.facp-util-bar-fill.ok { background-color: var(--color-evac-green); }
-.facp-util-bar-fill.warning { background-color: var(--color-amber-alert); }
-.facp-util-bar-fill.danger { background-color: var(--color-signal-red); }
+.facp-util-bar-fill.ok {
+	background-color: var(--color-evac-green);
+}
+.facp-util-bar-fill.warning {
+	background-color: var(--color-amber-alert);
+}
+.facp-util-bar-fill.danger {
+	background-color: var(--color-signal-red);
+}
 
 .facp-derating-block {
 	font-family: var(--font-data);
@@ -336,7 +349,9 @@
 	font-size: 0.625rem;
 	margin-top: 0.4rem;
 }
-.facp-derating-block dt:first-child { margin-top: 0; }
+.facp-derating-block dt:first-child {
+	margin-top: 0;
+}
 .facp-derating-block dd {
 	color: var(--color-bone);
 	margin-inline-start: 0;

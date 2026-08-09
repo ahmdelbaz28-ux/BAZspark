@@ -15,38 +15,44 @@
  */
 
 @layer base {
-        body {
-                background-color: var(--color-background);
-                color: var(--color-foreground);
-                font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-        }
+	body {
+		background-color: var(--color-background);
+		color: var(--color-foreground);
+		font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+	}
 }
 
 @layer components {
-        button, input, select, textarea {
-                min-height: 44px;
-                outline: none;
-                transition: all 0.2s ease;
-        }
-        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-                outline: 2px solid rgba(34, 211, 238, 0.6);
-                outline-offset: 2px;
-        }
+	button,
+	input,
+	select,
+	textarea {
+		min-height: 44px;
+		outline: none;
+		transition: all 0.2s ease;
+	}
+	button:focus-visible,
+	input:focus-visible,
+	select:focus-visible,
+	textarea:focus-visible {
+		outline: 2px solid rgba(34, 211, 238, 0.6);
+		outline-offset: 2px;
+	}
 }
 
 /* Technical utility classes */
 .bg-glass {
-        background-color: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(8px);
+	background-color: rgba(15, 23, 42, 0.95);
+	backdrop-filter: blur(8px);
 }
 
 .border-tech {
-        border: 1px solid rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .font-mono-num {
-        font-family: "JetBrains Mono", ui-monospace, monospace;
-        font-variant-numeric: tabular-nums;
+	font-family: "JetBrains Mono", ui-monospace, monospace;
+	font-variant-numeric: tabular-nums;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -64,55 +70,62 @@
  *    brightens, background lightens, subtle lift).
  * ═══════════════════════════════════════════════════════════════════════════ */
 .cursor-pointer {
-        cursor: pointer;
+	cursor: pointer;
 }
 
 .focus-ring {
-        outline: none;
+	outline: none;
 }
 .focus-ring:focus-visible {
-        box-shadow: var(--ring-focus);
-        outline: none;
+	box-shadow: var(--ring-focus);
+	outline: none;
 }
 
 .lift-on-hover {
-        transition: transform 0.2s var(--ease-micro), border-color 0.2s var(--ease-micro),
-                background-color 0.2s var(--ease-micro);
+	transition:
+		transform 0.2s var(--ease-micro),
+		border-color 0.2s var(--ease-micro),
+		background-color 0.2s var(--ease-micro);
 }
 .lift-on-hover:hover {
-        transform: translateY(-1px);
+	transform: translateY(-1px);
 }
 
 .card-hover {
-        transition: transform 0.2s var(--ease-micro), border-color 0.2s var(--ease-micro),
-                background-color 0.2s var(--ease-micro), box-shadow 0.2s var(--ease-micro);
+	transition:
+		transform 0.2s var(--ease-micro),
+		border-color 0.2s var(--ease-micro),
+		background-color 0.2s var(--ease-micro),
+		box-shadow 0.2s var(--ease-micro);
 }
 .card-hover:hover {
-        transform: translateY(-2px);
-        border-color: rgba(34, 211, 238, 0.35);
-        box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.1);
+	transform: translateY(-2px);
+	border-color: rgba(34, 211, 238, 0.35);
+	box-shadow:
+		0 8px 24px -8px rgba(0, 0, 0, 0.5),
+		0 0 0 1px rgba(34, 211, 238, 0.1);
 }
 
 /* Reduced motion — neutralize transforms & transitions per WCAG 2.3.3 */
 @media (prefers-reduced-motion: reduce) {
-        .lift-on-hover,
-        .card-hover,
-        .lift-on-hover:hover,
-        .card-hover:hover {
-                transition-duration: 0.01ms !important;
-                transition-delay: 0s !important;
-                transform: none !important;
-        }
+	.lift-on-hover,
+	.card-hover,
+	.lift-on-hover:hover,
+	.card-hover:hover {
+		transition-duration: 0.01ms !important;
+		transition-delay: 0s !important;
+		transform: none !important;
+	}
 
-        .dashboard-stagger-in {
-                animation: none !important;
-                opacity: 1 !important;
-        }
+	.dashboard-stagger-in {
+		animation: none !important;
+		opacity: 1 !important;
+	}
 
-        .heartbeat-pulse,
-        .heartbeat-pulse-trouble {
-                animation: none !important;
-        }
+	.heartbeat-pulse,
+	.heartbeat-pulse-trouble {
+		animation: none !important;
+	}
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -123,19 +136,19 @@
  * creating a calm, professional cascade. Respects reduced-motion above.
  * ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes dashboard-stagger {
-        from {
-                opacity: 0;
-                transform: translateY(8px);
-        }
-        to {
-                opacity: 1;
-                transform: translateY(0);
-        }
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .dashboard-stagger-in {
-        animation: dashboard-stagger 0.4s var(--ease-entrance) both;
-        animation-delay: calc(var(--stagger-index, 0) * 60ms);
+	animation: dashboard-stagger 0.4s var(--ease-entrance) both;
+	animation-delay: calc(var(--stagger-index, 0) * 60ms);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -147,18 +160,19 @@
  * Respects reduced-motion above.
  * ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes heartbeat {
-        0%, 100% {
-                opacity: 0.4;
-                transform: scale(1);
-        }
-        50% {
-                opacity: 0.15;
-                transform: scale(1.15);
-        }
+	0%,
+	100% {
+		opacity: 0.4;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.15;
+		transform: scale(1.15);
+	}
 }
 
 .heartbeat-pulse {
-        animation: heartbeat 2s var(--ease-micro) infinite;
+	animation: heartbeat 2s var(--ease-micro) infinite;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -169,16 +183,17 @@
  * Respects reduced-motion above.
  * ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes heartbeat-trouble {
-        0%, 100% {
-                opacity: 0.5;
-                transform: scale(1);
-        }
-        50% {
-                opacity: 0.15;
-                transform: scale(1.12);
-        }
+	0%,
+	100% {
+		opacity: 0.5;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.15;
+		transform: scale(1.12);
+	}
 }
 
 .heartbeat-pulse-trouble {
-        animation: heartbeat-trouble 1.5s var(--ease-micro) infinite;
+	animation: heartbeat-trouble 1.5s var(--ease-micro) infinite;
 }

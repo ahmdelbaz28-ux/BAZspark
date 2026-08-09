@@ -1,4 +1,3 @@
-
 /**
  * RevitCreatePage.tsx — Create Revit elements (wall, floor, column, beam, door, window)
  */
@@ -258,7 +257,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Wall
 							</Button>
@@ -309,7 +311,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Floor
 							</Button>
@@ -327,7 +332,9 @@ export function RevitCreatePage() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div>
-								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">
+									Location (x,y,z mm)
+								</Label>
 								<Input
 									value={colLocation}
 									onChange={(e) => setColLocation(e.target.value)}
@@ -366,7 +373,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Column
 							</Button>
@@ -425,7 +435,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Beam
 							</Button>
@@ -452,7 +465,9 @@ export function RevitCreatePage() {
 								/>
 							</div>
 							<div>
-								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">
+									Location (x,y,z mm)
+								</Label>
 								<Input
 									value={doorLocation}
 									onChange={(e) => setDoorLocation(e.target.value)}
@@ -483,7 +498,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Door
 							</Button>
@@ -510,7 +528,9 @@ export function RevitCreatePage() {
 								/>
 							</div>
 							<div>
-								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">
+									Location (x,y,z mm)
+								</Label>
 								<Input
 									value={winLocation}
 									onChange={(e) => setWinLocation(e.target.value)}
@@ -541,7 +561,10 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2
+										aria-hidden="true"
+										className="h-4 w-4 mr-2 animate-spin"
+									/>
 								) : null}{" "}
 								Create Window
 							</Button>

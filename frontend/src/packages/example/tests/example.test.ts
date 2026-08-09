@@ -8,8 +8,8 @@
 import { greet } from "../index";
 
 describe("example package", () => {
-  it("should greet a user", () => {
-    const result = greet("World");
-    expect(result).toBe("Hello, World! Welcome to BAZSpark.");
-  });
+	it("should greet a user", () => {
+		const result = greet("World");
+		expect(result).toBe("Hello, World! Welcome to BAZSpark.");
+	});
 });

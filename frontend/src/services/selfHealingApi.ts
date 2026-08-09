@@ -91,11 +91,15 @@ export const selfHealingApi = {
 	getAudit: (limit = 20) =>
 		client.get<SelfHealingAudit>(`/self-healing/audit?limit=${limit}`),
 	reset: () =>
-		client.post<{ success: boolean; message: string; circuit_breaker: CircuitBreakerHealth }>(
-			"/self-healing/reset",
-		),
+		client.post<{
+			success: boolean;
+			message: string;
+			circuit_breaker: CircuitBreakerHealth;
+		}>("/self-healing/reset"),
 	getLlmHealing: () =>
-		client.get<{ success: boolean; enabled: boolean }>("/self-healing/llm-healing"),
+		client.get<{ success: boolean; enabled: boolean }>(
+			"/self-healing/llm-healing",
+		),
 	setLlmHealing: (enabled: boolean) =>
 		client.put<{ success: boolean; enabled: boolean; message: string }>(
 			"/self-healing/llm-healing",

@@ -1,15 +1,14 @@
-
 import {
-        ChevronDown,
-        ChevronRight,
-        Cpu,
-        Folder,
-        FolderOpen,
-        MonitorSpeaker,
-        Settings,
-        Square,
-        Thermometer,
-        Volume2,
+	ChevronDown,
+	ChevronRight,
+	Cpu,
+	Folder,
+	FolderOpen,
+	MonitorSpeaker,
+	Settings,
+	Square,
+	Thermometer,
+	Volume2,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -17,239 +16,247 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 
 interface Device {
-        id: string;
-        name: string;
-        type: string;
-        zone: string;
-        status: "normal" | "warning" | "fault";
-        address: string;
+	id: string;
+	name: string;
+	type: string;
+	zone: string;
+	status: "normal" | "warning" | "fault";
+	address: string;
 }
 
 interface Zone {
-        id: string;
-        name: string;
-        parent?: string;
-        type: "panel" | "loop" | "circuit" | "zone" | "integration";
-        devices: Device[];
-        children?: Zone[];
+	id: string;
+	name: string;
+	parent?: string;
+	type: "panel" | "loop" | "circuit" | "zone" | "integration";
+	devices: Device[];
+	children?: Zone[];
 }
 
 interface ZoneNodeProps {
-        zone: Zone;
-        level: number;
-        selectedDevice: string | null;
-        onDeviceSelect: (deviceId: string) => void;
-        onZoomToZone: (zoneId: string) => void;
+	zone: Zone;
+	level: number;
+	selectedDevice: string | null;
+	onDeviceSelect: (deviceId: string) => void;
+	onZoomToZone: (zoneId: string) => void;
 }
 
 const ZoneNode: React.FC<ZoneNodeProps> = ({
-        zone,
-        level,
-        selectedDevice,
-        onDeviceSelect,
-        onZoomToZone,
+	zone,
+	level,
+	selectedDevice,
+	onDeviceSelect,
+	onZoomToZone,
 }) => {
-        const { t } = useTranslation();
-        const [expanded, setExpanded] = useState(true);
-        const [isolated, setIsolated] = useState(false);
+	const { t } = useTranslation();
+	const [expanded, setExpanded] = useState(true);
+	const [isolated, setIsolated] = useState(false);
 
-        const handleIsolateToggle = (e: React.MouseEvent) => {
-                e.stopPropagation();
-                setIsolated(!isolated);
-                // Here we would call the API and the AuditMerkleTree would record the event
-                console.log(`Zone ${zone.id} isolation state changed to ${!isolated}`);
-        };
+	const handleIsolateToggle = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		setIsolated(!isolated);
+		// Here we would call the API and the AuditMerkleTree would record the event
+		console.log(`Zone ${zone.id} isolation state changed to ${!isolated}`);
+	};
 
-        // Determine icon based on type
-        const getIcon = (type: string, expanded: boolean) => {
-                switch (type) {
-                        case "panel":
-                                return expanded ? (
-                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
-                                ) : (
-                                        <Folder aria-hidden="true" className="h-4 w-4" />
-                                );
-                        case "loop":
-                                return <Settings aria-hidden="true" className="h-4 w-4" />;
-                        case "circuit":
-                                return <Cpu aria-hidden="true" className="h-4 w-4" />;
-                        case "zone":
-                                return <Square aria-hidden="true" className="h-4 w-4" />;
-                        default:
-                                return <Folder aria-hidden="true" className="h-4 w-4" />;
-                }
-        };
+	// Determine icon based on type
+	const getIcon = (type: string, expanded: boolean) => {
+		switch (type) {
+			case "panel":
+				return expanded ? (
+					<FolderOpen aria-hidden="true" className="h-4 w-4" />
+				) : (
+					<Folder aria-hidden="true" className="h-4 w-4" />
+				);
+			case "loop":
+				return <Settings aria-hidden="true" className="h-4 w-4" />;
+			case "circuit":
+				return <Cpu aria-hidden="true" className="h-4 w-4" />;
+			case "zone":
+				return <Square aria-hidden="true" className="h-4 w-4" />;
+			default:
+				return <Folder aria-hidden="true" className="h-4 w-4" />;
+		}
+	};
 
-        // Determine status color based on devices
-        const getStatusColor = () => {
-                if (zone.devices.some((d) => d.status === "fault")) return "text-slate-400";
-                if (zone.devices.some((d) => d.status === "warning"))
-                        return "text-amber-500";
-                return "text-emerald-500";
-        };
+	// Determine status color based on devices
+	const getStatusColor = () => {
+		if (zone.devices.some((d) => d.status === "fault")) return "text-slate-400";
+		if (zone.devices.some((d) => d.status === "warning"))
+			return "text-amber-500";
+		return "text-emerald-500";
+	};
 
-        // SonarQube S3358: extract nested ternary into an independent function.
-        // Returns the Tailwind classes for a device's status badge.
-        const getDeviceStatusClasses = (status: Device["status"]) => {
-                switch (status) {
-                        case "normal":
-                                return "text-emerald-500 bg-emerald-500/10";
-                        case "warning":
-                                return "text-amber-500 bg-amber-500/10";
-                        case "fault":
-                                return "text-slate-400 bg-slate-500/10";
-                }
-        };
+	// SonarQube S3358: extract nested ternary into an independent function.
+	// Returns the Tailwind classes for a device's status badge.
+	const getDeviceStatusClasses = (status: Device["status"]) => {
+		switch (status) {
+			case "normal":
+				return "text-emerald-500 bg-emerald-500/10";
+			case "warning":
+				return "text-amber-500 bg-amber-500/10";
+			case "fault":
+				return "text-slate-400 bg-slate-500/10";
+		}
+	};
 
-        return (
-                <div className="select-none">
-                        <div  // NOSONAR: typescript:S6819
-                                className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
-                                        selectedDevice && zone.devices.some((d) => d.id === selectedDevice)
-                                                ? "bg-secondary"
-                                                : ""
-                                }`}
-                                style={{ paddingLeft: `${level * 20 + 8}px` }}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`${zone.name} — ${expanded ? "collapse" : "expand"}`}
-                                onClick={() => {
-                                        if (zone.children && zone.children.length > 0) {
-                                                setExpanded(!expanded);
-                                        } else {
-                                                onZoomToZone(zone.id);
-                                        }
-                                }}
-                                onKeyDown={(e) => {
-                                        if (e.key !== "Enter" && e.key !== " ") return;
-                                        e.preventDefault();
-                                        if (zone.children && zone.children.length > 0) {
-                                                setExpanded(!expanded);
-                                        } else {
-                                                onZoomToZone(zone.id);
-                                        }
-                                }}
-                        >
-                                {zone.children && zone.children.length > 0 ? (
-                                        expanded ? (
-                                                <ChevronDown aria-hidden="true" className="h-4 w-4" />
-                                        ) : (
-                                                <ChevronRight aria-hidden="true" className="h-4 w-4" />
-                                        )
-                                ) : (
-                                        <div className="w-4 h-4" />
-                                )}
-                                {getIcon(zone.type, expanded)}
-                                <span className="text-sm truncate">{zone.name}</span>
-                                {zone.devices.length > 0 && (
-                                        <span
-                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getStatusColor()} bg-card`}
-                                        >
-                                                {zone.devices.length} {t("fireAlarm.devices")}
-                                        </span>
-                                )}
-                                {zone.type === "zone" && (
-                                        <Button
-                                                variant={isolated ? "destructive" : "outline"}
-                                                size="sm"
-                                                className="h-6 text-[10px] ml-2 px-2"
-                                                onClick={handleIsolateToggle}
-                                        >
-                                                {isolated ? "RECONNECT" : "ISOLATE"}
-                                        </Button>
-                                )}
-                        </div>
+	return (
+		<div className="select-none">
+			<div // NOSONAR: typescript:S6819
+				className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
+					selectedDevice && zone.devices.some((d) => d.id === selectedDevice)
+						? "bg-secondary"
+						: ""
+				}`}
+				style={{ paddingLeft: `${level * 20 + 8}px` }}
+				role="button"
+				tabIndex={0}
+				aria-label={`${zone.name} — ${expanded ? "collapse" : "expand"}`}
+				onClick={() => {
+					if (zone.children && zone.children.length > 0) {
+						setExpanded(!expanded);
+					} else {
+						onZoomToZone(zone.id);
+					}
+				}}
+				onKeyDown={(e) => {
+					if (e.key !== "Enter" && e.key !== " ") return;
+					e.preventDefault();
+					if (zone.children && zone.children.length > 0) {
+						setExpanded(!expanded);
+					} else {
+						onZoomToZone(zone.id);
+					}
+				}}
+			>
+				{zone.children && zone.children.length > 0 ? (
+					expanded ? (
+						<ChevronDown aria-hidden="true" className="h-4 w-4" />
+					) : (
+						<ChevronRight aria-hidden="true" className="h-4 w-4" />
+					)
+				) : (
+					<div className="w-4 h-4" />
+				)}
+				{getIcon(zone.type, expanded)}
+				<span className="text-sm truncate">{zone.name}</span>
+				{zone.devices.length > 0 && (
+					<span
+						className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getStatusColor()} bg-card`}
+					>
+						{zone.devices.length} {t("fireAlarm.devices")}
+					</span>
+				)}
+				{zone.type === "zone" && (
+					<Button
+						variant={isolated ? "destructive" : "outline"}
+						size="sm"
+						className="h-6 text-[10px] ml-2 px-2"
+						onClick={handleIsolateToggle}
+					>
+						{isolated ? "RECONNECT" : "ISOLATE"}
+					</Button>
+				)}
+			</div>
 
-                        {expanded && zone.children && (
-                                <div>
-                                        {zone.children.map((child) => (
-                                                <ZoneNode
-                                                        key={child.id}
-                                                        zone={child}
-                                                        level={level + 1}
-                                                        selectedDevice={selectedDevice}
-                                                        onDeviceSelect={onDeviceSelect}
-                                                        onZoomToZone={onZoomToZone}
-                                                />
-                                        ))}
+			{expanded && zone.children && (
+				<div>
+					{zone.children.map((child) => (
+						<ZoneNode
+							key={child.id}
+							zone={child}
+							level={level + 1}
+							selectedDevice={selectedDevice}
+							onDeviceSelect={onDeviceSelect}
+							onZoomToZone={onZoomToZone}
+						/>
+					))}
 
-                                        {zone.devices.map((device) => (
-                                                <div  // NOSONAR: typescript:S6819
-                                                        key={device.id}
-                                                        className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
-                                                                selectedDevice === device.id ? "bg-secondary" : ""
-                                                        }`}
-                                                        style={{ paddingLeft: `${(level + 1) * 20 + 8}px` }}
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        aria-label={`Select device ${device.name}`}
-                                                        onClick={() => onDeviceSelect(device.id)}
-                                                        onKeyDown={(e) => {
-                                                                if (e.key === "Enter" || e.key === " ") {
-                                                                        e.preventDefault();
-                                                                        onDeviceSelect(device.id);
-                                                                }
-                                                        }}
-                                                >
-                                                        <div className="w-4" />
-                                                        {device.type === "smoke" && (
-                                                                <MonitorSpeaker aria-hidden="true" className="h-4 w-4" />
-                                                        )}
-                                                        {device.type === "heat" && <Thermometer aria-hidden="true" className="h-4 w-4" />}
-                                                        {device.type === "pull" && <Square aria-hidden="true" className="h-4 w-4" />}
-                                                        {device.type === "horns" && <Volume2 aria-hidden="true" className="h-4 w-4" />}
-                                                        {device.type === "facp" && <Settings aria-hidden="true" className="h-4 w-4" />}
-                                                        <span className="text-sm truncate">{device.name}</span>
-                                                        <span
-                                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getDeviceStatusClasses(
-                                                                        device.status,
-                                                                )}`}
-                                                        >
-                                                                {device.status}
-                                                        </span>
-                                                </div>
-                                        ))}
-                                </div>
-                        )}
-                </div>
-        );
+					{zone.devices.map((device) => (
+						<div // NOSONAR: typescript:S6819
+							key={device.id}
+							className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
+								selectedDevice === device.id ? "bg-secondary" : ""
+							}`}
+							style={{ paddingLeft: `${(level + 1) * 20 + 8}px` }}
+							role="button"
+							tabIndex={0}
+							aria-label={`Select device ${device.name}`}
+							onClick={() => onDeviceSelect(device.id)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onDeviceSelect(device.id);
+								}
+							}}
+						>
+							<div className="w-4" />
+							{device.type === "smoke" && (
+								<MonitorSpeaker aria-hidden="true" className="h-4 w-4" />
+							)}
+							{device.type === "heat" && (
+								<Thermometer aria-hidden="true" className="h-4 w-4" />
+							)}
+							{device.type === "pull" && (
+								<Square aria-hidden="true" className="h-4 w-4" />
+							)}
+							{device.type === "horns" && (
+								<Volume2 aria-hidden="true" className="h-4 w-4" />
+							)}
+							{device.type === "facp" && (
+								<Settings aria-hidden="true" className="h-4 w-4" />
+							)}
+							<span className="text-sm truncate">{device.name}</span>
+							<span
+								className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getDeviceStatusClasses(
+									device.status,
+								)}`}
+							>
+								{device.status}
+							</span>
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	);
 };
 
 interface ZoneNavigatorProps {
-        zones: Zone[];
-        selectedDevice: string | null;
-        onDeviceSelect: (deviceId: string) => void;
-        onZoomToZone: (zoneId: string) => void;
+	zones: Zone[];
+	selectedDevice: string | null;
+	onDeviceSelect: (deviceId: string) => void;
+	onZoomToZone: (zoneId: string) => void;
 }
 
 export const ZoneNavigator: React.FC<ZoneNavigatorProps> = ({
-        zones,
-        selectedDevice,
-        onDeviceSelect,
-        onZoomToZone,
+	zones,
+	selectedDevice,
+	onDeviceSelect,
+	onZoomToZone,
 }) => {
-        const { t } = useTranslation();
+	const { t } = useTranslation();
 
-        return (
-                <div className="h-full overflow-y-auto">
-                        <div className="mb-3 px-2">
-                                <h3 className="text-sm font-medium text-foreground/90">
-                                        {t("fireAlarm.systemNavigator")}
-                                </h3>
-                        </div>
+	return (
+		<div className="h-full overflow-y-auto">
+			<div className="mb-3 px-2">
+				<h3 className="text-sm font-medium text-foreground/90">
+					{t("fireAlarm.systemNavigator")}
+				</h3>
+			</div>
 
-                        <div className="space-y-1">
-                                {zones.map((zone) => (
-                                        <ZoneNode
-                                                key={zone.id}
-                                                zone={zone}
-                                                level={0}
-                                                selectedDevice={selectedDevice}
-                                                onDeviceSelect={onDeviceSelect}
-                                                onZoomToZone={onZoomToZone}
-                                        />
-                                ))}
-                        </div>
-                </div>
-        );
+			<div className="space-y-1">
+				{zones.map((zone) => (
+					<ZoneNode
+						key={zone.id}
+						zone={zone}
+						level={0}
+						selectedDevice={selectedDevice}
+						onDeviceSelect={onDeviceSelect}
+						onZoomToZone={onZoomToZone}
+					/>
+				))}
+			</div>
+		</div>
+	);
 };

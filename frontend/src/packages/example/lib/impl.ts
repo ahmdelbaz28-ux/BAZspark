@@ -12,5 +12,5 @@
  * @returns A formatted greeting.
  */
 export function formatGreeting(name: string): string {
-  return `Hello, ${name}! Welcome to BAZSpark.`;
+	return `Hello, ${name}! Welcome to BAZSpark.`;
 }

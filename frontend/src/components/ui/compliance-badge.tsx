@@ -6,7 +6,12 @@
  * Never animated — compliance status is static, not a live alarm.
  */
 import { cva, type VariantProps } from "class-variance-authority";
-import { AlertTriangle, CheckCircle2, MinusCircle, XCircle } from "lucide-react";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	MinusCircle,
+	XCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const complianceVariants = cva(
@@ -56,10 +61,7 @@ export function ComplianceBadge({
 }: ComplianceBadgeProps) {
 	const Icon = ICONS[status];
 	return (
-		<span
-			className={cn(complianceVariants({ status }), className)}
-			{...props}
-		>
+		<span className={cn(complianceVariants({ status }), className)} {...props}>
 			<Icon />
 			<span>{label ?? LABELS[status]}</span>
 			{nfpaSection && (

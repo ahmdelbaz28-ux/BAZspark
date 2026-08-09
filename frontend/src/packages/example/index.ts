@@ -14,5 +14,5 @@ import { formatGreeting } from "./lib/impl";
  * @returns A formatted greeting string.
  */
 export function greet(name: string): string {
-  return formatGreeting(name);
+	return formatGreeting(name);
 }

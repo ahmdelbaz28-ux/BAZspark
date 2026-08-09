@@ -9,7 +9,7 @@
  *
  * If the app ever moves to a full-page scroll model, re-enable Lenis here.
  */
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface SmoothScrollProps {
 	children: ReactNode;

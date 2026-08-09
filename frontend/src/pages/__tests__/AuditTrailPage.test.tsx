@@ -9,15 +9,15 @@ import userEvent from "@testing-library/user-event";
 import { AuditTrailPage } from "../AuditTrailPage";
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: "en", changeLanguage: vi.fn() },
-  }),
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
+	useTranslation: () => ({
+		t: (key: string) => key,
+		i18n: { language: "en", changeLanguage: vi.fn() },
+	}),
+	initReactI18next: { type: "3rdParty", init: vi.fn() },
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
+	const actual = (await importOriginal()) as Record<string, unknown>;
 	// Create a simple mock component for each icon export
 	const createIcon = (name: string) => {
 		const Icon = (_props: Record<string, unknown>) => (
@@ -28,7 +28,12 @@ vi.mock("lucide-react", async (importOriginal) => {
 	};
 	const mocked: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+		if (
+			typeof value === "function" ||
+			(typeof value === "object" &&
+				value !== null &&
+				"$$typeof" in (value as Record<string, unknown>))
+		) {
 			mocked[key] = createIcon(key);
 		} else {
 			mocked[key] = value;
@@ -41,172 +46,162 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 function createWorkflowResponse() {
-  return {
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        workflows: [
-          {
-            id: "WF-001",
-            transition_log: [
-              {
-                timestamp: new Date(Date.now() - 60000).toISOString(),
-                action: "workflow.approved",
-                actor: "admin",
-                comment: "Smoke detector layout approved",
-              },
-              {
-                timestamp: new Date(Date.now() - 300000).toISOString(),
-                action: "workflow.submitted",
-                actor: "engineer",
-                comment: "Initial layout submitted for review",
-              },
-            ],
-          },
-        ],
-      }),
-  };
+	return {
+		ok: true,
+		json: () =>
+			Promise.resolve({
+				workflows: [
+					{
+						id: "WF-001",
+						transition_log: [
+							{
+								timestamp: new Date(Date.now() - 60000).toISOString(),
+								action: "workflow.approved",
+								actor: "admin",
+								comment: "Smoke detector layout approved",
+							},
+							{
+								timestamp: new Date(Date.now() - 300000).toISOString(),
+								action: "workflow.submitted",
+								actor: "engineer",
+								comment: "Initial layout submitted for review",
+							},
+						],
+					},
+				],
+			}),
+	};
 }
 
 function renderPage() {
-  return render(<AuditTrailPage />);
+	return render(<AuditTrailPage />);
 }
 
 describe("AuditTrailPage", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-  it("renders the page title", () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
-    expect(screen.getByText("Audit Trail")).toBeInTheDocument();
-  });
+	it("renders the page title", () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
+		expect(screen.getByText("Audit Trail")).toBeInTheDocument();
+	});
 
-  it("shows loading initially", () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
-    renderPage();
-    expect(screen.getByText(/NFPA 72 §10.6/)).toBeInTheDocument();
-  });
+	it("shows loading initially", () => {
+		mockFetch.mockImplementation(() => new Promise(() => {}));
+		renderPage();
+		expect(screen.getByText(/NFPA 72 §10.6/)).toBeInTheDocument();
+	});
 
-  it("displays events from workflow API", async () => {
-    mockFetch.mockResolvedValue(createWorkflowResponse());
-    renderPage();
+	it("displays events from workflow API", async () => {
+		mockFetch.mockResolvedValue(createWorkflowResponse());
+		renderPage();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("workflow.approved")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("Smoke detector layout approved")
-      ).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByText("workflow.approved")).toBeInTheDocument();
+			expect(
+				screen.getByText("Smoke detector layout approved"),
+			).toBeInTheDocument();
+		});
+	});
 
-  it("falls back to sample data when API is unavailable", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 500 });
-    renderPage();
+	it("falls back to sample data when API is unavailable", async () => {
+		mockFetch.mockResolvedValue({ ok: false, status: 500 });
+		renderPage();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("workflow.approved")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("device.created")
-      ).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByText("workflow.approved")).toBeInTheDocument();
+			expect(screen.getByText("device.created")).toBeInTheDocument();
+		});
+	});
 
-  it("shows Refresh button", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText("Refresh")).toBeInTheDocument();
-    });
-  });
+	it("shows Refresh button", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
+		await waitFor(() => {
+			expect(screen.getByText("Refresh")).toBeInTheDocument();
+		});
+	});
 
-  it("has search input", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
-    await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Search events...")
-      ).toBeInTheDocument();
-    });
-  });
+	it("has search input", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
+		await waitFor(() => {
+			expect(
+				screen.getByPlaceholderText("Search events..."),
+			).toBeInTheDocument();
+		});
+	});
 
-  it("has type filter dropdown", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("All Types")).toBeInTheDocument();
-    });
-  });
+	it("has type filter dropdown", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
+		await waitFor(() => {
+			expect(screen.getByDisplayValue("All Types")).toBeInTheDocument();
+		});
+	});
 
-  it("filters events by search query", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
+	it("filters events by search query", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
 
-    await waitFor(() => {
-      expect(screen.getByText("device.created")).toBeInTheDocument();
-    });
+		await waitFor(() => {
+			expect(screen.getByText("device.created")).toBeInTheDocument();
+		});
 
-    const searchInput = screen.getByPlaceholderText("Search events...");
-    await userEvent.type(searchInput, "workflow");
+		const searchInput = screen.getByPlaceholderText("Search events...");
+		await userEvent.type(searchInput, "workflow");
 
-    await waitFor(() => {
-      expect(screen.getByText("workflow.approved")).toBeInTheDocument();
-      expect(screen.getByText("workflow.rejected")).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByText("workflow.approved")).toBeInTheDocument();
+			expect(screen.getByText("workflow.rejected")).toBeInTheDocument();
+		});
+	});
 
-  it("shows event details like entity ID and user", async () => {
-    mockFetch.mockResolvedValue(createWorkflowResponse());
-    renderPage();
+	it("shows event details like entity ID and user", async () => {
+		mockFetch.mockResolvedValue(createWorkflowResponse());
+		renderPage();
 
-    await waitFor(() => {
-      const wfElements = screen.getAllByText("WF-001");
-      expect(wfElements.length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText(/admin/)).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			const wfElements = screen.getAllByText("WF-001");
+			expect(wfElements.length).toBeGreaterThanOrEqual(1);
+			expect(screen.getByText(/admin/)).toBeInTheDocument();
+		});
+	});
 
-  it("renders event severity badges", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
+	it("renders event severity badges", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
 
-    await waitFor(() => {
-      const actionLabels = screen.getAllByText(/workflow\./, { exact: false });
-      expect(actionLabels.length).toBeGreaterThanOrEqual(2);
-    });
-  });
+		await waitFor(() => {
+			const actionLabels = screen.getAllByText(/workflow\./, { exact: false });
+			expect(actionLabels.length).toBeGreaterThanOrEqual(2);
+		});
+	});
 
-  it("shows event count summary", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
+	it("shows event count summary", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/total events/)
-      ).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByText(/total events/)).toBeInTheDocument();
+		});
+	});
 
-  it("shows empty state when no events match filter", async () => {
-    mockFetch.mockResolvedValue({ ok: false });
-    renderPage();
+	it("shows empty state when no events match filter", async () => {
+		mockFetch.mockResolvedValue({ ok: false });
+		renderPage();
 
-    await waitFor(() => {
-      expect(screen.getByText("device.created")).toBeInTheDocument();
-    });
+		await waitFor(() => {
+			expect(screen.getByText("device.created")).toBeInTheDocument();
+		});
 
-    const searchInput = screen.getByPlaceholderText("Search events...");
-    await userEvent.type(searchInput, "zzz_no_match_zzz");
+		const searchInput = screen.getByPlaceholderText("Search events...");
+		await userEvent.type(searchInput, "zzz_no_match_zzz");
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(/No events match/)
-      ).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByText(/No events match/)).toBeInTheDocument();
+		});
+	});
 });

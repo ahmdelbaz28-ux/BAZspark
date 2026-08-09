@@ -59,13 +59,13 @@ export function useSidebarBadges(): SidebarBadgeState {
 			// V271 FIX: apiCall prepends /api/v1, so pass relative paths only.
 			const [conflictsResp, guardsResp, agentResp] = await Promise.all([
 				fetchJson<{ total?: number; data?: { total?: number } }>(
-					"/conflicts?page=1&page_size=1"
+					"/conflicts?page=1&page_size=1",
 				),
 				fetchJson<{ data?: Array<{ violated?: boolean }> }>(
-					"/qomn/physics-guards"
+					"/qomn/physics-guards",
 				),
 				fetchJson<{ data?: Array<{ timestamp?: string; ts?: string }> }>(
-					"/monitor/agent-activity?limit=1"
+					"/monitor/agent-activity?limit=1",
 				),
 			]);
 
@@ -83,7 +83,7 @@ export function useSidebarBadges(): SidebarBadgeState {
 
 			// Physics guards: count violations
 			const guards = guardsResp?.data ?? [];
-			const violations = guards.filter(g => g.violated === true).length;
+			const violations = guards.filter((g) => g.violated === true).length;
 			const physicsGuardsBadge =
 				guards.length === 0
 					? null
@@ -97,7 +97,11 @@ export function useSidebarBadges(): SidebarBadgeState {
 			let agentBadge: string | null = null;
 			if (lastTs) {
 				const ageMs = Date.now() - new Date(lastTs).getTime();
-				agentBadge = Number.isNaN(ageMs) ? null : ageMs < RECENT_ACTIVITY_THRESHOLD_MS ? "live" : "idle";
+				agentBadge = Number.isNaN(ageMs)
+					? null
+					: ageMs < RECENT_ACTIVITY_THRESHOLD_MS
+						? "live"
+						: "idle";
 			}
 
 			setState({

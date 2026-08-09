@@ -1,4 +1,3 @@
-
 /**
  * DigitalTwinConfigPage.tsx — Config editor for Digital Twin settings
  */
@@ -52,12 +51,14 @@ export function DigitalTwinConfigPage() {
 				</CardHeader>
 				<CardContent>
 					{mappings.length === 0 ? (
-						<p className="text-muted-foreground text-sm">No mappings available</p>
+						<p className="text-muted-foreground text-sm">
+							No mappings available
+						</p>
 					) : (
 						<div className="space-y-2">
 							{mappings.map((m, i) => (
 								<div
-									key={i}  // NOSONAR: typescript:S6479
+									key={i} // NOSONAR: typescript:S6479
 									className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-border"
 								>
 									<Badge
@@ -66,7 +67,7 @@ export function DigitalTwinConfigPage() {
 									>
 										{typeof m === "object" && m
 											? String(
-													(m as Record<string, unknown>).name ||  // NOSONAR: typescript:S6551
+													(m as Record<string, unknown>).name || // NOSONAR: typescript:S6551
 														`Mapping ${i + 1}`,
 												)
 											: `Mapping ${i + 1}`}

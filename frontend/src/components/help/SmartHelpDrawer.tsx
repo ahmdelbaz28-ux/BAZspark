@@ -2,7 +2,9 @@ import { lazy, Suspense } from "react";
 import type { HelpTopicId } from "@/help/types";
 
 const GlobalHelpDrawerLazy = lazy(() =>
-	import("@/components/shared/GlobalHelpDrawer").then((m) => ({ default: m.GlobalHelpDrawer }))
+	import("@/components/shared/GlobalHelpDrawer").then((m) => ({
+		default: m.GlobalHelpDrawer,
+	})),
 );
 
 export interface SmartHelpDrawerProps {
@@ -15,7 +17,7 @@ export interface SmartHelpDrawerProps {
 
 export function SmartHelpDrawer({
 	open = false,
-	onOpenChange = () => { },
+	onOpenChange = () => {},
 	initialTopicId,
 	initialContextId,
 	initialSearch,
@@ -34,4 +36,3 @@ export function SmartHelpDrawer({
 		</Suspense>
 	);
 }
-

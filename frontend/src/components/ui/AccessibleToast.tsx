@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 
 interface AccessibleToastProps {
@@ -42,7 +41,8 @@ export function AccessibleToast({
 		>
 			<div className="flex items-center gap-2">
 				<p className="font-medium">{message}</p>
-				<button type="button"
+				<button
+					type="button"
 					onClick={onClose}
 					aria-label="Dismiss notification"
 					className="ml-2 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-slate-500 rounded"

@@ -29,13 +29,18 @@ export function ProjectSidebar() {
 						</div>
 					) : (
 						devices.map((el) => (
-							<div  // NOSONAR: typescript:S6848
+							<div // NOSONAR: typescript:S6848
 								key={el.id}
 								role="button"
 								tabIndex={0}
 								className={`flex items-center justify-between py-1 px-2 rounded cursor-pointer group ${selectedElementId === el.id ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
 								onClick={() => actions.selectElement(el.id)}
-								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); actions.selectElement(el.id); } }}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										actions.selectElement(el.id);
+									}
+								}}
 							>
 								<div className="flex items-center gap-2 truncate">
 									<Box aria-hidden="true" className="h-4 w-4 text-info" />

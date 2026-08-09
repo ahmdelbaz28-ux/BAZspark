@@ -1,4 +1,3 @@
-
 import type React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -25,7 +24,7 @@ interface SymbolProps {
 }
 
 interface SymbolLibraryProps extends SymbolProps {
-	type: DetectorType;  // NOSONAR: typescript:S6767
+	type: DetectorType; // NOSONAR: typescript:S6767
 }
 
 // Helper function to get status color

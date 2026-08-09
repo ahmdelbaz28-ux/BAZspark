@@ -18,48 +18,48 @@
 import { useStore } from "@/store/simpleStore";
 
 export function DemoDataBanner() {
-        const dataMode = useStore((s) => s.dataMode);
-        const connectionStatus = useStore((s) => s.connectionStatus);
+	const dataMode = useStore((s) => s.dataMode);
+	const connectionStatus = useStore((s) => s.connectionStatus);
 
-        const isLive = dataMode === "live" && connectionStatus === "connected";
-        if (isLive) return null;
+	const isLive = dataMode === "live" && connectionStatus === "connected";
+	if (isLive) return null;
 
-        // Build the reason text so the user knows WHY they're seeing demo data.
-        const reason =
-                dataMode !== "live"
-                        ? `data mode = ${dataMode}`
-                        : `connection = ${connectionStatus}`;
+	// Build the reason text so the user knows WHY they're seeing demo data.
+	const reason =
+		dataMode !== "live"
+			? `data mode = ${dataMode}`
+			: `connection = ${connectionStatus}`;
 
-        return (
-                <div
-                        role="alert"
-                        aria-live="polite"
-                        style={{
-                                background: "#000000",
-                                color: "#fbbf24",
-                                borderBottom: "2px solid #fbbf24",
-                                padding: "8px 16px",
-                                fontFamily: "system-ui, -apple-system, sans-serif",
-                                fontSize: "13px",
-                                fontWeight: 600,
-                                textAlign: "center",
-                                letterSpacing: "0.3px",
-                                position: "sticky",
-                                top: 0,
-                                zIndex: 9999,
-                                pointerEvents: "auto",
-                        }}
-                >
-                        <span aria-hidden="true" style={{ marginRight: "8px" }}>
-                                ⚠️
-                        </span>
-                        <strong>بيانات تجريبية</strong>
-                        <span style={{ margin: "0 8px", opacity: 0.6 }}>|</span>
-                        <strong>DEMO DATA</strong>
-                        <span style={{ marginLeft: "8px", fontWeight: 400, opacity: 0.85 }}>
-                                — {reason}. لا تستخدم هذه البيانات لتقديم تصميم فعلي للـ AHJ.
-                                Do NOT submit designs based on this data for AHJ review.
-                        </span>
-                </div>
-        );
+	return (
+		<div
+			role="alert"
+			aria-live="polite"
+			style={{
+				background: "#000000",
+				color: "#fbbf24",
+				borderBottom: "2px solid #fbbf24",
+				padding: "8px 16px",
+				fontFamily: "system-ui, -apple-system, sans-serif",
+				fontSize: "13px",
+				fontWeight: 600,
+				textAlign: "center",
+				letterSpacing: "0.3px",
+				position: "sticky",
+				top: 0,
+				zIndex: 9999,
+				pointerEvents: "auto",
+			}}
+		>
+			<span aria-hidden="true" style={{ marginRight: "8px" }}>
+				⚠️
+			</span>
+			<strong>بيانات تجريبية</strong>
+			<span style={{ margin: "0 8px", opacity: 0.6 }}>|</span>
+			<strong>DEMO DATA</strong>
+			<span style={{ marginLeft: "8px", fontWeight: 400, opacity: 0.85 }}>
+				— {reason}. لا تستخدم هذه البيانات لتقديم تصميم فعلي للـ AHJ. Do NOT
+				submit designs based on this data for AHJ review.
+			</span>
+		</div>
+	);
 }

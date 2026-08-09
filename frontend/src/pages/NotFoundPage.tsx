@@ -5,9 +5,10 @@
  * hierarchy and obvious next-step CTAs. Uses the BAZSPARK brand gradient
  * to maintain visual consistency with the login page.
  */
-import { Button } from "@/components/ui/button";
-import { Home, Compass, ArrowLeft } from "lucide-react";
+
+import { ArrowLeft, Compass, Home } from "lucide-react";
 import { useNavigate } from "react-router";
+import { Button } from "@/components/ui/button";
 
 export function NotFoundPage() {
 	const navigate = useNavigate();
@@ -24,9 +25,9 @@ export function NotFoundPage() {
 					Page not found
 				</h2>
 				<p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-					The page you're looking for doesn't exist or has been moved.
-					If you reached this page from a bookmark, the link may be outdated.
-					Use the buttons below to get back on track.
+					The page you're looking for doesn't exist or has been moved. If you
+					reached this page from a bookmark, the link may be outdated. Use the
+					buttons below to get back on track.
 				</p>
 				<div className="flex flex-wrap gap-3 justify-center">
 					<Button

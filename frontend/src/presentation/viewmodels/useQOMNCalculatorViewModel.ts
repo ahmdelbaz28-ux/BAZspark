@@ -6,14 +6,25 @@
 
 import { useState } from "react";
 import { engineeringRepository } from "../../data/repositories/EngineeringRepository";
-import { QOMNCalculationRequest, QOMNCalculationResult } from "../../domain/repositories/IEngineeringRepository";
+import type {
+	QOMNCalculationRequest,
+	QOMNCalculationResult,
+} from "../../domain/repositories/IEngineeringRepository";
 
-export type QOMNTab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct";
+export type QOMNTab =
+	| "smoke"
+	| "heat"
+	| "battery"
+	| "voltage"
+	| "detectors"
+	| "duct";
 
 export function useQOMNCalculatorViewModel() {
 	const [activeTab, setActiveTab] = useState<QOMNTab>("smoke");
 	const [calculating, setCalculating] = useState(false);
-	const [lastResult, setLastResult] = useState<QOMNCalculationResult | null>(null);
+	const [lastResult, setLastResult] = useState<QOMNCalculationResult | null>(
+		null,
+	);
 
 	const runCalculation = async (params: QOMNCalculationRequest) => {
 		setCalculating(true);

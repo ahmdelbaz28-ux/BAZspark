@@ -5,11 +5,11 @@
  * hitting the network (fetch is mocked).
  */
 import {
+	CSRF_HEADER_NAME,
+	csrfHeader,
 	getCachedCsrfToken,
 	getCsrfToken,
 	invalidateCsrfToken,
-	csrfHeader,
-	CSRF_HEADER_NAME,
 } from "../csrf";
 
 // Mock fetch globally

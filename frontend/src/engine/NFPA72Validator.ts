@@ -1,138 +1,137 @@
-
 /**
  * NFPA72Validator.ts - Validates Fire Alarm System Designs against NFPA 72 Standards
  */
 
 interface ValidationResult {
-        compliant: boolean;
-        violations: string[];
-        warnings: string[];
-        passedChecks: string[];
+	compliant: boolean;
+	violations: string[];
+	warnings: string[];
+	passedChecks: string[];
 }
 
 interface Device {
-        id: string;
-        type:
-                | "smoke"
-                | "heat"
-                | "pull"
-                | "horns"
-                | "speaker"
-                | "facp"
-                | "duct"
-                | "aspirating"
-                | "flow"
-                | "tamper";
-        x: number;
-        y: number;
-        zone: string;
-        room: string;
-        height: number; // Above finished floor (AFF) in meters
-        manufacturer: string;
-        model: string;
+	id: string;
+	type:
+		| "smoke"
+		| "heat"
+		| "pull"
+		| "horns"
+		| "speaker"
+		| "facp"
+		| "duct"
+		| "aspirating"
+		| "flow"
+		| "tamper";
+	x: number;
+	y: number;
+	zone: string;
+	room: string;
+	height: number; // Above finished floor (AFF) in meters
+	manufacturer: string;
+	model: string;
 }
 
 interface Room {
-        id: string;
-        name: string;
-        width: number;
-        length: number;
-        height: number;
-        occupancy: "ordinary" | "high-hazard" | "light-hazard" | "storage";
-        ceilingType: "flat" | "sloped" | "coffered";
+	id: string;
+	name: string;
+	width: number;
+	length: number;
+	height: number;
+	occupancy: "ordinary" | "high-hazard" | "light-hazard" | "storage";
+	ceilingType: "flat" | "sloped" | "coffered";
 }
 
 interface Panel {
-        id: string;
-        name: string;
-        type: "facp" | "annunciator" | "power_supply";
-        zoneCount: number;
+	id: string;
+	name: string;
+	type: "facp" | "annunciator" | "power_supply";
+	zoneCount: number;
 }
 
 interface Circuit {
-        id: string;
-        type: "notification" | "detection" | "signal";
-        deviceCount: number;
-        maxLoad: number;
+	id: string;
+	type: "notification" | "detection" | "signal";
+	deviceCount: number;
+	maxLoad: number;
 }
 
 interface SystemDesign {
-        devices: Device[];
-        rooms: Room[];
-        panels: Panel[];
-        circuits: Circuit[];
+	devices: Device[];
+	rooms: Room[];
+	panels: Panel[];
+	circuits: Circuit[];
 }
 
 /**
  * Validate detector spacing per NFPA 72 standards
  */
 function validateDetectorSpacing(
-        devices: Device[],
-        rooms: Room[],
+	devices: Device[],
+	rooms: Room[],
 ): { violations: string[]; warnings: string[] } {
-        const violations: string[] = [];
-        const warnings: string[] = [];
+	const violations: string[] = [];
+	const warnings: string[] = [];
 
-        devices.forEach((device) => {
-                const room = rooms.find((r) => r.id === device.room);
-                if (!room) {
-                        violations.push(
-                                `Device ${device.id} references non-existent room ${device.room}`,
-                        );
-                        return;
-                }
+	devices.forEach((device) => {
+		const room = rooms.find((r) => r.id === device.room);
+		if (!room) {
+			violations.push(
+				`Device ${device.id} references non-existent room ${device.room}`,
+			);
+			return;
+		}
 
-                // Check detector type specific requirements
-                switch (device.type) {
-                        case "smoke":
-                                // According to NFPA 72 Table 17.6.3.1.1 - Ceiling Height / Radius Table
-                                if (room.height <= 3.0) {
-                                        // For smoke detectors at ceiling height ≤3.0m (≤10ft), max spacing is 9.14m (30ft)
-                                        // Coverage radius should be 6.37m based on 0.7S rule (0.7 × 9.14)
-                                        if (device.height > 3.0) {
-                                                warnings.push(
-                                                        `Smoke detector ${device.id} at height ${device.height}m exceeds recommended ceiling height of 3.0m - verify per NFPA 72 Table 17.6.3.1.1`,
-                                                );
-                                        }
-                                } else {
-                                        warnings.push(
-                                                `Room ${room.name} ceiling height ${room.height}m requires spacing verification per NFPA 72 Table 17.6.3.1.1`,
-                                        );
-                                }
-                                break;
+		// Check detector type specific requirements
+		switch (device.type) {
+			case "smoke":
+				// According to NFPA 72 Table 17.6.3.1.1 - Ceiling Height / Radius Table
+				if (room.height <= 3.0) {
+					// For smoke detectors at ceiling height ≤3.0m (≤10ft), max spacing is 9.14m (30ft)
+					// Coverage radius should be 6.37m based on 0.7S rule (0.7 × 9.14)
+					if (device.height > 3.0) {
+						warnings.push(
+							`Smoke detector ${device.id} at height ${device.height}m exceeds recommended ceiling height of 3.0m - verify per NFPA 72 Table 17.6.3.1.1`,
+						);
+					}
+				} else {
+					warnings.push(
+						`Room ${room.name} ceiling height ${room.height}m requires spacing verification per NFPA 72 Table 17.6.3.1.1`,
+					);
+				}
+				break;
 
-                        case "heat":
-                                // According to NFPA 72 §17.7.5 - Heat Detector Spacing
-                                if (room.height > 4.3) {
-                                        violations.push(
-                                                `Heat detector ${device.id} in room ${room.name} with ceiling height ${room.height}m may exceed maximum permitted height per NFPA 72 §17.7.5`,
-                                        );
-                                }
-                                break;
+			case "heat":
+				// According to NFPA 72 §17.7.5 - Heat Detector Spacing
+				if (room.height > 4.3) {
+					violations.push(
+						`Heat detector ${device.id} in room ${room.name} with ceiling height ${room.height}m may exceed maximum permitted height per NFPA 72 §17.7.5`,
+					);
+				}
+				break;
 
-                        case "pull":
-                                // C-07 FIX (Engineering Review): NFPA 72-2022 §17.15
-                                // (was incorrectly cited as §21.4.1 — that section is
-                                // "Elevator Power Shutdown" in NFPA 72-2022).
-                                // §17.15 covers Manual Fire Alarm Boxes (pull stations):
-                                //   - Height: 42-48 inches (1.07-1.22m) AFF per §17.15.4
-                                //   - Location: within 5ft of exit doorway per §17.15.3
-                                // The 1.0-1.37m range below is the legacy code check;
-                                // the canonical NFPA range is 1.07-1.22m.
-                                if (device.height < 1.0 || device.height > 1.37) {
-                                        violations.push(
-                                                `Pull station ${device.id} height ${device.height}m outside required range of 1.0-1.37m (40-45 inches) per NFPA 72 §17.15`,
-                                        );
-                                }
-                                break;
+			case "pull":
+				// C-07 FIX (Engineering Review): NFPA 72-2022 §17.15
+				// (was incorrectly cited as §21.4.1 — that section is
+				// "Elevator Power Shutdown" in NFPA 72-2022).
+				// §17.15 covers Manual Fire Alarm Boxes (pull stations):
+				//   - Height: 42-48 inches (1.07-1.22m) AFF per §17.15.4
+				//   - Location: within 5ft of exit doorway per §17.15.3
+				// The 1.0-1.37m range below is the legacy code check;
+				// the canonical NFPA range is 1.07-1.22m.
+				if (device.height < 1.0 || device.height > 1.37) {
+					violations.push(
+						`Pull station ${device.id} height ${device.height}m outside required range of 1.0-1.37m (40-45 inches) per NFPA 72 §17.15`,
+					);
+				}
+				break;
 
-                        case "horns":
-                                // According to NFPA 72 §18.4.1 - Notification Appliance Requirements
-                                break;
-                }
-        });
+			case "horns":
+				// According to NFPA 72 §18.4.1 - Notification Appliance Requirements
+				break;
+		}
+	});
 
-        return { violations, warnings };
+	return { violations, warnings };
 }
 
 /**
@@ -168,117 +167,122 @@ const R_SMOKE_M = 0.7 * 9.1;
 const R_HEAT_M = 0.7 * 6.1;
 
 function getRequiredCoverage(occupancy: string): number {
-        switch (occupancy) {
-                case "high-hazard":
-                        return 90; // 90% minimum
-                case "ordinary":
-                case "light-hazard":
-                default:
-                        return 70; // 70% minimum
-        }
+	switch (occupancy) {
+		case "high-hazard":
+			return 90; // 90% minimum
+		case "ordinary":
+		case "light-hazard":
+		default:
+			return 70; // 70% minimum
+	}
 }
 
-function computeGridCoverage(
-        room: Room,
-        coverageDevices: Device[],
-): number {
-        const nx = Math.max(1, Math.ceil(room.width / GRID_STEP_M));
-        const ny = Math.max(1, Math.ceil(room.length / GRID_STEP_M));
-        let covered = 0;
-        let total = 0;
-        for (let i = 0; i < nx; i++) {
-                for (let j = 0; j < ny; j++) {
-                        const cx = (i + 0.5) * GRID_STEP_M;
-                        const cy = (j + 0.5) * GRID_STEP_M;
-                        if (cx > room.width || cy > room.length) continue;
-                        total++;
-                        if (isCellCovered(cx, cy, coverageDevices)) covered++;
-                }
-        }
-        return total > 0 ? (covered / total) * 100 : 0;
+function computeGridCoverage(room: Room, coverageDevices: Device[]): number {
+	const nx = Math.max(1, Math.ceil(room.width / GRID_STEP_M));
+	const ny = Math.max(1, Math.ceil(room.length / GRID_STEP_M));
+	let covered = 0;
+	let total = 0;
+	for (let i = 0; i < nx; i++) {
+		for (let j = 0; j < ny; j++) {
+			const cx = (i + 0.5) * GRID_STEP_M;
+			const cy = (j + 0.5) * GRID_STEP_M;
+			if (cx > room.width || cy > room.length) continue;
+			total++;
+			if (isCellCovered(cx, cy, coverageDevices)) covered++;
+		}
+	}
+	return total > 0 ? (covered / total) * 100 : 0;
 }
 
-function isCellCovered(cx: number, cy: number, coverageDevices: Device[]): boolean {
-        for (const d of coverageDevices) {
-                const r = d.type === "smoke" ? R_SMOKE_M : d.type === "heat" ? R_HEAT_M : 0;
-                if (r <= 0) continue;
-                if (Math.hypot(d.x - cx, d.y - cy) <= r) return true;
-        }
-        return false;
+function isCellCovered(
+	cx: number,
+	cy: number,
+	coverageDevices: Device[],
+): boolean {
+	for (const d of coverageDevices) {
+		const r = d.type === "smoke" ? R_SMOKE_M : d.type === "heat" ? R_HEAT_M : 0;
+		if (r <= 0) continue;
+		if (Math.hypot(d.x - cx, d.y - cy) <= r) return true;
+	}
+	return false;
 }
 
 function evaluateRoomCoverage(
-        room: Room,
-        devices: Device[],
-        result: { violations: string[]; warnings: string[]; passedChecks: string[] },
+	room: Room,
+	devices: Device[],
+	result: { violations: string[]; warnings: string[]; passedChecks: string[] },
 ): void {
-        const roomDevices = devices.filter((d) => d.room === room.id);
-        const requiredCoverage = getRequiredCoverage(room.occupancy);
+	const roomDevices = devices.filter((d) => d.room === room.id);
+	const requiredCoverage = getRequiredCoverage(room.occupancy);
 
-        if (roomDevices.length === 0) {
-                result.violations.push(
-                        `Room ${room.name} has no detectors - required minimum coverage ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
-                );
-                return;
-        }
+	if (roomDevices.length === 0) {
+		result.violations.push(
+			`Room ${room.name} has no detectors - required minimum coverage ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
+		);
+		return;
+	}
 
-        const coverageDevices = roomDevices.filter(
-                (d) => d.type === "smoke" || d.type === "heat",
-        );
-        if (coverageDevices.length === 0) {
-                result.warnings.push(
-                        `Room ${room.name} has devices but no smoke/heat detectors — coverage cannot be computed. Add a smoke or heat detector per NFPA 72 §17.7.5.2.2.`,
-                );
-                return;
-        }
+	const coverageDevices = roomDevices.filter(
+		(d) => d.type === "smoke" || d.type === "heat",
+	);
+	if (coverageDevices.length === 0) {
+		result.warnings.push(
+			`Room ${room.name} has devices but no smoke/heat detectors — coverage cannot be computed. Add a smoke or heat detector per NFPA 72 §17.7.5.2.2.`,
+		);
+		return;
+	}
 
-        if (room.width <= 0 || room.length <= 0) {
-                result.warnings.push(
-                        `Room ${room.name} has invalid dimensions (${room.width}×${room.length}m) — coverage not computed`,
-                );
-                return;
-        }
+	if (room.width <= 0 || room.length <= 0) {
+		result.warnings.push(
+			`Room ${room.name} has invalid dimensions (${room.width}×${room.length}m) — coverage not computed`,
+		);
+		return;
+	}
 
-        const coveragePct = computeGridCoverage(room, coverageDevices);
+	const coveragePct = computeGridCoverage(room, coverageDevices);
 
-        if (coveragePct < requiredCoverage) {
-                result.violations.push(
-                        `Room ${room.name} actual coverage ${coveragePct.toFixed(1)}% is below required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2 — add more detectors or reposition existing ones`,
-                );
-        } else if (coveragePct < requiredCoverage + 5) {
-                result.warnings.push(
-                        `Room ${room.name} coverage ${coveragePct.toFixed(1)}% is marginal (within 5% of required ${requiredCoverage}%) — consider adding detectors for safety margin per NFPA 72 §17.7.5.2.2`,
-                );
-        } else {
-                result.passedChecks.push(
-                        `Room ${room.name} coverage ${coveragePct.toFixed(1)}% meets required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
-                );
-        }
+	if (coveragePct < requiredCoverage) {
+		result.violations.push(
+			`Room ${room.name} actual coverage ${coveragePct.toFixed(1)}% is below required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2 — add more detectors or reposition existing ones`,
+		);
+	} else if (coveragePct < requiredCoverage + 5) {
+		result.warnings.push(
+			`Room ${room.name} coverage ${coveragePct.toFixed(1)}% is marginal (within 5% of required ${requiredCoverage}%) — consider adding detectors for safety margin per NFPA 72 §17.7.5.2.2`,
+		);
+	} else {
+		result.passedChecks.push(
+			`Room ${room.name} coverage ${coveragePct.toFixed(1)}% meets required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
+		);
+	}
 
-        if (room.occupancy === "high-hazard" && roomDevices.length >= 2) {
-                result.passedChecks.push(
-                        `High-hazard room ${room.name} has ≥2 detectors per NFPA 72 §17.7.5.2.2`,
-                );
-        } else if (room.occupancy === "high-hazard" && roomDevices.length < 2) {
-                result.warnings.push(
-                        `High hazard room ${room.name} may require additional detectors for adequate coverage per NFPA 72 §17.7.5.2.2`,
-                );
-        }
+	if (room.occupancy === "high-hazard" && roomDevices.length >= 2) {
+		result.passedChecks.push(
+			`High-hazard room ${room.name} has ≥2 detectors per NFPA 72 §17.7.5.2.2`,
+		);
+	} else if (room.occupancy === "high-hazard" && roomDevices.length < 2) {
+		result.warnings.push(
+			`High hazard room ${room.name} may require additional detectors for adequate coverage per NFPA 72 §17.7.5.2.2`,
+		);
+	}
 }
 
 function validateCoverage(
-        devices: Device[],
-        rooms: Room[],
+	devices: Device[],
+	rooms: Room[],
 ): { violations: string[]; warnings: string[]; passedChecks: string[] } {
-        const result: { violations: string[]; warnings: string[]; passedChecks: string[] } = {
-                violations: [],
-                warnings: [],
-                passedChecks: [],
-        };
+	const result: {
+		violations: string[];
+		warnings: string[];
+		passedChecks: string[];
+	} = {
+		violations: [],
+		warnings: [],
+		passedChecks: [],
+	};
 
-        rooms.forEach((room) => evaluateRoomCoverage(room, devices, result));
+	rooms.forEach((room) => evaluateRoomCoverage(room, devices, result));
 
-        return result;
+	return result;
 }
 
 /**
@@ -299,110 +303,124 @@ function validateCoverage(
  * list of 7 fake items). This makes the report honest.
  */
 export function validateNFPA72Compliance(
-        systemDesign: SystemDesign,
+	systemDesign: SystemDesign,
 ): ValidationResult {
-        const { violations: spacingViolations, warnings: spacingWarnings } =
-                validateDetectorSpacing(systemDesign.devices, systemDesign.rooms);
-        const {
-                violations: coverageViolations,
-                warnings: coverageWarnings,
-                passedChecks: coveragePassedChecks,
-        } = validateCoverage(systemDesign.devices, systemDesign.rooms);
+	const { violations: spacingViolations, warnings: spacingWarnings } =
+		validateDetectorSpacing(systemDesign.devices, systemDesign.rooms);
+	const {
+		violations: coverageViolations,
+		warnings: coverageWarnings,
+		passedChecks: coveragePassedChecks,
+	} = validateCoverage(systemDesign.devices, systemDesign.rooms);
 
-        const allViolations = [...spacingViolations, ...coverageViolations];
-        const allWarnings = [...spacingWarnings, ...coverageWarnings];
+	const allViolations = [...spacingViolations, ...coverageViolations];
+	const allWarnings = [...spacingWarnings, ...coverageWarnings];
 
-        // F-03 FIX: build passedChecks dynamically from what actually passed.
-        const passedChecks: string[] = [];
+	// F-03 FIX: build passedChecks dynamically from what actually passed.
+	const passedChecks: string[] = [];
 
-        // Global checks — only add if they actually hold.
-        if (systemDesign.rooms.length > 0) {
-                passedChecks.push(
-                        `Room definitions complete (${systemDesign.rooms.length} rooms defined)`,
-                );
-        }
-        if (systemDesign.devices.length > 0) {
-                passedChecks.push(
-                        `Device locations assigned (${systemDesign.devices.length} devices)`,
-                );
-        }
+	// Global checks — only add if they actually hold.
+	if (systemDesign.rooms.length > 0) {
+		passedChecks.push(
+			`Room definitions complete (${systemDesign.rooms.length} rooms defined)`,
+		);
+	}
+	if (systemDesign.devices.length > 0) {
+		passedChecks.push(
+			`Device locations assigned (${systemDesign.devices.length} devices)`,
+		);
+	}
 
-        // Detector-type check: only claim "detector types properly specified"
-        // if EVERY device has a recognized type.
-        const validTypes = new Set([
-                "smoke", "heat", "pull", "horns", "speaker",
-                "facp", "duct", "aspirating", "flow", "tamper",
-        ]);
-        const allTypesValid = systemDesign.devices.every((d) => validTypes.has(d.type));
-        if (systemDesign.devices.length > 0 && allTypesValid) {
-                passedChecks.push("Detector types properly specified");
-        }
+	// Detector-type check: only claim "detector types properly specified"
+	// if EVERY device has a recognized type.
+	const validTypes = new Set([
+		"smoke",
+		"heat",
+		"pull",
+		"horns",
+		"speaker",
+		"facp",
+		"duct",
+		"aspirating",
+		"flow",
+		"tamper",
+	]);
+	const allTypesValid = systemDesign.devices.every((d) =>
+		validTypes.has(d.type),
+	);
+	if (systemDesign.devices.length > 0 && allTypesValid) {
+		passedChecks.push("Detector types properly specified");
+	}
 
-        // 0.7S Rule: only claim it was "considered" if at least one smoke
-        // detector exists AND coverage was actually computed (which uses R=0.7×S).
-        const hasSmoke = systemDesign.devices.some((d) => d.type === "smoke");
-        if (hasSmoke) {
-                passedChecks.push(
-                        "NFPA 72 §17.7.4.2.3.1 (0.7S Rule) applied — coverage computed with R = 0.7 × S",
-                );
-        }
+	// 0.7S Rule: only claim it was "considered" if at least one smoke
+	// detector exists AND coverage was actually computed (which uses R=0.7×S).
+	const hasSmoke = systemDesign.devices.some((d) => d.type === "smoke");
+	if (hasSmoke) {
+		passedChecks.push(
+			"NFPA 72 §17.7.4.2.3.1 (0.7S Rule) applied — coverage computed with R = 0.7 × S",
+		);
+	}
 
-        // Heat detector check: only claim if at least one heat detector exists
-        // AND no heat-detector height violation was emitted.
-        const hasHeat = systemDesign.devices.some((d) => d.type === "heat");
-        const heatHeightOk =
-                hasHeat &&
-                !spacingViolations.some((v) => v.includes("Heat detector") && v.includes("height"));
-        if (heatHeightOk) {
-                passedChecks.push(
-                        "NFPA 72 §17.7.5 referenced for heat detector spacing — no height violations",
-                );
-        }
+	// Heat detector check: only claim if at least one heat detector exists
+	// AND no heat-detector height violation was emitted.
+	const hasHeat = systemDesign.devices.some((d) => d.type === "heat");
+	const heatHeightOk =
+		hasHeat &&
+		!spacingViolations.some(
+			(v) => v.includes("Heat detector") && v.includes("height"),
+		);
+	if (heatHeightOk) {
+		passedChecks.push(
+			"NFPA 72 §17.7.5 referenced for heat detector spacing — no height violations",
+		);
+	}
 
-        // Pull station height check: only claim if at least one pull station
-        // exists AND none violated the 1.0-1.37m height range.
-        const hasPull = systemDesign.devices.some((d) => d.type === "pull");
-        const pullHeightOk =
-                hasPull &&
-                !spacingViolations.some((v) => v.includes("Pull station") && v.includes("height"));
-        if (pullHeightOk) {
-                passedChecks.push(
-                        "NFPA 72 §21.4.1 referenced for manual station height (1.0-1.37m) — all compliant",
-                );
-        }
+	// Pull station height check: only claim if at least one pull station
+	// exists AND none violated the 1.0-1.37m height range.
+	const hasPull = systemDesign.devices.some((d) => d.type === "pull");
+	const pullHeightOk =
+		hasPull &&
+		!spacingViolations.some(
+			(v) => v.includes("Pull station") && v.includes("height"),
+		);
+	if (pullHeightOk) {
+		passedChecks.push(
+			"NFPA 72 §21.4.1 referenced for manual station height (1.0-1.37m) — all compliant",
+		);
+	}
 
-        // Merge in the per-room coverage passed checks from validateCoverage.
-        for (const pc of coveragePassedChecks) {
-                passedChecks.push(pc);
-        }
+	// Merge in the per-room coverage passed checks from validateCoverage.
+	for (const pc of coveragePassedChecks) {
+		passedChecks.push(pc);
+	}
 
-        return {
-                compliant: allViolations.length === 0,
-                violations: allViolations,
-                warnings: allWarnings,
-                passedChecks,
-        };
+	return {
+		compliant: allViolations.length === 0,
+		violations: allViolations,
+		warnings: allWarnings,
+		passedChecks,
+	};
 }
 
 /**
  * Get specific NFPA 72 reference for a validation check
  */
 export function getNFPAReference(checkType: string): string {
-        switch (checkType) {
-                case "spacing_smoke":
-                        return "NFPA 72 Table 17.6.3.1.1";
-                case "spacing_heat":
-                        return "NFPA 72 §17.7.5";
-                case "coverage_occupancy":
-                        return "NFPA 72 §17.7.5.2.2";
-                case "manual_stations":
-                        // C-07 FIX: §17.15 (was §21.4.1 — wrong section)
-                        return "NFPA 72 §17.15";
-                case "0.7S_rule":
-                        return "NFPA 72 §17.7.4.2.3.1";
-                case "notification_appliances":
-                        return "NFPA 72 §18.4.1";
-                default:
-                        return "NFPA 72 2022 Edition";
-        }
+	switch (checkType) {
+		case "spacing_smoke":
+			return "NFPA 72 Table 17.6.3.1.1";
+		case "spacing_heat":
+			return "NFPA 72 §17.7.5";
+		case "coverage_occupancy":
+			return "NFPA 72 §17.7.5.2.2";
+		case "manual_stations":
+			// C-07 FIX: §17.15 (was §21.4.1 — wrong section)
+			return "NFPA 72 §17.15";
+		case "0.7S_rule":
+			return "NFPA 72 §17.7.4.2.3.1";
+		case "notification_appliances":
+			return "NFPA 72 §18.4.1";
+		default:
+			return "NFPA 72 2022 Edition";
+	}
 }

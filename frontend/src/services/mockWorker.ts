@@ -1,7 +1,7 @@
 /**
  * @file mockWorker.ts
  * @description Web Worker that fetches real telemetry data from the backend API.
- * 
+ *
  * V223: Replaced simulated data with real API calls to /monitor/health and
  * /monitor/engine-status. Falls back to simulated data only when the API
  * is unreachable.
@@ -33,19 +33,19 @@ async function fetchRealData(): Promise<{
 		const healthResp = await fetch(`${baseUrl}/api/v1/monitor/health`, {
 			signal: AbortSignal.timeout(5000),
 		});
-		
+
 		if (!healthResp.ok) return null;
-		
+
 		const healthData = await healthResp.json();
-		
+
 		// Extract real metrics from health response
 		// The backend returns {success, data: {status, version, uptime, ...}}
 		const data = healthData.data || healthData;
-		
+
 		// Map real data to telemetry format
 		const now = new Date();
 		const hour = now.getHours() + now.getMinutes() / 60;
-		
+
 		// Use real metrics if available, otherwise use last known values
 		return {
 			voltage: data.voltage ?? lastKnownData?.voltage ?? 225,
@@ -75,19 +75,29 @@ function generateSimulatedData(): {
 	const baseCurrent = 10;
 	const peakCurrent = 30;
 	const current =
-		baseCurrent + peakCurrent * loadFactor + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5);
+		baseCurrent +
+		peakCurrent * loadFactor +
+		(crypto.getRandomValues(new Uint32Array(1))[0] / 0xffffffff - 0.5);
 
 	// Voltage drops slightly with high current
 	const baseVoltage = 225;
 	const voltage =
-		baseVoltage - (current - baseCurrent) * 0.5 + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5);
+		baseVoltage -
+		(current - baseCurrent) * 0.5 +
+		(crypto.getRandomValues(new Uint32Array(1))[0] / 0xffffffff - 0.5);
 
 	// Frequency stays around 50Hz
-	const frequency = 50.0 + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5) * 0.1;
+	const frequency =
+		50.0 +
+		(crypto.getRandomValues(new Uint32Array(1))[0] / 0xffffffff - 0.5) * 0.1;
 
 	// Check for simulated faults at peak load
 	let fault = null;
-	if (hour > 11 && hour < 13 && crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF > 0.95) {
+	if (
+		hour > 11 &&
+		hour < 13 &&
+		crypto.getRandomValues(new Uint32Array(1))[0] / 0xffffffff > 0.95
+	) {
 		fault = "gen-01";
 	}
 

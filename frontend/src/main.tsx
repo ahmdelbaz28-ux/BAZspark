@@ -1,11 +1,10 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import App from "./App";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import App from "./App";
 import { ErrorRecovery } from "./components/core/ErrorRecovery";
 import "@/utils/fontLoader";
 import "./i18n";
@@ -19,45 +18,44 @@ import "./styles/tokens.css";
 import "./index.css";
 import "./styles/facp-pages.css";
 
-
 // ── React Query Client ────────────────────────────────────────────────────
 const queryClient = new QueryClient({
-        defaultOptions: {
-                queries: {
-                        staleTime: 30_000,
-                        retry: 1,
-                        refetchOnWindowFocus: false,
-                },
-        },
+	defaultOptions: {
+		queries: {
+			staleTime: 30_000,
+			retry: 1,
+			refetchOnWindowFocus: false,
+		},
+	},
 });
 
 // ── Sentry Error Tracking ─────────────────────────────────────────────────
 // Vercel React Best Practices: bundle-defer-third-party — load Sentry after hydration
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
-        import("@sentry/react").then((Sentry: typeof import("@sentry/react")) => {
-                Sentry.init({
-                        dsn: sentryDsn,
-                        environment: import.meta.env.MODE,
-                        release: `fireai-digital-twin@${import.meta.env.VITE_APP_VERSION || "1.0.0"}`,
-                        tracesSampleRate: 0.1,
-                        replaysSessionSampleRate: 0.0,
-                        replaysOnErrorSampleRate: 0.1,
-                        integrations: [Sentry.browserTracingIntegration()],
-                        ignoreErrors: [
-                                "ResizeObserver loop limit exceeded",
-                                "NetworkError when attempting to fetch resource",
-                        ],
-                });
-        });
+	import("@sentry/react").then((Sentry: typeof import("@sentry/react")) => {
+		Sentry.init({
+			dsn: sentryDsn,
+			environment: import.meta.env.MODE,
+			release: `fireai-digital-twin@${import.meta.env.VITE_APP_VERSION || "1.0.0"}`,
+			tracesSampleRate: 0.1,
+			replaysSessionSampleRate: 0.0,
+			replaysOnErrorSampleRate: 0.1,
+			integrations: [Sentry.browserTracingIntegration()],
+			ignoreErrors: [
+				"ResizeObserver loop limit exceeded",
+				"NetworkError when attempting to fetch resource",
+			],
+		});
+	});
 }
 
 // ── Root Element Guard ────────────────────────────────────────────────────
 const rootEl = document.getElementById("root");
 if (!rootEl) {
-        throw new Error(
-                "BAZSPARK: Root element #root not found in DOM. Cannot mount application.",
-        );
+	throw new Error(
+		"BAZSPARK: Root element #root not found in DOM. Cannot mount application.",
+	);
 }
 
 // V250 FIX: ChunkLoadError handler — when a stale deployment causes a
@@ -66,31 +64,43 @@ if (!rootEl) {
 // a full-screen error view and must manually reload.
 let chunkErrorReloadAttempted = false;
 window.addEventListener("error", (event) => {
-        // Check for chunk load errors (Vite lazy-loaded chunks)
-        const isChunkError =
-                event.error?.name === "ChunkLoadError" ||
-                (event.error?.message?.includes("Failed to fetch dynamically imported module") ?? false) ||
-                (event.error?.message?.includes("Loading chunk") ?? false);
-        if (isChunkError && !chunkErrorReloadAttempted) {
-                chunkErrorReloadAttempted = true;
-                if (import.meta.env.DEV) console.warn("[BAZSPARK] Chunk load failed — reloading to pick up new deployment...");
-                window.location.reload();
-        }
+	// Check for chunk load errors (Vite lazy-loaded chunks)
+	const isChunkError =
+		event.error?.name === "ChunkLoadError" ||
+		(event.error?.message?.includes(
+			"Failed to fetch dynamically imported module",
+		) ??
+			false) ||
+		(event.error?.message?.includes("Loading chunk") ?? false);
+	if (isChunkError && !chunkErrorReloadAttempted) {
+		chunkErrorReloadAttempted = true;
+		if (import.meta.env.DEV)
+			console.warn(
+				"[BAZSPARK] Chunk load failed — reloading to pick up new deployment...",
+			);
+		window.location.reload();
+	}
 });
 
 createRoot(rootEl).render(
-        <BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
-                <QueryClientProvider client={queryClient}><ThemeProvider>
-                        <ErrorRecovery
-                                onError={(error, info) => {
-                                        if (import.meta.env.DEV) console.error("[BAZSPARK] Fatal error caught by boundary:", error, info);
-                                }}
-                        >
-                                <App />
-                                <Analytics />
-                                <SpeedInsights />
-                        </ErrorRecovery>
-                </ThemeProvider>
-                </QueryClientProvider>
-        </BrowserRouter>,
+	<BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider>
+				<ErrorRecovery
+					onError={(error, info) => {
+						if (import.meta.env.DEV)
+							console.error(
+								"[BAZSPARK] Fatal error caught by boundary:",
+								error,
+								info,
+							);
+					}}
+				>
+					<App />
+					<Analytics />
+					<SpeedInsights />
+				</ErrorRecovery>
+			</ThemeProvider>
+		</QueryClientProvider>
+	</BrowserRouter>,
 );

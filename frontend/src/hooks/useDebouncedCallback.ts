@@ -7,25 +7,25 @@
 import { useCallback, useEffect, useRef } from "react";
 
 export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
-  callback: T,
-  delay: number,
+	callback: T,
+	delay: number,
 ): T {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbackRef = useRef(callback);
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const callbackRef = useRef(callback);
 
-  // Keep callback ref current — this is a standard React pattern for
-  // stable refs that avoids adding the callback to deps.
-  useEffect(() => {
-    callbackRef.current = callback;
-  });
+	// Keep callback ref current — this is a standard React pattern for
+	// stable refs that avoids adding the callback to deps.
+	useEffect(() => {
+		callbackRef.current = callback;
+	});
 
-  const debounced = useCallback(
-    (...args: unknown[]) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => callbackRef.current(...args), delay);
-    },
-    [delay],
-  );
+	const debounced = useCallback(
+		(...args: unknown[]) => {
+			if (timerRef.current) clearTimeout(timerRef.current);
+			timerRef.current = setTimeout(() => callbackRef.current(...args), delay);
+		},
+		[delay],
+	);
 
-  return debounced as T;
+	return debounced as T;
 }

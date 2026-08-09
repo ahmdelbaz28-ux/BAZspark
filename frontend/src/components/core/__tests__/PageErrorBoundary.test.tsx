@@ -28,7 +28,9 @@ describe("PageErrorBoundary", () => {
 		// ErrorRecoveryView shows "Retry Component" when reload is provided
 		expect(screen.getByText(/retry component/i)).toBeInTheDocument();
 		// ErrorRecoveryView shows the standard heading
-		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
+		expect(
+			screen.getByText(/a component failed to render/i),
+		).toBeInTheDocument();
 		spy.mockRestore();
 	});
 
@@ -51,7 +53,9 @@ describe("PageErrorBoundary", () => {
 			expect.any(Object),
 		);
 		// ErrorRecoveryView still renders the standard UI
-		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
+		expect(
+			screen.getByText(/a component failed to render/i),
+		).toBeInTheDocument();
 		spy.mockRestore();
 	});
 
@@ -74,7 +78,9 @@ describe("PageErrorBoundary", () => {
 			expect.any(Object),
 		);
 		// ErrorRecoveryView still renders the standard UI
-		expect(screen.getByText(/a component failed to render/i)).toBeInTheDocument();
+		expect(
+			screen.getByText(/a component failed to render/i),
+		).toBeInTheDocument();
 		spy.mockRestore();
 	});
 });

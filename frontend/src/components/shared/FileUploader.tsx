@@ -1,4 +1,3 @@
-
 /**
  * FileUploader.tsx — Drag & Drop file uploader for DWG/RVT files
  */
@@ -66,7 +65,7 @@ export function FileUploader({
 	return (
 		<div className="space-y-3">
 			<label className="text-sm font-medium text-foreground/90">{label}</label>
-			<div  // NOSONAR: typescript:S6819
+			<div // NOSONAR: typescript:S6819
 				className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
 					dragging
 						? "border-primary bg-primary/10"
@@ -99,7 +98,10 @@ export function FileUploader({
 						if (file) setSelectedFile(file);
 					}}
 				/>
-				<Upload aria-hidden="true" className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+				<Upload
+					aria-hidden="true"
+					className="h-10 w-10 text-muted-foreground mx-auto mb-3"
+				/>
 				<p className="text-sm text-muted-foreground">
 					{dragging ? "Drop file here" : "Drag & drop or click to browse"}
 				</p>
@@ -109,7 +111,10 @@ export function FileUploader({
 			</div>
 			{selectedFile && (
 				<div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
-					<FileText aria-hidden="true" className="h-5 w-5 text-primary shrink-0" />
+					<FileText
+						aria-hidden="true"
+						className="h-5 w-5 text-primary shrink-0"
+					/>
 					<div className="flex-1 min-w-0">
 						<p className="text-sm text-foreground truncate">
 							{selectedFile.name}

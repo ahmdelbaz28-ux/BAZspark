@@ -1,4 +1,3 @@
-
 /**
  * SmartHelpProvider.tsx — Legacy stub (V140 Phase 7)
  *

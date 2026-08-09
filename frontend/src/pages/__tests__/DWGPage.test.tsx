@@ -10,236 +10,235 @@ import userEvent from "@testing-library/user-event";
 import { DWGPage } from "../DWGPage";
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: "en", changeLanguage: vi.fn() },
-  }),
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
+	useTranslation: () => ({
+		t: (key: string) => key,
+		i18n: { language: "en", changeLanguage: vi.fn() },
+	}),
+	initReactI18next: { type: "3rdParty", init: vi.fn() },
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-        const actual = await importOriginal() as Record<string, unknown>;
-        // Create a simple mock component for each icon export
-        const createIcon = (name: string) => {
-                const Icon = (_props: Record<string, unknown>) => (
-                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-                );
-                Icon.displayName = name;
-                return Icon;
-        };
-        const mocked: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(actual)) {
-                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-                        mocked[key] = createIcon(key);
-                } else {
-                        mocked[key] = value;
-                }
-        }
-        return mocked;
+	const actual = (await importOriginal()) as Record<string, unknown>;
+	// Create a simple mock component for each icon export
+	const createIcon = (name: string) => {
+		const Icon = (_props: Record<string, unknown>) => (
+			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+		);
+		Icon.displayName = name;
+		return Icon;
+	};
+	const mocked: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(actual)) {
+		if (
+			typeof value === "function" ||
+			(typeof value === "object" &&
+				value !== null &&
+				"$$typeof" in (value as Record<string, unknown>))
+		) {
+			mocked[key] = createIcon(key);
+		} else {
+			mocked[key] = value;
+		}
+	}
+	return mocked;
 });
 
 // Mock the fullApi module so we control dwgApi.parse directly
 // without going through the real apiCall/fetchWithRetry/CSRF pipeline.
 const mockParseDwg = vi.fn();
 vi.mock("@/services/fullApi", () => ({
-  dwgApi: {
-    parse: (...args: unknown[]) => mockParseDwg(...args),
-  },
+	dwgApi: {
+		parse: (...args: unknown[]) => mockParseDwg(...args),
+	},
 }));
 
 function createMockFile(name: string, ext: string, size = 1000): File {
-  const content = new ArrayBuffer(size);
-  return new File([content], name, { type: "application/octet-stream" });
+	const content = new ArrayBuffer(size);
+	return new File([content], name, { type: "application/octet-stream" });
 }
 
 function renderPage() {
-  return render(<DWGPage />);
+	return render(<DWGPage />);
 }
 
 describe("DWGPage", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-  it("renders the page title", () => {
-    renderPage();
-    expect(screen.getByText("DWG / DXF Parser")).toBeInTheDocument();
-  });
+	it("renders the page title", () => {
+		renderPage();
+		expect(screen.getByText("DWG / DXF Parser")).toBeInTheDocument();
+	});
 
-  it("renders upload zone with drop message", () => {
-    renderPage();
-    expect(
-      screen.getByText(/Drop a DWG or DXF file here/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Max file size: 50 MB/)).toBeInTheDocument();
-  });
+	it("renders upload zone with drop message", () => {
+		renderPage();
+		expect(screen.getByText(/Drop a DWG or DXF file here/)).toBeInTheDocument();
+		expect(screen.getByText(/Max file size: 50 MB/)).toBeInTheDocument();
+	});
 
-  it("shows error for unsupported file type", async () => {
-    renderPage();
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    
-    // Simulate file selection with a .pdf file
-    const badFile = createMockFile("test.pdf", ".pdf");
-    Object.defineProperty(fileInputEl, "files", { value: [badFile] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("shows error for unsupported file type", async () => {
+		renderPage();
+		const fileInputEl = document.querySelector('input[type="file"]')!;
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("Only .dwg and .dxf files are supported")
-      ).toBeInTheDocument();
-    });
-  });
+		// Simulate file selection with a .pdf file
+		const badFile = createMockFile("test.pdf", ".pdf");
+		Object.defineProperty(fileInputEl, "files", { value: [badFile] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("shows error for file too large", async () => {
-    renderPage();
-    const largeFile = createMockFile("test.dwg", ".dwg", 60 * 1024 * 1024);
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [largeFile] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+		await waitFor(() => {
+			expect(
+				screen.getByText("Only .dwg and .dxf files are supported"),
+			).toBeInTheDocument();
+		});
+	});
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("File too large (max 50 MB)")
-      ).toBeInTheDocument();
-    });
-  });
+	it("shows error for file too large", async () => {
+		renderPage();
+		const largeFile = createMockFile("test.dwg", ".dwg", 60 * 1024 * 1024);
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [largeFile] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("shows uploading state while parsing", async () => {
-    mockParseDwg.mockImplementation(
-      () => new Promise(() => {}) // Never resolves
-    );
+		await waitFor(() => {
+			expect(
+				screen.getByText("File too large (max 50 MB)"),
+			).toBeInTheDocument();
+		});
+	});
 
-    renderPage();
-    const file = createMockFile("floorplan.dwg", ".dwg");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [file] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("shows uploading state while parsing", async () => {
+		mockParseDwg.mockImplementation(
+			() => new Promise(() => {}), // Never resolves
+		);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Parsing floorplan.dwg/)).toBeInTheDocument();
-    });
-  });
+		renderPage();
+		const file = createMockFile("floorplan.dwg", ".dwg");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [file] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("displays parse results on success", async () => {
-    mockParseDwg.mockResolvedValue({
-      success: true,
-      source: "building_a.dwg",
-      room_count: 24,
-      conversion_time_s: 3.45,
-      errors: [],
-      warnings: [],
-    });
+		await waitFor(() => {
+			expect(screen.getByText(/Parsing floorplan.dwg/)).toBeInTheDocument();
+		});
+	});
 
-    renderPage();
-    const file = createMockFile("building_a.dwg", ".dwg");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [file] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("displays parse results on success", async () => {
+		mockParseDwg.mockResolvedValue({
+			success: true,
+			source: "building_a.dwg",
+			room_count: 24,
+			conversion_time_s: 3.45,
+			errors: [],
+			warnings: [],
+		});
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("File parsed successfully")
-      ).toBeInTheDocument();
-      expect(screen.getByText("DWG")).toBeInTheDocument();
-      expect(screen.getByText("24")).toBeInTheDocument();
-      expect(screen.getByText("3.45s")).toBeInTheDocument();
-      expect(screen.getByText("OK")).toBeInTheDocument();
-    });
-  });
+		renderPage();
+		const file = createMockFile("building_a.dwg", ".dwg");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [file] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("displays warnings when present", async () => {
-    mockParseDwg.mockResolvedValue({
-      success: true,
-      source: "test.dwg",
-      room_count: 10,
-      conversion_time_s: 1.2,
-      errors: [],
-      warnings: ["Layer '0' has no geometry", "Missing xref: furniture.dwg"],
-    });
+		await waitFor(() => {
+			expect(screen.getByText("File parsed successfully")).toBeInTheDocument();
+			expect(screen.getByText("DWG")).toBeInTheDocument();
+			expect(screen.getByText("24")).toBeInTheDocument();
+			expect(screen.getByText("3.45s")).toBeInTheDocument();
+			expect(screen.getByText("OK")).toBeInTheDocument();
+		});
+	});
 
-    renderPage();
-    const file = createMockFile("test.dwg", ".dwg");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [file] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("displays warnings when present", async () => {
+		mockParseDwg.mockResolvedValue({
+			success: true,
+			source: "test.dwg",
+			room_count: 10,
+			conversion_time_s: 1.2,
+			errors: [],
+			warnings: ["Layer '0' has no geometry", "Missing xref: furniture.dwg"],
+		});
 
-    await waitFor(() => {
-      expect(screen.getByText("Warnings (2)")).toBeInTheDocument();
-      expect(
-        screen.getByText("Layer '0' has no geometry")
-      ).toBeInTheDocument();
-    });
-  });
+		renderPage();
+		const file = createMockFile("test.dwg", ".dwg");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [file] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("displays errors when present", async () => {
-    mockParseDwg.mockResolvedValue({
-      success: false,
-      source: "broken.dxf",
-      room_count: 0,
-      conversion_time_s: 0.5,
-      errors: ["Unsupported DXF version: AC1032"],
-      warnings: [],
-    });
+		await waitFor(() => {
+			expect(screen.getByText("Warnings (2)")).toBeInTheDocument();
+			expect(screen.getByText("Layer '0' has no geometry")).toBeInTheDocument();
+		});
+	});
 
-    renderPage();
-    const file = createMockFile("broken.dxf", ".dxf");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [file] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("displays errors when present", async () => {
+		mockParseDwg.mockResolvedValue({
+			success: false,
+			source: "broken.dxf",
+			room_count: 0,
+			conversion_time_s: 0.5,
+			errors: ["Unsupported DXF version: AC1032"],
+			warnings: [],
+		});
 
-    await waitFor(() => {
-      expect(screen.getByText("Errors (1)")).toBeInTheDocument();
-      expect(
-        screen.getByText("Unsupported DXF version: AC1032")
-      ).toBeInTheDocument();
-    });
-  });
+		renderPage();
+		const file = createMockFile("broken.dxf", ".dxf");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [file] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("shows error banner on API error", async () => {
-    mockParseDwg.mockRejectedValue(new Error("Empty file uploaded"));
+		await waitFor(() => {
+			expect(screen.getByText("Errors (1)")).toBeInTheDocument();
+			expect(
+				screen.getByText("Unsupported DXF version: AC1032"),
+			).toBeInTheDocument();
+		});
+	});
 
-    renderPage();
-    const file = createMockFile("empty.dwg", ".dwg");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [file] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+	it("shows error banner on API error", async () => {
+		mockParseDwg.mockRejectedValue(new Error("Empty file uploaded"));
 
-    await waitFor(() => {
-      expect(screen.getByText("Parse Error")).toBeInTheDocument();
-      expect(screen.getByText("Empty file uploaded")).toBeInTheDocument();
-    });
-  });
+		renderPage();
+		const file = createMockFile("empty.dwg", ".dwg");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [file] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-  it("resets form when X button is clicked on error", async () => {
-    renderPage();
-    
-    // First trigger an error
-    const badFile = createMockFile("test.pdf", ".pdf");
-    const fileInputEl = document.querySelector('input[type="file"]')!;
-    Object.defineProperty(fileInputEl, "files", { value: [badFile] });
-    fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+		await waitFor(() => {
+			expect(screen.getByText("Parse Error")).toBeInTheDocument();
+			expect(screen.getByText("Empty file uploaded")).toBeInTheDocument();
+		});
+	});
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("Only .dwg and .dxf files are supported")
-      ).toBeInTheDocument();
-    });
+	it("resets form when X button is clicked on error", async () => {
+		renderPage();
 
-    // Click the X button to dismiss
-    const closeBtn = screen.getByRole("button", { name: "Close" });
-    await userEvent.click(closeBtn);
+		// First trigger an error
+		const badFile = createMockFile("test.pdf", ".pdf");
+		const fileInputEl = document.querySelector('input[type="file"]')!;
+		Object.defineProperty(fileInputEl, "files", { value: [badFile] });
+		fileInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText("Only .dwg and .dxf files are supported")
-      ).not.toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(
+				screen.getByText("Only .dwg and .dxf files are supported"),
+			).toBeInTheDocument();
+		});
 
-  it("shows info section at the bottom", () => {
-    renderPage();
-    expect(
-      screen.getByText(/The DWG\/DXF parser extracts room layouts/)
-    ).toBeInTheDocument();
-  });
+		// Click the X button to dismiss
+		const closeBtn = screen.getByRole("button", { name: "Close" });
+		await userEvent.click(closeBtn);
+
+		await waitFor(() => {
+			expect(
+				screen.queryByText("Only .dwg and .dxf files are supported"),
+			).not.toBeInTheDocument();
+		});
+	});
+
+	it("shows info section at the bottom", () => {
+		renderPage();
+		expect(
+			screen.getByText(/The DWG\/DXF parser extracts room layouts/),
+		).toBeInTheDocument();
+	});
 });

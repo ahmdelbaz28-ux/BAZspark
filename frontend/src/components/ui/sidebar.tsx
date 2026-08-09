@@ -275,7 +275,8 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
 	const { toggleSidebar } = useSidebar();
 
 	return (
-		<button type="button"
+		<button
+			type="button"
 			data-sidebar="rail"
 			data-slot="sidebar-rail"
 			aria-label="Toggle Sidebar"
@@ -315,9 +316,11 @@ function SidebarInput({
 	...props
 }: React.ComponentProps<typeof Input>) {
 	return (
-		<Input data-slot="sidebar-input"
+		<Input
+			data-slot="sidebar-input"
 			data-sidebar="input"
-			autoComplete="off"  className={cn("bg-background h-8 w-full shadow-none", className)}
+			autoComplete="off"
+			className={cn("bg-background h-8 w-full shadow-none", className)}
 			{...props}
 		/>
 	);
@@ -596,7 +599,7 @@ function SidebarMenuSkeleton({
 	showIcon?: boolean;
 }) {
 	const width = React.useMemo(() => {
-		return `${Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 40) + 50}%`;
+		return `${Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / 0xffffffff) * 40) + 50}%`;
 	}, []);
 
 	return (
