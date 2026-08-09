@@ -37,6 +37,12 @@
       "skillPath": "skills/engineering/code-review/SKILL.md",
       "computedHash": "7c3170d8b1b904418358af0474f82e74c89a2dd66c12c956caefdc0aa81ea09f"
     },
+    "code-review-and-quality": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-review-and-quality/SKILL.md",
+      "computedHash": "6231479cc74c7ed70a5618b81b3f94034d9806c0319a1a23d15f9b94a368c581"
+    },
     "debugging-wizard": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
