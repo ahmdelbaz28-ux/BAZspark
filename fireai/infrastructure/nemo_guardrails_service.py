@@ -22,8 +22,6 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from fireai.constants.nfpa72 import (
-    HEAT_MAX_SPACING_M,
-    PE_SIGNOFF_NOTICE,
     SMOKE_MAX_CEILING_HEIGHT_M,
     SMOKE_MAX_SPACING_M,
     VOLTAGE_DROP_MAX_FRACTION,
