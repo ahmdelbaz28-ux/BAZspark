@@ -1,0 +1,61 @@
+NFPA 72-2022 CHAPTER 17 — INITIATING DEVICES (CONTINUED)
+Section 17.6 Heat Detectors
+
+17.6.1 General.
+Heat detectors shall be installed in all areas where required by other NFPA standards, codes, federal, state, and local laws.
+
+17.6.2 Types of Heat Detectors.
+17.6.2.1 Fixed-Temperature Detectors.
+Fixed-temperature detectors actuate when the detecting element reaches a specified temperature. Common ratings include:
+- 57°C (135°F): Standard — for general areas where ambient temperature does not exceed 38°C (100°F).
+- 79°C (174°F): High — for areas where ambient temperature is 38°C to 66°C (100°F to 150°F).
+- 121°C (250°F): Extra-High — for areas where ambient temperature is 66°C to 107°C (150°F to 225°F).
+
+17.6.2.2 Rate-of-Rise (ROR) Detectors.
+Rate-of-rise detectors actuate when the temperature rises at a rate exceeding 8.3°C per minute (15°F per minute), regardless of the actual ambient temperature. ROR detectors should not be used in areas where rapid temperature increases occur normally (e.g., manufacturing, cooking areas).
+
+17.6.2.3 Combination Fixed-Temperature / Rate-of-Rise Detectors.
+These devices respond to either condition first.
+
+17.6.3 Spacing of Heat Detectors.
+17.6.3.1 Listed Spacing.
+The listed spacing for heat detectors is based on a smooth ceiling at a height of 3.05 m (10 ft) under standard conditions. The most common listed spacing is 9.1 m × 9.1 m (30 ft × 30 ft) = 83.6 m² (900 ft²) per detector.
+
+17.6.3.2 Ceiling Height Corrections.
+The listed spacing shall be reduced per Table 17.6.3.2 when ceiling heights exceed 3.05 m (10 ft):
+
+| Ceiling Height | Correction Factor |
+|---------------|-------------------|
+| Up to 3.05 m (10 ft)   | 1.00 (no reduction) |
+| 3.05 – 3.66 m (10–12 ft) | 0.91 |
+| 3.66 – 4.57 m (12–15 ft) | 0.84 |
+| 4.57 – 6.10 m (15–20 ft) | 0.75 |
+| 6.10 – 7.62 m (20–25 ft) | 0.69 |
+| 7.62 – 9.14 m (25–30 ft) | 0.59 |
+
+17.6.3.3 Beam Ceilings.
+Where the ceiling consists of solid beams more than 100 mm (4 in.) deep and spaced less than 9.1 m (30 ft) apart, detectors shall be installed in each beam bay.
+
+17.6.3.4 Sloped Ceilings.
+17.6.3.4.1 For sloped ceilings with a slope greater than 1 in 8, a row of detectors shall be installed at the high side of the area within 900 mm (36 in.) of the ridge.
+17.6.3.4.2 Additional rows shall be spaced at not more than the listed spacing measured horizontally.
+
+17.6.4 Ceiling Height Limitations for Heat Detectors.
+17.6.4.1 Listed spot-type heat detectors shall not be used on ceilings higher than 9.14 m (30 ft) unless the detector is listed and tested for higher installation heights.
+17.6.4.2 In areas with ceilings exceeding 9.14 m, alternative detection strategies (e.g., linear heat detection cable, aspirating systems) shall be considered.
+
+17.6.5 Linear Heat Detection.
+17.6.5.1 Linear heat detection cable shall be listed for the purpose.
+17.6.5.2 The cable shall be installed and spaced per the manufacturer's instructions.
+17.6.5.3 Typical spacing: parallel runs no more than 9.1 m (30 ft) apart for standard applications, reduced for high-hazard areas.
+
+HEAT DETECTOR SELECTION GUIDE (BAZspark occupancy mapping):
+- Kitchen / Boiler Room: Fixed-temperature 79°C or higher; NOT rate-of-rise due to normal rapid temperature changes.
+- General Offices: Rate-of-rise + Fixed combination (57°C) preferred.
+- Parking Garages: Fixed-temperature 57°C or 79°C; rate-of-rise acceptable if heating is not rapid.
+- Electrical Rooms: Fixed-temperature 57°C; ROR acceptable.
+- Attics: Fixed-temperature 57°C at ridge level; linear heat cable alternative.
+
+AMBIENT TEMPERATURE MARGINS:
+- The detector rating must exceed the maximum expected ambient temperature by at least 19°C (35°F) to prevent false alarms.
+- Example: If the ambient peak is 50°C (122°F), minimum detector rating = 50 + 19 = 69°C → use 79°C rated detector.

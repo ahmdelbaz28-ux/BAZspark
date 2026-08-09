@@ -1,0 +1,64 @@
+NFPA 72-2022 CHAPTER 17 — INITIATING DEVICES
+Section 17.7 Smoke Detectors
+
+17.7.1 General.
+Smoke detectors shall be installed in all areas where required by other NFPA standards, codes, federal, state, and local laws.
+
+17.7.3.2 Spacing of Spot-Type Smoke Detectors.
+17.7.3.2.1 In the absence of specific guidelines from the manufacturer, or when the detector is listed for a specific spacing, the following requirements shall apply.
+
+17.7.3.2.3 Smooth Ceiling Spacing.
+For smooth ceilings, a maximum smoke detector spacing of 9.1 m (30 ft) between detectors shall be used. The distance from a wall or partition to the nearest detector shall not exceed one-half the listed spacing.
+
+17.7.3.2.3.1 Smoke detectors installed below ceilings shall be located so that the detector is within 600 mm (24 in.) of the ceiling.
+
+17.7.3.2.3.2 For ceilings having a slope equal to or less than 1 in 8, the spacing requirements in 17.7.3.2.3 shall apply.
+
+17.7.3.3 Peaked or Sloped Ceiling Spacing.
+17.7.3.3.1 For peaked ceilings with a slope greater than 1 in 8, a row of detectors shall be located at or within 900 mm (36 in.) of the peak.
+17.7.3.3.2 The spacing of the detectors shall be based on a horizontal distance. The horizontal distance between additional rows of detectors shall not exceed the listed spacing.
+
+17.7.3.4 Ceiling Height Limitations.
+17.7.3.4.1 The maximum ceiling height for listed spot-type smoke detectors shall not exceed 9.1 m (30 ft), unless listed for a higher height and the AHJ approves.
+17.7.3.4.2 Spot-type smoke detectors shall not be used on ceilings more than 9.1 m (30 ft) high unless listed for higher heights.
+
+17.7.3.5 Beam Construction Ceilings.
+17.7.3.5.1 Where the ceiling is composed of solid structural or solid nonstructural members extending downward from the ceiling surface more than 100 mm (4 in.), the space between beams shall be treated as a separate section.
+17.7.3.5.2 If the beams are less than 100 mm (4 in.) deep or if the beams are spaced more than 7.5 m (25 ft) apart, the beams may be ignored.
+17.7.3.5.3 If the beams are 100 mm (4 in.) to 460 mm (18 in.) deep and less than 9.1 m (30 ft) from center to center, the detector spacing shall be reduced to two-thirds the spacing listed in Table 17.7.3.2.3.
+
+17.7.3.6 Partitioned Areas.
+17.7.3.6.1 Where walls or partitions extend to within 15 percent of the ceiling height, the area shall be treated as a room.
+
+17.7.4 Duct Smoke Detectors.
+17.7.4.1 Duct smoke detectors shall be listed for the purpose of detecting smoke in air-handling systems.
+17.7.4.2 Duct smoke detectors shall be installed in supply air systems, return air systems, and exhaust air systems where required by the applicable code.
+17.7.4.3 The sampling tube length and coverage area shall be within the manufacturer's listed specifications.
+17.7.4.4 A duct smoke detector installed in an air duct shall be installed downstream of the air filters or other filtration equipment where particulates are removed.
+
+17.7.5 Air Sampling-Type Detectors.
+17.7.5.1 Air sampling-type smoke detectors shall be listed for the application.
+17.7.5.2 Pipe networks shall be designed so that the transport time from any sampling point to the detector is not more than 120 seconds.
+17.7.5.3 Pipe networks shall be configured and sized for the airflow requirements of the listed detector.
+
+17.7.6 Multicriteria Detectors.
+Multicriteria smoke detectors shall be installed as specified by the manufacturer and within the requirements of this code. Where a multicriteria smoke detector incorporates a heat element, the heat element shall comply with the applicable requirements for heat detectors.
+
+17.7.7 Linear Beam-Type Smoke Detectors.
+17.7.7.1 Linear beam-type smoke detectors shall be listed for the application.
+17.7.7.2 The path of the beam shall not pass over any area that is open to the outside of the building.
+17.7.7.3 The beam path shall be oriented parallel to the ceiling.
+17.7.7.4 The horizontal separation between beams shall not exceed 9.1 m (30 ft).
+17.7.7.5 Where beams are used on peaked or sloped ceilings, the requirements of 17.7.3.3 shall apply to the placement of the beam nearest the peak.
+
+OCCUPANCY CLASSIFICATIONS AND SMOKE DETECTOR SELECTION:
+- Office/Commercial: Ionization or Photoelectric spot-type; max spacing 9.1 m (30 ft) on smooth ceilings.
+- Industrial: Ionization, photoelectric, or air-sampling depending on environment; consult AHJ.
+- High Rack Storage: Linear beam detectors or air-sampling preferred above 6 m (20 ft).
+- Clean Rooms: Air-sampling with appropriate sensitivity class (A, B, or C per manufacturer spec).
+
+CEILING HEIGHT THRESHOLDS FOR SMOKE DETECTORS (per BAZspark implementation):
+- 0 – 3.0 m: Standard spot-type, special considerations may apply.
+- 3.0 – 9.14 m (30 ft): Standard spot-type, full NFPA 72 §17.7.3 applies.
+- 9.14 m – 15.24 m (50 ft): Listed high-ceiling detectors ONLY; PE review required.
+- > 15.24 m – 18.288 m (60 ft): Absolute hard limit; design rejected without special variance.

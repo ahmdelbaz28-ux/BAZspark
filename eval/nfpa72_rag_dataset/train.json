@@ -1,0 +1,273 @@
+[
+  {
+    "id": 0,
+    "question": "What is the maximum spacing between smoke detectors on a smooth ceiling per NFPA 72?",
+    "answer": "The maximum spacing between spot-type smoke detectors on a smooth ceiling is 9.1 m (30 ft), per NFPA 72 §17.7.3.2.3. The distance from a wall or partition to the nearest detector must not exceed one-half the listed spacing, i.e., 4.55 m (15 ft).",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "a maximum smoke detector spacing of 9.1 m (30 ft) between detectors shall be used. The distance from a wall or partition to the nearest detector shall not exceed one-half the listed spacing."}
+    ]
+  },
+  {
+    "id": 1,
+    "question": "What is the maximum ceiling height for standard spot-type smoke detectors in BAZspark?",
+    "answer": "Standard spot-type smoke detectors in BAZspark are limited to a maximum ceiling height of 9.14 m (30 ft). Between 9.14 m and 15.24 m, only listed high-ceiling detectors may be used and PE review is required. The absolute hard limit is 18.288 m (60 ft), above which the design is rejected.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt"},
+      {"filename": "BAZspark_system_overview.txt", "text": "Standard spot-type detectors: max 9.14 m (30 ft)"}
+    ]
+  },
+  {
+    "id": 2,
+    "question": "At what rate of temperature rise do rate-of-rise heat detectors activate?",
+    "answer": "Rate-of-rise (ROR) heat detectors activate when the temperature rises at a rate exceeding 8.3°C per minute (15°F per minute), regardless of the actual ambient temperature.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "Rate-of-rise detectors actuate when the temperature rises at a rate exceeding 8.3°C per minute (15°F per minute), regardless of the actual ambient temperature."}
+    ]
+  },
+  {
+    "id": 3,
+    "question": "What is the minimum sound level required for audible notification appliances in public operating mode per NFPA 72?",
+    "answer": "In public operating mode, audible notification appliances must produce a sound level of not less than 65 dB(A) at 3 m (10 ft). Additionally, the sound level must be at least 15 dB above the average ambient sound level or 5 dB above the maximum sound level having a duration of at least 60 seconds, whichever is greater, measured 1.5 m (5 ft) above the floor.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "Audible appliances shall have a sound level of not less than 65 dB(A) at 3 m (10 ft) in public areas."}
+    ]
+  },
+  {
+    "id": 4,
+    "question": "What is the minimum battery capacity (in AH) required for a system with 0.35 A standby current and 4.2 A alarm current for 24 hours standby and 5 minutes alarm?",
+    "answer": "Using the formula: Battery AH = (I_standby × T_standby + I_alarm × T_alarm) × 1.20 = (0.35 × 24 + 4.20 × 0.0833) × 1.20 = (8.40 + 0.350) × 1.20 = 8.75 × 1.20 = 10.50 AH. The next standard battery size should be selected, which is 12 AH.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_voltage_drop_formulas.txt", "text": "Battery AH = (I_standby × T_standby + I_alarm × T_alarm) × Safety_factor"}
+    ]
+  },
+  {
+    "id": 5,
+    "question": "What correction factor applies to heat detector spacing when the ceiling height is between 4.57 m and 6.10 m?",
+    "answer": "Per NFPA 72 Table 17.6.3.2, when the ceiling height is between 4.57 m (15 ft) and 6.10 m (20 ft), the correction factor is 0.75. This means the listed spacing must be multiplied by 0.75. For a listed spacing of 9.1 m, the adjusted spacing would be 9.1 × 0.75 = 6.825 m.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "4.57 – 6.10 m (15–20 ft) | 0.75"}
+    ]
+  },
+  {
+    "id": 6,
+    "question": "How far from the ceiling must smoke detectors be installed when mounted below the ceiling surface?",
+    "answer": "Per NFPA 72 §17.7.3.2.3.1, smoke detectors installed below ceilings shall be located so that the detector is within 600 mm (24 in.) of the ceiling.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "Smoke detectors installed below ceilings shall be located so that the detector is within 600 mm (24 in.) of the ceiling."}
+    ]
+  },
+  {
+    "id": 7,
+    "question": "What is the minimum strobe candela (cd) rating required for a room with an area of 75 m²?",
+    "answer": "A room with an area of 75 m² (approximately 807 ft²) falls in the 46.5 m² to 93.0 m² (500 ft² to 1000 ft²) range, requiring a minimum strobe rating of 75 cd per NFPA 72 Table 18.5.4.3.5.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "46.5 m² to 93.0 m² (500 ft² to 1000 ft²): 75 cd minimum."}
+    ]
+  },
+  {
+    "id": 8,
+    "question": "What is the voltage drop on a 14 AWG NAC circuit, 150 m one-way, drawing 0.80 A on a 24 VDC system?",
+    "answer": "Using the formula V_drop = I × 2 × L × R_unit: R_total = 2 × 150 m × 0.00820 Ω/m = 2.46 Ω. V_drop = 0.80 A × 2.46 Ω = 1.97 V. Terminal voltage = 24.0 - 1.97 = 22.03 V, which is above the minimum of 20.4 V. The circuit PASSES.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_voltage_drop_formulas.txt", "text": "AWG 14: 0.00820 Ω/m"}
+    ]
+  },
+  {
+    "id": 9,
+    "question": "What happens to smoke detector spacing when the ceiling has beams 200 mm deep spaced 8 m apart?",
+    "answer": "Per NFPA 72 §17.7.3.5.3, when beams are 100 mm to 460 mm deep and spaced less than 9.1 m apart, the smoke detector spacing must be reduced to two-thirds the listed spacing. With beams 200 mm deep at 8 m spacing, the adjusted spacing = 9.1 m × (2/3) = 6.07 m. Each beam bay is also treated as a separate section.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "If the beams are 100 mm (4 in.) to 460 mm (18 in.) deep and less than 9.1 m (30 ft) from center to center, the detector spacing shall be reduced to two-thirds the spacing listed in Table 17.7.3.2.3."}
+    ]
+  },
+  {
+    "id": 10,
+    "question": "What is the maximum sound pressure level that audible notification appliances may produce?",
+    "answer": "Per NFPA 72 §24.4.1.2 and §24.4.4, the sound level must not exceed 110 dB(A) at the minimum hearing distance from the device, and the maximum SPL for audible appliances must not exceed 120 dB peak sound pressure.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "The sound level shall not exceed 110 dB(A) at the minimum hearing distance from the device."}
+    ]
+  },
+  {
+    "id": 11,
+    "question": "What are the four Safety Tiers in BAZspark and what coverage percentages do they represent?",
+    "answer": "BAZspark defines four Safety Tiers: TIER_1 (< 70% coverage) — REJECTED, cannot proceed; TIER_2 (70–89% coverage) — FLAGGED, PE review required; TIER_3 (90–99% coverage) — CONDITIONAL, submittable with documentation; TIER_4 (≥ 99% coverage) — VERIFIED, fully compliant and ready for AHJ submittal.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "BAZspark_system_overview.txt", "text": "TIER_1 (< 70% coverage): REJECTED — cannot proceed"}
+    ]
+  },
+  {
+    "id": 12,
+    "question": "What detector type should be installed in a kitchen per NFPA 72 and BAZspark guidelines?",
+    "answer": "In a kitchen, fixed-temperature heat detectors rated at 79°C or higher should be used. Rate-of-rise (ROR) detectors should NOT be used in kitchens because rapid temperature changes occur normally during cooking, which would cause false alarms.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "Kitchen / Boiler Room: Fixed-temperature 79°C or higher; NOT rate-of-rise due to normal rapid temperature changes."}
+    ]
+  },
+  {
+    "id": 13,
+    "question": "How are duct smoke detectors required to be positioned relative to air filters?",
+    "answer": "Per NFPA 72 §17.7.4.4, a duct smoke detector installed in an air duct shall be installed downstream of the air filters or other filtration equipment where particulates are removed.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "A duct smoke detector installed in an air duct shall be installed downstream of the air filters or other filtration equipment where particulates are removed."}
+    ]
+  },
+  {
+    "id": 14,
+    "question": "What is the NFPA 72 requirement for standby power duration for fire alarm systems?",
+    "answer": "Per NFPA 72 Section 10.6.7.2, fire alarm systems must be capable of operating in standby mode for a minimum of 24 hours, followed by a minimum of 5 minutes of full alarm operation. For high-rise or special hazard occupancies, the requirement increases to 24 hours standby plus 15 minutes of alarm.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_voltage_drop_formulas.txt", "text": "Standby power: Minimum 24 hours of standby (supervisory) mode; Alarm power: Minimum 5 minutes of full alarm at end of standby period"}
+    ]
+  },
+  {
+    "id": 15,
+    "question": "What is the maximum transport time allowed from any sampling point to the detector in air-sampling type smoke detectors?",
+    "answer": "Per NFPA 72 §17.7.5.2, the pipe network shall be designed so that the transport time from any sampling point to the detector is not more than 120 seconds.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "Pipe networks shall be designed so that the transport time from any sampling point to the detector is not more than 120 seconds."}
+    ]
+  },
+  {
+    "id": 16,
+    "question": "Where should visible notification appliances (strobes) be installed relative to the ceiling in sleeping areas?",
+    "answer": "Per NFPA 72 §24.5.5, visible appliances in sleeping areas must have a minimum intensity of 177 cd (or 110 cd with an oblong pattern) and shall be located within 1.83 m (6 ft) of the pillow centerline. The general lens height requirement of 2.03 m to 2.44 m above the finished floor also applies.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "Visible appliances in sleeping areas shall be located within 1.83 m (6 ft) of the pillow centerline."}
+    ]
+  },
+  {
+    "id": 17,
+    "question": "What is the flash rate requirement for strobe devices per NFPA 72?",
+    "answer": "Per NFPA 72 §24.5.2.1, the flash rate for single strobes shall be 1 Hz minimum to 2 Hz maximum (1 to 2 flashes per second). Where rooms contain two or more visible appliances, the devices shall be synchronized.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "The flash rate for single strobes shall be 1 Hz minimum to 2 Hz maximum (1 to 2 flashes per second). For rooms with two or more devices, the devices shall be synchronized."}
+    ]
+  },
+  {
+    "id": 18,
+    "question": "What detector spacing is required on a peaked ceiling with a slope greater than 1 in 8?",
+    "answer": "Per NFPA 72 §17.7.3.3, for peaked ceilings with a slope greater than 1 in 8, a row of detectors must be located at or within 900 mm (36 in.) of the peak. Additional rows of detectors must not exceed the listed spacing measured as a horizontal distance.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "For peaked ceilings with a slope greater than 1 in 8, a row of detectors shall be located at or within 900 mm (36 in.) of the peak."}
+    ]
+  },
+  {
+    "id": 19,
+    "question": "What is the minimum ambient temperature margin required above the maximum ambient temperature when selecting a fixed-temperature heat detector?",
+    "answer": "The detector rating must exceed the maximum expected ambient temperature by at least 19°C (35°F) to prevent false alarms. For example, if the ambient peak temperature is 50°C, the minimum detector rating required is 50 + 19 = 69°C, so a 79°C rated detector should be selected.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "The detector rating must exceed the maximum expected ambient temperature by at least 19°C (35°F) to prevent false alarms."}
+    ]
+  },
+  {
+    "id": 20,
+    "question": "What is the maximum visible appliance spacing along a corridor per NFPA 72?",
+    "answer": "Per NFPA 72 §24.5.3.1, visible appliances must be installed so that no point in any corridor is more than 15.25 m (50 ft) from a visible appliance. Where the corridor is greater than 15.25 m (50 ft) long, devices must be spaced no more than 30.5 m (100 ft) apart.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "Visible appliances shall be installed so that no point in any corridor is more than 15.25 m (50 ft) from the visible appliance. Where the corridor is greater than 15.25 m (50 ft) long, the devices shall be spaced no more than 30.5 m (100 ft) apart."}
+    ]
+  },
+  {
+    "id": 21,
+    "question": "What are the five main analysis steps in BAZspark's compliance pipeline?",
+    "answer": "BAZspark's compliance pipeline consists of five steps: (1) Geometry validation (polygon, ceiling height, room type); (2) Detector type selection based on occupancy and ceiling height; (3) Placement calculation with coverage verification using grid sampling; (4) SPL verification for notification appliances; (5) Voltage drop and battery backup calculations; followed by signing and storing the audit record.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "BAZspark_system_overview.txt", "text": "COMPLIANCE PIPELINE"}
+    ]
+  },
+  {
+    "id": 22,
+    "question": "What is the resistance per meter of 12 AWG copper wire at 20°C?",
+    "answer": "Per the wire resistance table in the BAZspark voltage drop reference, 12 AWG copper wire has a resistance of 0.00515 Ω/m at 20°C (equivalent to approximately 0.00529 Ω/m in some references). This gauge is commonly used for heavy NAC runs and long-distance circuits.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_voltage_drop_formulas.txt", "text": "AWG 12: 0.00515 Ω/m (heavy NAC runs, long distances)"}
+    ]
+  },
+  {
+    "id": 23,
+    "question": "When should partitioned areas be treated as separate rooms for smoke detector purposes?",
+    "answer": "Per NFPA 72 §17.7.3.6.1, where walls or partitions extend to within 15 percent of the ceiling height, the area shall be treated as a separate room for smoke detector placement purposes.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_smoke_detectors.txt", "text": "Where walls or partitions extend to within 15 percent of the ceiling height, the area shall be treated as a room."}
+    ]
+  },
+  {
+    "id": 24,
+    "question": "What is the maximum rated temperature for an Extra-High fixed-temperature heat detector?",
+    "answer": "Extra-High fixed-temperature heat detectors are rated at 121°C (250°F) and are used in areas where the ambient temperature is between 66°C and 107°C (150°F to 225°F).",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "121°C (250°F): Extra-High — for areas where ambient temperature is 66°C to 107°C (150°F to 225°F)."}
+    ]
+  },
+  {
+    "id": 25,
+    "question": "What embedding model and vector dimensions does the BAZspark GraphRAG Engine use?",
+    "answer": "The BAZspark GraphRAGEngine uses OpenAI text-embedding-3-small with 1536 embedding dimensions for vector similarity search. It also applies Nemotron-style reranking combining term overlap and semantic scoring to improve retrieval precision.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "BAZspark_system_overview.txt", "text": "Using OpenAI text-embedding-3-small (1536 dimensions) for vector similarity search"}
+    ]
+  },
+  {
+    "id": 26,
+    "question": "What minimum sound level is required in sleeping areas for audible fire alarm appliances?",
+    "answer": "Per NFPA 72 §24.4.2.2, where the occupancy is used for sleeping, the minimum sound level shall be 75 dB(A) measured at the pillow level for sleeping areas.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "Where the occupancy is used for sleeping, the minimum sound level shall be 75 dB(A) at the pillow level for sleeping areas."}
+    ]
+  },
+  {
+    "id": 27,
+    "question": "What is the SLC loop resistance limit and what resistance would a 600 m AWG 18 Class B circuit have?",
+    "answer": "Typical FACP manufacturer SLC loop resistance limits are 40 Ω to 100 Ω total. For a 600 m one-way AWG 18 Class B (Style 4) circuit: R_loop = 600 m × 0.02067 Ω/m = 12.40 Ω, which is well within the 40 Ω limit.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_voltage_drop_formulas.txt", "text": "AWG 18: 0.02067 Ω/m (most common for SLC/Class B IDC)"}
+    ]
+  },
+  {
+    "id": 28,
+    "question": "What is the minimum standby sound level for private operating mode notification appliances?",
+    "answer": "Per NFPA 72 §24.4.3, audible appliances in private operating mode must produce a sound level of not less than 45 dB(A) at 3 m (10 ft) or 10 dB(A) above the ambient sound level, whichever is greater.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter24_notification_appliances.txt", "text": "Audible appliances in private operating mode shall have a sound level of not less than 45 dB(A) at 3 m (10 ft) or 10 dB(A) above the ambient sound level, whichever is greater."}
+    ]
+  },
+  {
+    "id": 29,
+    "question": "What is the maximum coverage area per heat detector on a smooth 3.05 m ceiling per NFPA 72?",
+    "answer": "Per NFPA 72 §17.6.3.1, the most common listed spacing for heat detectors at 3.05 m (10 ft) ceiling height is 9.1 m × 9.1 m (30 ft × 30 ft), giving a maximum coverage area of 83.6 m² (900 ft²) per detector. No height correction factor is applied at or below 3.05 m.",
+    "is_impossible": false,
+    "contexts": [
+      {"filename": "NFPA72_chapter17_heat_detectors.txt", "text": "The most common listed spacing is 9.1 m × 9.1 m (30 ft × 30 ft) = 83.6 m² (900 ft²) per detector."}
+    ]
+  }
+]

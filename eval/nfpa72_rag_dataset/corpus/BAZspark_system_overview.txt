@@ -1,0 +1,68 @@
+BAZSPARK SYSTEM OVERVIEW — Fire Alarm Design Intelligence Platform
+
+VERSION: 2.x
+AUTHOR: Ahmed Elbaz
+DOMAIN: NFPA 72-2022 Fire Alarm System Design (Safety-Critical)
+
+OVERVIEW:
+BAZspark is a production-grade, safety-first fire alarm design automation platform implementing
+NFPA 72-2022. It automates detector placement, compliance checking, voltage drop analysis,
+battery backup sizing, acoustic SPL verification, and audit trail generation.
+
+KEY MODULES:
+1. FloorAnalyser — Analyses floor plans, rooms, and ceiling geometry for detector layout
+2. BuildingEngine — Coordinates multi-floor analysis and aggregated compliance
+3. NACBoosterAllocator — Allocates NAC circuits and verifies SPL & voltage drop
+4. BatteryCalculator — Calculates standby and alarm battery AH requirements
+5. GraphRAGEngine — AI-powered knowledge retrieval using Neo4j + OpenAI embeddings
+6. AuditTrail — Immutable audit records for PE (Professional Engineer) review
+
+GRAPHRAG ENGINE:
+The GraphRAGEngine provides natural-language access to engineering knowledge by:
+- Indexing NFPA 72 code knowledge in Neo4j graph database
+- Using OpenAI text-embedding-3-small (1536 dimensions) for vector similarity search
+- Applying Nemotron-style reranking (term overlap + semantic score) for result precision
+- Returning structured citations with document name and text excerpts
+
+COMPLIANCE PIPELINE:
+When a room is submitted for analysis:
+1. Geometry validation (polygon, ceiling height, room type)
+2. Detector type selection (smoke/heat/beam) per occupancy and ceiling height
+3. Placement calculation with coverage verification using grid sampling
+4. SPL verification for notification appliances
+5. Voltage drop and battery backup calculations
+6. Audit record signed and stored
+
+SAFETY TIERS:
+- TIER_1 (< 70% coverage): REJECTED — cannot proceed
+- TIER_2 (70-89% coverage): FLAGGED — PE review required
+- TIER_3 (90-99% coverage): CONDITIONAL — submittable with documentation
+- TIER_4 (≥ 99% coverage): VERIFIED — fully compliant, ready for AHJ submittal
+
+SUPPORTED ROOM TYPES:
+office, conference_room, corridor, lobby, server_room, storage, kitchen, parking,
+restroom, stairwell, electrical_room, mechanical_room, high_rack_storage, clean_room,
+attic, hazardous_area
+
+CEILING HEIGHT LIMITS:
+- Standard spot-type detectors: max 9.14 m (30 ft)
+- Listed high-ceiling detectors: 9.14 m – 15.24 m (50 ft) — PE review required
+- Absolute hard limit: 18.288 m (60 ft) — design rejected without special variance
+- Heights < 3.0 m: Standard detectors with possible reduced spacing requirements
+
+DETECTOR SPACING (SMOKE, SMOOTH CEILING):
+- Default listed spacing: 9.1 m (30 ft)
+- Maximum wall offset: 4.55 m (half of listed spacing)
+- Beam ceiling adjustment: 2/3 of listed spacing if beams 100–460 mm deep, < 9.1 m apart
+
+DETECTOR SPACING (HEAT, SMOOTH CEILING AT 3.05 m):
+- Default listed spacing: 9.1 m (30 ft) → 83.6 m² per detector
+- Height correction required for ceilings > 3.05 m per NFPA 72 Table 17.6.3.2
+
+API ENDPOINTS:
+POST /analyse/room — Single room analysis
+POST /analyse/floor — Multi-room floor analysis
+POST /api/v2/graphrag/ask — AI question answering on engineering knowledge
+POST /api/v2/graphrag/search — Semantic search over knowledge base
+GET  /api/v2/graphrag/health — GraphRAG engine health status
+POST /api/v2/graphrag/knowledge — Add new knowledge to the graph

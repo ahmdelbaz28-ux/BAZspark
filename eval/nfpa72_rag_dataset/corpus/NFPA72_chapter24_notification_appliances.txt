@@ -1,0 +1,63 @@
+NFPA 72-2022 CHAPTER 24 — NOTIFICATION APPLIANCES
+Section 24.4 Audible Characteristics
+
+24.4.1 General.
+24.4.1.1 Audible notification appliances shall produce a sound level not less than 15 dB above the average ambient sound level or 5 dB above the maximum sound level having a duration of at least 60 seconds, whichever is greater, measured 1.5 m (5 ft) above the floor in the area served by the appliance.
+
+24.4.1.2 The sound level shall not exceed 110 dB(A) at the minimum hearing distance from the device.
+
+24.4.2 Public Operating Mode.
+24.4.2.1 Audible appliances shall have a sound level of not less than 65 dB(A) at 3 m (10 ft) in public areas.
+24.4.2.2 Where the occupancy is used for sleeping, the minimum sound level shall be 75 dB(A) at the pillow level for sleeping areas.
+
+24.4.3 Private Operating Mode.
+Audible appliances in private operating mode shall have a sound level of not less than 45 dB(A) at 3 m (10 ft) or 10 dB(A) above the ambient sound level, whichever is greater.
+
+24.4.4 Maximum Sound Pressure.
+24.4.4.1 The maximum SPL for audible appliances shall not exceed 120 dB peak sound pressure.
+24.4.4.2 Appliances producing a sound level in excess of 100 dB(A) shall not be installed within 1 m (3 ft) of any occupant's normal head position.
+
+24.5 Visible Characteristics
+
+24.5.1 General.
+24.5.1.1 Visible notification appliances (strobes) shall be installed in all areas where audible appliances are required and shall meet or exceed the requirements of this section.
+
+24.5.2.1 The flash rate for single strobes shall be 1 Hz minimum to 2 Hz maximum (1 to 2 flashes per second). For rooms with two or more devices, the devices shall be synchronized.
+
+24.5.2.4 Candela (cd) Requirements for Rooms.
+The required cd rating for rooms based on room area is specified in Table 18.5.4.3.5 of NFPA 72-2022:
+- 9.3 m² to 27.9 m² (100 ft² to 300 ft²): 15 cd minimum.
+- 27.9 m² to 46.5 m² (300 ft² to 500 ft²): 30 cd minimum.
+- 46.5 m² to 93.0 m² (500 ft² to 1000 ft²): 75 cd minimum.
+- 93.0 m² to 186.0 m² (1000 ft² to 2000 ft²): 110 cd minimum.
+- 186.0 m² to 278.5 m² (2000 ft² to 3000 ft²): 135 cd minimum.
+- 278.5 m² to 371.6 m² (3000 ft² to 4000 ft²): 185 cd minimum.
+
+24.5.3 Spacing.
+24.5.3.1 Corridor Spacing:
+Visible appliances shall be installed so that no point in any corridor is more than 15.25 m (50 ft) from the visible appliance.
+Where the corridor is greater than 15.25 m (50 ft) long, the devices shall be spaced no more than 30.5 m (100 ft) apart.
+
+24.5.3.2 Room Spacing (single device):
+The strobe shall be installed in the upper portion of a room, with the lens 2.03 m to 2.44 m (80 to 96 in.) above the finished floor.
+The maximum coverage area per device depends on cd rating per Table 18.5.4.3.5.
+
+24.5.5 Sleeping Areas.
+24.5.5.1 Visible appliances in sleeping areas shall have a minimum cd intensity of 177 cd or 110 cd with an oblong pattern.
+24.5.5.2 Visible appliances in sleeping areas shall be located within 1.83 m (6 ft) of the pillow centerline.
+
+NOTIFICATION APPLIANCE CIRCUIT (NAC) REQUIREMENTS:
+- NAC voltage: Typically 12V or 24V DC (nominal).
+- End-of-Line (EOL) resistance: Required on each circuit for supervision.
+- Maximum current: Limited by FACP panel rating per circuit (commonly 1.0 A to 3.0 A per NAC).
+- Wire sizing: Shall be based on voltage drop calculations such that voltage at the last device is within device operating range.
+
+VOLTAGE DROP FORMULA FOR NAC:
+  V_drop = (2 × L × I × R_per_meter)
+  Where:
+    L = one-way wire length in meters
+    I = total current draw (amperes)
+    R_per_meter = wire resistance per meter (Ω/m) — 14 AWG = 0.00843 Ω/m; 12 AWG = 0.00529 Ω/m
+
+MINIMUM TERMINAL VOLTAGE:
+  Device terminal voltage = V_supply - V_drop ≥ V_device_min (typically 20.4 V for 24 V devices)
