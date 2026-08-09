@@ -59,6 +59,8 @@ class MCPServer:
         self.app.post("/validate_design")(self.validate_design)
         self.app.post("/run_engineering_checks")(self.run_engineering_checks)
         self.app.post("/process_request")(self.process_request)
+        self.app.post("/convert_simready")(self.convert_simready)
+
 
     # Request models
     class DrawingRequest(BaseModel):
@@ -509,6 +511,39 @@ class MCPServer:
         except Exception as e:
             self.logger.error(f"Error processing request: {e}")
             raise HTTPException(status_code=500, detail=str(e))
+
+    class SimReadyRequest(BaseModel):
+        source_asset: str
+        profile: str = "Prop-Robotics-Neutral"
+        property_assignment: str = "run"
+
+    async def convert_simready(self, request: SimReadyRequest) -> Dict[str, Any]:
+        """Convert CAD/BIM model into NVIDIA SimReady OpenUSD package."""
+        try:
+            self.logger.info(f"Converting asset to SimReady: {request.source_asset}")
+            from backend.services.simready_adapter import SimReadyAdapter, SimReadyPipelineConfig
+
+            adapter = SimReadyAdapter()
+            cfg = SimReadyPipelineConfig(
+                simready_profile=request.profile,
+                property_assignment_intent=request.property_assignment,
+            )
+            res = adapter.run_pipeline(request.source_asset, cfg)
+            result = {
+                "success": res.success,
+                "source_asset": res.source_asset_path,
+                "output_usd": res.output_usd_path,
+                "conformed_usd": res.conformed_usd_path,
+                "deliverable_root": res.deliverable_root,
+                "render_preview": res.render_preview_path,
+                "errors": res.errors,
+            }
+            self._log_operation("convert_simready", request.dict(), result)
+            return result
+        except Exception as e:
+            self.logger.error(f"Error converting asset to SimReady: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
 
     def _log_operation(self, operation: str, input_data: Dict[str, Any], result: Dict[str, Any]):
         """Log an operation to the history."""

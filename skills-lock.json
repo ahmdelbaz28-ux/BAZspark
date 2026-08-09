@@ -79,6 +79,12 @@
       "skillPath": "skills/lint/SKILL.md",
       "computedHash": "402fbf53ae527a7173bb9fb126e3567ced5f66cd3758f46eb2c11832fb3d84c1"
     },
+    "omniverse-cad-to-simready": {
+      "source": "NVIDIA/skills",
+      "sourceType": "github",
+      "skillPath": "skills/omniverse-cad-to-simready/SKILL.md",
+      "computedHash": "421e19c91dbcf9027a2fdaf5a44d89619180fa129c57b8c9c17d0e9f683ccf2e"
+    },
     "rag-blueprint": {
       "source": "NVIDIA/skills",
       "sourceType": "github",

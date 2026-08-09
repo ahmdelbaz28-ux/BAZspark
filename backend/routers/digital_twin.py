@@ -179,6 +179,34 @@ class ConfigureRequest(BaseModel):
     config: Dict[str, Any]
 
 
+class SimReadyConvertRequest(BaseModel):
+    """Request model for CAD to SimReady conversion."""
+
+    source_filepath: str = Field(min_length=1, max_length=500)
+    simready_profile: str = Field(default="Prop-Robotics-Neutral")
+    property_assignment: str = Field(default="run", pattern=r"^(run|skip|blocked)$")
+    output_root: Optional[str] = Field(default=None)
+
+
+class SimReadyConvertResponse(BaseModel):
+    """Response model for CAD to SimReady conversion."""
+
+    success: bool
+    source_asset_path: str
+    source_format: str
+    output_root: str
+    output_usd_path: Optional[str] = None
+    conformed_usd_path: Optional[str] = None
+    simready_profile: str
+    property_assignment_status: str
+    render_preview_path: Optional[str] = None
+    deliverable_root: Optional[str] = None
+    errors: List[str] = []
+    warnings: List[str] = []
+    stage_reports: Dict[str, Any] = {}
+
+
+
 class ConfigureResponse(BaseModel):
     """Response model for configuration update."""
 
@@ -768,3 +796,33 @@ async def download_file(filename: str) -> FileResponse:
         raise
     except Exception as e:
         raise _safe_error(500, "Download failed", e)
+
+
+@router.post(
+    "/cad-to-simready",
+    response_model=SimReadyConvertResponse,
+    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
+)
+@limiter.limit("5/minute")
+async def convert_cad_to_simready_endpoint(
+    http_request: Request,
+    request: SimReadyConvertRequest,
+    service: DigitalTwinServiceDep,
+) -> SimReadyConvertResponse:
+    """Convert CAD/BIM model into an NVIDIA SimReady OpenUSD package."""
+    try:
+        validated_source = validate_input_path(request.source_filepath, parser_name="simready_convert")
+    except (UnsafePathError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
+
+    try:
+        res = service.convert_cad_to_simready(
+            source_asset=validated_source,
+            profile=request.simready_profile,
+            property_assignment=request.property_assignment,
+            output_root=request.output_root,
+        )
+        return SimReadyConvertResponse(**res)
+    except Exception as e:
+        raise _safe_error(500, "CAD to SimReady conversion failed", e)
+

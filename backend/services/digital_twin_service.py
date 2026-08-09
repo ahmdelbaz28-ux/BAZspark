@@ -1231,6 +1231,34 @@ class DigitalTwinService:
         """Convert Revit to AutoCAD."""
         return self.engine.convert_revit_to_autocad(rvt_path, dwg_path)
 
+    def convert_cad_to_simready(self, source_asset: str, profile: str = "Prop-Robotics-Neutral",
+                                property_assignment: str = "run", output_root: Optional[str] = None) -> Dict[str, Any]:
+        """Convert CAD/BIM source asset to NVIDIA SimReady OpenUSD package."""
+        from backend.services.simready_adapter import SimReadyAdapter, SimReadyPipelineConfig
+
+        adapter = SimReadyAdapter()
+        config = SimReadyPipelineConfig(
+            simready_profile=profile,
+            property_assignment_intent=property_assignment,
+            output_root=output_root,
+        )
+        res = adapter.run_pipeline(source_asset, config)
+        return {
+            "success": res.success,
+            "source_asset_path": res.source_asset_path,
+            "source_format": res.source_format,
+            "output_root": res.output_root,
+            "output_usd_path": res.output_usd_path,
+            "conformed_usd_path": res.conformed_usd_path,
+            "simready_profile": res.simready_profile,
+            "property_assignment_status": res.property_assignment_status,
+            "render_preview_path": res.render_preview_path,
+            "deliverable_root": res.deliverable_root,
+            "errors": res.errors,
+            "warnings": res.warnings,
+            "stage_reports": res.stage_reports,
+        }
+
     def get_conversion_history(self) -> List[Dict[str, Any]]:
         """Get conversion history."""
         return self.engine.version_manager.get_history()
