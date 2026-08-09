@@ -119,6 +119,11 @@ const DigitalTwinPage = lazy(() =>
 		default: m.DigitalTwinPage,
 	})),
 );
+const SimReadyPage = lazy(() =>
+	import("./pages/SimReadyPage").then((m) => ({
+		default: m.SimReadyPage,
+	})),
+);
 const EtapPage = lazy(() =>
 	import("./pages/EtapPage").then((m) => ({ default: m.EtapPage })),
 );
@@ -477,6 +482,7 @@ function App() {
 			{ path: "/digital-twin/convert", element: <DigitalTwinConvertPage /> },
 			{ path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
 			{ path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
+			{ path: "/simready", element: <SimReadyPage /> },
 			{ path: "/etap", element: <EtapPage /> },
 			// V270: FDS Simulation — smoke simulation job submission and tracking
 			{

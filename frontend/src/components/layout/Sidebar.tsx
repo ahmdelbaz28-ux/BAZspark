@@ -284,6 +284,12 @@ const navGroups: NavGroup[] = [
 				path: "/digital-twin/history",
 			},
 			{
+				labelKey: "nav.simready",
+				defaultLabel: "SimReady",
+				icon: Sparkles,
+				path: "/simready",
+			},
+			{
 				labelKey: "nav.cadTools",
 				defaultLabel: "CAD Tools",
 				icon: PenLine,
