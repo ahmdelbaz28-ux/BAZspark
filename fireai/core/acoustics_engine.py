@@ -769,6 +769,7 @@ class AcousticsEngine:
         """Log the coverage result (PASS/FAIL) with safe room_id."""
         if compliant:
             logger.info(
+                "check_coverage PASS: room=%s margin_dba=%.1f",
                 _safe_log_fragment(room_id),
                 result.margin_dba,
             )
