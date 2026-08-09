@@ -24,6 +24,12 @@ export function DemoDataBanner() {
 	const isLive = dataMode === "live" && connectionStatus === "connected";
 	if (isLive) return null;
 
+	// V302 SECURITY FIX: allow production deployments to hide the demo banner
+	// ONLY when VITE_DEMO_BANNER_DISABLED is set AND dataMode is "live".
+	// This prevents the banner from being hidden in true demo mode.
+	const DEMO_BANNER_DISABLED = import.meta.env.VITE_DEMO_BANNER_DISABLED === "true";
+	if (DEMO_BANNER_DISABLED && dataMode === "live") return null;
+
 	// Build the reason text so the user knows WHY they're seeing demo data.
 	const reason =
 		dataMode !== "live"
