@@ -79,6 +79,12 @@
       "skillPath": "skills/lint/SKILL.md",
       "computedHash": "402fbf53ae527a7173bb9fb126e3567ced5f66cd3758f46eb2c11832fb3d84c1"
     },
+    "rag-blueprint": {
+      "source": "NVIDIA/skills",
+      "sourceType": "github",
+      "skillPath": "skills/rag-blueprint/SKILL.md",
+      "computedHash": "4621085caf70c1ab91cf321dcd97ed432e44150565c30f9b2d87bbb4a2b62dfe"
+    },
     "readme-wizard": {
       "source": "debs-obrien/learn-agent-skills",
       "sourceType": "github",

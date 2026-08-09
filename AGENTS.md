@@ -45,6 +45,12 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Resolving in-progress git merge/rebase conflicts.
 - **Scope:** 5-step methodology — state analysis, root cause search, hunk resolution preserving intent, automated checks verification, merge completion.
 
+### 6. `rag-blueprint`
+
+- **Location:** `.agents/skills/rag-blueprint/SKILL.md`
+- **When:** Building, deploying, configuring, or optimizing Retrieval-Augmented Generation (RAG), NeMo Guardrails, VLM, hybrid search, NV-Ingest, reranking, and LLM reasoning pipelines.
+- **Scope:** NVIDIA RAG Blueprint operations — multimodal ingestion, NeMo guardrails, Agentic RAG, Qdrant/Neo4j hybrid search, Nemotron reranking, and observability.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.
