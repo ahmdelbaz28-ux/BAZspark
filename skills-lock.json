@@ -73,6 +73,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "569299a60c8e93880f3b3c1eca55578f58f7e1a4155876edb4cb814da3d6b3ea"
     },
+    "lint": {
+      "source": "helderberto/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/lint/SKILL.md",
+      "computedHash": "402fbf53ae527a7173bb9fb126e3567ced5f66cd3758f46eb2c11832fb3d84c1"
+    },
     "readme-wizard": {
       "source": "debs-obrien/learn-agent-skills",
       "sourceType": "github",
@@ -90,6 +96,12 @@
       "sourceType": "github",
       "skillPath": ".agents/skills/resolve-merge-conflicts/SKILL.md",
       "computedHash": "23f28117a0d622d494a1b7650305507a2a76d4c51f609b34654c7b1866e4542d"
+    },
+    "resolving-merge-conflicts": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/resolving-merge-conflicts/SKILL.md",
+      "computedHash": "6a005119c18c477c2122321a380a43d40242bae3cc7027125f13497d90875be2"
     },
     "security-audit": {
       "source": "cloudflare/security-audit-skill",

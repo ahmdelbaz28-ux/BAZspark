@@ -39,6 +39,12 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Security audits, vulnerability reviews, penetration testing code reviews, finding exploitable bugs.
 - **Scope:** 6-phase methodology — Recon, Hunt, Validate, Report, Structured Output, Independent Verification. Focuses on exploitable vulnerabilities with real impact, not theoretical concerns.
 
+### 5. `resolving-merge-conflicts`
+
+- **Location:** `.agents/skills/resolving-merge-conflicts/SKILL.md`
+- **When:** Resolving in-progress git merge/rebase conflicts.
+- **Scope:** 5-step methodology — state analysis, root cause search, hunk resolution preserving intent, automated checks verification, merge completion.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.
