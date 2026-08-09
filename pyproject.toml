@@ -473,6 +473,7 @@ testpaths = [
     "qomn_conduit/tests",
     "qomn_fire/tests",
     "core/tests",
+    "marine/tests",
     # V140 FIX (Rule 17 — Root-Cause Analysis): Removed "facp_distributed/tests"
     # from testpaths. This directory is ALSO listed in norecursedirs (line below)
     # because facp_distributed is an OPTIONAL subsystem requiring aiohttp +
