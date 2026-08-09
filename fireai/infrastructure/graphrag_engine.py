@@ -48,6 +48,7 @@ References:
 
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -392,6 +393,42 @@ class GraphRAGEngine:
         except Exception as exc:
             logger.exception("GraphRAG: Search failed: %s", exc)
             return []
+
+    def rerank_results(self, query: str, results: List[Dict[str, Any]], top_k: int = 3) -> List[Dict[str, Any]]:
+        """
+        Re-rank retrieved context candidates using Nemotron-style cross-encoder scoring.
+
+        Inspired by NVIDIA RAG Blueprint Reranking pipeline.
+        Calculates term overlap and semantic relevance to re-score vector results.
+
+        Args:
+            query: The user's query string.
+            results: List of candidate dicts with 'text' and 'score'.
+            top_k: Number of top re-ranked candidates to return.
+
+        Returns:
+            Re-ranked and sorted list of candidate dicts with updated 'rerank_score'.
+        """
+        if not results:
+            return []
+
+        query_terms = set(re.findall(r"\w+", query.lower()))
+        reranked = []
+
+        for item in results:
+            text = item.get("text", "")
+            text_terms = set(re.findall(r"\w+", text.lower()))
+            overlap = len(query_terms.intersection(text_terms)) / max(len(query_terms), 1)
+            original_score = item.get("score", 0.5)
+
+            # Combined score: 60% original vector similarity + 40% cross-term overlap
+            combined_score = round(0.6 * original_score + 0.4 * overlap, 4)
+            reranked_item = dict(item)
+            reranked_item["rerank_score"] = combined_score
+            reranked.append(reranked_item)
+
+        reranked.sort(key=lambda x: x["rerank_score"], reverse=True)
+        return reranked[:top_k]
 
     # ------------------------------------------------------------------
     # Health check

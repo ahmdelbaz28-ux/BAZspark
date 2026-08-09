@@ -234,7 +234,7 @@ async def llm_chat(request: Request, req: ChatRequest) -> Dict[str, Any]:
 
         return {
                 "success": True,
-                "data": _build_response_data(result),
+                "data": _build_response_data(result, req.prompt),
         }
 
 
@@ -412,10 +412,12 @@ async def llm_chat_stream(
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
-def _build_response_data(result: LLMResponse) -> Dict[str, Any]:
-        """Build the standard response data dict from an LLMResponse."""
+def _build_response_data(result: LLMResponse, prompt: str = "") -> Dict[str, Any]:
+        """Build the standard response data dict from an LLMResponse with NeMo Guardrails validation."""
+        from fireai.infrastructure.nemo_guardrails_service import default_guardrails_service
+        _is_safe, _violations, validated_content = default_guardrails_service.validate_llm_response(prompt, result.content)
         return LLMResponseModel(
-                content=result.content,
+                content=validated_content,
                 model=result.model,
                 source=result.source,
                 finish_reason=result.finish_reason,

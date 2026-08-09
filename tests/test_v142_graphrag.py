@@ -87,6 +87,20 @@ class TestGraphRAGEngine:
         engine = GraphRAGEngine()
         assert engine._llm_model == "gpt-4o"
 
+    def test_rerank_results_orders_by_relevance(self):
+        """Verify Nemotron-style Reranking scores candidates based on term overlap and similarity."""
+        from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+        engine = GraphRAGEngine()
+        candidates = [
+            {"text": "General acoustic noise level in room 101", "score": 0.9},
+            {"text": "Smoke detector spacing rule NFPA 72 9.1m flat ceiling", "score": 0.8},
+        ]
+        reranked = engine.rerank_results("smoke detector spacing", candidates, top_k=2)
+        assert len(reranked) == 2
+        # The smoke detector result should be reranked to top #1 due to term overlap
+        assert "smoke detector" in reranked[0]["text"].lower()
+        assert reranked[0]["rerank_score"] > reranked[1]["rerank_score"]
+
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
