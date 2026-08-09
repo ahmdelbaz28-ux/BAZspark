@@ -1,0 +1,95 @@
+VOLTAGE DROP AND BATTERY BACKUP CALCULATIONS — BAZspark Engineering Reference
+
+SECTION 1: VOLTAGE DROP CALCULATIONS
+
+1.1 General Principles
+Per NFPA 72 and standard electrical engineering practice, the voltage at the most remote device on any circuit must remain within the device's rated operating range under worst-case conditions.
+
+1.2 Standard Formulas
+
+TOTAL WIRE RESISTANCE:
+  R_total = 2 × L × R_unit
+  Where:
+    L      = one-way cable length (meters)
+    R_unit = resistance per meter for selected wire gauge (Ω/m)
+
+WIRE RESISTANCE TABLE (copper, at 20°C):
+  AWG 18: 0.02067 Ω/m (most common for SLC/Class B IDC)
+  AWG 16: 0.01300 Ω/m
+  AWG 14: 0.00820 Ω/m (common NAC/IDC run)
+  AWG 12: 0.00515 Ω/m (heavy NAC runs, long distances)
+  AWG 10: 0.00324 Ω/m (main supply feeders)
+
+VOLTAGE DROP:
+  V_drop = I_total × R_total
+  Where I_total = sum of all device currents on the circuit (amperes)
+
+TERMINAL VOLTAGE:
+  V_terminal = V_supply - V_drop
+  This must be ≥ V_device_min (e.g., 20.4 V for 24 VDC devices, 10.2 V for 12 VDC)
+
+1.3 Maximum Allowable Drop
+Per common industry practice and UL listing:
+  - For 24 VDC systems: V_terminal ≥ 20.4 V (15% drop from nominal)
+  - For 12 VDC systems: V_terminal ≥ 10.2 V (15% drop from nominal)
+
+1.4 Example Calculation
+  System: 24 VDC NAC
+  Cable: 14 AWG (R_unit = 0.00820 Ω/m)
+  One-way length: 150 m
+  Total device current: 0.80 A
+
+  R_total = 2 × 150 × 0.00820 = 2.46 Ω
+  V_drop  = 0.80 × 2.46 = 1.97 V
+  V_terminal = 24.0 - 1.97 = 22.03 V ✓ (≥ 20.4 V — PASS)
+
+SECTION 2: BATTERY BACKUP CALCULATIONS
+
+2.1 NFPA 72 Requirements
+Per NFPA 72 Section 10.6.7.2:
+  - Standby power: Minimum 24 hours of standby (supervisory) mode
+  - Alarm power: Minimum 5 minutes of full alarm at end of standby period
+  - For high-rise or special hazard: 24 h standby + 15 min alarm minimum
+
+2.2 Battery Capacity Formula
+  Battery AH required = (I_standby × T_standby) + (I_alarm × T_alarm) × Safety_factor
+
+  Safety_factor = 1.20 (20% derating for aging and temperature effects)
+
+  Where:
+    I_standby = panel + detector quiescent current (amperes)
+    T_standby = standby time (hours, typically 24)
+    I_alarm   = full alarm current (all appliances active) (amperes)
+    T_alarm   = alarm time (hours, typically 0.0833 h = 5 min)
+
+2.3 Example Calculation
+  I_standby = 0.35 A (all detectors + panel supervisory)
+  I_alarm   = 4.20 A (all NAC devices active + panel)
+  T_standby = 24 h
+  T_alarm   = 0.0833 h (5 min)
+
+  Battery AH = (0.35 × 24 + 4.20 × 0.0833) × 1.20
+             = (8.40 + 0.350) × 1.20
+             = 8.75 × 1.20
+             = 10.50 AH → Select next standard size: 12 AH battery
+
+2.4 Temperature Derating
+  Battery capacity degrades at low temperatures:
+  - 20°C: 100% capacity
+  - 0°C:  87% capacity
+  - -10°C: 76% capacity
+  Apply further derating if installation is in unheated space.
+
+SECTION 3: SIGNALING LINE CIRCUIT (SLC) LOOP RESISTANCE
+
+3.1 General
+  SLC (Class A or B) maximum loop resistance is defined by FACP manufacturer.
+  Typical limits: 40 Ω to 100 Ω total loop resistance.
+
+3.2 Class B (Style 4) Wiring
+  R_loop = R_unit × total_length (one way, since Class B is open circuit at break)
+  Example: AWG 18, 600 m one-way = 600 × 0.02067 = 12.40 Ω (within 40 Ω limit)
+
+3.3 Class A (Style 6/7) Wiring
+  Both conductors are looped back; resistance on each conductor must meet limits.
+  Consult FACP data sheet for maximum values.

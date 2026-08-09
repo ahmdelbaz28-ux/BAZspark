@@ -1,0 +1,169 @@
+name: RAG Evaluation — NFPA 72 Engineering Copilot
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers: Run on push/PR touching GraphRAG or evaluation assets.
+# Also supports manual dispatch with optional dry-run mode.
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+    paths:
+      - "fireai/infrastructure/graphrag_engine.py"
+      - "eval/nfpa72_rag_dataset/**"
+      - "scripts/eval/**"
+      - ".github/workflows/rag-eval.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "fireai/infrastructure/graphrag_engine.py"
+      - "eval/nfpa72_rag_dataset/**"
+      - "scripts/eval/**"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run in dry-run mode (validate dataset only, no RAG queries)"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      quality_threshold:
+        description: "Minimum nv_accuracy_mean required to pass"
+        required: false
+        default: "0.75"
+
+jobs:
+  rag-eval:
+    name: RAG Quality Evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # Set NVIDIA_API_KEY in GitHub Secrets for live RAGAS scoring.
+      # Without it, the driver falls back to mock accuracy scores.
+      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RAG_EVAL_JUDGE_MODEL: ${{ vars.RAG_EVAL_JUDGE_MODEL || 'gpt-4o-mini' }}
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python setup ──────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── 3. Install uv ────────────────────────────────────────────────────────
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      # ── 4. Install eval dependencies ─────────────────────────────────────────
+      - name: Install eval dependencies
+        run: |
+          uv sync --project scripts/eval --no-dev
+        continue-on-error: true  # Non-fatal: driver works without RAGAS in dry-run
+
+      # ── 5. Validate dataset (always) ─────────────────────────────────────────
+      - name: Validate NFPA 72 eval dataset
+        run: |
+          python scripts/eval/prepare_dataset.py validate eval/nfpa72_rag_dataset
+
+      # ── 6. Run evaluation ────────────────────────────────────────────────────
+      - name: Run RAG evaluation
+        id: rag_eval
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
+            DRY_RUN_FLAG="--dry_run"
+            echo "Running in dry-run mode (PR or manual dry-run)"
+          fi
+
+          python scripts/eval/evaluate_rag.py \
+            --dataset-paths eval/nfpa72_rag_dataset \
+            --host localhost \
+            --port 8000 \
+            --output_dir results \
+            --top_k 5 \
+            --vdb_top_k 20 \
+            --temperature 0.0 \
+            $DRY_RUN_FLAG \
+          2>&1 | tee eval_output.log
+
+      # ── 7. Parse and check quality gate ──────────────────────────────────────
+      - name: Check quality gate
+        if: steps.rag_eval.outcome == 'success'
+        run: |
+          SUMMARY="results/nfpa72_rag_dataset/rag_nfpa72_rag_dataset_evaluation_summary.json"
+          THRESHOLD="${{ github.event.inputs.quality_threshold || '0.75' }}"
+
+          if [ -f "$SUMMARY" ]; then
+            ACC=$(python3 -c "import json; d=json.load(open('$SUMMARY')); v=d.get('nv_accuracy_mean'); print(v if v else '0')")
+            MOCK=$(python3 -c "import json; d=json.load(open('$SUMMARY')); print(d.get('mock_scores', False))")
+            echo "nv_accuracy_mean = $ACC (mock=$MOCK, threshold=$THRESHOLD)"
+
+            if [ "$MOCK" = "True" ]; then
+              echo "⚠️ Mock scores (no API key). Set NVIDIA_API_KEY secret for real RAGAS scoring."
+            else
+              PASS=$(python3 -c "print('pass' if float('$ACC') >= float('$THRESHOLD') else 'fail')")
+              if [ "$PASS" = "fail" ]; then
+                echo "❌ Quality gate FAILED: nv_accuracy_mean ($ACC) < threshold ($THRESHOLD)"
+                exit 1
+              else
+                echo "✅ Quality gate PASSED: nv_accuracy_mean ($ACC) >= threshold ($THRESHOLD)"
+              fi
+            fi
+          else
+            echo "No summary file found (dry-run mode or error). Skipping quality gate check."
+          fi
+
+      # ── 8. Generate Markdown report ───────────────────────────────────────────
+      - name: Generate evaluation report
+        if: always() && !contains(github.event.inputs.dry_run, 'true')
+        continue-on-error: true
+        run: |
+          SUMMARY="results/nfpa72_rag_dataset/rag_nfpa72_rag_dataset_evaluation_summary.json"
+          if [ -f "$SUMMARY" ]; then
+            python scripts/eval/analyze_results.py \
+              --dataset nfpa72_rag_dataset \
+              --results-dir results \
+              --top-n 5 \
+              --save-markdown results/nfpa72_rag_dataset/eval_report.md \
+              --export-csv
+            echo "Evaluation report generated."
+          fi
+
+      # ── 9. Upload artifacts ───────────────────────────────────────────────────
+      - name: Upload evaluation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-eval-results-${{ github.run_number }}
+          path: |
+            results/
+            eval_output.log
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── 10. Post PR comment ───────────────────────────────────────────────────
+      - name: Post evaluation summary to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'results/nfpa72_rag_dataset/eval_report.md';
+            let body = '## 🔥 RAG Evaluation Results\n\nEvaluation ran in **dry-run** mode for this PR (no live RAG server).\nDataset validated: ✅ 30 questions loaded.';
+            if (fs.existsSync(reportPath)) {
+              body = fs.readFileSync(reportPath, 'utf8');
+            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body,
+            });

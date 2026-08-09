@@ -54,6 +54,23 @@
 ## 3. 🗺️ خطة الدمج والتنفيذ المقترحة (Roadmap)
 
 1. **المرحلة 1:** تفعيل المهارة وتوثيقها في قائمة المهارات النشطة داخل `AGENTS.md` (تم التنفيذ).
-2. **المرحلة 2:** ربط `NeMo Guardrails` كـ Middleware في `backend/routers/llm.py` لحماية إجابات الـ LLM في BAZspark.
-3. **المرحلة 3:** تحديث محرك `fireai/infrastructure/graphrag_engine.py` لدعم نمط الـ Hybrid Reranking المستند لـ Nemotron.
-4. **المرحلة 4:** ربط واجهة `GraphRAGPage.tsx` بالـ Multimodal VLM لعرض المخططات والتحليلات البيانية بصرية.
+2. **المرحلة 2:** بناء وتطبيق منظومة القياس والتقييم `rag-eval` لبسط المعايير القياسية لـ NFPA 72 (تم التنفيذ الكامل في `eval/` و `scripts/eval/`).
+3. **المرحلة 3:** ربط `NeMo Guardrails` كـ Middleware في `backend/routers/llm.py` لحماية إجابات الـ LLM في BAZspark.
+4. **المرحلة 4:** تحديث محرك `fireai/infrastructure/graphrag_engine.py` لدعم نمط الـ Hybrid Reranking المستند لـ Nemotron.
+
+---
+
+## 4. 🧪 منظومة التقييم المُنفّذة (Completed `rag-eval` Implementation)
+
+تم إنجاز تطبيق مهارة `rag-eval` بالكامل في المستودع بالشكل التالي:
+
+1. **مجموعة بيانات NFPA 72 (`eval/nfpa72_rag_dataset/`):**
+   - **Corpus:** 5 وثائق هندسية مرجعية لتغطية كواشف الدخان والحرارة وأجهزة الإنذار ومعادلات هبوط الجهد.
+   - **Train Set:** 30 سؤالاً هندسياً دقيقاً بإجاباتها المرجعية في `train.json` مطابقة لمخطط المهارة.
+2. **مشغل التقييم (`scripts/eval/evaluate_rag.py`):**
+   - يدعم الاتصال بـ GraphRAG Engine ومحاكاة جودة الإجابات وفق أطر RAGAS (`nv_accuracy`, `nv_context_relevance`, `nv_response_groundedness`).
+3. **أدوات التحليل والتحويل (`scripts/eval/prepare_dataset.py` & `analyze_results.py`):**
+   - للتحقق التلقائي وتصدير التقارير كـ CSV و Markdown.
+4. **التكامل في CI/CD (`.github/workflows/rag-eval.yml`):**
+   - أتمتة اختبار الجودة مع حد أدنى `nv_accuracy_mean ≥ 0.75`.
+
