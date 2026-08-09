@@ -42,7 +42,7 @@ jobs:
       # Without it, the driver falls back to mock accuracy scores.
       NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RAG_EVAL_JUDGE_MODEL: ${{ vars.RAG_EVAL_JUDGE_MODEL || 'gpt-4o-mini' }}
+      RAG_EVAL_JUDGE_MODEL: ${{ vars.RAG_EVAL_JUDGE_MODEL }}
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
@@ -98,7 +98,8 @@ jobs:
         if: steps.rag_eval.outcome == 'success'
         run: |
           SUMMARY="results/nfpa72_rag_dataset/rag_nfpa72_rag_dataset_evaluation_summary.json"
-          THRESHOLD="${{ github.event.inputs.quality_threshold || '0.75' }}"
+          INPUT_THRESHOLD="${{ github.event.inputs.quality_threshold }}"
+          THRESHOLD="${INPUT_THRESHOLD:-0.75}"
 
           if [ -f "$SUMMARY" ]; then
             ACC=$(python3 -c "import json; d=json.load(open('$SUMMARY')); v=d.get('nv_accuracy_mean'); print(v if v else '0')")
