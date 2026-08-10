@@ -3,7 +3,7 @@
 psycopg2-binary>=2.9.0
 
 # Vector Database
-qdrant-client>=1.18.0
+qdrant-client>=1.19.0
 
 # Graph Database  
 neo4j>=6.2.0
