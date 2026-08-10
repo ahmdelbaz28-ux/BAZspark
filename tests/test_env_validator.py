@@ -28,6 +28,15 @@ RUNTIME_MINIMAL = {
     "LANGFUSE_SECRET_KEY": "sk-lf-" + "y" * 32,
     "LANGFUSE_HOST": "https://cloud.langfuse.com",
     "CORS_ORIGINS": "https://app.example.com",
+    # P0-4: new security/HMAC/webhook HARD vars (see env_validator.py §17)
+    "AUDIT_HMAC_KEY": "z" * 40,
+    "FIREAI_QOMN_HMAC_KEY": "q" * 40,
+    "QOMN_AUDIT_SECRET_KEY": "o" * 40,
+    "FDS_WEBHOOK_SECRET": "f" * 40,
+    "BAZSPARK_MASTER_ADMIN_TOKEN": "m" * 40,
+    "FIREAI_VISION_KEY_ENCRYPTION_KEY": "e" * 40,
+    "MEEZA_WEBHOOK_HMAC_SECRET": "w" * 40,
+    "TRUSTED_PROXIES": "10.0.0.0/8",
 }
 
 

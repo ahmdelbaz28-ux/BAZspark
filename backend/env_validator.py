@@ -237,6 +237,19 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
 
     # ── 16. CORS / Security ──
     ("CORS_ORIGINS", Severity.HARD, _cors_origins_present),
+
+    # ── 17. HMAC / Webhook / Admin secrets (P0-4 launch blockers) ──
+    # All HARD: a missing value means silent security downgrade (see
+    # fireai/core/qomn_kernel.py P0-1) or an unauthenticated webhook/
+    # admin path. Mirrors .env.production.example section 17/20.
+    ("AUDIT_HMAC_KEY",                    Severity.HARD, _min_len(32)),
+    ("FIREAI_QOMN_HMAC_KEY",              Severity.HARD, _min_len(32)),
+    ("QOMN_AUDIT_SECRET_KEY",             Severity.HARD, _min_len(32)),
+    ("FDS_WEBHOOK_SECRET",                Severity.HARD, _present),
+    ("BAZSPARK_MASTER_ADMIN_TOKEN",       Severity.HARD, _present),
+    ("FIREAI_VISION_KEY_ENCRYPTION_KEY",  Severity.HARD, _min_len(32)),
+    ("MEEZA_WEBHOOK_HMAC_SECRET",         Severity.HARD, _present),
+    ("TRUSTED_PROXIES",                   Severity.HARD, _present),
 ]
 
 

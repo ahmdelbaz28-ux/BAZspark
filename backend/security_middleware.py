@@ -274,6 +274,11 @@ _PUBLIC_PATHS_EXACT = frozenset({
     # FDS Webhook: receives callbacks from Modal cloud worker.
     # Auth is handled internally via HMAC secret (not API key).
     "/api/v2/fds/webhook",
+    # Meeza PSP webhook — auth handled internally via
+    # MEEZA_WEBHOOK_HMAC_SECRET (mimir pattern FDS). The PSP cannot
+    # send an X-API-Key; without this entry the middleware 401s
+    # BEFORE the HMAC check runs, breaking the payment callback.
+    "/api/v1/billing/webhooks/meeza",
 })
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)
