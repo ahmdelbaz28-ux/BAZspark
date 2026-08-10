@@ -45,11 +45,13 @@ jobs:
         if: steps.docker-build.outputs.build_failed != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         env:
-          # P0-14b FIX: pip installs to /install (non-standard), so Trivy must be
-          # told where the Python packages live; otherwise it falls back to
-          # analyzing requirements.txt version specifiers (e.g. "setuptools>=78.1.1"
-          # includes the vulnerable 70.3.0 in the range, triggering false positives).
-          TRIVY_PYTHON_PACKAGES_DIR: /install/lib/python3.12/site-packages
+          # P0-14b FIX: pip installs to /install in the builder, but the runtime
+          # stage does `COPY --from=python-builder /install /usr/local`, so the
+          # packages end up at /usr/local/lib/python3.12/site-packages (the
+          # standard location). Point Trivy there — NOT at /install (which no
+          # longer exists in the final image), otherwise Trivy scans the default
+          # location anyway and the env var is misleading.
+          TRIVY_PYTHON_PACKAGES_DIR: /usr/local/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
           format: 'sarif'

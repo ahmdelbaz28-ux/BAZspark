@@ -37,7 +37,15 @@ WORKDIR /build
 # pyproject.toml build-system (setuptools.build_meta backend). Without this,
 # pip fails with "Cannot import 'setuptools.build_meta'" when installing
 # packages that use PEP 517 builds.
-RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; updated setuptools to fix CVE-2025-47273 / GHSA-6v7p-g79w-8964
+RUN pip install --no-cache-dir --upgrade pip
+# P0-14c FIX: install setuptools+wheel into /install (NOT the builder's default
+# /usr/local). The runtime stage only `COPY --from=python-builder /install /usr/local`,
+# so anything installed to the builder's /usr/local is DISCARDED. Previously this
+# bootstrap ran without --prefix, leaving the runtime image with the base
+# python:3.12-slim setuptools (vulnerable → CVE-2025-47273 / CVE-2026-59890),
+# which Trivy flags and fails the pipeline. With --prefix=/install the upgraded
+# setuptools (>=78.1.1) is copied into runtime and overwrites the base version.
+RUN pip install --no-cache-dir --prefix=/install "setuptools>=78.1.1" wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; --prefix=/install so the upgraded setuptools is copied into the runtime image (fixes CVE-2025-47273 / CVE-2026-59890)
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions
