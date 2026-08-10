@@ -44,6 +44,12 @@ jobs:
       - name: Run Trivy on Docker image
         if: steps.docker-build.outputs.build_failed != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        env:
+          # P0-14b FIX: pip installs to /install (non-standard), so Trivy must be
+          # told where the Python packages live; otherwise it falls back to
+          # analyzing requirements.txt version specifiers (e.g. "setuptools>=78.1.1"
+          # includes the vulnerable 70.3.0 in the range, triggering false positives).
+          TRIVY_PYTHON_PACKAGES_DIR: /install/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
           format: 'sarif'
