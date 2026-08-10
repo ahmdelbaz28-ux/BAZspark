@@ -54,8 +54,8 @@ jobs:
           TRIVY_PYTHON_PACKAGES_DIR: /usr/local/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
-          format: 'table'
-          output: 'trivy-table.txt'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
@@ -69,24 +69,6 @@ jobs:
         # so scanning them causes spurious CI failures as the DB ages.
         # Language-library scanning still catches our pinned dependencies
         # (setuptools, msgpack, lxml, cryptography, Pillow, python-multipart).
-
-      - name: Diagnostic — Trivy table output (non-failing)
-        if: steps.docker-build.outputs.build_failed != 'true'
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
-        continue-on-error: true
-        with:
-          image-ref: 'bazspark:scan'
-          format: 'table'
-          output: 'trivy-diag.txt'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'library'
-
-      - name: Diagnostic — print Trivy table
-        if: always()
-        run: cat trivy-table.txt 2>/dev/null || echo "no table file"
-        continue-on-error: true
 
       - name: Run Trivy filesystem scan (fallback)
         if: steps.docker-build.outputs.build_failed == 'true'
