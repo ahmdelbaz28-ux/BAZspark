@@ -49,6 +49,7 @@ from fireai.core.qomn_kernel import (
     # Layer 4 — Audit
     AuditEntry,
     ComputationError,
+    SecurityError,
     # Layer 0 — Physics Guards
     PhysicsGuardError,
     QOMNAuditLog,
@@ -877,6 +878,27 @@ class TestQOMNAuditLog:
         log_plain.record("test", {"x": 1}, "§1", {"y": 1})
         plain_hash = log_plain._chain_hash
         assert hmac_hash != plain_hash
+
+    def test_production_fail_closed_without_hmac_key(self, monkeypatch):
+        """P0-1 FIX: In production (FIREAI_ENV=production) with no
+        FIREAI_QOMN_HMAC_KEY, QOMNAuditLog must raise SecurityError rather than
+        silently fall back to forgeable plain SHA-256."""
+        monkeypatch.setenv("FIREAI_ENV", "production")
+        monkeypatch.delenv("PRODUCTION", raising=False)
+        monkeypatch.delenv("ENV", raising=False)
+        with pytest.raises(SecurityError, match="FIREAI_QOMN_HMAC_KEY"):
+            QOMNAuditLog()
+
+    def test_non_production_falls_back_without_hmac_key(self, monkeypatch):
+        """P0-1 FIX: In non-production with no FIREAI_QOMN_HMAC_KEY, QOMNAuditLog
+        must NOT raise — it falls back to plain SHA-256 (tamper-evident) and logs
+        a warning, so local/dev audit logging still works."""
+        monkeypatch.setenv("FIREAI_ENV", "development")
+        monkeypatch.delenv("PRODUCTION", raising=False)
+        monkeypatch.delenv("ENV", raising=False)
+        log = QOMNAuditLog()
+        log.record("test", {}, "", {})
+        assert log.verify_chain_integrity() is True
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

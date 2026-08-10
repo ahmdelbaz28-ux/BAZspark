@@ -85,6 +85,12 @@ jobs:
             --cov=adapters \
             --cov=core \
             --cov-report=xml:coverage.xml \
+            # timeout_func_only=true applies the 60s ceiling to the TEST BODY
+            # only, NOT to collection/setup. Otherwise the 60s budget is spent
+            # collecting the ~8k-test suite (28s+) plus per-test fixtures, the
+            # session-wide timeout fires before tests run, and coverage.xml ends
+            # up empty -> SonarCloud reports 0% new-code coverage (gate fail).
+            -o timeout_func_only=true \
             --timeout=60 -q \
             -p no:cacheprovider \
             || echo "::warning::Some tests failed (non-blocking for SonarCloud scan)"

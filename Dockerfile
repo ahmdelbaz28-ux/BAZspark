@@ -76,6 +76,15 @@ WORKDIR /app
 # Copy installed Python packages
 COPY --from=python-builder /install /usr/local
 
+# P0 FIX: upgrade pip in the RUNTIME stage. The /install overlay above only carries
+# setuptools/wheel/requirements from the builder — the base python:3.12-slim pip
+# (25.0.1) is still present in the runtime and Trivy flags it (CVE-2026-8643 [HIGH,
+# fixed 26.1.2] plus CVE-2026-1703/6357/3219/2025-8869), failing the pipeline.
+# Upgrading pip here REMOVES the stale 25.0.1 dist-info so the image is clean.
+# (The builder's `pip install --upgrade pip` on line 40 does NOT reach the runtime
+# because only /install is copied — it lands in the discarded builder /usr/local.)
+RUN pip install --no-cache-dir --upgrade pip
+
 # Copy application code (only what's needed for production)
 COPY --chown=fireai:fireai backend/ backend/
 COPY --chown=fireai:fireai fireai/ fireai/
