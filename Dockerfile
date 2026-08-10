@@ -73,6 +73,17 @@ RUN groupadd -r fireai && \
 
 WORKDIR /app
 
+# P0-14d FIX: purge the BASE image's stale setuptools BEFORE the /install overlay
+# is copied. python:3.12-slim ships setuptools <78.1.1 in /usr/local, which carries
+# CVE-2025-47273 (HIGH, fixed in 78.1.1). `COPY --from=python-builder /install
+# /usr/local` only MERGES the upgraded dist-info NEXT TO the vulnerable base one,
+# so Trivy still flags the old dist-info and the container gate fails (all runs
+# after the Trivy DB recorded this advisory). Deleting the base remnants here
+# means the overlay brings in exactly one, clean setuptools (>=78.1.1).
+RUN rm -rf /usr/local/lib/python3.12/site-packages/setuptools \
+           /usr/local/lib/python3.12/site-packages/setuptools-*.dist-info \
+           /usr/local/lib/python3.12/site-packages/pkg_resources
+
 # Copy installed Python packages
 COPY --from=python-builder /install /usr/local
 
