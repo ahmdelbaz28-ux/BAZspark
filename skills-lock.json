@@ -157,6 +157,12 @@
       "skillPath": "skills/shipping-and-launch/SKILL.md",
       "computedHash": "005e89054a4bbe27e991c58aa2ddcede4285a7128eb452aaaae351832ebc8a88"
     },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "a2750dfbaed1690da73b120254892c4f926b4576cb82eb16fc877783941fe39b"
+    },
     "test-engineer": {
       "source": "caomeiyouren/momei",
       "sourceType": "github",
