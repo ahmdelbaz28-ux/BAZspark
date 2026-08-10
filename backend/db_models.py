@@ -277,7 +277,9 @@ class Order(Base):
         server_default="pending",
     )
     description = Column(String, nullable=False, server_default="")
-    metadata = Column(Text, nullable=False, server_default="{}")
+    # SQLAlchemy reserves 'metadata' for Declarative; use metadata_ as the
+    # attribute name but keep the DB column name as 'metadata'.
+    metadata_ = Column("metadata", Text, nullable=False, server_default="{}")
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
     expires_at = Column(DateTime(timezone=True))
