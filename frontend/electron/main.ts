@@ -299,7 +299,27 @@ function handleProtocolUrl(url: string): void {
         try {
                 const parsed = new URL(url);
                 const action = parsed.hostname || parsed.pathname.replace("//", "");
+
+                // P0-9 FIX: strict allowlist — only the documented "open"
+                // action is accepted; anything else is dropped with a warning
+                // BEFORE it reaches the renderer (no arbitrary data broadcast).
+                if (action !== "open") {
+                        console.warn("[Protocol] Rejected action (must be 'open'):", action);
+                        return;
+                }
                 const params = Object.fromEntries(parsed.searchParams.entries());
+
+                // "file" is the only supported param: a .bazspark project file.
+                const file = params.file ?? "";
+                if (!file.endsWith(".bazspark")) {
+                        console.warn("[Protocol] Rejected file param (must end '.bazspark'):", file);
+                        return;
+                }
+                // Lock against path traversal ("..") and nested file:// destinations.
+                if (file.includes("..") || file.startsWith("file://")) {
+                        console.warn("[Protocol] Rejected file param (traversal or file:// destination):", file);
+                        return;
+                }
 
                 // Focus the main window first
                 if (mainWindow) {
