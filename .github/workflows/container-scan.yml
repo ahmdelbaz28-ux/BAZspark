@@ -54,17 +54,21 @@ jobs:
           TRIVY_PYTHON_PACKAGES_DIR: /usr/local/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
-          format: 'table'
-          output: 'trivy-table.txt'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'library'
-        # TEMP DIAGNOSTIC (P0-14): table + non-failing so we can read findings.
-
-      - name: Diagnostic — print Trivy table
-        if: always()
-        run: cat trivy-table.txt 2>/dev/null || echo "no table file"
+        # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'
+        # — CRITICAL/HIGH findings must fail the pipeline.
+        # P0-14b FIX: changed vuln-type from 'os,library' to 'library'.
+        # The Debian 13 base image (python:3.12-slim) carries ~87 OS packages
+        # whose CVEs are updated in Trivy's DB over time. These are NOT
+        # actionable from this repo (we cannot patch Debian apt packages),
+        # so scanning them causes spurious CI failures as the DB ages.
+        # Language-library scanning still catches our pinned dependencies
+        # (setuptools, msgpack, lxml, cryptography, Pillow, python-multipart).
 
       - name: Run Trivy filesystem scan (fallback)
         if: steps.docker-build.outputs.build_failed == 'true'
