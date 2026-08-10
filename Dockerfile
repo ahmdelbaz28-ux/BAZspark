@@ -37,7 +37,7 @@ WORKDIR /build
 # pyproject.toml build-system (setuptools.build_meta backend). Without this,
 # pip fails with "Cannot import 'setuptools.build_meta'" when installing
 # packages that use PEP 517 builds.
-RUN pip install --no-cache-dir --upgrade pip setuptools==70.3.0 wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; setuptools pinned to known-good 70.3.0
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; updated setuptools to fix CVE-2025-47273 / GHSA-6v7p-g79w-8964
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions

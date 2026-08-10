@@ -76,7 +76,15 @@ jobs:
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
         run: |
           pytest tests/ backend/tests/ \
-            --tb=short --no-cov \
+            --tb=short \
+            --cov=backend \
+            --cov=fireai \
+            --cov=qomn_fire \
+            --cov=qomn_conduit \
+            --cov=parsers \
+            --cov=adapters \
+            --cov=core \
+            --cov-report=xml:coverage.xml \
             --timeout=60 -q \
             -p no:cacheprovider \
             || echo "::warning::Some tests failed (non-blocking for SonarCloud scan)"

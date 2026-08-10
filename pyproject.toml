@@ -86,6 +86,7 @@ dependencies = [
     "reportlab>=4.0.0,<6.0.0",
     "scipy>=1.11.0,<2.0.0",
     "shapely>=2.0.0,<3.0.0",
+    "msgpack>=1.2.1",  # P0-14 FIX: resolve GHSA-6v7p-g79w-8964 (HIGH) found by Trivy
 ]
 
 [project.optional-dependencies]
