@@ -1,5 +1,5 @@
 # Container image vulnerability scanning with Trivy
-# Reports CRITICAL/HIGH vulnerabilities without blocking the pipeline.
+# P0-14 FIX: now BLOCKING — CRITICAL/HIGH findings fail the pipeline.
 
 name: Container Security Scan
 
@@ -49,10 +49,11 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
-        continue-on-error: true
+        # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'
+        # — CRITICAL/HIGH findings must fail the pipeline.
 
       - name: Run Trivy filesystem scan (fallback)
         if: steps.docker-build.outputs.build_failed == 'true'
@@ -63,9 +64,9 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
-        continue-on-error: true
+        # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'.
 
       - name: Ensure SARIF file exists
         if: always()
@@ -80,7 +81,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
-        continue-on-error: true
+        # P0-14 FIX: removed `continue-on-error: true`.
 
       - name: Scan summary
         if: always()

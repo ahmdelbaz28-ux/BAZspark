@@ -27,7 +27,9 @@ RUN ls -la dist/ && test -f dist/index.html
 
 
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
-FROM python:3.14-slim AS python-builder
+# P0-10 FIX: unified on python:3.12-slim — matches deploy/docker/Dockerfile.api
+# and Dockerfile.worker (3.14 drifted and broke --only-binary wheel parity).
+FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
 
@@ -41,7 +43,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
@@ -78,6 +80,12 @@ COPY --chown=fireai:fireai facp_system/ facp_system/
 COPY --chown=fireai:fireai core/ core/
 COPY --chown=fireai:fireai marine/ marine/
 COPY --chown=fireai:fireai adapters/ adapters/
+
+# P0-12 FIX: ship Alembic migrations so `alembic upgrade head` can run
+# at container start (see CMD below). Previously alembic.ini + alembic/
+# were never copied into the image.
+COPY --chown=fireai:fireai alembic.ini ./
+COPY --chown=fireai:fireai alembic/ alembic/
 
 # V206: Copy the built frontend (from Stage 1) — served at / by FastAPI StaticFiles
 # when BAZSPARK_FRONTEND_DIST is set (see backend/app.py).
@@ -124,4 +132,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # For multi-worker deployments, use PostgreSQL via deploy/docker/docker-compose.yml
 #
 # H-3 FIX: Bind to 0.0.0.0 for external routing (required by cloud hosting like HF Spaces).
-CMD ["sh", "-c", "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}"]
+# P0-12 FIX: run `alembic upgrade head` before uvicorn — schema migrations
+# now apply on every container start (idempotent), so a fresh deploy cannot
+# boot against a stale DB schema.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}"]
