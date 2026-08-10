@@ -54,8 +54,8 @@ jobs:
           TRIVY_PYTHON_PACKAGES_DIR: /usr/local/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          format: 'table'
+          output: 'trivy-table.txt'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
@@ -85,7 +85,7 @@ jobs:
 
       - name: Diagnostic — print Trivy table
         if: always()
-        run: cat trivy-diag.txt 2>/dev/null || echo "no diag file"
+        run: cat trivy-table.txt 2>/dev/null || echo "no table file"
         continue-on-error: true
 
       - name: Run Trivy filesystem scan (fallback)
