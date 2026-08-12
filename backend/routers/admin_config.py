@@ -339,6 +339,17 @@ def _resolve_env_var_value(var: str, value: str | None) -> Any:
     if var in _BOOLEAN_LIKE:
         return value.lower() in {"1", "true", "yes"} if value else False
 
+    # Secrets (C-06): anything that looks like a key/secret/token/password is
+    # never returned in full — only a masked preview (or None when unset).
+    # LANGFUSE_PUBLIC_KEY is intentionally public and handled above.
+    if (
+        re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var)
+        and var != "LANGFUSE_PUBLIC_KEY"
+    ):
+        if not value:
+            return None
+        return f"{value[:4]}***"
+
     # Default: return raw value (None if unset)
     return value
 
