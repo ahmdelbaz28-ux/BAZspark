@@ -72,3 +72,51 @@ class TestTargetedClear:
     def test_clear_missing_bucket_is_noop(self):
         session_store.clear_failed_attempts("198.51.100.99")
         assert session_store.get_failed_attempts("198.51.100.99") == []
+
+
+class TestCleanupExpired:
+    """C-08: cleanup_expired() removes expired in-memory sessions."""
+
+    def _store_expired_session(self, key: str) -> None:
+        """Inject an expired session directly into the in-memory store."""
+        with ss._mem_lock:
+            ss._mem_sessions[key] = {
+                "api_key_hash": "x",
+                "principal": "test",
+                "role": "engineer",
+                "expires_at": 1.0,  # long past
+                "created_at": 0.0,
+                "client_ip": _IP_A,
+            }
+
+    def _store_live_session(self, key: str) -> None:
+        """Inject a still-valid session (expires far in the future)."""
+        with ss._mem_lock:
+            ss._mem_sessions[key] = {
+                "api_key_hash": "x",
+                "principal": "test",
+                "role": "engineer",
+                "expires_at": 1e12,  # far future
+                "created_at": 0.0,
+                "client_ip": _IP_A,
+            }
+
+    def test_expired_session_removed(self):
+        self._store_expired_session("expired-key-1")
+        removed = session_store.cleanup_expired()
+        assert removed == 1
+        assert session_store.get("expired-key-1") is None
+
+    def test_live_session_kept(self):
+        self._store_live_session("live-key-1")
+        removed = session_store.cleanup_expired()
+        assert removed == 0
+        assert session_store.get("live-key-1") is not None
+
+    def test_mixed_sessions_only_expired_removed(self):
+        self._store_expired_session("expired-key-2")
+        self._store_live_session("live-key-2")
+        removed = session_store.cleanup_expired()
+        assert removed == 1
+        assert session_store.get("expired-key-2") is None
+        assert session_store.get("live-key-2") is not None

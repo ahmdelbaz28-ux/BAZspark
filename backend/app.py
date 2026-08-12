@@ -273,6 +273,30 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Could not start UptimeRobot keep-awake heartbeat: %s", exc)
 
+    # C-08: Start the in-memory session cleanup loop (no-op when Redis is used,
+    # since Redis auto-expires sessions via TTL). Without this, the in-memory
+    # store grew unboundedly because cleanup_expired() had no caller.
+    _session_cleanup_task: asyncio.Task | None = None
+    try:
+        from backend.session_store import session_store
+
+        async def _session_cleanup_loop() -> None:
+            while True:
+                try:
+                    await asyncio.sleep(60)
+                    removed = session_store.cleanup_expired()
+                    if removed:
+                        logger.info("Session cleanup removed %d expired session(s)", removed)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:  # never kill the loop on transient errors
+                    logger.warning("Session cleanup iteration failed: %s", exc)
+
+        _session_cleanup_task = asyncio.create_task(_session_cleanup_loop())
+        logger.info("Session cleanup loop initiated (60s interval)")
+    except Exception as exc:
+        logger.warning("Could not start session cleanup loop: %s", exc)
+
     yield
     # Stop the UptimeRobot Keep-Awake Heartbeat Loop
     try:
@@ -283,6 +307,15 @@ async def lifespan(app: FastAPI):
             loop.create_task(get_uptime_service().stop_heartbeat_loop())  # NOSONAR - python:S7502
     except Exception as exc:
         logger.warning("Could not stop UptimeRobot keep-awake heartbeat cleanly: %s", exc)
+    # C-08: Cancel the session cleanup task explicitly on shutdown.
+    if _session_cleanup_task is not None and not _session_cleanup_task.done():
+        _session_cleanup_task.cancel()
+        try:
+            await _session_cleanup_task
+        except asyncio.CancelledError:
+            pass
+        except Exception as exc:
+            logger.warning("Session cleanup task shutdown error: %s", exc)
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 # Create FastAPI app with lifespan
