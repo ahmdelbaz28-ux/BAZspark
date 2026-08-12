@@ -265,13 +265,14 @@ class SessionStore:
         redis = _get_redis()
         if redis is not None:
             try:
-                # Delete all keys with the session prefix
-                session_keys = redis.keys(f"{_SESSION_PREFIX}*")
+                # C-09: scan_iter instead of KEYS (KEYS blocks Redis on large
+                # key sets — SCAN iterates in batches).
+                session_keys = list(redis.scan_iter(match=f"{_SESSION_PREFIX}*"))
                 if session_keys:
                     redis.delete(*session_keys)
                 return
             except Exception as e:
-                logger.warning("Redis KEYS/DELETE failed (%s) — falling back to in-memory", e)
+                logger.warning("Redis SCAN/DELETE failed (%s) — falling back to in-memory", e)
 
         # In-memory fallback
         with _mem_lock:
@@ -282,13 +283,13 @@ class SessionStore:
         redis = _get_redis()
         if redis is not None:
             try:
-                # Delete all keys with the failed attempts prefix
-                failed_keys = redis.keys(f"{_FAILED_PREFIX}*")
+                # C-09: scan_iter instead of KEYS (see clear_all_sessions).
+                failed_keys = list(redis.scan_iter(match=f"{_FAILED_PREFIX}*"))
                 if failed_keys:
                     redis.delete(*failed_keys)
                 return
             except Exception as e:
-                logger.warning("Redis KEYS/DELETE failed (%s) — falling back to in-memory", e)
+                logger.warning("Redis SCAN/DELETE failed (%s) — falling back to in-memory", e)
 
         # In-memory fallback
         with _mem_lock:
@@ -299,9 +300,10 @@ class SessionStore:
         redis = _get_redis()
         if redis is not None:
             try:
-                return len(redis.keys(f"{_SESSION_PREFIX}*"))
+                # C-09: scan_iter instead of KEYS (see clear_all_sessions).
+                return len(list(redis.scan_iter(match=f"{_SESSION_PREFIX}*")))
             except Exception as e:
-                logger.warning("Redis KEYS failed (%s) — falling back to in-memory", e)
+                logger.warning("Redis SCAN failed (%s) — falling back to in-memory", e)
 
         # In-memory fallback
         with _mem_lock:

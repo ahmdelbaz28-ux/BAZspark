@@ -361,7 +361,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
     api_key = websocket.headers.get("x-api-key")
     if not api_key:
         api_key = websocket.query_params.get("api_key")
-    
+
     principal = validate_api_key(api_key) if api_key else None
     if not principal:
         await websocket.close(code=4001, reason="Unauthorized: Valid API key required")

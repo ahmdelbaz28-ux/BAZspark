@@ -12,8 +12,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override URL from environment (same as main app) or use default
-db_url = os.getenv("DATABASE_URL", "sqlite:///./db/digital_twin.db")
+# Override URL from environment (same as main app). Fail loudly rather than
+# silently falling back to a hardcoded path — a missing DATABASE_URL must
+# never result in migrations running against the wrong database (C-05).
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    raise RuntimeError(
+        "alembic: DATABASE_URL is not set. Alembic refuses to migrate without "
+        "an explicit target database URL (set DATABASE_URL and retry)."
+    )
 if db_url.startswith("sqlite:///"):
     db_path = db_url.replace("sqlite:///", "")
 else:

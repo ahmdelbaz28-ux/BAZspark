@@ -62,6 +62,14 @@ _PLACEHOLDER_PATTERNS = (
 # ALSO count as placeholders (so an operator doesn't accidentally ship the
 # template literal `<pk-lf-...>` as a real key).
 _TEMPLATE_LITERAL_HINTS = (
+    # Legacy defaults that shipped in older .env.example files (C-02/C-03/C-04)
+    # — production must refuse to boot with any of these.
+    "dev-fireai-key-local",
+    "dev-session-secret-please-replace",
+    "change-me-please",
+    # Public test-only key from backend/tests/conftest.py (L-18) — must never
+    # be used as a production credential.
+    "test-api-key-for-testing-only",
     "pk-lf-...",
     "sk-lf-...",
     "napi_...",

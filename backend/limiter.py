@@ -37,38 +37,76 @@ from starlette.requests import Request
 logger = logging.getLogger(__name__)
 
 
+_PROXY_ENABLED_VALUES = ("true", "1", "yes", "on")
+
+
+def _trusted_proxy_list() -> list[str]:
+    """Parse the comma-separated TRUSTED_PROXIES env var."""
+    return [p.strip() for p in os.environ.get("TRUSTED_PROXIES", "").split(",") if p.strip()]
+
+
+def _peer_is_trusted_proxy(request: Request) -> bool:
+    """True when the TCP peer (request.client.host) is a configured trusted proxy."""
+    if not request.client or not request.client.host:
+        return False
+    return request.client.host in _trusted_proxy_list()
+
+
+def _cdn_enabled() -> bool:
+    """True when Cloudflare or Akamai integration is enabled via env flags."""
+    for var in ("CF_ENABLED", "AKAMAI_ENABLED"):
+        if os.environ.get(var, "false").strip().lower() in _PROXY_ENABLED_VALUES:
+            return True
+    return False
+
+
 def get_remote_address(request: Request) -> str:
     """Get the client IP address for rate limiting.
 
-    Priority:
-      1. CF-Connecting-IP (Cloudflare — set after edge authentication)
-      2. True-Client-IP (Akamai — set after edge authentication)
-      3. X-Forwarded-For (first hop — for other proxies)
-      4. request.client.host (direct connection — local dev)
+    SECURITY (C-01): Client-supplied proxy headers are only trusted when we
+    can establish that the request actually transited that proxy:
+
+      1. ``CF-Connecting-IP`` (Cloudflare) is trusted only when Cloudflare
+         integration is enabled (``CF_ENABLED=true``) or the TCP peer is a
+         configured trusted proxy.
+      2. ``True-Client-IP`` (Akamai) is trusted only when Akamai integration
+         is enabled (``AKAMAI_ENABLED=true``) or the TCP peer is a configured
+         trusted proxy.
+      3. ``X-Forwarded-For`` is spoofable, so it is only honored when the TCP
+         peer is a configured trusted proxy, and we take the LAST entry (the
+         value the proxy appended from ``$remote_addr``, not a client-supplied
+         hop).
+      4. ``request.client.host`` (the TCP peer) is used as the safe default —
+         including local dev where no proxy headers are present.
 
     Returns "0.0.0.0" if no IP can be determined (should never happen
     in practice, but prevents a None key_func crash if it does).
     """
+    edge_headers_trusted = _cdn_enabled() or _peer_is_trusted_proxy(request)
+
     # 1. Cloudflare CF-Connecting-IP — canonical client IP behind Cloudflare
-    cf_ip = request.headers.get("CF-Connecting-IP")
-    if cf_ip:
-        ip = cf_ip.strip().split(",")[0].strip()
-        if ip:
-            return ip
+    if edge_headers_trusted:
+        cf_ip = request.headers.get("CF-Connecting-IP")
+        if cf_ip:
+            ip = cf_ip.strip().split(",")[0].strip()
+            if ip:
+                return ip
 
     # 2. Akamai True-Client-IP — canonical client IP behind Akamai
-    true_client_ip = request.headers.get("True-Client-IP")
-    if true_client_ip:
-        ip = true_client_ip.strip().split(",")[0].strip()
-        if ip:
-            return ip
+    if edge_headers_trusted:
+        true_client_ip = request.headers.get("True-Client-IP")
+        if true_client_ip:
+            ip = true_client_ip.strip().split(",")[0].strip()
+            if ip:
+                return ip
 
-    # 3. X-Forwarded-For — first hop (set by other proxies / load balancers)
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        ip = xff.split(",")[0].strip()
-        if ip:
-            return ip
+    # 3. X-Forwarded-For — last hop only, and only from a trusted proxy
+    if _peer_is_trusted_proxy(request):
+        xff = request.headers.get("X-Forwarded-For")
+        if xff:
+            ip = xff.split(",")[-1].strip()
+            if ip:
+                return ip
 
     # 4. Direct connection (local dev, or no proxy in front)
     if request.client and request.client.host:

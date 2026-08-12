@@ -8,12 +8,16 @@ those two modules (auth.py → security_middleware → auth.py).
 
 Provides:
   1. Cookie parsing — extract_session_token_from_headers()
-     Parses raw ASGI headers to find the __Host-fireai_session cookie value.
-     Used by both ApiKeyMiddleware and the logout endpoint.
+      Parses raw ASGI headers to find the __Host-fireai_session cookie value.
+      Used by both ApiKeyMiddleware and the logout endpoint.
 
   2. API key credential validation — validate_api_key_credential()
-     Checks FIREAI_API_KEY env var bypass, then delegates to api_keys.validate_api_key.
-     Returns a Role or None. Used by both ApiKeyMiddleware and the login endpoint.
+      Checks FIREAI_API_KEY env var bypass, then delegates to api_keys.validate_api_key.
+      Returns a Role or None. Used by both ApiKeyMiddleware and the login endpoint.
+
+  3. Session token verification — verify_session_token()
+      Validates a signed session token (cookie or header) and returns the session_id.
+      Used by WebSocket auth and other cross-module flows (T20).
 
 DESIGN NOTES:
   - This module has ZERO imports from security_middleware or routers/auth,
@@ -29,6 +33,7 @@ import hashlib as _hashlib
 import hmac as _hmac
 import logging
 import os
+import time
 from typing import Optional, Tuple
 
 from backend.api_keys import validate_api_key as _validate_api_key
@@ -131,3 +136,56 @@ def resolve_credential(api_key: str) -> Optional[Tuple[Role, str]]:
         return (info.role, info.key_hash)
 
     return None
+
+
+def verify_session_token(token: str) -> Optional[str]:
+    """
+    Verify a signed session token and return the session_id if valid.
+
+    T20: Shared helper for session-cookie auth in WebSocket handshake.
+    Uses local imports to avoid circular dependencies with auth.py and session_store.
+
+    Returns None if:
+      - Token format is invalid
+      - HMAC signature does not match
+      - Token has expired
+      - Session ID is not in the session store
+    """
+    # Local imports to avoid circular dependency
+    from backend.routers.auth import _SECRET_MANAGER
+    from backend.session_store import session_store as _session_store
+
+    if "." not in token:
+        return None
+
+    parts = token.split(".", 2)
+    if len(parts) != 3:
+        return None
+
+    session_id, expires_at_str, signature = parts
+    try:
+        expires_at = int(expires_at_str)
+    except ValueError:
+        return None
+
+    # Client-side expiration check
+    if time.time() > expires_at:
+        return None
+
+    # Verify signature against primary AND previous secrets
+    if not _SECRET_MANAGER.verify_signature(f"{session_id}.{expires_at}", signature):
+        return None
+
+    # Check that session exists in store (server-side validation)
+    import hashlib as _hashlib_local
+    session_id_hash = _hashlib_local.sha256(session_id.encode("utf-8")).hexdigest()
+    session = _session_store.get(session_id_hash)
+    if session is None:
+        return None
+
+    # Server-side expiration check
+    if time.time() > session.get("expires_at", 0):
+        _session_store.delete(session_id_hash)
+        return None
+
+    return session_id

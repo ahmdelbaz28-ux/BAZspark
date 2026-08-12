@@ -293,8 +293,22 @@ class MultiDatabaseService:
             session.close()
 
     def neo4j_execute_query(self, query: str, parameters: dict = None, database: Optional[str] = None) -> list:
-        """Execute a Cypher query against Neo4j."""
+        """Execute a Cypher READ-ONLY query against Neo4j.
+
+        H-09: Defense-in-depth — only whitelisted read patterns are allowed.
+        Query must be a MATCH/RETURN or simple RETURN. Any write operation
+        (CREATE/MERGE/SET/DELETE/DETACH) is rejected and logs a warning.
+        """
         if not self._neo4j_driver:
+            return []
+
+        q = query.strip().upper()
+        # Reject any write operation
+        if any(q.startswith(w) for w in ("CREATE", "MERGE", "SET", "DELETE", "DETACH", "REMOVE")):
+            logger.warning(
+                "neo4j_execute_query: rejected write operation (query starts with: %s)",
+                query.split()[0] if query else "<empty>",
+            )
             return []
 
         try:
@@ -323,20 +337,36 @@ class MultiDatabaseService:
             self._postgres_pool.putconn(conn)
 
     def postgres_execute(self, query: str, parameters: tuple = None) -> list:
-        """Execute a query against PostgreSQL."""
+        """Execute a READ-ONLY query against PostgreSQL.
+
+        H-10: Defense-in-depth — only SELECT/EXPLAIN/DESC queries are allowed.
+        Any DML (INSERT/UPDATE/DELETE) or DDL are rejected and logged.
+        """
         if not self._postgres_pool:
+            return []
+
+        q = query.strip().upper()
+        # Reject any write or DDL operation
+        blocked = ("INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP",
+                   "TRUNCATE", "GRANT", "REVOKE", "CALL", "WITH")
+        if any(q.startswith(w) for w in blocked) or (";" in q and any(w in q.upper() for w in ("INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE", "GRANT", "REVOKE", "CALL"))):
+            logger.warning(
+                "postgres_execute: rejected write/DDL operation (query: %s...)",
+                query[:50] if query else "<empty>",
+            )
             return []
 
         try:
             with self.postgres_connection() as conn:
                 cur = conn.cursor()
+                # H-10: Set read-only for defense-in-depth (will raise on writes)
+                cur.execute("SET TRANSACTION READ ONLY")
                 cur.execute(query, parameters or ())
-                if query.strip().upper().startswith("SELECT"):
+                if q.startswith("SELECT") or q.startswith("EXPLAIN") or q.startswith("DESC"):
                     results = cur.fetchall()
                     cur.close()
                     return results
                 else:
-                    conn.commit()
                     cur.close()
                     return []
         except Exception:

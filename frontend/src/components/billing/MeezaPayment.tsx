@@ -472,7 +472,7 @@ function IframeCheckout({
 							src={checkout.checkout_url}
 							title="Meeza secure payment"
 							className="w-full h-[500px] border-0 rounded-md bg-slate-50"
-							sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation"
+							sandbox="allow-forms allow-scripts allow-top-navigation-by-user-activation"
 							onLoad={() => setIframeFailed(false)}
 							onError={() => setIframeFailed(true)}
 						/>

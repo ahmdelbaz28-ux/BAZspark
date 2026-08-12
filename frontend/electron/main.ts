@@ -181,8 +181,72 @@ function startPythonBackend(): Promise<boolean> {
                 const fireaiEnv = app.isPackaged
                         ? "production"
                         : (process.env.FIREAI_ENV || "development");
+
+                // H-02 FIX: never spread the full Electron host environment into
+                // the Python backend child process. The host may hold unrelated
+                // secrets (browser-session tokens, editor credentials, cloud CLI
+                // auth, etc.) which must not be readable by the backend. Only a
+                // whitelist of system/path vars plus the backend configuration
+                // vars is forwarded.
+                const BACKEND_ENV_KEYS = [
+                        // system / process lookup (path resolution, temp dirs)
+                        "PATH", "PYTHONPATH", "HOME", "USERPROFILE",
+                        "HOMEDRIVE", "HOMEPATH", "SystemRoot", "SystemDrive",
+                        "WINDIR", "TEMP", "TMP", "APPDATA", "LOCALAPPDATA",
+                        "COMSPEC", "PATHEXT", "OS", "PROCESSOR_ARCHITECTURE",
+                        "NUMBER_OF_PROCESSORS", "ProgramData", "ProgramFiles",
+                        "ProgramFiles(x86)",
+                        // backend runtime + configuration (mirrors
+                        // backend/env_validator.py + backend/config.py)
+                        "FIREAI_ENV", "FIREAI_ENV_VALIDATION",
+                        "FIREAI_API_KEY", "FIREAI_SESSION_SECRET",
+                        "FIREAI_SESSION_TTL", "FIREAI_API_KEYS",
+                        "FIREAI_API_KEYS_FILE", "FIREAI_DB_PATH",
+                        "FIREAI_DATA_DIR", "FIREAI_QOMN_HMAC_KEY",
+                        "FIREAI_VISION_KEY_ENCRYPTION_KEY",
+                        "DATABASE_URL", "DATABASE_POOL_SIZE", "DATABASE_TIMEOUT",
+                        "DIGITAL_TWIN_DB_PATH", "UDM_DB_PATH",
+                        "REDIS_URL", "REDIS_HOST", "REDIS_PORT",
+                        "REDIS_PASSWORD", "REDIS_DB",
+                        "QDRANT_HOST", "QDRANT_PORT", "QDRANT_API_KEY", "QDRANT_URL",
+                        "NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD", "NEO4J_DATABASE",
+                        "CORS_ORIGINS", "CORS_ALLOWED_ORIGINS", "TRUSTED_PROXIES",
+                        "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+                        "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
+                        "LANGFUSE_HOST", "LANGFUSE_ENABLED",
+                        "NVIDIA_API_KEY", "NVIDIA_BASE_URL", "NVIDIA_MODEL",
+                        "OPENAI_API_KEY", "GEMINI_API_KEY",
+                        "RESEND_API_KEY", "RESEND_FROM_EMAIL",
+                        "APS_CLIENT_ID", "APS_CLIENT_SECRET", "APS_WEBHOOK_URL",
+                        "AUDIT_HMAC_KEY", "FDS_WEBHOOK_SECRET",
+                        "BAZSPARK_MASTER_ADMIN_TOKEN",
+                        "QOMN_AUDIT_SECRET_KEY", "QOMN_AUDIT_LOG_PATH",
+                        "SESSION_COOKIE_SECURE", "BAZSPARK_FRONTEND_DIST",
+                ];
+                // Related config families forwarded wholesale.
+                const BACKEND_ENV_PREFIXES = ["ZENMUX_", "MEEZA_", "AKAMAI_", "CF_", "LLM_"];
+
+                function pickBackendEnv(): Record<string, string> {
+                        const picked: Record<string, string> = {};
+                        for (const key of BACKEND_ENV_KEYS) {
+                                const value = process.env[key];
+                                if (value !== undefined) {
+                                        picked[key] = value;
+                                }
+                        }
+                        for (const [key, value] of Object.entries(process.env)) {
+                                if (value === undefined) {
+                                        continue;
+                                }
+                                if (BACKEND_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+                                        picked[key] = value;
+                                }
+                        }
+                        return picked;
+                }
+
                 const env: Record<string, string> = {
-                        ...(process.env as Record<string, string>),
+                        ...pickBackendEnv(),
                         FIREAI_ENV: fireaiEnv,
                         PORT: PYTHON_BACKEND_PORT,
                         PYTHONPATH: `${appDir}${pathDelimiter}${path.resolve(appDir, "..")}${pathDelimiter}${process.env.PYTHONPATH || ""}`,

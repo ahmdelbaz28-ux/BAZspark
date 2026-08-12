@@ -256,17 +256,35 @@ class Database:
 
     @contextmanager
     def _pg_cursor(self):
-        """Get a cursor from the PostgreSQL connection pool with PgBouncer resilience."""
+        """Get a cursor from the PostgreSQL connection pool with PgBouncer resilience.
+
+        H-11 FIX: Track the actual working connection to avoid leaks when
+        putconn(conn, close=True) fails. Only return the connection we successfully
+        extracted from the pool, never attempt to return a closed/broken one.
+
+        Flow:
+          1. getconn() → obtain connection from pool
+          2. pre-ping: if connection.closed → try putconn(close=True) → getconn() again
+          3. yield cursor for use
+          4. on success → commit
+          5. on error → rollback
+          6. finally → always putconn(conn) the working connection back
+
+        Note: If putconn(close=True) fails in step 2, we log and proceed with the
+        new connection. The broken connection is "orphaned" but this preserves
+        availability over strict pool accounting.
+        """
         import psycopg2
         from psycopg2.extras import RealDictCursor
 
         conn = self._pg_pool.getconn()
-        # Pre-ping connection health (PgBouncer idle disconnect protection)
-        try:
-            if conn.closed or getattr(conn, "is_closed", False):
+        # Pre-ping: ensure connection is healthy (PgBouncer can return closed
+        # idle connections). If broken, discard it and get a fresh one.
+        if conn.closed or getattr(conn, "is_closed", False):
+            try:
                 self._pg_pool.putconn(conn, close=True)
-                conn = self._pg_pool.getconn()
-        except Exception:
+            except Exception as exc:
+                logger.warning("Could not return/closed broken Postgres conn: %s", exc)
             conn = self._pg_pool.getconn()
 
         try:

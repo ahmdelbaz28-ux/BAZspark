@@ -11,6 +11,3 @@ neo4j>=6.2.0
 # Cache/In-Memory Database
 # V263: use [hiredis] for consistency with main deps — hiredis C extension speeds up parsing.
 redis[hiredis]>=5.0.0
-
-# For async Redis (optional)
-aredis>=2.0.0  # Optional: for async Redis operations
