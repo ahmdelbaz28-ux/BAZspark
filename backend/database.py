@@ -261,6 +261,18 @@ class Database:
         H-11 FIX: Track the actual working connection to avoid leaks when
         putconn(conn, close=True) fails. Only return the connection we successfully
         extracted from the pool, never attempt to return a closed/broken one.
+
+        Flow:
+          1. getconn() → obtain connection from pool
+          2. pre-ping: if connection.closed → try putconn(close=True) → getconn() again
+          3. yield cursor for use
+          4. on success → commit
+          5. on error → rollback
+          6. finally → always putconn(conn) the working connection back
+
+        Note: If putconn(close=True) fails in step 2, we log and proceed with the
+        new connection. The broken connection is "orphaned" but this preserves
+        availability over strict pool accounting.
         """
         import psycopg2
         from psycopg2.extras import RealDictCursor

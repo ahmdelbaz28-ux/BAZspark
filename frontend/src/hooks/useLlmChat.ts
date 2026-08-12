@@ -115,6 +115,10 @@ export function useLlmChat(
 
 			// F5b: bounded history window — last MAX_HISTORY_TURNS
 			// completed turns (oldest first, server also caps at 20).
+			// Use messagesRef (ref) instead of state for history because:
+			// the history must be stable across renders — streaming updates
+			// append chunks to the last message without causing re-renders
+			// of the entire history array.
 			const history = messagesRef.current
 				.filter((m) => m.content)
 				.slice(-MAX_HISTORY_TURNS)
