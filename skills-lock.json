@@ -5,7 +5,7 @@
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/agent-architecture-audit/SKILL.md",
-      "computedHash": "f20cd1f810f5df07bdf12dc2f0895915842bd084e115c0a45bcd1c9633909401"
+      "computedHash": "8db8e5f849a924a58080345423ad6ed5f383a3bbd7b6f8ba842cf2dc917ebda2"
     },
     "backend-code-review": {
       "source": "langflow-ai/langflow",
@@ -35,7 +35,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/code-review/SKILL.md",
-      "computedHash": "7c3170d8b1b904418358af0474f82e74c89a2dd66c12c956caefdc0aa81ea09f"
+      "computedHash": "591a274f7be02c24da6628b464b66be44c351adfccd7e8c12f550715c695e3fe"
     },
     "code-review-and-quality": {
       "source": "addyosmani/agent-skills",
@@ -77,13 +77,13 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "computedHash": "ac63b22655a6fa4a59468dda21415b773c0aaf5a7e2e27e2259eaabf02a840bc"
+      "computedHash": "4eb5bf61b1e602f9cedbd3a5e4469dfba1db0247d5d40956d03299c455b91197"
     },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "computedHash": "569299a60c8e93880f3b3c1eca55578f58f7e1a4155876edb4cb814da3d6b3ea"
+      "computedHash": "3929c6892605b67b60503ced451876e9b313d1a909ab7066fbcd9967c56ed226"
     },
     "lint": {
       "source": "helderberto/agent-skills",
@@ -155,7 +155,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/shipping-and-launch/SKILL.md",
-      "computedHash": "005e89054a4bbe27e991c58aa2ddcede4285a7128eb452aaaae351832ebc8a88"
+      "computedHash": "47c62d418e9f3f395092864e6080b5c4b84fe3ef8abbbb6a3397ed655dda0ba8"
     },
     "systematic-debugging": {
       "source": "obra/superpowers",
@@ -167,7 +167,7 @@
       "source": "caomeiyouren/momei",
       "sourceType": "github",
       "skillPath": ".github/skills/test-engineer/SKILL.md",
-      "computedHash": "e690be8e22c3a981618cbb848803591ca98bf904c7cb0543ead9781f1b9e4df3"
+      "computedHash": "3397c778c1eaeec32ed9450ec7ddd6a3e3c8e644a74091cf94f33cd5d3788699"
     },
     "using-superpowers": {
       "source": "obra/superpowers",
@@ -179,7 +179,7 @@
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/verification-loop/SKILL.md",
-      "computedHash": "8b34b684c58df967598910e0771428ecaa6615033f7605cfd99d72b59acde31b"
+      "computedHash": "18e7a80e867972c6230ee7682e13df41f9bb4e25c86e5000b5da178d9f9663d5"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
