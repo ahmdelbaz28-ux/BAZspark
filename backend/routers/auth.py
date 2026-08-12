@@ -375,10 +375,15 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     response.headers["Set-Cookie"] = "; ".join(cookie_parts)
     response.headers["Cache-Control"] = "no-store"
 
-    # Clear failed attempts on successful login — resets BOTH the IP bucket
-    # and the per-credential bucket (V257 FIX: cred buckets were never cleared,
+    # Clear failed attempts on successful login — resets ONLY the caller's IP
+    # bucket and per-credential bucket (V257: cred buckets were never cleared,
     # so a key that failed before a successful login stayed rate-limited).
-    _session_store.clear_all_failed_attempts()
+    # C-07 FIX: previously clear_all_failed_attempts() wiped EVERY client's
+    # counters globally on any successful login, letting a legit user reset
+    # the lockout counters protecting other users.
+    _session_store.clear_failed_attempts(client_ip)
+    if credential_key:
+        _session_store.clear_failed_attempts(f"cred:{credential_key}")
 
     logger.info("Successful login, role=%s, ip=%s", role.value, client_ip)
     return response
