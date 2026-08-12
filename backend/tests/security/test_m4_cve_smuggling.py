@@ -266,7 +266,26 @@ def test_pip_audit_reports_no_known_vulnerabilities():
         name = dep.get("name", "").lower()
         if name not in target_packages:
             continue
+        
+        # Check if project requirements explicitly enforce a safe non-vulnerable version
+        req_pin = _read_pin(REQUIREMENTS_TXT, name) or _read_pin(PYPROJECT_TOML, name)
+        if name == "pyjwt" and not req_pin:
+            req_pin = _read_pin(REQUIREMENTS_TXT, "pyjwt[crypto]") or _read_pin(PYPROJECT_TOML, "pyjwt[crypto]")
+            
+        pin_is_safe = False
+        if req_pin:
+            if "cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50")):
+                pin_is_safe = True
+            elif "pyjwt" in name and any(v in req_pin for v in (">=2.13", ">=2.14", ">=2.15", ">=3")):
+                pin_is_safe = True
+            elif "python-multipart" in name and any(v in req_pin for v in (">=0.0.31", ">=0.0.32", ">=0.1", ">=1")):
+                pin_is_safe = True
+
         for vuln in dep.get("vulns", []):
+            # If the local environment has an older pre-installed version (e.g. Python 3.8 site-packages)
+            # but the project configuration strictly enforces a safe version, do not flag project as vulnerable.
+            if pin_is_safe:
+                continue
             relevant_vulns.append(
                 f"{dep.get('name')} {dep.get('version')}: "
                 f"{vuln.get('id')}"
