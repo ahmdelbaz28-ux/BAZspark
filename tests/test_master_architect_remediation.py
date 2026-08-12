@@ -145,47 +145,63 @@ def test_dual_db_saga_rollback():
 
 
 def test_meeza_billing_router(monkeypatch):
-    """Verify Meeza payment initiation, status polling, and webhook HMAC verification."""
+    """Verify Meeza order creation, checkout initiation, webhook HMAC verification, and status update."""
     from backend.routers.billing import router as billing_router
+    # Reset Meeza config cache so env var changes take effect
+    from backend.services import meeza_payment_service as meeza_svc
+    meeza_svc._CONFIG = None
     app.include_router(billing_router, prefix="/api/v1")
     test_key = "test_meeza_api_key"
+    webhook_secret = "meeza_secret_key_v1"
     monkeypatch.setenv("FIREAI_API_KEY", test_key)
+    monkeypatch.setenv("MEEZA_WEBHOOK_HMAC_SECRET", webhook_secret)
     client = TestClient(app, headers={"X-API-Key": test_key})
 
-    # 1. Initiate payment
-    init_res = client.post("/api/v1/billing/meeza/initiate", json={
-        "amount": 499.0,
+    # 1. Create order
+    order_res = client.post("/api/v1/billing/orders", json={
+        "amount_cents": 49900,
         "currency": "EGP",
         "description": "Professional Plan Subscription",
-        "customer_email": "engineer@example.com",
+        "metadata": {"customer_email": "engineer@example.com"},
+        "expires_in_seconds": 1800,
     })
-    assert init_res.status_code == 200
-    data = init_res.json()
-    payment_id = data["payment_id"]
-    assert payment_id.startswith("MEEZA-")
-    assert data["status"] == "PENDING"
-    assert "redirect_url" in data
+    assert order_res.status_code == 201
+    order_data = order_res.json()
+    order_id = order_data["id"]
+    assert order_data["status"] == "pending"
 
-    # 2. Check transaction status
-    status_res = client.get(f"/api/v1/billing/meeza/status/{payment_id}")
-    assert status_res.status_code == 200
-    assert status_res.json()["status"] == "PENDING"
+    # 2. Initiate checkout
+    checkout_res = client.post(f"/api/v1/billing/orders/{order_id}/checkout", json={
+        "billing_data": {"email": "engineer@example.com"},
+    })
+    assert checkout_res.status_code == 200
+    checkout_data = checkout_res.json()
+    assert checkout_data["order_id"] == order_id
+    assert "transaction_id" in checkout_data
+    assert "checkout_url" in checkout_data
 
     # 3. Test Webhook with HMAC signature
-    webhook_payload = {"payment_id": payment_id, "status": "SUCCESS"}
-    secret = "meeza_secret_key_v1"
+    webhook_payload = {
+        "merchant_order_id": order_id,
+        "txn_id": checkout_data["transaction_id"],
+        "amount_cents": 49900,
+        "success": True,
+    }
+    secret = webhook_secret
     import json
     raw_body = json.dumps(webhook_payload).encode("utf-8")
     sig = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
 
     wh_res = client.post(
-        "/api/v1/billing/meeza/webhook",
+        "/api/v1/billing/webhooks/meeza",
         content=raw_body,
-        headers={"Content-Type": "application/json", "X-Meeza-Signature": sig, "X-API-Key": test_key}
+        headers={"Content-Type": "application/json", "X-Meeza-Signature": sig}
     )
     assert wh_res.status_code == 200
-    assert wh_res.json()["status"] == "SUCCESS"
+    assert wh_res.json()["status"] == "processed"
+    assert wh_res.json()["order_status"] == "PAID"
 
-    # 4. Verify updated status
-    status_res_after = client.get(f"/api/v1/billing/meeza/status/{payment_id}")
-    assert status_res_after.json()["status"] == "SUCCESS"
+    # 4. Verify updated order status
+    status_res_after = client.get(f"/api/v1/billing/orders/{order_id}")
+    assert status_res_after.status_code == 200
+    assert status_res_after.json()["status"] == "PAID"

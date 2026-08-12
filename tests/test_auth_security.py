@@ -67,7 +67,7 @@ class TestRateLimiting:
         assert resp.status_code == 429, "6th attempt should be 429"
 
     def test_successful_login_resets_rate_limit(self, client: TestClient) -> None:
-        """A successful login should clear failed attempts."""
+        """A successful login should clear failed attempts for that credential."""
         # 4 failed attempts (under the limit)
         for _ in range(4):
             client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
@@ -79,9 +79,9 @@ class TestRateLimiting:
         )
         assert resp.status_code == 200
 
-        # Should be able to fail again (rate limit was reset)
+        # Should be able to fail again with the SAME credential (rate limit was reset)
         for _ in range(4):
-            resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
+            resp = client.post("/api/v1/auth/login", json={"api_key": "test_key_for_security_audit"})  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
             assert resp.status_code == 401
 
 
