@@ -266,12 +266,12 @@ def test_pip_audit_reports_no_known_vulnerabilities():
         name = dep.get("name", "").lower()
         if name not in target_packages:
             continue
-        
+
         # Check if project requirements explicitly enforce a safe non-vulnerable version
         req_pin = _read_pin(REQUIREMENTS_TXT, name) or _read_pin(PYPROJECT_TOML, name)
         if name == "pyjwt" and not req_pin:
             req_pin = _read_pin(REQUIREMENTS_TXT, "pyjwt[crypto]") or _read_pin(PYPROJECT_TOML, "pyjwt[crypto]")
-            
+
         pin_is_safe = False
         if req_pin:
             if "cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50")):
