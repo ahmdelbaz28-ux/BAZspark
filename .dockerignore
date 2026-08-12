@@ -19,6 +19,12 @@ data/
 logs/
 .env
 .env.local
+.env.production
+.env.*.example
+*.secret
+*.key
+*.pem
+.secrets.baseline
 *.md
 docs/
 tests/

@@ -90,16 +90,16 @@ paths = [
   '''NOSONAR_AUDIT\.md''',
 ]
 
-# ── Regex Stopwords (content-based exclusions) ───────────────────────────
+# ── Regex Stopwords (content-based exclusions) ────────────────────────────
 [[allowlists]]
-description = "Regex-based content exclusions for inline patterns"
+description = "Regex-based content exclusions for placeholder patterns (full-string match only)"
 regexes = [
-  '''your-api-key-here''',
-  '''YOUR_API_KEY''',
-  '''sk-placeholder''',
-  '''changeme''',
-  '''CHANGE_ME''',
-  '''your-key''',
-  '''gitleaks:allow''',
-  '''secrets\.fireai-secrets\.stringData\.''',
+  '''^changeme$''',
+  '''^your-api-key-here$''',
+  '''^sk-placeholder$''',
+  '''^CHANGE_ME$''',
+  '''^YOUR_API_KEY$''',
+  '''^your-key$''',
 ]
+# General allow marker for inline false positives
+''':allow''',

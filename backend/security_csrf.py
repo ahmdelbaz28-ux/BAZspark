@@ -119,11 +119,6 @@ def extract_csrf_header(headers: MutableMapping[str, str] | dict) -> str | None:
     return None
 
 
-def is_csrf_exempt_path(path: str) -> bool:
-    """Check if request path is exempt from CSRF protection."""
-    return path in CSRF_EXEMPT_PATHS or any(path.startswith(p) for p in CSRF_EXEMPT_PATHS)
-
-
 # It was defined but NEVER USED anywhere in the codebase. Keeping it
 # misled readers into thinking the middleware enforces content-type
 # checks. The middleware enforces CSRF on ALL state-changing requests
@@ -132,9 +127,8 @@ def is_csrf_exempt_path(path: str) -> bool:
 # In production, this MUST be False (or unset, which defaults to False).
 # The OLD hardcoded True overrode the dev_allow_http parameter, causing the
 # Secure attribute to be omitted in production behind TLS-terminating proxies.
-import os as _os
-
-_DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in ("1", "true", "yes")
+# DEBUG_ALLOW_HTTP_COOKIES: when True, drops Secure requirement (dev fallback).
+DEBUG_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in ("1", "true", "yes")
 
 
 # ---------------------------------------------------------------------------

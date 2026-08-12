@@ -107,6 +107,11 @@ class Config:
             if "sqlite" in cls.DATABASE_URL.lower() and os.environ.get("ALLOW_SQLITE_IN_PROD", "").lower() not in ("true", "1"):
                 issues.append("CRITICAL: SQLite is in use for production without ALLOW_SQLITE_IN_PROD=true. Consider PostgreSQL.")
 
+        # Neo4j — password required when a URI is configured
+        if cls.NEO4J_URI and not cls.NEO4J_PASSWORD:
+            issues.append("CRITICAL: NEO4J_URI is set but NEO4J_PASSWORD is missing or empty. "
+                          "Neo4j connections require authentication.")
+
         return issues
 
 
