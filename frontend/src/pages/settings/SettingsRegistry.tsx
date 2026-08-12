@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiCall } from "@/services/fullApi";
 
 type SystemConfig = Record<string, string>;
 
@@ -21,12 +22,7 @@ export function SettingsRegistry() {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		fetch("http://localhost:7860/settings/config", {
-			headers: {
-				"X-API-Key": "dev-key-123",
-			},
-		})
-			.then((res) => res.json())
+		apiCall<SystemConfig>("/settings/config")
 			.then((data) => {
 				setConfig(data);
 				setLoading(false);
