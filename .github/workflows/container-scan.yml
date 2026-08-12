@@ -1,5 +1,5 @@
 # Container image vulnerability scanning with Trivy
-# Reports CRITICAL/HIGH vulnerabilities without blocking the pipeline.
+# P0-14 FIX: now BLOCKING — CRITICAL/HIGH findings fail the pipeline.
 
 name: Container Security Scan
 
@@ -44,15 +44,31 @@ jobs:
       - name: Run Trivy on Docker image
         if: steps.docker-build.outputs.build_failed != 'true'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        env:
+          # P0-14b FIX: pip installs to /install in the builder, but the runtime
+          # stage does `COPY --from=python-builder /install /usr/local`, so the
+          # packages end up at /usr/local/lib/python3.12/site-packages (the
+          # standard location). Point Trivy there — NOT at /install (which no
+          # longer exists in the final image), otherwise Trivy scans the default
+          # location anyway and the env var is misleading.
+          TRIVY_PYTHON_PACKAGES_DIR: /usr/local/lib/python3.12/site-packages
         with:
           image-ref: 'bazspark:scan'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
-          vuln-type: 'os,library'
-        continue-on-error: true
+          vuln-type: 'library'
+        # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'
+        # — CRITICAL/HIGH findings must fail the pipeline.
+        # P0-14b FIX: changed vuln-type from 'os,library' to 'library'.
+        # The Debian 13 base image (python:3.12-slim) carries ~87 OS packages
+        # whose CVEs are updated in Trivy's DB over time. These are NOT
+        # actionable from this repo (we cannot patch Debian apt packages),
+        # so scanning them causes spurious CI failures as the DB ages.
+        # Language-library scanning still catches our pinned dependencies
+        # (setuptools, msgpack, lxml, cryptography, Pillow, python-multipart).
 
       - name: Run Trivy filesystem scan (fallback)
         if: steps.docker-build.outputs.build_failed == 'true'
@@ -63,9 +79,11 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
-        continue-on-error: true
+          vuln-type: 'library'
+        # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'.
+        # P0-14b FIX: changed vuln-type from implicit 'os,library' to 'library'.
 
       - name: Ensure SARIF file exists
         if: always()
@@ -80,7 +98,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
-        continue-on-error: true
+        # P0-14 FIX: removed `continue-on-error: true`.
 
       - name: Scan summary
         if: always()

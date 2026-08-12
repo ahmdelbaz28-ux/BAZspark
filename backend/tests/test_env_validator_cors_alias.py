@@ -26,6 +26,15 @@ _HARD_KEYS = (
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
     "LANGFUSE_HOST",
+    # P0-4: new security/HMAC/webhook HARD vars (see env_validator.py §17)
+    "AUDIT_HMAC_KEY",
+    "FIREAI_QOMN_HMAC_KEY",
+    "QOMN_AUDIT_SECRET_KEY",
+    "FDS_WEBHOOK_SECRET",
+    "BAZSPARK_MASTER_ADMIN_TOKEN",
+    "FIREAI_VISION_KEY_ENCRYPTION_KEY",
+    "MEEZA_WEBHOOK_HMAC_SECRET",
+    "TRUSTED_PROXIES",
 )
 
 
@@ -76,3 +85,23 @@ def test_new_var_takes_precedence(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     assert "CORS_ORIGINS" not in _hard_names()
     ev.assert_environment()  # must not raise
+
+
+# ─── P0-4: new security/HMAC/webhook HARD vars ──────────────────────────────
+
+def test_p0_4_security_vars_missing_are_hard(monkeypatch):
+    """Each newly-added security var is a HARD launch blocker when unset."""
+    p0_4_keys = (
+        "AUDIT_HMAC_KEY",
+        "FIREAI_QOMN_HMAC_KEY",
+        "QOMN_AUDIT_SECRET_KEY",
+        "FDS_WEBHOOK_SECRET",
+        "BAZSPARK_MASTER_ADMIN_TOKEN",
+        "FIREAI_VISION_KEY_ENCRYPTION_KEY",
+        "MEEZA_WEBHOOK_HMAC_SECRET",
+        "TRUSTED_PROXIES",
+    )
+    for key in p0_4_keys:
+        monkeypatch.delenv(key, raising=False)
+    hard = _hard_names()
+    assert set(p0_4_keys) <= hard

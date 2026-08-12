@@ -106,17 +106,13 @@
           props (100+ usages across the app); CSP3 restricts it to
           style attributes only, which is the OWASP-accepted pattern.
      -->
-     <!-- NOSONAR: Web:S7039 — style-src-attr 'unsafe-inline' required for React style props (CSP3 attribute-only scope) -->
-     <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self';
-    script-src 'self';
-    style-src 'self' https://fonts.googleapis.com;
-    style-src-attr 'unsafe-inline';
-    img-src 'self' data: blob:;
-    font-src 'self' data: https://fonts.gstatic.com;
-    connect-src 'self' http://localhost:8000 ws://localhost:5173 ws://localhost:8000 http://127.0.0.1:8000 https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app __CSP_CONNECT_SRC__;
-    base-uri 'self';
-    form-action 'self';" />
+     <!-- P0-8 FIX: CSP meta REMOVED — moved to frontend/public/_headers
+          (single source, served by Vercel/static hosts). The meta tag
+          duplicated the header policy; browsers merge both, so keeping
+          both was dead weight and let stale localhost entries leak into
+          production. The header now includes frame-src for the Meeza
+          checkout iframe and a connect-src without dev localhost hosts. -->
+     <!-- NOSONAR: Web:S7039 — style-src-attr 'unsafe-inline' required for React style props (CSP3 attribute-only scope) (now served via public/_headers) -->
 
     <!-- Security: Prevent MIME-type sniffing -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />

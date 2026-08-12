@@ -34,6 +34,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import math
 import os
 import struct
@@ -48,6 +49,12 @@ from fireai.core.results import (
     SmokeSpacingResult,
     VoltageDropResult,
 )
+
+logger = logging.getLogger(__name__)
+
+
+class SecurityError(Exception):
+    """Raised when a security-critical configuration is missing (QOMN Layer 4)."""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 0 — INPUT SANITIZATION (Physics Guards)
@@ -824,6 +831,28 @@ class QOMNAuditLog:
         # for security_logging.py). Plain SHA-256 is tamper-evident but NOT
         # tamper-proof — any attacker with source access can recompute chains.
         self._hmac_key = os.environ.get("FIREAI_QOMN_HMAC_KEY", "").encode()
+        if not self._hmac_key:
+            # P0-1 FIX (launch blocker): fail-closed in production — a silent
+            # SHA-256 fallback turns a tamper-EVIDENT chain into a forgeable
+            # one. Mirrors audit_store.py `_get_audit_hmac_key` production
+            # enforcement (FIREAI_ENV / PRODUCTION / ENV).
+            is_production = (
+                os.environ.get("FIREAI_ENV", "").lower() == "production"
+                or os.environ.get("PRODUCTION", "") == "1"
+                or os.environ.get("ENV", "").lower() == "production"
+            )
+            if is_production:
+                raise SecurityError(
+                    "FIREAI_QOMN_HMAC_KEY is not set in production environment. "
+                    "The QOMN audit chain must be HMAC-SHA256 signed, not plain "
+                    "SHA-256. Generate one with: "
+                    'python -c "import secrets; print(secrets.token_hex(32))"'
+                )
+            logger.warning(
+                "[SECURITY] FIREAI_QOMN_HMAC_KEY not set — audit chain falls back "
+                "to plain SHA-256 (tamper-evident, NOT tamper-proof). Set "
+                "FIREAI_ENV=production to enforce the HMAC key requirement."
+            )
         self._chain_hash: str = self._compute_chain_hash(b"QOMN-GENESIS")
         self._lock = threading.RLock()  # V-10: thread-safe under concurrent analyze_building()
 

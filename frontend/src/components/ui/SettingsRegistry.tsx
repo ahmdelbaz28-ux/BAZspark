@@ -26,12 +26,12 @@ export const SettingsRegistry: React.FC = () => {
 	useEffect(() => {
 		const fetchSettings = async () => {
 			try {
-				const headers = {
-					"X-API-Key": process.env.VITE_FIREAI_API_KEY || "test-key",
-				};
+				// P0-6 FIX: no hardcoded http://localhost:8000 and no "test-key"
+				// fallback — auth flows via the HttpOnly session cookie.
+				const apiBase = (import.meta.env.VITE_API_URL || "/").replace(/\/$/, "");
 				const [rtRes, bsRes] = await Promise.all([
-					fetch("http://localhost:8000/settings/runtime", { headers }),
-					fetch("http://localhost:8000/settings/bootstrap", { headers }),
+					fetch(`${apiBase}/settings/runtime`, { credentials: "same-origin" }),
+					fetch(`${apiBase}/settings/bootstrap`, { credentials: "same-origin" }),
 				]);
 
 				if (rtRes.ok) setRuntime(await rtRes.json());
@@ -58,12 +58,13 @@ export const SettingsRegistry: React.FC = () => {
 		setRuntime(newSettings);
 
 		try {
-			await fetch("http://localhost:8000/settings/runtime", {
+			const apiBase = (import.meta.env.VITE_API_URL || "/").replace(/\/$/, "");
+			await fetch(`${apiBase}/settings/runtime`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					"X-API-Key": process.env.VITE_FIREAI_API_KEY || "test-key",
 				},
+				credentials: "same-origin",
 				body: JSON.stringify(newSettings),
 			});
 		} catch (err) {

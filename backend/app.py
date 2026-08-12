@@ -538,6 +538,9 @@ for _router_name in (
     "analyze",
     "llm",  # V207: AI Copilot (Zenmux OpenAI-compatible LLM service)
     "auth",  # M-3: session-based auth with HttpOnly cookies
+    "agent_ws",  # P0-3 FIX: Local Agent WebSocket router — /agent/ws was
+                 # never registered (only its helpers were imported by
+                 # revit.py), so every agent connection got 404 in prod.
     "settings",  # V151: Vision API Keys (AES-256-GCM encrypted) — /api/v1/settings/keys/openai
     # V270 FIX (systematic-debugging): closes 7 confirmed broken frontend
     # API calls identified by the BAZspark UI Coverage Audit. These routers

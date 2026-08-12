@@ -9,6 +9,8 @@ services:
     repo: https://github.com/ahmdelbaz28-ux/BAZspark
     branch: main
     dockerfilePath: ./Dockerfile
+    # P0-12 FIX: apply Alembic migrations before booting the API (idempotent).
+    startCommand: alembic upgrade head && uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860}
     envVars:
       - key: FIREAI_ENV
         value: production

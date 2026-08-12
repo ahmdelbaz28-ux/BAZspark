@@ -17,16 +17,21 @@
 
 import { URL } from 'node:url';
 
-// Shared secret — MUST match AKAMAI_REQUIRE_ORIGIN_TOKEN env var on backend.
-// Stored as an EdgeWorker secret (not in source code) via Property Manager.
-// For demo purposes only — replace with actual secret rotation process.
-const ORIGIN_TOKEN = 'REPLACE_WITH_SECRET_FROM_PROPERTY_MANAGER';
-
 // Paths that are always allowed (health checks, public endpoints).
 const PUBLIC_PATHS = ['/api/health', '/api/v1/health', '/favicon.ico', '/robots.txt'];
 
 export function onClientRequest(request) {
     const path = new URL(request.url).pathname;
+
+    // P0-15 FIX: the shared secret now comes from a Property Manager variable
+    // (PMUSER_origin_token), never from source code. If the variable is unset
+    // we FAIL CLOSED with 403 — an EdgeWorker silently injecting a placeholder
+    // token would let direct-to-origin traffic pass the backend check.
+    const ORIGIN_TOKEN = request.getVariable('PMUSER_origin_token') || '';
+    if (!ORIGIN_TOKEN) {
+        request.respondWith(403, {}, 'Forbidden: origin token not configured');
+        return;
+    }
 
     // Skip verification for public paths
     if (PUBLIC_PATHS.some(p => path === p || path.startsWith(p + '/'))) {

@@ -30,19 +30,15 @@ export const AuditVisualizer: React.FC = () => {
 
 	useEffect(() => {
 		// Fetch audit chain
+		// P0-6 FIX: no more hardcoded http://localhost:8000 (broken in prod) and
+		// no "test-key" fallback — auth flows via the HttpOnly session cookie
+		// (getApiKey() returns null by design; see services/apiKey.ts V288).
 		const fetchAudit = async () => {
 			try {
+				const apiBase = (import.meta.env.VITE_API_URL || "/").replace(/\/$/, "");
 				const [chainRes, verifyRes] = await Promise.all([
-					fetch("http://localhost:8000/audit/chain", {
-						headers: {
-							"X-API-Key": process.env.VITE_FIREAI_API_KEY || "test-key",
-						},
-					}),
-					fetch("http://localhost:8000/audit/verify", {
-						headers: {
-							"X-API-Key": process.env.VITE_FIREAI_API_KEY || "test-key",
-						},
-					}),
+					fetch(`${apiBase}/audit/chain`, { credentials: "same-origin" }),
+					fetch(`${apiBase}/audit/verify`, { credentials: "same-origin" }),
 				]);
 
 				if (chainRes.ok) setChain(await chainRes.json());

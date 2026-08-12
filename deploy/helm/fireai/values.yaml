@@ -278,21 +278,24 @@ services:
         protocol: TCP
 
 # ── Secrets ──────────────────────────────────────────────────────────────────
+# P0-13 FIX: every key below is REQUIRED — the template fails closed with
+# `required` when a value is empty. Fill real values via `--set-file` or a
+# secrets management tool; NEVER commit real secrets here.
 secrets:
   fireai-secrets:
     stringData:
-      FIREAI_API_KEY: ""
-      FIREAI_EVIDENCE_HMAC_KEY: ""
-      DB_PASSWORD: ""
-      REDIS_PASSWORD: ""
-      GEMINI_API_KEY: ""
-      ENCRYPTION_KEY: ""
-      JWT_SECRET: ""
+      FIREAI_API_KEY: ""              # REQUIRED — X-API-Key for all clients
+      FIREAI_EVIDENCE_HMAC_KEY: ""    # REQUIRED — evidence chain HMAC signing
+      DB_PASSWORD: ""                 # REQUIRED — Postgres password
+      REDIS_PASSWORD: ""              # REQUIRED — Redis password
+      GEMINI_API_KEY: ""              # REQUIRED — Gemini LLM provider key
+      ENCRYPTION_KEY: ""              # REQUIRED — FIREAI_VISION_KEY_ENCRYPTION_KEY (32 bytes)
+      JWT_SECRET: ""                  # REQUIRED — session/access token signing
   fireai-tls:
     type: kubernetes.io/tls
     stringData:
-      tls.crt: ""
-      tls.key: ""
+      tls.crt: ""                     # REQUIRED — TLS certificate (PEM)
+      tls.key: ""                     # REQUIRED — TLS private key (PEM)
 
 # ── ConfigMap ────────────────────────────────────────────────────────────────
 configMap:

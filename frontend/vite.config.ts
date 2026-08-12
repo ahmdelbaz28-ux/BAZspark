@@ -263,6 +263,12 @@ export default defineConfig({
                                         // jsdom's internal timers. This is safe because we're in CI
                                         // and don't need the server after tests complete.
                                         forceExit: true,
+                                        // P0-13 FIX: Generate lcov coverage report for SonarCloud.
+                                        coverage: {
+                                                provider: "v8",
+                                                reporter: ["html", "lcov", "text-summary"],
+                                                reportsDirectory: "coverage",
+                                        },
                                         // V156 FIX: Exclude Playwright visual tests from Vitest collection.
                                         // tests/visual/*.spec.ts are Playwright test files (use @playwright/test's
                                         // test() function). When Vitest discovers them, it fails with:

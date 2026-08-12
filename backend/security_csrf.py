@@ -101,6 +101,13 @@ CSRF_EXEMPT_PATHS = frozenset({
     "/openapi.json",
     "/api/v1/auth/login",
     "/api/v1/auth/session/login",
+    # P0-2 FIX: server-to-server webhooks are HMAC-authenticated (never
+    # browser-originated), so CSRF does not apply — and the PSP cannot
+    # echo a CSRF cookie. Without this, Meeza callbacks died with
+    # CSRF_VALIDATION_FAILED before reaching the HMAC handler.
+    # (FDS webhook had the same latent bug — both fixed together.)
+    "/api/v1/billing/webhooks/meeza",
+    "/api/v2/fds/webhook",
 })
 
 

@@ -27,7 +27,9 @@ RUN ls -la dist/ && test -f dist/index.html
 
 
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
-FROM python:3.14-slim AS python-builder
+# P0-10 FIX: unified on python:3.12-slim — matches deploy/docker/Dockerfile.api
+# and Dockerfile.worker (3.14 drifted and broke --only-binary wheel parity).
+FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
 
@@ -35,13 +37,21 @@ WORKDIR /build
 # pyproject.toml build-system (setuptools.build_meta backend). Without this,
 # pip fails with "Cannot import 'setuptools.build_meta'" when installing
 # packages that use PEP 517 builds.
-RUN pip install --no-cache-dir --upgrade pip setuptools==70.3.0 wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; setuptools pinned to known-good 70.3.0
+RUN pip install --no-cache-dir --upgrade pip
+# P0-14c FIX: install setuptools+wheel into /install (NOT the builder's default
+# /usr/local). The runtime stage only `COPY --from=python-builder /install /usr/local`,
+# so anything installed to the builder's /usr/local is DISCARDED. Previously this
+# bootstrap ran without --prefix, leaving the runtime image with the base
+# python:3.12-slim setuptools (vulnerable → CVE-2025-47273 / CVE-2026-59890),
+# which Trivy flags and fails the pipeline. With --prefix=/install the upgraded
+# setuptools (>=78.1.1) is copied into runtime and overwrites the base version.
+RUN pip install --no-cache-dir --prefix=/install "setuptools>=78.1.1" wheel # NOSONAR:S8541,S8544 — pip/setuptools/wheel bootstrap; --prefix=/install so the upgraded setuptools is copied into the runtime image (fixes CVE-2025-47273 / CVE-2026-59890)
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
@@ -63,8 +73,28 @@ RUN groupadd -r fireai && \
 
 WORKDIR /app
 
+# P0-14d FIX: purge the BASE image's stale setuptools BEFORE the /install overlay
+# is copied. python:3.12-slim ships setuptools <78.1.1 in /usr/local, which carries
+# CVE-2025-47273 (HIGH, fixed in 78.1.1). `COPY --from=python-builder /install
+# /usr/local` only MERGES the upgraded dist-info NEXT TO the vulnerable base one,
+# so Trivy still flags the old dist-info and the container gate fails (all runs
+# after the Trivy DB recorded this advisory). Deleting the base remnants here
+# means the overlay brings in exactly one, clean setuptools (>=78.1.1).
+RUN rm -rf /usr/local/lib/python3.12/site-packages/setuptools \
+           /usr/local/lib/python3.12/site-packages/setuptools-*.dist-info \
+           /usr/local/lib/python3.12/site-packages/pkg_resources
+
 # Copy installed Python packages
 COPY --from=python-builder /install /usr/local
+
+# P0 FIX: upgrade pip in the RUNTIME stage. The /install overlay above only carries
+# setuptools/wheel/requirements from the builder — the base python:3.12-slim pip
+# (25.0.1) is still present in the runtime and Trivy flags it (CVE-2026-8643 [HIGH,
+# fixed 26.1.2] plus CVE-2026-1703/6357/3219/2025-8869), failing the pipeline.
+# Upgrading pip here REMOVES the stale 25.0.1 dist-info so the image is clean.
+# (The builder's `pip install --upgrade pip` on line 40 does NOT reach the runtime
+# because only /install is copied — it lands in the discarded builder /usr/local.)
+RUN pip install --no-cache-dir --upgrade pip
 
 # Copy application code (only what's needed for production)
 COPY --chown=fireai:fireai backend/ backend/
@@ -78,6 +108,12 @@ COPY --chown=fireai:fireai facp_system/ facp_system/
 COPY --chown=fireai:fireai core/ core/
 COPY --chown=fireai:fireai marine/ marine/
 COPY --chown=fireai:fireai adapters/ adapters/
+
+# P0-12 FIX: ship Alembic migrations so `alembic upgrade head` can run
+# at container start (see CMD below). Previously alembic.ini + alembic/
+# were never copied into the image.
+COPY --chown=fireai:fireai alembic.ini ./
+COPY --chown=fireai:fireai alembic/ alembic/
 
 # V206: Copy the built frontend (from Stage 1) — served at / by FastAPI StaticFiles
 # when BAZSPARK_FRONTEND_DIST is set (see backend/app.py).
@@ -124,4 +160,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # For multi-worker deployments, use PostgreSQL via deploy/docker/docker-compose.yml
 #
 # H-3 FIX: Bind to 0.0.0.0 for external routing (required by cloud hosting like HF Spaces).
-CMD ["sh", "-c", "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}"]
+# P0-12 FIX: run `alembic upgrade head` before uvicorn — schema migrations
+# now apply on every container start (idempotent), so a fresh deploy cannot
+# boot against a stale DB schema.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}"]

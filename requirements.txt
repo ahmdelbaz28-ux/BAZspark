@@ -67,6 +67,7 @@ pytz>=2023.0.0,<2027.0.0  # V265: bump upper bound (PR #148)
 pytesseract>=0.3.10,<1.0.0  # V301 FIX: OCR service hard-imports pytesseract (was missing from runtime deps)
 tenacity>=8.2.0,<10.0.0
 hypothesis>=6.82.0,<7.0.0
+msgpack>=1.2.1  # P0-14 FIX: resolve GHSA-6v7p-g79w-8964 (HIGH) found by Trivy
 
 # ── LangGraph (Workflow + Crash Recovery Checkpointing) ─────────────────────
 # V141.3: Upgraded to langgraph 1.x + langgraph-checkpoint-sqlite 3.x
