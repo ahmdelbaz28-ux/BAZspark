@@ -54,6 +54,7 @@ export function useLlmChat(
 	const streamBufferRef = useRef("");
 	const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const streamIndexRef = useRef<number>(-1);
+	const messagesRef = useRef<ChatMessage[]>([]); // H-12 FIX: ref for stable history reference
 
 	const flushBuffer = useCallback(() => {
 		const buffer = streamBufferRef.current;
@@ -66,6 +67,7 @@ export function useLlmChat(
 			if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
 				updated[idx] = { ...lastMsg, content: lastMsg.content + buffer };
 			}
+			messagesRef.current = updated;
 			return updated;
 		});
 	}, []);
@@ -94,7 +96,7 @@ export function useLlmChat(
 			const assistantTimestamp = Date.now();
 			setMessages((prev) => {
 				streamIndexRef.current = prev.length + 1;
-				return [
+				const updated = [
 					...prev,
 					userMessage,
 					{
@@ -104,6 +106,8 @@ export function useLlmChat(
 						isStreaming: true,
 					},
 				];
+				messagesRef.current = updated;
+				return updated;
 			});
 			setLoading(true);
 			setError(null);
@@ -111,7 +115,7 @@ export function useLlmChat(
 
 			// F5b: bounded history window — last MAX_HISTORY_TURNS
 			// completed turns (oldest first, server also caps at 20).
-			const history = messages
+			const history = messagesRef.current
 				.filter((m) => m.content)
 				.slice(-MAX_HISTORY_TURNS)
 				.map((m) => ({ role: m.role, content: m.content }));
@@ -161,6 +165,7 @@ export function useLlmChat(
 									isStreaming: false,
 								};
 							}
+							messagesRef.current = updated;
 							return updated;
 						});
 						streamIndexRef.current = -1;
@@ -187,6 +192,7 @@ export function useLlmChat(
 									isStreaming: false,
 								};
 							}
+							messagesRef.current = updated;
 							return updated;
 						});
 						setError(errMsg);
@@ -203,16 +209,9 @@ export function useLlmChat(
 					err instanceof Error ? err.message : "Failed to get AI response";
 				setError(msg);
 				setMessages((prev) => {
-					const last = prev[prev.length - 1];
-					if (
-						last &&
-						last.role === "assistant" &&
-						last.isStreaming &&
-						!last.content
-					) {
-						return prev.slice(0, -1);
-					}
-					return prev;
+					const updated = prev.slice(0, -1);
+					messagesRef.current = updated;
+					return updated;
 				});
 				toast({
 					title: "AI Error",
@@ -232,7 +231,7 @@ export function useLlmChat(
 				setLoading(false);
 			}
 		},
-		[loading, role, messages, toast, flushBuffer],
+		[loading, role, toast, flushBuffer],
 	);
 
 	const clearChat = useCallback(() => {
@@ -246,6 +245,7 @@ export function useLlmChat(
 		streamBufferRef.current = "";
 		streamIndexRef.current = -1;
 		setMessages([]);
+		messagesRef.current = []; // sync ref
 		setError(null);
 	}, []);
 
