@@ -94,18 +94,15 @@ export function useLlmChat(
 			};
 
 			const assistantTimestamp = Date.now();
+			const assistantMessage: ChatMessage = {
+				role: "assistant",
+				content: "",
+				timestamp: assistantTimestamp,
+				isStreaming: true,
+			};
 			setMessages((prev) => {
 				streamIndexRef.current = prev.length + 1;
-				const updated = [
-					...prev,
-					userMessage,
-					{
-						role: "assistant",
-						content: "",
-						timestamp: assistantTimestamp,
-						isStreaming: true,
-					},
-				];
+				const updated = [...prev, userMessage, assistantMessage];
 				messagesRef.current = updated;
 				return updated;
 			});
