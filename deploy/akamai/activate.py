@@ -83,8 +83,13 @@ def _origin_hostname() -> str:
 
 
 def _origin_token() -> str:
-    """Resolve the Akamai origin token from env (placeholder until rotated)."""
-    return os.getenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "REPLACE_ME")
+    """Resolve the Akamai origin token from env. Fail closed if not set."""
+    token = os.getenv("AKAMAI_REQUIRE_ORIGIN_TOKEN")
+    if not token or token == "REPLACE_ME":
+        raise RuntimeError(
+            "AKAMAI_REQUIRE_ORIGIN_TOKEN environment variable must be set to a valid secret token before activating property"
+        )
+    return token
 
 
 # ── EdgeGrid auth ────────────────────────────────────────────────────────────

@@ -169,10 +169,23 @@ export function LoginPage() {
 		[lang],
 	);
 
-	// Redirect if authenticated
+	// Redirect if authenticated safely (Strict local relative path validation for open-redirect defense)
 	if (!ctxLoading && isAuthenticated && (redirectReady || !isSuccess)) {
 		let from = searchParams.get("from") || "/dashboard";
-		if (from && (from.startsWith("//") || !from.startsWith("/"))) {
+		try {
+			// Resolve URL relative to origin and verify origin match and leading single slash
+			const resolved = new URL(from, window.location.origin);
+			if (
+				resolved.origin !== window.location.origin ||
+				!resolved.pathname.startsWith("/") ||
+				resolved.pathname.startsWith("//") ||
+				resolved.pathname.startsWith("/\\")
+			) {
+				from = "/dashboard";
+			} else {
+				from = resolved.pathname + resolved.search + resolved.hash;
+			}
+		} catch {
 			from = "/dashboard";
 		}
 		return <RouterNavigate to={from} replace />;
@@ -216,9 +229,13 @@ export function LoginPage() {
 		}
 	};
 
-	// 1-Click Auto Fill Demo Key
+	// 1-Click Auto Fill Demo Key (Gated strictly to dev mode)
 	const handleAutoFillTestKey = () => {
-		setApiKey("test-api-key-for-testing-only");
+		if (import.meta.env.DEV) {
+			setApiKey("test-api-key-for-testing-only");
+		} else {
+			setApiKey("");
+		}
 		setShowRequestModal(false);
 		setError(null);
 	};

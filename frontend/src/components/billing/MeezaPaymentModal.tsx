@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createOrder, initiateCheckout } from "@/services/billingApi";
 
 interface MeezaPaymentModalProps {
 	open: boolean;
@@ -56,29 +57,21 @@ export function MeezaPaymentModal({
 		setErrorMsg("");
 
 		try {
-			const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
-			const res = await fetch(`${apiUrl}/billing/meeza/initiate`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					amount: amountEgp,
-					currency: "EGP",
-					description: planName,
-					customer_email: email,
-					customer_phone: phone || undefined,
-				}),
+			const order = await createOrder({
+				amount_cents: amountEgp * 100,
+				currency: "EGP",
+				description: planName || "BAZspark Subscription Plan",
 			});
-
-			if (!res.ok) {
-				const err = await res.json();
-				throw new Error(err.detail || t("billing.meeza.initiateFailed"));
-			}
-
-			const data = await res.json();
+			const checkout = await initiateCheckout(order.id, {
+				billing_data: {
+					email: email,
+					phone: phone || undefined,
+				},
+			});
 			setPaymentData({
-				payment_id: data.payment_id,
-				redirect_url: data.redirect_url,
-				iframe_url: data.iframe_url,
+				payment_id: checkout.transaction_id,
+				redirect_url: checkout.checkout_url,
+				iframe_url: checkout.checkout_url,
 			});
 			setStatus("INITIATED");
 		} catch (err: unknown) {

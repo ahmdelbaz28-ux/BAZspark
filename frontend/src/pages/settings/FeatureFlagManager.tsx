@@ -10,6 +10,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { apiCall } from "@/services/fullApi";
 
 type FeatureFlags = Record<string, boolean>;
 
@@ -20,12 +21,7 @@ export function FeatureFlagManager() {
 	const [success, setSuccess] = useState(false);
 
 	useEffect(() => {
-		fetch("http://localhost:7860/settings/feature-flags", {
-			headers: {
-				"X-API-Key": "dev-key-123", // Or get from auth context
-			},
-		})
-			.then((res) => res.json())
+		apiCall<FeatureFlags>("/settings/feature-flags")
 			.then((data) => {
 				setFlags(data);
 				setLoading(false);
@@ -47,18 +43,15 @@ export function FeatureFlagManager() {
 	const saveFlags = async () => {
 		setSaving(true);
 		try {
-			const res = await fetch("http://localhost:7860/settings/feature-flags", {
+			await apiCall("/settings/feature-flags", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					"X-API-Key": "dev-key-123",
 				},
 				body: JSON.stringify(flags),
 			});
-			if (res.ok) {
-				setSuccess(true);
-				setTimeout(() => setSuccess(false), 3000);
-			}
+			setSuccess(true);
+			setTimeout(() => setSuccess(false), 3000);
 		} catch (err) {
 			console.error("Failed to save flags", err);
 		} finally {

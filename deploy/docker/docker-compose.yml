@@ -197,7 +197,6 @@ services:
     container_name: fireai-nginx
     ports:
       - "80:8080"
-      - "443:8080"
     <<: *default-security
     logging: *default-logging
     healthcheck:
