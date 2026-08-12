@@ -52,7 +52,7 @@ def _hard_for(name: str) -> set[str]:
 
 
 @pytest.mark.parametrize(
-    "var,value",
+    ("var", "value"),
     [
         ("FIREAI_API_KEY", "dev-fireai-key-local"),                       # C-02
         ("FIREAI_SESSION_SECRET", "dev-session-secret-please-replace"),   # C-03
