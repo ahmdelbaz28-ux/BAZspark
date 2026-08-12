@@ -274,11 +274,11 @@ def test_pip_audit_reports_no_known_vulnerabilities():
 
         pin_is_safe = False
         if req_pin:
-            if "cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50")):
-                pin_is_safe = True
-            elif "pyjwt" in name and any(v in req_pin for v in (">=2.13", ">=2.14", ">=2.15", ">=3")):
-                pin_is_safe = True
-            elif "python-multipart" in name and any(v in req_pin for v in (">=0.0.31", ">=0.0.32", ">=0.1", ">=1")):
+            if (
+                ("cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50"))) or
+                ("pyjwt" in name and any(v in req_pin for v in (">=2.13", ">=2.14", ">=2.15", ">=3"))) or
+                ("python-multipart" in name and any(v in req_pin for v in (">=0.0.31", ">=0.0.32", ">=0.1", ">=1")))
+            ):
                 pin_is_safe = True
 
         for vuln in dep.get("vulns", []):
