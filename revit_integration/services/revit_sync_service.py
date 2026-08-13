@@ -499,7 +499,7 @@ class MockParameter:
     def __init__(self, name: str, value: Any):
         self.Definition = MockParameterDef(name)
         self.HasValue = value is not None
-        self.StorageType = 'String' if isinstance(value, str) else 'Double' if isinstance(value, (int, float)) else 'String'
+        self.StorageType = 'String' if isinstance(value, str) else 'Double' if isinstance(value, int | float) else 'String'
         self._value = value
 
     def AsString(self):

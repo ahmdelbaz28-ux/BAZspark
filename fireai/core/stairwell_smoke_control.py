@@ -1503,7 +1503,7 @@ class StairwellSmokeControlIntegrator:
         if not has_fan:
             if roof_vent is None:
                 roof_vent = (0.0, 0.0)
-            if isinstance(roof_vent, (list, tuple)) and len(roof_vent) >= 2:
+            if isinstance(roof_vent, list | tuple) and len(roof_vent) >= 2:
                 vent_loc = (float(roof_vent[0]), float(roof_vent[1]))
             else:
                 vent_loc = (0.0, 0.0)
@@ -1523,7 +1523,7 @@ class StairwellSmokeControlIntegrator:
         if not has_switches:
             for floor_id in floors_served:
                 landing_loc = landings.get(floor_id, (0.0, 0.0))
-                if isinstance(landing_loc, (list, tuple)) and len(landing_loc) >= 2:
+                if isinstance(landing_loc, list | tuple) and len(landing_loc) >= 2:
                     loc = (float(landing_loc[0]), float(landing_loc[1]))
                 else:
                     loc = (0.0, 0.0)
@@ -1543,7 +1543,7 @@ class StairwellSmokeControlIntegrator:
         if vestibule_type == VestibuleType.PRESSURIZED_VESTIBULE.value:
             # Vestibule requires its own pressurization fan
             vestibule_vent = stair.get("vestibule_vent_location", (0.0, 0.0))
-            if isinstance(vestibule_vent, (list, tuple)) and len(vestibule_vent) >= 2:
+            if isinstance(vestibule_vent, list | tuple) and len(vestibule_vent) >= 2:
                 v_loc = (float(vestibule_vent[0]), float(vestibule_vent[1]))
             else:
                 v_loc = (0.0, 0.0)

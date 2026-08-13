@@ -97,7 +97,7 @@ def _guard_finite(value: float, field: str) -> float:
     Source: IEEE-754-2008 §7 — Exception handling.
     NaN and Inf are NEVER permitted in life-safety computations.
     """
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, int | float):
         raise PhysicsGuardError(field, value, "must be numeric", "IEEE-754-2008 §7")
     if math.isnan(value):
         raise PhysicsGuardError(

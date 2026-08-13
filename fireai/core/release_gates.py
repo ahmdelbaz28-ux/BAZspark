@@ -64,7 +64,7 @@ def _gate_input_validation(input_payload: dict | None) -> dict[str, Any]:
         return {"passed": False, "reason": "Missing room_id in validated payload"}
 
     area = input_payload.get("area_m2")
-    if area is None or (isinstance(area, (int, float)) and (area <= 0 or not math.isfinite(area))):
+    if area is None or (isinstance(area, int | float) and (area <= 0 or not math.isfinite(area))):
         return {"passed": False, "reason": f"Invalid area_m2: {area}"}
 
     return {"passed": True, "reason": "Input validated"}

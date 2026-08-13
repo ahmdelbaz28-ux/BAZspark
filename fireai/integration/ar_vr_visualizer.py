@@ -616,20 +616,20 @@ class ARVRVisualizer:
             poly = room.get("polygon", [])
             ceiling_h = room.get("ceiling_height_m", self.DEFAULT_CEILING_HEIGHT)
             for pt in poly:
-                if isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                if isinstance(pt, list | tuple) and len(pt) >= 2:
                     all_points.append((float(pt[0]), self.FLOOR_Y, float(pt[1])))
                     all_points.append((float(pt[0]), self.FLOOR_Y + ceiling_h, float(pt[1])))
 
         for det in design.detectors:
             pos = det.get("position", det.get("coordinates", [0, 0, 0]))
-            if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+            if isinstance(pos, list | tuple) and len(pos) >= 2:
                 x, z = float(pos[0]), float(pos[1]) if len(pos) >= 2 else 0.0
                 y = float(pos[2]) if len(pos) >= 3 else self.FLOOR_Y + self.DEFAULT_CEILING_HEIGHT
                 all_points.append((x, y, z))
 
         for nac in design.notification_appliances:
             pos = nac.get("position", nac.get("coordinates", [0, 0, 0]))
-            if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+            if isinstance(pos, list | tuple) and len(pos) >= 2:
                 x, z = float(pos[0]), float(pos[1]) if len(pos) >= 2 else 0.0
                 y = float(pos[2]) if len(pos) >= 3 else self.FLOOR_Y + 2.5
                 all_points.append((x, y, z))
@@ -687,8 +687,8 @@ class ARVRVisualizer:
                 continue
 
             # Compute room center and extents
-            xs = [float(p[0]) if isinstance(p, (list, tuple)) else 0 for p in poly]
-            zs = [float(p[1]) if isinstance(p, (list, tuple)) else 0 for p in poly]
+            xs = [float(p[0]) if isinstance(p, list | tuple) else 0 for p in poly]
+            zs = [float(p[1]) if isinstance(p, list | tuple) else 0 for p in poly]
             min_x, max_x = min(xs), max(xs)
             min_z, max_z = min(zs), max(zs)
             center_x = (min_x + max_x) / 2
@@ -809,7 +809,7 @@ class ARVRVisualizer:
             det_type = det.get("detector_type", "SMOKE")
             pos_raw = det.get("position", det.get("coordinates", [0, 0, 0]))
 
-            if isinstance(pos_raw, (list, tuple)):
+            if isinstance(pos_raw, list | tuple):
                 x = float(pos_raw[0]) if len(pos_raw) >= 1 else 0.0
                 z = float(pos_raw[1]) if len(pos_raw) >= 2 else 0.0
                 y = float(pos_raw[2]) if len(pos_raw) >= 3 else self.FLOOR_Y + self.DEFAULT_CEILING_HEIGHT
@@ -873,7 +873,7 @@ class ARVRVisualizer:
             pos_raw = nac.get("position", nac.get("coordinates", [0, 0, 0]))
             spl = nac.get("spl_dba", 0)
 
-            if isinstance(pos_raw, (list, tuple)):
+            if isinstance(pos_raw, list | tuple):
                 x = float(pos_raw[0]) if len(pos_raw) >= 1 else 0.0
                 z = float(pos_raw[1]) if len(pos_raw) >= 2 else 0.0
                 y = float(pos_raw[2]) if len(pos_raw) >= 3 else self.FLOOR_Y + 2.5
@@ -911,7 +911,7 @@ class ARVRVisualizer:
             panel_id = panel.get("panel_id", str(uuid.uuid4()))
             pos_raw = panel.get("position", panel.get("coordinates", [0, 0, 0]))
 
-            if isinstance(pos_raw, (list, tuple)):
+            if isinstance(pos_raw, list | tuple):
                 x = float(pos_raw[0]) if len(pos_raw) >= 1 else 0.0
                 z = float(pos_raw[1]) if len(pos_raw) >= 2 else 0.0
                 y = float(pos_raw[2]) if len(pos_raw) >= 3 else self.FLOOR_Y + 1.6

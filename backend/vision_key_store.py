@@ -102,7 +102,7 @@ def _normalize_master_key(raw: bytes | str) -> bytes:
             pass
         # Fallback: derive via SHA-256 (deterministic, 32 bytes)
         return hashlib.sha256(s.encode("utf-8")).digest()
-    if isinstance(raw, (bytes, bytearray)):
+    if isinstance(raw, bytes | bytearray):
         if len(raw) == _KEY_LEN:
             return bytes(raw)
         # Derive via SHA-256 if not already 32 bytes

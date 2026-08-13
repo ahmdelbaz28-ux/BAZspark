@@ -423,7 +423,7 @@ class AnalysisPipeline:
         # Life-Safety Rule 5: reject non-finite geometry immediately.
         _geom_valid = True
         for _name, _val in [("room.width", room.width), ("room.length", room.length), ("ceiling_height", ceiling_height)]:
-            if not isinstance(_val, (int, float)) or not math.isfinite(float(_val)) or float(_val) <= 0:
+            if not isinstance(_val, int | float) or not math.isfinite(float(_val)) or float(_val) <= 0:
                 result.errors.append(
                     f"GEOMETRY INVALID: {_name}={_val!r} (must be finite positive number). "
                     "Cannot run optimization with invalid room geometry."

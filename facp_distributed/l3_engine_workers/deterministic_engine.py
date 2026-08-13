@@ -251,7 +251,7 @@ class DeterministicEngine:
             # Normalize numeric values
             normalized = {}
             for k, v in data.items():
-                if isinstance(v, (int, float, Decimal)):
+                if isinstance(v, int | float | Decimal):
                     normalized[k] = float(v)
                 else:
                     normalized[k] = v

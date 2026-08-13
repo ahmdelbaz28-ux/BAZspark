@@ -747,7 +747,7 @@ def _validate_fallback(value: Any, name: str) -> None:  # NOSONAR — S3776: cog
                 f"{name} cannot be infinity — there is no infinite pressure/flow/temperature "
                 f"in NFPA standards. Use a physically realistic maximum instead."
             )
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         for i, v in enumerate(value):
             if isinstance(v, float):
                 if math.isnan(v):
@@ -760,7 +760,7 @@ def _is_physically_invalid(value: Any) -> bool:
     """يتحقق من أن القيمة ليست مستحيلة فيزيائياً."""
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return True
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         for v in value:
             if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
                 return True
@@ -779,7 +779,7 @@ def _compute_healed_value(
     """
     if err_type == "IndexError":
         # آخر عنصر صالح
-        if args and isinstance(args[0], (list, tuple)) and len(args[0]) > 0:
+        if args and isinstance(args[0], list | tuple) and len(args[0]) > 0:
             return args[0][-1]
         return default_value
 
@@ -819,7 +819,7 @@ _AAMKS_MAX_SIMULATIONS = 10000
 def _validate_aamks_simulation(val: float) -> bool:
     """لا نقبل محاكاة واحدة — لا معنى إحصائياً."""
     return (
-        isinstance(val, (int, float))
+        isinstance(val, int | float)
         and not math.isnan(val)
         and not math.isinf(val)
         and val >= _AAMKS_MIN_SIMULATIONS
@@ -857,12 +857,12 @@ class Evac4BimAdapter:
     @staticmethod
     def validate_coords(coords: list[float]) -> bool:
         """لا نقبل NaN أو Inf في الإحداثيات — مستحيل فيزيائياً."""
-        if not isinstance(coords, (list, tuple)):
+        if not isinstance(coords, list | tuple):
             return False
         if len(coords) == 0:
             return False
         return all(
-            isinstance(c, (int, float))
+            isinstance(c, int | float)
             and not math.isnan(c)
             and not math.isinf(c)
             for c in coords
@@ -892,7 +892,7 @@ _OPENFIRE_MAX_HEIGHT = 30.0  # [v4.0] أعلى ارتفاع واقعي
 def _validate_openfire_height(h: float) -> bool:
     """لا نقبل ارتفاعاً أقل من 1.5م أو مستحيلاً."""
     return (
-        isinstance(h, (int, float))
+        isinstance(h, int | float)
         and not math.isnan(h)
         and not math.isinf(h)
         and _OPENFIRE_MIN_HEIGHT <= h <= _OPENFIRE_MAX_HEIGHT
@@ -989,7 +989,7 @@ _DISASTER_MAX_THROUGHPUT = 100.0  # [v4.0] أقصى معدل واقعي (أشخ�
 def _validate_disaster_throughput(val: float) -> bool:
     """لا نقبل قيمة سلبية أو لا نهائية."""
     return (
-        isinstance(val, (int, float))
+        isinstance(val, int | float)
         and not math.isnan(val)
         and not math.isinf(val)
         and 0.0 <= val <= _DISASTER_MAX_THROUGHPUT
@@ -1027,7 +1027,7 @@ _EPYT_DEFAULT_PSI = 175.0  # [v4.0] قيمة افتراضية آمنة (ليس i
 def _validate_epyt_pressure(val: float) -> bool:
     """لا نقبل ضغطاً سالباً أو لا نهائياً — NFPA 13 يحدد 7-400 PSI."""
     return (
-        isinstance(val, (int, float))
+        isinstance(val, int | float)
         and not math.isnan(val)
         and not math.isinf(val)
         and _EPYT_MIN_PSI <= val <= _EPYT_MAX_PSI
@@ -1068,7 +1068,7 @@ _SPRAY_DEFAULT_PSI = 7.0  # [v4.0] القيمة الدنيا كافتراضي آ
 
 def _validate_spray_flow(val: float) -> bool:
     """لا نقبل inf — ضغط لا نهائي مستحيل فيزيائياً."""
-    if not isinstance(val, (int, float)):
+    if not isinstance(val, int | float):
         return False
     if math.isnan(val) or math.isinf(val):
         return False

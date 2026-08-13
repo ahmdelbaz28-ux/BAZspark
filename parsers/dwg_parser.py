@@ -243,7 +243,7 @@ class DWGParser(ParserBase):
                     for pt in raw_pts:
                         if hasattr(pt, "dxf"):
                             vx, vy = float(pt.dxf.location.x), float(pt.dxf.location.y)
-                        elif isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                        elif isinstance(pt, list | tuple) and len(pt) >= 2:
                             vx, vy = float(pt[0]), float(pt[1])
                         else:
                             continue

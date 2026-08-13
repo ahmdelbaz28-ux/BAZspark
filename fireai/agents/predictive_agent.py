@@ -187,7 +187,7 @@ class PredictiveAgent:
             for key, val in changes.changes.items():
                 if key in room_dict:
                     updated[key] = val
-                elif key == "add_detectors" and isinstance(val, (int, float)):
+                elif key == "add_detectors" and isinstance(val, int | float):
                     updated["detector_count"] = room.detector_count + int(val)
                     updated["coverage_pct"] = min(0.99, room.coverage_pct + int(val) * 0.03)
             projected_rooms.append(

@@ -713,7 +713,7 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
     # A NaN ceiling height poisons every downstream Shapely geometry operation
     # and produces NaN spacing/radius/coverage — rooms appear "compliant" because
     # NaN comparisons always return False. Must use isfinite() BEFORE comparison.
-    if not isinstance(ceiling_height, (int, float)) or not math.isfinite(ceiling_height):
+    if not isinstance(ceiling_height, int | float) or not math.isfinite(ceiling_height):
         raise ValueError(
             f"ceiling_height must be a finite number, got {ceiling_height!r}. "
             f"NaN/Inf values bypass safety guards and corrupt all downstream calculations."
@@ -817,7 +817,7 @@ def get_ceiling_height_warnings(height: float) -> list[str]:
 
     """
     # An empty list appears "valid" to downstream code, hiding data corruption.
-    if not isinstance(height, (int, float)) or not math.isfinite(height):
+    if not isinstance(height, int | float) or not math.isfinite(height):
         return [f"Height {height!r} is not a finite number — cannot validate."]
     warnings = []
     if height < 2.1:
@@ -1029,7 +1029,7 @@ def check_voltage_drop(
         ("cable_length_m", cable_length_m),
         ("max_drop_fraction", max_drop_fraction),
     ]:
-        if not isinstance(val, (int, float)) or not math.isfinite(val):
+        if not isinstance(val, int | float) or not math.isfinite(val):
             raise ValueError(
                 f"{name} must be a finite number, got {val!r}. "
                 f"NaN/Inf values corrupt voltage drop calculations — "
@@ -1106,7 +1106,7 @@ def required_battery_capacity_ah(
         ("alarm_minutes", alarm_minutes),
         ("safety_factor", safety_factor),
     ]:
-        if not isinstance(val, (int, float)) or not math.isfinite(val):
+        if not isinstance(val, int | float) or not math.isfinite(val):
             raise ValueError(
                 f"{name} must be a finite number, got {val!r}. "
                 f"NaN/Inf values corrupt battery capacity calculations — "

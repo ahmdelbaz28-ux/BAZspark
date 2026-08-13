@@ -253,7 +253,7 @@ class RevitAPIBridge:
                 area_m2 = 0.0
                 for pset in ifcopenshell.util.element.get_psets(space).values():
                     for key, val in pset.items():
-                        if "area" in key.lower() and isinstance(val, (int, float)):
+                        if "area" in key.lower() and isinstance(val, int | float):
                             area_m2 = float(val)
                             break
 
@@ -261,7 +261,7 @@ class RevitAPIBridge:
                 h_m = 3.0
                 for pset in ifcopenshell.util.element.get_psets(space).values():
                     for key, val in pset.items():
-                        if "height" in key.lower() and isinstance(val, (int, float)):
+                        if "height" in key.lower() and isinstance(val, int | float):
                             h_m = float(val)
                             break
 

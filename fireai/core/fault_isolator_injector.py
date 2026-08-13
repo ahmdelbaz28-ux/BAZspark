@@ -154,7 +154,7 @@ def inject_fault_isolators(  # NOSONAR — S3776: cognitive complexity is inhere
     def _get_position(device: dict[str, Any]) -> tuple[float, float]:
         """Extract (x, y) position from device."""
         pos = device.get("position") or device.get("pos")
-        if pos is not None and isinstance(pos, (list, tuple)) and len(pos) >= 2:
+        if pos is not None and isinstance(pos, list | tuple) and len(pos) >= 2:
             return (float(pos[0]), float(pos[1]))
         # Fallback: position from tuple key
         if "x" in device and "y" in device:

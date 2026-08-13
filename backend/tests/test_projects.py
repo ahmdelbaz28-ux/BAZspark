@@ -47,7 +47,7 @@ class TestProjectsList:
         data = response.json()
         body = data.get("data", data)
         # Should have items or total count
-        assert isinstance(body, (dict, list)), f"Unexpected body type: {type(body)}"
+        assert isinstance(body, dict | list), f"Unexpected body type: {type(body)}"
 
 
 class TestProjectsCreate:

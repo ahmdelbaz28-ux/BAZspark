@@ -250,7 +250,7 @@ class AccessControlResult:
 
 def _validate_finite(value: float, name: str) -> None:
     """Validate that a value is finite (not NaN or Inf)."""
-    if not isinstance(value, (int, float)) or not math.isfinite(value):
+    if not isinstance(value, int | float) or not math.isfinite(value):
         raise ContractViolation(
             f"{name} = {value!r} is not a finite number — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
             code_ref="IEEE-754 / QOMN-FIRE L0",

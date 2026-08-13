@@ -114,12 +114,12 @@ class DuctSpec:
 
         for name in ("length_m", "width_m", "height_m"):
             val = getattr(self, name)
-            if not isinstance(val, (int, float)) or not math.isfinite(val) or val < 0:
+            if not isinstance(val, int | float) or not math.isfinite(val) or val < 0:
                 raise ValueError(
                     f"DuctSpec.{name}={val} is invalid. Must be a non-negative finite number. [NFPA 72 §17.7.5.1]"
                 )
         if self.airflow_cfm is not None and (
-            not isinstance(self.airflow_cfm, (int, float))
+            not isinstance(self.airflow_cfm, int | float)
             or not math.isfinite(self.airflow_cfm)
             or self.airflow_cfm < 0
         ):

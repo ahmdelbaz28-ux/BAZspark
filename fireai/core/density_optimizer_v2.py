@@ -298,7 +298,7 @@ class DensityOptimizerV2:
             if isinstance(spec, dict):
                 # Check for NaN/Inf in critical fields
                 ceiling_h = spec.get("ceiling_height_m", 3.0)
-                if isinstance(ceiling_h, (int, float)) and not math.isfinite(ceiling_h):
+                if isinstance(ceiling_h, int | float) and not math.isfinite(ceiling_h):
                     log.error(
                         f"Room {room_id}: ceiling_height_m={ceiling_h} is NaN/Inf — SKIPPING per Life-Safety Rule 2"
                     )
@@ -306,7 +306,7 @@ class DensityOptimizerV2:
                 vertices = spec.get("vertices", [])
                 has_invalid = False
                 for v in vertices:
-                    for coord in v if isinstance(v, (list, tuple)) else [v]:
+                    for coord in v if isinstance(v, list | tuple) else [v]:
                         if isinstance(coord, float) and not math.isfinite(coord):
                             log.error(
                                 f"Room {room_id}: vertex coordinate={coord} is NaN/Inf — "

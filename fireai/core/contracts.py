@@ -525,7 +525,7 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR â
 
     # 4. Validate polygon is a list of at least 3 points
     polygon = payload.get("polygon")
-    if not isinstance(polygon, (list, tuple)) or len(polygon) < 3:
+    if not isinstance(polygon, list | tuple) or len(polygon) < 3:
         raise ContractViolation(f"polygon must be a list of at least 3 points, got {type(polygon).__name__}")
 
     # 4a. Validate polygon points are numeric â€” prevents downstream crashes
@@ -533,7 +533,7 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR â
     #     when Shapely tries to compute area.
     coords = []
     for i, pt in enumerate(polygon):
-        if isinstance(pt, (list, tuple)):
+        if isinstance(pt, list | tuple):
             if len(pt) < 2:
                 raise ContractViolation(f"polygon point {i} must have at least 2 coordinates, got {len(pt)}")
             try:

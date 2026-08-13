@@ -160,7 +160,7 @@ def _normalize_enum(raw: str, aliases: dict[str, str]) -> str | None:
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
     """Safely convert any value to float."""
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     if isinstance(value, str):
         cleaned = value.strip().replace(",", ".")
@@ -331,9 +331,9 @@ class RevitObstructionDTO(BaseModel):
             data["obstruction_id"] = data["element_id"]
 
         # Handle vertex format: Revit may export as flat list [x1,y1,z1,x2,y2,z2,...]
-        if "vertices" in data and isinstance(data["vertices"], (list, tuple)):
+        if "vertices" in data and isinstance(data["vertices"], list | tuple):
             verts = data["vertices"]
-            if len(verts) > 0 and isinstance(verts[0], (int, float)):
+            if len(verts) > 0 and isinstance(verts[0], int | float):
                 # Flat list -> convert to [[x,y,z], [x,y,z], ...]
                 if len(verts) % 3 == 0:
                     data["vertices"] = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
@@ -412,11 +412,11 @@ class RevitDetectorDTO(BaseModel):
             data["detector_id"] = data.pop("id")
 
         # Handle position as flat list
-        if "position" in data and isinstance(data["position"], (list, tuple)):
+        if "position" in data and isinstance(data["position"], list | tuple):
             data["position"] = [_safe_float(v, 0.0) for v in data["position"]]
 
         # Handle orientation as flat list
-        if "orientation" in data and isinstance(data["orientation"], (list, tuple)):
+        if "orientation" in data and isinstance(data["orientation"], list | tuple):
             data["orientation"] = [_safe_float(v, 0.0) for v in data["orientation"]]
 
         # Handle range
@@ -424,7 +424,7 @@ class RevitDetectorDTO(BaseModel):
         data["aoc_deg"] = _safe_float(data.get("aoc_deg", 90.0), 90.0)
 
         # Normalize spectral bands
-        if "spectral_bands" in data and isinstance(data["spectral_bands"], (list, str)):
+        if "spectral_bands" in data and isinstance(data["spectral_bands"], list | str):
             if isinstance(data["spectral_bands"], str):
                 data["spectral_bands"] = [data["spectral_bands"]]
             normalized = []

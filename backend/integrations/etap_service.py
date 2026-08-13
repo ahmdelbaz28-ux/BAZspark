@@ -162,7 +162,7 @@ class EtapService:
             import socket as _socket
             safe_ip = resolve_to_safe_ip(settings["host"])
             timeout = settings.get("timeout_seconds", 30)
-            if not isinstance(timeout, (int, float)):
+            if not isinstance(timeout, int | float):
                 timeout = 30
             sock = _socket.create_connection((safe_ip, settings["port"]), timeout=timeout)
             sock.close()

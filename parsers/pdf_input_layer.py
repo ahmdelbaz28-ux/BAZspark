@@ -377,7 +377,7 @@ class PDFInputLayer:
 
             try:
                 bbox = page.get_text("bbox", match.span())
-                if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                if bbox and isinstance(bbox, list | tuple) and len(bbox) >= 4:
                     try:
                         center_x = (float(bbox[0]) + float(bbox[2])) / 2.0
                         center_y = (float(bbox[1]) + float(bbox[3])) / 2.0
@@ -408,7 +408,7 @@ class PDFInputLayer:
 
                 try:
                     bbox = page.get_text("bbox", match.span())
-                    if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                    if bbox and isinstance(bbox, list | tuple) and len(bbox) >= 4:
                         try:
                             center_x = (float(bbox[0]) + float(bbox[2])) / 2.0
                             center_y = (float(bbox[1]) + float(bbox[3])) / 2.0

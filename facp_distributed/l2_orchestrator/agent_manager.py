@@ -191,7 +191,7 @@ class ValidatorAgent(BaseAgent):
         else:
             # Check 2: Numeric values must be non-negative
             for key, value in target.items():
-                if isinstance(value, (int, float)) and value < 0:
+                if isinstance(value, int | float) and value < 0:
                     issues.append(f"Negative value for '{key}': {value}")
                     compliance = False
 
@@ -199,7 +199,7 @@ class ValidatorAgent(BaseAgent):
             for field_name in ("coverage_pct", "compliance_rate", "accuracy", "confidence"):
                 if field_name in target:
                     val = target[field_name]
-                    if isinstance(val, (int, float)) and not (0.0 <= val <= 1.0):
+                    if isinstance(val, int | float) and not (0.0 <= val <= 1.0):
                         issues.append(f"'{field_name}' out of [0, 1] range: {val}")
                         accuracy = False
 

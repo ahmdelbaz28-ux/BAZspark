@@ -776,7 +776,7 @@ class IntegrationBridge:
                                         float(det.get("z", floor.ceiling_height_m)),
                                     )
                                 )
-                            elif isinstance(det, (list, tuple)) and len(det) >= 2:
+                            elif isinstance(det, list | tuple) and len(det) >= 2:
                                 device_positions.append(
                                     (
                                         float(det[0]),

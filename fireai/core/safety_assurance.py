@@ -276,7 +276,7 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
     if isinstance(coverage_pct_or_tier, SafetyTier):
         # OLD convention: apply_fail_safe(tier, coverage_pct, errors)
         tier_arg = coverage_pct_or_tier
-        coverage_pct = proof_valid_or_coverage if isinstance(proof_valid_or_coverage, (int, float)) else None
+        coverage_pct = proof_valid_or_coverage if isinstance(proof_valid_or_coverage, int | float) else None
         errors = errors_or_proof if isinstance(errors_or_proof, list) else []
         # Derive proof_valid from tier
         proof_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)

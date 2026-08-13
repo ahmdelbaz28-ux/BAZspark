@@ -509,7 +509,7 @@ class RevitService:
                 if val is None:
                     return default
                 # Primitive — return as-is
-                if isinstance(val, (str, int, float, bool)):
+                if isinstance(val, str | int | float | bool):
                     return val
                 if prefer == 'name':
                     try:
@@ -924,7 +924,7 @@ class RevitService:
                         props["Level"] = str(elem["level"])
                     # Add any other scalar properties
                     for k, v in elem.items():
-                        if k not in ("id", "category", "level", "name") and isinstance(v, (str, int, float, bool)):
+                        if k not in ("id", "category", "level", "name") and isinstance(v, str | int | float | bool):
                             props[k] = str(v)
                     if props:
                         ifcopenshell.api.run(

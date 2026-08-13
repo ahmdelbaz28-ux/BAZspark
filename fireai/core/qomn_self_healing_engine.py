@@ -1121,9 +1121,9 @@ def compute_hash(data: Any) -> str:
     """
     def _make_serializable(obj: Any) -> Any:
         """Recursively replace non-serializable objects with deterministic strings."""
-        if isinstance(obj, (str, int, float, bool, type(None))):
+        if isinstance(obj, str | int | float | bool | type(None)):
             return obj
-        if isinstance(obj, (list, tuple)):
+        if isinstance(obj, list | tuple):
             return [_make_serializable(item) for item in obj]
         if isinstance(obj, dict):
             return {str(k): _make_serializable(v) for k, v in obj.items()}
@@ -1476,7 +1476,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                     # default_value after validation.
                     if physics_validator is None:
                         # Non-safety-critical: return last valid item of first list parameter
-                        if args and isinstance(args[0], (list, tuple)) and len(args[0]) > 0:
+                        if args and isinstance(args[0], list | tuple) and len(args[0]) > 0:
                             healed_val = args[0][-1]
                         else:
                             healed_val = default_value
@@ -1743,7 +1743,7 @@ def _sanitize_value(key: Any, value: Any) -> Any:
         return _sanitize_string_value(value)
     if isinstance(value, dict):
         return _sanitize_inputs(value)
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         return [
             _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
         ]
@@ -1916,7 +1916,7 @@ def validate_sprinkler_pressure(val: Any) -> bool:
     provides ZERO fire protection. In a real fire, sprinklers at 0 psi
     deliver no water -- people die.
     """
-    if isinstance(val, (int, float)):
+    if isinstance(val, int | float):
         return val > 0.0 and math.isfinite(val)
     return False
 

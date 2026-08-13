@@ -122,7 +122,7 @@ def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$")
             errors.append(f"{path}: expected array, got {type(data).__name__}")
         elif expected == "string" and not isinstance(data, str):
             errors.append(f"{path}: expected string, got {type(data).__name__}")
-        elif expected == "number" and not isinstance(data, (int, float)):
+        elif expected == "number" and not isinstance(data, int | float):
             errors.append(f"{path}: expected number, got {type(data).__name__}")
         elif expected == "boolean" and not isinstance(data, bool):
             errors.append(f"{path}: expected boolean, got {type(data).__name__}")
@@ -153,10 +153,10 @@ def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$")
     if "enum" in schema and data not in schema["enum"]:
         errors.append(f"{path}: value {data!r} not in enum {schema['enum']}")
 
-    if "minimum" in schema and isinstance(data, (int, float)) and data < schema["minimum"]:
+    if "minimum" in schema and isinstance(data, int | float) and data < schema["minimum"]:
         errors.append(f"{path}: {data} < minimum {schema['minimum']}")
 
-    if "maximum" in schema and isinstance(data, (int, float)) and data > schema["maximum"]:
+    if "maximum" in schema and isinstance(data, int | float) and data > schema["maximum"]:
         errors.append(f"{path}: {data} > maximum {schema['maximum']}")
 
     if "pattern" in schema and isinstance(data, str):

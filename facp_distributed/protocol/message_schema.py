@@ -224,7 +224,7 @@ class FACPMessageValidator:
                     errors.append("timeout_ms must be a positive integer")
 
             if "max_memory_mb" in request.constraints:
-                if not isinstance(request.constraints["max_memory_mb"], (int, float)) or request.constraints["max_memory_mb"] <= 0:
+                if not isinstance(request.constraints["max_memory_mb"], int | float) or request.constraints["max_memory_mb"] <= 0:
                     errors.append("max_memory_mb must be a positive number")
 
             if "max_recursion_depth" in request.constraints:

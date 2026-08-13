@@ -1460,7 +1460,7 @@ class AdapterBridge:
                 continue
             poly = np.array(
                 [
-                    (p[0], p[1]) if isinstance(p, (list, tuple)) else (getattr(p, "x", 0), getattr(p, "y", 0))
+                    (p[0], p[1]) if isinstance(p, list | tuple) else (getattr(p, "x", 0), getattr(p, "y", 0))
                     for p in geom
                 ],
                 dtype=np.float64,

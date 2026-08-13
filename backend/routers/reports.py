@@ -952,7 +952,7 @@ def _add_pdf_value(story, styles, value, label, safe_label, depth):
     """Append a single key/value pair to the PDF story."""
     from reportlab.platypus import Paragraph as _Paragraph  # noqa: F811
 
-    if isinstance(value, (str, int, float, bool)):
+    if isinstance(value, str | int | float | bool):
         safe_value = _escape_xml(value)
         story.append(_Paragraph(f"<b>{safe_label}:</b> {safe_value}", styles["Normal"]))
     elif isinstance(value, list):
@@ -1059,7 +1059,7 @@ def _build_dxf_report(report, report_id):
     content_data = params.get("content", {})
     y_offset = 7.5
     for key, value in content_data.items():
-        if isinstance(value, (str, int, float)):
+        if isinstance(value, str | int | float):
             msp.add_text(
                 f"{key}: {value}",
                 dxfattribs={"height": 0.25, "insert": (0, y_offset)},

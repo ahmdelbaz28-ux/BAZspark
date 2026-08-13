@@ -203,7 +203,7 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
     """
     # NaN >= X is False, NaN <= X is False → BREATHING_ZONE (middle tier).
     # A detector with unknown elevation should NOT be classified as correctly placed.
-    if not isinstance(z_position, (int, float)) or not math.isfinite(z_position):
+    if not isinstance(z_position, int | float) or not math.isfinite(z_position):
         return ElevationTier.BREATHING_ZONE  # Tier assigned, but callers must check
         # for NaN and emit CRITICAL violation via ZAX-002/ZAX-003
     if z_position >= ceiling_height_m * 0.75:
@@ -699,7 +699,7 @@ class SafetyAuditEngine:
 
         # Check 2a: Fouling factor itself
         total_checks += 1
-        if not isinstance(fouling, (int, float)) or not math.isfinite(fouling):
+        if not isinstance(fouling, int | float) or not math.isfinite(fouling):
             violations.append(
                 AuditViolation(
                     gate="FOULING",
@@ -762,7 +762,7 @@ class SafetyAuditEngine:
             total_checks += 1
             # then NaN < threshold is False → fouling gate PASSES.
             # Cannot verify optical path with corrupt spectral data.
-            if not isinstance(min_transmittance, (int, float)) or not math.isfinite(min_transmittance):
+            if not isinstance(min_transmittance, int | float) or not math.isfinite(min_transmittance):
                 violations.append(
                     AuditViolation(
                         gate="FOULING",
@@ -1068,7 +1068,7 @@ class SafetyAuditEngine:
             # MED-02 FIX: NaN z_position silently falls through to BREATHING_ZONE
             # in elevation_tier_from_detector_z(). A detector with unknown elevation
             # is NOT correctly placed — emit CRITICAL violation.
-            if not isinstance(z, (int, float)) or not math.isfinite(z):
+            if not isinstance(z, int | float) or not math.isfinite(z):
                 violations.append(
                     AuditViolation(
                         gate="Z_AXIS",

@@ -97,7 +97,7 @@ def _has_nan_inf(value: Any, path: str = "") -> list[str]:
         for k, v in value.items():
             violations.extend(_has_nan_inf(v, f"{path}.{k}" if path else k))
 
-    elif isinstance(value, (list, tuple)):
+    elif isinstance(value, list | tuple):
         for i, v in enumerate(value):
             violations.extend(_has_nan_inf(v, f"{path}[{i}]"))
 
@@ -121,13 +121,13 @@ def _validate_polygon(polygon: Any) -> list[str]:
         return [f"room_polygon must have ≥3 vertices, got {len(polygon)}"]
 
     for i, pt in enumerate(polygon):
-        if not isinstance(pt, (list, tuple)):
+        if not isinstance(pt, list | tuple):
             warnings.append(f"polygon vertex {i} must be tuple/list, got {type(pt).__name__}")
         elif len(pt) != 2:
             warnings.append(f"polygon vertex {i} must have 2 coords, got {len(pt)}")
         else:
             for j, c in enumerate(pt):
-                if not isinstance(c, (int, float)):
+                if not isinstance(c, int | float):
                     warnings.append(f"polygon vertex {i} coord {j} must be numeric, got {type(c).__name__}")
 
     return warnings
@@ -211,7 +211,7 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
         )
 
     ceiling_height = payload["ceiling_height_m"]
-    if not isinstance(ceiling_height, (int, float)):
+    if not isinstance(ceiling_height, int | float):
         raise ContractViolation(
             f"ceiling_height_m must be numeric, got {type(ceiling_height).__name__}",
             field="ceiling_height_m",
@@ -272,15 +272,15 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
             )
         # Check for non-numeric vertex coords that would crash area computation
         for i, pt in enumerate(polygon):
-            if isinstance(pt, (list, tuple)) and len(pt) == 2:
+            if isinstance(pt, list | tuple) and len(pt) == 2:
                 for j, c in enumerate(pt):
-                    if not isinstance(c, (int, float)):
+                    if not isinstance(c, int | float):
                         raise ContractViolation(
                             f"polygon vertex {i} coord {j} must be numeric, got {type(c).__name__}",
                             field="room_polygon",
                             value=polygon,
                         )
-            elif not isinstance(pt, (list, tuple)):
+            elif not isinstance(pt, list | tuple):
                 raise ContractViolation(
                     f"polygon vertex {i} must be tuple/list, got {type(pt).__name__}",
                     field="room_polygon",
@@ -307,7 +307,7 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
         result["area_m2"] = computed_area
         warnings.append(f"area_m2 computed from polygon: {computed_area:.4f} m²")
     else:
-        if not isinstance(area_m2, (int, float)) or area_m2 <= 0:
+        if not isinstance(area_m2, int | float) or area_m2 <= 0:
             raise ContractViolation(
                 f"area_m2 must be positive, got {area_m2}",
                 field="area_m2",
@@ -325,9 +325,9 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
 
     # ── Step 5b: QOMN-FIRE Layer 0 Coordinate Bounds Check ─────────────
     for i, pt in enumerate(polygon):
-        if isinstance(pt, (list, tuple)) and len(pt) == 2:
+        if isinstance(pt, list | tuple) and len(pt) == 2:
             for j, c in enumerate(pt):
-                if isinstance(c, (int, float)) and abs(c) > _MAX_COORDINATE_M:
+                if isinstance(c, int | float) and abs(c) > _MAX_COORDINATE_M:
                     warnings.append(
                         f"QOMN-FIRE L0 WARNING: polygon vertex {i} coord {j} = {c}m "
                         f"exceeds coordinate limit of ±{_MAX_COORDINATE_M}m."
@@ -373,7 +373,7 @@ def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
         ContractViolation: If voltage is out of range or not finite.
 
     """
-    if not isinstance(value_v, (int, float)) or not math.isfinite(value_v):
+    if not isinstance(value_v, int | float) or not math.isfinite(value_v):
         raise ContractViolation(
             f"{field_name} = {value_v!r} is not a finite number. NEC 760 requires a valid voltage for FA circuits.",
             field=field_name,
@@ -421,7 +421,7 @@ def validate_current(value_a: float, field_name: str = "current") -> float:
         ContractViolation: If current is out of range or not finite.
 
     """
-    if not isinstance(value_a, (int, float)) or not math.isfinite(value_a):
+    if not isinstance(value_a, int | float) or not math.isfinite(value_a):
         raise ContractViolation(
             f"{field_name} = {value_a!r} is not a finite number. "
             f"NEC Ch.9 Table 8 requires valid current for voltage drop calculation.",
@@ -464,7 +464,7 @@ def validate_temperature(value_c: float, field_name: str = "temperature") -> flo
         ContractViolation: If temperature is out of range or not finite.
 
     """
-    if not isinstance(value_c, (int, float)) or not math.isfinite(value_c):
+    if not isinstance(value_c, int | float) or not math.isfinite(value_c):
         raise ContractViolation(
             f"{field_name} = {value_c!r} is not a finite number. "
             f"Temperature must be finite for tenability evaluation per ISO 13571.",

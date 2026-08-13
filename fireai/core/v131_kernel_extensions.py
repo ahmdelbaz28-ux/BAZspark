@@ -378,9 +378,9 @@ class WebhookPublisher:
         try:
             # Implement custom serialization to prevent security issues
             def safe_serializer(item):
-                if isinstance(item, (str, int, float, bool, type(None))):
+                if isinstance(item, str | int | float | bool | type(None)):
                     return item
-                elif isinstance(item, (list, tuple)):
+                elif isinstance(item, list | tuple):
                     result = []
                     for i, val in enumerate(item):
                         serialized = safe_serializer(val)

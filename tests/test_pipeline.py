@@ -166,7 +166,7 @@ class TestAnalyzeRoomValid:
         assert len(result.detector_positions) > 0
         # Each position is an (x, y) tuple
         for pos in result.detector_positions:
-            assert isinstance(pos, (list, tuple))
+            assert isinstance(pos, list | tuple)
             assert len(pos) == 2
 
     def test_total_ms_positive(self):
@@ -776,7 +776,7 @@ class TestPipelineInvariants:
             assert isinstance(stage, StageResult)
             assert isinstance(stage.stage_name, str)
             assert isinstance(stage.success, bool)
-            assert isinstance(stage.duration_ms, (int, float))
+            assert isinstance(stage.duration_ms, int | float)
             assert stage.duration_ms >= 0
 
     def test_heat_detector_type_works(self):

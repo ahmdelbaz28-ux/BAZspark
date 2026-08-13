@@ -385,7 +385,7 @@ class StreamProcessor:
                        "current", "temperature", "pressure"]
         for key in candidates:
             val = event.data.get(key)
-            if isinstance(val, (int, float)):
+            if isinstance(val, int | float):
                 return float(val)
         return None
 

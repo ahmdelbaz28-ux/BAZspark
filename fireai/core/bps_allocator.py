@@ -109,7 +109,7 @@ def _guard_finite(value: float, field_name: str) -> float:
         ValueError: If value is NaN or Inf.
 
     """
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, int | float):
         raise ValueError(
             f"[L0 REJECTION] {field_name}={value!r}: must be numeric, got {type(value).__name__}. IEEE-754-2008 §7."
         )
@@ -1717,7 +1717,7 @@ class NACBoosterAllocator:
                 )
 
             centroid = f_info.get("centroid_location")
-            if centroid is not None and isinstance(centroid, (tuple, list)):
+            if centroid is not None and isinstance(centroid, tuple | list):
                 if len(centroid) >= 2:
                     _guard_finite(
                         float(centroid[0]),

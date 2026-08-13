@@ -488,7 +488,7 @@ class CableRouter:
         # ── Input Validation (QOMN-FIRE Layer 0) ─────────────────────────
         for label, point in [("start", start), ("end", end)]:
             for i, coord in enumerate(point):
-                if not isinstance(coord, (int, float)) or not math.isfinite(coord):
+                if not isinstance(coord, int | float) or not math.isfinite(coord):
                     raise ContractViolation(
                         f"{label}[{i}] = {coord!r} is not finite — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
                         field=f"{label}[{i}]",
@@ -499,7 +499,7 @@ class CableRouter:
         # (is_compliant=True), allowing non-compliant circuits to be approved.
         # Negative ps_voltage would also silently report 0% drop.
         for label, value in [("ps_voltage", ps_voltage), ("alarm_current_a", alarm_current_a)]:
-            if not isinstance(value, (int, float)) or not math.isfinite(value):
+            if not isinstance(value, int | float) or not math.isfinite(value):
                 raise ContractViolation(
                     f"{label} = {value!r} is not finite — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
                     field=label,

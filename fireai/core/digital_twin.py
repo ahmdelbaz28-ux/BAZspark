@@ -1949,7 +1949,7 @@ class DigitalTwin:
             det_list = []
             if isinstance(detectors_raw, list):
                 for d in detectors_raw:
-                    if isinstance(d, (list, tuple)) and len(d) >= 2:
+                    if isinstance(d, list | tuple) and len(d) >= 2:
                         # (x, y) tuple from DensityOptimizer
                         det_list.append(
                             {

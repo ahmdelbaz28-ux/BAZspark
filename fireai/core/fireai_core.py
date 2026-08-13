@@ -324,7 +324,7 @@ class FireAISystem:
                 ceiling_height = room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0
                 mc_result = mc_adapter._sim.simulate_room_reliability(
                     detectors=[
-                        (d[0], d[1]) if isinstance(d, (list, tuple)) and len(d) >= 2 else (d.x, d.y)
+                        (d[0], d[1]) if isinstance(d, list | tuple) and len(d) >= 2 else (d.x, d.y)
                         for d in detector_positions
                         if hasattr(d, "__len__") or hasattr(d, "x")
                     ],
@@ -730,7 +730,7 @@ class FireAISystem:
                                                     float(d.get("y", 0.0)),
                                                 )
                                             )
-                                        elif isinstance(d, (list, tuple)) and len(d) >= 2:
+                                        elif isinstance(d, list | tuple) and len(d) >= 2:
                                             det_tuples.append((float(d[0]), float(d[1])))
                                     if det_tuples:
                                         # FIX: Use dynamic coverage radius based on ceiling height

@@ -276,7 +276,7 @@ class ConstantCollector(ast.NodeVisitor):
 
     @staticmethod
     def _extract_float(node: ast.expr) -> float | None:
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        if isinstance(node, ast.Constant) and isinstance(node.value, int | float):
             return float(node.value)
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
             inner = ConstantCollector._extract_float(node.operand)

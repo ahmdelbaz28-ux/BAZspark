@@ -459,13 +459,13 @@ class TwinSystemOfRecord:
             # Handle tuples, lists, or dict representations
             if isinstance(pa, dict):
                 ax, ay = float(pa.get("x", 0)), float(pa.get("y", 0))
-            elif isinstance(pa, (list, tuple)) and len(pa) >= 2:
+            elif isinstance(pa, list | tuple) and len(pa) >= 2:
                 ax, ay = float(pa[0]), float(pa[1])
             else:
                 return False
             if isinstance(pb, dict):
                 bx, by = float(pb.get("x", 0)), float(pb.get("y", 0))
-            elif isinstance(pb, (list, tuple)) and len(pb) >= 2:
+            elif isinstance(pb, list | tuple) and len(pb) >= 2:
                 bx, by = float(pb[0]), float(pb[1])
             else:
                 return False

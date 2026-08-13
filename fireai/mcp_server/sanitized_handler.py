@@ -321,7 +321,7 @@ class SanitizedMCPHandler:
                     continue
 
             # Validate numerics
-            elif rule.get("type") == "float" and isinstance(raw_value, (int, float)):
+            elif rule.get("type") == "float" and isinstance(raw_value, int | float):
                 num_val = float(raw_value)
                 if not math.isfinite(num_val):
                     violations.append(
@@ -355,7 +355,7 @@ class SanitizedMCPHandler:
                             f"Sanitization rejected parameter '{param_name}': {e}"
                         )
                         continue
-                elif isinstance(raw_value, (int, float)):
+                elif isinstance(raw_value, int | float):
                     if not math.isfinite(float(raw_value)):
                         violations.append(
                             f"Parameter '{param_name}' is not finite: {raw_value}"

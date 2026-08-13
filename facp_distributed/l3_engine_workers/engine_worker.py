@@ -193,7 +193,7 @@ class EngineWorker:
 
             # Validate that execution was deterministic
             is_deterministic, det_message = self.stateless_validator.validate_deterministic_function(
-                lambda: result if isinstance(result, (int, float, str, bool, list, dict)) else {"result": result}
+                lambda: result if isinstance(result, int | float | str | bool | list | dict) else {"result": result}
             )
 
             if not is_deterministic:

@@ -181,14 +181,14 @@ class CeilingSpec:
         errors = []
 
         h_low = self.height_at_low_point_m
-        if not isinstance(h_low, (int, float)):
+        if not isinstance(h_low, int | float):
             errors.append("height_at_low_point_m must be a number")
         elif h_low <= 0 or not math.isfinite(h_low):
             errors.append(f"height_at_low_point_m must be > 0 and finite, got {h_low}")
 
         if self.height_at_high_point_m is not None:
             h_high = self.height_at_high_point_m
-            if not isinstance(h_high, (int, float)):
+            if not isinstance(h_high, int | float):
                 errors.append("height_at_high_point_m must be a number")
             elif h_high <= 0 or not math.isfinite(h_high):
                 errors.append(f"height_at_high_point_m must be > 0 and finite, got {h_high}")
@@ -352,7 +352,7 @@ class RoomSpec:
         if self.width_m is not None:
             if isinstance(self.width_m, bool):
                 errors.append("width_m must be a number, not boolean")
-            elif not isinstance(self.width_m, (int, float)):
+            elif not isinstance(self.width_m, int | float):
                 errors.append("width_m must be a number")
             elif self.width_m <= 0 or not math.isfinite(self.width_m):
                 errors.append(f"width_m must be > 0 and finite, got {self.width_m}")
@@ -362,7 +362,7 @@ class RoomSpec:
         if self.depth_m is not None:
             if isinstance(self.depth_m, bool):
                 errors.append("depth_m must be a number, not boolean")
-            elif not isinstance(self.depth_m, (int, float)):
+            elif not isinstance(self.depth_m, int | float):
                 errors.append("depth_m must be a number")
             elif self.depth_m <= 0 or not math.isfinite(self.depth_m):
                 errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
@@ -380,10 +380,10 @@ class RoomSpec:
             else:
                 # Validate each point is a tuple
                 for i, pt in enumerate(self.custom_polygon):
-                    if not isinstance(pt, (tuple, list)) or len(pt) != 2:
+                    if not isinstance(pt, tuple | list) or len(pt) != 2:
                         errors.append(f"custom_polygon point {i} must be (x,y) tuple")
                         break
-                    if not all(isinstance(c, (int, float)) for c in pt):
+                    if not all(isinstance(c, int | float) for c in pt):
                         errors.append(f"custom_polygon point {i} must be numeric")
                         break
                 else:
