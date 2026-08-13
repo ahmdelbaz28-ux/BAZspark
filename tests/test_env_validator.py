@@ -92,6 +92,22 @@ def test_full_env_has_zero_issues():
             "CODESANDBOX_TOKEN": "csb_v1_" + "e" * 20,
             "APS_CLIENT_ID": "aps-cid",
             "APS_CLIENT_SECRET": "aps-secret",
+            # SOFT vars added after V295+ — must be present for zero-issues
+            "NEON_DATABASE_URL": "postgresql://u:p@neonhost/db",
+            "GEMINI_API_KEY": "gem_" + "x" * 20,
+            "OPENAI_API_KEY": "sk-" + "o" * 20,
+            "ZENMUX_API_KEY": "zm_" + "z" * 20,
+            "RESEND_FROM_EMAIL": "noreply@example.com",
+            "QOMN_AUDIT_LOG_PATH": "/var/log/qomn",
+            "APS_WEBHOOK_URL": "https://aps.example.com/hook",
+            "VERCEL_DEPLOY_HOOK_URL": "https://vercel.example.com/hook",
+            "UPTIMEROBOT_USER_KEY": "ur_" + "u" * 20,
+            "UPTIMEROBOT_MONITOR_KEY": "um_" + "m" * 20,
+            "FIREAI_ENV_VALIDATION": "strict",
+            "FIREAI_CSRF_DISABLED": "false",
+            "AKAMAI_ENABLED": "false",
+            "CF_ENABLED": "false",
+            "LANGFUSE_ENABLED": "true",
         }
     )
     for k, v in full.items():
@@ -109,14 +125,15 @@ def test_runtime_only_env_passes_gate():
 
 
 def test_missing_runtime_var_is_hard():
+    """Removing a HARD variable (LANGFUSE_PUBLIC_KEY) must produce a HARD issue."""
     env = dict(RUNTIME_MINIMAL)
-    del env["SUPABASE_URL"]
+    del env["LANGFUSE_PUBLIC_KEY"]
     for k, v in env.items():
         os.environ[k] = v
     issues = validate_environment()
     hard = [i for i in issues if i.severity is Severity.HARD]
     names = {i.name for i in hard}
-    assert "SUPABASE_URL" in names
+    assert "LANGFUSE_PUBLIC_KEY" in names
 
 
 def test_placeholder_value_is_rejected():
@@ -161,7 +178,7 @@ def test_unset_fireai_env_never_blocks_startup():
     for k, v in RUNTIME_MINIMAL.items():
         os.environ[k] = v
     os.environ.pop("FIREAI_ENV", None)
-    os.environ.pop("SUPABASE_URL", None)  # simulate missing HARD var
+    os.environ.pop("LANGFUSE_PUBLIC_KEY", None)  # simulate missing HARD var
     assert_environment()  # must NOT raise
 
 
@@ -170,7 +187,7 @@ def test_explicit_production_missing_hard_raises():
     for k, v in RUNTIME_MINIMAL.items():
         os.environ[k] = v
     os.environ["FIREAI_ENV"] = "production"
-    os.environ.pop("SUPABASE_URL", None)
+    os.environ.pop("LANGFUSE_PUBLIC_KEY", None)  # HARD var
     with pytest.raises(RuntimeError):
         assert_environment()
 
@@ -181,5 +198,5 @@ def test_escape_hatch_warn_allows_startup_in_production():
         os.environ[k] = v
     os.environ["FIREAI_ENV"] = "production"
     os.environ["FIREAI_ENV_VALIDATION"] = "warn"
-    os.environ.pop("SUPABASE_URL", None)
+    os.environ.pop("LANGFUSE_PUBLIC_KEY", None)  # HARD var
     assert_environment()  # degraded mode: must NOT raise

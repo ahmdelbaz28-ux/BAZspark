@@ -200,9 +200,9 @@ def test_meeza_billing_router(monkeypatch):
     )
     assert wh_res.status_code == 200
     assert wh_res.json()["status"] == "processed"
-    assert wh_res.json()["order_status"] == "PAID"
+    assert wh_res.json()["order_status"] == "paid"
 
     # 4. Verify updated order status
     status_res_after = client.get(f"/api/v1/billing/orders/{order_id}")
     assert status_res_after.status_code == 200
-    assert status_res_after.json()["status"] == "PAID"
+    assert status_res_after.json()["status"] == "paid"
