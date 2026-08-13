@@ -1,7 +1,9 @@
-# NOSONAR
-"""Cluster Communicator for Event Bus in Distributed FACP System"""
+import hashlib
+import hmac
 import json
+import os
 import socket
+import ssl
 import threading
 import time
 import uuid
@@ -115,6 +117,7 @@ class ClusterCommunicator:
         self.is_leader = False  # Whether this node is the leader
         self.leader_election_enabled = True
         self.known_peers = set()  # Known peer addresses
+        self.cluster_secret = os.getenv("FACP_CLUSTER_SECRET", "") or os.getenv("FACP_INTER_NODE_SECRET", "")
 
         # Add self to nodes
         self.local_node = ClusterNode(self.node_id, self.host, self.port, self.node_type)
@@ -244,6 +247,19 @@ class ClusterCommunicator:
 
         msg_type = message.get("type")
         sender_node_id = message.get("sender_node_id")
+
+        # D-001: Authenticate inter-node messages via HMAC-SHA256 signature when secret is configured
+        cluster_secret = self.cluster_secret or os.getenv("FACP_CLUSTER_SECRET", "") or os.getenv("FACP_INTER_NODE_SECRET", "")
+        if cluster_secret:
+            sig = message.get("hmac_sig")
+            ts = message.get("timestamp", 0)
+            if not sig or not sender_node_id:
+                print(f"Rejected unauthenticated cluster message from {addr}")
+                return
+            expected_sig = hmac.new(cluster_secret.encode("utf-8"), f"{sender_node_id}:{msg_type}:{ts}".encode("utf-8"), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(sig, expected_sig):
+                print(f"Rejected invalid HMAC cluster message signature from {sender_node_id}@{addr}")
+                return
 
         # Update sender node information if present
         if sender_node_id and sender_node_id != self.node_id:
@@ -470,6 +486,11 @@ class ClusterCommunicator:
         message["sender_node_id"] = self.node_id
         message["timestamp"] = time.time()
         message["cluster_id"] = self.cluster_id
+
+        cluster_secret = self.cluster_secret or os.getenv("FACP_CLUSTER_SECRET", "") or os.getenv("FACP_INTER_NODE_SECRET", "")
+        if cluster_secret:
+            sig_base = f"{self.node_id}:{message.get('type')}:{message['timestamp']}"
+            message["hmac_sig"] = hmac.new(cluster_secret.encode("utf-8"), sig_base.encode("utf-8"), hashlib.sha256).hexdigest()
 
         try:
             json_msg = json.dumps(message)

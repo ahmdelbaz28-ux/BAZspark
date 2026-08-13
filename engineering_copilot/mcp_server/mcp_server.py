@@ -6,15 +6,50 @@ MCP (Microservice Control Protocol) Server for Engineering Copilot operations.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+import os
+import secrets
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from engineering_copilot.ai_agent.ai_agent import AICopilot
 from engineering_copilot.translation_engine.translation_engine import TranslationEngine
+
+
+async def verify_copilot_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+) -> str:
+    """
+    Verify API key for Engineering Copilot MCP Server (FC-001 defense).
+    Checks X-API-Key header or Bearer token using constant-time secrets.compare_digest.
+    """
+    raw_keys = os.getenv("COPILOT_API_KEYS", "") or os.getenv("FIREAI_API_KEY", "") or os.getenv("BAZ_API_KEY", "")
+    valid_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+
+    provided_key = None
+    if x_api_key:
+        provided_key = x_api_key.strip()
+    elif authorization and authorization.startswith("Bearer "):
+        provided_key = authorization[7:].strip()
+
+    if not valid_keys:
+        if os.getenv("ENVIRONMENT") == "production":
+            raise HTTPException(status_code=503, detail="Copilot API authentication not configured")
+        valid_keys = [os.getenv("DEV_COPILOT_API_KEY", "dev-copilot-key-secret")]
+
+    if not provided_key:
+        raise HTTPException(status_code=401, detail="API key required (X-API-Key header or Bearer token)")
+
+    if not any(secrets.compare_digest(provided_key, key) for key in valid_keys):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    return provided_key
 
 
 class MCPServer:
@@ -42,24 +77,25 @@ class MCPServer:
         self.operation_history = []
 
     def _register_endpoints(self):
-        """Register all MCP endpoints."""
-        self.app.post("/create_drawing")(self.create_drawing)
-        self.app.put("/update_drawing")(self.update_drawing)
-        self.app.get("/read_drawing")(self.read_drawing)
-        self.app.post("/create_panel")(self.create_panel)
-        self.app.post("/create_transformer")(self.create_transformer)
-        self.app.post("/create_bus")(self.create_bus)
-        self.app.post("/create_cable")(self.create_cable)
-        self.app.post("/generate_sld")(self.generate_sld)
-        self.app.post("/sync_etap")(self.sync_etap)
-        self.app.post("/sync_revit")(self.sync_revit)
-        self.app.post("/sync_autocad")(self.sync_autocad)
-        self.app.post("/export_dwg")(self.export_dwg)
-        self.app.post("/export_json")(self.export_json)
-        self.app.post("/validate_design")(self.validate_design)
-        self.app.post("/run_engineering_checks")(self.run_engineering_checks)
-        self.app.post("/process_request")(self.process_request)
-        self.app.post("/convert_simready")(self.convert_simready)
+        """Register all MCP endpoints with mandatory API key authentication."""
+        auth_dep = [Depends(verify_copilot_api_key)]
+        self.app.post("/create_drawing", dependencies=auth_dep)(self.create_drawing)
+        self.app.put("/update_drawing", dependencies=auth_dep)(self.update_drawing)
+        self.app.get("/read_drawing", dependencies=auth_dep)(self.read_drawing)
+        self.app.post("/create_panel", dependencies=auth_dep)(self.create_panel)
+        self.app.post("/create_transformer", dependencies=auth_dep)(self.create_transformer)
+        self.app.post("/create_bus", dependencies=auth_dep)(self.create_bus)
+        self.app.post("/create_cable", dependencies=auth_dep)(self.create_cable)
+        self.app.post("/generate_sld", dependencies=auth_dep)(self.generate_sld)
+        self.app.post("/sync_etap", dependencies=auth_dep)(self.sync_etap)
+        self.app.post("/sync_revit", dependencies=auth_dep)(self.sync_revit)
+        self.app.post("/sync_autocad", dependencies=auth_dep)(self.sync_autocad)
+        self.app.post("/export_dwg", dependencies=auth_dep)(self.export_dwg)
+        self.app.post("/export_json", dependencies=auth_dep)(self.export_json)
+        self.app.post("/validate_design", dependencies=auth_dep)(self.validate_design)
+        self.app.post("/run_engineering_checks", dependencies=auth_dep)(self.run_engineering_checks)
+        self.app.post("/process_request", dependencies=auth_dep)(self.process_request)
+        self.app.post("/convert_simready", dependencies=auth_dep)(self.convert_simready)
 
 
     # Request models

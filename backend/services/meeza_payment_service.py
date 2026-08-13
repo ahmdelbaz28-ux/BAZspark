@@ -928,6 +928,7 @@ def handle_meeza_webhook(
         now=now,
         raw_json=raw_json,
         sig_truncated=sig_truncated,
+        amount_cents=amount_cents,
     )
 
 
@@ -937,20 +938,29 @@ def _persist_webhook_event(
     merchant_order_id: str,
     txn_status: TxnStatus,
     order_status: str,
-    idem_key: str,
-    event_id: str,
-    now: str,
-    raw_json: str,
-    sig_truncated: str,
+    amount_cents: int = 0,
 ) -> Dict[str, Any]:
     """Insert the webhook event, link the transaction, and apply the atomic
     order status transition. Extracted from `handle_meeza_webhook` to keep
     cognitive complexity below the SonarCloud S3776 threshold (15).
 
-    Returns the webhook result dict (processed / duplicate / order_already_terminal).
+    Returns the webhook result dict (processed / duplicate / order_already_terminal / amount_mismatch).
     """
     with _RedlockFence(f"order:{merchant_order_id}", ttl_ms=5000):
         with _get_conn() as conn:
+            # P-001 defense: Cross-verify webhook amount against stored order amount
+            order_row = conn.execute(
+                "SELECT amount_cents FROM orders WHERE id = ?", (merchant_order_id,)
+            ).fetchone()
+            if order_row is not None:
+                expected = order_row["amount_cents"] if "amount_cents" in order_row.keys() else None
+                if amount_cents > 0 and expected is not None and expected != amount_cents:
+                    logger.warning(
+                        "Meeza Payment: amount mismatch for order %s (expected=%s, webhook=%s)",
+                        merchant_order_id[:8], expected, amount_cents,
+                    )
+                    return {"status": "rejected", "http_status": 409, "reason": "amount_mismatch"}
+
             # 5. Idempotent event insert — UNIQUE constraint guards duplicates
             try:
                 conn.execute(

@@ -9,9 +9,12 @@ from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+import hmac
+import os
 import aiohttp
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 _FACP_PROTOCOL = "facp/1.0"
 
@@ -126,6 +129,21 @@ class HTTPTransport(TransportLayer):
         @self.app.post("/facp/request")
         async def handle_facp_request(request: Request):
             try:
+                # D-003 defense: Check inter-node secret header
+                inter_node_secret = os.getenv("FACP_INTER_NODE_SECRET", "") or os.getenv("FACP_CLUSTER_SECRET", "")
+                if inter_node_secret:
+                    req_secret = request.headers.get("X-FACP-Node-Secret", "")
+                    if not hmac.compare_digest(req_secret, inter_node_secret):
+                        return JSONResponse(
+                            status_code=401,
+                            content={
+                                "protocol": _FACP_PROTOCOL,
+                                "id": "unknown",
+                                "status": "error",
+                                "error": {"code": "UNAUTHORIZED", "message": "Invalid inter-node secret"}
+                            }
+                        )
+
                 request_data = await request.json()
 
                 # Input validation gate - validate request structure and content
@@ -260,7 +278,8 @@ class HTTPTransport(TransportLayer):
 
     async def async_send_request(self, request_data: Dict[str, Any], target_host: str = "localhost", target_port: int = 8000) -> Dict[str, Any]:
         """Send request asynchronously to target HTTP endpoint"""
-        target_url = f"http://{target_host}:{target_port}/facp/request"  # NOSONAR - python:S5332
+        scheme = "https" if os.getenv("FACP_USE_HTTPS", "").lower() in ("1", "true") else "http"
+        target_url = f"{scheme}://{target_host}:{target_port}/facp/request"
 
         # Create a session for this host if not exists
         session_key = f"{target_host}:{target_port}"
@@ -269,9 +288,14 @@ class HTTPTransport(TransportLayer):
 
         session = self.client_sessions[session_key]
 
+        headers = {}
+        inter_node_secret = os.getenv("FACP_INTER_NODE_SECRET", "") or os.getenv("FACP_CLUSTER_SECRET", "")
+        if inter_node_secret:
+            headers["X-FACP-Node-Secret"] = inter_node_secret
+
         try:
             timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout
-            async with session.post(target_url, json=request_data, timeout=timeout) as response:
+            async with session.post(target_url, json=request_data, headers=headers, timeout=timeout) as response:
                 return await response.json()
         except Exception as e:
             return {

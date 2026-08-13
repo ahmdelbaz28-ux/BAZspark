@@ -81,6 +81,11 @@ def _write_temp_file(suffix: str, content: bytes) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+from urllib.parse import urlsplit
+from pydantic import field_validator
+from backend.integrations._ssrf_guard import validate_host_for_user_input, SSRFError
+
+
 class SpeckleOperationRequest(BaseModel):
     """Body for /speckle/push and /speckle/receive."""
 
@@ -94,6 +99,25 @@ class SpeckleOperationRequest(BaseModel):
         default=None,
         description="Elements to push (push only). Ignored for receive.",
     )
+
+    @field_validator("server_url")
+    @classmethod
+    def _validate_server_url(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            return "https://speckle.xyz"
+        parts = urlsplit(v)
+        if parts.scheme.lower() != "https":
+            raise ValueError("server_url must use https scheme")
+        if parts.username or parts.password:
+            raise ValueError("server_url must not contain embedded credentials")
+        if not parts.hostname:
+            raise ValueError("server_url must include a valid hostname")
+        try:
+            validate_host_for_user_input(parts.hostname)
+        except SSRFError as err:
+            raise ValueError(f"SSRF validation failed: {err}") from err
+        return v.rstrip("/")
 
 
 class ExperimentalFeatureStatus(BaseModel):

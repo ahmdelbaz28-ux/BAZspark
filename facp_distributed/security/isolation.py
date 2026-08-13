@@ -83,8 +83,20 @@ with open("func.json", "r") as f:
     args = tuple(data["args"])
     kwargs = data["kwargs"]
 
-# Recreate function
-func = types.FunctionType(marshal.loads(func_code), globals())
+# Recreate function with restricted builtins (D-002 defense)
+safe_builtins = {{
+    "abs": abs, "all": all, "any": any, "bool": bool, "dict": dict,
+    "enumerate": enumerate, "float": float, "int": int, "len": len,
+    "list": list, "max": max, "min": min, "range": range, "round": round,
+    "set": set, "str": str, "sum": sum, "tuple": tuple, "zip": zip,
+    "isinstance": isinstance, "issubclass": issubclass, "hasattr": hasattr,
+    "getattr": getattr, "setattr": setattr, "Exception": Exception,
+    "ValueError": ValueError, "TypeError": TypeError, "KeyError": KeyError,
+    "IndexError": IndexError, "AttributeError": AttributeError,
+    "True": True, "False": False, "None": None
+}}
+safe_globals = {{"__builtins__": safe_builtins}}
+func = types.FunctionType(marshal.loads(func_code), safe_globals)
 
 # Execute function
 try:
