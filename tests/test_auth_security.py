@@ -79,9 +79,9 @@ class TestRateLimiting:
         )
         assert resp.status_code == 200
 
-        # Should be able to fail again with the SAME credential (rate limit was reset)
+        # Should be able to fail again after reset (rate limit counter was cleared)
         for _ in range(4):
-            resp = client.post("/api/v1/auth/login", json={"api_key": "test_key_for_security_audit"})  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            resp = client.post("/api/v1/auth/login", json={"api_key": "invalid_key_after_reset"})  # NOSONAR: python:S6418 — test fixture
             assert resp.status_code == 401
 
 

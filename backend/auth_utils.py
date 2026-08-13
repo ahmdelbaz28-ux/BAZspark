@@ -38,6 +38,8 @@ from typing import Optional, Tuple
 
 from backend.api_keys import validate_api_key as _validate_api_key
 from backend.rbac import Role
+from backend.session_secret import get_secret_manager as _get_secret_manager
+from backend.session_store import session_store as _session_store
 
 logger = logging.getLogger(__name__)
 
@@ -142,19 +144,12 @@ def verify_session_token(token: str) -> Optional[str]:
     """
     Verify a signed session token and return the session_id if valid.
 
-    T20: Shared helper for session-cookie auth in WebSocket handshake.
-    Uses local imports to avoid circular dependencies with auth.py and session_store.
-
     Returns None if:
       - Token format is invalid
       - HMAC signature does not match
       - Token has expired
       - Session ID is not in the session store
     """
-    # Local imports to avoid circular dependency
-    from backend.routers.auth import _SECRET_MANAGER
-    from backend.session_store import session_store as _session_store
-
     if "." not in token:
         return None
 
@@ -173,12 +168,12 @@ def verify_session_token(token: str) -> Optional[str]:
         return None
 
     # Verify signature against primary AND previous secrets
-    if not _SECRET_MANAGER.verify_signature(f"{session_id}.{expires_at}", signature):
+    secret_mgr = _get_secret_manager()
+    if not secret_mgr.verify_signature(f"{session_id}.{expires_at}", signature):
         return None
 
     # Check that session exists in store (server-side validation)
-    import hashlib as _hashlib_local
-    session_id_hash = _hashlib_local.sha256(session_id.encode("utf-8")).hexdigest()
+    session_id_hash = _hashlib.sha256(session_id.encode("utf-8")).hexdigest()
     session = _session_store.get(session_id_hash)
     if session is None:
         return None

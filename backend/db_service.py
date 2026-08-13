@@ -209,10 +209,11 @@ class DatabaseService:
         """
         return self._data_model._lock
 
-    def _init_projects_table(self) -> None:
-        """Create projects table in the existing SQLite database."""
+    def ensure_udm_schema(self) -> None:
+        """Initialize all UDM schema tables, columns, and performance indexes safely."""
         with self._service_lock:
             try:
+                # 1. Projects table
                 self._safe_db_execute('''
                     CREATE TABLE IF NOT EXISTS projects (
                         project_id TEXT PRIMARY KEY,
@@ -224,12 +225,95 @@ class DatabaseService:
                         last_modified_timestamp TEXT
                     )
                 ''')
+
+                # 2. Elements table
+                self._safe_db_execute('''
+                    CREATE TABLE IF NOT EXISTS elements (
+                        element_id TEXT PRIMARY KEY,
+                        element_type TEXT NOT NULL,
+                        name TEXT,
+                        position TEXT,
+                        properties TEXT,
+                        created_timestamp TEXT,
+                        last_modified_timestamp TEXT,
+                        is_deleted INTEGER DEFAULT 0
+                    )
+                ''')
+
+                # Migrate missing columns if table existed with older schema
+                for col in ["name TEXT", "position TEXT", "properties TEXT", "is_deleted INTEGER DEFAULT 0"]:
+                    try:
+                        self._safe_db_execute(f"ALTER TABLE elements ADD COLUMN {col}")
+                    except Exception:
+                        pass
+
+                # 3. Element-Projects junction table
+                self._safe_db_execute('''
+                    CREATE TABLE IF NOT EXISTS element_projects (
+                        element_id TEXT,
+                        project_id TEXT,
+                        PRIMARY KEY (element_id, project_id)
+                    )
+                ''')
+
+                # 4. Relationships table
+                self._safe_db_execute('''
+                    CREATE TABLE IF NOT EXISTS relationships (
+                        relationship_id TEXT PRIMARY KEY,
+                        from_element_id TEXT NOT NULL,
+                        to_element_id TEXT NOT NULL,
+                        relationship_type TEXT NOT NULL,
+                        is_parametric INTEGER DEFAULT 0,
+                        metadata JSON,
+                        is_deleted INTEGER DEFAULT 0,
+                        last_modified_timestamp TEXT
+                    )
+                ''')
+
+                for col in ["is_deleted INTEGER DEFAULT 0", "last_modified_timestamp TEXT"]:
+                    try:
+                        self._safe_db_execute(f"ALTER TABLE relationships {col}")
+                    except Exception:
+                        pass
+
+                # 5. Performance Indexes
+                self._safe_db_execute("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
+                self._safe_db_execute("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
+
                 # Enable foreign keys
                 self._safe_db_execute("PRAGMA foreign_keys=ON")
                 self._safe_db_execute("SELECT 1", commit=True)
-                logger.info("Projects table initialized")
+                logger.info("UDM schema and performance indexes initialized successfully")
             except Exception as e:
-                logger.exception("Error initializing projects table: %s", e)
+                logger.exception("Error initializing UDM schema: %s", e)
+
+    def _init_projects_table(self) -> None:
+        """Create UDM schema tables and indexes in the SQLite database."""
+        self.ensure_udm_schema()
+
+    def set_project_cache(self, project_id: str, project_dict: dict[str, Any]) -> None:
+        """Thread-safe update to in-memory project cache."""
+        with self._service_lock:
+            self._projects[project_id] = project_dict
+
+    def update_project_cache_fields(self, project_id: str, updates: dict[str, Any], last_modified: str) -> None:
+        """Thread-safe update of specific project cache fields."""
+        with self._service_lock:
+            if project_id in self._projects:
+                field_map = {"name": "name", "description": "description", "status": "status"}
+                for field, value in updates.items():
+                    if value is not None and field in field_map:
+                        self._projects[project_id][field_map[field]] = value
+                self._projects[project_id]["last_modified_timestamp"] = last_modified
+                if "author" in updates and updates["author"] is not None:
+                    meta = self._projects[project_id].get("metadata") or {}
+                    meta["author"] = updates["author"]
+                    self._projects[project_id]["metadata"] = meta
+
+    def remove_project_cache(self, project_id: str) -> None:
+        """Thread-safe removal from in-memory project cache."""
+        with self._service_lock:
+            self._projects.pop(project_id, None)
 
     def _load_projects_from_db(self) -> None:
         """Load projects from SQLite into in-memory cache."""

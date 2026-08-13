@@ -109,15 +109,18 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
             )
 
             # Update in-memory cache
-            udm._projects[project_id] = {
-                "project_id": project_id,
-                "name": name,
-                "description": description,
-                "status": status,
-                "metadata": metadata,
-                "created_timestamp": created_at,
-                "last_modified_timestamp": updated_at,
-            }
+            udm.set_project_cache(
+                project_id,
+                {
+                    "project_id": project_id,
+                    "name": name,
+                    "description": description,
+                    "status": status,
+                    "metadata": metadata,
+                    "created_timestamp": created_at,
+                    "last_modified_timestamp": updated_at,
+                },
+            )
 
             logger.info("Project %s synced to UDM successfully", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
@@ -195,20 +198,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
                     commit=True,
                 )
 
-                if project_id in udm._projects:
-                    field_map = {
-                        "name": "name",
-                        "description": "description",
-                        "status": "status",
-                    }
-                    for field, value in updates.items():
-                        if value is not None and field in field_map:
-                            udm._projects[project_id][field_map[field]] = value
-                    udm._projects[project_id]["last_modified_timestamp"] = now
-                    if "author" in updates and updates["author"] is not None:
-                        meta = udm._projects[project_id].get("metadata", {})
-                        meta["author"] = updates["author"]
-                        udm._projects[project_id]["metadata"] = meta
+                udm.update_project_cache_fields(project_id, updates, now)
 
             logger.info("Project %s update synced to UDM", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
@@ -247,14 +237,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
         db.record_sync("project", project_id, _TARGET_DB, "syncing")
 
         try:
-            udm.bridge_create_table("""
-                CREATE TABLE IF NOT EXISTS element_projects (
-                    element_id TEXT,
-                    project_id TEXT,
-                    PRIMARY KEY (element_id, project_id)
-                )
-            """)
-
+            udm.ensure_udm_schema()
             udm.bridge_sql(
                 "DELETE FROM element_projects WHERE project_id = ?",
                 (project_id,),
@@ -266,8 +249,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
                 commit=True,
             )
 
-            if project_id in udm._projects:
-                del udm._projects[project_id]
+            udm.remove_project_cache(project_id)
 
             logger.info("Project %s deletion synced to UDM", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
@@ -343,44 +325,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
         })
 
         try:
-            udm.bridge_create_table("""
-                CREATE TABLE IF NOT EXISTS elements (
-                    element_id TEXT PRIMARY KEY,
-                    element_type TEXT NOT NULL,
-                    name TEXT,
-                    position TEXT,
-                    properties TEXT,
-                    created_timestamp TEXT,
-                    last_modified_timestamp TEXT,
-                    is_deleted INTEGER DEFAULT 0
-                )
-            """)
-
-            # core/database.py (which doesn't have name/position/is_deleted
-            # columns). CREATE TABLE IF NOT EXISTS silently skips if the table
-            # already exists, so we need ALTER TABLE to add missing columns.
-            for migration in [
-                "ALTER TABLE elements ADD COLUMN name TEXT",
-                "ALTER TABLE elements ADD COLUMN position TEXT",
-                "ALTER TABLE elements ADD COLUMN properties TEXT",
-                "ALTER TABLE elements ADD COLUMN is_deleted INTEGER DEFAULT 0",
-            ]:
-                try:
-                    udm.bridge_sql(migration)
-                except Exception:
-                                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
-
-            udm.bridge_create_table("""
-                CREATE TABLE IF NOT EXISTS element_projects (
-                    element_id TEXT,
-                    project_id TEXT,
-                    PRIMARY KEY (element_id, project_id)
-                )
-            """)
-
-            # Performance indexes for UDM tables
-            udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
-            udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
+            udm.ensure_udm_schema()
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_insert(
@@ -637,26 +582,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
         }
 
         try:
-            udm.bridge_create_table("""
-                CREATE TABLE IF NOT EXISTS relationships (
-                    relationship_id TEXT PRIMARY KEY,
-                    from_element_id TEXT NOT NULL,
-                    to_element_id TEXT NOT NULL,
-                    relationship_type TEXT NOT NULL,
-                    is_parametric INTEGER DEFAULT 0,
-                    metadata JSON,
-                    is_deleted INTEGER DEFAULT 0,
-                    last_modified_timestamp TEXT
-                )
-            """)
-
-            # Ensure compatibility columns exist (safe to ignore if already present)
-            for col in [
-                "ADD COLUMN is_deleted INTEGER DEFAULT 0",
-                "ADD COLUMN last_modified_timestamp TEXT",
-            ]:
-                with contextlib.suppress(Exception):
-                    udm.bridge_sql(f"ALTER TABLE relationships {col}")
+            udm.ensure_udm_schema()
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_insert(
@@ -715,12 +641,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
         db.record_sync("connection", connection_id, _TARGET_DB, "syncing")
 
         try:
-            for col in [
-                "ADD COLUMN is_deleted INTEGER DEFAULT 0",
-                "ADD COLUMN last_modified_timestamp TEXT",
-            ]:
-                with contextlib.suppress(Exception):
-                    udm.bridge_sql(f"ALTER TABLE relationships {col}")
+            udm.ensure_udm_schema()
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_sql(
