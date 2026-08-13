@@ -230,7 +230,7 @@ def _check_facp_available() -> bool:
     in a safety-critical system per agent.md Anti-Deception Directive.
     """
     global _facp_available
-    if _facp_available is None:
+    if not _facp_available:
         try:
             from facp_system.panel_database import MASTER_PANEL_DATABASE  # noqa: F401
             from facp_system.panel_output import OutputGenerator  # noqa: F401
