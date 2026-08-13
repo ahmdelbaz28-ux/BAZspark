@@ -49,7 +49,7 @@ export function ExportsPage() {
 			const apiKey = getApiKey();
 			if (apiKey) headers["X-API-Key"] = apiKey;
 
-			const resp = await fetch(endpoint, { headers });
+			const resp = await fetch(endpoint, { headers, credentials: "same-origin" }); // audit P1-5 fix
 			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
 			const blob = await resp.blob();
@@ -104,6 +104,7 @@ export function ExportsPage() {
 				method: "POST",
 				headers,
 				body: JSON.stringify({ exportType: "excel" }),
+				credentials: "same-origin", // audit P1-5 fix
 			});
 			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 			const blob = await resp.blob();

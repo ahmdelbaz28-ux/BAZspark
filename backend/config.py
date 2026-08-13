@@ -88,6 +88,13 @@ class Config:
     ).lower() in ("true", "1", "yes", "on")
 
     # Additional settings
+    # V246 fail-safe: default "production" — a safety-critical fire alarm system
+    # MUST fail closed. If FIREAI_ENV is unset, assume production (strictest
+    # posture). All real production deployments EXPLICITLY set FIREAI_ENV=production
+    # (Dockerfile ENV, docker-compose.yml, HF Space). CI sets it to "development"
+    # in conftest.py. Previously changed to "development" in audit P1-2, but
+    # self-critique revealed this creates split-brain with 12+ other files that
+    # use default="production" (V246 hardening). Reverted for consistency.
     ENVIRONMENT: str = os.environ.get("FIREAI_ENV", "production")
     DEBUG: bool = ENVIRONMENT.lower() == "development"
 
@@ -135,6 +142,7 @@ if not _jwt_secret:
     )
 
 _WEAK_SECRETS = {"secret", "change-me", "default", "test", "123456", "admin", "jwt_secret", "password"}
+# V246 fail-safe: default "production" — mirrors Config.ENVIRONMENT above.
 _env_name = os.environ.get("FIREAI_ENV", "production").lower()
 if _env_name in ("production", "prod"):
     if _jwt_secret.strip().lower() in _WEAK_SECRETS or len(_jwt_secret.strip()) < 32:

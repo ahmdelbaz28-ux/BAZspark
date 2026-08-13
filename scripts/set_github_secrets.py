@@ -65,7 +65,8 @@ SECRET_KEYS = [
     # Resend Email
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
-    # Box
+    # Box — PLANNED: SDK not yet implemented in backend runtime.
+    # Pushing secrets so they're ready when integration is implemented.
     "BOX_CLIENT_ID",
     "BOX_CLIENT_SECRET",
     "BOX_DEVELOPER_TOKEN",

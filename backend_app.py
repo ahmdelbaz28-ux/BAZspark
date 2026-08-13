@@ -75,7 +75,7 @@ class _RoleDevMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Any]]):  # noqa: ANN401
-        env = os.getenv("FIREAI_ENV", "production").lower()
+        env = os.getenv("FIREAI_ENV", "development").lower()  # audit P1-2 fix (follow-up): aligned with config.py
         if env in ("development", "testing"):
             # Only set if not already set by an upstream middleware.
             if getattr(request.state, "fireai_role", None) is None:
@@ -151,7 +151,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID"],
+    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID", "Authorization", "X-Request-ID", "X-CSRF-Token", "Accept"],  # audit P1-3 fix (follow-up),
     # NEVER enable allow_credentials=True with this design — API uses
     # X-API-Key header auth (not cookies), so cross-origin credentialed
     # requests are unnecessary and would expand the attack surface.
