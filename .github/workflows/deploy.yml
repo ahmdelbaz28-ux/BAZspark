@@ -181,7 +181,7 @@ jobs:
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
           # Explicitly remove api_keys.secret if it exists (may be invalid from prior run)
           rm -f db/api_keys.secret
-          pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.1.10 tenacity==9.0.0 openpyxl==3.1.5
+          pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.1.10 tenacity==9.0.0 openpyxl==3.1.5 aiohttp>=3.9.0
           # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
           python -m pytest tests/ backend/tests/ \
             --tb=short \

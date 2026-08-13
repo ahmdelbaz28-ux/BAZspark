@@ -106,7 +106,7 @@ jobs:
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_full_deploy_test.db"
           UDM_DB_PATH: "/tmp/udm_full_deploy_test.db"
         run: |
-          pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.1.10 tenacity==9.0.0 openpyxl==3.1.5
+          pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.1.10 tenacity==9.0.0 openpyxl==3.1.5 aiohttp>=3.9.0
           # V301 FIX: Aggressive cleanup of stale db/ artifacts before pytest.
           # backend.api_keys creates db/api_keys.secret at module import time,
           # and if it persists from a previous test run, the secret format may
