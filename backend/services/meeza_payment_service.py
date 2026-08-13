@@ -938,6 +938,11 @@ def _persist_webhook_event(
     merchant_order_id: str,
     txn_status: TxnStatus,
     order_status: str,
+    idem_key: str = "",
+    event_id: str = "",
+    now: str = "",
+    raw_json: str = "{}",
+    sig_truncated: str = "",
     amount_cents: int = 0,
 ) -> Dict[str, Any]:
     """Insert the webhook event, link the transaction, and apply the atomic
@@ -953,7 +958,7 @@ def _persist_webhook_event(
                 "SELECT amount_cents FROM orders WHERE id = ?", (merchant_order_id,)
             ).fetchone()
             if order_row is not None:
-                expected = order_row["amount_cents"] if "amount_cents" in order_row.keys() else None
+                expected = dict(order_row).get("amount_cents")
                 if amount_cents > 0 and expected is not None and expected != amount_cents:
                     logger.warning(
                         "Meeza Payment: amount mismatch for order %s (expected=%s, webhook=%s)",
