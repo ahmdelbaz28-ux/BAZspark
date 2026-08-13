@@ -29,6 +29,19 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHealth } from "@/hooks/useApiQuery";
+import { getCsrfToken } from "@/services/csrf";
+
+async function csrfFetch(url: string, init: RequestInit = {}): Promise<Response> {
+	const method = (init.method || "GET").toUpperCase();
+	const headers = new Headers(init.headers || {});
+	if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+		const token = await getCsrfToken();
+		if (token && !headers.has("X-CSRF-Token")) {
+			headers.set("X-CSRF-Token", token);
+		}
+	}
+	return fetch(url, { credentials: "same-origin", ...init, headers });
+}
 
 export function SettingsPage() {
 	const { t } = useTranslation();
@@ -192,7 +205,7 @@ export function SettingsPage() {
 			setFlagUpdateStatus((prev) => ({ ...prev, [flagKey]: "saving" }));
 
 			try {
-				const res = await fetch("/api/v1/feature-flags", {
+				const res = await csrfFetch("/api/v1/feature-flags", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ flag: flagKey, enabled: newValue }),
@@ -329,7 +342,7 @@ export function SettingsPage() {
 		persistSettings("api", { apiTimeout, retryAttempts });
 		setSettingsUpdateStatus((prev) => ({ ...prev, api: "saving" }));
 		try {
-			const res = await fetch(`${API_BASE}/settings`, {
+			const res = await csrfFetch(`${API_BASE}/settings`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				credentials: "same-origin",
@@ -361,7 +374,7 @@ export function SettingsPage() {
 		});
 		setSettingsUpdateStatus((prev) => ({ ...prev, reports: "saving" }));
 		try {
-			const res = await fetch(`${API_BASE}/settings`, {
+			const res = await csrfFetch(`${API_BASE}/settings`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				credentials: "same-origin",
@@ -781,7 +794,7 @@ export function SettingsPage() {
 												secretRotation: "loading",
 											}));
 											try {
-												const res = await fetch(
+												const res = await csrfFetch(
 													`${API_BASE}/settings/secret-rotation/rotate`,
 													{ method: "POST", credentials: "same-origin" },
 												);
@@ -851,7 +864,7 @@ export function SettingsPage() {
 													addKey: "loading",
 												}));
 												try {
-													const res = await fetch(
+													const res = await csrfFetch(
 														`${API_BASE}/settings/keys/openai`,
 														{
 															method: "POST",
@@ -950,7 +963,7 @@ export function SettingsPage() {
 																		[`test-${key.id}`]: "loading",
 																	}));
 																	try {
-																		const res = await fetch(
+																		const res = await csrfFetch(
 																			`${API_BASE}/settings/keys/openai/${key.id}/test`,
 																			{
 																				method: "POST",
@@ -989,7 +1002,7 @@ export function SettingsPage() {
 																onClick={async () => {
 																	if (!confirm("Delete this key?")) return;
 																	try {
-																		await fetch(
+																		await csrfFetch(
 																			`${API_BASE}/settings/keys/openai/${key.id}`,
 																			{
 																				method: "DELETE",
@@ -1055,7 +1068,7 @@ export function SettingsPage() {
 												adminToken: "loading",
 											}));
 											try {
-												const res = await fetch(
+												const res = await csrfFetch(
 													`${API_BASE}/settings/admin-token/rotate`,
 													{ method: "POST", credentials: "same-origin" },
 												);

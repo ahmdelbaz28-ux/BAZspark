@@ -63,6 +63,12 @@ class SpeckleService:
             return {"success": True, "commit_id": mock_commit, "simulation_mode": True}
 
         try:
+            from urllib.parse import urlsplit
+            from backend.integrations._ssrf_guard import validate_host_for_user_input, SSRFError
+            parts = urlsplit(server_url)
+            if parts.hostname:
+                validate_host_for_user_input(parts.hostname)
+
             client = SpeckleClient(host=server_url)
             client.authenticate_with_token(token)
 
