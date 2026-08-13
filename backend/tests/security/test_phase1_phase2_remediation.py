@@ -6,17 +6,22 @@
 - B-001: Speckle server_url SSRF validation
 - P-001: Meeza payment webhook amount verification
 """
-import os
 import sqlite3
+
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.routers.experimental_services import SpeckleOperationRequest
+from backend.services.meeza_payment_service import (
+    MeezaConfig,
+    OrderStatus,
+    TxnStatus,
+    _persist_webhook_event,
+)
 from engineering_copilot.mcp_server.mcp_server import MCPServer
 from facp_distributed.event_bus.cluster_communicator import ClusterCommunicator
 from facp_distributed.security.isolation import ExecutionIsolationManager
 from facp_distributed.transport.http_transport import HTTPTransport
-from backend.routers.experimental_services import SpeckleOperationRequest
-from backend.services.meeza_payment_service import _persist_webhook_event, MeezaConfig, OrderStatus, TxnStatus
 
 
 def test_fc001_copilot_mcp_unauthenticated_requests_rejected(monkeypatch):
