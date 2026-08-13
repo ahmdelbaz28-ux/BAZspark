@@ -324,6 +324,10 @@ async def lifespan(app: FastAPI):
 # fully disable. Development keeps the docs available for DX.
 
 
+# V246 fail-safe: default "production" — a safety-critical fire alarm system MUST
+# fail closed. If FIREAI_ENV is unset, assume production (strictest posture).
+# All real production deployments EXPLICITLY set FIREAI_ENV=production (Dockerfile
+# ENV, docker-compose.yml, HF Space). CI sets FIREAI_ENV=development in conftest.py.
 _is_prod = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
 _docs_url = None if _is_prod else "/docs"
 _redoc_url = None if _is_prod else "/redoc"
@@ -413,6 +417,9 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
 # SECURITY: This is a safety-critical fire protection engineering API.
 # Allowing arbitrary origins to read API responses would permit any website
 # to exfiltrate engineering data (building layouts, fire alarm designs).
+# V246 fail-safe: default "production" — mirrors _is_prod above and the V246
+# hardening that unified ALL FIREAI_ENV defaults to production across the
+# codebase (security_middleware, csp, session_secret, akamai, etc.).
 _env_mode = os.getenv("FIREAI_ENV", "production").lower()
 if _env_mode in ("production", "prod"):
     # Support both CORS_ORIGINS (new) and CORS_ALLOWED_ORIGINS (legacy) for backward compatibility
@@ -479,7 +486,13 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID"],
+    # NOTE (audit P1-3 fix): Added Authorization (for LLM providers and
+    # Engineering Copilot Bearer tokens), X-Request-ID, X-CSRF-Token
+    # (for double-submit cookie pattern), and Accept for content negotiation.
+    allow_headers=[
+        "X-API-Key", "Content-Type", "X-Correlation-ID",
+        "Authorization", "X-Request-ID", "X-CSRF-Token", "Accept",
+    ],
 )
 
 # Include our CAD/BIM integration routers
@@ -818,17 +831,12 @@ async def health_check_v2() -> dict[str, object]:
     }
 
 # ── Error handlers ──────────────────────────────────────────────────────────
-# FIX #2: Return JSONResponse (not HTTPException) and never expose str(exc)
-# to the client. In a fire-safety system, internal exception messages can
-# leak file paths, DB connection strings, and variable names.
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception) -> Response:
-    """General exception handler — logs full traceback, returns safe message."""
-    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", "success": False}
-    )
+# NOTE (audit P0-3 fix): The duplicate @app.exception_handler(Exception) that
+# was here has been REMOVED. The correlation-ID-aware handler at line ~374
+# (_unhandled_exception_handler) is the canonical one — it logs the full
+# traceback with a correlation_id and returns it to the client for debugging.
+# This simpler handler was silently overriding it (FastAPI uses the last
+# registered handler), causing all 500 errors to lose correlation IDs.
 
 
 # ── Database health check endpoint ──────────────────────────────────────────

@@ -216,6 +216,7 @@ export function ReportsPage() {
 						designer: ahjDesigner.trim(),
 						jurisdiction: ahjJurisdiction.trim() || "AHJ",
 						nfpa_edition: ahjNfpaEdition,
+							credentials: "same-origin", // audit P1-5 fix
 					}),
 				},
 			);

@@ -9,7 +9,7 @@
 
 import { ApiClient } from "./apiClient";
 
-const client = new ApiClient("/api/v1");
+const client = new ApiClient(); // audit P1-4 fix: was ApiClient("/api/v1") - empty args uses VITE_API_URL
 
 export interface CircuitBreakerHealth {
 	state: string;

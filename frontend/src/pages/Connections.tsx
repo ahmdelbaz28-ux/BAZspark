@@ -49,6 +49,7 @@ function Connections() {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
+					credentials: "same-origin", // audit P1-5 fix
 			});
 			if (!res.ok) throw new Error("Update failed");
 			return res.json();

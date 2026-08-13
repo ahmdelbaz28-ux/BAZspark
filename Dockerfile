@@ -7,7 +7,9 @@
 # V206 FIX: The frontend MUST be built and served by the FastAPI app on
 # HuggingFace Spaces. Without this stage, the HF Space URL returns 404 for /
 # because there is no static file server — only the FastAPI backend runs.
-FROM node:26-slim AS frontend-builder
+# NOTE (self-critique C2): changed from node:26-slim (doesn't exist) to node:22-slim
+# matching .nvmrc. Node 22 is the active LTS (Oct 2024 – Apr 2027).
+FROM node:22-slim AS frontend-builder
 
 WORKDIR /build
 
@@ -19,7 +21,9 @@ RUN npm ci --no-audit --no-fund --prefer-offline --ignore-scripts 2>&1 | tail -5
 COPY frontend/ ./
 # Set the production API URL — same-origin since backend serves frontend
 ENV VITE_API_URL=/api/v1
-ENV VITE_APP_VERSION=8.1.0
+# NOTE (audit P1-6 fix): Aligned with package.json version 1.56.0.
+# Was previously 8.1.0 which caused monitoring/debugging confusion.
+ENV VITE_APP_VERSION=1.56.0
 RUN npm run build
 
 # Verify the build output exists

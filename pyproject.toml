@@ -246,7 +246,7 @@ exclude = [
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py312']  # audit P1-6 fix: aligned with requires-python = ">=3.12"
 include = '\.pyi?$'
 
 [tool.mypy]
@@ -597,7 +597,7 @@ skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purpo
 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py312"  # audit P1-6 fix: aligned with requires-python = ">=3.12"
 exclude = ["skills/ppt"]  # PPT skill uses match/case (Python 3.10+)
 
 [tool.ruff.lint]

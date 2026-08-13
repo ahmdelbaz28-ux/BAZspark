@@ -194,9 +194,16 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     ("DATABASE_URL",          Severity.HARD, _present),
 
     # ── 2. Supabase Auth + REST ──
-    ("SUPABASE_URL",              Severity.HARD, _is_https),
-    ("SUPABASE_ANON_KEY",         Severity.HARD, _present),
-    ("SUPABASE_SERVICE_ROLE_KEY", Severity.HARD, _present),
+    # NOTE (audit P0-2 fix + self-critique M2): The backend currently uses
+    # Supabase ONLY as a PostgreSQL connection pooler via DATABASE_URL (section 1).
+    # The Supabase Python SDK (create_client) is NOT imported anywhere — none of
+    # SUPABASE_URL, SUPABASE_ANON_KEY, or SUPABASE_SERVICE_ROLE_KEY are consumed
+    # at runtime. All three downgraded from HARD to SOFT to prevent unnecessary
+    # launch blockers. When Supabase Auth/REST SDK is implemented, upgrade all
+    # back to HARD.
+    ("SUPABASE_URL",              Severity.SOFT, _is_https),
+    ("SUPABASE_ANON_KEY",         Severity.SOFT, _present),
+    ("SUPABASE_SERVICE_ROLE_KEY", Severity.SOFT, _present),
 
     # ── 3. Langfuse ──
     ("LANGFUSE_PUBLIC_KEY", Severity.HARD, _present),
@@ -208,8 +215,11 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     ("NVIDIA_BASE_URL", Severity.SOFT, _is_https),
 
     # ── 5. Resend ──
-    # SOFT: email is a feature — the API serves fine without it; the CI
-    # diagnostic gates its health instead.
+    # SOFT: email is a feature — the API serves fine without it.
+    # NOTE (audit P1-1): Resend Python SDK is not yet imported in backend.
+    # RESEND_API_KEY is validated here but no code sends emails yet.
+    # When email sending is implemented, add "from resend import Resend" and
+    # document the integration in ARCHITECTURE.md.
     ("RESEND_API_KEY", Severity.SOFT, _present),
 
     # ── 7. Autodesk APS ──
@@ -258,6 +268,29 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     ("FIREAI_VISION_KEY_ENCRYPTION_KEY",  Severity.HARD, _min_len(32)),
     ("MEEZA_WEBHOOK_HMAC_SECRET",         Severity.HARD, _present),
     ("TRUSTED_PROXIES",                   Severity.HARD, _present),
+
+    # ── Additional SOFT checks (audit P1-7 fix) ──
+    # These variables from .env.production.example were not previously validated.
+    # Added as SOFT so operators get startup warnings without blocking launch.
+    ("NEON_DATABASE_URL",         Severity.SOFT, _present),       # fallback DB
+    ("GEMINI_API_KEY",            Severity.SOFT, _present),       # LLM fallback embeddings
+    ("OPENAI_API_KEY",            Severity.SOFT, _present),       # Mem0 embeddings
+    ("ZENMUX_API_KEY",            Severity.SOFT, _present),       # primary LLM provider
+    ("RESEND_FROM_EMAIL",         Severity.SOFT, _present),       # email from address
+    ("QOMN_AUDIT_LOG_PATH",       Severity.SOFT, _present),       # audit log file path
+    ("APS_WEBHOOK_URL",           Severity.SOFT, _is_https),      # APS webhook callback
+    ("VERCEL_DEPLOY_HOOK_URL",    Severity.SOFT, _is_https),      # Vercel auto-deploy
+    ("UPTIMEROBOT_USER_KEY",      Severity.SOFT, _present),       # keep-awake heartbeat
+    ("UPTIMEROBOT_MONITOR_KEY",   Severity.SOFT, _present),       # keep-awake monitor
+
+    # ── Security / Feature Flags (self-critique M1) ──
+    # These flags affect security posture. SOFT validation warns operators if
+    # they are misconfigured (e.g. CSRF disabled in prod) without blocking launch.
+    ("FIREAI_ENV_VALIDATION",  Severity.SOFT, _present),       # strict/warn escape hatch
+    ("FIREAI_CSRF_DISABLED",   Severity.SOFT, _bool_like),     # CSRF double-submit toggle
+    ("AKAMAI_ENABLED",         Severity.SOFT, _bool_like),     # Akamai edge middleware
+    ("CF_ENABLED",             Severity.SOFT, _bool_like),     # Cloudflare middleware
+    ("LANGFUSE_ENABLED",       Severity.SOFT, _bool_like),     # LLM observability toggle
 ]
 
 
@@ -298,6 +331,31 @@ def validate_environment() -> list[ValidationIssue]:
     return issues
 
 
+def _detect_production_indicators() -> list[str]:
+    """Detect environment indicators suggesting production deployment.
+
+    When FIREAI_ENV is unset and defaults to "production" (V246 fail-safe),
+    this function checks for heuristics that confirm or contradict that
+    assumption. Used by assert_environment() to log a warning when the
+    default may not match the actual deployment context.
+    """
+    indicators = []
+    db_url = os.environ.get("DATABASE_URL", "")
+    cors = os.environ.get("CORS_ORIGINS", "") or os.environ.get("CORS_ALLOWED_ORIGINS", "")
+
+    # Production database indicators
+    prod_db_markers = ("supabase.com", "neon.tech", "aws-0", "pooler.")
+    if any(m in db_url for m in prod_db_markers):
+        indicators.append(f"DATABASE_URL contains production host ({next(m for m in prod_db_markers if m in db_url)})")
+
+    # Production CORS indicators
+    prod_cors_markers = ("vercel.app", "hf.space", "huggingface.co")
+    if any(m in cors for m in prod_cors_markers):
+        indicators.append(f"CORS_ORIGINS contains production origin ({next(m for m in prod_cors_markers if m in cors)})")
+
+    return indicators
+
+
 def assert_environment(prod_mode: bool | None = None) -> None:
     """Run validation and react.
 
@@ -305,14 +363,16 @@ def assert_environment(prod_mode: bool | None = None) -> None:
     - In production (or when prod_mode=True), HARD issues raise RuntimeError
       → app refuses to start. SOFT issues only warn.
     - In development, both HARD and SOFT only warn.
-    - IMPORTANT: production mode is ONLY detected when FIREAI_ENV is
-      EXPLICITLY "production"/"prod". When FIREAI_ENV is unset, the gate
-      behaves as development (warnings only). Rationale: all real production
-      paths set FIREAI_ENV=production explicitly (root Dockerfile ENV,
-      deploy/docker/docker-compose.yml, HF Space Docker build), while CI
-      runners that start uvicorn without declaring an environment (e.g. the
-      Playwright visual-regression job in ci.yml) must NOT be blocked by
-      missing HARD vars that belong to production secrets only.
+    - V246 FAIL-SAFE: default is "production" — a safety-critical fire alarm
+      system MUST fail closed. If FIREAI_ENV is unset, assume production
+      (strictest posture). This is consistent with 12+ other files across
+      the codebase (security_middleware, csp, session_secret, akamai,
+      cloudflare, webhook_service, qomn_self_healing_engine, etc.) that
+      all use default="production" per the V246 hardening.
+    - CI COMPATIBILITY: tests set FIREAI_ENV=development in conftest.py,
+      so this default does NOT block CI. For CI jobs that run uvicorn
+      without conftest (e.g. Playwright E2E), set FIREAI_ENV=development
+      or FIREAI_ENV_VALIDATION=warn.
     - OPERATIONS ESCAPE HATCH: set FIREAI_ENV_VALIDATION=warn to demote HARD
       issues to warnings instead of a launch blocker. Default is "strict"
       (fail-closed). This protects a live deployment from an outage while
@@ -320,9 +380,36 @@ def assert_environment(prod_mode: bool | None = None) -> None:
       logged loudly, and the integration-diagnostic CI job still gates them.
     """
     if prod_mode is None:
-        # Explicit-production detection (see docstring above). Unset
-        # FIREAI_ENV ⇒ development semantics: warn, never block startup.
-        prod_mode = os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod")
+        # V246 fail-safe: default "production" — mirrors config.py, app.py,
+        # and all 12+ V246-hardened files across the codebase.
+        fireai_env = os.getenv("FIREAI_ENV")
+        if fireai_env is None:
+            # FIREAI_ENV is UNSET — we're using the default. Log which default.
+            prod_indicators = _detect_production_indicators()
+            dev_indicators = []
+            db_url = os.environ.get("DATABASE_URL", "")
+            if "localhost" in db_url or "sqlite" in db_url.lower():
+                dev_indicators.append("DATABASE_URL points to localhost/sqlite")
+
+            if prod_indicators and not dev_indicators:
+                logger.info(
+                    "env_validator: FIREAI_ENV unset → defaulting to production "
+                    "(V246 fail-safe). Production indicators detected: %s",
+                    ", ".join(prod_indicators),
+                )
+            elif dev_indicators and not prod_indicators:
+                logger.warning(
+                    "env_validator: FIREAI_ENV unset → defaulting to production "
+                    "(V246 fail-safe), BUT development indicators detected: %s. "
+                    "Set FIREAI_ENV=development explicitly to avoid this warning.",
+                    ", ".join(dev_indicators),
+                )
+            else:
+                logger.info(
+                    "env_validator: FIREAI_ENV unset → defaulting to production "
+                    "(V246 fail-safe). Set FIREAI_ENV=development for dev mode.",
+                )
+        prod_mode = (fireai_env or "production").lower() in ("production", "prod")
 
     issues = validate_environment()
     if not issues:
