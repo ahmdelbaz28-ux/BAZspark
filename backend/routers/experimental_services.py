@@ -82,8 +82,10 @@ def _write_temp_file(suffix: str, content: bytes) -> str:
 
 
 from urllib.parse import urlsplit
+
 from pydantic import field_validator
-from backend.integrations._ssrf_guard import validate_host_for_user_input, SSRFError
+
+from backend.integrations._ssrf_guard import SSRFError, validate_host_for_user_input
 
 
 class SpeckleOperationRequest(BaseModel):
