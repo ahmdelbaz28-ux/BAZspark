@@ -169,15 +169,19 @@ def test_cors_wildcard_forbidden_in_production():
 # ─── assert_environment() mode detection ─────────────────────────────────────
 
 def test_unset_fireai_env_never_blocks_startup():
-    """FIREAI_ENV unset ⇒ development semantics: HARD issues warn, never raise.
+    """FIREAI_ENV=development ⇒ HARD issues warn, never raise.
 
     Guards the CI Playwright uvicorn job (ci.yml Gate 4b), which starts the
-    backend without declaring FIREAI_ENV and without production secrets —
-    the gate must not crash it (regression guard).
+    backend without production secrets — the gate must not crash it
+    (regression guard).
+
+    NOTE: V246 fail-safe defaults FIREAI_ENV to "production" when unset.
+    Callers must explicitly set FIREAI_ENV=development to get non-blocking
+    semantics.
     """
     for k, v in RUNTIME_MINIMAL.items():
         os.environ[k] = v
-    os.environ.pop("FIREAI_ENV", None)
+    os.environ["FIREAI_ENV"] = "development"
     os.environ.pop("LANGFUSE_PUBLIC_KEY", None)  # simulate missing HARD var
     assert_environment()  # must NOT raise
 
