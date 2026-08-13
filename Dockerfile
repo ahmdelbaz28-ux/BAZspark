@@ -9,7 +9,7 @@
 # because there is no static file server — only the FastAPI backend runs.
 # NOTE (self-critique C2): changed from node:26-slim (doesn't exist) to node:22-slim
 # matching .nvmrc. Node 22 is the active LTS (Oct 2024 – Apr 2027).
-FROM node:22-slim AS frontend-builder
+FROM node:26-slim AS frontend-builder
 
 WORKDIR /build
 
