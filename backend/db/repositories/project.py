@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 
@@ -11,7 +11,7 @@ class ProjectRepository(BaseRepository):
 
     def create_project(self, project_data: dict) -> dict:
         """Insert a new project and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         project_data.setdefault("id", str(uuid.uuid4()))
         project_data["createdAt"] = now
         project_data["updatedAt"] = now
@@ -151,7 +151,7 @@ class ProjectRepository(BaseRepository):
         if not existing:
             return None
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         set_clauses = [f"updated_at = {self.db._ph()}"]
         values = [now]
 

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 _logger = _logging.getLogger(__name__)
 
 
-def _lazy_import(name: str) -> Optional[object]:
+def _lazy_import(name: str) -> object | None:
     """Lazily import a router module -- fails gracefully if unavailable.
 
     Catches ImportError (optional dependency missing), NameError (typing

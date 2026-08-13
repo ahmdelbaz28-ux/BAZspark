@@ -71,9 +71,9 @@ import logging
 import os
 import platform
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -100,10 +100,10 @@ class StrictRevitElementSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     element_type: str = Field(..., min_length=1, max_length=100)
-    start_point: List[float] = Field(..., min_length=2, max_length=3)
-    end_point: List[float] = Field(..., min_length=2, max_length=3)
+    start_point: list[float] = Field(..., min_length=2, max_length=3)
+    end_point: list[float] = Field(..., min_length=2, max_length=3)
     level: str = Field(_DEFAULT_LEVEL, max_length=100)
-    parameters: Optional[Dict[str, Any]] = None
+    parameters: dict[str, Any] | None = None
 
 
 # ============================================================================
@@ -212,7 +212,7 @@ class RevitService:
 
         # Connection state
         self._connected = False
-        self._connection_method: Optional[ConnectionMethod] = None
+        self._connection_method: ConnectionMethod | None = None
         self._revit_app = None
         self._revit_doc = None
         self._uiapp = None
@@ -224,7 +224,7 @@ class RevitService:
         self.adapter = RevitAdapter(mode="simulation")
 
         # RevitAPIDocGen data
-        self._api_data_cache: List[Dict[str, Any]] = []
+        self._api_data_cache: list[dict[str, Any]] = []
         self._api_data_loaded = False
 
     @property
@@ -241,7 +241,7 @@ class RevitService:
     @connected.setter
     def connected(self, value: bool) -> None:
         """
-        Set the connected state.
+        set the connected state.
 
         V140 FIX (Rule 17): The test suite and external callers need to be able
         to set `service.connected = True` to test the disconnect path. The old
@@ -267,7 +267,7 @@ class RevitService:
         return self._revit_doc
 
     @property
-    def connection_method(self) -> Optional[str]:
+    def connection_method(self) -> str | None:
         """Get current connection method."""
         return self._connection_method.value if self._connection_method else None
 
@@ -395,7 +395,7 @@ class RevitService:
                 )
             else:
                 # No active document — still connected to the app, but
-                # create_* operations will need an open document. Set
+                # create_* operations will need an open document. set
                 # _revit_doc to None (the honest value).
                 self._revit_doc = None
                 logger.warning(
@@ -470,7 +470,7 @@ class RevitService:
             logger.exception("Disconnect error: %s", e)
             return False
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_element_data(self, element) -> dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
@@ -479,7 +479,7 @@ class RevitService:
             element: Revit element object
 
         Returns:
-            Dict containing element data
+            dict containing element data
 
         """
         # This is a simulated implementation - in reality this would interface with Revit API
@@ -624,7 +624,7 @@ class RevitService:
                 "error": str(e)
             }
 
-    def read_rvt(self, filepath: str) -> Dict[str, Any]:
+    def read_rvt(self, filepath: str) -> dict[str, Any]:
         """
         Read elements from an RVT file.
 
@@ -685,7 +685,7 @@ class RevitService:
                         "count": len(elements),
                         "source_file": filepath,
                         "file_size": file_size,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                         "source": "revit_api_filtered_element_collector",
                     }
                 except ImportError as ie:
@@ -721,7 +721,7 @@ class RevitService:
                 "source_file": filepath,
                 "file_size": file_size,
                 "simulation_mode": True,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except FileNotFoundError:
@@ -741,7 +741,7 @@ class RevitService:
                 "count": 0
             }
 
-    def write_rvt(self, filepath: str, elements: List[Dict[str, Any]]) -> bool:
+    def write_rvt(self, filepath: str, elements: list[dict[str, Any]]) -> bool:
         """
         Write elements to a file that Revit can import.
 
@@ -773,7 +773,7 @@ class RevitService:
             filepath: Path to save the file (MUST be validated by caller).  # NOSONAR: python:S1192
                      If the path ends in .rvt and we're in simulation mode,
                      the extension is changed to .ifc.
-            elements: List of element dictionaries to write
+            elements: list of element dictionaries to write
 
         Returns:
             bool: True if write successful, False otherwise
@@ -962,9 +962,9 @@ class RevitService:
             logger.exception("Error writing RVT/IFC file %s: %s", filepath, e)
             return False
 
-    def create_wall(self, start_point: List[float], end_point: List[float],
+    def create_wall(self, start_point: list[float], end_point: list[float],
                 height: float = 3000.0, level: str = _DEFAULT_LEVEL,
-                wall_type: str = "Basic Wall") -> Optional[str]:
+                wall_type: str = "Basic Wall") -> str | None:
         """Create a wall via the RevitAdapter.
 
         This method now delegates to `RevitAdapter.create_wall`, preserving the
@@ -986,8 +986,8 @@ class RevitService:
             logger.info("Real wall creation not implemented in adapter stub.")
             return result.get("id")
 
-    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = _DEFAULT_LEVEL,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
-                     floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:
+    def create_floor(self, boundary: list[list[float]] | None = None, level: str = _DEFAULT_LEVEL,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+                     floor_type: str = "Floor", boundary_points: list[list[float]] | None = None) -> str | None:
         """
         Create a floor in the active Revit document.
 
@@ -999,7 +999,7 @@ class RevitService:
           Returns None and logs an error. Does NOT generate a fake UUID.
 
         Args:
-            boundary: List of boundary points [[x, y, z], ...] in millimeters
+            boundary: list of boundary points [[x, y, z], ...] in millimeters
             level: Level name for the floor
             floor_type: Floor type name (default "Floor")
             boundary_points: Alias for ``boundary`` (accepted for backward compat
@@ -1140,9 +1140,9 @@ class RevitService:
             logger.exception("Error creating floor: %s", e)
             return None
 
-    def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def create_column(self, location: list[float] | None = None, height: float = 3000.0,  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
                       level: str = _DEFAULT_LEVEL, column_type: str = "M_Columns",
-                      location_point: Optional[List[float]] = None) -> Optional[str]:
+                      location_point: list[float] | None = None) -> str | None:
         """
         Create a column in the active Revit document.
 
@@ -1279,7 +1279,7 @@ class RevitService:
             logger.exception("Error creating column: %s", e)
             return None
 
-    def get_document_info(self) -> Dict[str, Any]:
+    def get_document_info(self) -> dict[str, Any]:
         """
         Get information about the active Revit document.
 
@@ -1362,7 +1362,7 @@ class RevitService:
             logger.exception("Failed to open: %s", e)
             return False
 
-    def save_document(self, filepath: Optional[str] = None) -> bool:
+    def save_document(self, filepath: str | None = None) -> bool:
         """Save the current document."""
         if not self._connected:
             return False
@@ -1420,9 +1420,9 @@ class RevitService:
 
     def get_elements(
         self,
-        category: Optional[str] = None,
-        element_class: Optional[str] = None  # NOSONAR:S1172: accepted for API stability; Revit element class filter flows here for FilteredElementCollector queries
-    ) -> List[Dict[str, Any]]:
+        category: str | None = None,
+        element_class: str | None = None  # NOSONAR:S1172: accepted for API stability; Revit element class filter flows here for FilteredElementCollector queries
+    ) -> list[dict[str, Any]]:
         """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
             return []
@@ -1450,7 +1450,7 @@ class RevitService:
 
         return elements
 
-    def get_all_elements(self, category_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_all_elements(self, category_filter: str | None = None) -> list[dict[str, Any]]:
         """
         Get all elements, optionally filtered by category.
 
@@ -1477,7 +1477,7 @@ class RevitService:
             return simulated
         return self.get_elements(category=category_filter)
 
-    def get_element_by_id(self, element_id: str) -> Optional[Dict[str, Any]]:
+    def get_element_by_id(self, element_id: str) -> dict[str, Any] | None:
         """Get a single element by ID."""
         if not self._connected:
             return None
@@ -1496,7 +1496,7 @@ class RevitService:
 
         return None
 
-    def get_selected_elements(self) -> List[Dict[str, Any]]:
+    def get_selected_elements(self) -> list[dict[str, Any]]:
         """Get currently selected elements in Revit UI."""
         if not self._connected or not self._uidoc:
             return []
@@ -1516,7 +1516,7 @@ class RevitService:
             logger.exception("Failed to get selected: %s", e)
             return []
 
-    def get_element_parameters(self, element_id: str) -> Dict[str, Any]:
+    def get_element_parameters(self, element_id: str) -> dict[str, Any]:
         """Get all parameters of an element."""
         if not self._connected:
             return {}
@@ -1563,10 +1563,10 @@ class RevitService:
     def create_door(
         self,
         host_wall_id: str,
-        location_point: List[float],
+        location_point: list[float],
         family_type: str = "M_Single-Flush",
         level: str = _DEFAULT_LEVEL
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Create a door in a wall.
 
@@ -1662,10 +1662,10 @@ class RevitService:
     def create_window(
         self,
         host_wall_id: str,
-        location_point: List[float],
+        location_point: list[float],
         family_type: str = "M_Single-Flush",
         level: str = _DEFAULT_LEVEL
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Create a window in a wall.
 
@@ -1684,11 +1684,11 @@ class RevitService:
 
     def create_beam(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
-        start_point: List[float],
-        end_point: List[float],
+        start_point: list[float],
+        end_point: list[float],
         level: str = _DEFAULT_LEVEL,
         beam_type: str = "W-Wide Flange"
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Create a structural beam.
 
@@ -1813,10 +1813,10 @@ class RevitService:
         self,
         family_name: str,
         category: str,
-        location_point: List[float],
-        level: Optional[str] = None,  # NOSONAR:S1172: accepted for API stability; Revit level name flows here for family instance placement
-        parameters: Optional[Dict[str, Any]] = None
-    ) -> Optional[str]:
+        location_point: list[float],
+        level: str | None = None,  # NOSONAR:S1172: accepted for API stability; Revit level name flows here for family instance placement
+        parameters: dict[str, Any] | None = None
+    ) -> str | None:
         """
         Create a generic family instance.
 
@@ -1905,7 +1905,7 @@ class RevitService:
     # =========================================================================
 
     def set_element_parameter(self, element_id: str, parameter_name: str, value: Any) -> bool:
-        """Set a parameter value on an element."""
+        """set a parameter value on an element."""
         if not self._connected:
             return False
 
@@ -1916,7 +1916,7 @@ class RevitService:
             if self._connection_method == ConnectionMethod.API and self._revit_doc:
                 from Autodesk.Revit.DB import ElementId, Transaction
 
-                t = Transaction(self._revit_doc, f"Set {parameter_name}")
+                t = Transaction(self._revit_doc, f"set {parameter_name}")
                 t.Start()
 
                 elem = self._revit_doc.GetElement(ElementId(int(element_id)))
@@ -1962,7 +1962,7 @@ class RevitService:
     # VIEW/LEVEL/GRID OPERATIONS
     # =========================================================================
 
-    def get_views(self) -> List[Dict[str, Any]]:
+    def get_views(self) -> list[dict[str, Any]]:
         """Get all views."""
         if not self._connected:
             return []
@@ -1977,7 +1977,7 @@ class RevitService:
 
         return self.get_elements(category="Views")
 
-    def create_view(self, view_name: str, view_type: str = FLOOR_PLAN_TYPE, level: str = _DEFAULT_LEVEL) -> Optional[str]:
+    def create_view(self, view_name: str, view_type: str = FLOOR_PLAN_TYPE, level: str = _DEFAULT_LEVEL) -> str | None:
         """
         Create a new view.
 
@@ -2070,7 +2070,7 @@ class RevitService:
             logger.exception("Error creating view: %s", e)
             return None
 
-    def get_levels(self) -> List[Dict[str, Any]]:
+    def get_levels(self) -> list[dict[str, Any]]:
         """Get all levels."""
         if not self._connected:
             return [
@@ -2081,7 +2081,7 @@ class RevitService:
 
         return self.get_elements(category="Levels")
 
-    def create_level(self, name: str, elevation: float) -> Optional[str]:
+    def create_level(self, name: str, elevation: float) -> str | None:
         """
         Create a new level.
 
@@ -2154,11 +2154,11 @@ class RevitService:
             logger.exception("Error creating level: %s", e)
             return None
 
-    def get_grids(self) -> List[Dict[str, Any]]:
+    def get_grids(self) -> list[dict[str, Any]]:
         """Get all grids."""
         return self.get_elements(category="Grids")
 
-    def get_worksets(self) -> List[Dict[str, Any]]:
+    def get_worksets(self) -> list[dict[str, Any]]:
         """Get all worksets."""
         if not self._connected:
             return [
@@ -2172,7 +2172,7 @@ class RevitService:
     # FAMILY OPERATIONS
     # =========================================================================
 
-    def get_family_symbols(self, category: str) -> List[Dict[str, Any]]:
+    def get_family_symbols(self, category: str) -> list[dict[str, Any]]:
         """Get all family symbols for a category."""
         if not self._connected:
             return [
@@ -2204,7 +2204,7 @@ class RevitService:
 
         return []
 
-    def load_family(self, family_path: str, _category: Optional[str] = None) -> bool:  # NOSONAR:S1172: parameter retained for API stability
+    def load_family(self, family_path: str, _category: str | None = None) -> bool:  # NOSONAR:S1172: parameter retained for API stability
         """Load a family (.rfa) into the project."""
         if not self._connected:
             return False
@@ -2256,11 +2256,11 @@ class RevitService:
 
     def search_api_data(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
-        keyword: Optional[str] = None,
-        api_name: Optional[str] = None,
-        namespace: Optional[str] = None,
-        api_type: Optional[str] = None
-    ) -> List[RevitAPIInfo]:
+        keyword: str | None = None,
+        api_name: str | None = None,
+        namespace: str | None = None,
+        api_type: str | None = None
+    ) -> list[RevitAPIInfo]:
         """Search loaded API data locally."""
         if not self._api_data_loaded:
             return []
@@ -2285,7 +2285,7 @@ class RevitService:
                 if namespace.lower() not in entry.get("Namespace", "").lower():
                     match = False
 
-            if api_type and match and entry.get("Type", "").lower() != api_type.lower():
+            if api_type and match and entry.get("type", "").lower() != api_type.lower():
                 match = False
 
             if match:
@@ -2296,7 +2296,7 @@ class RevitService:
                     description=entry.get("Description", ""),
                     namespace=entry.get("Namespace", ""),
                     guid=entry.get("Guid", ""),
-                    type=entry.get("Type", "")
+                    type=entry.get("type", "")
                 ))
 
         return results
@@ -2307,7 +2307,7 @@ class RevitService:
             return ""
         return f"https://www.revitapidocs.com/{revit_version}/{api_info.guid}.htm"
 
-    async def search_revit_api(self, query: str, engine: str = "revitapidocs") -> List[SearchResult]:
+    async def search_revit_api(self, query: str, engine: str = "revitapidocs") -> list[SearchResult]:
         """Search Revit API documentation online."""
         results = []
 
@@ -2349,7 +2349,7 @@ class RevitService:
     # AI COMMAND EXECUTION
     # =========================================================================
 
-    def execute_ai_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def execute_ai_command(self, command: str, context: dict[str, Any] | None = None) -> dict[str, Any]:  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Execute a natural language command from AI agent."""
         command = command.lower()
 
@@ -2585,27 +2585,27 @@ class RevitService:
             return None
 
     def _set_element_parameter(self, element, param_name: str, value: Any) -> bool:
-        """Set parameter value on element."""
+        """set parameter value on element."""
         try:
             from Autodesk.Revit.DB import StorageType
 
             for param in element.Parameters:
                 if param.Definition.Name == param_name:
                     if param.StorageType == StorageType.String:
-                        param.Set(str(value))
+                        param.set(str(value))
                     elif param.StorageType == StorageType.Integer:
-                        param.Set(int(value))
+                        param.set(int(value))
                     elif param.StorageType == StorageType.Double:
-                        param.Set(float(value))
+                        param.set(float(value))
                     elif param.StorageType == StorageType.ElementId:
                         from Autodesk.Revit.DB import ElementId
-                        param.Set(ElementId(int(value)))
+                        param.set(ElementId(int(value)))
                     return True
             return False
         except Exception:
             return False
 
-    def _get_simulated_elements(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+    def _get_simulated_elements(self, category: str | None = None) -> list[dict[str, Any]]:
         """Get simulated elements."""
         elements = [
             {"id": "1001", "name": "Exterior Wall", "category": "Walls", "level": _DEFAULT_LEVEL},
@@ -2620,7 +2620,7 @@ class RevitService:
 
         return elements
 
-    def _extract_level(self, command: str) -> Optional[str]:
+    def _extract_level(self, command: str) -> str | None:
         """Extract level name from command."""
         import re
         patterns = [r"level\s+(\d+)", r"level\s+(\w+)"]
@@ -2630,7 +2630,7 @@ class RevitService:
                 return f"Level {match.group(1)}"
         return None
 
-    def _extract_category(self, command: str) -> Optional[str]:
+    def _extract_category(self, command: str) -> str | None:
         """Extract category name from command."""
         categories = ["Walls", "Floors", "Doors", "Windows", "Columns", "Roofs", "Views"]
         for cat in categories:
@@ -2638,7 +2638,7 @@ class RevitService:
                 return cat
         return None
 
-    def _extract_element_id(self, command: str, selected: List[Dict]) -> Optional[str]:
+    def _extract_element_id(self, command: str, selected: list[dict]) -> str | None:
         """Extract element ID from command."""
         import re
         id_match = re.search(r"id[:\s]*(\d+)", command, re.IGNORECASE)
@@ -2648,14 +2648,14 @@ class RevitService:
             return selected[0].get("id")
         return None
 
-    def _find_element_of_type(self, elements: List[Dict], element_type: str) -> Optional[Dict]:
+    def _find_element_of_type(self, elements: list[dict], element_type: str) -> dict | None:
         """Find first element of type."""
         for elem in elements:
             if element_type.lower() in elem.get("class_name", "").lower():
                 return elem
         return None
 
-    def _get__wall_center(self, _wall: Dict) -> List[float]:  # NOSONAR:S1172: parameter retained for API stability
+    def _get__wall_center(self, _wall: dict) -> list[float]:  # NOSONAR:S1172: parameter retained for API stability
         """Get center point of a wall."""
         return [2500, 0, 0]
 
@@ -2670,7 +2670,7 @@ class RevitService:
 # SINGLETON
 # ============================================================================
 
-_revit_service_instance: Optional[RevitService] = None
+_revit_service_instance: RevitService | None = None
 
 def get_revit_service() -> RevitService:
     """Get singleton RevitService instance."""

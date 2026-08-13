@@ -46,7 +46,7 @@ import logging
 import queue
 import sys
 import threading
-from typing import Any, Optional
+from typing import Any
 
 from fireai.mcp_server.sanitized_handler import (
     MCPRequest,
@@ -99,7 +99,7 @@ class RevitMCPServer:
         self._handler = SanitizedMCPHandler()
         self._update_queue = ThreadSafeModelUpdateQueue()
         self._running = False
-        self._stdin_thread: Optional[threading.Thread] = None
+        self._stdin_thread: threading.Thread | None = None
         self._client_capabilities: dict[str, Any] = {}
         # Previously the queue was filled but NEVER consumed — commands died in the queue.
         # Now after enqueue, we forward the command to the C# add-in via named pipe.
@@ -526,7 +526,7 @@ class RevitMCPServer:
 
         logger.info("[MCP SERVER]: stdin EOF reached, server shutting down.")
 
-    def _handle_jsonrpc_line(self, line: str) -> Optional[dict[str, Any]]:
+    def _handle_jsonrpc_line(self, line: str) -> dict[str, Any] | None:
         """
         Parse a JSON-RPC line and return a response dict (or None for notifications).
 

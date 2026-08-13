@@ -33,14 +33,14 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
 
-class RegulatoryFramework(str, Enum):
+class RegulatoryFramework(StrEnum):
     """International regulatory frameworks supported by FireAI."""
 
     NFPA = "nfpa"            # US: NFPA 72, NEC
@@ -55,7 +55,7 @@ class RegulatoryFramework(str, Enum):
     STANDARD_IEC = "standard_iec"  # Default: IEC standards
 
 
-class ElectricalCode(str, Enum):
+class ElectricalCode(StrEnum):
     """Electrical code standards."""
 
     NEC = "nec"      # US: National Electrical Code (NFPA 70)

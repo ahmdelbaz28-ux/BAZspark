@@ -7,13 +7,13 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 from uuid import uuid4
 
 
-class SourceSystem(str, Enum):
+class SourceSystem(StrEnum):
     """Enumeration of source systems for entities."""
     ETAP = "ETAP"
     AUTOCAD = "AutoCAD"
@@ -21,7 +21,7 @@ class SourceSystem(str, Enum):
     UNIFIED = "Unified"
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     """Enumeration of entity types."""
     PROJECT = "Project"
     BUILDING = "Building"
@@ -58,7 +58,7 @@ class Coordinates:
     """Coordinates for positioning entities."""
     x: float
     y: float
-    z: Optional[float] = 0.0
+    z: float | None = 0.0
 
 
 @dataclass
@@ -68,12 +68,12 @@ class BaseEntity:
     name: str = ""
     description: str = ""
     type: str = "BaseEntity"
-    coordinates: Optional[Coordinates] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    relationships: List[Relationship] = field(default_factory=list)
+    coordinates: Coordinates | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    relationships: list[Relationship] = field(default_factory=list)
     source_system: SourceSystem = SourceSystem.UNIFIED
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self):
         if not self.id:
@@ -81,9 +81,9 @@ class BaseEntity:
         if self.coordinates is None:
             self.coordinates = Coordinates(0.0, 0.0, 0.0)
         if self.created_at is None:
-            self.created_at = datetime.now(timezone.utc)
+            self.created_at = datetime.now(UTC)
         if self.updated_at is None:
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
 
 
 @dataclass
@@ -94,8 +94,8 @@ class Project(BaseEntity):
     project_phase: str = ""
     location: str = ""
     owner: str = ""
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
 
 @dataclass
@@ -260,7 +260,7 @@ class Relay(BaseEntity):
     relay_type: str = ""
     manufacturer: str = ""
     model: str = ""
-    settings: Dict[str, Any] = field(default_factory=dict)
+    settings: dict[str, Any] = field(default_factory=dict)
     connected_equipment_id: str = ""
 
 
@@ -271,7 +271,7 @@ class ProtectionDevice(BaseEntity):
     device_type: str = ""
     voltage_rating: float = 0.0
     current_rating: float = 0.0
-    settings: Dict[str, Any] = field(default_factory=dict)
+    settings: dict[str, Any] = field(default_factory=dict)
     connected_equipment_id: str = ""
 
 
@@ -283,8 +283,8 @@ class Conduit(BaseEntity):
     size: str = ""
     material: str = ""
     length: float = 0.0
-    start_point: Optional[Coordinates] = None
-    end_point: Optional[Coordinates] = None
+    start_point: Coordinates | None = None
+    end_point: Coordinates | None = None
 
 
 @dataclass
@@ -307,7 +307,7 @@ class Equipment(BaseEntity):
     manufacturer: str = ""
     model: str = ""
     serial_number: str = ""
-    installation_date: Optional[datetime] = None
+    installation_date: datetime | None = None
     location_room_id: str = ""
 
 
@@ -324,22 +324,22 @@ class Annotation(BaseEntity):
 @dataclass
 class UnifiedEngineeringModel:
     """Container for the unified engineering model."""
-    entities: List[Union[BaseEntity]] = field(default_factory=list)
+    entities: list[BaseEntity] = field(default_factory=list)
     project_id: str = ""
     schema_version: str = "1.0.0"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def add_entity(self, entity: BaseEntity) -> None:
         """Add an entity to the model."""
         self.entities.append(entity)
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
-    def get_entities_by_type(self, entity_type: EntityType) -> List[BaseEntity]:
+    def get_entities_by_type(self, entity_type: EntityType) -> list[BaseEntity]:
         """Get all entities of a specific type."""
         return [entity for entity in self.entities if entity.type == entity_type]
 
-    def get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
+    def get_entity_by_id(self, entity_id: str) -> BaseEntity | None:
         """Get an entity by its ID."""
         for entity in self.entities:
             if entity.id == entity_id:
@@ -351,7 +351,7 @@ class UnifiedEngineeringModel:
         for i, existing_entity in enumerate(self.entities):
             if existing_entity.id == entity.id:
                 self.entities[i] = entity
-                self.updated_at = datetime.now(timezone.utc)
+                self.updated_at = datetime.now(UTC)
                 return True
         return False
 
@@ -360,11 +360,11 @@ class UnifiedEngineeringModel:
         for i, entity in enumerate(self.entities):
             if entity.id == entity_id:
                 del self.entities[i]
-                self.updated_at = datetime.now(timezone.utc)
+                self.updated_at = datetime.now(UTC)
                 return True
         return False
 
-    def get_related_entities(self, entity_id: str) -> List[BaseEntity]:
+    def get_related_entities(self, entity_id: str) -> list[BaseEntity]:
         """Get all entities related to a specific entity."""
         related = []
         for entity in self.entities:

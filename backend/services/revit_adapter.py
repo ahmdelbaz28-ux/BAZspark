@@ -20,7 +20,7 @@ DEDUP NOTE (Phase 5):
   Do NOT merge them.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class RevitAdapter:
@@ -71,7 +71,7 @@ class RevitAdapter:
     # ---------------------------------------------------------------------
     # Public API - wall operations (example)
     # ---------------------------------------------------------------------
-    def create_wall(self, start_point: List[float], end_point: List[float]) -> Dict[str, Any]:
+    def create_wall(self, start_point: list[float], end_point: list[float]) -> dict[str, Any]:
         """Create a wall and return its identifier.
 
         In simulation mode a UUID is generated; in API mode the real Revit
@@ -104,7 +104,7 @@ class RevitAdapter:
             logging.getLogger(__name__).exception("Failed to create wall via Revit API")
             raise
 
-    def get_level_by_name(self, name: str) -> Optional[Any]:
+    def get_level_by_name(self, name: str) -> Any | None:
         """Return a Revit Level object or ``None``.
 
         Simulation returns ``None`` because levels are not modelled there.
@@ -125,7 +125,7 @@ class RevitAdapter:
             logging.getLogger(__name__).debug("Adapter get_level_by_name error", exc_info=True)
         return None
 
-    def get_wall_type_id(self, wall_type_name: str) -> Optional[Any]:
+    def get_wall_type_id(self, wall_type_name: str) -> Any | None:
         """Return the ElementId of a WallType matching ``wall_type_name``.
 
         In simulation mode returns ``None``.

@@ -18,7 +18,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..dto.revit_dto import ElectricalAssetDTO, RevitElementDTO
 
@@ -32,7 +32,7 @@ class IRevitAdapter(ABC):
         pass
 
     @abstractmethod
-    def extract_electrical_asset(self, revit_element: Any) -> Optional[ElectricalAssetDTO]:
+    def extract_electrical_asset(self, revit_element: Any) -> ElectricalAssetDTO | None:
         """Extract electrical asset information from Revit element."""
         pass
 
@@ -103,7 +103,7 @@ class RevitElementAdapter(IRevitAdapter):
                 category='Unknown'
             )
 
-    def extract_electrical_asset(self, revit_element: Any) -> Optional[ElectricalAssetDTO]:
+    def extract_electrical_asset(self, revit_element: Any) -> ElectricalAssetDTO | None:
         """
         Extract electrical asset information from a Revit element.
 
@@ -158,7 +158,7 @@ class RevitElementAdapter(IRevitAdapter):
             self.logger.error(f"Error extracting electrical asset from Revit element: {e}")
             return None
 
-    def _extract_parameters(self, revit_element: Any) -> Dict[str, Any]:
+    def _extract_parameters(self, revit_element: Any) -> dict[str, Any]:
         """Extract parameters from Revit element."""
         parameters = {}
         try:
@@ -192,7 +192,7 @@ class RevitElementAdapter(IRevitAdapter):
         except Exception:
             return None
 
-    def _extract_location(self, revit_element: Any) -> Optional[Dict[str, float]]:
+    def _extract_location(self, revit_element: Any) -> dict[str, float] | None:
         """Extract location from Revit element."""
         try:
             location = getattr(revit_element, 'Location', None)
@@ -207,7 +207,7 @@ class RevitElementAdapter(IRevitAdapter):
             pass
         return None
 
-    def _extract_geometry(self, _revit_element: Any) -> Optional[Dict[str, Any]]:
+    def _extract_geometry(self, _revit_element: Any) -> dict[str, Any] | None:
         """Extract geometry information from Revit element."""
         try:
             # This is a simplified geometry extraction
@@ -220,7 +220,7 @@ class RevitElementAdapter(IRevitAdapter):
         except Exception:
             return None
 
-    def _extract_electrical_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_electrical_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Extract electrical-specific parameters."""
         electrical_params = {}
 
@@ -249,7 +249,7 @@ class ETAPDataAdapter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def convert_to_etap_format(self, dto: RevitElementDTO) -> Dict[str, Any]:
+    def convert_to_etap_format(self, dto: RevitElementDTO) -> dict[str, Any]:
         """
         Convert RevitElementDTO to ETAP-compatible format.
 
@@ -257,7 +257,7 @@ class ETAPDataAdapter:
             dto: Standardized element DTO
 
         Returns:
-            Dict: ETAP-compatible data structure
+            dict: ETAP-compatible data structure
         """
         etap_format = {
             'id': dto.id,
@@ -316,7 +316,7 @@ class IFCAdapter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def import_from_ifc(self, _ifc_file_path: str) -> List[RevitElementDTO]:
+    def import_from_ifc(self, _ifc_file_path: str) -> list[RevitElementDTO]:
         """
         Import elements from IFC file to DTOs.
 
@@ -324,7 +324,7 @@ class IFCAdapter:
             ifc_file_path: Path to IFC file
 
         Returns:
-            List[RevitElementDTO]: Imported elements as DTOs
+            list[RevitElementDTO]: Imported elements as DTOs
         """
         # Placeholder implementation
         # In a real implementation, this would parse IFC files
@@ -332,7 +332,7 @@ class IFCAdapter:
         self.logger.warning("IFC import is not yet implemented")
         return []
 
-    def export_to_ifc(self, _elements: List[RevitElementDTO], _ifc_file_path: str) -> bool:
+    def export_to_ifc(self, _elements: list[RevitElementDTO], _ifc_file_path: str) -> bool:
         """
         Export DTOs to IFC file.
 
@@ -357,15 +357,15 @@ class GeoJSONAdapter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def convert_to_geojson(self, elements: List[RevitElementDTO]) -> Dict[str, Any]:
+    def convert_to_geojson(self, elements: list[RevitElementDTO]) -> dict[str, Any]:
         """
         Convert Revit elements to GeoJSON format.
 
         Args:
-            elements: List of Revit elements to convert
+            elements: list of Revit elements to convert
 
         Returns:
-            Dict: GeoJSON feature collection
+            dict: GeoJSON feature collection
         """
         features = []
 

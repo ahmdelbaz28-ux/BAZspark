@@ -23,7 +23,7 @@ Standards Referenced:
 from __future__ import annotations
 
 import math
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -31,7 +31,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # ENUMS — Ceiling Type, Detector Type, Hazard Type
 # ============================================================================
 
-class CeilingTypePydantic(str, Enum):
+class CeilingTypePydantic(StrEnum):
     """Ceiling type classification per NFPA 72 §17.6.3."""
 
     FLAT = "flat"
@@ -43,7 +43,7 @@ class CeilingTypePydantic(str, Enum):
     BEAM_AND_POCKET = "beam_and_pocket"
 
 
-class DetectorTypePydantic(str, Enum):
+class DetectorTypePydantic(StrEnum):
     """Detector type per NFPA 72 Chapter 17."""
 
     SMOKE = "smoke"

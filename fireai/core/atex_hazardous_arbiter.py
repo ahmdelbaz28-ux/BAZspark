@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from fireai.core.international_reg_selector import (
     ATEXZone,
@@ -94,7 +94,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class EquipmentProtectionLevel(str, Enum):
+class EquipmentProtectionLevel(StrEnum):
     """EPL per IEC 60079-0:2017 §5."""
 
     Ga = "Ga"
@@ -107,7 +107,7 @@ class EquipmentProtectionLevel(str, Enum):
     Mb = "Mb"
 
 
-class ATEXCategory(str, Enum):
+class ATEXCategory(StrEnum):
     """ATEX equipment categories (2014/34/EU Annex I)."""
 
     CAT_1G = "1G"
@@ -120,7 +120,7 @@ class ATEXCategory(str, Enum):
     CAT_M2 = "M2"
 
 
-class ProtectionType(str, Enum):
+class ProtectionType(StrEnum):
     """IEC 60079 protection concepts."""
 
     # Gas protection concepts (IEC 60079-0/-1/-2/.../-18)
@@ -148,7 +148,7 @@ class ProtectionType(str, Enum):
     mc = "mc"     # Encapsulation, category c (EPL Dc — dust) per IEC 60079-18
 
 
-class InstallationClass(str, Enum):
+class InstallationClass(StrEnum):
     CLASS_I = "CLASS_I"
     CLASS_II = "CLASS_II"
     CLASS_III = "CLASS_III"

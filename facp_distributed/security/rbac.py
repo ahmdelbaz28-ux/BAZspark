@@ -4,7 +4,7 @@ from __future__ import annotations
 """RBAC System for Distributed FACP System"""
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class Role(Enum):
@@ -65,11 +65,11 @@ class RBACEngine:
             Role.SYSTEM.value: 3
         }
 
-    def create_role(self, role_name: str, permissions: List[str]):
+    def create_role(self, role_name: str, permissions: list[str]):
         """Create a new role with specified permissions"""
         self.roles[role_name] = permissions
 
-    def assign_role_to_user(self, user_id: str, role: str, expires_at: Optional[float] = None, node_id: Optional[str] = None):
+    def assign_role_to_user(self, user_id: str, role: str, expires_at: float | None = None, node_id: str | None = None):
         """Assign a role to a user with optional node context"""
         if role not in self.roles:
             raise ValueError(f"Role '{role}' does not exist")
@@ -90,7 +90,7 @@ class RBACEngine:
             }
             self.user_roles[user_id].append(assignment)
 
-    def remove_role_from_user(self, user_id: str, role: str, node_id: Optional[str] = None):
+    def remove_role_from_user(self, user_id: str, role: str, node_id: str | None = None):
         """Remove a role from a user with optional node context"""
         if user_id in self.user_roles:
             if node_id:
@@ -103,7 +103,7 @@ class RBACEngine:
                 # Remove role for all nodes
                 self.user_roles[user_id] = [r for r in self.user_roles[user_id] if r['role'] != role]
 
-    def get_user_permissions(self, user_id: str, node_context: Optional[str] = None) -> List[str]:
+    def get_user_permissions(self, user_id: str, node_context: str | None = None) -> list[str]:
         """Get permissions for a user based on their roles in specific node context"""
         if user_id not in self.user_roles:
             return []
@@ -131,12 +131,12 @@ class RBACEngine:
 
         return list(permissions)
 
-    def has_permission(self, user_id: str, required_permission: str, node_context: Optional[str] = None) -> bool:
+    def has_permission(self, user_id: str, required_permission: str, node_context: str | None = None) -> bool:
         """Check if a user has a specific permission in node context"""
         user_permissions = self.get_user_permissions(user_id, node_context)
         return required_permission in user_permissions
 
-    def has_role(self, user_id: str, required_role: str, node_context: Optional[str] = None) -> bool:
+    def has_role(self, user_id: str, required_role: str, node_context: str | None = None) -> bool:
         """Check if a user has a specific role in node context"""
         if user_id not in self.user_roles:
             return False
@@ -155,13 +155,13 @@ class RBACEngine:
 
         return False
 
-    def is_authorized(self, user_id: str, required_permissions: List[str], node_context: Optional[str] = None) -> bool:
+    def is_authorized(self, user_id: str, required_permissions: list[str], node_context: str | None = None) -> bool:
         """Check if user has all required permissions in node context"""
         user_permissions = set(self.get_user_permissions(user_id, node_context))
         required_set = set(required_permissions)
         return required_set.issubset(user_permissions)
 
-    def get_role_hierarchy_level(self, role: str) -> Optional[int]:
+    def get_role_hierarchy_level(self, role: str) -> int | None:
         """Get the hierarchy level of a role"""
         return self.role_hierarchy.get(role)
 
@@ -178,7 +178,7 @@ class RBACEngine:
         for node in target_nodes:
             self.distributed_cache[node] = rbac_state
 
-    def sync_with_cluster(self, cluster_rbac_state: Dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def sync_with_cluster(self, cluster_rbac_state: dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Sync RBAC state with cluster"""
         # Merge cluster state with local state
         cluster_roles = cluster_rbac_state.get("roles", {})
@@ -216,7 +216,7 @@ class PermissionChecker:
     def __init__(self, rbac_engine: RBACEngine):
         self.rbac_engine = rbac_engine
 
-    def check_method_access(self, user_id: str, method: str, node_context: Optional[str] = None) -> tuple[bool, str]:
+    def check_method_access(self, user_id: str, method: str, node_context: str | None = None) -> tuple[bool, str]:
         """
         Check if user can access a specific method in node context
         :param user_id: User ID
@@ -260,7 +260,7 @@ class PermissionChecker:
             return True, "Access granted"
         return False, f"Insufficient permissions. Required: {required_permissions}"
 
-    def check_resource_access(self, user_id: str, resource: str, action: str, node_context: Optional[str] = None) -> tuple[bool, str]:
+    def check_resource_access(self, user_id: str, resource: str, action: str, node_context: str | None = None) -> tuple[bool, str]:
         """
         Check if user can perform an action on a resource in node context
         :param user_id: User ID
@@ -275,7 +275,7 @@ class PermissionChecker:
             return True, "Access granted"
         return False, f"Insufficient permissions for {action} on {resource}"
 
-    def get_user_capabilities(self, user_id: str, node_context: Optional[str] = None) -> Dict[str, Any]:
+    def get_user_capabilities(self, user_id: str, node_context: str | None = None) -> dict[str, Any]:
         """Get all capabilities for a user in node context"""
         permissions = self.rbac_engine.get_user_permissions(user_id, node_context)
         roles = []
@@ -300,7 +300,7 @@ class PermissionChecker:
             "capabilities": self._derive_capabilities(permissions)
         }
 
-    def _derive_capabilities(self, permissions: List[str]) -> List[str]:
+    def _derive_capabilities(self, permissions: list[str]) -> list[str]:
         """Derive high-level capabilities from permissions"""
         capabilities = []
 

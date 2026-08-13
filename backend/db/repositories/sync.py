@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 
@@ -23,7 +23,7 @@ class SyncRepository(BaseRepository):
                 return {
                     "projectId": project_id,
                     "status": "synced",
-                    "lastSync": datetime.now(timezone.utc).isoformat(),
+                    "lastSync": datetime.now(UTC).isoformat(),
                     "pendingChanges": 0,
                     "error": None,
                 }
@@ -46,7 +46,7 @@ class SyncRepository(BaseRepository):
                     (
                         project_id,
                         status.get("status", "syncing"),
-                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("lastSync", datetime.now(UTC).isoformat()),
                         status.get("pendingChanges", 0),
                         status.get("error"),
                     ),
@@ -59,7 +59,7 @@ class SyncRepository(BaseRepository):
                     (
                         project_id,
                         status.get("status", "syncing"),
-                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("lastSync", datetime.now(UTC).isoformat()),
                         status.get("pendingChanges", 0),
                         status.get("error"),
                     ),
@@ -76,7 +76,7 @@ class SyncRepository(BaseRepository):
         error: str | None = None,
     ) -> int:
         """Record a sync operation status."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         with self.db._transaction() as cur:
             # Check for an existing pending/syncing record for this entity

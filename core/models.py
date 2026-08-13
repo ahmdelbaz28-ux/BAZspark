@@ -57,6 +57,7 @@ Copyright (c) 2024-2026 FireAI Project. All rights reserved.
 
 from __future__ import annotations
 
+import enum
 import logging
 import math
 from dataclasses import dataclass
@@ -91,9 +92,8 @@ except ImportError as _import_err:
         "If backend is installed, this indicates a problem.",
         _import_err,
     )
-    from enum import Enum
 
-    class ElementType(str, Enum):  # type: ignore[no-redef]
+    class ElementType(enum.StrEnum):  # type: ignore[no-redef]
         WALL = "wall"
         DOOR = "door"
         WINDOW = "window"
@@ -103,13 +103,13 @@ except ImportError as _import_err:
         ELECTRICAL = "electrical"
         UNKNOWN = "unknown"
 
-    class ChangeSource(str, Enum):  # type: ignore[no-redef]
+    class ChangeSource(enum.StrEnum):  # type: ignore[no-redef]
         AUTOCAD = "autocad"
         REVIT = "revit"
         MANUAL = "manual"
         SYSTEM = "system"
 
-    class ConflictType(str, Enum):  # type: ignore[no-redef]
+    class ConflictType(enum.StrEnum):  # type: ignore[no-redef]
         GEOMETRY_MISMATCH = "geometry_mismatch"
         PROPERTY_CONFLICT = "property_conflict"
         DELETION_CONFLICT = "deletion_conflict"

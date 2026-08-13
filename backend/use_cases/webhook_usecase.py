@@ -4,14 +4,14 @@ Encapsulates subscription management and event payload validation.
 """
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class WebhookUseCase:
     def __init__(self):
-        self._subscriptions: Dict[str, Dict[str, Any]] = {}
+        self._subscriptions: dict[str, dict[str, Any]] = {}
 
-    def subscribe(self, url: str, events: List[str], _secret: Optional[str] = None) -> Dict[str, Any]:
+    def subscribe(self, url: str, events: list[str], _secret: str | None = None) -> dict[str, Any]:
         sub_id = f"sub_{uuid.uuid4().hex[:12]}"
         subscription = {
             "subscription_id": sub_id,
@@ -23,7 +23,7 @@ class WebhookUseCase:
         self._subscriptions[sub_id] = subscription
         return {"success": True, "subscription": subscription}
 
-    def list_subscriptions(self) -> List[Dict[str, Any]]:
+    def list_subscriptions(self) -> list[dict[str, Any]]:
         return list(self._subscriptions.values())
 
     def unsubscribe(self, subscription_id: str) -> bool:

@@ -8,8 +8,8 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from .event_definitions import (
     EVENT_PRIORITIES,
@@ -44,12 +44,12 @@ class RevitEventPublisher:
         self.logger.info("Initializing mock event bus connection for Revit integration")
         return MockEventBus()
 
-    async def publish_event(self, event_type: str, payload: Dict[str, Any]) -> bool:
+    async def publish_event(self, event_type: str, payload: dict[str, Any]) -> bool:
         """
         Publish an event to the EventBus.
 
         Args:
-            event_type: Type of event (as string)
+            event_type: type of event (as string)
             payload: Event payload data
 
         Returns:
@@ -70,7 +70,7 @@ class RevitEventPublisher:
 
         # Add timestamp if not present
         if 'timestamp' not in payload:
-            payload['timestamp'] = datetime.now(timezone.utc).isoformat()
+            payload['timestamp'] = datetime.now(UTC).isoformat()
 
         # Add event metadata
         event_data = {
@@ -102,7 +102,7 @@ class RevitEventPublisher:
             self.failed_events.append(event_data)
             return False
 
-    async def _publish_to_bus(self, event_data: Dict[str, Any]) -> bool:
+    async def _publish_to_bus(self, event_data: dict[str, Any]) -> bool:
         """
         Publish event to the actual EventBus.
 
@@ -116,12 +116,12 @@ class RevitEventPublisher:
         # For now, we'll use our mock event bus
         return await self.event_bus.publish(event_data)
 
-    async def _handle_specific_event(self, event_type: str, payload: Dict[str, Any]) -> None:
+    async def _handle_specific_event(self, event_type: str, payload: dict[str, Any]) -> None:
         """
         Handle specific event types with custom logic.
 
         Args:
-            event_type: Type of event
+            event_type: type of event
             payload: Event payload
         """
         if event_type == "RevitElementImported":
@@ -133,7 +133,7 @@ class RevitEventPublisher:
         elif event_type == "RevitSyncCompleted":
             await self._handle_sync_completed(payload)
 
-    async def _handle_element_imported(self, payload: Dict[str, Any]) -> None:
+    async def _handle_element_imported(self, payload: dict[str, Any]) -> None:
         """Handle element imported event."""
         element_id = payload.get('element_id', 'unknown')
         category = payload.get('category', 'unknown')
@@ -144,7 +144,7 @@ class RevitEventPublisher:
         # In a real implementation, this might trigger additional processing
         # based on the element type and target model
 
-    async def _handle_topology_changed(self, payload: Dict[str, Any]) -> None:
+    async def _handle_topology_changed(self, payload: dict[str, Any]) -> None:
         """Handle topology changed event."""
         element_id = payload.get('element_id', 'unknown')
         model_type = payload.get('model_type', 'unknown')
@@ -156,7 +156,7 @@ class RevitEventPublisher:
         if model_type == "ElectricalModel":
             await self._trigger_electrical_analysis(element_id)
 
-    async def _handle_electrical_asset_synced(self, payload: Dict[str, Any]) -> None:
+    async def _handle_electrical_asset_synced(self, payload: dict[str, Any]) -> None:
         """Handle electrical asset synced event."""
         element_id = payload.get('element_id', 'unknown')
         asset_type = payload.get('asset_type', 'unknown')
@@ -167,7 +167,7 @@ class RevitEventPublisher:
         # This could trigger asset-specific processing
         await self._process_electrical_asset(element_id, asset_type)
 
-    async def _handle_sync_completed(self, payload: Dict[str, Any]) -> None:
+    async def _handle_sync_completed(self, payload: dict[str, Any]) -> None:
         """Handle sync completed event."""
         successful = payload.get('successful_elements', 0)
         failed = payload.get('failed_elements', 0)
@@ -198,7 +198,7 @@ class RevitEventPublisher:
         Subscribe to an event type.
 
         Args:
-            event_type: Type of event to subscribe to
+            event_type: type of event to subscribe to
             handler: Handler function to call when event occurs
 
         Returns:
@@ -211,15 +211,15 @@ class RevitEventPublisher:
             self.logger.error(f"Error subscribing to event {event_type}: {e}")
             return False
 
-    async def get_published_events(self) -> List[Dict[str, Any]]:
+    async def get_published_events(self) -> list[dict[str, Any]]:
         """Get list of published events."""
         return self.published_events.copy()
 
-    async def get_failed_events(self) -> List[Dict[str, Any]]:
+    async def get_failed_events(self) -> list[dict[str, Any]]:
         """Get list of failed events."""
         return self.failed_events.copy()
 
-    async def get_event_stats(self) -> Dict[str, int]:
+    async def get_event_stats(self) -> dict[str, int]:
         """Get statistics about published events."""
         return {
             'published_count': len(self.published_events),
@@ -248,7 +248,7 @@ class MockEventBus:
         # before completion (fixes SonarCloud python:S7502).
         self._background_tasks: set = set()
 
-    async def publish(self, event_data: Dict[str, Any]) -> bool:
+    async def publish(self, event_data: dict[str, Any]) -> bool:
         """
         Publish an event to the mock bus.
 
@@ -287,7 +287,7 @@ class MockEventBus:
         Subscribe to an event type.
 
         Args:
-            event_type: Type of event to subscribe to
+            event_type: type of event to subscribe to
             handler: Handler function
 
         Returns:
@@ -308,7 +308,7 @@ class MockEventBus:
                 event_data = await self.event_queue.get(timeout=1.0)
                 self.logger.debug(f"Processing event: {event_data['event_type']}")
                 self.event_queue.task_done()
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue  # Continue waiting for events
             except Exception as e:
                 self.logger.error(f"Error processing event: {e}")

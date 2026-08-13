@@ -11,7 +11,6 @@ import os
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from parsers._base import ParserBase
 from parsers._path_security import (
@@ -35,8 +34,8 @@ class DWGParseResult:
     success: bool
     room_count: int = 0
     conversion_time_s: float = 0.0
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class DWGParser(ParserBase):
@@ -318,7 +317,7 @@ class DWGParser(ParserBase):
                 except Exception as exc:
                     logger.debug("Temp file cleanup failed: %s", exc)
 
-    def _parse_dxf_directly(self, dxf_path: str, start_time: Optional[float] = None) -> DWGParseResult:
+    def _parse_dxf_directly(self, dxf_path: str, start_time: float | None = None) -> DWGParseResult:
         import time
 
         if start_time is None:

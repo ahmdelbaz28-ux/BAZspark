@@ -29,8 +29,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 from fireai.constants.nfpa72 import (
     NAC_MIN_CD as NFPA72_NAC_MIN_CD,
@@ -95,7 +95,7 @@ assert not _MISSING_CEILING, (
 )
 
 
-class _LowercaseAliasEnum(str, Enum):
+class _LowercaseAliasEnum(StrEnum):
     """
     Base class for lowercase-valued enum aliases.
 
@@ -125,7 +125,7 @@ class DetectorType(_LowercaseAliasEnum):
     MULTI = "multi"
 
 
-class OccupancyType(str, Enum):
+class OccupancyType(StrEnum):
     """Occupancy types per NFPA 101-2021."""
 
     ASSEMBLY = "assembly"
@@ -197,7 +197,7 @@ class ExitDoor:
     x_m: float
     y_m: float
     door_width_m: float = 0.914  # 3 ft standard
-    door_swing: Optional[str] = None  # "right" | "left" | None — see docstring
+    door_swing: str | None = None  # "right" | "left" | None — see docstring
 
 
 @dataclass

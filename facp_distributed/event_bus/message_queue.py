@@ -3,8 +3,9 @@ import queue
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 class MessagePriority(Enum):
@@ -25,8 +26,8 @@ class MessageStatus(Enum):
 class Message:
     """Represents a message in the distributed FACP system"""
 
-    def __init__(self, topic: str, data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL,
-                 correlation_id: Optional[str] = None, reply_to: Optional[str] = None, headers: Optional[Dict[str, str]] = None):
+    def __init__(self, topic: str, data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL,
+                 correlation_id: str | None = None, reply_to: str | None = None, headers: dict[str, str] | None = None):
         self.id = str(uuid.uuid4())
         self.topic = topic
         self.data = data
@@ -43,7 +44,7 @@ class Message:
         self.node_source = self.headers.get("source_node", "unknown")
         self.node_target = self.headers.get("target_node", "all")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert message to dictionary representation"""
         return {
             "id": self.id,
@@ -64,7 +65,7 @@ class Message:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Message':
+    def from_dict(cls, data: dict[str, Any]) -> 'Message':
         """Create message from dictionary representation"""
         msg = cls(
             topic=data["topic"],
@@ -129,7 +130,7 @@ class MessageQueue:
         except queue.Full:
             return False
 
-    def dequeue(self, topic_filter: Optional[str] = None) -> Optional[Message]:
+    def dequeue(self, topic_filter: str | None = None) -> Message | None:
         """Remove and return a message from the queue"""
         try:
             with self.lock:
@@ -218,7 +219,7 @@ class MessageQueue:
             self.stats["failed"] += 1
             return False
 
-    def get_message(self, message_id: str) -> Optional[Message]:
+    def get_message(self, message_id: str) -> Message | None:
         """Get a message by ID"""
         with self.lock:
             return self.messages.get(message_id)
@@ -233,12 +234,12 @@ class MessageQueue:
             return self.topic_queues[topic].qsize()
         return 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get queue statistics"""
         with self.lock:
             return self.stats.copy()
 
-    def get_messages_by_topic(self, topic: str) -> List[Message]:
+    def get_messages_by_topic(self, topic: str) -> list[Message]:
         """Get all messages for a specific topic"""
         with self.lock:
             return [msg for msg in self.messages.values() if msg.topic == topic]
@@ -280,7 +281,7 @@ class MessageQueue:
         """Check if the main queue is empty"""
         return self.queue.empty()
 
-    def peek(self) -> Optional[Message]:
+    def peek(self) -> Message | None:
         """Peek at the next message without removing it (not thread-safe for modification)"""
         with self.lock:
             if not self.queue.empty():
@@ -334,7 +335,7 @@ class PriorityQueue(MessageQueue):
         except queue.Full:
             return False
 
-    def dequeue_by_priority(self, priority: MessagePriority) -> Optional[Message]:
+    def dequeue_by_priority(self, priority: MessagePriority) -> Message | None:
         """Dequeue a message with a specific priority"""
         try:
             with self.lock:
@@ -356,7 +357,7 @@ class PriorityQueue(MessageQueue):
         except queue.Empty:
             return None
 
-    def get_priority_stats(self) -> Dict[str, int]:
+    def get_priority_stats(self) -> dict[str, int]:
         """Get statistics broken down by priority"""
         with self.lock:
             return {
@@ -370,7 +371,7 @@ class PriorityQueue(MessageQueue):
 class DistributedMessageQueue(MessageQueue):
     """Distributed message queue that can synchronize with other nodes"""
 
-    def __init__(self, name: str, max_size: int = 10000, node_id: Optional[str] = None):
+    def __init__(self, name: str, max_size: int = 10000, node_id: str | None = None):
         super().__init__(name, max_size)
         self.node_id = node_id or f"node_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.cluster_sync_callback = None
@@ -378,7 +379,7 @@ class DistributedMessageQueue(MessageQueue):
         self.message_replication_factor = 2  # How many nodes to replicate to
 
     def set_cluster_sync_callback(self, callback):
-        """Set callback for cluster synchronization"""
+        """set callback for cluster synchronization"""
         self.cluster_sync_callback = callback
 
     def enqueue(self, message: Message) -> bool:
@@ -396,7 +397,7 @@ class DistributedMessageQueue(MessageQueue):
 
         return success
 
-    def sync_with_cluster(self, cluster_messages: List[Dict[str, Any]]):
+    def sync_with_cluster(self, cluster_messages: list[dict[str, Any]]):
         """Sync messages with cluster"""
         for msg_data in cluster_messages:
             if msg_data["node_source"] != self.node_id:  # Don't process our own messages
@@ -404,7 +405,7 @@ class DistributedMessageQueue(MessageQueue):
                 # Add to our distributed messages
                 self.distributed_messages[message.id] = message
 
-    def get_local_and_distributed_messages(self, topic: Optional[str] = None) -> List[Message]:
+    def get_local_and_distributed_messages(self, topic: str | None = None) -> list[Message]:
         """Get both local and distributed messages"""
         local_msgs = self.get_messages_by_topic(topic) if topic else list(self.messages.values())
         distributed_msgs = [msg for msg in self.distributed_messages.values()

@@ -7,7 +7,7 @@ without ezdxf installed, enabling test collection in CI environments.
 """
 
 import math
-from typing import Any, List, Tuple
+from typing import Any
 
 try:
     import ezdxf
@@ -18,7 +18,7 @@ from qomn_fire.core.errors import HatchPlacementError, Result
 from qomn_fire.core.types import HatchSpec, Point3D
 
 
-def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16) -> List[Tuple[float, float]]:
+def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16) -> list[tuple[float, float]]:
     poly = []
     for i in range(num_sides):
         angle = (2.0 * math.pi * i) / num_sides
@@ -29,7 +29,7 @@ def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16
 
 def place_boundary_hatch(
     doc,
-    boundary_points: List[Tuple[float, float]],
+    boundary_points: list[tuple[float, float]],
     spec: HatchSpec,
     run_id: str
 ) -> Result[Any, HatchPlacementError]:

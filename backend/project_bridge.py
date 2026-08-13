@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
         # Create in UDM — use the SAME ID from System A.
         # DatabaseService.create_project() generates its own UUID,
         # so we directly insert with the System A ID.
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         name = project_data.get("name", "Untitled")
         description = project_data.get("description", "")
@@ -179,7 +179,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
                 set_clauses.append("status = ?")
                 values.append(updates["status"])
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             set_clauses.append("last_modified_timestamp = ?")
             values.append(now)
 
@@ -326,7 +326,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
         try:
             udm.ensure_udm_schema()
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_insert(
                 "INSERT OR REPLACE INTO elements "
                 "(element_id, element_type, name, position, properties, "
@@ -449,7 +449,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
                     values.append(json.dumps(current_props))
 
             if set_clauses:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 set_clauses.append("last_modified_timestamp = ?")
                 values.append(now)
                 values.append(device_id)
@@ -497,7 +497,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
         db.record_sync("device", device_id, _TARGET_DB, "syncing")
 
         try:
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_sql(
                 "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? "
                 "WHERE element_id = ?",
@@ -583,7 +583,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
         try:
             udm.ensure_udm_schema()
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_insert(
                 "INSERT OR REPLACE INTO relationships "
                 "(relationship_id, from_element_id, to_element_id, "
@@ -642,7 +642,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
         try:
             udm.ensure_udm_schema()
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_sql(
                 "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
                 "WHERE relationship_id = ?",

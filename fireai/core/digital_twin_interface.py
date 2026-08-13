@@ -63,7 +63,7 @@ import logging
 import threading
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -335,7 +335,7 @@ class DigitalTwinInterface:
         checksum = self.compute_checksum(detector_positions)
 
         # Build version
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         version = TwinModelVersion(
             version_id=str(uuid.uuid4()),
             timestamp=now,
@@ -404,7 +404,7 @@ class DigitalTwinInterface:
             return []
 
         changes: list[ChangeRecord] = []
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Room count changes
         if old_version.room_count != new_version.room_count:

@@ -6,7 +6,6 @@ BUG-44 FIX: ezdxf import is now guarded — module can be imported
 without ezdxf installed, enabling test collection in CI environments.
 """
 
-from typing import List, Tuple
 
 try:
     import ezdxf
@@ -16,7 +15,7 @@ except ImportError:
 from qomn_fire.core.types import Revision
 
 
-def draw_revision_cloud(doc, vertices: List[Tuple[float, float]]):
+def draw_revision_cloud(doc, vertices: list[tuple[float, float]]):
     if ezdxf is None:
         raise ImportError("ezdxf library is required for revision cloud drawing.")
     msp = doc.modelspace()
@@ -25,7 +24,7 @@ def draw_revision_cloud(doc, vertices: List[Tuple[float, float]]):
     msp.add_lwpolyline(bulge_vertices, format='xyb', close=True,
                                  dxfattribs={"layer": "A-FIRE-REVC", "color": 1})
 
-def draw_revision_table(doc, revisions: List[Revision]):
+def draw_revision_table(doc, revisions: list[Revision]):
     if ezdxf is None:
         raise ImportError("ezdxf library is required for revision table drawing.")
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")

@@ -45,7 +45,7 @@ import hashlib
 import hmac
 import json
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -221,7 +221,7 @@ class EvidenceChain:
         """
         body = {
             "schema_version": "evidence-envelope/1",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "namespace": self._namespace,  # V59 FIX (Finding 4): Include namespace for domain separation
             "signer_id": self._signer_id,
             "snapshot_hash": _sha256_payload(snapshot_payload),

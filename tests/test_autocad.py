@@ -690,7 +690,7 @@ class TestV214NoMockDwgData:
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
         src_path = os.path.normpath(src_path)
-        with open(src_path, "r", encoding="utf-8") as f:
+        with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
         # Match f.write("MOCK...") or f.write('MOCK...') — actual write calls
@@ -839,7 +839,7 @@ class TestV214NoHardcodedReadDwgEntities:
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
         src_path = os.path.normpath(src_path)
-        with open(src_path, "r", encoding="utf-8") as f:
+        with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
         # Match "handle": "H1" or "handle": "H2" as dict values (actual code)

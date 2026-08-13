@@ -14,7 +14,7 @@ def get_all_routes():
             for file in files:
                 if file.endswith('.py'):
                     filepath = os.path.join(root, file)
-                    with open(filepath, 'r', encoding='utf-8') as f:
+                    with open(filepath, encoding='utf-8') as f:
                         for line in f:
                             match = ROUTE_REGEX.search(line)
                             if match:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
             if file.endswith(('.ts', '.tsx', '.js', '.jsx')):
                 filepath = os.path.join(root, file)
                 try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
+                    with open(filepath, encoding='utf-8') as f:
                         frontend_code += f.read() + "\n"
                 except Exception:
                     pass

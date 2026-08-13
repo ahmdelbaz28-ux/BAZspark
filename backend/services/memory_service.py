@@ -62,8 +62,8 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +104,7 @@ Focus on extracting and storing fire protection engineering information:
 """
 
 
-class MemoryScope(str, Enum):
+class MemoryScope(StrEnum):
     """Memory scoping levels — determines the context boundary of stored memories."""
 
     USER = "user"          # Engineer's personal preferences and patterns
@@ -113,7 +113,7 @@ class MemoryScope(str, Enum):
     GLOBAL = "global"      # Shared knowledge across all users/projects
 
 
-class MemoryCategory(str, Enum):
+class MemoryCategory(StrEnum):
     """Categories of memories for structured storage and retrieval."""
 
     LAYOUT = "layout"                    # Building layouts and detector placements
@@ -417,7 +417,7 @@ class MemoryService:
         try:
             metadata = request.metadata or {}
             metadata["source"] = "fireai"
-            metadata["added_at"] = datetime.now(timezone.utc).isoformat()
+            metadata["added_at"] = datetime.now(UTC).isoformat()
             if request.memory_type:
                 metadata["memory_type"] = request.memory_type
 

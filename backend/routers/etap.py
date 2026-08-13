@@ -8,7 +8,7 @@ Endpoints:
     POST /api/v1/integrations/etap/connect          — Test ETAP connection
     POST /api/v1/integrations/etap/disconnect       — Disconnect from ETAP
     GET  /api/v1/integrations/etap/status           — Get integration status
-    GET  /api/v1/integrations/etap/projects         — List ETAP projects
+    GET  /api/v1/integrations/etap/projects         — list ETAP projects
     POST /api/v1/integrations/etap/export           — Export to ETAP
     POST /api/v1/integrations/etap/import           — Import from ETAP
     GET  /api/v1/integrations/etap/logs             — Get sync logs
@@ -17,12 +17,11 @@ Endpoints:
     DELETE /api/v1/integrations/etap/settings       — Delete settings
 """
 import logging
-from typing import List, Optional
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 
 
@@ -118,8 +117,8 @@ async def get_status(
 async def list_etap_projects(
     service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-) -> List[EtapProjectInfo]:
-    """List available ETAP projects."""
+) -> list[EtapProjectInfo]:
+    """list available ETAP projects."""
     projects = service.list_etap_projects(project_id)
     return [EtapProjectInfo(**p) for p in projects]
 
@@ -127,8 +126,8 @@ async def list_etap_projects(
 @router.get("/projects/local", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def list_local_projects(
     service: EtapServiceDep,
-) -> List[dict]:
-    """List local BAZSPARK projects."""
+) -> list[dict]:
+    """list local BAZSPARK projects."""
     return service.list_local_projects()
 
 
@@ -229,7 +228,7 @@ async def create_settings(
 async def get_settings(
     service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-) -> Optional[EtapSettingsResponse]:
+) -> EtapSettingsResponse | None:
     """Get ETAP settings for a project (no secrets returned)."""
     settings = service.get_settings(project_id)
     if not settings:

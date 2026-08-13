@@ -9,7 +9,6 @@ BIM/CAD applications with PostgreSQL, Qdrant, Neo4j, and Redis.
 """
 
 import secrets
-from typing import Dict, List
 
 from backend.multi_db_service import get_multi_db_service
 
@@ -23,7 +22,7 @@ def _rand_float(low: float, high: float) -> float:
     return low + (secrets.randbelow(1_000_000) / 1_000_000) * (high - low)
 
 
-def simulate_bim_element_data(element_id: str) -> Dict:
+def simulate_bim_element_data(element_id: str) -> dict:
     """Simulate BIM element data for demonstration."""
     element_types = ["wall", "door", "window", "column", "beam", "floor"]
     categories = ["Architecture", "Structural", "MEP"]
@@ -46,12 +45,12 @@ def simulate_bim_element_data(element_id: str) -> Dict:
     }
 
 
-def simulate_embeddings(vector_size: int = 1536) -> List[float]:
+def simulate_embeddings(vector_size: int = 1536) -> list[float]:
     """Simulate embeddings for vector search."""
     return [_rand_float(0.0, 1.0) for _ in range(vector_size)]
 
 
-def simulate_relationships(element_ids: List[str], count: int) -> List[str]:
+def simulate_relationships(element_ids: list[str], count: int) -> list[str]:
     """Simulate relationships between elements."""
     relationships = []
     for _ in range(count):

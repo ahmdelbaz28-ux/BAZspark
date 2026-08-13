@@ -6,7 +6,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..protocol.message_schema import FACPResponse
 from ..security.isolation import SandboxController, StatelessExecutionValidator
@@ -19,7 +19,7 @@ class EngineWorker:
     Runs as a separate node in the distributed system
     """
 
-    def __init__(self, worker_id: Optional[str] = None, capabilities: Optional[list] = None,
+    def __init__(self, worker_id: str | None = None, capabilities: list | None = None,
                  max_concurrent_tasks: int = 10):
         self.worker_id = worker_id or f"engine_worker_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.capabilities = capabilities or [
@@ -81,7 +81,7 @@ class EngineWorker:
         self.status = "stopped"
         self.logger.info("Engine Worker %s stopped", self.worker_id)
 
-    def process_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def process_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Process an incoming request from the orchestrator"""
         request_id = request_data.get("id", str(uuid.uuid4()))
         method = request_data.get("method", "")
@@ -137,7 +137,7 @@ class EngineWorker:
 
         return False
 
-    def _validate_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
+    def _validate_constraints(self, request_data: dict[str, Any]) -> tuple[bool, str]:
         """Validate request constraints"""
         constraints = request_data.get("constraints", {})
 
@@ -158,7 +158,7 @@ class EngineWorker:
 
         return True, ""
 
-    def _execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Execute a request in a sandboxed environment"""
         request_id = request_data["id"]
         method = request_data["method"]
@@ -270,12 +270,12 @@ class EngineWorker:
             # Small sleep to prevent busy waiting
             time.sleep(0.01)
 
-    def _process_queued_task(self, task: Dict[str, Any]):
+    def _process_queued_task(self, task: dict[str, Any]):
         """Process a task from the queue"""
         # This is a simplified version - in a real system, we'd run this asynchronously
         self.process_request(task["request_data"])
 
-    def get_worker_status(self) -> Dict[str, Any]:
+    def get_worker_status(self) -> dict[str, Any]:
         """Get the status of this engine worker"""
         return {
             "worker_id": self.worker_id,
@@ -292,12 +292,12 @@ class EngineWorker:
             "engine_version": "FACP/1.1"
         }
 
-    def heartbeat(self) -> Dict[str, Any]:
+    def heartbeat(self) -> dict[str, Any]:
         """Heartbeat method for cluster monitoring"""
         self.heartbeat_timestamp = time.time()
         return self.get_worker_status()
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get execution statistics for this worker"""
         return {
             "worker_id": self.worker_id,
@@ -339,7 +339,7 @@ class EngineWorker:
             self.cpu_usage = cpu_usage
             self.memory_usage = memory_usage
 
-    def queue_task(self, request_data: Dict[str, Any]):
+    def queue_task(self, request_data: dict[str, Any]):
         """Queue a task for processing"""
         with self.lock:
             self.task_queue.append({
@@ -347,7 +347,7 @@ class EngineWorker:
                 "queued_at": time.time()
             })
 
-    def get_queue_status(self) -> Dict[str, Any]:
+    def get_queue_status(self) -> dict[str, Any]:
         """Get status of the task queue"""
         with self.lock:
             return {
@@ -357,6 +357,6 @@ class EngineWorker:
                 "tasks_waiting": len(self.task_queue)
             }
 
-    def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
+    def enforce_execution_constraints(self, request_data: dict[str, Any]) -> tuple[bool, str]:
         """Enforce execution constraints for this worker"""
         return self.sandbox_controller.enforce_execution_constraints(request_data)

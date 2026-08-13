@@ -6,19 +6,19 @@ FDS Simulation Webhook Router.
 Handles:
   POST /api/v2/fds/submit   — Submit a new FDS simulation job
   GET  /api/v2/fds/status/{job_id} — Check job status
-  GET  /api/v2/fds/jobs     — List all jobs for the authenticated user
+  GET  /api/v2/fds/jobs     — list all jobs for the authenticated user
   POST /api/v2/fds/webhook  — Internal webhook (Modal → BAZspark result callback)
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -50,7 +50,7 @@ class FDSSubmitRequest(BaseModel):
                                         description="Raw FDS input file content")
     project_id: str             = Field(default="",
                                         description="BAZspark project ID")
-    metadata:   Dict[str, Any]  = Field(default_factory=dict)
+    metadata:   dict[str, Any]  = Field(default_factory=dict)
 
 
 class FDSWebhookPayload(BaseModel):
@@ -58,8 +58,8 @@ class FDSWebhookPayload(BaseModel):
     job_id:  str
     status:  str
     secret:  str
-    result:  Optional[Dict[str, Any]] = None
-    error:   Optional[str]            = None
+    result:  dict[str, Any] | None = None
+    error:   str | None            = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ async def submit_simulation(
     body: FDSSubmitRequest,
     request: Request,
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Submit an FDS input file for cloud simulation.
 
@@ -99,7 +99,7 @@ async def submit_simulation(
 async def get_job_status(
     job_id: str,
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
     if result.get("error"):
@@ -107,13 +107,13 @@ async def get_job_status(
     return result
 
 
-@router.get("/jobs", summary="List FDS simulation jobs")
+@router.get("/jobs", summary="list FDS simulation jobs")
 async def list_jobs(
     _: SystemConfigRole,
     request: Request,
     limit: int = 20,
-) -> Dict[str, Any]:
-    """List recent FDS jobs for the authenticated user."""
+) -> dict[str, Any]:
+    """list recent FDS jobs for the authenticated user."""
     user_id = getattr(request.state, "user_id", "") or ""
     return list_fds_jobs(user_id=user_id, limit=limit)
 
@@ -122,7 +122,7 @@ async def list_jobs(
 async def fds_result_webhook(
     payload: FDSWebhookPayload,
     request: Request,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Internal webhook called by Modal worker when an FDS simulation completes.
     Validates the HMAC secret, updates the job record, and broadcasts to

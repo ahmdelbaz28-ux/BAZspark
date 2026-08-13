@@ -13,7 +13,7 @@ overheated wires in overfilled conduit can ignite surrounding materials.
 """
 
 import math
-from typing import Any, Tuple, Union
+from typing import Any
 
 # BUG-44 FIX: Guard ezdxf import — module can be imported without ezdxf installed
 try:
@@ -49,7 +49,7 @@ def route_conduit_and_hatch(
     trade_size: str = "",
     wire_gauge: str = _DEFAULT_WIRE_GAUGE,
     wire_count: int = _DEFAULT_WIRE_COUNT
-) -> Result[Tuple[ConduitRun, Any], Union[NECViolationError, HatchPlacementError, ConduitFillError]]:
+) -> Result[tuple[ConduitRun, Any], NECViolationError | HatchPlacementError | ConduitFillError]:
     """
     BUG-CH1 FIX: Added trade_size parameter to pass through to routing and fill engines.
     The original code did not pass trade_size to astar_route_3d, causing the routing

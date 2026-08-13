@@ -14,7 +14,6 @@ except ImportError:
     fitz = None  # PDF features unavailable without pymupdf
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 
 class ConfidenceLevel(Enum):
@@ -28,10 +27,10 @@ class ConfidenceLevel(Enum):
 class WallElement:
     """جدار مستخلص من الرسم."""
 
-    geometry: List[Tuple[float, float]]  # قائمة نقاط مغلقة
+    geometry: list[tuple[float, float]]  # قائمة نقاط مغلقة
     confidence: ConfidenceLevel
     source: str
-    raw_data: Dict = field(default_factory=dict)
+    raw_data: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         geometry_list = [(round(x, 2), round(y, 2)) for x, y in self.geometry]
@@ -87,12 +86,12 @@ class GeometryExtractor:
         self.page = self.doc[page_number]
         self.page_number = page_number
 
-    def extract_walls(self) -> List[WallElement]:
+    def extract_walls(self) -> list[WallElement]:
         """
         استخراج كل المسارات المغلقة التي يمكن أن تكون جدراناً.
 
         Returns:
-            List of WallElement objects
+            list of WallElement objects
 
         """
         drawings = self.page.get_drawings()
@@ -106,7 +105,7 @@ class GeometryExtractor:
         self.doc.close()
         return self._merge_adjacent_walls(walls)
 
-    def _parse_drawing(self, draw: dict) -> Optional[WallElement]:
+    def _parse_drawing(self, draw: dict) -> WallElement | None:
         """Parse a single drawing object into a WallElement."""
         # نتعامل فقط مع المسارات المغلقة (type 'f' = fill, أو 's' = stroke, 're' = rect)
         draw_type = draw.get("type", "")
@@ -161,7 +160,7 @@ class GeometryExtractor:
             }
         )
 
-    def _extract_points_from_items(self, items: list) -> List[Tuple[float, float]]:
+    def _extract_points_from_items(self, items: list) -> list[tuple[float, float]]:
         """Extract points from drawing items."""
         points = []
         for item in items:
@@ -177,7 +176,7 @@ class GeometryExtractor:
                 points.append((item[-2], item[-1]))
         return points
 
-    def _merge_adjacent_walls(self, walls: List[WallElement]) -> List[WallElement]:
+    def _merge_adjacent_walls(self, walls: list[WallElement]) -> list[WallElement]:
         """Merge walls that share edges."""
         if len(walls) <= 1:
             return walls
@@ -259,7 +258,7 @@ class GeometryExtractor:
         }
 
 
-def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> List[WallElement]:
+def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> list[WallElement]:
     """
     دالة مساعدة سريعة لاستخراج الجدران.
 
@@ -268,14 +267,14 @@ def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> List[WallElement]:
         page: رقم الصفحة ( يبدأ من 0)
 
     Returns:
-        List of WallElement objects
+        list of WallElement objects
 
     """
     extractor = GeometryExtractor(pdf_path, page)
     return extractor.extract_walls()
 
 
-def extract_rooms_from_walls(walls: List[WallElement]) -> List[dict]:
+def extract_rooms_from_walls(walls: list[WallElement]) -> list[dict]:
     """
     استخراج الغرف من الجدران المستخلصة.
 

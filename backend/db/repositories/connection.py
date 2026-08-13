@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 
@@ -14,7 +14,7 @@ class ConnectionRepository(BaseRepository):
 
     def create_connection(self, project_id: str, conn_data: dict) -> dict:
         """Insert a new connection and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         conn_data.setdefault("id", str(uuid.uuid4()))
         conn_data["projectId"] = project_id
         conn_data["createdAt"] = now

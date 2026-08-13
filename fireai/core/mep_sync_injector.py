@@ -45,7 +45,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # ============================================================================
@@ -72,7 +72,7 @@ MEP_UNIT_COSTS: dict[str, float] = {
 # ============================================================================
 
 
-class ModuleType(str, Enum):
+class ModuleType(StrEnum):
     """Types of MEP interface modules per NFPA 72 Chapter 21."""
 
     ELEVATOR_RECALL = "ELEVATOR_RECALL"
@@ -82,7 +82,7 @@ class ModuleType(str, Enum):
     SUPERVISORY = "SUPERVISORY"
 
 
-class MEPElementType(str, Enum):
+class MEPElementType(StrEnum):
     """Types of MEP elements found in building models."""
 
     AHU = "AHU"  # Air Handling Unit
@@ -95,14 +95,14 @@ class MEPElementType(str, Enum):
     DUCT = "DUCT"
 
 
-class AddressType(str, Enum):
+class AddressType(StrEnum):
     """Addressing mode for MEP interface modules."""
 
     ANALOG = "ANALOG"
     ADDRESSABLE = "ADDRESSABLE"
 
 
-class ElevatorPhase(str, Enum):
+class ElevatorPhase(StrEnum):
     """Elevator recall phases per NFPA 72 §21.3 / ASME A17.1."""
 
     PHASE_I = "PHASE_I"  # Automatic recall to designated/alternate floor

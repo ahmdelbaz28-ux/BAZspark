@@ -18,7 +18,6 @@ Standards: ISO 10303-21 §6 (STEP file structure), AutoCAD DXF Specification
 
 import hashlib
 import os
-from typing import Union
 
 from parsers._path_security import (
     UnsafePathError,
@@ -37,7 +36,7 @@ class FileValidator:
     """Validates file existence, readability, size limits, and structural integrity."""
 
     @staticmethod
-    def validate_file(filepath: str) -> Result[str, Union[FileValidationError, CorruptionError]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def validate_file(filepath: str) -> Result[str, FileValidationError | CorruptionError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validates file existence, readability, size limits, and returns file SHA-256 hash.
         Returns Result containing SHA-256 hex digest or error.

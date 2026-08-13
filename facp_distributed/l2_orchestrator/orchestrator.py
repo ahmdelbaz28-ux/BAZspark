@@ -3,7 +3,7 @@
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..protocol.message_schema import FACPResponse
 from ..security.rbac import PermissionChecker
@@ -64,7 +64,7 @@ class Orchestrator:
             "node_affinity": None
         })
 
-    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
+    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> tuple[bool, dict[str, Any]]:
         """
         Process a request from L1 through the orchestrator
         :param request_data: Request data that passed validation
@@ -307,7 +307,7 @@ class Orchestrator:
         # Default to engine for unknown methods (conservative approach)
         return True
 
-    def _simulate_engine_forwarding(self, request_data: Dict[str, Any], target_worker: str) -> Dict[str, Any]:
+    def _simulate_engine_forwarding(self, request_data: dict[str, Any], target_worker: str) -> dict[str, Any]:
         """Simulate forwarding to engine worker (in real system, this would be actual transport)"""
         # In a real implementation, this would send the request to the target worker
         # via the message bus or other transport mechanism
@@ -330,7 +330,7 @@ class Orchestrator:
             }
         }
 
-    def _process_with_agent_info(self, agent_info: Dict[str, Any], request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_with_agent_info(self, agent_info: dict[str, Any], request_data: dict[str, Any]) -> dict[str, Any]:
         """Process request using agent information from registry"""
         # In a real implementation, this would create or locate the actual agent
         # For simulation, we'll return a result indicating the agent would process it
@@ -359,7 +359,7 @@ class Orchestrator:
             # Remove from active tasks
             del self.active_tasks[task_id]
 
-    def get_orchestrator_status(self) -> Dict[str, Any]:
+    def get_orchestrator_status(self) -> dict[str, Any]:
         """Get orchestrator status information"""
         return {
             "node_id": self.node_id,
@@ -374,7 +374,7 @@ class Orchestrator:
             "agent_types_registered": self.agent_registry.get_registered_agent_types()
         }
 
-    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Get status of a specific task"""
         if task_id in self.active_tasks:
             return self.active_tasks[task_id]
@@ -386,7 +386,7 @@ class Orchestrator:
 
         return None
 
-    def get_load_statistics(self) -> Dict[str, Any]:
+    def get_load_statistics(self) -> dict[str, Any]:
         """Get load statistics for the orchestrator"""
         return {
             "active_task_count": len(self.active_tasks),
@@ -434,12 +434,12 @@ class Orchestrator:
             "node_affinity": self.node_id
         })
 
-    def update_policy(self, policy_name: str, _policy_config: Dict[str, Any]):  # NOSONAR — S1172: parameter retained for API stability
+    def update_policy(self, policy_name: str, _policy_config: dict[str, Any]):  # NOSONAR — S1172: parameter retained for API stability
         """Update a specific policy (placeholder for future implementation)"""
         self.logger.info("Policy update requested: %s", policy_name)
         # Implementation would depend on policy management system
 
-    def handle_node_join(self, node_id: str, node_type: str, capabilities: List[str]):
+    def handle_node_join(self, node_id: str, node_type: str, capabilities: list[str]):
         """Handle a new node joining the cluster"""
         if node_type == "l3_engine_worker":
             self.load_balancer.register_engine_worker(node_id, capabilities)
@@ -456,11 +456,11 @@ class Orchestrator:
         # Already handled in _record_task_completion, but can do additional cleanup
         self.logger.debug("cleanup_completed_tasks called; no additional cleanup needed")
 
-    def get_execution_context(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def get_execution_context(self, request_id: str) -> dict[str, Any] | None:
         """Get execution context for a request (placeholder)"""
         return self.active_tasks.get(request_id)
 
-    def enforce_distributed_idempotency(self, request_data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    def enforce_distributed_idempotency(self, request_data: dict[str, Any]) -> tuple[bool, dict[str, Any] | None]:
         """Enforce idempotency across distributed cluster"""
         idempotency_key = request_data.get("security", {}).get("idempotency_key")
         if not idempotency_key:
@@ -481,7 +481,7 @@ class Orchestrator:
 
         return True, None
 
-    def release_idempotency_lock(self, idempotency_key: str, response: Dict[str, Any]):
+    def release_idempotency_lock(self, idempotency_key: str, response: dict[str, Any]):
         """Release the distributed idempotency lock"""
         if idempotency_key in self.distributed_locks:
             self.distributed_locks[idempotency_key].update({
@@ -490,7 +490,7 @@ class Orchestrator:
                 "released_at": time.time()
             })
 
-    def sync_with_cluster(self, cluster_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_state: dict[str, Any]):
         """Sync orchestrator state with cluster"""
         # Update agent registry with cluster-wide agent information
         cluster_agents = cluster_state.get("agents", {})

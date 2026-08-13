@@ -54,11 +54,11 @@ import logging
 import os
 import secrets
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Generator, Optional
 
 # AES-256-GCM via cryptography.hazmat — provides authenticated encryption
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 # ── Master key management ────────────────────────────────────────────────────
 
-_MASTER_KEY: Optional[bytes] = None
+_MASTER_KEY: bytes | None = None
 _MASTER_KEY_LOCK = threading.Lock()
 _MASTER_KEY_FILE_DEFAULT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -332,13 +332,13 @@ class VisionApiKeyRecord:
     model_name: str
     created_at: str
     updated_at: str
-    last_used_at: Optional[str]
+    last_used_at: str | None
     is_active: bool
 
 
 def utc_now_iso() -> str:
     """Return current UTC time as ISO 8601 string (matches DB datetime format)."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 __all__ = [

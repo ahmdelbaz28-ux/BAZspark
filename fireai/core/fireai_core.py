@@ -26,7 +26,7 @@ CRITICAL FIX (2026-05-20):
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -436,7 +436,7 @@ class FireAISystem:
                     greedy_retries=0,
                     proof_valid=proof_valid,
                     compliant=result.compliant,
-                    timestamp_utc=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    timestamp_utc=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 )
                 self.learning.maybe_recalibrate()
             except Exception as e:

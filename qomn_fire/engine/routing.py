@@ -19,7 +19,6 @@ makes A* prefer straighter routes with fewer fittings.
 import heapq
 import logging
 import math
-from typing import Dict, List, Set, Tuple
 
 from qomn_fire.core.errors import NECViolationError, Result
 from qomn_fire.core.types import ConduitRun, ConduitType, Fitting, FittingType, Point3D
@@ -30,16 +29,16 @@ logger = logging.getLogger("qomn_fire.routing")
 class GridMap3D:
     def __init__(self, step_m: float = 0.5):
         self.step_m = step_m
-        self.obstacles: Set[Tuple[int, int, int]] = set()
+        self.obstacles: set[tuple[int, int, int]] = set()
 
-    def to_grid(self, p: Point3D) -> Tuple[int, int, int]:
+    def to_grid(self, p: Point3D) -> tuple[int, int, int]:
         return (
             round(p.x / self.step_m),
             round(p.y / self.step_m),
             round(p.z / self.step_m)
         )
 
-    def to_physical(self, gp: Tuple[int, int, int]) -> Point3D:
+    def to_physical(self, gp: tuple[int, int, int]) -> Point3D:
         return Point3D(
             gp[0] * self.step_m,
             gp[1] * self.step_m,
@@ -117,8 +116,8 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
     open_set = []
     heapq.heappush(open_set, (0.0, heap_counter, g_start))
 
-    came_from: Dict[Tuple[int, int, int], Tuple[int, int, int]] = {}
-    g_score: Dict[Tuple[int, int, int], float] = {g_start: 0.0}
+    came_from: dict[tuple[int, int, int], tuple[int, int, int]] = {}
+    g_score: dict[tuple[int, int, int], float] = {g_start: 0.0}
 
     directions = [
         (1, 0, 0), (-1, 0, 0),
@@ -156,7 +155,7 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
             # bend_degrees = total cumulative bend angle in degrees
             bend_count = 0
             bend_degrees = 0
-            fittings: List[Fitting] = []
+            fittings: list[Fitting] = []
             if len(pts) >= 3:
                 prev_dir = (
                     pts[1].x - pts[0].x,

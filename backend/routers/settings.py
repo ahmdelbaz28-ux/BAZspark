@@ -4,7 +4,7 @@ backend/routers/settings.py — Vision API Keys settings endpoints (V151).
 Implements the customer-facing flow for managing OpenAI Vision API keys:
 
   POST   /api/v1/settings/keys/openai         → Store (encrypt + persist) a key
-  GET    /api/v1/settings/keys/openai         → List active keys (masked only)
+  GET    /api/v1/settings/keys/openai         → list active keys (masked only)
   GET    /api/v1/settings/keys/openai/{id}    → Get one key (masked only)
   DELETE /api/v1/settings/keys/openai/{id}    → Delete (revoke) a key
   POST   /api/v1/settings/keys/openai/{id}/test → Test the key (lightweight ping)
@@ -41,13 +41,12 @@ import logging
 import re
 import socket
 import uuid
-from typing import Dict, List, Optional
 from urllib.parse import urlsplit
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 
 import httpx
@@ -62,6 +61,8 @@ from backend.rbac import Permission
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
 SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]
 # ────────────────────────────────────────────────────────────────────────────
+
+from datetime import UTC
 
 from backend.vision_key_store import (
     decrypt_key,
@@ -85,7 +86,7 @@ router = APIRouter(prefix="/settings/keys", tags=["settings"])
 
 
 # ── V151.1 Audit logging helper ──────────────────────────────────────────────
-def _safe_log_fragment(value: Optional[str], max_len: int = 64) -> str:
+def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
     """Sanitize user-controlled strings for safe inclusion in log output.
 
     Strips control characters (including newlines used for log forging) and
@@ -98,7 +99,7 @@ def _safe_log_fragment(value: Optional[str], max_len: int = 64) -> str:
     return cleaned[:max_len]
 
 
-def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: Optional[dict] = None) -> None:
+def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict | None = None) -> None:
     """
     Record a Vision API Keys event in the AuditStore for compliance traceability.
 
@@ -123,7 +124,7 @@ def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: Optio
 
 # V152: Supported providers — extensible list. Each provider has a default
 # base_url and a default vision-capable model. The customer can override both.
-SUPPORTED_PROVIDERS: Dict[str, Dict[str, str]] = {
+SUPPORTED_PROVIDERS: dict[str, dict[str, str]] = {
     "openai": {
         "default_base_url": "https://api.openai.com/v1",
         "default_model": "gpt-4o",
@@ -268,7 +269,7 @@ class OpenAIKeyRequest(BaseModel):
         max_length=200,
         description="Optional human-readable label for the key (NOT stored encrypted).",
     )
-    expires_at: Optional[str] = Field(
+    expires_at: str | None = Field(
         None,
         description="Optional ISO 8601 expiry timestamp. After this date, the key is treated as inactive.",
     )
@@ -286,8 +287,8 @@ class OpenAIKeyResponse(BaseModel):
     is_active: bool
     created_at: str
     updated_at: str
-    last_used_at: Optional[str] = None
-    expires_at: Optional[str] = None
+    last_used_at: str | None = None
+    expires_at: str | None = None
     is_expired: bool = False
 
 
@@ -295,8 +296,8 @@ class OpenAIKeyTestResponse(BaseModel):
     """Result of testing a stored key against the configured endpoint."""
 
     ok: bool
-    status_code: Optional[int] = None
-    error: Optional[str] = None
+    status_code: int | None = None
+    error: str | None = None
     masked_key: str
 
 
@@ -326,17 +327,17 @@ def _row_to_response(row) -> OpenAIKeyResponse:
     )
 
 
-def _is_expired(expires_at: Optional[str]) -> bool:
+def _is_expired(expires_at: str | None) -> bool:
     """Check if a key has expired. Returns False if expires_at is None or unparseable."""
     if not expires_at:
         return False
     try:
-        from datetime import datetime, timezone
+        from datetime import datetime
         # Handle both with and without timezone
         dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return datetime.now(timezone.utc) > dt
+            dt = dt.replace(tzinfo=UTC)
+        return datetime.now(UTC) > dt
     except (ValueError, TypeError):
         return False  # unparseable → treat as not expired (fail-open for usability)
 
@@ -425,7 +426,7 @@ def _ensure_description_column() -> None:
 async def list_supported_providers(
     _role: SystemConfigRole,
 ):
-    """List all supported Vision API providers and their defaults."""
+    """list all supported Vision API providers and their defaults."""
     return {"providers": SUPPORTED_PROVIDERS}
 
 
@@ -563,14 +564,14 @@ async def store_openai_key_compat(
     return await store_provider_key(request, "openai", body, _role)
 
 
-@router.get("/{provider}", response_model=List[OpenAIKeyResponse])
+@router.get("/{provider}", response_model=list[OpenAIKeyResponse])
 async def list_provider_keys(
     _role: SystemConfigRole,
     provider: str,
     include_inactive: bool = False,
 ):
     """
-    List stored Vision API keys for a given provider.
+    list stored Vision API keys for a given provider.
 
     Returns ONLY the masked form — never the plaintext. By default returns
     only active keys; pass `?include_inactive=true` to include deactivated ones.
@@ -603,7 +604,7 @@ async def list_provider_keys(
     return [_row_to_response(r) for r in rows]
 
 
-@router.get("/openai", response_model=List[OpenAIKeyResponse], include_in_schema=False)
+@router.get("/openai", response_model=list[OpenAIKeyResponse], include_in_schema=False)
 async def list_openai_keys_compat(
     _role: SystemConfigRole,
     include_inactive: bool = False,
@@ -688,9 +689,9 @@ async def delete_provider_key(
 # V152: Bulk delete — delete all keys for a provider, or specific ids
 class BulkDeleteRequest(BaseModel):
     """Request body for bulk-delete endpoint."""
-    ids: Optional[List[str]] = Field(
+    ids: list[str] | None = Field(
         None,
-        description="List of key IDs to delete. If omitted, deletes ALL keys for the provider.",
+        description="list of key IDs to delete. If omitted, deletes ALL keys for the provider.",
     )
 
 
@@ -715,7 +716,7 @@ async def bulk_delete_provider_keys(
     _ensure_v152_columns()
     db = get_db()
     deleted_count = 0
-    deleted_masks: List[str] = []
+    deleted_masks: list[str] = []
     try:
         with db._transaction() as cur:
             if body.ids:

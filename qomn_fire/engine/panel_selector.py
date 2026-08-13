@@ -8,7 +8,7 @@ Reference Standard: NFPA 72 (2022) §10.6.7, UL 864 10th Edition.
 Wraps the shared SelectionEngine to return Result[PanelRecommendation, FACPSelectionError].
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from fireai.core.panel_selection import (
     FireAlarmPanel,
@@ -54,7 +54,7 @@ class SelectionEngine(_SelectionEngine):
         panel: FireAlarmPanel,
         requires_voice: bool,
         min_temperature_c: float = 20.0,
-    ) -> Tuple[float, Dict[str, Any]]:
+    ) -> tuple[float, dict[str, Any]]:
         return super().compute_battery_ah(
             device_count, nac_circuit_count, panel, requires_voice, min_temperature_c
         )

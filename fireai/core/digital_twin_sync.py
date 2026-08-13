@@ -94,7 +94,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .digital_twin import (
@@ -161,7 +161,7 @@ class SyncResult:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
 
@@ -233,7 +233,7 @@ class DriftReport:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
         self._recompute_counts()
@@ -328,7 +328,7 @@ class CoverageValidationResult:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
 
@@ -390,7 +390,7 @@ class SyncReport:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
         self._compute_overall_status()
@@ -1326,7 +1326,7 @@ class DigitalTwinSync:
 
         """
         drifts: list[DriftRecord] = []
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Build index of design detectors by ID
         design_by_id: dict[str, dict[str, Any]] = {}
@@ -1505,7 +1505,7 @@ class DigitalTwinSync:
             "topic": topic,
             "detector_id": detector_id,
             "status": status_str,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "synced_count": res.synced_count,
         }
         self.broadcast_websocket_event(event_packet)
@@ -1519,7 +1519,7 @@ class DigitalTwinSync:
             "protocol": "BACnet/IP",
             "object_identifier": object_identifier,
             "property_value": property_value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.broadcast_websocket_event(event_packet)
         return event_packet

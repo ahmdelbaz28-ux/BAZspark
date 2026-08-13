@@ -31,8 +31,9 @@ import logging
 import math
 import os
 import time
+from collections.abc import Generator, Iterator
 from dataclasses import dataclass
-from typing import Any, Generator, Iterator
+from typing import Any
 
 logger = logging.getLogger("fireai.streaming_dwg_parser")
 

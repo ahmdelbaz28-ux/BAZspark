@@ -37,7 +37,7 @@ import logging
 import math
 import warnings as _warnings
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from fireai.core.international_reg_selector import (
     ATEXZone,
@@ -63,25 +63,25 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class ReleaseGrade(str, Enum):
+class ReleaseGrade(StrEnum):
     CONTINUOUS = "CONTINUOUS"
     PRIMARY = "PRIMARY"
     SECONDARY = "SECONDARY"
 
 
-class VentilationDegree(str, Enum):
+class VentilationDegree(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
 
-class VentilationAvailability(str, Enum):
+class VentilationAvailability(StrEnum):
     GOOD = "GOOD"
     FAIR = "FAIR"
     POOR = "POOR"
 
 
-class HazardousMaterial(str, Enum):
+class HazardousMaterial(StrEnum):
     GAS = "GAS"
     VAPOR = "VAPOR"
     DUST_COMB = "DUST_COMB"
@@ -89,7 +89,7 @@ class HazardousMaterial(str, Enum):
     MIST = "MIST"
 
 
-class SoRGeometry(str, Enum):
+class SoRGeometry(StrEnum):
     POINT = "POINT"
     LINE = "LINE"
     AREA = "AREA"

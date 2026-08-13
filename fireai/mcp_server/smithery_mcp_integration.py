@@ -69,8 +69,8 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ REVIT_API_DOCS_PATHS = {
 # ---------------------------------------------------------------------------
 
 
-class ActionType(str, Enum):
+class ActionType(StrEnum):
     """Types of actions the AI can propose (NOT execute)."""
 
     CREATE = "create"      # Create a new Revit element
@@ -104,7 +104,7 @@ class ActionType(str, Enum):
     READ = "read"          # Read element data (safe — can execute directly)
 
 
-class ActionStatus(str, Enum):
+class ActionStatus(StrEnum):
     """Status of a proposed action in the review queue."""
 
     PROPOSED = "proposed"        # AI proposed, awaiting human review
@@ -162,7 +162,7 @@ class ProposedAction:
     parameters: dict[str, Any] = field(default_factory=dict)
     proposed_by: str = "fireai_agent"
     proposed_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
     )
     rationale: str = ""
     confidence: float = 0.0

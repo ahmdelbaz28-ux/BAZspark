@@ -12,10 +12,10 @@ Three-role RBAC system:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     """User roles in the FireAI platform."""
 
     ADMIN = "admin"
@@ -24,7 +24,7 @@ class Role(str, Enum):
 
 
 # Permission definitions
-class Permission(str, Enum):
+class Permission(StrEnum):
     """Granular permissions for the FireAI platform."""
 
     # Project permissions

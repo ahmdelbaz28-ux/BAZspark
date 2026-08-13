@@ -43,7 +43,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 
@@ -59,7 +59,7 @@ T = TypeVar("T")
 
 
 @dataclass(frozen=True)
-class ApiResult(Generic[T]):
+class ApiResult[T]:
     """
     Typed result of an external-API call.
 

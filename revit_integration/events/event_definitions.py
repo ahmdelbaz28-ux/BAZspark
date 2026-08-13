@@ -7,7 +7,7 @@ Event types and definitions for Revit integration.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 
 class RevitEventType(Enum):
@@ -48,7 +48,7 @@ class RevitEventType(Enum):
 
 
 # Define the event schema for each event type
-EVENT_SCHEMAS: Dict[RevitEventType, Dict[str, Any]] = {
+EVENT_SCHEMAS: dict[RevitEventType, dict[str, Any]] = {
     RevitEventType.REVIT_MODEL_IMPORTED: {
         "required": ["model_id", "project_id", "element_count", "timestamp"],
         "optional": ["file_path", "user_id", "client_ip"]
@@ -200,16 +200,16 @@ EVENT_CATEGORIES = {
 }
 
 
-def validate_event_payload(event_type: RevitEventType, payload: Dict[str, Any]) -> List[str]:
+def validate_event_payload(event_type: RevitEventType, payload: dict[str, Any]) -> list[str]:
     """
     Validate that an event payload contains required fields.
 
     Args:
-        event_type: Type of event
+        event_type: type of event
         payload: Event payload to validate
 
     Returns:
-        List[str]: List of validation errors
+        list[str]: list of validation errors
     """
     errors = []
 

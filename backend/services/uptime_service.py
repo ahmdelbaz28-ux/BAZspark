@@ -15,7 +15,7 @@ import logging
 import os
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # ── Keys and Configuration ───────────────────────────────────────────────────
 # SECURITY: Keys MUST be set via environment variables. Never hardcode them.
-# Set UPTIMEROBOT_USER_KEY (read-only key recommended) and
+# set UPTIMEROBOT_USER_KEY (read-only key recommended) and
 # UPTIMEROBOT_MONITOR_KEY (heartbeat monitor key) in your environment.
 # Get keys from: https://dashboard.uptimerobot.com/integrations
 
@@ -32,17 +32,17 @@ HEARTBEAT_INTERVAL = int(os.getenv("UPTIMEROBOT_HEARTBEAT_INTERVAL", "300"))  # 
 if not os.getenv("UPTIMEROBOT_USER_KEY", ""):
     logger.warning(
         "UPTIMEROBOT_USER_KEY is not set. Monitor status API will be disabled. "
-        "Set it in your environment to enable UptimeRobot monitoring."
+        "set it in your environment to enable UptimeRobot monitoring."
     )
 if not os.getenv("UPTIMEROBOT_MONITOR_KEY", ""):
     logger.warning(
         "UPTIMEROBOT_MONITOR_KEY is not set. Heartbeat pings will be disabled. "
-        "Set it in your environment to enable keep-awake heartbeats."
+        "set it in your environment to enable keep-awake heartbeats."
     )
 
 # ── Singleton Pattern ──────────────────────────────────────────────────────────
 
-_instance: Optional[UptimeService] = None
+_instance: UptimeService | None = None
 _lock = threading.Lock()
 
 
@@ -61,7 +61,7 @@ class UptimeService:
 
     def __init__(self) -> None:
         self._loop_running = False
-        self._task: Optional[asyncio.Task[None]] = None
+        self._task: asyncio.Task[None] | None = None
         self._last_ping_status = "never"
         self._last_ping_time: float = 0.0
 
@@ -129,7 +129,7 @@ class UptimeService:
             logger.warning("UptimeRobot heartbeat network failure: %s", e)
             return False
 
-    async def fetch_monitor_status(self) -> Dict[str, Any]:
+    async def fetch_monitor_status(self) -> dict[str, Any]:
         """
         Query the UptimeRobot API using the user key to get monitor statuses.
         """
@@ -161,7 +161,7 @@ class UptimeService:
             logger.exception("Failed to query UptimeRobot API: %s", e)
             return {"success": False, "error": str(e)}
 
-    def get_local_status(self) -> Dict[str, Any]:
+    def get_local_status(self) -> dict[str, Any]:
         """Return the status of the local keep-awake loop."""
         return {
             "loop_running": self._loop_running,

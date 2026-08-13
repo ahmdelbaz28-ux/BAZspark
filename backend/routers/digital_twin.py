@@ -23,14 +23,14 @@ FIXES APPLIED:
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
@@ -127,18 +127,18 @@ def _safe_resolve_upload_path(filename: str) -> str:
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
 
-    source_filepath: Optional[str] = Field(None, max_length=500)
-    target_filepath: Optional[str] = Field(None, max_length=500)
-    conversion_type: Optional[str] = Field(
+    source_filepath: str | None = Field(None, max_length=500)
+    target_filepath: str | None = Field(None, max_length=500)
+    conversion_type: str | None = Field(
         None,
         description="Conversion direction: autocad_to_revit or revit_to_autocad",
     )
-    template_path: Optional[str] = None
+    template_path: str | None = None
 
     # Postman / Alternative fields
-    sourceFormat: Optional[str] = None
-    targetFormat: Optional[str] = None
-    conversionParams: Optional[Dict[str, Any]] = None
+    sourceFormat: str | None = None
+    targetFormat: str | None = None
+    conversionParams: dict[str, Any] | None = None
 
 
 class ConvertResponse(BaseModel):
@@ -153,10 +153,10 @@ class ConvertResponse(BaseModel):
     source_file: str
     target_file: str
     elements_converted: int
-    duration_seconds: Optional[float] = None
-    errors: List[str] = []
-    warnings: List[str] = []
-    download_url: Optional[str] = None
+    duration_seconds: float | None = None
+    errors: list[str] = []
+    warnings: list[str] = []
+    download_url: str | None = None
 
 
 class OperationResponse(BaseModel):
@@ -164,19 +164,19 @@ class OperationResponse(BaseModel):
 
     success: bool
     message: str
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 class HistoryResponse(BaseModel):
     """Response model for conversion history."""
 
-    history: List[Dict[str, Any]]
+    history: list[dict[str, Any]]
 
 
 class ConfigureRequest(BaseModel):
     """Request model for configuration update."""
 
-    config: Dict[str, Any]
+    config: dict[str, Any]
 
 
 class SimReadyConvertRequest(BaseModel):
@@ -185,7 +185,7 @@ class SimReadyConvertRequest(BaseModel):
     source_filepath: str = Field(min_length=1, max_length=500)
     simready_profile: str = Field(default="Prop-Robotics-Neutral")
     property_assignment: str = Field(default="run", pattern=r"^(run|skip|blocked)$")
-    output_root: Optional[str] = Field(default=None)
+    output_root: str | None = Field(default=None)
 
 
 class SimReadyConvertResponse(BaseModel):
@@ -195,15 +195,15 @@ class SimReadyConvertResponse(BaseModel):
     source_asset_path: str
     source_format: str
     output_root: str
-    output_usd_path: Optional[str] = None
-    conformed_usd_path: Optional[str] = None
+    output_usd_path: str | None = None
+    conformed_usd_path: str | None = None
     simready_profile: str
     property_assignment_status: str
-    render_preview_path: Optional[str] = None
-    deliverable_root: Optional[str] = None
-    errors: List[str] = []
-    warnings: List[str] = []
-    stage_reports: Dict[str, Any] = {}
+    render_preview_path: str | None = None
+    deliverable_root: str | None = None
+    errors: list[str] = []
+    warnings: list[str] = []
+    stage_reports: dict[str, Any] = {}
 
 
 
@@ -238,12 +238,12 @@ class UpdateMappingRequest(BaseModel):
 class MappingsResponse(BaseModel):
     """Response model for available mappings."""
 
-    layer_to_category: Dict[str, str]
-    category_to_layer: Dict[str, str]
-    linetype_to_element: Dict[str, str]
-    block_to_family: Dict[str, str]
-    units: Dict[str, Any]
-    levels: Dict[str, Any]
+    layer_to_category: dict[str, str]
+    category_to_layer: dict[str, str]
+    linetype_to_element: dict[str, str]
+    block_to_family: dict[str, str]
+    units: dict[str, Any]
+    levels: dict[str, Any]
 
 
 # ── Safe error helper (FIX #20) ────────────────────────────────────────────
@@ -262,7 +262,7 @@ _SAFE_FORMAT_RE = re.compile(r"^[a-zA-Z0-9._-]{1,32}$")
 
 
 def _validate_conversion_format(
-    fmt: Optional[str], field: str, default: str
+    fmt: str | None, field: str, default: str
 ) -> str:
     """Validate a conversion format string before it is used in a file path."""
     value = (fmt or default).strip()
@@ -278,7 +278,7 @@ def _validate_conversion_format(
 
 
 def _resolve_conversion_type(
-    conversion_type: Optional[str],
+    conversion_type: str | None,
     source_format: str,
     target_format: str,
 ) -> str:
@@ -670,7 +670,7 @@ async def get_available_mappings(
 @router.get("/status")
 async def get_digital_twin_status(
     service: DigitalTwinServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get Digital Twin service status.
 
@@ -684,7 +684,7 @@ async def get_digital_twin_status(
             "total_conversions": len(history),
             "last_conversion": history[-1] if history else None,
             "config_loaded": True,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
     except Exception as e:
         raise _safe_error(500, "Error getting Digital Twin status", e)
@@ -695,7 +695,7 @@ async def update_single_mapping(
     request: UpdateMappingRequest,
     config_mgr: ConfigManagerDep,
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Update a single mapping rule.
 
@@ -723,7 +723,7 @@ async def update_single_mapping(
 )
 async def get_config(
     config_mgr: ConfigManagerDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get current conversion configuration.
 

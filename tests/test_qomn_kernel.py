@@ -49,12 +49,12 @@ from fireai.core.qomn_kernel import (
     # Layer 4 — Audit
     AuditEntry,
     ComputationError,
-    SecurityError,
     # Layer 0 — Physics Guards
     PhysicsGuardError,
     QOMNAuditLog,
     # Kernel
     QOMNKernel,
+    SecurityError,
     ValidationError,
     # Layer 2 — Computation
     _f64_hash,

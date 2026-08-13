@@ -39,7 +39,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 # ACTION TYPES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class ModelUpdateType(str, Enum):
+class ModelUpdateType(StrEnum):
     """
     Types of model updates that can be queued.
 
@@ -68,7 +68,7 @@ class ModelUpdateType(str, Enum):
     UPDATE_ANNOTATION = "update_annotation"
 
 
-class ModelUpdateStatus(str, Enum):
+class ModelUpdateStatus(StrEnum):
     """Status of a model update action."""
 
     PENDING = "pending"

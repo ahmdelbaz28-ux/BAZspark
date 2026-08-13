@@ -23,7 +23,6 @@ import logging
 import math
 import os
 import re
-from typing import List, Tuple
 
 from parsers._path_security import (
     UnsafePathError,
@@ -106,9 +105,9 @@ class IfcParser:
                 remedy="Check disk health and file permissions."
             ))
 
-        walls: List[Wall] = []
-        rooms: List[Room] = []
-        openings: List[Opening] = []
+        walls: list[Wall] = []
+        rooms: list[Room] = []
+        openings: list[Opening] = []
 
         # Track how many elements used fallback/placeholder geometry
         # SAFETY CRITICAL: If any element uses placeholder data, the entire
@@ -254,7 +253,7 @@ class IfcParser:
                 opening_counter += 1
 
         # Fallback room instantiation — ensures at least one room for pipeline testing.
-        # BUG-9 FIX: Set has_fallback_geometry=True when fallback room is used.
+        # BUG-9 FIX: set has_fallback_geometry=True when fallback room is used.
         # Downstream systems MUST check this flag — fire protection design based
         # on fallback geometry is INVALID and must be rejected.
         #
@@ -341,7 +340,7 @@ class IfcParser:
         return result
 
     @staticmethod
-    def _extract_room_boundary(inst_id: str, content: str) -> Tuple[Point3D, ...]:
+    def _extract_room_boundary(inst_id: str, content: str) -> tuple[Point3D, ...]:
         """
         Try to extract room boundary from IFC representation items.
         Falls back to a spaced 10m x 10m room if no geometry found.
@@ -376,7 +375,7 @@ class IfcParser:
         )
 
     @staticmethod
-    def _calculate_polygon_area(boundary: Tuple[Point3D, ...]) -> float:
+    def _calculate_polygon_area(boundary: tuple[Point3D, ...]) -> float:
         """Calculate polygon area using the Shoelace formula."""
         n = len(boundary)
         if n < 3:

@@ -57,7 +57,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ except ImportError:
 # ============================================================================
 
 
-class LogicFunction(str, Enum):
+class LogicFunction(StrEnum):
     """
     Output actions that a FACP can trigger per NFPA 72 §14.4.
 
@@ -127,7 +127,7 @@ class LogicFunction(str, Enum):
 # ============================================================================
 
 
-class DeviceInputType(str, Enum):
+class DeviceInputType(StrEnum):
     """
     Input device types for cause-effect mapping.
 

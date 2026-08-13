@@ -16,7 +16,7 @@ import sqlite3
 import threading
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class ImprovementFeedback:
     expected_value: float = 0.0
     severity: str = "medium"  # "low", "medium", "high", "critical"
     context: str = ""  # JSON context string
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -48,7 +48,7 @@ class ImprovementRecord:
     new_value: float = 0.0
     change_pct: float = 0.0
     action_taken: str = ""
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     requires_approval: bool = False  # F-02: flag pending human review for safety-critical changes
 
     def to_dict(self) -> dict[str, Any]:
@@ -80,7 +80,7 @@ class ImprovementReport:
     trends: list[ComponentTrend] = field(default_factory=list)
     top_improvements: list[ImprovementRecord] = field(default_factory=list)
     regression_warnings: list[str] = field(default_factory=list)
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -277,7 +277,7 @@ class SelfImprovementEngine:
                     new_value,
                     round(change_pct, 4),
                     action_taken,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                     1 if requires_approval else 0,
                 ),
             )
@@ -474,7 +474,7 @@ class SelfImprovementEngine:
                     best.margin,
                     best.threshold,
                     best.confidence,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                 ),
             )
             self.conn.commit()

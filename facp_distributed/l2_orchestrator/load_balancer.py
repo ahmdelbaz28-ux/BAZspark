@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class LoadBalancingStrategy(Enum):
@@ -19,7 +19,7 @@ class LoadBalancingStrategy(Enum):
 class EngineWorker:
     """Represents an engine worker node in the distributed system"""
 
-    def __init__(self, worker_id: str, capabilities: List[str],
+    def __init__(self, worker_id: str, capabilities: list[str],
                  max_concurrent_tasks: int = 10, current_load: float = 0.0):
         self.worker_id = worker_id
         self.capabilities = capabilities
@@ -60,7 +60,7 @@ class EngineWorker:
         """Check if worker is healthy based on heartbeat"""
         return (time.time() - self.last_heartbeat) < timeout_seconds
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get worker status information"""
         return {
             "worker_id": self.worker_id,
@@ -84,7 +84,7 @@ class LoadBalancer:
     """Load balancer for distributing tasks to engine workers in distributed system"""
 
     def __init__(self, strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTIONS):
-        self.workers: Dict[str, EngineWorker] = {}
+        self.workers: dict[str, EngineWorker] = {}
         self.strategy = strategy
         self.lock = threading.Lock()
         self.round_robin_index = 0
@@ -95,7 +95,7 @@ class LoadBalancer:
         self.cluster_workers = {}  # cluster-wide worker info
         self.worker_selection_history = {}  # worker_id -> selection_count
 
-    def register_engine_worker(self, worker_id: str, capabilities: List[str],
+    def register_engine_worker(self, worker_id: str, capabilities: list[str],
                               max_concurrent_tasks: int = 10, location: str = "unknown"):
         """Register a new engine worker with the load balancer"""
         with self.lock:
@@ -116,7 +116,7 @@ class LoadBalancer:
             if worker_id in self.worker_selection_history:
                 del self.worker_selection_history[worker_id]
 
-    def select_engine_worker(self, method: str, request_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    def select_engine_worker(self, method: str, request_data: dict[str, Any] | None = None) -> str | None:
         """Select an appropriate engine worker for a method"""
         with self.lock:
             # First, filter workers that can handle this method
@@ -162,7 +162,7 @@ class LoadBalancer:
 
         return False
 
-    def _round_robin_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
+    def _round_robin_selection(self, workers: list[EngineWorker]) -> EngineWorker | None:
         """Round-robin selection of workers"""
         if not workers:
             return None
@@ -172,7 +172,7 @@ class LoadBalancer:
         self.round_robin_index = (self.round_robin_index + 1) % len(workers)
         return selected
 
-    def _least_connections_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
+    def _least_connections_selection(self, workers: list[EngineWorker]) -> EngineWorker | None:
         """Select worker with least connections"""
         if not workers:
             return None
@@ -181,7 +181,7 @@ class LoadBalancer:
         sorted_workers = sorted(workers, key=lambda w: (w.current_tasks, w.current_load))
         return sorted_workers[0]
 
-    def _weighted_round_robin_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
+    def _weighted_round_robin_selection(self, workers: list[EngineWorker]) -> EngineWorker | None:
         """Weighted round-robin selection"""
         if not workers:
             return None
@@ -204,7 +204,7 @@ class LoadBalancer:
         # Fallback to last worker
         return workers[-1]
 
-    def _resource_based_selection(self, workers: List[EngineWorker], request_data: Dict[str, Any]) -> Optional[EngineWorker]:
+    def _resource_based_selection(self, workers: list[EngineWorker], request_data: dict[str, Any]) -> EngineWorker | None:
         """Select worker based on resource availability and request requirements"""
         if not workers:
             return None
@@ -241,8 +241,8 @@ class LoadBalancer:
             if worker_id in self.workers:
                 self.workers[worker_id].status = status
 
-    def update_worker_resources(self, worker_id: str, cpu_usage: Optional[float] = None,
-                               memory_usage: Optional[float] = None, network_latency: Optional[float] = None):
+    def update_worker_resources(self, worker_id: str, cpu_usage: float | None = None,
+                               memory_usage: float | None = None, network_latency: float | None = None):
         """Update resource usage information for a worker"""
         with self.lock:
             if worker_id in self.workers:
@@ -270,19 +270,19 @@ class LoadBalancer:
                 # Don't immediately remove, keep for a while for debugging
                 pass
 
-    def get_worker_status(self, worker_id: str) -> Optional[Dict[str, Any]]:
+    def get_worker_status(self, worker_id: str) -> dict[str, Any] | None:
         """Get status of a specific worker"""
         with self.lock:
             if worker_id in self.workers:
                 return self.workers[worker_id].get_status()
         return None
 
-    def get_all_worker_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_worker_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all workers"""
         with self.lock:
             return {wid: worker.get_status() for wid, worker in self.workers.items()}
 
-    def get_load_balancer_status(self) -> Dict[str, Any]:
+    def get_load_balancer_status(self) -> dict[str, Any]:
         """Get overall load balancer status"""
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
@@ -398,9 +398,9 @@ class LoadBalancer:
         )
 
     # Storage for tasks that couldn't be redistributed (no healthy workers available)
-    _pending_redistribution: Dict[str, str] = {}
+    _pending_redistribution: dict[str, str] = {}
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get load balancing statistics"""
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
@@ -430,7 +430,7 @@ class LoadBalancer:
             if worker_id in self.workers:
                 self.workers[worker_id].weight = max(0.1, new_weight)  # Minimum weight of 0.1
 
-    def get_eligible_workers_for_method(self, method: str) -> List[Dict[str, Any]]:
+    def get_eligible_workers_for_method(self, method: str) -> list[dict[str, Any]]:
         """Get all workers eligible for a specific method"""
         with self.lock:
             eligible_workers = []
@@ -504,7 +504,7 @@ class LoadBalancer:
                 items = list(self.task_assignment_history.items())
                 self.task_assignment_history = dict(items[-5000:])  # Keep last 5000
 
-    def sync_with_cluster(self, cluster_worker_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_worker_state: dict[str, Any]):
         """Sync load balancer with cluster-wide worker information"""
         with self.lock:
             # Update cluster workers information
@@ -523,7 +523,7 @@ class AdaptiveLoadBalancer(LoadBalancer):
         self.adaptation_threshold = 0.1  # Threshold for changing strategy
         self.monitoring_window = 100  # Number of requests to consider for adaptation
 
-    def select_engine_worker(self, method: str, request_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    def select_engine_worker(self, method: str, request_data: dict[str, Any] | None = None) -> str | None:
         """Select worker with adaptive strategy selection"""
         # Periodically evaluate if we should change strategy
         self._evaluate_strategy()
@@ -546,7 +546,7 @@ class AdaptiveLoadBalancer(LoadBalancer):
                 # Switch to resource-based strategy for better optimization
                 self.strategy = LoadBalancingStrategy.RESOURCE_BASED
 
-    def record_task_completion(self, task_id: str, worker_id: str, response_time: Optional[float] = None):
+    def record_task_completion(self, task_id: str, worker_id: str, response_time: float | None = None):
         """Override to record performance metrics"""
         super().record_task_completion(task_id, worker_id)
 

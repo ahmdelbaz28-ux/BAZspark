@@ -5,7 +5,7 @@ import threading
 import time
 import uuid
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,8 @@ class TaskScheduler:
         self.last_cleanup = time.time()
         self.cleanup_interval = 60  # seconds
 
-    def schedule_task(self, method: str, request_data: Dict[str, Any],
-                     target_worker: str, source_node: Optional[str] = None) -> Dict[str, Any]:
+    def schedule_task(self, method: str, request_data: dict[str, Any],
+                     target_worker: str, source_node: str | None = None) -> dict[str, Any]:
         """Schedule a task to be executed on a specific worker"""
         task_id = str(uuid.uuid4())
 
@@ -80,7 +80,7 @@ class TaskScheduler:
 
         return task_info
 
-    def _determine_priority(self, constraints: Dict[str, Any]) -> TaskPriority:
+    def _determine_priority(self, constraints: dict[str, Any]) -> TaskPriority:
         """Determine task priority based on constraints"""
         risk_level = constraints.get("risk_level", "low")
 
@@ -107,7 +107,7 @@ class TaskScheduler:
                 return True
         return False
 
-    def complete_task(self, task_id: str, result: Dict[str, Any]) -> bool:
+    def complete_task(self, task_id: str, result: dict[str, Any]) -> bool:
         """Mark a task as completed successfully"""
         with self.lock:
             if task_id in self.running_tasks:
@@ -189,7 +189,7 @@ class TaskScheduler:
                 return True
         return False
 
-    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Get the status of a specific task"""
         with self.lock:
             if task_id in self.tasks:
@@ -202,7 +202,7 @@ class TaskScheduler:
 
         return None
 
-    def get_worker_queue_status(self, worker_id: str) -> Dict[str, Any]:
+    def get_worker_queue_status(self, worker_id: str) -> dict[str, Any]:
         """Get the status of a worker's task queue"""
         with self.lock:
             task_ids = self.worker_task_queues.get(worker_id, [])
@@ -226,7 +226,7 @@ class TaskScheduler:
 
             return queue_info
 
-    def get_scheduler_status(self) -> Dict[str, Any]:
+    def get_scheduler_status(self) -> dict[str, Any]:
         """Get overall scheduler status"""
         with self.lock:
             return {
@@ -241,7 +241,7 @@ class TaskScheduler:
                 "active_workers": len([wid for wid, tasks in self.worker_task_queues.items() if len(tasks) > 0])
             }
 
-    def register_task_dependency(self, task_id: str, dependency_task_ids: List[str]):
+    def register_task_dependency(self, task_id: str, dependency_task_ids: list[str]):
         """Register dependencies for a task"""
         with self.lock:
             self.task_dependencies[task_id] = dependency_task_ids
@@ -253,7 +253,7 @@ class TaskScheduler:
                 self.task_notifications[task_id] = []
             self.task_notifications[task_id].append(callback)
 
-    def _notify_task_completion(self, task_id: str, result: Dict[str, Any]):
+    def _notify_task_completion(self, task_id: str, result: dict[str, Any]):
         """Notify listeners about task completion"""
         with self.lock:
             if task_id in self.task_notifications:
@@ -283,7 +283,7 @@ class TaskScheduler:
             if len(self.failed_tasks) > self.max_history_size:
                 self.failed_tasks = self.failed_tasks[-self.max_history_size:]
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get scheduler statistics"""
         with self.lock:
             completed_count = len(self.completed_tasks)
@@ -370,7 +370,7 @@ class TaskScheduler:
                 # Clear the worker's queue
                 self.worker_task_queues[worker_id] = []
 
-    def get_ready_tasks_for_worker(self, worker_id: str, max_tasks: int = 1) -> List[Dict[str, Any]]:
+    def get_ready_tasks_for_worker(self, worker_id: str, max_tasks: int = 1) -> list[dict[str, Any]]:
         """Get tasks ready for a specific worker"""
         with self.lock:
             if worker_id not in self.worker_task_queues:
@@ -386,7 +386,7 @@ class TaskScheduler:
 
             return ready_tasks
 
-    def remove_worker_tasks(self, worker_id: str) -> List[str]:
+    def remove_worker_tasks(self, worker_id: str) -> list[str]:
         """Remove all tasks assigned to a worker and return their IDs"""
         with self.lock:
             if worker_id not in self.worker_task_queues:
@@ -413,11 +413,11 @@ class DistributedTaskScheduler(TaskScheduler):
         self.cross_node_dependencies = {}  # task_id -> [(dependency_task_id, dependency_node_id), ...]
 
     def set_cluster_sync_callback(self, callback):
-        """Set callback for syncing task state with cluster"""
+        """set callback for syncing task state with cluster"""
         self.cluster_sync_callback = callback
 
-    def schedule_task(self, method: str, request_data: Dict[str, Any],
-                     target_worker: str, source_node: Optional[str] = None) -> Dict[str, Any]:
+    def schedule_task(self, method: str, request_data: dict[str, Any],
+                     target_worker: str, source_node: str | None = None) -> dict[str, Any]:
         """Override to support cluster-wide task scheduling"""
         task_info = super().schedule_task(method, request_data, target_worker, source_node)
 
@@ -435,7 +435,7 @@ class DistributedTaskScheduler(TaskScheduler):
 
         return task_info
 
-    def complete_task(self, task_id: str, result: Dict[str, Any]) -> bool:
+    def complete_task(self, task_id: str, result: dict[str, Any]) -> bool:
         """Override to support cluster-wide task completion"""
         success = super().complete_task(task_id, result)
 
@@ -463,7 +463,7 @@ class DistributedTaskScheduler(TaskScheduler):
 
         return success
 
-    def sync_with_cluster(self, cluster_task_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_task_state: dict[str, Any]):
         """Sync task scheduler with cluster state"""
         # Implementation would update scheduler with cluster-wide task information
         logger.debug("sync_with_cluster called with %d entries; not yet implemented", len(cluster_task_state))

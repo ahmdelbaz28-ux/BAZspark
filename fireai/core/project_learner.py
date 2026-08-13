@@ -199,7 +199,7 @@ class ProjectLearner:
                 global_dominant_strategy="unknown",
                 strategy_distribution={},
                 avg_efficiency=0.0,
-                generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
             )
 
         pts = [(r.width, r.length) for r in records]
@@ -248,7 +248,7 @@ class ProjectLearner:
             global_dominant_strategy=global_dom,
             strategy_distribution=strategy_dist,
             avg_efficiency=round(avg_eff, 4),
-            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
         )
 
     # ── k-means++ ─────────────────────────────────────────────
@@ -274,7 +274,7 @@ class ProjectLearner:
             r = random.random() * total  # NOSONAR
             cum = 0.0
             chosen = pts[-1]
-            for p, d in zip(pts, d2):
+            for p, d in zip(pts, d2, strict=False):
                 cum += d
                 if cum >= r:
                     chosen = p

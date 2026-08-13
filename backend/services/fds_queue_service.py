@@ -24,9 +24,9 @@ import hmac
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +44,12 @@ if not _MODAL_AVAILABLE:
     logger.info(
         "FDS Queue: MODAL_TOKEN_ID/MODAL_TOKEN_SECRET not set — "
         "running in LOCAL_SIMULATION mode. "
-        "Set these env vars to enable real cloud FDS runs."
+        "set these env vars to enable real cloud FDS runs."
     )
 
 
 # ── Job status enum ───────────────────────────────────────────────────────────
-class FDSJobStatus(str, Enum):
+class FDSJobStatus(StrEnum):
     PENDING   = "pending"
     RUNNING   = "running"
     COMPLETED = "completed"
@@ -62,10 +62,10 @@ class FDSJobStatus(str, Enum):
 # IMPORTANT: defined at module level so it is a true singleton across all
 # FastAPI routes and test clients that import this module. Never reassign the
 # dict itself — only mutate it (add/update keys) so all references stay live.
-_JOB_STORE: Dict[str, Dict[str, Any]] = {}
+_JOB_STORE: dict[str, dict[str, Any]] = {}
 
 
-def _get_job_store() -> Dict[str, Dict[str, Any]]:
+def _get_job_store() -> dict[str, dict[str, Any]]:
     """Return the singleton job store. Always use this instead of _JOB_STORE directly."""
     return _JOB_STORE
 
@@ -79,8 +79,8 @@ def submit_fds_job(
     project_id: str = "",
     user_id: str = "",
     webhook_url: str = "",
-    metadata: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Submit an FDS simulation job.
 
@@ -92,7 +92,7 @@ def submit_fds_job(
         metadata:    Optional extra metadata stored with the job.
 
     Returns:
-        Dict with job_id, status, estimated_runtime_sec.
+        dict with job_id, status, estimated_runtime_sec.
     """
     job_id = str(uuid.uuid4())
     # V294 SECURITY FIX (Bandit B324): MD5 used for non-security checksum
@@ -102,12 +102,12 @@ def submit_fds_job(
     # input), switch to hashlib.sha256().
     checksum = hashlib.md5(fds_input.encode(), usedforsecurity=False).hexdigest()
 
-    job: Dict[str, Any] = {
+    job: dict[str, Any] = {
         "job_id":          job_id,
         "project_id":      project_id,
         "user_id":         user_id,
         "status":          FDSJobStatus.PENDING,
-        "submitted_at":    datetime.now(timezone.utc).isoformat(),
+        "submitted_at":    datetime.now(UTC).isoformat(),
         "completed_at":    None,
         "fds_checksum":    checksum,
         "webhook_url":     webhook_url,
@@ -136,7 +136,7 @@ def submit_fds_job(
     }
 
 
-def get_fds_job_status(job_id: str) -> Dict[str, Any]:
+def get_fds_job_status(job_id: str) -> dict[str, Any]:
     """Return the current status and result of a job."""
     job = _get_job_store().get(job_id)
     if not job:
@@ -153,8 +153,8 @@ def get_fds_job_status(job_id: str) -> Dict[str, Any]:
     }
 
 
-def list_fds_jobs(user_id: str = "", limit: int = 20) -> Dict[str, Any]:
-    """List recent FDS jobs for a user."""
+def list_fds_jobs(user_id: str = "", limit: int = 20) -> dict[str, Any]:
+    """list recent FDS jobs for a user."""
     jobs = [
         {k: v for k, v in j.items() if k != "fds_checksum"}
         for j in _get_job_store().values()
@@ -164,7 +164,7 @@ def list_fds_jobs(user_id: str = "", limit: int = 20) -> Dict[str, Any]:
     return {"jobs": jobs_sorted[:limit], "total": len(jobs_sorted)}
 
 
-def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle_fds_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Handle an incoming webhook from Modal (or internal simulation).
     Updates the job record and notifies connected WebSocket clients.
@@ -199,7 +199,7 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": f"Job {job_id} not found"}
 
     job["status"]       = status
-    job["completed_at"] = datetime.now(timezone.utc).isoformat()
+    job["completed_at"] = datetime.now(UTC).isoformat()
     job["result"]       = payload.get("result")
     job["error"]        = payload.get("error")
 
@@ -280,10 +280,10 @@ def _run_local_simulation(job_id: str, fds_input: str) -> None:
         "evacuation_time_s": 210,
         "note": (
             "Simulated locally (no Modal credentials). "
-            "Set MODAL_TOKEN_ID + MODAL_TOKEN_SECRET for real FDS runs."
+            "set MODAL_TOKEN_ID + MODAL_TOKEN_SECRET for real FDS runs."
         ),
     }
 
     _get_job_store()[job_id]["status"]       = FDSJobStatus.SIMULATED
-    _get_job_store()[job_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
+    _get_job_store()[job_id]["completed_at"] = datetime.now(UTC).isoformat()
     _get_job_store()[job_id]["result"]       = simulated_result

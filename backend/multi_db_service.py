@@ -19,8 +19,9 @@ from __future__ import annotations
 import importlib.util
 import logging
 import threading
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Callable, Optional
+from typing import Any
 
 from backend.config import config
 
@@ -74,10 +75,10 @@ class MultiDatabaseService:
         self._lock = threading.Lock()
 
         # Database connections/pools
-        self._redis_client: Optional[Any] = None
-        self._qdrant_client: Optional[Any] = None
-        self._neo4j_driver: Optional[Any] = None
-        self._postgres_pool: Optional[Any] = None
+        self._redis_client: Any | None = None
+        self._qdrant_client: Any | None = None
+        self._neo4j_driver: Any | None = None
+        self._postgres_pool: Any | None = None
 
         self.initialize()
 
@@ -209,11 +210,11 @@ class MultiDatabaseService:
             self._postgres_pool = None
 
     # Redis methods
-    def get_redis(self) -> Optional[Any]:
+    def get_redis(self) -> Any | None:
         """Get Redis client if available."""
         return self._redis_client
 
-    def redis_set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
+    def redis_set(self, key: str, value: str, ex: int | None = None) -> bool:
         """Set a value in Redis."""
         if not self._redis_client:
             return False
@@ -224,7 +225,7 @@ class MultiDatabaseService:
             logger.exception("Redis set error")
             return False
 
-    def redis_get(self, key: str) -> Optional[str]:
+    def redis_get(self, key: str) -> str | None:
         """Get a value from Redis."""
         if not self._redis_client:
             return None
@@ -245,7 +246,7 @@ class MultiDatabaseService:
             return False
 
     # Qdrant methods
-    def get_qdrant(self) -> Optional[Any]:
+    def get_qdrant(self) -> Any | None:
         """Get Qdrant client if available."""
         return self._qdrant_client
 
@@ -276,12 +277,12 @@ class MultiDatabaseService:
             return []
 
     # Neo4j methods
-    def get_neo4j(self) -> Optional[Any]:
+    def get_neo4j(self) -> Any | None:
         """Get Neo4j driver if available."""
         return self._neo4j_driver
 
     @contextmanager
-    def neo4j_session(self, database: Optional[str] = None):
+    def neo4j_session(self, database: str | None = None):
         """Context manager for Neo4j sessions."""
         if not self._neo4j_driver:
             raise RuntimeError("Neo4j driver not available")
@@ -292,7 +293,7 @@ class MultiDatabaseService:
         finally:
             session.close()
 
-    def neo4j_execute_query(self, query: str, parameters: dict = None, database: Optional[str] = None) -> list:
+    def neo4j_execute_query(self, query: str, parameters: dict = None, database: str | None = None) -> list:
         """Execute a Cypher READ-ONLY query against Neo4j.
 
         H-09: Defense-in-depth — only whitelisted read patterns are allowed.
@@ -307,7 +308,7 @@ class MultiDatabaseService:
         if any(q.startswith(w) for w in ("CREATE", "MERGE", "SET", "DELETE", "DETACH", "REMOVE")):
             logger.warning(
                 "neo4j_execute_query: rejected write operation (query starts with: %s)",
-                query.split()[0] if query else "<empty>",
+                query.split(maxsplit=1)[0] if query else "<empty>",
             )
             return []
 
@@ -320,7 +321,7 @@ class MultiDatabaseService:
             return []
 
     # PostgreSQL methods (when using PostgreSQL as primary DB)
-    def get_postgres_pool(self) -> Optional[Any]:
+    def get_postgres_pool(self) -> Any | None:
         """Get PostgreSQL connection pool if available."""
         return self._postgres_pool
 
@@ -409,7 +410,7 @@ class MultiDatabaseService:
             logger.exception("cache_bim_element failed")
             return False
 
-    def get_cached_bim_element(self, element_id: str, tenant_id: str = "") -> Optional[dict]:
+    def get_cached_bim_element(self, element_id: str, tenant_id: str = "") -> dict | None:
         """Retrieve cached BIM element data from Redis.
 
         When tenant_id is provided, the Redis key includes tenant isolation:
@@ -615,7 +616,7 @@ class MultiDatabaseService:
 
 
 # Global instance
-_multi_db_service: Optional[MultiDatabaseService] = None
+_multi_db_service: MultiDatabaseService | None = None
 _multi_db_lock = threading.Lock()
 
 

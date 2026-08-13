@@ -11,7 +11,6 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Dict, List
 
 from parsers._base import ParserBase
 from parsers._path_security import (
@@ -35,8 +34,8 @@ class IFCAnalysis:
 
     building_name: str
     floors: int
-    spaces: List[Dict]
-    devices: List[Dict]
+    spaces: list[dict]
+    devices: list[dict]
     total_area: float
 
 
@@ -61,15 +60,15 @@ class IFCParser(ParserBase):
             logging.error("Could not open IFC file: %s", e)
             raise
 
-    def _load_json(self) -> Dict:
+    def _load_json(self) -> dict:
         safe_path = self.validate_input(self.ifc_path)
         with open(safe_path) as f:
             return json.load(f)
 
-    def _parse_instances(self, data: Dict) -> List[Dict]:
+    def _parse_instances(self, data: dict) -> list[dict]:
         return data.get('instances', [])
 
-    def _extract_spaces(self, instances: List[Dict]) -> List[Dict]:
+    def _extract_spaces(self, instances: list[dict]) -> list[dict]:
         spaces = []
         for inst in instances:
             if inst.get('type') == 'IfcSpace':
@@ -107,7 +106,7 @@ class IFCParser(ParserBase):
 
         return spaces
 
-    def _extract_devices(self, instances: List[Dict]) -> List[Dict]:
+    def _extract_devices(self, instances: list[dict]) -> list[dict]:
         _FIRE_ENTITY_TYPES = {
             'IfcFireSuppressionDevice_Type',
             'IfcAlarm',
@@ -133,7 +132,7 @@ class IFCParser(ParserBase):
 
         return devices
 
-    def _extract_building(self, instances: List[Dict]) -> Dict:
+    def _extract_building(self, instances: list[dict]) -> dict:
         for inst in instances:
             if inst.get('type') == 'IfcBuilding':
                 attrs = inst.get('attributes', {})
@@ -143,7 +142,7 @@ class IFCParser(ParserBase):
                 }
         return {'name': 'Unknown'}
 
-    def _count_floors(self, instances: List[Dict]) -> int:
+    def _count_floors(self, instances: list[dict]) -> int:
         floors = set()
         for inst in instances:
             if inst.get('type') == 'IfcBuildingStorey':

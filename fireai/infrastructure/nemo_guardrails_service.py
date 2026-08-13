@@ -19,7 +19,7 @@ References:
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.constants.nfpa72 import (
     SMOKE_MAX_CEILING_HEIGHT_M,
@@ -38,7 +38,7 @@ class GuardrailViolation:
         self.description = description
         self.severity = severity
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {
             "rule_id": self.rule_id,
             "description": self.description,
@@ -61,18 +61,18 @@ class NeMoGuardrailsService:
         self,
         query: str,
         response_text: str,
-        context_data: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[bool, List[GuardrailViolation], str]:
+        context_data: dict[str, Any] | None = None,
+    ) -> tuple[bool, list[GuardrailViolation], str]:
         """
         Validate an LLM response against safety-critical fire alarm rules.
 
         Returns:
-            Tuple[is_safe, violations_list, sanitized_or_modified_text]
+            tuple[is_safe, violations_list, sanitized_or_modified_text]
         """
         if not self.enabled:
             return True, [], response_text
 
-        violations: List[GuardrailViolation] = []
+        violations: list[GuardrailViolation] = []
 
         # Rule 1: Check for invalid smoke detector spacing claims (e.g., > 9.1m / 30ft)
         spacing_matches = re.findall(

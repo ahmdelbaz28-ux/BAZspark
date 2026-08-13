@@ -1,7 +1,6 @@
 import io
 import json
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -79,7 +78,7 @@ def _write_project_sheet(wb, project, device_count, connection_count):
         ("Project ID", project.get("id", "")),
         ("Project Name", project.get("name", "")),
         ("Author", project.get("author", "")),
-        ("Exported At (UTC)", datetime.now(timezone.utc).isoformat()),
+        ("Exported At (UTC)", datetime.now(UTC).isoformat()),
         ("Software", "FireAI / BAZSPARK v1.56.0 (V157)"),
         ("Device Count", device_count),
         ("Connection Count", connection_count),
@@ -203,7 +202,7 @@ def _generate_manifest_export(project, devices, connections, export_type, projec
             f"/api/v1/projects/{project_id}/export/ifc",
             "/api/v1/exports (this endpoint, with exportType=excel)",
         ],
-        "exportedAt": datetime.now(timezone.utc).isoformat(),
+        "exportedAt": datetime.now(UTC).isoformat(),
         "software": "FireAI / BAZSPARK v1.56.0 (V157)",
         "note": (
             f"exportType='{export_type}' is not a binary format. Use the "
@@ -220,7 +219,7 @@ def _generate_manifest_export(project, devices, connections, export_type, projec
 
 class ExportDataInput(BaseModel):
     exportType: str
-    dataIds: Optional[list] = None
+    dataIds: list | None = None
 
 
 @project_router.post(

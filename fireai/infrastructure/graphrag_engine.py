@@ -49,7 +49,7 @@ References:
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +68,11 @@ class GraphRAGEngine:
 
     def __init__(
         self,
-        neo4j_uri: Optional[str] = None,
-        neo4j_user: Optional[str] = None,
-        neo4j_password: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
-        openai_base_url: Optional[str] = None,
+        neo4j_uri: str | None = None,
+        neo4j_user: str | None = None,
+        neo4j_password: str | None = None,
+        openai_api_key: str | None = None,
+        openai_base_url: str | None = None,
         embedding_model: str = "text-embedding-3-small",
         embedding_dimensions: int = 1536,
         llm_model: str = "gpt-4o",
@@ -143,7 +143,7 @@ class GraphRAGEngine:
             return
 
         try:
-            # Set env vars for LangChain (it reads from os.environ)
+            # set env vars for LangChain (it reads from os.environ)
             os.environ["NEO4J_URI"] = self._neo4j_uri
             os.environ["NEO4J_USERNAME"] = self._neo4j_user
             os.environ["NEO4J_PASSWORD"] = self._neo4j_password
@@ -369,7 +369,7 @@ class GraphRAGEngine:
     # Semantic search (vector only, no LLM)
     # ------------------------------------------------------------------
 
-    def search_similar(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def search_similar(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
         """
         Search for similar text chunks using vector similarity.
 
@@ -378,7 +378,7 @@ class GraphRAGEngine:
             limit: Max results.
 
         Returns:
-            List of {"text": ..., "score": ...} dicts.
+            list of {"text": ..., "score": ...} dicts.
         """
         self._initialize()
         if self._vector_store is None:
@@ -394,7 +394,7 @@ class GraphRAGEngine:
             logger.exception("GraphRAG: Search failed: %s", exc)
             return []
 
-    def rerank_results(self, query: str, results: List[Dict[str, Any]], top_k: int = 3) -> List[Dict[str, Any]]:
+    def rerank_results(self, query: str, results: list[dict[str, Any]], top_k: int = 3) -> list[dict[str, Any]]:
         """
         Re-rank retrieved context candidates using Nemotron-style cross-encoder scoring.
 
@@ -403,7 +403,7 @@ class GraphRAGEngine:
 
         Args:
             query: The user's query string.
-            results: List of candidate dicts with 'text' and 'score'.
+            results: list of candidate dicts with 'text' and 'score'.
             top_k: Number of top re-ranked candidates to return.
 
         Returns:
@@ -434,7 +434,7 @@ class GraphRAGEngine:
     # Health check
     # ------------------------------------------------------------------
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check GraphRAG engine health."""
         self._initialize()
         return {
@@ -454,7 +454,7 @@ class GraphRAGEngine:
 # Singleton
 # ---------------------------------------------------------------------------
 
-_graphrag_engine: Optional[GraphRAGEngine] = None
+_graphrag_engine: GraphRAGEngine | None = None
 
 
 def get_graphrag_engine() -> GraphRAGEngine:

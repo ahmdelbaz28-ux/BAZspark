@@ -16,8 +16,8 @@ import logging
 import secrets
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
@@ -91,7 +91,7 @@ class _RateLimiter:
 # ===========================================================================
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     INSPECTION = "INSPECTION"
     SURVEY = "SURVEY"
     PUNCH_ITEM = "PUNCH_ITEM"
@@ -99,7 +99,7 @@ class TaskType(str, Enum):
     COMMISSIONING = "COMMISSIONING"
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -107,7 +107,7 @@ class TaskStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
-class AuthScheme(str, Enum):
+class AuthScheme(StrEnum):
     BEARER = "BEARER"
     API_KEY = "API_KEY"  # Auth scheme name, not an actual key value
 
@@ -144,7 +144,7 @@ class AuthToken:
 
     @property
     def is_expired(self) -> bool:
-        return datetime.now(timezone.utc) >= self.expires_at
+        return datetime.now(UTC) >= self.expires_at
 
 
 @dataclass(frozen=True)
@@ -248,7 +248,7 @@ class MobileAPI:
 
         token_str = self._generate_token()
         refresh_str = self._generate_token()
-        expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        expires = datetime.now(UTC) + timedelta(hours=24)
 
         auth_token = AuthToken(
             token=token_str,
@@ -274,7 +274,7 @@ class MobileAPI:
             if stored.refresh_token == refresh_token:
                 new_token = self._generate_token()
                 new_refresh = self._generate_token()
-                new_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+                new_expires = datetime.now(UTC) + timedelta(hours=24)
 
                 auth_token = AuthToken(
                     token=new_token,
@@ -391,7 +391,7 @@ class MobileAPI:
 
             sync_data = SyncPackage(
                 user_id=user_id,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
                 projects=projects,
                 tasks=updated_tasks,
                 inspections=list(self._reports.values()),  # type: ignore[arg-type]
@@ -553,7 +553,7 @@ if __name__ == "__main__":
             name="Hospital Tower B",
             building_count=3,
             status="ACTIVE",
-            last_updated=datetime.now(timezone.utc),
+            last_updated=datetime.now(UTC),
             role="editor",
         )
     )
@@ -565,13 +565,13 @@ if __name__ == "__main__":
         task_id="TASK-001",
         user_id="field_engineer",
         findings="All detectors operational",
-        submitted_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(UTC),
     )
     result = api.submit_field_report(report)
     print(f"Report accepted: {result.accepted}")
 
     sync = api.get_offline_sync(
         "field_engineer",
-        datetime(2020, 1, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 1, tzinfo=UTC),
     )
     print(f"Sync package: {len(sync.tasks)} tasks, checksum={sync.checksum}")

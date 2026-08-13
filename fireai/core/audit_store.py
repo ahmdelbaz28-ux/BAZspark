@@ -547,7 +547,7 @@ def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> st
     # This prevents concurrent add_event() calls from forking the chain.
     with _chain_lock:
         # Generate timestamp
-        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+        timestamp = datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
 
         # Get previous hash
         previous_hash = _get_last_hash()

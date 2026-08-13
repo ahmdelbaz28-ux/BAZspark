@@ -21,7 +21,7 @@ import logging
 import os
 import threading
 import time
-from typing import Any, Dict, Optional, Set
+from typing import Any
 
 import websockets
 
@@ -36,7 +36,7 @@ class WebSocketTransport(TransportLayer):
     """WebSocket transport implementation for distributed FACP"""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator",
-                 auth_token: Optional[str] = None, allowed_methods: Optional[Set[str]] = None,
+                 auth_token: str | None = None, allowed_methods: set[str] | None = None,
                  allow_insecure_ws: bool = False):
         # L-3 FIX: secure-by-default. The default outbound URL is now wss://.
         # Use allow_insecure_ws=True to opt in to ws:// for trusted internal
@@ -53,7 +53,7 @@ class WebSocketTransport(TransportLayer):
             _logger.warning(
                 "WebSocketTransport started with auth_token=None — "
  "authentication is DISABLED. This is only safe on "
- "trusted internal networks. Set auth_token for any "
+ "trusted internal networks. set auth_token for any "
  "deployment where port %s is reachable from untrusted "
  "networks.",
                 port,
@@ -62,8 +62,8 @@ class WebSocketTransport(TransportLayer):
             "get_status", "get_health", "route_announcement",
             "process_alert", "query_sensor", "acknowledge_alarm",
         }
-        self.clients: Set[websockets.WebSocketServerProtocol] = set()
-        self._authenticated: Set[websockets.WebSocketServerProtocol] = set()
+        self.clients: set[websockets.WebSocketServerProtocol] = set()
+        self._authenticated: set[websockets.WebSocketServerProtocol] = set()
         self.websocket_server = None
         self.request_queue = []  # Queue for requests
         self.response_callbacks = {}  # request_id -> callback
@@ -215,7 +215,7 @@ class WebSocketTransport(TransportLayer):
             raise ValueError(
                 "Refusing to start WebSocketTransport without auth_token. "
                 "Authentication is required for any network-exposed deployment. "
-                "Set auth_token explicitly, or set FACP_ALLOW_UNAUTHENTICATED=1 "
+                "set auth_token explicitly, or set FACP_ALLOW_UNAUTHENTICATED=1 "
                 "for trusted dev/test networks only."
             )
 
@@ -251,7 +251,7 @@ class WebSocketTransport(TransportLayer):
         if websocket in self.clients:
             await websocket.send(message)
 
-    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
+    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
         """
         Send request to target WebSocket endpoint
         target_node format: "ws://host:port" (e.g., "ws://localhost:8002")

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class FindingCategory(str, Enum):
+class FindingCategory(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -35,7 +35,7 @@ class FindingCategory(str, Enum):
     INFO = "INFO"
 
 
-class InspectionStatus(str, Enum):
+class InspectionStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -43,7 +43,7 @@ class InspectionStatus(str, Enum):
     REJECTED = "REJECTED"
 
 
-class SyncStatus(str, Enum):
+class SyncStatus(StrEnum):
     SYNCED = "SYNCED"
     CONFLICT = "CONFLICT"
     PENDING = "PENDING"
@@ -91,7 +91,7 @@ class FieldInspection:
             raise ValueError("building_id must not be empty")
         if not self.asset_id.strip():
             raise ValueError("asset_id must not be empty")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if self.timestamp > now:
             raise ValueError("Inspection timestamp cannot be in the future")
 
@@ -359,7 +359,7 @@ class FieldDataService:
             raise ValueError(
                 "timestamp must be timezone-aware"
             )
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if inspection.timestamp > now:
             raise ValueError(
                 f"Inspection timestamp {inspection.timestamp} "
@@ -406,7 +406,7 @@ if __name__ == "__main__":
         building_id="BLDG-A",
         asset_id="DET-SMK-201",
         findings=[finding],
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     result = service.submit_inspection(inspection)
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     print(f"Critical findings: {result.critical_findings}")
 
     updates = service.get_field_updates(
-        datetime(2020, 1, 1, tzinfo=timezone.utc)
+        datetime(2020, 1, 1, tzinfo=UTC)
     )
     print(f"Field updates: {len(updates)}")
 
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     asset = AssetData(
         asset_id="DET-SMK-201",
         asset_type=AssetType.DETECTOR_SMOKE,
-        installation_date=datetime(2019, 1, 1, tzinfo=timezone.utc),
+        installation_date=datetime(2019, 1, 1, tzinfo=UTC),
     )
     sync = service.sync_asset(asset)
     print(f"Sync OK: {sync.synced}, conflict: {sync.conflict}")

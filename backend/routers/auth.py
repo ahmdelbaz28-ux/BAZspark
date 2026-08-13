@@ -51,8 +51,7 @@ import logging
 import os
 import secrets
 import time
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -101,9 +100,9 @@ _FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
 
 class LoginRequest(BaseModel):
     """Request body for POST /auth/login."""
-    api_key: Optional[str] = Field(None, min_length=1, description="FireAI API key (must be non-empty if provided)")
-    username: Optional[str] = None
-    password: Optional[str] = None
+    api_key: str | None = Field(None, min_length=1, description="FireAI API key (must be non-empty if provided)")
+    username: str | None = None
+    password: str | None = None
 
 
 class LoginResponse(BaseModel):
@@ -151,7 +150,7 @@ def _create_session_token(session_id: str, expires_at: int) -> str:
     return f"{payload}.{signature}"
 
 
-def _verify_session_token(token: str) -> Optional[str]:
+def _verify_session_token(token: str) -> str | None:
     """
     Verify a session token and return the session_id if valid.
 
@@ -297,7 +296,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     # Validate the API key using shared credential validation
     # (env var bypass + RBAC store — single implementation in auth_utils)
-    role: Optional[Role] = None
+    role: Role | None = None
     if api_key:
         role = validate_api_key_credential(api_key)
 
@@ -363,7 +362,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
         "Secure",
     ]
 
-    expires_at_iso = datetime.now(timezone.utc) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)
+    expires_at_iso = datetime.now(UTC) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)
 
     from fastapi.responses import JSONResponse
     response = JSONResponse(
@@ -479,7 +478,7 @@ async def verify_token(body: VerifyTokenRequest) -> dict[str, object]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def validate_session_cookie(cookie_value: str) -> Optional[str]:
+def validate_session_cookie(cookie_value: str) -> str | None:
     """
     Validate a session cookie value and return the role if valid.
 
@@ -504,7 +503,7 @@ def validate_session_cookie(cookie_value: str) -> Optional[str]:
     return session.get("role")
 
 
-def get_session_principal(cookie_value: str) -> Optional[tuple[str, str]]:
+def get_session_principal(cookie_value: str) -> tuple[str, str] | None:
     """
     Validate a session cookie and return ``(role, principal)``.
 

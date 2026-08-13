@@ -38,7 +38,8 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from datetime import UTC
+from typing import Any
 
 from fireai.vision.cua_loop import VisionAnalysisResult, analyze_screenshot
 
@@ -63,13 +64,13 @@ class CUAAgentResult:
     ok: bool
     provider: str = "none"
     description: str = ""
-    suggested_action: Dict[str, Any] = field(default_factory=dict)
+    suggested_action: dict[str, Any] = field(default_factory=dict)
     screenshot_captured: bool = False
-    analysis: Optional[VisionAnalysisResult] = None
-    error: Optional[str] = None
+    analysis: VisionAnalysisResult | None = None
+    error: str | None = None
     timestamp: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "ok": self.ok,
             "provider": self.provider,
@@ -84,7 +85,7 @@ class CUAAgentResult:
 # ── Screenshot capture ───────────────────────────────────────────────────────
 
 
-def _capture_screenshot() -> Optional[bytes]:
+def _capture_screenshot() -> bytes | None:
     """
     Capture the primary screen as PNG bytes.
 
@@ -135,7 +136,7 @@ def _capture_screenshot() -> Optional[bytes]:
 # ── Action extraction ────────────────────────────────────────────────────────
 
 
-def _extract_suggested_action(analysis: VisionAnalysisResult) -> Dict[str, Any]:
+def _extract_suggested_action(analysis: VisionAnalysisResult) -> dict[str, Any]:
     """
     Extract a structured suggested action from the VisionAnalysisResult.
 
@@ -186,7 +187,7 @@ class CUAAgent:
         self.prompt = prompt
         self._step_count = 0
 
-    def step(self, screenshot_bytes: Optional[bytes] = None) -> CUAAgentResult:
+    def step(self, screenshot_bytes: bytes | None = None) -> CUAAgentResult:
         """
         Execute one CUA step: capture (or use provided) screenshot → analyze → suggest.
 
@@ -198,8 +199,8 @@ class CUAAgent:
             CUAAgentResult — never raises.
         """
         self._step_count += 1
-        from datetime import datetime, timezone
-        timestamp = datetime.now(timezone.utc).isoformat()
+        from datetime import datetime
+        timestamp = datetime.now(UTC).isoformat()
 
         # 1. Capture screenshot (or use provided one)
         if screenshot_bytes is None:

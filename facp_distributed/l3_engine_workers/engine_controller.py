@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..protocol.message_schema import FACPRequest, FACPResponse
 from ..security.isolation import ExecutionIsolationManager
@@ -72,7 +72,7 @@ class EngineController:
 
             self.logger.info("Engine Controller %s stopped", self.controller_id)
 
-    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
         """Process an incoming request through the engine pool"""
         request_id = request_data.get("id", str(uuid.uuid4()))
 
@@ -219,7 +219,7 @@ class EngineController:
 
         return True
 
-    def _track_task_start(self, task_id: str, request_data: Dict[str, Any], source_node: Optional[str] = None):
+    def _track_task_start(self, task_id: str, request_data: dict[str, Any], source_node: str | None = None):
         """Track the start of a task"""
         with self.lock:
             self.active_tasks[task_id] = {
@@ -230,7 +230,7 @@ class EngineController:
                 "status": "running"
             }
 
-    def _track_task_completion(self, task_id: str, result: Dict[str, Any]):
+    def _track_task_completion(self, task_id: str, result: dict[str, Any]):
         """Track the completion of a task"""
         with self.lock:
             if task_id in self.active_tasks:
@@ -250,7 +250,7 @@ class EngineController:
                 if len(self.task_history) > self.max_task_history:
                     self.task_history = self.task_history[-self.max_task_history:]
 
-    def get_controller_status(self) -> Dict[str, Any]:
+    def get_controller_status(self) -> dict[str, Any]:
         """Get the status of the engine controller"""
         with self.lock:
             pool_status = self.engine_pool.get_pool_status()
@@ -269,7 +269,7 @@ class EngineController:
                 "last_health_check": self.last_health_check
             }
 
-    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Get the status of a specific task"""
         with self.lock:
             if task_id in self.active_tasks:
@@ -282,7 +282,7 @@ class EngineController:
 
         return None
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get detailed statistics for the controller"""
         with self.lock:
             # Calculate stats from task history
@@ -392,10 +392,10 @@ class EngineController:
             # Disk usage would be updated based on actual file operations
 
     def set_cluster_sync_callback(self, callback):
-        """Set callback for syncing with cluster"""
+        """set callback for syncing with cluster"""
         self.cluster_sync_callback = callback
 
-    def sync_with_cluster(self, cluster_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_state: dict[str, Any]):
         """Sync controller state with cluster"""
         # In a real implementation, this would update controller based on cluster state
         # For now, we'll just log the sync
@@ -421,7 +421,7 @@ class EngineController:
             # The pool would handle resizing internally
             # For now, we'll just note the change
 
-    def get_queue_status(self) -> Dict[str, Any]:
+    def get_queue_status(self) -> dict[str, Any]:
         """Get the status of the task queue"""
         return self.engine_pool.get_queue_status()
 
@@ -435,7 +435,7 @@ class EngineController:
         # In a real implementation, we might have tasks with TTL
         # For now, this just ensures history size is maintained
 
-    def get_resource_utilization(self) -> Dict[str, Any]:
+    def get_resource_utilization(self) -> dict[str, Any]:
         """Get resource utilization metrics"""
         with self.lock:
             return {
@@ -447,7 +447,7 @@ class EngineController:
                 }
             }
 
-    def update_resource_limits(self, new_limits: Dict[str, float]):
+    def update_resource_limits(self, new_limits: dict[str, float]):
         """Update resource limits for the controller"""
         with self.lock:
             for key, value in new_limits.items():
@@ -492,10 +492,10 @@ class DistributedEngineController(EngineController):
         self.cross_node_communicator = None
 
     def set_cross_node_communicator(self, communicator):
-        """Set the communicator for cross-node communication"""
+        """set the communicator for cross-node communication"""
         self.cross_node_communicator = communicator
 
-    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
         """Override to support distributed task processing"""
         # Check if this should be processed locally or forwarded to another node
         if self._should_process_locally(request_data):
@@ -503,7 +503,7 @@ class DistributedEngineController(EngineController):
         # Forward to another node
         return self._forward_request(request_data, source_node)
 
-    def _should_process_locally(self, _request_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(self, _request_data: dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if request should be processed locally"""
         if self.task_distribution_policy == "local_first":
             return True  # Always prefer local processing
@@ -531,7 +531,7 @@ class DistributedEngineController(EngineController):
 
         return total_load / count if count > 0 else 0.0
 
-    def _forward_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+    def _forward_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
         """Forward request to another node in the cluster"""
         if not self.cross_node_communicator:
             # If no cross-node communication available, process locally
@@ -567,7 +567,7 @@ class DistributedEngineController(EngineController):
             self.logger.error("Request forwarding failed: %s, processing locally", e)
             return super().process_request(request_data, source_node)
 
-    def _select_target_node(self) -> Optional[str]:
+    def _select_target_node(self) -> str | None:
         """Select a target node for request forwarding"""
         # Find the node with the lowest load
         best_node = None
@@ -582,12 +582,12 @@ class DistributedEngineController(EngineController):
 
         return best_node
 
-    def sync_cluster_membership(self, cluster_state: Dict[str, Any]):
+    def sync_cluster_membership(self, cluster_state: dict[str, Any]):
         """Sync cluster membership information"""
         self.cluster_members.update(cluster_state)
 
     def set_task_distribution_policy(self, policy: str):
-        """Set the task distribution policy"""
+        """set the task distribution policy"""
         if policy in ["local_first", "balanced", "remote_only"]:
             self.task_distribution_policy = policy
         else:

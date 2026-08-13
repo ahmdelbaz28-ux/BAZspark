@@ -7,7 +7,7 @@ The frontend expects: {success, data?, error?, message?, timestamp}
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -17,7 +17,7 @@ def success(data: Any = None, message: str = "") -> dict[str, Any]:
         "success": True,
         "data": data,
         "message": message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -27,7 +27,7 @@ def error(message: str, data: Any = None) -> dict[str, Any]:
         "success": False,
         "data": data,
         "error": message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

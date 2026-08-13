@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -88,7 +88,7 @@ class CSDGenerator:
         """
         report_id = f"REP-{uuid.uuid4().hex[:8].upper()}"
         # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         total_devices = len(devices)
 
         if total_devices == 0:

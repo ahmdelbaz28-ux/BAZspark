@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import List
 
 import ezdxf
 from ezdxf import recover
@@ -30,7 +29,7 @@ class ParsedRoom:
     polygon: Polygon
     source_layer: str
     area_m2: float = 0.0
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.area_m2 = round(self.polygon.area, 3)
@@ -41,10 +40,10 @@ class DXFParseResult:
     source_file: str
     dxf_units: str
     scale_to_meters: float
-    rooms: List[ParsedRoom] = field(default_factory=list)
+    rooms: list[ParsedRoom] = field(default_factory=list)
     skipped_count: int = 0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     @property
     def room_count(self) -> int:
@@ -217,7 +216,7 @@ class DXFParser(ParserBase):
         logger.error("No valid unit scale found")
         return None
 
-    def _extract_lines(self, msp, scale: float) -> List:  # NOSONAR — S3776: DXF entity extraction requires type-specific branching
+    def _extract_lines(self, msp, scale: float) -> list:  # NOSONAR — S3776: DXF entity extraction requires type-specific branching
         from shapely.geometry import LineString
 
         lines = []
@@ -344,7 +343,7 @@ class DXFParser(ParserBase):
         overlap_ratio = intersection.area / min_area
         return overlap_ratio > 0.9
 
-    def _remove_duplicates(self, polygons: List[Polygon]) -> List[Polygon]:
+    def _remove_duplicates(self, polygons: list[Polygon]) -> list[Polygon]:
         if len(polygons) <= 1:
             return polygons
 
@@ -363,7 +362,7 @@ class DXFParser(ParserBase):
 
         return unique
 
-    def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
+    def _lines_to_valid_polygons(self, lines) -> list[Polygon]:
         if not lines:
             return []
 

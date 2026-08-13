@@ -17,7 +17,7 @@ Covers all public functions, classes, and constants:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -433,7 +433,7 @@ class TestOverrideRecord:
 
     def test_auto_timestamp_generated(self):
         """When no timestamp is provided, one is auto-generated in UTC ISO format."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         record = OverrideRecord(
             override_id="OVR-002",
             tier_from="REJECTED",
@@ -443,7 +443,7 @@ class TestOverrideRecord:
             justification="Jurisdictional override",
             risk_assessment="Moderate risk",
         )
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         # The auto-generated timestamp should be parseable and between before/after
         ts = datetime.fromisoformat(record.timestamp)

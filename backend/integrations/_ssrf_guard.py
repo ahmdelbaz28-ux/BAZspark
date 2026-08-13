@@ -57,7 +57,6 @@ import re
 import socket
 import threading
 import time
-from typing import Optional, Tuple
 
 __all__ = [
     "SSRFError",
@@ -84,7 +83,7 @@ __all__ = [
 #    - Daemon threads don't block process exit
 #
 # 3. Global thread counter with HIGH limit (fail-fast only at OS-exhaustion)
-#    - Set to 500 (far beyond legitimate traffic)
+#    - set to 500 (far beyond legitimate traffic)
 #    - Prevents OS-level thread exhaustion under sustained attack
 #    - Does NOT cause cross-host DoS (unlike the old semaphore with limit=8)
 #
@@ -101,7 +100,7 @@ _DNS_THREAD_LIMIT = 500  # global cap on concurrent DNS threads (OS protection)
 
 # Cache: host -> (ip_str_or_None, expiry_monotonic)
 # None means "last lookup failed/timed out" — return SSRFError without new lookup
-_DNS_CACHE: dict[str, Tuple[Optional[str], float]] = {}
+_DNS_CACHE: dict[str, tuple[str | None, float]] = {}
 _DNS_CACHE_LOCK = threading.Lock()
 
 # Per-host locks: ensure concurrent requests for same host share one DNS call
@@ -225,7 +224,7 @@ def _resolve_host(host: str) -> list[str]:
     """Resolve a hostname to a list of IP literal strings.
 
     Returns:
-        List of IP literal strings (may be empty if resolution fails or
+        list of IP literal strings (may be empty if resolution fails or
         returns no usable records).
 
     Raises:
@@ -432,7 +431,7 @@ def resolve_to_safe_ip(host: str, dns_timeout: float = 5.0) -> str:
     return safe_ip
 
 
-def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> Tuple[str, str]:
+def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> tuple[str, str]:
     """Like resolve_to_safe_ip, but also returns the original hostname.
 
     Use this for TLS/HTTPS connections:
@@ -455,7 +454,7 @@ def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> Tup
 
 def validate_url(
     url: str,
-    allowed_schemes: Tuple[str, ...] = ("http", "https"),
+    allowed_schemes: tuple[str, ...] = ("http", "https"),
     dns_timeout: float = 5.0,
 ) -> str:
     """Validate a destination URL against SSRF attacks before network execution.
@@ -502,7 +501,7 @@ def validate_url(
     return url
 
 
-def _try_resolve_literal_ip(host: str) -> Optional[Tuple[str, str]]:
+def _try_resolve_literal_ip(host: str) -> tuple[str, str] | None:
     """If ``host`` is a literal IP, return ``(ip_str, host)`` after safety check.
 
     Returns ``None`` if ``host`` is not a literal IP (caller should treat it
@@ -519,7 +518,7 @@ def _try_resolve_literal_ip(host: str) -> Optional[Tuple[str, str]]:
     return str(ip), host
 
 
-def _read_dns_cache(host: str, now: float) -> Optional[str]:
+def _read_dns_cache(host: str, now: float) -> str | None:
     """Return cached safe IP for ``host`` if cache entry is fresh.
 
     Returns:
@@ -555,14 +554,14 @@ def _read_dns_cache(host: str, now: float) -> Optional[str]:
     return cached_ip
 
 
-def _cache_dns_result(host: str, ip: Optional[str]) -> None:
+def _cache_dns_result(host: str, ip: str | None) -> None:
     """Write a DNS cache entry. ``None`` IP = negative cache."""
     ttl = _DNS_POSITIVE_TTL if ip is not None else _DNS_NEGATIVE_TTL
     with _DNS_CACHE_LOCK:
         _DNS_CACHE[host] = (ip, time.monotonic() + ttl)
 
 
-def _find_first_safe_ip(ip_literals: list) -> Optional[str]:
+def _find_first_safe_ip(ip_literals: list) -> str | None:
     """Return the first safe IP string from ``ip_literals``, or ``None``."""
     for ip_str in ip_literals:
         try:
@@ -575,7 +574,7 @@ def _find_first_safe_ip(ip_literals: list) -> Optional[str]:
     return None
 
 
-def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> Tuple[str, str]:
+def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> tuple[str, str]:
     """Shared implementation for resolve_to_safe_ip and the _with_hostname variant."""
     if not host:
         raise SSRFError("Host cannot be empty")

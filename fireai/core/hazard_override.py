@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 # HAZARD CLASSIFICATION ENUM
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class HazardClassification(str, Enum):
+class HazardClassification(StrEnum):
     """
     NFPA 13-2022 Chapter 11 hazard classifications.
 

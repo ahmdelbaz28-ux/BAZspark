@@ -50,7 +50,7 @@ import enum
 import logging
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .event_bus import EventBus
@@ -208,7 +208,7 @@ class RoomLifecycle:
         self._room_id = room_id
         self._state = RoomState.PENDING
         self._transitions: list[RoomTransition] = []
-        self._state_entered_at: str = datetime.now(timezone.utc).isoformat()
+        self._state_entered_at: str = datetime.now(UTC).isoformat()
         # ✅ FIX: Use RLock to prevent deadlock — RoomLifecycle.to_dict()
         # calls methods that also acquire the lock.
         self._lock = threading.RLock()
@@ -307,7 +307,7 @@ class RoomLifecycle:
                     f"{sorted(s.value for s in allowed)}"
                 )
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             transition = RoomTransition(
                 from_state=self._state,
                 to_state=new_state,
@@ -401,7 +401,7 @@ class RoomLifecycle:
             entered = self._state_entered_at
 
         entered_dt = datetime.fromisoformat(entered)
-        now_dt = datetime.now(timezone.utc)
+        now_dt = datetime.now(UTC)
         delta = now_dt - entered_dt
         return delta.total_seconds()
 

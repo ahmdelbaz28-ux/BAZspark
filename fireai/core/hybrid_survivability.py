@@ -53,7 +53,7 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class SurvivabilityClass(str, Enum):
+class SurvivabilityClass(StrEnum):
     """
     Per-point hybrid survivability classification.
 
@@ -631,7 +631,7 @@ class HybridSurvivabilityEngine:
 
         payload = {
             "meta": {
-                "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "generated": datetime.datetime.now(datetime.UTC).isoformat(),
                 "version": "FireAI_V24",
                 "total_points": total_pts,
                 "standards": [

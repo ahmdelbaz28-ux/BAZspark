@@ -3,7 +3,7 @@
 import time
 import unittest
 import uuid
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import Mock
 
 # The original `from ..event_bus.cluster_communicator import ...` syntax fails
@@ -35,7 +35,7 @@ class TestDistributedFACP(unittest.TestCase):
     """Comprehensive test suite for distributed FACP system"""
 
     def setUp(self):
-        """Set up test fixtures"""
+        """set up test fixtures"""
         # Create security components
         # The old "test_secret" was only 11 chars — would fail validation.
         import secrets as _secrets
@@ -189,7 +189,7 @@ class TestDistributedFACP(unittest.TestCase):
                 super().__init__("test_agent", "Test Agent")
                 self.capabilities = ["execute.run", "task.execute"]
 
-            def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+            def execute_task(self, request_data: dict[str, Any]) -> dict[str, Any]:
                 return {"result": "test_success", "agent_id": self.id}
 
         test_agent = TestAgent()
@@ -605,7 +605,7 @@ class TestDistributedSecurity(unittest.TestCase):
     """Security-specific tests for distributed FACP system"""
 
     def setUp(self):
-        """Set up security test fixtures"""
+        """set up security test fixtures"""
         import secrets as _secrets2
         self.auth_provider = AuthProvider(secret_key=_secrets2.token_urlsafe(48))
         self.rbac_engine = RBACEngine()

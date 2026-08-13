@@ -4,9 +4,9 @@ from __future__ import annotations
 """Enhanced FACP Message Schema for Distributed System"""
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class RiskLevel(Enum):
@@ -57,13 +57,13 @@ class FACPRequest:
         self,
         id: str,
         method: str,
-        params: Dict[str, Any],
+        params: dict[str, Any],
         source: SourceType,
         target: TargetType,
         execution_state: ExecutionState,
-        timestamp: Optional[str] = None,
-        security: Optional[Dict[str, Any]] = None,
-        constraints: Optional[Dict[str, Any]] = None
+        timestamp: str | None = None,
+        security: dict[str, Any] | None = None,
+        constraints: dict[str, Any] | None = None
     ):
         self.protocol = "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         self.type = MessageType.REQUEST.value
@@ -76,7 +76,7 @@ class FACPRequest:
         # Use timezone-aware UTC now (the legacy naive-UTC constructor is
         # deprecated in Python 3.12+ and causes comparison bugs when mixed
         # with tz-aware datetimes).
-        self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        self.timestamp = timestamp or datetime.now(UTC).isoformat()
         self.security = security or {}
         self.constraints = constraints or {
             "timeout_ms": 8000,
@@ -84,7 +84,7 @@ class FACPRequest:
             "max_recursion_depth": 5
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert request to dictionary format"""
         return {
             "protocol": self.protocol,
@@ -101,7 +101,7 @@ class FACPRequest:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> FACPRequest:
+    def from_dict(cls, data: dict[str, Any]) -> FACPRequest:
         """Create request from dictionary"""
         return cls(
             id=data.get("id", str(uuid.uuid4())),
@@ -123,9 +123,9 @@ class FACPResponse:
         self,
         id: str,
         status: StatusType,
-        result: Optional[Dict[str, Any]] = None,
-        error: Optional[Dict[str, str]] = None,
-        trace: Optional[Dict[str, Any]] = None
+        result: dict[str, Any] | None = None,
+        error: dict[str, str] | None = None,
+        trace: dict[str, Any] | None = None
     ):
         self.protocol = "FACP/1.1"
         self.type = MessageType.RESPONSE.value
@@ -135,7 +135,7 @@ class FACPResponse:
         self.error = error
         self.trace = trace or {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert response to dictionary format"""
         response = {
             "protocol": self.protocol,
@@ -150,7 +150,7 @@ class FACPResponse:
         return response
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> FACPResponse:
+    def from_dict(cls, data: dict[str, Any]) -> FACPResponse:
         """Create response from dictionary"""
         return cls(
             id=data["id"],
@@ -165,7 +165,7 @@ class FACPMessageValidator:
     """Validates FACP messages according to distributed system specification"""  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
     @staticmethod
-    def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:  # NOSONAR - python:S3776
+    def validate_request(request: FACPRequest) -> tuple[bool, list[str]]:  # NOSONAR - python:S3776
         """Validate FACP request message for distributed system"""
         errors = []
 
@@ -234,7 +234,7 @@ class FACPMessageValidator:
         return len(errors) == 0, errors
 
     @staticmethod
-    def validate_response(response: FACPResponse) -> tuple[bool, List[str]]:
+    def validate_response(response: FACPResponse) -> tuple[bool, list[str]]:
         """Validate FACP response message for distributed system"""
         errors = []
 

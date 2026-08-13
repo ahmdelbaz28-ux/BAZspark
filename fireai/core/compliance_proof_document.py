@@ -125,7 +125,7 @@ class ComplianceProofDocument:
         self.nfpa_edition = nfpa_edition
         self.jurisdiction = jurisdiction
         self.records: list[RoomVerificationRecord] = []
-        self.generation_date = datetime.datetime.now(datetime.timezone.utc).strftime(
+        self.generation_date = datetime.datetime.now(datetime.UTC).strftime(
             "%Y-%m-%d %H:%M UTC"
         )  # V54 FIX (AUDIT-012): timezone-aware UTC
 

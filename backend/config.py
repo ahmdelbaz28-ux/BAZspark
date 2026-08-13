@@ -12,7 +12,6 @@ Configuration management for:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 # Load .env file before reading any configuration values.
 # This ensures environment variables from .env are available to os.environ.get()
@@ -46,22 +45,22 @@ class Config:
     )
 
     # Qdrant Configuration (Vector Database)
-    QDRANT_HOST: Optional[str] = os.environ.get("QDRANT_HOST")  # V257: was 'localhost'
+    QDRANT_HOST: str | None = os.environ.get("QDRANT_HOST")  # V257: was 'localhost'
     QDRANT_PORT: int = int(os.environ.get("QDRANT_PORT", 6333))
-    QDRANT_API_KEY: Optional[str] = os.environ.get("QDRANT_API_KEY")
-    QDRANT_URL: Optional[str] = os.environ.get("QDRANT_URL")  # For cloud instances
+    QDRANT_API_KEY: str | None = os.environ.get("QDRANT_API_KEY")
+    QDRANT_URL: str | None = os.environ.get("QDRANT_URL")  # For cloud instances
 
     # Neo4j Configuration (Graph Database)
-    NEO4J_URI: Optional[str] = os.environ.get("NEO4J_URI")  # V257: was 'bolt://localhost:7687'
+    NEO4J_URI: str | None = os.environ.get("NEO4J_URI")  # V257: was 'bolt://localhost:7687'
     NEO4J_USERNAME: str = os.environ.get("NEO4J_USERNAME", "neo4j")
     NEO4J_PASSWORD: str = os.environ.get("NEO4J_PASSWORD", "")
     NEO4J_DATABASE: str = os.environ.get("NEO4J_DATABASE", "neo4j")
 
     # Redis Configuration (Cache/Temporary Storage)
-    REDIS_URL: Optional[str] = os.environ.get("REDIS_URL")  # V257: was 'redis://localhost:6379'
-    REDIS_HOST: Optional[str] = os.environ.get("REDIS_HOST")  # V257: was 'localhost'
+    REDIS_URL: str | None = os.environ.get("REDIS_URL")  # V257: was 'redis://localhost:6379'
+    REDIS_HOST: str | None = os.environ.get("REDIS_HOST")  # V257: was 'localhost'
     REDIS_PORT: int = int(os.environ.get("REDIS_PORT", 6379))
-    REDIS_PASSWORD: Optional[str] = os.environ.get("REDIS_PASSWORD")
+    REDIS_PASSWORD: str | None = os.environ.get("REDIS_PASSWORD")
     REDIS_DB: int = int(os.environ.get("REDIS_DB", 0))
 
     # ── Akamai Edge Integration ────────────────────────────────────────────

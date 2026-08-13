@@ -70,7 +70,7 @@ def test_version_consistency():
     version_file = os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")
     assert os.path.exists(version_file)
 
-    with open(version_file, 'r') as f:
+    with open(version_file) as f:
         version = f.read().strip()
         # Version should be in format x.y.z
         assert len(version.split('.')) >= 3

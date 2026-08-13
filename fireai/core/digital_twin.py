@@ -54,7 +54,7 @@ import threading
 import uuid
 from collections import deque
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -478,7 +478,7 @@ class TwinDriftAnalyzer:
 
         """
         drifts: list[DriftRecord] = []
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         for det_id, det in detectors.items():
             # Position drift
@@ -671,7 +671,7 @@ class TwinSimulator:
         return SimulationResult(
             simulation_id=str(uuid.uuid4()),
             description=description,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             original_health_score=original_score,
             simulated_health_score=sim_score,
             new_coverage_pct=sim_coverage,
@@ -849,7 +849,7 @@ class DigitalTwin:
         self._events: deque = deque(maxlen=10_000)
         self._drift_records: list[DriftRecord] = []
         self._room_ids: set = set()
-        self._created_at = datetime.now(timezone.utc).isoformat()
+        self._created_at = datetime.now(UTC).isoformat()
         self._bus = EventBus.instance()
         # FIX-6: Store AuditStore INSTANCE, not the class itself.
         # The old code stored AuditStore (class), which meant _audit_log
@@ -1225,7 +1225,7 @@ class DigitalTwin:
 
             det.status = new_status
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
 
             # Track installation time
             if new_status == DetectorStatus.OK and not det.installed_at:
@@ -1274,7 +1274,7 @@ class DigitalTwin:
                 "verified_by": verified_by,
                 "forced": force,
                 "force_reason": force_reason if force else "",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         )
 
@@ -1506,7 +1506,7 @@ class DigitalTwin:
 
         report = TwinHealthReport(
             building_id=self._building_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             total_detectors=total,
             active_detectors=active,
             planned_detectors=planned,
@@ -1844,7 +1844,7 @@ class DigitalTwin:
             event = TwinEvent(
                 event_id=str(uuid.uuid4()),
                 event_type=event_type,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 detector_id=detector_id,
                 room_id=room_id,
                 details=details or {},

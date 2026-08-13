@@ -50,9 +50,10 @@ import logging
 import os
 import threading
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
+from datetime import UTC, datetime, timezone
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ __all__ = [
 class BaseByRightError(AssertionError):
     """Raised when a BASEBYRIGHT contract is violated."""
 
-    def __init__(self, message: str, contract: str, detail: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, message: str, contract: str, detail: dict[str, Any] | None = None) -> None:
         self.contract = contract
         self.detail = detail or {}
         super().__init__(f"[BASEBYRIGHT:{contract}] {message}")
@@ -107,7 +108,7 @@ class AssertionContract:
     STATUS_500 = ("STATUS_500", "Server errors MUST NEVER occur in tests (hides bugs)", "error")
     SECURITY_HEADERS = (
         "SECURITY_HEADERS",
-        "Every response must include X-Frame-Options, X-Content-Type-Options, "
+        "Every response must include X-Frame-Options, X-Content-type-Options, "
         "CSP, HSTS for defense-in-depth",
         "error",
     )
@@ -139,7 +140,7 @@ class AssertionContract:
 
 # Every HTTP response MUST include these headers for defense-in-depth.
 # Reference: backend/security_middleware.py :: _STATIC_SECURITY_HEADERS
-REQUIRED_SECURITY_HEADERS: Set[str] = {
+REQUIRED_SECURITY_HEADERS: set[str] = {
     "x-frame-options",
     "x-content-type-options",
     "content-security-policy",
@@ -167,10 +168,10 @@ class StateIsolationContext:
 
     def __init__(self, client: Any) -> None:
         self.client = client
-        self._created_project_ids: List[str] = []
-        self._created_device_ids: List[str] = []
-        self._created_element_ids: List[str] = []
-        self._created_connection_ids: List[str] = []
+        self._created_project_ids: list[str] = []
+        self._created_device_ids: list[str] = []
+        self._created_element_ids: list[str] = []
+        self._created_connection_ids: list[str] = []
         self._lock = threading.Lock()
 
     def track_project(self, project_id: str) -> None:
@@ -190,7 +191,7 @@ class StateIsolationContext:
             self._created_connection_ids.append(connection_id)
 
     @property
-    def all_tracked(self) -> List[str]:
+    def all_tracked(self) -> list[str]:
         with self._lock:
             return (
                 self._created_project_ids
@@ -199,9 +200,9 @@ class StateIsolationContext:
                 + self._created_connection_ids
             )
 
-    def cleanup(self) -> Dict[str, int]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def cleanup(self) -> dict[str, int]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Delete all tracked resources. Returns counts of deleted items."""
-        counts: Dict[str, int] = {
+        counts: dict[str, int] = {
             "projects": 0,
             "devices": 0,
             "elements": 0,
@@ -307,8 +308,8 @@ class FaultInjector:
     }
 
     def __init__(self) -> None:
-        self._active_faults: Dict[str, str] = {}
-        self._original_env: Dict[str, Optional[str]] = {}
+        self._active_faults: dict[str, str] = {}
+        self._original_env: dict[str, str | None] = {}
 
     def activate(self, **faults: str) -> None:
         """
@@ -340,7 +341,7 @@ class FaultInjector:
         return len(self._active_faults) > 0
 
     @property
-    def active_faults(self) -> Dict[str, str]:
+    def active_faults(self) -> dict[str, str]:
         return dict(self._active_faults)
 
 
@@ -358,7 +359,7 @@ class GoldenTestResult:
         passed: bool,
         expected: Any = None,
         actual: Any = None,
-        diff: Optional[str] = None,
+        diff: str | None = None,
     ) -> None:
         self.test_name = test_name
         self.passed = passed
@@ -366,7 +367,7 @@ class GoldenTestResult:
         self.actual = actual
         self.diff = diff
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_name": self.test_name,
             "passed": self.passed,
@@ -390,7 +391,7 @@ class GoldenTestRunner:
 
     def __init__(self, client: Any) -> None:
         self.client = client
-        self.results: List[GoldenTestResult] = []
+        self.results: list[GoldenTestResult] = []
         os.makedirs(self.GOLDEN_DIR, exist_ok=True)
 
     def _golden_path(self, name: str) -> str:
@@ -406,7 +407,7 @@ class GoldenTestRunner:
             data = {"status_code": response.status_code, "text": response.text}
         payload = {
             "golden_version": "1.0",
-            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "recorded_at": datetime.now(UTC).isoformat(),
             "status_code": response.status_code,
             "headers": dict(response.headers),
             "body": data,
@@ -485,7 +486,7 @@ class GoldenTestRunner:
         else:
             return expected == actual
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Return a summary of all golden test results."""
         total = len(self.results)
         passed = sum(1 for r in self.results if r.passed)
@@ -515,8 +516,8 @@ class IdempotencyChecker:
     def check_put_idempotent(
         client: Any,
         url: str,
-        payload: Dict[str, Any],
-    ) -> Tuple[bool, str]:
+        payload: dict[str, Any],
+    ) -> tuple[bool, str]:
         """
         Verify a PUT endpoint is idempotent.
 
@@ -537,7 +538,7 @@ class IdempotencyChecker:
         client: Any,
         url: str,
         expected_first_status: int = 200,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Verify a DELETE endpoint is idempotent.
 
@@ -579,7 +580,7 @@ class BaseByRight:
     """
 
     # Known public paths (from backend/security_middleware.py :: _PUBLIC_PATHS_EXACT)
-    PUBLIC_PATHS: Set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    PUBLIC_PATHS: set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         "/docs",
         "/redoc",
         "/openapi.json",
@@ -592,7 +593,7 @@ class BaseByRight:
     })
 
     # Known admin-only paths (require SYSTEM_CONFIG or higher permission)
-    ADMIN_ONLY_PATHS: Set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    ADMIN_ONLY_PATHS: set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         "/api/v1/cache/clear",
         "/api/v1/cache/stats",
     })
@@ -626,12 +627,12 @@ class BaseByRight:
         # Tracking
         self._assertions_passed: int = 0
         self._assertions_failed: int = 0
-        self._assertion_log: List[Dict[str, Any]] = []
+        self._assertion_log: list[dict[str, Any]] = []
 
     # ── Context Managers ─────────────────────────────────────────────────
 
     @contextmanager
-    def isolated_project(self) -> Iterator[Dict[str, Any]]:
+    def isolated_project(self) -> Iterator[dict[str, Any]]:
         """
         Create an isolated project context.
 
@@ -697,14 +698,14 @@ class BaseByRight:
 
     # ── Core Assertions (Layers 4+8 — Exception Guarding + Behavior Contracts) ──
 
-    def _record_assertion(self, passed: bool, contract: str, message: str, detail: Optional[Dict] = None) -> None:
+    def _record_assertion(self, passed: bool, contract: str, message: str, detail: dict | None = None) -> None:
         """Record an assertion result for reporting."""
         entry = {
             "contract": contract,
             "passed": passed,
             "message": message,
             "detail": detail or {},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._assertion_log.append(entry)
         if passed:
@@ -798,7 +799,7 @@ class BaseByRight:
 
     # ── Security Assertions (Layer 10 — Header Enforcement) ──────────────
 
-    def assert_security_headers(self, response: Any, *, context: str = "") -> Set[str]:
+    def assert_security_headers(self, response: Any, *, context: str = "") -> set[str]:
         """
         Assert that the response includes all required security headers.
 
@@ -806,10 +807,10 @@ class BaseByRight:
         (V129 INFRASTRUCTURE SECURITY HARDENING)
 
         Returns:
-            Set of missing header names (empty if all present).
+            set of missing header names (empty if all present).
         """
         headers = {k.lower(): v for k, v in response.headers.items()}
-        missing: Set[str] = set()
+        missing: set[str] = set()
 
         for required in REQUIRED_SECURITY_HEADERS:
             if required not in headers:
@@ -906,7 +907,7 @@ class BaseByRight:
 
     # ── Response Shape Assertions (Layer 8 — Behavior Contracts) ────────
 
-    def assert_json_response(self, response: Any, *, context: str = "") -> Dict[str, Any]:
+    def assert_json_response(self, response: Any, *, context: str = "") -> dict[str, Any]:
         """Assert the response is valid JSON with 'success' field."""
         try:
             data = response.json()
@@ -929,7 +930,7 @@ class BaseByRight:
         )
         return data
 
-    def assert_has_field(self, data: Dict[str, Any], field: str, *, context: str = "") -> None:
+    def assert_has_field(self, data: dict[str, Any], field: str, *, context: str = "") -> None:
         """Assert that a dict contains a specific field."""
         passed = field in data
         ctx = f" [{context}]" if context else ""
@@ -942,7 +943,7 @@ class BaseByRight:
 
     # ── State & Cleanup ─────────────────────────────────────────────────
 
-    def cleanup_all(self) -> Dict[str, int]:
+    def cleanup_all(self) -> dict[str, int]:
         """
         Clean up all tracked resources, rate limiter, and cache.
 
@@ -955,7 +956,7 @@ class BaseByRight:
 
     # ── Report ──────────────────────────────────────────────────────────
 
-    def report(self) -> Dict[str, Any]:
+    def report(self) -> dict[str, Any]:
         """
         Generate a comprehensive assertion report.
 
@@ -978,7 +979,7 @@ class BaseByRight:
             "results": list(self._assertion_log),
             "golden": self.golden.summary(),
             "faults_active": self.faults.active_faults,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def print_report(self) -> None:
@@ -1004,7 +1005,7 @@ class BaseByRight:
             print(f"\n  ⚠ Active faults: {report['faults_active']}")
         print("=" * 60)
 
-    def save_report(self, path: Optional[str] = None) -> str:
+    def save_report(self, path: str | None = None) -> str:
         """
         Save assertion report to a JSON file.
 

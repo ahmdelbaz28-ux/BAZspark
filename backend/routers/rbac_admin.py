@@ -26,12 +26,12 @@ invalidate every permission check in the system).
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
@@ -54,7 +54,7 @@ router = APIRouter(prefix="/admin/rbac", tags=["rbac"])
 
 
 @router.get("/permissions")
-async def get_role_permission_matrix(_role: SystemConfigRole) -> Dict[str, Any]:
+async def get_role_permission_matrix(_role: SystemConfigRole) -> dict[str, Any]:
     """
     Return the full role-permission matrix.
 

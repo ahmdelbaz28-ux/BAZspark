@@ -3,7 +3,8 @@
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Tuple
+from collections.abc import Callable
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -135,7 +136,7 @@ class ClientInterface:
         """Register a custom handler for specific request methods"""
         self.request_handlers[method] = handler
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get status of the client interface"""
         return {
             "node_id": self.node_id,
@@ -151,7 +152,7 @@ class RequestNormalizer:
     """Normalizes requests from various client types to FACP/1.1 format"""
 
     @staticmethod
-    def normalize_vscode_extension_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_vscode_extension_request(raw_request: dict[str, Any]) -> dict[str, Any]:
         """Normalize request from VSCode extension"""
         return {
             "protocol": "FACP/1.1",
@@ -184,7 +185,7 @@ class RequestNormalizer:
         }
 
     @staticmethod
-    def normalize_autocad_plugin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_autocad_plugin_request(raw_request: dict[str, Any]) -> dict[str, Any]:
         """Normalize request from AutoCAD plugin"""
         return {
             "protocol": "FACP/1.1",
@@ -222,7 +223,7 @@ class RequestNormalizer:
         }
 
     @staticmethod
-    def normalize_revit_addin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_revit_addin_request(raw_request: dict[str, Any]) -> dict[str, Any]:
         """Normalize request from Revit add-in"""
         return {
             "protocol": "FACP/1.1",
@@ -260,7 +261,7 @@ class RequestNormalizer:
         }
 
     @staticmethod
-    def normalize_generic_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_generic_request(raw_request: dict[str, Any]) -> dict[str, Any]:
         """Normalize a generic request to FACP/1.1 format"""
         # Try to detect the source and apply appropriate normalization
         if "extensionVersion" in raw_request:
@@ -298,7 +299,7 @@ class RequestNormalizer:
         }
 
     @staticmethod
-    def validate_normalized_request(request_data: Dict[str, Any]) -> Tuple[bool, List]:
+    def validate_normalized_request(request_data: dict[str, Any]) -> tuple[bool, list]:
         """Validate a normalized request"""
         errors = []
 

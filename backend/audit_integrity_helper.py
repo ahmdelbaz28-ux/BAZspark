@@ -52,8 +52,9 @@ from __future__ import annotations
 
 import functools
 import logging
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

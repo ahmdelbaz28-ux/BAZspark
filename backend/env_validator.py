@@ -42,9 +42,9 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
-from typing import Callable, Optional, Tuple
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ def _mask(value: str | None) -> str:
     return f"{v[:4]}*** (len={len(v)})"
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     HARD = "HARD"   # launch blocker in production
     SOFT = "SOFT"   # warning only (degraded mode acceptable in dev)
 
@@ -135,7 +135,7 @@ class ValidationIssue:
 # Each entry: (env_var_name, severity, validator)
 # `validator` returns (ok: bool, message: str). A value of None is passed in
 # for unset variables so validators can tailor the message.
-_EnvValidator = Callable[[Optional[str]], Tuple[bool, str]]
+_EnvValidator = Callable[[str | None], tuple[bool, str]]
 
 
 def _present(value: str | None) -> tuple[bool, str]:
@@ -401,13 +401,13 @@ def assert_environment(prod_mode: bool | None = None) -> None:
                 logger.warning(
                     "env_validator: FIREAI_ENV unset → defaulting to production "
                     "(V246 fail-safe), BUT development indicators detected: %s. "
-                    "Set FIREAI_ENV=development explicitly to avoid this warning.",
+                    "set FIREAI_ENV=development explicitly to avoid this warning.",
                     ", ".join(dev_indicators),
                 )
             else:
                 logger.info(
                     "env_validator: FIREAI_ENV unset → defaulting to production "
-                    "(V246 fail-safe). Set FIREAI_ENV=development for dev mode.",
+                    "(V246 fail-safe). set FIREAI_ENV=development for dev mode.",
                 )
         prod_mode = (fireai_env or "production").lower() in ("production", "prod")
 
@@ -433,7 +433,7 @@ def assert_environment(prod_mode: bool | None = None) -> None:
         raise RuntimeError(
             f"BAZspark environment validation FAILED in production mode — "
             f"{len(hard)} required variable(s) missing/invalid:\n  - {preview}\n"
-            "Set them in Vercel/HF Space/GitHub Secrets (see "
+            "set them in Vercel/HF Space/GitHub Secrets (see "
             ".env.production.example). The app will NOT start until fixed."
             "To start anyway while rotating secrets, set "
             "FIREAI_ENV_VALIDATION=warn (degraded mode — HARD vars become "

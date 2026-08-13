@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import aiohttp
@@ -37,7 +37,7 @@ class APSDataExchange:
             return False
         return True
 
-    async def create_project(self, project_name: str, description: str = "") -> Optional[Dict[str, Any]]:
+    async def create_project(self, project_name: str, description: str = "") -> dict[str, Any] | None:
         """
         Create a new project in APS.
 
@@ -46,7 +46,7 @@ class APSDataExchange:
             description: Project description
 
         Returns:
-            Dict: Project information or None if failed
+            dict: Project information or None if failed
         """
         if not self._check_aiohttp():
             return None
@@ -92,7 +92,7 @@ class APSDataExchange:
             self.logger.error(f"Error creating project: {e}")
             return None
 
-    async def upload_file(self, project_id: str, file_path: str, folder_id: str = "root") -> Optional[Dict[str, Any]]:
+    async def upload_file(self, project_id: str, file_path: str, folder_id: str = "root") -> dict[str, Any] | None:
         """
         Upload a file to APS project.
 
@@ -102,7 +102,7 @@ class APSDataExchange:
             folder_id: Target folder ID (default: root)
 
         Returns:
-            Dict: Upload result or None if failed
+            dict: Upload result or None if failed
         """
         if not self._check_aiohttp():
             return None
@@ -111,7 +111,7 @@ class APSDataExchange:
             return None
 
         headers = self.auth_service.get_auth_headers()
-        headers.pop('Content-Type', None)  # Remove content-type for multipart upload
+        headers.pop('Content-type', None)  # Remove content-type for multipart upload
 
         file_name = os.path.basename(file_path)
 
@@ -184,7 +184,7 @@ class APSDataExchange:
             self.logger.error(f"Error uploading file: {e}")
             return None
 
-    async def get_project_contents(self, project_id: str, folder_id: str = "root") -> Optional[Dict[str, Any]]:
+    async def get_project_contents(self, project_id: str, folder_id: str = "root") -> dict[str, Any] | None:
         """
         Get contents of a project folder.
 
@@ -193,7 +193,7 @@ class APSDataExchange:
             folder_id: Folder ID to list contents (default: root)
 
         Returns:
-            Dict: Folder contents or None if failed
+            dict: Folder contents or None if failed
         """
         if not self._check_aiohttp():
             return None
@@ -273,16 +273,16 @@ class APSDataExchange:
             self.logger.error(f"Error downloading file: {e}")
             return False
 
-    async def start_model_derivative_job(self, urn: str, output_formats: List[str] = None) -> Optional[Dict[str, Any]]:
+    async def start_model_derivative_job(self, urn: str, output_formats: list[str] = None) -> dict[str, Any] | None:
         """
         Start a model derivative job to convert model to different formats.
 
         Args:
             urn: URN of the model to process
-            output_formats: List of desired output formats (default: ['svf2'])
+            output_formats: list of desired output formats (default: ['svf2'])
 
         Returns:
-            Dict: Job information or None if failed
+            dict: Job information or None if failed
         """
         if not self._check_aiohttp():
             return None
@@ -320,7 +320,7 @@ class APSDataExchange:
             self.logger.error(f"Error starting model derivative job: {e}")
             return None
 
-    async def get_derivative_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+    async def get_derivative_job_status(self, job_id: str) -> dict[str, Any] | None:
         """
         Get status of a model derivative job.
 
@@ -328,7 +328,7 @@ class APSDataExchange:
             job_id: ID of the job to check
 
         Returns:
-            Dict: Job status or None if failed
+            dict: Job status or None if failed
         """
         if not self._check_aiohttp():
             return None

@@ -27,9 +27,8 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from statistics import median
-from typing import Tuple
 
 from fireai.core.models_v21 import (
     MIN_REDUNDANCY_BY_ZONE,
@@ -57,11 +56,11 @@ logger = logging.getLogger(__name__)
 # Legacy Types & Enums
 # ---------------------------------------------------------------------------
 
-Point3D = Tuple[float, float, float]
-Point2D = Tuple[float, float]
+Point3D = tuple[float, float, float]
+Point2D = tuple[float, float]
 
 
-class FlameDetectorTech(str, Enum):
+class FlameDetectorTech(StrEnum):
     UV = "UV"
     IR_SINGLE = "IR_SINGLE"
     IR_TRIPLE = "IR_TRIPLE"
@@ -70,7 +69,7 @@ class FlameDetectorTech(str, Enum):
     UV_IR_IR = "UV_IR_IR"
 
 
-class ObstructionType(str, Enum):
+class ObstructionType(StrEnum):
     STRUCTURAL_BEAM = "STRUCTURAL_BEAM"
     WALL = "WALL"
     EQUIPMENT = "EQUIPMENT"
@@ -79,7 +78,7 @@ class ObstructionType(str, Enum):
     CEILING_LOWERED = "CEILING_LOWERED"
 
 
-class CoverageQuality(str, Enum):
+class CoverageQuality(StrEnum):
     CLEAR = "CLEAR"
     OBSTRUCTED = "OBSTRUCTED"
     MARGINAL = "MARGINAL"

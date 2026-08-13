@@ -39,9 +39,10 @@ import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, NoReturn
+from datetime import UTC, datetime
+from typing import Any, NoReturn
 
 # ===========================================================================
 # Event Data Model
@@ -68,7 +69,7 @@ class Event:
     correlation_id: str = ""
     timestamp: float = field(default_factory=time.monotonic)
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    _wall_clock_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    _wall_clock_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def datetime_utc(self) -> str:

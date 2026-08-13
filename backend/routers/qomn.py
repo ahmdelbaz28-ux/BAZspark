@@ -15,7 +15,7 @@ ENDPOINTS:
   POST /api/qomn/place-detectors     — Full room detector placement
   POST /api/qomn/place-duct          — Duct detector placement
   GET  /api/qomn/audit               — Export audit log (AHJ access)
-  GET  /api/qomn/physics-guards      — List all physics guard limits
+  GET  /api/qomn/physics-guards      — list all physics guard limits
   POST /api/qomn/golden-tests        — Run golden test suite
 
 All responses include:
@@ -32,7 +32,7 @@ STANDARDS:
 
 import logging
 import threading
-from typing import Any, Dict, List, NoReturn
+from typing import Any, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
@@ -239,7 +239,7 @@ class RoomRequest(BaseModel):
     detector_type:    str   = Field("smoke", description="smoke|heat|duct|beam|aspirating")
     is_sleeping_area: bool  = Field(False, description="True → 177 cd strobes (NFPA 72 §18.5.5.7)")
     slope_degrees:    float = Field(0.0, ge=0, le=45, description="Ceiling slope in degrees")
-    exit_doors:       List[Dict[str, float]] = Field(
+    exit_doors:       list[dict[str, float]] = Field(
         default_factory=list,
         description="Exit doors: [{x_m, y_m, door_width_m}]"
     )

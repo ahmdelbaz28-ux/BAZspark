@@ -3,12 +3,12 @@ import hmac
 import json
 import os
 import socket
-import ssl
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 class ClusterMessageType(Enum):
@@ -60,7 +60,7 @@ class ClusterNode:
         """Check if node is healthy based on heartbeat"""
         return (time.time() - self.last_heartbeat) < timeout_seconds
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get node status information"""
         return {
             "node_id": self.node_id,
@@ -84,7 +84,7 @@ class ClusterNode:
 class ClusterCommunicator:
     """Manages communication between nodes in the distributed FACP cluster"""
 
-    def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000,
+    def __init__(self, node_id: str | None = None, host: str = "0.0.0.0", port: int = 9000,
                  node_type: str = "worker", location: str = "primary"):
         self.node_id = node_id or f"node_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.host = host
@@ -92,7 +92,7 @@ class ClusterCommunicator:
         self.node_type = node_type
         self.location = location
         self.cluster_id = f"facp_cluster_{uuid.uuid4().hex[:8]}"
-        self.nodes: Dict[str, ClusterNode] = {}
+        self.nodes: dict[str, ClusterNode] = {}
         self.node_callbacks = {}  # node_id -> [callbacks]
         self.message_handlers = {}  # message_type -> [handlers]
         self.cluster_state = {}  # Shared cluster state
@@ -126,7 +126,7 @@ class ClusterCommunicator:
         self.local_node.capabilities = self._get_local_capabilities()
         self.nodes[self.node_id] = self.local_node
 
-    def _get_local_capabilities(self) -> List[str]:
+    def _get_local_capabilities(self) -> list[str]:
         """Get capabilities of this local node"""
         if self.node_type == "l1_gateway":
             return ["client.interface", "request.reception", "validation.basic"]
@@ -204,7 +204,7 @@ class ClusterCommunicator:
 
                     with self.lock:
                         self.stats["connections_made"] += 1
-                except socket.timeout:
+                except TimeoutError:
                     # Non-blocking timeout, continue loop
                     continue
             except Exception as e:
@@ -232,7 +232,7 @@ class ClusterCommunicator:
                     except json.JSONDecodeError:
                         print(f"Invalid JSON from {addr}")
                         continue
-                except socket.timeout:
+                except TimeoutError:
                     # Connection timeout, close it
                     break
         except Exception as e:
@@ -240,7 +240,7 @@ class ClusterCommunicator:
         finally:
             conn.close()
 
-    def _handle_incoming_message(self, message: Dict[str, Any], _conn: socket.socket, addr):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _handle_incoming_message(self, message: dict[str, Any], _conn: socket.socket, addr):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Handle an incoming message from another node"""
         with self.lock:
             self.stats["messages_received"] += 1
@@ -256,7 +256,7 @@ class ClusterCommunicator:
             if not sig or not sender_node_id:
                 print(f"Rejected unauthenticated cluster message from {addr}")
                 return
-            expected_sig = hmac.new(cluster_secret.encode("utf-8"), f"{sender_node_id}:{msg_type}:{ts}".encode("utf-8"), hashlib.sha256).hexdigest()
+            expected_sig = hmac.new(cluster_secret.encode("utf-8"), f"{sender_node_id}:{msg_type}:{ts}".encode(), hashlib.sha256).hexdigest()
             if not hmac.compare_digest(sig, expected_sig):
                 print(f"Rejected invalid HMAC cluster message signature from {sender_node_id}@{addr}")
                 return
@@ -291,7 +291,7 @@ class ClusterCommunicator:
                 except Exception as e:
                     print(f"Error in message handler: {e}")
 
-    def _update_node_info(self, node_id: str, node_info: Dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _update_node_info(self, node_id: str, node_info: dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Update information about a cluster node"""
         with self.lock:
             if node_id in self.nodes:
@@ -326,13 +326,13 @@ class ClusterCommunicator:
                     new_node.location = node_info.get("location", "unknown")
                     self.nodes[node_id] = new_node
 
-    def _handle_heartbeat_message(self, message: Dict[str, Any]):
+    def _handle_heartbeat_message(self, message: dict[str, Any]):
         """Handle heartbeat message"""
         sender_id = message.get("sender_node_id")
         if sender_id and sender_id in self.nodes:
             self.nodes[sender_id].update_heartbeat()
 
-    def _handle_node_join_message(self, message: Dict[str, Any]):
+    def _handle_node_join_message(self, message: dict[str, Any]):
         """Handle node join message"""
         node_info = message.get("node_info", {})
         node_id = message.get("sender_node_id")
@@ -349,7 +349,7 @@ class ClusterCommunicator:
                 "timestamp": time.time()
             }, exclude_node=self.node_id)
 
-    def _handle_node_leave_message(self, message: Dict[str, Any]):
+    def _handle_node_leave_message(self, message: dict[str, Any]):
         """Handle node leave message"""
         sender_id = message.get("sender_node_id")
         if sender_id in self.nodes:
@@ -357,7 +357,7 @@ class ClusterCommunicator:
             node.status = NodeStatus.DEAD
             node.last_heartbeat = time.time() - 1000  # Mark as dead
 
-    def _handle_state_sync_message(self, message: Dict[str, Any]):
+    def _handle_state_sync_message(self, message: dict[str, Any]):
         """Handle state synchronization message"""
         state = message.get("state", {})
         sender_id = message.get("sender_node_id")
@@ -374,7 +374,7 @@ class ClusterCommunicator:
                 except Exception as e:
                     print(f"Error in state sync callback: {e}")
 
-    def _handle_event_forward_message(self, message: Dict[str, Any]):
+    def _handle_event_forward_message(self, message: dict[str, Any]):
         """Handle event forwarding message"""
         event_data = message.get("event_data", {})
         sender_id = message.get("sender_node_id")
@@ -383,7 +383,7 @@ class ClusterCommunicator:
         # For now, we'll just log it
         print(f"Event forwarded from {sender_id}: {event_data.get('event_type', 'unknown')}")
 
-    def _handle_task_assignment_message(self, message: Dict[str, Any]):
+    def _handle_task_assignment_message(self, message: dict[str, Any]):
         """Handle task assignment message"""
         task_data = message.get("task_data", {})
         sender_id = message.get("sender_node_id")
@@ -391,14 +391,14 @@ class ClusterCommunicator:
         # This would trigger task processing in the actual system
         print(f"Task assigned from {sender_id}: {task_data.get('task_id', 'unknown')}")
 
-    def _handle_result_return_message(self, message: Dict[str, Any]):
+    def _handle_result_return_message(self, message: dict[str, Any]):
         """Handle result return message"""
         result_data = message.get("result_data", {})
         sender_id = message.get("sender_node_id")
 
         print(f"Result returned from {sender_id}: {result_data.get('task_id', 'unknown')}")
 
-    def _handle_error_report_message(self, message: Dict[str, Any]):
+    def _handle_error_report_message(self, message: dict[str, Any]):
         """Handle error report message"""
         error_data = message.get("error_data", {})
         sender_id = message.get("sender_node_id")
@@ -477,7 +477,7 @@ class ClusterCommunicator:
                 print(f"Discovery loop error: {e}")
                 time.sleep(5)
 
-    def send_message(self, node_id: str, message: Dict[str, Any]) -> bool:
+    def send_message(self, node_id: str, message: dict[str, Any]) -> bool:
         """Send a message to a specific node"""
         if not self.running:
             return False
@@ -533,7 +533,7 @@ class ClusterCommunicator:
             print(f"Error sending message: {e}")
             return False
 
-    def broadcast_message(self, message: Dict[str, Any], exclude_node: Optional[str] = None):
+    def broadcast_message(self, message: dict[str, Any], exclude_node: str | None = None):
         """Broadcast a message to all nodes in the cluster"""
         for node_id in list(self.nodes.keys()):  # NOSONAR - python:S7504
             if node_id != exclude_node and node_id != self.node_id:
@@ -611,7 +611,7 @@ class ClusterCommunicator:
                 self.node_callbacks[node_id] = []
             self.node_callbacks[node_id].append(callback)
 
-    def get_cluster_status(self) -> Dict[str, Any]:
+    def get_cluster_status(self) -> dict[str, Any]:
         """Get the status of the cluster"""
         with self.lock:
             healthy_nodes = []
@@ -639,19 +639,19 @@ class ClusterCommunicator:
                 "uptime_seconds": time.time() - self.local_node.joined_at
             }
 
-    def get_node_status(self, node_id: str) -> Optional[Dict[str, Any]]:
+    def get_node_status(self, node_id: str) -> dict[str, Any] | None:
         """Get status of a specific node"""
         with self.lock:
             if node_id in self.nodes:
                 return self.nodes[node_id].get_status()
         return None
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get communication statistics"""
         with self.lock:
             return self.stats.copy()
 
-    def sync_cluster_state(self, state: Dict[str, Any]):
+    def sync_cluster_state(self, state: dict[str, Any]):
         """Synchronize cluster state with other nodes"""
         sync_msg = {
             "type": ClusterMessageType.STATE_SYNC.value,
@@ -661,7 +661,7 @@ class ClusterCommunicator:
 
         self.broadcast_message(sync_msg)
 
-    def get_healthy_nodes(self) -> List[str]:
+    def get_healthy_nodes(self) -> list[str]:
         """Get list of healthy nodes"""
         with self.lock:
             return [
@@ -669,7 +669,7 @@ class ClusterCommunicator:
                 if node.is_healthy() and node.status == NodeStatus.HEALTHY
             ]
 
-    def get_node_by_type(self, node_type: str) -> List[str]:
+    def get_node_by_type(self, node_type: str) -> list[str]:
         """Get nodes of a specific type"""
         with self.lock:
             return [
@@ -682,7 +682,7 @@ class ClusterCommunicator:
         with self.lock:
             self.local_node.load = load
 
-    def update_local_resource_usage(self, cpu_percent: Optional[float] = None, memory_mb: Optional[float] = None, disk_gb: Optional[float] = None):
+    def update_local_resource_usage(self, cpu_percent: float | None = None, memory_mb: float | None = None, disk_gb: float | None = None):
         """Update resource usage of the local node"""
         with self.lock:
             if cpu_percent is not None:
@@ -696,7 +696,7 @@ class ClusterCommunicator:
 class DistributedClusterCommunicator(ClusterCommunicator):
     """Extended cluster communicator with additional distributed features"""
 
-    def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000,
+    def __init__(self, node_id: str | None = None, host: str = "0.0.0.0", port: int = 9000,
                  node_type: str = "worker", location: str = "primary"):
         super().__init__(node_id, host, port, node_type, location)
         self.consensus_algorithm = "raft"  # Default consensus algorithm
@@ -724,12 +724,12 @@ class DistributedClusterCommunicator(ClusterCommunicator):
             # If no leader, broadcast to all
             self.broadcast_message(config_exchange_msg)
 
-    def handle_config_exchange(self, config_data: Dict[str, Any], _sender_node_id: str):  # NOSONAR — S1172: parameter retained for API stability
+    def handle_config_exchange(self, config_data: dict[str, Any], _sender_node_id: str):  # NOSONAR — S1172: parameter retained for API stability
         """Handle configuration exchange message"""
         # Merge configurations
         self.cluster_config.update(config_data.get("config", {}))
 
-    def request_consensus(self, proposal: Dict[str, Any], timeout: int = 10) -> bool:
+    def request_consensus(self, proposal: dict[str, Any], timeout: int = 10) -> bool:
         """Request consensus on a proposal using Raft-like algorithm"""
         if not self.is_leader:
             # Forward to leader
@@ -765,7 +765,7 @@ class DistributedClusterCommunicator(ClusterCommunicator):
             total_nodes = len([n for n in self.nodes.values() if n.is_healthy()])
             return (total_nodes // 2) + 1 if total_nodes > 0 else 1
 
-    def get_cluster_topology(self) -> Dict[str, Any]:
+    def get_cluster_topology(self) -> dict[str, Any]:
         """Get cluster topology information"""
         topology = {
             "nodes": {},

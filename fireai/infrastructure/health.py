@@ -4,8 +4,9 @@ import dataclasses
 import os
 import shutil
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Literal
+from typing import Any, Literal
 
 START_TIME = time.monotonic()
 
@@ -25,7 +26,7 @@ class HealthStatus:
         return json.dumps(self.to_dict(), indent=2)
 
 
-CheckFn = Callable[[], Dict[str, Any]]
+CheckFn = Callable[[], dict[str, Any]]
 
 
 class HealthRegistry:

@@ -17,7 +17,7 @@ import os
 import re
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # ── Singleton Pattern ──────────────────────────────────────────────────────────
 
-_instance: Optional[ApsService] = None
+_instance: ApsService | None = None
 _lock = threading.Lock()
 
 
@@ -53,7 +53,7 @@ class ApsService:
         else:
             logger.info("APS Service initialized with developer credentials.")
 
-    def get_token(self) -> Dict[str, Any]:
+    def get_token(self) -> dict[str, Any]:
         """
         Authenticate via 2-legged OAuth to get an access token.
         """
@@ -70,7 +70,7 @@ class ApsService:
         auth_base64 = base64.b64encode(auth_bytes).decode("utf-8")
 
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-type": "application/x-www-form-urlencoded",
             "Authorization": f"Basic {auth_base64}"
         }
         data = {
@@ -95,7 +95,7 @@ class ApsService:
             logger.exception("APS OAuth exception: %s", e)
             return {"success": False, "error": str(e)}
 
-    def create_bucket(self, bucket_key: str, token: str) -> Dict[str, Any]:
+    def create_bucket(self, bucket_key: str, token: str) -> dict[str, Any]:
         """
         Create a new bucket in Autodesk OSS.
         """
@@ -105,7 +105,7 @@ class ApsService:
         url = "https://developer.api.autodesk.com/oss/v2/buckets"
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-type": "application/json"
         }
         payload = {
             "bucketKey": bucket_key,
@@ -122,7 +122,7 @@ class ApsService:
             logger.exception("APS create bucket error: %s", e)
             return {"success": False, "error": str(e)}
 
-    def upload_file(self, bucket_key: str, object_key: str, file_path: str, token: str) -> Dict[str, Any]:
+    def upload_file(self, bucket_key: str, object_key: str, file_path: str, token: str) -> dict[str, Any]:
         """
         Upload local file to Autodesk OSS.
         """
@@ -138,7 +138,7 @@ class ApsService:
         url = f"https://developer.api.autodesk.com/oss/v2/buckets/{bucket_key}/objects/{object_key}"
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/octet-stream"
+            "Content-type": "application/octet-stream"
         }
 
         try:
@@ -160,7 +160,7 @@ class ApsService:
             logger.exception("APS upload file error: %s", e)
             return {"success": False, "error": str(e)}
 
-    def execute_work_item(self, activity_id: str, input_urn: str, output_urn: str, params: Dict[str, Any], token: str) -> Dict[str, Any]:
+    def execute_work_item(self, activity_id: str, input_urn: str, output_urn: str, params: dict[str, Any], token: str) -> dict[str, Any]:
         """
         Trigger Design Automation WorkItem.
         """
@@ -171,7 +171,7 @@ class ApsService:
         url = "https://developer.api.autodesk.com/da/us-east/v2/workitems"
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-type": "application/json"
         }
 
         # Structure parameters mapping inputs and outputs for DA engine
@@ -208,7 +208,7 @@ class ApsService:
             logger.exception("APS WorkItem execution failed: %s", e)
             return {"success": False, "error": str(e)}
 
-    def poll_work_item(self, work_item_id: str, token: str) -> Dict[str, Any]:
+    def poll_work_item(self, work_item_id: str, token: str) -> dict[str, Any]:
         """
         Poll work item execution progress.
         """

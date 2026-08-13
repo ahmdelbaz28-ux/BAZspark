@@ -35,7 +35,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -43,7 +43,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 logger = logging.getLogger(__name__)
 
 
-class MaterialGroup(str, Enum):
+class MaterialGroup(StrEnum):
     """IEC 60079-0 gas/dust groups for equipment selection."""
 
     IIA = "IIA"    # Propane group (least restrictive)
@@ -55,7 +55,7 @@ class MaterialGroup(str, Enum):
     UNKNOWN = "unknown"
 
 
-class TemperatureClass(str, Enum):
+class TemperatureClass(StrEnum):
     """IEC 60079-0 temperature classes based on auto-ignition temperature."""
 
     T1 = "T1"    # > 450°C

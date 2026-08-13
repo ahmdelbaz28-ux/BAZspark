@@ -29,14 +29,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ELEVATOR RECALL — NFPA 72 §21.3
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class ElevatorRecallPhase(str, Enum):
+class ElevatorRecallPhase(StrEnum):
     """
     Elevator recall phases per NFPA 72 §21.3.
 

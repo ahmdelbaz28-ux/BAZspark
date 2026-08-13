@@ -25,10 +25,11 @@ import contextlib
 import logging
 import threading
 import uuid
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import IntEnum
-from typing import Any, Callable, List, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class Fact:
     fact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     source: str = "user_input"  # or 'derived', 'sensor', 'import'
     nfpa_reference: str | None = None  # e.g., "NFPA 72 §17.6.3.1"
-    asserted_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    asserted_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def matches(self, fact_type: str, **conditions) -> bool:
         """
@@ -130,7 +131,7 @@ class RuleResult:
     retracted_fact_ids: list[str] = field(default_factory=list)
     matched_facts: list[str] = field(default_factory=list)  # fact_ids
     session_id: str = ""
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     confidence: float = 1.0  # 0.0 to 1.0 — for uncertain inferences
 
 
@@ -155,10 +156,10 @@ class RuleAuditEntry:
     result: RuleResult | None = None
 
 
-# Type aliases for rule conditions and actions
+# type aliases for rule conditions and actions
 ConditionFn = Callable[[Fact], bool]
 JoinConditionFn = Callable[[Fact, Fact], bool]
-ActionFn = Callable[[List[Fact], "RulesEngine"], List[RuleResult]]
+ActionFn = Callable[[list[Fact], "RulesEngine"], list[RuleResult]]
 
 
 @dataclass
@@ -187,7 +188,7 @@ class Rule:
     condition: ConditionFn | None = None
 
     # Multi-fact join conditions (beta network)
-    # List of (fact_type_1, fact_type_2, join_predicate)
+    # list of (fact_type_1, fact_type_2, join_predicate)
     join_conditions: list[tuple[str, str, JoinConditionFn]] = field(default_factory=list)
 
     # Action: what happens when the rule fires
@@ -536,7 +537,7 @@ class RulesEngine:
                 rule_id=rule.rule_id,
                 rule_name=rule.rule_name,
                 nfpa_reference=rule.nfpa_reference,
-                evaluated_at=datetime.now(timezone.utc).isoformat(),
+                evaluated_at=datetime.now(UTC).isoformat(),
                 fired=True,
                 reason=f"Matched {len(matched_facts)} facts",
                 session_id=self.session_id,
@@ -602,7 +603,7 @@ class RulesEngine:
                         rule_id=rule.rule_id,
                         rule_name=rule.rule_name,
                         nfpa_reference=rule.nfpa_reference,
-                        evaluated_at=datetime.now(timezone.utc).isoformat(),
+                        evaluated_at=datetime.now(UTC).isoformat(),
                         fired=False,
                         reason="No matching facts",
                         session_id=self.session_id,

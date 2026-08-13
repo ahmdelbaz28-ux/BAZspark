@@ -7,7 +7,7 @@ Translation engine for converting between ETAP, AutoCAD, Revit, and Unified Engi
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from engineering_copilot.models.unified_model import (
     Breaker,
@@ -111,7 +111,7 @@ class TranslationEngine:
             }
         }
 
-    def etap_to_unified(self, etap_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def etap_to_unified(self, etap_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert ETAP data to Unified Engineering Model.
 
@@ -221,7 +221,7 @@ class TranslationEngine:
         self.logger.info(f"Converted ETAP data to unified model with {len(unified_model.entities)} entities")
         return unified_model
 
-    def autocad_to_unified(self, autocad_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def autocad_to_unified(self, autocad_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert AutoCAD data to Unified Engineering Model.
 
@@ -316,7 +316,7 @@ class TranslationEngine:
         self.logger.info(f"Converted AutoCAD data to unified model with {len(unified_model.entities)} entities")
         return unified_model
 
-    def revit_to_unified(self, revit_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def revit_to_unified(self, revit_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert Revit data to Unified Engineering Model.
 
@@ -398,7 +398,7 @@ class TranslationEngine:
         self.logger.info(f"Converted Revit data to unified model with {len(unified_model.entities)} entities")
         return unified_model
 
-    def unified_to_etap(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR:S3776: ETAP conversion must translate all engineering entities
+    def unified_to_etap(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: ETAP conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to ETAP operations.
 
@@ -406,7 +406,7 @@ class TranslationEngine:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: ETAP operations
+            dict: ETAP operations
         """
         etap_operations = {
             "create_buses": [],
@@ -484,7 +484,7 @@ class TranslationEngine:
         self.logger.info(f"Converted unified model to {sum(len(v) for v in etap_operations.values())} ETAP operations")
         return etap_operations
 
-    def unified_to_autocad(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR:S3776: AutoCAD conversion must translate all engineering entities
+    def unified_to_autocad(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: AutoCAD conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to AutoCAD operations.
 
@@ -492,7 +492,7 @@ class TranslationEngine:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: AutoCAD operations
+            dict: AutoCAD operations
         """
         autocad_operations = {
             "insert_blocks": [],
@@ -567,7 +567,7 @@ class TranslationEngine:
         self.logger.info(f"Converted unified model to {sum(len(v) for v in autocad_operations.values())} AutoCAD operations")
         return autocad_operations
 
-    def unified_to_revit(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR:S3776: Revit conversion must translate all engineering entities
+    def unified_to_revit(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: Revit conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to Revit operations.
 
@@ -575,7 +575,7 @@ class TranslationEngine:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: Revit operations
+            dict: Revit operations
         """
         revit_operations = {
             "place_families": [],
@@ -628,7 +628,7 @@ class TranslationEngine:
                     "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
                     "parameters": {
                         "Equipment Name": entity.name,
-                        "Equipment Type": entity.equipment_type
+                        "Equipment type": entity.equipment_type
                     }
                 })
 
@@ -675,7 +675,7 @@ class TranslationEngine:
         else:
             return unified_model
 
-    def sync_models(self, source_model: UnifiedEngineeringModel, target_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def sync_models(self, source_model: UnifiedEngineeringModel, target_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Synchronize differences between two unified models.
 
@@ -684,7 +684,7 @@ class TranslationEngine:
             target_model: Target unified model to sync
 
         Returns:
-            Dict: Sync results
+            dict: Sync results
         """
         sync_results = {
             "added": 0,

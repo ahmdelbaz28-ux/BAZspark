@@ -5,12 +5,14 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 import hmac
 import os
+
 import aiohttp
 import uvicorn
 from fastapi import FastAPI, Request
@@ -102,7 +104,7 @@ class TransportLayer(ABC):
         raise NotImplementedError("Subclasses must implement stop()")
 
     @abstractmethod
-    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
+    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
         """Send request to target"""
         raise NotImplementedError("Subclasses must implement send_request()")
 
@@ -218,7 +220,7 @@ class HTTPTransport(TransportLayer):
                 "timestamp": time.time()
             }
 
-    def _validate_request(self, request_data: Dict[str, Any]) -> bool:
+    def _validate_request(self, request_data: dict[str, Any]) -> bool:
         """Validate incoming request for security"""
         # Check if request has required fields
         required_fields = ["method", "id"]
@@ -276,7 +278,7 @@ class HTTPTransport(TransportLayer):
         # Note: In a real implementation, we'd have a proper shutdown mechanism
         self.is_running = False
 
-    async def async_send_request(self, request_data: Dict[str, Any], target_host: str = "localhost", target_port: int = 8000) -> Dict[str, Any]:
+    async def async_send_request(self, request_data: dict[str, Any], target_host: str = "localhost", target_port: int = 8000) -> dict[str, Any]:
         """Send request asynchronously to target HTTP endpoint"""
         scheme = "https" if os.getenv("FACP_USE_HTTPS", "").lower() in ("1", "true") else "http"
         target_url = f"{scheme}://{target_host}:{target_port}/facp/request"
@@ -314,7 +316,7 @@ class HTTPTransport(TransportLayer):
                 }
             }
 
-    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
+    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
         """
         Send request to target (synchronous wrapper for async method) with circuit breaker protection
         target_node format: "host:port" (e.g., "localhost:8001")
@@ -399,12 +401,12 @@ class TransportRouter:
             return True
         return False
 
-    def get_transport(self, name: str) -> Optional[TransportLayer]:
+    def get_transport(self, name: str) -> TransportLayer | None:
         """Get a specific transport"""
         return self.transports.get(name)
 
-    def route_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None,
-                     transport_hint: Optional[str] = None) -> Dict[str, Any]:
+    def route_request(self, request_data: dict[str, Any], target_node: str | None = None,
+                     transport_hint: str | None = None) -> dict[str, Any]:
         """Route request to appropriate transport and node"""
         transport = None
 

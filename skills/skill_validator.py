@@ -8,8 +8,7 @@ using Pydantic models with strict type checking and validation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, Generic, List, Tuple, TypeVar
-from typing import Optional as Opt
+from typing import Any, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -54,7 +53,7 @@ class SkillMetadata(BaseModel):
         default_factory=datetime.now,
         description="Creation timestamp",
     )
-    updated_at: Opt[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None,
         description="Last update timestamp",
     )
@@ -100,17 +99,17 @@ class SkillDescription(BaseModel):
         max_length=200,
         description="Brief description for listings",
     )
-    long_description: Opt[str] = Field(
+    long_description: str | None = Field(
         default=None,
         max_length=5000,
         description="Detailed description",
     )
-    trigger_words: List[str] = Field(
+    trigger_words: list[str] = Field(
         min_length=1,
         max_length=50,
         description="Keywords that activate this skill",
     )
-    use_cases: List[str] = Field(
+    use_cases: list[str] = Field(
         default_factory=list,
         max_length=20,
         description="Common use case descriptions",
@@ -118,7 +117,7 @@ class SkillDescription(BaseModel):
 
     @field_validator("trigger_words")
     @classmethod
-    def validate_triggers(cls, v: List[str]) -> List[str]:
+    def validate_triggers(cls, v: list[str]) -> list[str]:
         """Ensure trigger words are meaningful and lowercase.
         Numeric-only triggers are prefixed with a letter to satisfy .islower() checks.
         """
@@ -152,11 +151,11 @@ class SkillPermissions(BaseModel):
     filesystem_read: bool = Field(default=False, description="Requires read access")
     filesystem_write: bool = Field(default=False, description="Requires write access")
     subprocess: bool = Field(default=False, description="Can spawn subprocesses")
-    env_vars: List[str] = Field(default_factory=list, description="Required env vars")
+    env_vars: list[str] = Field(default_factory=list, description="Required env vars")
 
     @field_validator("env_vars", mode="before")
     @classmethod
-    def validate_env_vars(cls, v: Any) -> List[str]:
+    def validate_env_vars(cls, v: Any) -> list[str]:
         if isinstance(v, str):
             return [x.strip() for x in v.split(",") if x.strip()]
         return v if isinstance(v, list) else []
@@ -172,7 +171,7 @@ class SkillRequirements(BaseModel):
         default="3.10",
         description="Minimum Python version",
     )
-    dependencies: Dict[str, str] = Field(
+    dependencies: dict[str, str] = Field(
         default_factory=dict,
         description="Package name to version spec",
     )
@@ -201,30 +200,30 @@ class ExecutionError(BaseModel):
     error: bool = True
     type: str = Field(description="Error classification")
     message: str = Field(description="Human-readable message")
-    action_required: Opt[str] = Field(
+    action_required: str | None = Field(
         default=None,
         description="How to resolve",
     )
     can_retry: bool = Field(default=False, description="Whether retry is safe")
-    details: Opt[Dict[str, Any]] = Field(
+    details: dict[str, Any] | None = Field(
         default=None,
         description="Additional context",
     )
 
 
-class ExecutionResult(BaseModel, Generic[T]):
+class ExecutionResult[T](BaseModel):
     """Generic execution result with type safety."""
 
     model_config = ConfigDict(extra="forbid")
 
     success: bool = Field(description="Whether execution succeeded")
-    data: Opt[T] = Field(default=None, description="Result data")
-    error: Opt[ExecutionError] = Field(default=None, description="Error if failed")
+    data: T | None = Field(default=None, description="Result data")
+    error: ExecutionError | None = Field(default=None, description="Error if failed")
     timestamp: datetime = Field(
         default_factory=datetime.now,
         description="Execution timestamp",
     )
-    duration_ms: Opt[float] = Field(
+    duration_ms: float | None = Field(
         default=None,
         ge=0,
         description="Execution duration in milliseconds",
@@ -239,7 +238,7 @@ class ExecutionResult(BaseModel, Generic[T]):
             raise ValueError("Cannot have data on failed execution")
         return self
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON export."""
         return self.model_dump(mode="json")
 
@@ -265,18 +264,18 @@ class SkillManifest(BaseModel):
         default="1.0",
         pattern=r"^\d+\.\d+$",
     )
-    tags: List[str] = Field(default_factory=list, max_length=10)
+    tags: list[str] = Field(default_factory=list, max_length=10)
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, v: Any) -> List[str]:
+    def validate_tags(cls, v: Any) -> list[str]:
         if isinstance(v, str):
             return [x.strip().lower() for x in v.split(",") if x.strip()]
         return v if isinstance(v, list) else []
 
     @field_validator("tags")
     @classmethod
-    def validate_tags_content(cls, v: List[str]) -> List[str]:
+    def validate_tags_content(cls, v: list[str]) -> list[str]:
         """Ensure tags are meaningful."""
         return [t for t in v if len(t) >= 2]
 
@@ -292,7 +291,7 @@ class SkillManifest(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def validate_skill_manifest(data: Dict[str, Any]) -> Tuple[bool, Opt[str]]:
+def validate_skill_manifest(data: dict[str, Any]) -> tuple[bool, str | None]:
     """
     Validate skill manifest data.
 

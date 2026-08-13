@@ -19,7 +19,7 @@ Supports PyScada (Python/Django), Scada-LTS (Java), and JSON-SCADA (Go).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 
 import yaml
@@ -158,7 +158,7 @@ def dashboard_payload(
     current UTC time so payloads are always correctly time-stamped.
     """
     if timestamp is None:
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     return {
         "ship_imo": imo,
         "timestamp": timestamp,

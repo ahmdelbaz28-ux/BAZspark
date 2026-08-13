@@ -7,8 +7,8 @@ Service for extracting electrical and other assets from Revit models.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 
 class AssetExtractionService:
@@ -20,15 +20,15 @@ class AssetExtractionService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def extract_electrical_assets(self, model_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def extract_electrical_assets(self, model_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Extract electrical assets from model elements.
 
         Args:
-            model_elements: List of model elements to extract assets from
+            model_elements: list of model elements to extract assets from
 
         Returns:
-            List[Dict]: Extracted electrical assets
+            list[dict]: Extracted electrical assets
         """
         electrical_assets = []
 
@@ -45,22 +45,22 @@ class AssetExtractionService:
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
                     'connections': [],  # Will be populated with connected elements
-                    'created_at': datetime.now(timezone.utc).isoformat()
+                    'created_at': datetime.now(UTC).isoformat()
                 }
                 electrical_assets.append(asset)
 
         self.logger.info(f"Extracted {len(electrical_assets)} electrical assets")
         return electrical_assets
 
-    async def extract_mechanical_assets(self, model_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def extract_mechanical_assets(self, model_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Extract mechanical assets from model elements.
 
         Args:
-            model_elements: List of model elements to extract assets from
+            model_elements: list of model elements to extract assets from
 
         Returns:
-            List[Dict]: Extracted mechanical assets
+            list[dict]: Extracted mechanical assets
         """
         mechanical_assets = []
 
@@ -76,22 +76,22 @@ class AssetExtractionService:
                     'category': element.get('category'),
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
-                    'created_at': datetime.now(timezone.utc).isoformat()
+                    'created_at': datetime.now(UTC).isoformat()
                 }
                 mechanical_assets.append(asset)
 
         self.logger.info(f"Extracted {len(mechanical_assets)} mechanical assets")
         return mechanical_assets
 
-    async def extract_structural_assets(self, model_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def extract_structural_assets(self, model_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Extract structural assets from model elements.
 
         Args:
-            model_elements: List of model elements to extract assets from
+            model_elements: list of model elements to extract assets from
 
         Returns:
-            List[Dict]: Extracted structural assets
+            list[dict]: Extracted structural assets
         """
         structural_assets = []
 
@@ -107,22 +107,22 @@ class AssetExtractionService:
                     'category': element.get('category'),
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
-                    'created_at': datetime.now(timezone.utc).isoformat()
+                    'created_at': datetime.now(UTC).isoformat()
                 }
                 structural_assets.append(asset)
 
         self.logger.info(f"Extracted {len(structural_assets)} structural assets")
         return structural_assets
 
-    async def extract_spatial_elements(self, model_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def extract_spatial_elements(self, model_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Extract spatial elements (rooms, spaces, areas) from model.
 
         Args:
-            model_elements: List of model elements to extract from
+            model_elements: list of model elements to extract from
 
         Returns:
-            List[Dict]: Extracted spatial elements
+            list[dict]: Extracted spatial elements
         """
         spatial_elements = []
 
@@ -139,14 +139,14 @@ class AssetExtractionService:
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
                     'geometry': element.get('geometry'),
-                    'created_at': datetime.now(timezone.utc).isoformat()
+                    'created_at': datetime.now(UTC).isoformat()
                 }
                 spatial_elements.append(spatial_element)
 
         self.logger.info(f"Extracted {len(spatial_elements)} spatial elements")
         return spatial_elements
 
-    def _classify_electrical_asset_type(self, element: Dict[str, Any]) -> str:
+    def _classify_electrical_asset_type(self, element: dict[str, Any]) -> str:
         """Classify the type of electrical asset."""
         category = element.get('category', '').lower()
         name = element.get('name', '').lower()
@@ -164,7 +164,7 @@ class AssetExtractionService:
         else:
             return 'ElectricalEquipment'
 
-    def _classify_mechanical_asset_type(self, element: Dict[str, Any]) -> str:
+    def _classify_mechanical_asset_type(self, element: dict[str, Any]) -> str:
         """Classify the type of mechanical asset."""
         category = element.get('category', '').lower()
         element.get('name', '').lower()
@@ -178,7 +178,7 @@ class AssetExtractionService:
         else:
             return 'MechanicalEquipment'
 
-    def _classify_structural_asset_type(self, element: Dict[str, Any]) -> str:
+    def _classify_structural_asset_type(self, element: dict[str, Any]) -> str:
         """Classify the type of structural asset."""
         category = element.get('category', '').lower()
         name = element.get('name', '').lower()
@@ -192,15 +192,15 @@ class AssetExtractionService:
         else:
             return 'StructuralMember'
 
-    async def get_asset_connections(self, model_elements: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+    async def get_asset_connections(self, model_elements: list[dict[str, Any]]) -> dict[str, list[str]]:
         """
         Identify connections between assets.
 
         Args:
-            model_elements: List of model elements to analyze
+            model_elements: list of model elements to analyze
 
         Returns:
-            Dict: Mapping of element_id to connected element_ids
+            dict: Mapping of element_id to connected element_ids
         """
         connections = {}
 

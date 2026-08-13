@@ -14,7 +14,7 @@ import json
 import logging
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class FailurePrediction:
     probability: float
     failure_mode: str
     features_used: list[str]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -72,7 +72,7 @@ class CoverageForecast:
     degradation_rate: float
     confidence_lower: list[float]
     confidence_upper: list[float]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -98,7 +98,7 @@ class CapacityPrediction:
     risk: str  # "low", "medium", "high", "critical"
     confidence_lower: float
     confidence_upper: float
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -125,7 +125,7 @@ class RiskScore:
     env_factor: float
     risk_level: str  # "low", "moderate", "high", "critical"
     recommendations: list[str]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -385,7 +385,7 @@ class PredictiveAnalyticsEngine:
         # Fall back to statistical method
         device_id = device_history[0].device_id
         events_sorted = sorted(device_history, key=lambda e: e.timestamp)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         age_hours: list[float] = []
         for evt in events_sorted:
@@ -442,7 +442,7 @@ class PredictiveAnalyticsEngine:
         )
 
     def predict_coverage_degradation(self, room_id: str, days: int) -> CoverageForecast:
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         n = max(days, 1)
         coverage_series = self._simulate_recent_coverage(room_id)
         horizon = n

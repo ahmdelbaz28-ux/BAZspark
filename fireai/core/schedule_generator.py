@@ -26,7 +26,7 @@ import io
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -245,7 +245,7 @@ class ScheduleGenerator:
             # a half-solution (empty=True) is worse than no solution because
             # it creates a false sense of security.
             return ScheduleReport(
-                generated=datetime.now(timezone.utc).isoformat(),
+                generated=datetime.now(UTC).isoformat(),
                 total_cable_length_m=0.0,
                 total_bends=0,
                 max_circuit_length_m=0.0,
@@ -258,7 +258,7 @@ class ScheduleGenerator:
             )
 
         return ScheduleReport(
-            generated=datetime.now(timezone.utc).isoformat(),
+            generated=datetime.now(UTC).isoformat(),
             total_cable_length_m=round(sum(r.length_m for r in rows), 3),
             total_bends=sum(r.bend_count for r in rows),
             max_circuit_length_m=round(max(r.length_m for r in rows), 3),

@@ -21,7 +21,7 @@ from __future__ import annotations
 import math
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -157,7 +157,7 @@ def make_element(
         element_id=element_id,
         properties=props,
         geometry=geometry,
-        created_timestamp=datetime.now(timezone.utc),
+        created_timestamp=datetime.now(UTC),
         **kwargs,
     )
 

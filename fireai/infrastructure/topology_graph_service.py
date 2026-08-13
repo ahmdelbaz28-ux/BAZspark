@@ -35,8 +35,8 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ NEO4J_PASSWORD_DEFAULT = "etap_password"
 # ---------------------------------------------------------------------------
 
 
-class ElementType(str, Enum):
+class ElementType(StrEnum):
     """Types of electrical network elements (Neo4j node labels)."""
 
     BUS = "Bus"
@@ -72,7 +72,7 @@ class ElementType(str, Enum):
     PANEL = "Panel"
 
 
-class RelationshipType(str, Enum):
+class RelationshipType(StrEnum):
     """Types of relationships between network elements (Neo4j edge types)."""
 
     CONNECTED_TO = "CONNECTED_TO"
@@ -95,7 +95,7 @@ class NetworkElement:
 
     Attributes:
         element_id: Unique identifier (e.g., "BUS-001", "LINE-042").
-        element_type: Type of element (Bus, Line, Transformer, etc.).
+        element_type: type of element (Bus, Line, Transformer, etc.).
         name: Human-readable name.
         properties: Element properties (impedance, rating, voltage, status).
     """
@@ -103,9 +103,9 @@ class NetworkElement:
     element_id: str
     element_type: ElementType
     name: str
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "element_id": self.element_id,
             "element_type": self.element_type.value,
@@ -122,16 +122,16 @@ class NetworkConnection:
     Attributes:
         from_element: Source element ID.
         to_element: Target element ID.
-        relationship_type: Type of relationship.
+        relationship_type: type of relationship.
         properties: Connection properties (impedance, length, status).
     """
 
     from_element: str
     to_element: str
     relationship_type: RelationshipType
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "from": self.from_element,
             "to": self.to_element,
@@ -147,19 +147,19 @@ class ImpactAnalysisResult:
 
     Attributes:
         breaker_id: The breaker that was tripped.
-        affected_loads: List of load IDs affected by the trip.
-        affected_buses: List of bus IDs that lose power.
+        affected_loads: list of load IDs affected by the trip.
+        affected_buses: list of bus IDs that lose power.
         path_count: Number of paths analyzed.
         analysis_ms: Time taken for the analysis.
     """
 
     breaker_id: str
-    affected_loads: List[str] = field(default_factory=list)
-    affected_buses: List[str] = field(default_factory=list)
+    affected_loads: list[str] = field(default_factory=list)
+    affected_buses: list[str] = field(default_factory=list)
     path_count: int = 0
     analysis_ms: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "breaker_id": self.breaker_id,
             "affected_loads": self.affected_loads,
@@ -204,9 +204,9 @@ class TopologyGraphService:
 
     def __init__(
         self,
-        uri: Optional[str] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
+        uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
     ) -> None:
         """
         Initialize the topology graph service.
@@ -222,8 +222,8 @@ class TopologyGraphService:
         self._driver = None
         self._initialized = False
         # Fallback in-memory graph (for dev mode without Neo4j)
-        self._in_memory_nodes: Dict[str, NetworkElement] = {}
-        self._in_memory_edges: List[NetworkConnection] = []
+        self._in_memory_nodes: dict[str, NetworkElement] = {}
+        self._in_memory_edges: list[NetworkConnection] = []
 
     # ------------------------------------------------------------------
     # Lazy Initialization
@@ -424,9 +424,9 @@ class TopologyGraphService:
         import time
         from collections import deque
 
-        affected_loads: Set[str] = set()
-        affected_buses: Set[str] = set()
-        visited: Set[str] = set()
+        affected_loads: set[str] = set()
+        affected_buses: set[str] = set()
+        visited: set[str] = set()
         queue = deque([(breaker_id, 0)])
         path_count = 0
 
@@ -466,7 +466,7 @@ class TopologyGraphService:
         self,
         element_id: str,
         max_depth: int = 10,
-    ) -> List[NetworkElement]:
+    ) -> list[NetworkElement]:
         """
         Get all elements downstream of the given element.
 
@@ -475,14 +475,14 @@ class TopologyGraphService:
             max_depth: Maximum traversal depth.
 
         Returns:
-            List of downstream NetworkElement objects.
+            list of downstream NetworkElement objects.
         """
         self._initialize()
 
         if self._driver is None:
             # In-memory BFS
-            result: List[NetworkElement] = []
-            visited: Set[str] = set()
+            result: list[NetworkElement] = []
+            visited: set[str] = set()
             queue = [(element_id, 0)]
 
             while queue:
@@ -514,7 +514,7 @@ class TopologyGraphService:
                     depth=max_depth,
                 )
 
-                elements: List[NetworkElement] = []
+                elements: list[NetworkElement] = []
                 for record in result:
                     type_str = record["type"] or "Bus"
                     try:
@@ -537,7 +537,7 @@ class TopologyGraphService:
     # Health Check
     # ------------------------------------------------------------------
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check Neo4j connectivity."""
         self._initialize()
         if self._driver is None:
@@ -586,7 +586,7 @@ class TopologyGraphService:
 # Singleton
 # ---------------------------------------------------------------------------
 
-_topology_service: Optional[TopologyGraphService] = None
+_topology_service: TopologyGraphService | None = None
 
 
 def get_topology_service() -> TopologyGraphService:

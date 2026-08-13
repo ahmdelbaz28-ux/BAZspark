@@ -9,7 +9,6 @@ import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Tuple
 
 import _fitz_compat as fitz
 from parsers._device_types import DeviceType
@@ -41,11 +40,11 @@ class ConfidenceLevel(Enum):
 @dataclass
 class SymbolElement:
     symbol_type: SymbolType
-    bbox: Tuple[float, float, float, float]
+    bbox: tuple[float, float, float, float]
     confidence: ConfidenceLevel
     text: str
     page: int = 0
-    raw: Dict = field(default_factory=dict)
+    raw: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -125,7 +124,7 @@ class SymbolExtractor:
         self.page = self.doc[page_number]
         self.page_number = page_number
 
-    def extract_symbols(self) -> List[SymbolElement]:
+    def extract_symbols(self) -> list[SymbolElement]:
         words = self.page.get_text("words")
         symbols = []
 
@@ -148,11 +147,11 @@ class SymbolExtractor:
         self.doc.close()
         return symbols
 
-    def extract_by_type(self, symbol_type: SymbolType) -> List[SymbolElement]:
+    def extract_by_type(self, symbol_type: SymbolType) -> list[SymbolElement]:
         all_symbols = self.extract_symbols()
         return [s for s in all_symbols if s.symbol_type == symbol_type]
 
-    def get_symbol_count(self) -> Dict[str, int]:
+    def get_symbol_count(self) -> dict[str, int]:
         symbols = self.extract_symbols()
         counts = {}
         for sym in symbols:
@@ -165,12 +164,12 @@ class SymbolExtractor:
             self.doc.close()
 
 
-def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> List[SymbolElement]:
+def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> list[SymbolElement]:
     extractor = SymbolExtractor(pdf_path, page)
     return extractor.extract_symbols()
 
 
-def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> Dict[str, List[SymbolElement]]:
+def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> dict[str, list[SymbolElement]]:
     symbols = extract_symbols_from_pdf(pdf_path, page)
 
     devices = {}

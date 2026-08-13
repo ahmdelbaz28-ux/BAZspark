@@ -6,7 +6,6 @@ Extended with building model types for IFC/DXF parsing pipeline.
 
 import hashlib
 from dataclasses import dataclass
-from typing import Tuple
 
 from fireai.core.base_types import (
     ConduitType,
@@ -44,7 +43,7 @@ class Room:
 
     id: str
     name: str
-    boundary: Tuple[Point3D, ...]
+    boundary: tuple[Point3D, ...]
     area_m2: float
     height_m: float
     has_placeholder_boundary: bool = False
@@ -58,9 +57,9 @@ class Building:
     format_detected: str
     version_detected: str
     units: str  # Expected "METERS"
-    walls: Tuple[Wall, ...]
-    rooms: Tuple[Room, ...]
-    openings: Tuple[Opening, ...]
+    walls: tuple[Wall, ...]
+    rooms: tuple[Room, ...]
+    openings: tuple[Opening, ...]
     has_fallback_geometry: bool = False
 
     def compute_hash(self) -> str:
@@ -110,11 +109,11 @@ class ConduitRun:
     id: str
     conduit_type: ConduitType
     trade_size: str
-    points: Tuple[Point3D, ...]
+    points: tuple[Point3D, ...]
     total_length_ft: float
     bend_count: int
     bend_degrees: int
-    fittings: Tuple[Fitting, ...]
+    fittings: tuple[Fitting, ...]
 
     def compute_hash(self) -> str:
         pt_strs = ",".join([f"{p.x:.4f},{p.y:.4f},{p.z:.4f}" for p in self.points])

@@ -9,11 +9,11 @@ Principal Software Architect: Eng. Ahmed Elbaz
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-
 import os
 import secrets
+from datetime import datetime
+from typing import Any
+
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
@@ -22,8 +22,8 @@ from engineering_copilot.translation_engine.translation_engine import Translatio
 
 
 async def verify_copilot_api_key(
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
-    authorization: Optional[str] = Header(None, alias="Authorization"),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    authorization: str | None = Header(None, alias="Authorization"),
 ) -> str:
     """
     Verify API key for Engineering Copilot MCP Server (FC-001 defense).
@@ -107,22 +107,22 @@ class MCPServer:
     class EntityRequest(BaseModel):
         name: str
         description: str = ""
-        coordinates: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
-        properties: Dict[str, Any] = {}
+        coordinates: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        properties: dict[str, Any] = {}
 
     class SyncRequest(BaseModel):
         source_system: str
         target_system: str
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
 
     class ProcessRequest(BaseModel):
         request: str
-        target_systems: List[str] = ["AutoCAD", "ETAP", "Revit"]
+        target_systems: list[str] = ["AutoCAD", "ETAP", "Revit"]
 
     class ValidationRequest(BaseModel):
-        model_data: Dict[str, Any]
+        model_data: dict[str, Any]
 
-    async def create_drawing(self, request: DrawingRequest) -> Dict[str, Any]:
+    async def create_drawing(self, request: DrawingRequest) -> dict[str, Any]:
         """Create a new drawing."""
         try:
             self.logger.info(f"Creating drawing: {request.name}")
@@ -145,7 +145,7 @@ class MCPServer:
             self.logger.error(f"Error creating drawing: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def update_drawing(self, request: DrawingRequest) -> Dict[str, Any]:
+    async def update_drawing(self, request: DrawingRequest) -> dict[str, Any]:
         """Update an existing drawing."""
         try:
             self.logger.info(f"Updating drawing: {request.name}")
@@ -165,7 +165,7 @@ class MCPServer:
             self.logger.error(f"Error updating drawing: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def read_drawing(self) -> Dict[str, Any]:
+    async def read_drawing(self) -> dict[str, Any]:
         """Read the current drawing."""
         try:
             self.logger.info("Reading current drawing")
@@ -191,7 +191,7 @@ class MCPServer:
             self.logger.error(f"Error reading drawing: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_panel(self, request: EntityRequest) -> Dict[str, Any]:
+    async def create_panel(self, request: EntityRequest) -> dict[str, Any]:
         """Create an electrical panel."""
         try:
             self.logger.info(f"Creating panel: {request.name}")
@@ -229,7 +229,7 @@ class MCPServer:
             self.logger.error(f"Error creating panel: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_transformer(self, request: EntityRequest) -> Dict[str, Any]:
+    async def create_transformer(self, request: EntityRequest) -> dict[str, Any]:
         """Create a transformer."""
         try:
             self.logger.info(f"Creating transformer: {request.name}")
@@ -271,7 +271,7 @@ class MCPServer:
             self.logger.error(f"Error creating transformer: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_bus(self, request: EntityRequest) -> Dict[str, Any]:
+    async def create_bus(self, request: EntityRequest) -> dict[str, Any]:
         """Create an electrical bus."""
         try:
             self.logger.info(f"Creating bus: {request.name}")
@@ -308,7 +308,7 @@ class MCPServer:
             self.logger.error(f"Error creating bus: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def create_cable(self, request: EntityRequest) -> Dict[str, Any]:
+    async def create_cable(self, request: EntityRequest) -> dict[str, Any]:
         """Create a cable."""
         try:
             self.logger.info(f"Creating cable: {request.name}")
@@ -346,7 +346,7 @@ class MCPServer:
             self.logger.error(f"Error creating cable: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def generate_sld(self, request: EntityRequest) -> Dict[str, Any]:
+    async def generate_sld(self, request: EntityRequest) -> dict[str, Any]:
         """Generate a single line diagram."""
         try:
             self.logger.info(f"Generating SLD for: {request.name}")
@@ -372,7 +372,7 @@ class MCPServer:
             self.logger.error(f"Error generating SLD: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def sync_etap(self, request: SyncRequest) -> Dict[str, Any]:
+    async def sync_etap(self, request: SyncRequest) -> dict[str, Any]:
         """Synchronize with ETAP."""
         try:
             self.logger.info(f"Synchronizing {request.source_system} with ETAP")
@@ -393,7 +393,7 @@ class MCPServer:
             self.logger.error(f"Error syncing with ETAP: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def sync_revit(self, request: SyncRequest) -> Dict[str, Any]:
+    async def sync_revit(self, request: SyncRequest) -> dict[str, Any]:
         """Synchronize with Revit."""
         try:
             self.logger.info(f"Synchronizing {request.source_system} with Revit")
@@ -414,7 +414,7 @@ class MCPServer:
             self.logger.error(f"Error syncing with Revit: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def sync_autocad(self, request: SyncRequest) -> Dict[str, Any]:
+    async def sync_autocad(self, request: SyncRequest) -> dict[str, Any]:
         """Synchronize with AutoCAD."""
         try:
             self.logger.info(f"Synchronizing {request.source_system} with AutoCAD")
@@ -435,7 +435,7 @@ class MCPServer:
             self.logger.error(f"Error syncing with AutoCAD: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def export_dwg(self, request: EntityRequest) -> Dict[str, Any]:
+    async def export_dwg(self, request: EntityRequest) -> dict[str, Any]:
         """Export to DWG format."""
         try:
             self.logger.info(f"Exporting to DWG: {request.name}")
@@ -455,7 +455,7 @@ class MCPServer:
             self.logger.error(f"Error exporting to DWG: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def export_json(self, request: EntityRequest) -> Dict[str, Any]:
+    async def export_json(self, request: EntityRequest) -> dict[str, Any]:
         """Export to JSON format."""
         try:
             self.logger.info(f"Exporting to JSON: {request.name}")
@@ -475,7 +475,7 @@ class MCPServer:
             self.logger.error(f"Error exporting to JSON: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def validate_design(self, request: ValidationRequest) -> Dict[str, Any]:
+    async def validate_design(self, request: ValidationRequest) -> dict[str, Any]:
         """Validate engineering design."""
         try:
             self.logger.info("Validating engineering design")
@@ -498,7 +498,7 @@ class MCPServer:
             self.logger.error(f"Error validating design: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def run_engineering_checks(self, request: ValidationRequest) -> Dict[str, Any]:
+    async def run_engineering_checks(self, request: ValidationRequest) -> dict[str, Any]:
         """Run engineering checks on the model."""
         try:
             self.logger.info("Running engineering checks")
@@ -521,7 +521,7 @@ class MCPServer:
             self.logger.error(f"Error running engineering checks: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def process_request(self, request: ProcessRequest) -> Dict[str, Any]:
+    async def process_request(self, request: ProcessRequest) -> dict[str, Any]:
         """Process a natural language engineering request."""
         try:
             self.logger.info(f"Processing engineering request: {request.request}")
@@ -553,7 +553,7 @@ class MCPServer:
         profile: str = "Prop-Robotics-Neutral"
         property_assignment: str = "run"
 
-    async def convert_simready(self, request: SimReadyRequest) -> Dict[str, Any]:
+    async def convert_simready(self, request: SimReadyRequest) -> dict[str, Any]:
         """Convert CAD/BIM model into NVIDIA SimReady OpenUSD package."""
         try:
             self.logger.info(f"Converting asset to SimReady: {request.source_asset}")
@@ -581,7 +581,7 @@ class MCPServer:
             raise HTTPException(status_code=500, detail=str(e))
 
 
-    def _log_operation(self, operation: str, input_data: Dict[str, Any], result: Dict[str, Any]):
+    def _log_operation(self, operation: str, input_data: dict[str, Any], result: dict[str, Any]):
         """Log an operation to the history."""
         log_entry = {
             "operation": operation,
@@ -596,7 +596,7 @@ class MCPServer:
         if len(self.operation_history) > 100:
             self.operation_history = self.operation_history[-100:]
 
-    def get_operation_history(self) -> List[Dict[str, Any]]:
+    def get_operation_history(self) -> list[dict[str, Any]]:
         """Get the operation history."""
         return self.operation_history
 

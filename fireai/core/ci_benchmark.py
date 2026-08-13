@@ -26,8 +26,9 @@ import os
 import sys
 import time
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Benchmark result

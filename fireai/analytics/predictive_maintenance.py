@@ -18,8 +18,8 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class AssetType(str, Enum):
+class AssetType(StrEnum):
     DETECTOR_SMOKE = "DETECTOR_SMOKE"
     DETECTOR_HEAT = "DETECTOR_HEAT"
     DETECTOR_FLAME = "DETECTOR_FLAME"
@@ -41,14 +41,14 @@ class AssetType(str, Enum):
     CABLE = "CABLE"
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
 
-class MaintenanceType(str, Enum):
+class MaintenanceType(StrEnum):
     INSPECTION = "INSPECTION"
     TEST = "TEST"
     REPAIR = "REPAIR"
@@ -312,7 +312,7 @@ class PredictiveMaintenance:
     # ── Internal: Health score components ────────────────────────────────
 
     def _compute_age_factor(self, asset: AssetData) -> float:
-        age_days = (datetime.now(timezone.utc) - asset.installation_date).days
+        age_days = (datetime.now(UTC) - asset.installation_date).days
         design_days = asset.design_life_years * 365.25
         if design_days <= 0:
             return 1.0
@@ -336,7 +336,7 @@ class PredictiveMaintenance:
         if not history:
             return 0.5  # Neutral — no data
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Recent maintenance within 1 year is good
         recent = [
             e
@@ -374,7 +374,7 @@ class PredictiveMaintenance:
         if not history:
             return 1.0
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Look at last 2 years of events
         window = [
             e
@@ -538,7 +538,7 @@ if __name__ == "__main__":
     asset = AssetData(
         asset_id="DET-001",
         asset_type=AssetType.DETECTOR_SMOKE,
-        installation_date=datetime(2018, 6, 1, tzinfo=timezone.utc),
+        installation_date=datetime(2018, 6, 1, tzinfo=UTC),
         manufacturer="SystemSensor",
         location="Building A - Floor 3",
         environment_rating="indoor",
@@ -550,13 +550,13 @@ if __name__ == "__main__":
             event_id="M-001",
             asset_id="DET-001",
             maintenance_type=MaintenanceType.INSPECTION,
-            timestamp=datetime(2024, 1, 15, tzinfo=timezone.utc),
+            timestamp=datetime(2024, 1, 15, tzinfo=UTC),
         ),
         MaintenanceEvent(
             event_id="M-002",
             asset_id="DET-001",
             maintenance_type=MaintenanceType.TEST,
-            timestamp=datetime(2024, 6, 1, tzinfo=timezone.utc),
+            timestamp=datetime(2024, 6, 1, tzinfo=UTC),
         ),
     ]
 

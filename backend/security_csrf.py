@@ -64,7 +64,7 @@ from __future__ import annotations
 import hmac
 import logging
 import secrets
-from typing import Callable, MutableMapping
+from collections.abc import Callable, MutableMapping
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ never silently accept a healed computation as PROOF_VERIFIED.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -31,12 +31,12 @@ class SmokeSpacingResult:
     table_row_used: str = ""
     formula: str = ""
     computation_hash: str = ""
-    audit_notice: Optional[str] = None
+    audit_notice: str | None = None
     layer3_validated: bool = False
     # Healing metadata — set only on the self-healing fallback path.
     is_healed: bool = False
     healing_tier: int = 0
-    healing_error: Optional[str] = None
+    healing_error: str | None = None
     safety_tier: str = ""
     requires_fpe_review: bool = False
 
@@ -57,7 +57,7 @@ class HeatSpacingResult:
     # Healing metadata — set only on the self-healing fallback path.
     is_healed: bool = False
     healing_tier: int = 0
-    healing_error: Optional[str] = None
+    healing_error: str | None = None
     safety_tier: str = ""
     requires_fpe_review: bool = False
 
@@ -84,7 +84,7 @@ class BatteryCapacityResult:
     # Healing metadata — set only on the self-healing fallback path.
     is_healed: bool = False
     healing_tier: int = 0
-    healing_error: Optional[str] = None
+    healing_error: str | None = None
     safety_tier: str = ""
     requires_fpe_review: bool = False
 
@@ -111,7 +111,7 @@ class VoltageDropResult:
     # Healing metadata — set only on the self-healing fallback path.
     is_healed: bool = False
     healing_tier: int = 0
-    healing_error: Optional[str] = None
+    healing_error: str | None = None
     safety_tier: str = ""
     requires_fpe_review: bool = False
 

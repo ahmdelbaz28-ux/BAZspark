@@ -65,7 +65,7 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 from core.models import (
@@ -369,7 +369,7 @@ class UniversalDataModel:
             try:
                 element_id = element.element_id
                 data = element.to_dict()
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
 
                 cursor = self._conn.cursor()
                 # indexed column access (avoids full JSON scan on every query).
@@ -408,7 +408,7 @@ class UniversalDataModel:
         count = 0
         with self._lock:
             try:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 cursor = self._conn.cursor()
                 for element in elements:
                     element_id = element.element_id
@@ -539,7 +539,7 @@ class UniversalDataModel:
                 # Merge only whitelisted updates
                 data.update(updates)
                 new_version = current_version + 1
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
 
                 et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
                 if hasattr(et, 'value'):
@@ -574,7 +574,7 @@ class UniversalDataModel:
         """
         with self._lock:
             try:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 cursor = self._conn.cursor()
                 cursor.execute(
                     "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? WHERE element_id = ?",
@@ -711,7 +711,7 @@ class UniversalDataModel:
                                 change_a={"element_id": elems[i].element_id},
                                 change_b={"element_id": elems[i + 1].element_id},
                                 resolved=False,
-                                timestamp=datetime.now(timezone.utc),
+                                timestamp=datetime.now(UTC),
                             ))
 
                 # Also check conflicts table for persisted conflicts

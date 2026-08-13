@@ -2,7 +2,7 @@
 Redis client module for backend services.
 Provides Redis connection and utility functions.
 """
-from typing import Any, Optional
+from typing import Any
 
 import redis.asyncio as redis
 
@@ -26,7 +26,7 @@ async def get_redis_client() -> redis.Redis:  # noqa: S7503 — async for redis.
     return redis_client
 
 
-async def get_value(key: str) -> Optional[Any]:
+async def get_value(key: str) -> Any | None:
     """
     Get a value from Redis by key.
 
@@ -44,7 +44,7 @@ async def get_value(key: str) -> Optional[Any]:
         return None
 
 
-async def set_value(key: str, value: Any, expire: Optional[int] = 3600) -> bool:
+async def set_value(key: str, value: Any, expire: int | None = 3600) -> bool:
     """
     Set a value in Redis with optional expiration.
 

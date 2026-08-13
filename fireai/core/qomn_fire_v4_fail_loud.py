@@ -35,10 +35,11 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 
 # =====================================================================
@@ -224,7 +225,7 @@ class AsyncAuditLogger:
             cls._instance = None
 
     def log_event(self, event_data: dict[str, Any]) -> str:
-        event_data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+        event_data["timestamp_utc"] = datetime.now(UTC).isoformat()
         event_data["event_id"] = hashlib.sha256(
             f"{time.time()}{id(self)}{json.dumps(event_data, sort_keys=True, default=str)}".encode()
         ).hexdigest()[:12]

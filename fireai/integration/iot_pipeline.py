@@ -27,10 +27,11 @@ import asyncio
 import logging
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus
 
@@ -42,7 +43,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class SensorType(str, Enum):
+class SensorType(StrEnum):
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     FLAME_DETECTOR = "FLAME_DETECTOR"
@@ -55,7 +56,7 @@ class SensorType(str, Enum):
     CURRENT_SENSOR = "CURRENT_SENSOR"
 
 
-class EventSeverity(str, Enum):
+class EventSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -63,7 +64,7 @@ class EventSeverity(str, Enum):
     INFO = "INFO"
 
 
-class SensorStatus(str, Enum):
+class SensorStatus(StrEnum):
     NORMAL = "NORMAL"
     ALARM = "ALARM"
     TROUBLE = "TROUBLE"
@@ -72,7 +73,7 @@ class SensorStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class CommunicationProtocol(str, Enum):
+class CommunicationProtocol(StrEnum):
     MQTT = "MQTT"
     OPC_UA = "OPC_UA"
     MODBUS = "MODBUS"
@@ -363,7 +364,7 @@ class IoTPipeline:
 
         """
         if timestamp is None:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
 
@@ -703,7 +704,6 @@ class IoTPipeline:
 
 if __name__ == "__main__":
     import asyncio
-    from datetime import timezone
 
     async def test() -> None:
         pipeline = IoTPipeline()
@@ -735,7 +735,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             15.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading: {reading.value} {reading.unit}")
 
@@ -743,7 +743,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             35.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading (warning): {reading.value}")
 
@@ -751,7 +751,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             75.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading (alarm): {reading.value}")
 

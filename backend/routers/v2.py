@@ -16,14 +16,14 @@ Smoke Simulation state) under a versioned ``/api/v2/`` prefix.
 Endpoints
 ---------
 - ``POST /api/v2/generative/design`` — Generate 3 layout variants
-- ``GET  /api/v2/bim/providers`` — List registered BIM providers
+- ``GET  /api/v2/bim/providers`` — list registered BIM providers
 - ``POST /api/v2/bim/extract-rooms`` — Extract rooms via configured provider
 - ``GET  /api/v2/bim/health`` — Health check for BIM provider
 - ``POST /api/v2/ifc43/map-detector`` — Map detector to IFC 4.3
 - ``POST /api/v2/ifc43/map-project`` — Map entire project to IFC 4.3
 - ``POST /api/v2/ar/export`` — Export DigitalTwin to GLB/USDZ
 - ``POST /api/v2/webhooks/subscribe`` — Subscribe to webhook events
-- ``GET  /api/v2/webhooks/subscriptions`` — List subscriptions
+- ``GET  /api/v2/webhooks/subscriptions`` — list subscriptions
 - ``DELETE /api/v2/webhooks/subscriptions/{sub_id}`` — Unsubscribe
 - ``POST /api/v2/webhooks/publish`` — Publish an event
 - ``POST /api/v2/smoke-simulation/state`` — Create/update smoke state
@@ -43,18 +43,18 @@ References
 
 """
 
-# With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
+# With __future__ annotations, dict[str, Any] becomes ForwardRef('dict[str, Any]')
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -97,8 +97,8 @@ class GenerativeDesignRequest(BaseModel):
 class BIMExtractRoomsRequest(BaseModel):
     """Request body for /api/v2/bim/extract-rooms."""
 
-    source: Optional[str] =  Field(None, description="File path or URL")
-    provider: Optional[str] =  Field(None, description="Provider name (default: env var)")
+    source: str | None =  Field(None, description="File path or URL")
+    provider: str | None =  Field(None, description="Provider name (default: env var)")
 
 
 class IFC43MapDetectorRequest(BaseModel):
@@ -125,7 +125,7 @@ class ARExportRequest(BaseModel):
 
     building_id: str = "API_Building"
     format: str = Field("both", pattern="^(glb|usdz|both)$")
-    nodes: List[Dict[str, Any]] = Field(
+    nodes: list[dict[str, Any]] = Field(
         default_factory=list,
         description="AR scene nodes (optional — empty uses DigitalTwin)",
     )
@@ -136,7 +136,7 @@ class WebhookSubscribeRequest(BaseModel):
 
     url: str
     secret: str = Field(..., min_length=32)  # V135 F-33: NIST SP 800-107
-    event_types: List[str] = Field(default_factory=list)
+    event_types: list[str] = Field(default_factory=list)
 
 
 class WebhookPublishRequest(BaseModel):
@@ -144,12 +144,12 @@ class WebhookPublishRequest(BaseModel):
 
     event_type: str
     source: str
-    data: Dict[str, Any]
-    trace_id: Optional[str] =  None
+    data: dict[str, Any]
+    trace_id: str | None =  None
 
 
 class SmokeDensityPointRequest(BaseModel):
-    """V138 F-14: Pydantic model for smoke density point (was unvalidated Dict)."""
+    """V138 F-14: Pydantic model for smoke density point (was unvalidated dict)."""
 
     x: float = Field(..., ge=-10000, le=10000)
     y: float = Field(..., ge=-10000, le=10000)
@@ -162,15 +162,15 @@ class SmokeSimulationStateRequest(BaseModel):
     Request body for /api/v2/smoke-simulation/state.
 
     V138 F-13: Added max_length to prevent DoS.
-    V138 F-14: Use Pydantic model for smoke_density_points (was unvalidated Dict).
+    V138 F-14: Use Pydantic model for smoke_density_points (was unvalidated dict).
     """
 
     room_id: str = Field(..., max_length=200)
-    smoke_density_points: List[SmokeDensityPointRequest] = Field(
+    smoke_density_points: list[SmokeDensityPointRequest] = Field(
         default_factory=list, max_length=10000
     )
-    visibility_at_height: Dict[float, float] = Field(default_factory=dict)
-    fds_run_id: Optional[str] =  None
+    visibility_at_height: dict[float, float] = Field(default_factory=dict)
+    fds_run_id: str | None =  None
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class SmokeSimulationStateRequest(BaseModel):
 
 @router.post("/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> Dict[str, Any]:
+async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> dict[str, Any]:
     """
     Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
@@ -223,8 +223,8 @@ async def generate_design_variants(request: Request, req: GenerativeDesignReques
 @router.get("/bim/providers")
 async def list_bim_providers(
     _: SystemConfigRole,
-) -> Dict[str, Any]:
-    """List all registered BIM providers."""
+) -> dict[str, Any]:
+    """list all registered BIM providers."""
     from fireai.bridges.bim_provider import BIMProviderRegistry
 
     providers = BIMProviderRegistry.list_available()
@@ -237,7 +237,7 @@ async def list_bim_providers(
 
 @router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract rooms via configured BIM provider.
 
@@ -304,7 +304,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
         from fireai.bridges.bim_provider import BIMProviderRegistry
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-            detail=f"No BIM provider available. Set FIREAI_BIM_PROVIDER env var. "
+            detail=f"No BIM provider available. set FIREAI_BIM_PROVIDER env var. "
             f"Registered: {BIMProviderRegistry.list_available()}",
         )
 
@@ -326,7 +326,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
 
 
 @router.get("/bim/health")
-async def bim_health() -> Dict[str, Any]:
+async def bim_health() -> dict[str, Any]:
     """Health check for active BIM provider."""
     from fireai.bridges.bim_provider import get_provider
 
@@ -335,7 +335,7 @@ async def bim_health() -> Dict[str, Any]:
         return {
             "healthy": False,
             "details": "No BIM provider configured",
-            "error": "Set FIREAI_BIM_PROVIDER env var",
+            "error": "set FIREAI_BIM_PROVIDER env var",
         }
     return provider.health_check()
 
@@ -347,7 +347,7 @@ async def bim_health() -> Dict[str, Any]:
 
 @router.post("/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("30/minute")
-async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> Dict[str, Any]:
+async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -367,7 +367,7 @@ async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) 
 
 @router.post("/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def map_project_to_ifc43(request: Request, req: Dict[str, Any]) -> Dict[str, Any]:
+async def map_project_to_ifc43(request: Request, req: dict[str, Any]) -> dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -390,7 +390,7 @@ async def map_project_to_ifc43(request: Request, req: Dict[str, Any]) -> Dict[st
 
 @router.post("/ar/export", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def export_ar_snapshot(request: Request, req: ARExportRequest) -> Dict[str, Any]:
+async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str, Any]:
     """
     Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
 
@@ -448,7 +448,7 @@ async def export_ar_snapshot(request: Request, req: ARExportRequest) -> Dict[str
 
 @router.post("/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> Dict[str, Any]:
+async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> dict[str, Any]:
     """Subscribe to webhook events."""
     from fireai.infrastructure.webhook_service import (
         WebhookSubscription,
@@ -479,8 +479,8 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> D
 @router.get("/webhooks/subscriptions")
 async def list_webhook_subscriptions(
     _: SystemConfigRole,
-) -> Dict[str, Any]:
-    """List all webhook subscriptions."""
+) -> dict[str, Any]:
+    """list all webhook subscriptions."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
     service = get_webhook_service()
@@ -501,7 +501,7 @@ async def list_webhook_subscriptions(
 
 @router.delete("/webhooks/subscriptions/{sub_id}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def unsubscribe_webhook(request: Request, sub_id: str) -> Dict[str, Any]:
+async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
     """Remove a webhook subscription."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -514,7 +514,7 @@ async def unsubscribe_webhook(request: Request, sub_id: str) -> Dict[str, Any]:
 
 @router.post("/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> Dict[str, Any]:
+async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -539,7 +539,7 @@ async def publish_webhook_event(request: Request, req: WebhookPublishRequest) ->
 
 @router.post("/smoke-simulation/state", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> Dict[str, Any]:
+async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> dict[str, Any]:
     """
     Create or update smoke simulation state for a room.
 
@@ -601,7 +601,7 @@ class VectorMemoryStoreRequest(BaseModel):
 
     content: str = Field(..., min_length=1, max_length=10000)
     memory_type: str = Field("conversation", description="conversation|study_result|document|etap_knowledge")
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class VectorMemorySearchRequest(BaseModel):
@@ -619,7 +619,7 @@ class TopologyAddElementRequest(BaseModel):
     element_id: str = Field(..., max_length=200)
     element_type: str = Field(..., description="Bus|Line|Transformer|Load|Breaker|Generator")
     name: str = Field("", max_length=200)
-    properties: Dict[str, Any] = Field(default_factory=dict)
+    properties: dict[str, Any] = Field(default_factory=dict)
 
 
 class TopologyAddConnectionRequest(BaseModel):
@@ -628,7 +628,7 @@ class TopologyAddConnectionRequest(BaseModel):
     from_element: str = Field(..., max_length=200)
     to_element: str = Field(..., max_length=200)
     relationship_type: str = Field("CONNECTED_TO")
-    properties: Dict[str, Any] = Field(default_factory=dict)
+    properties: dict[str, Any] = Field(default_factory=dict)
 
 
 class TopologyImpactRequest(BaseModel):
@@ -639,7 +639,7 @@ class TopologyImpactRequest(BaseModel):
 
 @router.post("/memory/store", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def store_memory(request: Request, req: VectorMemoryStoreRequest) -> Dict[str, Any]:
+async def store_memory(request: Request, req: VectorMemoryStoreRequest) -> dict[str, Any]:
     """Store a memory entry in Qdrant vector database."""
     from fireai.infrastructure.vector_memory_service import (
         MemoryType,
@@ -662,7 +662,7 @@ async def search_memory(
     request: Request,
     req: VectorMemorySearchRequest,
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search for similar memories in Qdrant."""
     from fireai.infrastructure.vector_memory_service import (
         MemoryType,
@@ -683,7 +683,7 @@ async def search_memory(
 @router.get("/memory/health")
 async def memory_health(
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Check Qdrant vector database health."""
     from fireai.infrastructure.vector_memory_service import get_vector_memory
     return get_vector_memory().health_check()
@@ -691,7 +691,7 @@ async def memory_health(
 
 @router.post("/topology/element", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("30/minute")
-async def add_topology_element(request: Request, req: TopologyAddElementRequest) -> Dict[str, Any]:
+async def add_topology_element(request: Request, req: TopologyAddElementRequest) -> dict[str, Any]:
     """Add a network element to the Neo4j topology graph."""
     from fireai.infrastructure.topology_graph_service import (
         ElementType,
@@ -713,7 +713,7 @@ async def add_topology_element(request: Request, req: TopologyAddElementRequest)
 
 @router.post("/topology/connection", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("30/minute")
-async def add_topology_connection(request: Request, req: TopologyAddConnectionRequest) -> Dict[str, Any]:
+async def add_topology_connection(request: Request, req: TopologyAddConnectionRequest) -> dict[str, Any]:
     """Add a connection between two network elements."""
     from fireai.infrastructure.topology_graph_service import (
         NetworkConnection,
@@ -735,7 +735,7 @@ async def add_topology_connection(request: Request, req: TopologyAddConnectionRe
 
 @router.post("/topology/impact", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("30/minute")
-async def analyze_impact(request: Request, req: TopologyImpactRequest) -> Dict[str, Any]:
+async def analyze_impact(request: Request, req: TopologyImpactRequest) -> dict[str, Any]:
     """
     Analyze the impact of tripping a breaker.
 
@@ -750,7 +750,7 @@ async def analyze_impact(request: Request, req: TopologyImpactRequest) -> Dict[s
 @router.get("/topology/health")
 async def topology_health(
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Check Neo4j topology graph health."""
     from fireai.infrastructure.topology_graph_service import get_topology_service
     return get_topology_service().health_check()
@@ -782,7 +782,7 @@ class GraphRAGSearchRequest(BaseModel):
 
 @router.post("/graphrag/knowledge", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("30/minute")
-async def add_graphrag_knowledge(request: Request, req: GraphRAGAddKnowledgeRequest) -> Dict[str, Any]:
+async def add_graphrag_knowledge(request: Request, req: GraphRAGAddKnowledgeRequest) -> dict[str, Any]:
     """
     Add knowledge to GraphRAG (vector + entity/relationship graph).
 
@@ -808,7 +808,7 @@ async def add_graphrag_knowledge(request: Request, req: GraphRAGAddKnowledgeRequ
 
 @router.post("/graphrag/ask", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("30/minute")
-async def ask_graphrag(request: Request, req: GraphRAGAskRequest) -> Dict[str, Any]:
+async def ask_graphrag(request: Request, req: GraphRAGAskRequest) -> dict[str, Any]:
     """
     Ask a question using GraphRAG hybrid retrieval (vector + graph).
 
@@ -826,7 +826,7 @@ async def ask_graphrag(request: Request, req: GraphRAGAskRequest) -> Dict[str, A
 
 @router.post("/graphrag/search", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 @limiter.limit("30/minute")
-async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> Dict[str, Any]:
+async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> dict[str, Any]:
     """Semantic search in GraphRAG vector store (no LLM, fast)."""
     from fireai.infrastructure.graphrag_engine import get_graphrag_engine
 
@@ -838,7 +838,7 @@ async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> Dict[
 @router.get("/graphrag/health")
 async def graphrag_health(
     _: SystemConfigRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Check GraphRAG engine health."""
     from fireai.infrastructure.graphrag_engine import get_graphrag_engine
 
@@ -851,7 +851,7 @@ async def graphrag_health(
 
 
 @router.get("/health")
-async def v2_health() -> Dict[str, Any]:
+async def v2_health() -> dict[str, Any]:
     """Health check for v2 API endpoints."""
     return {
         "status": "ok",
@@ -889,7 +889,7 @@ async def v2_health() -> Dict[str, Any]:
 
 
 @router.get("/auth/csrf-token")
-async def get_csrf_token(request: Request) -> Dict[str, Any]:
+async def get_csrf_token(request: Request) -> dict[str, Any]:
     """
     Issue a CSRF token via Double Submit Cookie pattern.
 
@@ -927,7 +927,7 @@ async def get_csrf_token(request: Request) -> Dict[str, Any]:
             "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
         ),
     })
-    response.headers["Set-Cookie"] = cookie_header
+    response.headers["set-Cookie"] = cookie_header
     return response
 
 

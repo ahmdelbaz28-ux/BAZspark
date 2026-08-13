@@ -34,7 +34,7 @@ import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .density_optimizer import DETECTOR_RADIUS
 
@@ -135,7 +135,7 @@ class ProofCertificate:
     def seal(self) -> None:
         """Seal the certificate by computing hash and timestamp."""
         self.proof_hash = self.compute_hash()
-        self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.timestamp = datetime.now(UTC).isoformat()
 
     def verify_hash(self) -> bool:
         """Verify the certificate hash matches the current data."""

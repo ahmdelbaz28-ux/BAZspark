@@ -22,8 +22,8 @@ from __future__ import annotations
 
 import math
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, Literal, Optional, TypeVar
+from datetime import UTC, datetime
+from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -66,10 +66,10 @@ class Project(BaseModel):
     description: str = Field(default="", max_length=5000)  # V113: max_length prevents DoS via unbounded string
     author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
     createdAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     updatedAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     status: Literal["active", "archived", "draft"] = Field(default="draft")
     deviceCount: int = Field(default=0, ge=0)
@@ -95,9 +95,9 @@ class CreateProjectInput(BaseModel):
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
-    author: Optional[str] = Field(default=None, max_length=255)  # V113: max_length prevents DoS
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
+    author: str | None = Field(default=None, max_length=255)  # V113: max_length prevents DoS
     status: Literal["active", "archived", "draft"] | None = Field(default=None)
 
 
@@ -122,10 +122,10 @@ class Device(BaseModel):
     load: float = Field(default=0.0)
     properties: dict = Field(default_factory=dict)
     createdAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     updatedAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
     @field_validator("voltage", "current", "load")
@@ -143,12 +143,12 @@ class DeviceCreate(BaseModel):
     category: str = Field(default="", min_length=1)
     x: float
     y: float
-    z: Optional[float] = Field(default=0.0)
-    rotation: Optional[float] = Field(default=0.0)
+    z: float | None = Field(default=0.0)
+    rotation: float | None = Field(default=0.0)
     voltage: float = Field(ge=0, default=0.0)
     current: float = Field(ge=0, default=0.0)
     load: float = Field(ge=0, default=0.0)
-    properties: Optional[Dict[str, Any]] = Field(default=None)
+    properties: dict[str, Any] | None = Field(default=None)
 
 
 class CreateDeviceInput(BaseModel):
@@ -173,7 +173,7 @@ class CreateDeviceInput(BaseModel):
             "battery sizing calculations."
         ),
     )
-    properties: Optional[Dict] = Field(default=None)
+    properties: dict | None = Field(default=None)
 
     @field_validator("load")
     @classmethod
@@ -202,7 +202,7 @@ class UpdateDeviceInput(BaseModel):
     a 1000x error in life-safety battery sizing calculations.
     """
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
     x: float | None = Field(default=None)
     y: float | None = Field(default=None)
     z: float | None = Field(default=None)
@@ -217,7 +217,7 @@ class UpdateDeviceInput(BaseModel):
             "Must match the unit of the load value being set."
         ),
     )
-    properties: Optional[Dict] = Field(default=None)
+    properties: dict | None = Field(default=None)
 
 
 # ============================================================================
@@ -235,7 +235,7 @@ class Connection(BaseModel):
     length: float = Field(default=0.0, ge=0)
     type: str = Field(default="power")
     createdAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 
@@ -244,9 +244,9 @@ class CreateConnectionInput(BaseModel):
 
     fromId: str = Field(min_length=1, max_length=255)
     toId: str = Field(min_length=1, max_length=255)
-    cableSize: Optional[str] = Field(default="1.5mm²")
+    cableSize: str | None = Field(default="1.5mm²")
     length: float | None = Field(default=0.0, ge=0)
-    type: Optional[str] = Field(default="power")
+    type: str | None = Field(default="power")
 
     @field_validator("toId")
     @classmethod
@@ -284,21 +284,21 @@ class Report(BaseModel):
     parameters: dict = Field(default_factory=dict)
     status: Literal["pending", "completed", "failed"] = Field(default="pending")
     createdAt: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
-    completedAt: Optional[str] = Field(default=None)
+    completedAt: str | None = Field(default=None)
 
 
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
 
-    type: Optional[str] = Field(None, max_length=255)
-    name: Optional[str] = Field(default=None, max_length=255)
-    parameters: Optional[Dict] = Field(default=None)
+    type: str | None = Field(None, max_length=255)
+    name: str | None = Field(default=None, max_length=255)
+    parameters: dict | None = Field(default=None)
 
     # Postman / Compatibility fields
-    reportType: Optional[str] = None
-    filters: Optional[Dict] = None
+    reportType: str | None = None
+    filters: dict | None = None
 
     @field_validator("parameters")
     @classmethod
@@ -343,10 +343,10 @@ class SyncStatus(BaseModel):
     projectId: str
     status: Literal["syncing", "synced", "error"]
     lastSync: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     pendingChanges: int = Field(default=0, ge=0)
-    error: Optional[str] = Field(default=None)
+    error: str | None = Field(default=None)
 
 
 # ============================================================================
@@ -361,7 +361,7 @@ class HealthStatus(BaseModel):
     uptime: float = Field(default=0.0, ge=0)
     database: Literal["connected", "disconnected"]
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 

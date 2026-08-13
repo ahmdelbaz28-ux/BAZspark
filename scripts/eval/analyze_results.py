@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 analyze_results.py — BAZspark RAG Evaluation Result Analyzer
 ============================================================
 Analyzes RAGAS output artifacts from evaluate_rag.py.
@@ -30,7 +30,6 @@ import csv
 import json
 import sys
 from pathlib import Path
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Loader
@@ -99,7 +98,7 @@ def print_worst_queries(data: list, scores: dict, top_n: int = 10) -> list[dict]
         ctx_flag = "Y" if r["has_context"] else "N"
         print(f"{r['i']:>4}  {str(r['id']):>5}  {acc_s:>5}  {ctx_s:>7}  {grd_s:>5}  {ctx_flag:>4}  {r['question']}")
     print(f"{'─'*90}")
-    print(f"(has_context=N with low accuracy → retrieval gap, not generation problem)")
+    print("(has_context=N with low accuracy → retrieval gap, not generation problem)")
     return rows
 
 
@@ -148,7 +147,7 @@ def generate_markdown(
     """Generate Markdown table of worst queries for PR descriptions."""
     acc_list = scores.get("nv_accuracy", [])
     pairs = sorted(
-        zip(acc_list, data),
+        zip(acc_list, data, strict=False),
         key=lambda x: (x[0] is None, x[0] or 0.0)
     )
 
@@ -163,8 +162,8 @@ def generate_markdown(
     lines = [
         f"## RAG Evaluation Report — `{label}`",
         "",
-        f"| Metric | Value |",
-        f"|--------|-------|",
+        "| Metric | Value |",
+        "|--------|-------|",
         f"| Dataset | `{label}` |",
         f"| Queries | {n_queries} |",
         f"| Errors | {n_errors} |",
@@ -176,8 +175,8 @@ def generate_markdown(
         "",
         f"### Worst {top_n} Queries by Accuracy",
         "",
-        f"| id | acc | question | generated_answer |",
-        f"|----|-----|----------|-----------------|",
+        "| id | acc | question | generated_answer |",
+        "|----|-----|----------|-----------------|",
     ]
 
     for acc, d in pairs[:top_n]:

@@ -15,7 +15,7 @@ Tests the core utility and model classes covering:
 """
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -527,7 +527,7 @@ class TestConflict:
 
     def test_create_with_all_fields(self) -> None:
         """Test creating a Conflict with all fields."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         c = Conflict(
             conflict_id="conflict-001",
             element_id="elem-001",
@@ -676,7 +676,7 @@ class TestUniversalElement:
 
     def test_to_dict_with_timestamps(self) -> None:
         """Test to_dict serializes timestamps as ISO format strings."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         elem = UniversalElement(
             element_id="ts-001",
             created_timestamp=now,
@@ -695,7 +695,7 @@ class TestUniversalElement:
 
     def test_to_dict_all_fields(self) -> None:
         """Test to_dict with all fields populated."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         elem = UniversalElement(
             element_id="full-001",
             properties=SemanticProperties(element_type=ElementType.WALL, name="Full"),

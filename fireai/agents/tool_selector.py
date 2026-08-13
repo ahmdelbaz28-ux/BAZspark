@@ -13,9 +13,10 @@ import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class RoutingLog:
     selected_tool: str
     scores: list[tuple[str, float]]
     context: str  # JSON
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return {"task_id": self.task_id, "selected_tool": self.selected_tool, "scores": self.scores, "context": self.context, "timestamp": self.timestamp}
@@ -164,7 +165,7 @@ class ToolSelector:
                     best_tool,
                     json.dumps([(name, round(s, 4)) for name, s in scored]),
                     json.dumps(asdict(context)),
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                 ),
             )
             self.conn.commit()
@@ -228,7 +229,7 @@ class ToolSelector:
         scores = [directness, accuracy, performance, availability]
         weights = [self.DIRECTNESS_WEIGHT, self.ACCURACY_WEIGHT, self.PERFORMANCE_WEIGHT, self.AVAILABILITY_WEIGHT]
 
-        weighted = sum(s * w for s, w in zip(scores, weights))
+        weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
         blended = 0.7 * weighted + 0.3 * custom_score
 
         complexity_factor = 1.0 - context.design_complexity * 0.2
@@ -255,7 +256,7 @@ class ToolSelector:
                     task_type,
                     1 if success else 0,
                     execution_time_ms,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                 ),
             )
             self.conn.commit()

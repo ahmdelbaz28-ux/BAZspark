@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
+from datetime import UTC
 from typing import Literal, cast
 
 from .audit_trail import AuditTrail
@@ -118,7 +119,7 @@ class FloorResult:
         """Save audit trail to JSON file for liability protection."""
         import json
         import re
-        from datetime import datetime, timezone
+        from datetime import datetime
         from pathlib import Path
 
         Path(output_dir).mkdir(exist_ok=True)
@@ -132,7 +133,7 @@ class FloorResult:
         if safe_name != self.project_name:
             logger.warning("project_name sanitized for path safety: '%s' -> '%s'", self.project_name, safe_name)
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
         filename = f"{output_dir}/audit_{safe_name}_{timestamp}.json"
 
         # V FIX: Verify resolved path stays within output_dir (path traversal guard)
@@ -143,7 +144,7 @@ class FloorResult:
             filename = f"{output_dir}/audit_SANITIZED_{timestamp}.json"
 
         audit_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),  # V54 FIX (AUDIT-012): UTC
+            "timestamp": datetime.now(UTC).isoformat(),  # V54 FIX (AUDIT-012): UTC
             "project_name": self.project_name,
             "source_dxf": self.source_dxf,
             "version": "FireAI V20.2",

@@ -86,7 +86,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -123,7 +123,7 @@ MAX_ROUGHNESS_M: float = 0.01            # 10mm — extremely rough
 # ---------------------------------------------------------------------------
 
 
-class FluidType(str, Enum):
+class FluidType(StrEnum):
     """
     Common fluids used in fire suppression systems.
 

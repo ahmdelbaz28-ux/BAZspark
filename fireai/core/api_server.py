@@ -31,7 +31,7 @@ import os
 import secrets
 import threading
 import time
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from fireai.core.fireai_core import FireAISystem
@@ -65,7 +65,7 @@ def _get_or_create_api_key() -> str:
         "╔══════════════════════════════════════════════════════════════╗\n"
         "║  ⚠️  FIREAI_API_KEY not set — auto-generated for dev:      ║\n"
         f"║  {generated:<57s}║\n"
-        "║  Set this in FIREAI_API_KEY env var for production.        ║\n"
+        "║  set this in FIREAI_API_KEY env var for production.        ║\n"
         "╚══════════════════════════════════════════════════════════════╝"
     )
     return generated
@@ -97,7 +97,7 @@ def _init_api_keys() -> None:
                 "╔══════════════════════════════════════════════════════════════╗\n"
                 "║  FIREAI_API_KEYS not set — auto-generated for dev:         ║\n"
                 f"║  {generated:<57s}║\n"
-                "║  Set FIREAI_API_KEYS=key1,key2,... for production.         ║\n"
+                "║  set FIREAI_API_KEYS=key1,key2,... for production.         ║\n"
                 "╚══════════════════════════════════════════════════════════════╝"
             )
             _EFFECTIVE_API_KEYS = {generated}
@@ -249,7 +249,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_api_cors_origins,
     allow_methods=["GET", "POST"],
-    allow_headers=["X-API-Key", "Content-Type"],
+    allow_headers=["X-API-Key", "Content-type"],
 )
 
 
@@ -463,7 +463,7 @@ def analyse_room(req: RoomRequest):
         raise HTTPException(status_code=500, detail="Analysis failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@app.post("/analyse/floor", response_model=List[RoomResponse], dependencies=[Depends(verify_api_key)], include_in_schema=False)
+@app.post("/analyse/floor", response_model=list[RoomResponse], dependencies=[Depends(verify_api_key)], include_in_schema=False)
 def analyse_floor(rooms: list[RoomRequest]):
     """Analyse multiple rooms (floor) — authenticated, max 50 rooms."""
     if not rooms:

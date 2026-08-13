@@ -43,7 +43,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # ── Internal imports ──────────────────────────────────────────────────────
@@ -145,14 +145,14 @@ _CITE_ASME_A17_1 = "ASME A17.1"
 # ============================================================================
 
 
-class SLCLoopClass(str, Enum):
+class SLCLoopClass(StrEnum):
     """SLC loop wiring class per NFPA 72 §12.3."""
 
     CLASS_A = "A"  # Ring topology — continues to operate with single break
     CLASS_B = "B"  # Home-run topology — devices beyond break lose comms
 
 
-class OccupancyType(str, Enum):
+class OccupancyType(StrEnum):
     """Building occupancy classification for zone design per NFPA 72 §21.3.3."""
 
     RESIDENTIAL = "residential"
@@ -165,7 +165,7 @@ class OccupancyType(str, Enum):
     ASSEMBLY = "assembly"
 
 
-class ElevatorRecallPhase(str, Enum):
+class ElevatorRecallPhase(StrEnum):
     """Elevator recall phases per NFPA 72 §21.3.2 / ASME A17.1."""
 
     PHASE_I = "PHASE_I"  # Recall to designated floor
@@ -173,7 +173,7 @@ class ElevatorRecallPhase(str, Enum):
     SHUNT_TRIP = "SHUNT_TRIP"  # Power disconnect per §21.4.1
 
 
-class SmokeSpreadPathway(str, Enum):
+class SmokeSpreadPathway(StrEnum):
     """Smoke spread pathway types through a building."""
 
     ELEVATOR_SHAFT = "elevator_shaft"

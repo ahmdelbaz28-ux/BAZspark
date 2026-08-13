@@ -48,7 +48,7 @@ import heapq
 import logging
 import math
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -88,7 +88,7 @@ except ImportError:
 # ════════════════════════════════════════════════════════════════════════════
 
 
-class ObstacleType(str, Enum):
+class ObstacleType(StrEnum):
     """Types of routing obstacles in a building."""
 
     WALL = "wall"

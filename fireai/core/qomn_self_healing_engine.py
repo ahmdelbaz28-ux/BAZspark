@@ -76,10 +76,11 @@ import traceback
 import urllib.error
 import urllib.request
 from collections import OrderedDict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 # F7: event bus for runtime healing notifications (stdlib-only module,
 # no circular-import risk — see fireai/core/event_bus.py).
@@ -531,7 +532,7 @@ class AsyncAuditLogger:
                 # Copy event_data to avoid mutating the caller's dictionary
                 event_data = dict(event_data)
                 # Enforce clean UTC timestamp (V59 AUDIT-012 timezone fix)
-                event_data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+                event_data["timestamp_utc"] = datetime.now(UTC).isoformat()
 
                 event_data["previous_hash"] = self._last_chain_hash
 

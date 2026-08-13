@@ -3,7 +3,6 @@
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class FireAlarmPanel:
     supports_voice: bool
     supports_releasing: bool
     max_slc_loops: int
-    listings: List[str]
+    listings: list[str]
     standby_current_amps: float
     alarm_current_amps: float
     power_supply_watts: int
@@ -37,7 +36,7 @@ class ProjectRequirements:
     requires_voice: bool
     requires_releasing: bool
     jurisdiction: str
-    preferred_manufacturer: Optional[str] = None
+    preferred_manufacturer: str | None = None
     min_temperature_c: float = 20.0
 
 
@@ -50,14 +49,14 @@ class PanelRecommendation:
     battery_size_ah: float
     battery_derating_details: dict
     power_supply_watts: int
-    listings: List[str]
-    code_compliance: List[str]
-    warnings: List[str]
-    alternatives: List[str]
+    listings: list[str]
+    code_compliance: list[str]
+    warnings: list[str]
+    alternatives: list[str]
     signature_hash: str
 
 
-MASTER_PANEL_DATABASE: List[FireAlarmPanel] = [
+MASTER_PANEL_DATABASE: list[FireAlarmPanel] = [
     FireAlarmPanel(model="NFS-320", manufacturer="NOTIFIER", points_capacity=250, nac_capacity=2, supports_networking=False, supports_voice=False, supports_releasing=False, max_slc_loops=1, listings=["UL", "ULC"], standby_current_amps=0.200, alarm_current_amps=0.350, power_supply_watts=144),
     FireAlarmPanel(model="NFS-640", manufacturer="NOTIFIER", points_capacity=640, nac_capacity=4, supports_networking=True, supports_voice=True, supports_releasing=False, max_slc_loops=4, listings=["UL", "ULC"], standby_current_amps=0.250, alarm_current_amps=0.450, power_supply_watts=144),
     FireAlarmPanel(model="NFS2-3030", manufacturer="NOTIFIER", points_capacity=3180, nac_capacity=10, supports_networking=True, supports_voice=True, supports_releasing=True, max_slc_loops=10, listings=["UL", "ULC", "FM"], standby_current_amps=0.350, alarm_current_amps=0.650, power_supply_watts=288),
@@ -76,7 +75,7 @@ class SelectionEngine:
         panel: FireAlarmPanel,
         requires_voice: bool,
         min_temperature_c: float = 20.0
-    ) -> Tuple[float, dict]:
+    ) -> tuple[float, dict]:
         standby_load = (device_count * STANDBY_MA_PER_DEVICE / 1000.0) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * ALARM_MA_PER_DEVICE / 1000.0) + panel.alarm_current_amps
         alarm_duration_h = 0.25 if requires_voice else (5.0 / 60.0)
@@ -127,7 +126,7 @@ class SelectionEngine:
         required_points = req.device_count * 1.2
         required_nacs = req.nac_circuit_count
 
-        eligible_panels: List[Tuple[FireAlarmPanel, float]] = []
+        eligible_panels: list[tuple[FireAlarmPanel, float]] = []
 
         for p in MASTER_PANEL_DATABASE:
             if p.points_capacity < required_points:

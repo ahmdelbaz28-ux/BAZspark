@@ -4,11 +4,11 @@ Decouples layout generation algorithms from API controllers.
 Preserves 100% existing generation logic and data schemas.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class GenerativeDesignUseCase:
-    def generate_layout_variants(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_layout_variants(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Generates 3 layout variants (Optimal, Cost-Effective, High-Redundancy)
         based on room dimensions, ceiling height, and hazard classification.

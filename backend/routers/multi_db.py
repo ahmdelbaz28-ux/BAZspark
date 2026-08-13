@@ -15,12 +15,11 @@ multiple database technologies.
 """
 
 import logging
-from typing import Dict, List, Optional
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/multi-db", tags=["multi-db"])
 
 
-@router.get("/health", response_model=ApiResponse[Dict[str, bool]])
+@router.get("/health", response_model=ApiResponse[dict[str, bool]])
 async def get_database_health():
     """Check the health of all database connections."""
     try:
@@ -72,8 +71,8 @@ async def get_from_redis(key: str):
 
 @router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def set_in_redis(request: Request, key: str, value: str, ttl: Annotated[Optional[int], Query(description="Time to live in seconds")] = None):
-    """Set a value in Redis cache."""
+async def set_in_redis(request: Request, key: str, value: str, ttl: Annotated[int | None, Query(description="Time to live in seconds")] = None):
+    """set a value in Redis cache."""
     try:
         db_service = get_multi_db_service()
         success = db_service.redis_set(key, value, ex=ttl)
@@ -92,7 +91,7 @@ async def set_in_redis(request: Request, key: str, value: str, ttl: Annotated[Op
 
 @router.post("/bim/cache-element", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def cache_bim_element(request: Request, element_id: str, element_data: Dict):
+async def cache_bim_element(request: Request, element_id: str, element_data: dict):
     """Cache BIM element data in Redis for faster access."""
     try:
         db_service = get_multi_db_service()
@@ -131,7 +130,7 @@ async def get_cached_bim_element(element_id: str):
 
 @router.post("/bim/store-embeddings", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def store_element_embeddings(request: Request, element_id: str, embeddings: List[float]):
+async def store_element_embeddings(request: Request, element_id: str, embeddings: list[float]):
     """Store element embeddings in Qdrant for similarity search."""
     try:
         db_service = get_multi_db_service()
@@ -151,7 +150,7 @@ async def store_element_embeddings(request: Request, element_id: str, embeddings
 
 @router.post("/bim/find-similar", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
-async def find_similar_elements(request: Request, query_embedding: List[float], limit: Annotated[int, Query(ge=1, le=20)] = 5):
+async def find_similar_elements(request: Request, query_embedding: list[float], limit: Annotated[int, Query(ge=1, le=20)] = 5):
     """Find similar BIM elements using vector search."""
     try:
         db_service = get_multi_db_service()
@@ -171,8 +170,8 @@ async def find_similar_elements(request: Request, query_embedding: List[float], 
 async def create_element_relationships(
     request: Request,
     element_id: str,
-    related_elements: List[str],
-    relationship_type: Annotated[str, Query(description="Type of relationship")] = "CONNECTED_TO"
+    related_elements: list[str],
+    relationship_type: Annotated[str, Query(description="type of relationship")] = "CONNECTED_TO"
 ):
     """Create relationships between elements in Neo4j."""
     try:
@@ -198,7 +197,7 @@ async def create_element_relationships(
 @router.get("/bim/related-elements/{element_id}", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def find_related_elements(
     element_id: str,
-    relationship_type: Annotated[str, Query(description="Type of relationship")] = "CONNECTED_TO"
+    relationship_type: Annotated[str, Query(description="type of relationship")] = "CONNECTED_TO"
 ):
     """Find elements related to a specific element in Neo4j."""
     try:
@@ -218,7 +217,7 @@ async def find_related_elements(
              responses={400: {"description": "Invalid query type"}, 500: {"description": "Query execution failed"}})
 async def execute_neo4j_query(
     query_type: str = Query(..., description="Predefined safe query template to execute"),
-    parameters: Optional[str] = Query(None, description="JSON string of query parameters")
+    parameters: str | None = Query(None, description="JSON string of query parameters")
 ):
     """Execute a predefined, parameterized Cypher query against Neo4j securely."""
     # Predefined safe, read-only queries

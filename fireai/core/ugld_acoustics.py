@@ -82,7 +82,7 @@ Usage:
 from __future__ import annotations
 
 import math
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -232,7 +232,7 @@ def atmospheric_attenuation_db_per_m(
 # ===========================================================================
 
 
-class UGLDFrequencyBand(str, Enum):
+class UGLDFrequencyBand(StrEnum):
     """
     Ultrasonic frequency bands for UGLD classification.
 

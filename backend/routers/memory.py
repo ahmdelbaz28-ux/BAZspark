@@ -25,7 +25,6 @@ Reference: agent.md Rules 1-21, Priority Hierarchy
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -39,7 +38,7 @@ from backend.services.memory_service import (
 )
 
 
-def _sanitize_error(msg: Optional[str]) -> str:
+def _sanitize_error(msg: str | None) -> str:
     """Sanitize error messages to prevent stack trace exposure (CodeQL: py/stack-trace-exposure)."""
     if not msg:
         return "An error occurred"
@@ -70,7 +69,7 @@ def _require_principal(request: Request) -> str:
 
 def _enforce_principal_scope(
     principal: str,
-    client_user_id: Optional[str],
+    client_user_id: str | None,
     *,
     logger_name: str,
 ) -> str:
@@ -199,9 +198,9 @@ async def search_memories(request: Request, body: MemorySearchRequest):
 @router.get("/all", summary="Get all memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_all_memories(
     request: Request,
-    user_id: Optional[str] =  Query(None, description="Filter by user/engineer"),  # NOSONAR - python:S8410
-    agent_id: Optional[str] =  Query(None, description="Filter by agent"),  # NOSONAR - python:S8410
-    run_id: Optional[str] =  Query(None, description="Filter by project/run"),  # NOSONAR - python:S8410
+    user_id: str | None =  Query(None, description="Filter by user/engineer"),  # NOSONAR - python:S8410
+    agent_id: str | None =  Query(None, description="Filter by agent"),  # NOSONAR - python:S8410
+    run_id: str | None =  Query(None, description="Filter by project/run"),  # NOSONAR - python:S8410
 ):
     """
     Get all memories for a given scope.

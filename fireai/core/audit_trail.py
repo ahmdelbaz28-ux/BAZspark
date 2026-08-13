@@ -30,7 +30,7 @@ import hashlib
 import json
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -96,7 +96,7 @@ class AuditTrail:
     def __init__(self, project_name: str, floor_id: str = "FL01") -> None:
         self.project_name = project_name
         self.floor_id = floor_id
-        self.created_at = datetime.now(timezone.utc).isoformat()
+        self.created_at = datetime.now(UTC).isoformat()
         self._entries: list[AuditEntry] = []
         self._lock = threading.Lock()
 
@@ -109,7 +109,7 @@ class AuditTrail:
     def log_radius_lookup(self, room_id, ceiling_height_m, radius_m, table_row) -> None:
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="SMOKE_RADIUS_LOOKUP",
                 inputs={"ceiling_height_m": ceiling_height_m},
@@ -122,7 +122,7 @@ class AuditTrail:
         """Log rejected input before it reaches the solver."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="INPUT_REJECTED",
                 inputs={"room_id": room_id},
@@ -134,7 +134,7 @@ class AuditTrail:
     def log_heat_params(self, room_id, listed_spacing_m, adjusted_spacing_m, adjustments) -> None:
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="HEAT_DETECTOR_PARAMS",
                 inputs={"listed_spacing_m": listed_spacing_m},
@@ -147,7 +147,7 @@ class AuditTrail:
     def log_coverage_result(self, room_id, detector_count, coverage_pct, worst_case_m, status) -> None:
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="COVERAGE_VERIFICATION",
                 inputs={"detector_count": detector_count, "grid_resolution_m": 0.20},
@@ -159,7 +159,7 @@ class AuditTrail:
     def log_dxf_parse(self, source_file, units, scale, rooms_found, rooms_skipped) -> None:
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id="__FLOOR__",
                 operation="DXF_PARSE",
                 inputs={"source_file": source_file},
@@ -171,7 +171,7 @@ class AuditTrail:
     def log_nfpa_violation(self, room_id, violation, nfpa_ref) -> None:
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="NFPA_COMPLIANCE_ERROR",
                 inputs={},
@@ -187,7 +187,7 @@ class AuditTrail:
         """Log a detector placement decision. NFPA 72 §17.6.3."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="DETECTOR_PLACEMENT",
                 inputs={"grid_resolution_m": 0.25},
@@ -205,7 +205,7 @@ class AuditTrail:
         """Log a wall distance violation. NFPA 72 §17.6.3.1.1."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="WALL_DISTANCE_VIOLATION",
                 inputs={"detector_index": detector_index, "position": position},
@@ -219,7 +219,7 @@ class AuditTrail:
         """Log duct detector placement. NFPA 72 §17.7.5."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="DUCT_DETECTOR_PLACEMENT",
                 inputs={"duct_id": duct_id},
@@ -232,7 +232,7 @@ class AuditTrail:
         """Log safe fallback activation for out-of-range ceiling height. Table 17.6.3.1."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="SAFE_FALLBACK_ACTIVATED",
                 inputs={"original_height_m": original_height_m},
@@ -246,7 +246,7 @@ class AuditTrail:
         """Log BOUNDARY_LIMIT warning when coverage > 99.9% but proof_valid=False."""
         self._add(
             AuditEntry(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 room_id=room_id,
                 operation="BOUNDARY_LIMIT_WARNING",
                 inputs={"grid_resolution_m": 0.20},

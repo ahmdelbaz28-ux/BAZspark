@@ -4,7 +4,8 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Any, Callable, Coroutine, Dict
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
@@ -19,15 +20,15 @@ router = APIRouter(prefix="/agent", tags=["agent-ws"])
 
 # Active connections from agents
 # Map from agent_type -> list of WebSocket
-active_agents: Dict[str, list[WebSocket]] = {}
-agent_response_futures: Dict[str, asyncio.Future[Any]] = {}
+active_agents: dict[str, list[WebSocket]] = {}
+agent_response_futures: dict[str, asyncio.Future[Any]] = {}
 
 # A lock per connection to serialize command dispatches
-agent_locks: Dict[str, asyncio.Lock] = {}
+agent_locks: dict[str, asyncio.Lock] = {}
 
 # Track which futures belong to which websocket (for cleanup on disconnect)
 # Maps websocket id -> set of pending command IDs
-_agent_pending_commands: Dict[str, set[str]] = {}
+_agent_pending_commands: dict[str, set[str]] = {}
 
 
 def get_agent_lock(websocket: WebSocket) -> asyncio.Lock:
@@ -369,7 +370,7 @@ def has_active_agent(agent_type: str = "autocad_revit") -> bool:
 
 
 async def send_agent_command(
-    agent_type: str, action: str, args: Dict[str, Any], timeout: float = 30.0
+    agent_type: str, action: str, args: dict[str, Any], timeout: float = 30.0
 ) -> Any:
     """
     Send a command to the active agent and await the response.
@@ -405,7 +406,7 @@ async def send_agent_command(
             if isinstance(response, dict) and "error" in response:
                 raise HTTPException(status_code=400, detail=response["error"])
             return response
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             logger.warning("Agent command %s timed out after %s seconds", action, timeout)
             raise HTTPException(
                 status_code=504, detail="Local Agent command execution timed out."

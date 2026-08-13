@@ -2,8 +2,8 @@
 """FACP Distributed Protocol Schema Definitions"""
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 @dataclass
@@ -12,7 +12,7 @@ class FACPDistributedSchema:
 
     # Enhanced Request schema for distributed system
     @staticmethod
-    def request_schema() -> Dict[str, Any]:
+    def request_schema() -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -59,7 +59,7 @@ class FACPDistributedSchema:
 
     # Enhanced Response schema for distributed system
     @staticmethod
-    def response_schema() -> Dict[str, Any]:
+    def response_schema() -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -96,20 +96,20 @@ class FACPDistributedSerializationHelper:
     @staticmethod
     def create_request(
         method: str,
-        params: Dict[str, Any],
+        params: dict[str, Any],
         source: str = "client",
         target: str = "engine",
         execution_state: str = "RECEIVED",
-        security: Optional[Dict[str, Any]] = None,
-        constraints: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        security: dict[str, Any] | None = None,
+        constraints: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Create a distributed FACP request message"""
         return {
             "protocol": "FACP/1.1",
             "type": "request",
             "id": str(uuid.uuid4()),
             # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "source": source,
             "target": target,
             "execution_state": execution_state,
@@ -127,10 +127,10 @@ class FACPDistributedSerializationHelper:
     def create_response(
         req_id: str,
         status: str,
-        result: Optional[Dict[str, Any]] = None,
-        error: Optional[Dict[str, str]] = None,
-        trace: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        result: dict[str, Any] | None = None,
+        error: dict[str, str] | None = None,
+        trace: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Create a distributed FACP response message"""
         response = {
             "protocol": "FACP/1.1",

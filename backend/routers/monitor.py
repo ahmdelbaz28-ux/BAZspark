@@ -21,8 +21,8 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
@@ -43,7 +43,7 @@ router = APIRouter(tags=["monitor"])
 class MonitorState:
     """Singleton holding all monitoring state with thread-safe access."""
 
-    _instance: Optional[MonitorState] =  None
+    _instance: MonitorState | None =  None
     _lock = threading.Lock()
 
     def __new__(cls) -> MonitorState:
@@ -184,7 +184,7 @@ class MonitorState:
                 for e in self._engines.values()
             ]
 
-    def get_engine(self, engine_id: str) -> Optional[dict[str, Any]]:
+    def get_engine(self, engine_id: str) -> dict[str, Any] | None:
         with self._lock:
             e = self._engines.get(engine_id)
             return dict(e) if e else None
@@ -210,12 +210,12 @@ class MonitorState:
     def add_agent_activity(self, activity: dict[str, Any]) -> None:
         with self._lock:
             if "timestamp" not in activity:
-                activity["timestamp"] = datetime.now(timezone.utc).isoformat()
+                activity["timestamp"] = datetime.now(UTC).isoformat()
             self._agent_activity.appendleft(activity)
 
     def get_agent_activity(
-        self, limit: int = 50, agent_id: Optional[str] = None,
-        activity_type: Optional[str] = None,
+        self, limit: int = 50, agent_id: str | None = None,
+        activity_type: str | None = None,
     ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._agent_activity)
@@ -230,7 +230,7 @@ class MonitorState:
     def add_security_alert(self, alert: dict[str, Any]) -> None:
         with self._lock:
             if "timestamp" not in alert:
-                alert["timestamp"] = datetime.now(timezone.utc).isoformat()
+                alert["timestamp"] = datetime.now(UTC).isoformat()
             if "alert_id" not in alert:
                 import uuid
                 alert["alert_id"] = str(uuid.uuid4())
@@ -240,8 +240,8 @@ class MonitorState:
                 self._security_alerts = self._security_alerts[-500:]
 
     def get_security_alerts(
-        self, limit: int = 50, severity: Optional[str] = None,
-        resolved: Optional[bool] =  None,
+        self, limit: int = 50, severity: str | None = None,
+        resolved: bool | None =  None,
     ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._security_alerts)
@@ -275,14 +275,14 @@ class MonitorState:
             for rule in self._alert_rules:
                 if not rule["enabled"]:
                     continue
-                rule["last_evaluated"] = datetime.now(timezone.utc).isoformat()
+                rule["last_evaluated"] = datetime.now(UTC).isoformat()
 
                 triggered = False
                 alert_data: dict[str, Any] = {
                     "rule_id": rule["rule_id"],
                     "name": rule["name"],
                     "severity": rule["severity"],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "message": "",
                 }
 
@@ -343,7 +343,7 @@ class MonitorState:
                         )
 
                 if triggered:
-                    rule["last_triggered"] = datetime.now(timezone.utc).isoformat()
+                    rule["last_triggered"] = datetime.now(UTC).isoformat()
                     new_active.append(alert_data)
 
             self._active_alerts = new_active
@@ -380,7 +380,7 @@ class MonitorState:
                 "uptime_seconds": round(uptime, 2),
                 "uptime_human": self._format_uptime(uptime),
                 "version": __package_version__,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "database": "connected" if db_connected else "disconnected",
                 "engines": {
                     "total": len(self._engines),
@@ -550,7 +550,7 @@ async def get_health(request: Request):
     return {
         "success": True,
         "data": health,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -573,7 +573,7 @@ async def get_metrics(request: Request):
 @router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_engine_status(
     request: Request,
-    engine_id: Optional[str] = Query(None, description="Filter by engine ID"),  # NOSONAR - python:S8410
+    engine_id: str | None = Query(None, description="Filter by engine ID"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/engine-status — Per-engine status and health.
@@ -605,7 +605,7 @@ async def get_engine_status(
         "data": {
             "engines": engines,
             "total": len(engines),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -614,8 +614,8 @@ async def get_engine_status(
 async def get_agent_activity(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),  # NOSONAR - python:S8410
-    agent_id: Optional[str] = Query(None, description="Filter by agent ID"),  # NOSONAR - python:S8410
-    activity_type: Optional[str] = Query(None, description="Filter by activity type"),  # NOSONAR - python:S8410
+    agent_id: str | None = Query(None, description="Filter by agent ID"),  # NOSONAR - python:S8410
+    activity_type: str | None = Query(None, description="Filter by activity type"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/agent-activity — Agent activity log.
@@ -636,7 +636,7 @@ async def get_agent_activity(
             "activities": activities,
             "total": len(activities),
             "limit": limit,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -645,8 +645,8 @@ async def get_agent_activity(
 async def get_security_alerts(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),  # NOSONAR - python:S8410
-    severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),  # NOSONAR - python:S8410
-    resolved: Optional[bool] =  Query(None, description="Filter by resolved state"),  # NOSONAR - python:S8410
+    severity: str | None = Query(None, pattern="^(low|medium|high|critical)$"),  # NOSONAR - python:S8410
+    resolved: bool | None =  Query(None, description="Filter by resolved state"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/security-alerts — Active and historical security alerts.
@@ -678,7 +678,7 @@ async def get_security_alerts(
                     "alerts": alerts[:limit],
                     "total": len(alerts),
                     "source": "security_logging",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 },
             }
     except Exception as e:
@@ -691,7 +691,7 @@ async def get_security_alerts(
             "alerts": alerts,
             "total": len(alerts),
             "source": "monitor_state",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -722,7 +722,7 @@ async def get_alerts(request: Request):
             "alert_count": len(active_alerts),
             "rules": rules,
             "rule_count": len(rules),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -774,6 +774,6 @@ async def get_uptime_robot_status(request: Request):
             "local_keep_awake": local_status,
             "external_uptime_robot": uptime_api_res
         },
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 

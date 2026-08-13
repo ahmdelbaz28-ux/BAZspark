@@ -75,9 +75,9 @@ import threading
 import types
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ _JSON_CONTENT_TYPE = "application/json"
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """Order lifecycle states. `paid` is terminal-success, the others are
     recoverable or terminal-failure."""
     PENDING   = "pending"
@@ -98,7 +98,7 @@ class OrderStatus(str, Enum):
     REFUNDED  = "refunded"
 
 
-class TxnStatus(str, Enum):
+class TxnStatus(StrEnum):
     """Per-transaction status. Mapped from PSP-specific codes by the adapter."""
     PENDING   = "PENDING"
     SUCCESS   = "SUCCESS"
@@ -107,7 +107,7 @@ class TxnStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
-class PSPName(str, Enum):
+class PSPName(StrEnum):
     """Supported Payment Service Providers for Meeza card routing."""
     PAYMOB     = "paymob"
     FAWRY      = "fawry"
@@ -168,7 +168,7 @@ class MeezaConfig:
         )
 
 
-_CONFIG: Optional[MeezaConfig] = None
+_CONFIG: MeezaConfig | None = None
 _CONFIG_LOCK = threading.Lock()
 
 
@@ -346,8 +346,8 @@ class _RedlockFence:
     def __init__(self, key: str, ttl_ms: int = 5000):
         self.key = f"meeza:lock:{key}"
         self.ttl_ms = ttl_ms
-        self._lock: Optional[Any] = None
-        self._client: Optional[Any] = None
+        self._lock: Any | None = None
+        self._client: Any | None = None
 
     def __enter__(self) -> _RedlockFence:
         self._client = _get_redis_client()
@@ -368,9 +368,9 @@ class _RedlockFence:
 
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc: Optional[BaseException],
-        tb: Optional[types.TracebackType],
+        exc_type: type | None,
+        exc: BaseException | None,
+        tb: types.TracebackType | None,
     ) -> None:
         if self._lock is not None:
             try:
@@ -390,8 +390,8 @@ def _hmac_digest(secret: str, message: bytes, algorithm: str) -> str:
 def verify_webhook_signature(
     payload_raw: bytes,
     signature_header: str,
-    secret: Optional[str] = None,
-    algorithm: Optional[str] = None,
+    secret: str | None = None,
+    algorithm: str | None = None,
 ) -> bool:
     """Verify the HMAC signature of a webhook payload.
 
@@ -469,11 +469,11 @@ class Order:
     currency: str
     status: str
     description: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     created_at: str
     updated_at: str
-    expires_at: Optional[str]
-    paid_at: Optional[str]
+    expires_at: str | None
+    paid_at: str | None
 
 
 @dataclass
@@ -482,17 +482,17 @@ class CheckoutResult:
     transaction_id: str
     checkout_url: str
     method: str   # "iframe" | "redirect" | "sandbox"
-    raw: Dict[str, Any]
+    raw: dict[str, Any]
 
 
 def create_order(
     user_principal: str,
     amount_cents: int,
     description: str = "",
-    metadata: Optional[Dict[str, Any]] = None,
-    currency: Optional[str] = None,
+    metadata: dict[str, Any] | None = None,
+    currency: str | None = None,
     expires_in_seconds: int = 1800,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new order.
 
     Args:
@@ -504,7 +504,7 @@ def create_order(
         expires_in_seconds: Order expiration window. Default 30 minutes.
 
     Returns:
-        Dict representation of the created order.
+        dict representation of the created order.
 
     Raises:
         ValueError: on invalid input (non-positive amount, empty principal,
@@ -521,9 +521,9 @@ def create_order(
 
     _init_schema()
     cfg = get_config()
-    now = datetime.now(timezone.utc).isoformat()
-    expires_at = datetime.now(timezone.utc).timestamp() + expires_in_seconds
-    expires_iso = datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
+    expires_at = datetime.now(UTC).timestamp() + expires_in_seconds
+    expires_iso = datetime.fromtimestamp(expires_at, tz=UTC).isoformat()
 
     order_id = str(uuid.uuid4())
     metadata_json = json.dumps(metadata or {}, separators=(",", ":"))
@@ -562,7 +562,7 @@ def create_order(
     }
 
 
-def get_order(order_id: str, user_principal: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_order(order_id: str, user_principal: str | None = None) -> dict[str, Any] | None:
     """Fetch an order by id. If `user_principal` is given, the order must
     belong to that principal (otherwise None is returned — defence-in-depth
     against IDOR)."""
@@ -582,14 +582,14 @@ def list_orders(
     user_principal: str,
     limit: int = 50,
     offset: int = 0,
-    status: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """List orders for a principal, newest first."""
+    status: str | None = None,
+) -> list[dict[str, Any]]:
+    """list orders for a principal, newest first."""
     _init_schema()
     limit = max(1, min(int(limit), 200))
     offset = max(0, int(offset))
     sql = "SELECT * FROM orders WHERE user_principal = ?"
-    params: Tuple[Any, ...] = (user_principal,)
+    params: tuple[Any, ...] = (user_principal,)
     if status:
         sql += " AND status = ?"
         params = (*params, status)
@@ -603,8 +603,8 @@ def list_orders(
 def initiate_checkout(
     order_id: str,
     user_principal: str,
-    billing_data: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    billing_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Initiate a Meeza checkout for an order.
 
     Returns a dict with:
@@ -635,14 +635,14 @@ def initiate_checkout(
     if order["expires_at"]:
         try:
             exp_ts = datetime.fromisoformat(order["expires_at"]).timestamp()
-            if datetime.now(timezone.utc).timestamp() > exp_ts:
+            if datetime.now(UTC).timestamp() > exp_ts:
                 _expire_order(order_id)
                 raise ValueError(f"Order {order_id} has expired")
         except (ValueError, TypeError):
             pass  # malformed expires_at — don't block checkout
 
     txn_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     # Per-attempt idempotency key (different from webhook idempotency key,
     # which is derived from PSP-side fields). This prevents double-charge if
     # the frontend retries the checkout call.
@@ -659,7 +659,7 @@ def initiate_checkout(
         psp_order_id = f"sandbox-{order_id[:8]}"
         psp_payment_key = f"sandbox-key-{txn_id[:8]}"
         method = "sandbox"
-        raw: Dict[str, Any] = {"mode": "sandbox", "demo": True}
+        raw: dict[str, Any] = {"mode": "sandbox", "demo": True}
     else:
         # ── Live PSP call ──────────────────────────────────────────────
         # Adapter dispatch — currently PayMob is fully implemented; other
@@ -710,9 +710,9 @@ def initiate_checkout(
 
 def _paymob_checkout(
     cfg: MeezaConfig,
-    order: Dict[str, Any],
-    billing_data: Dict[str, Any],
-) -> Tuple[str, str, str, Dict[str, Any]]:
+    order: dict[str, Any],
+    billing_data: dict[str, Any],
+) -> tuple[str, str, str, dict[str, Any]]:
     """PayMob-specific checkout flow. Returns (iframe_url, psp_order_id,
     payment_key, raw_response).
 
@@ -728,7 +728,7 @@ def _paymob_checkout(
     auth_req = urllib.request.Request(
         f"{base}/auth/tokens",
         data=json.dumps({"api_key": cfg.api_key}).encode("utf-8"),
-        headers={"Content-Type": _JSON_CONTENT_TYPE},
+        headers={"Content-type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(auth_req, timeout=10) as resp:  # nosec: B310 — verified URL
@@ -747,7 +747,7 @@ def _paymob_checkout(
             "merchant_order_id": order["id"],
             "items": [],
         }).encode("utf-8"),
-        headers={"Content-Type": _JSON_CONTENT_TYPE},
+        headers={"Content-type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(order_req, timeout=10) as resp:  # nosec: B310
@@ -781,7 +781,7 @@ def _paymob_checkout(
             "integration_id": int(os.getenv("MEEZA_PAYMOB_INTEGRATION_ID", "0")),
             "lock_order_when_paid": "true",
         }).encode("utf-8"),
-        headers={"Content-Type": _JSON_CONTENT_TYPE},
+        headers={"Content-type": _JSON_CONTENT_TYPE},
         method="POST",
     )
     with urllib.request.urlopen(pay_req, timeout=10) as resp:  # nosec: B310
@@ -798,8 +798,8 @@ def _paymob_checkout(
 
 
 def _extract_webhook_fields(
-    payload_parsed: Dict[str, Any],
-) -> Dict[str, Any]:
+    payload_parsed: dict[str, Any],
+) -> dict[str, Any]:
     """Extract standard fields from a Meeza/PayMob webhook payload.
 
     Tolerates both nested (``{obj: {...}}``) and flat shapes. Returns a dict
@@ -832,8 +832,8 @@ def _extract_webhook_fields(
 
 
 def _map_psp_flags_to_status(
-    fields: Dict[str, Any],
-) -> Tuple[TxnStatus, str]:
+    fields: dict[str, Any],
+) -> tuple[TxnStatus, str]:
     """Map PSP boolean flags to (TxnStatus, order_status) pair.
 
     Order of precedence: refund > void > expired > success > pending > failed.
@@ -854,8 +854,8 @@ def _map_psp_flags_to_status(
 def handle_meeza_webhook(
     payload_raw: bytes,
     signature_header: str,
-    payload_parsed: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    payload_parsed: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Process a Meeza webhook.
 
     Args:
@@ -864,7 +864,7 @@ def handle_meeza_webhook(
         payload_parsed:    Parsed JSON dict. If None, parsed from payload_raw.
 
     Returns:
-        Dict with `status` ("processed" | "duplicate" | "rejected"),
+        dict with `status` ("processed" | "duplicate" | "rejected"),
         `http_status`, and optional `reason`.
 
     Idempotency & atomicity:
@@ -913,7 +913,7 @@ def handle_meeza_webhook(
         amount_cents=amount_cents,
     )
     event_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     raw_json = json.dumps(payload_parsed, separators=(",", ":"))
     sig_truncated = signature_header[:128] if signature_header else ""
 
@@ -944,7 +944,7 @@ def _persist_webhook_event(
     raw_json: str = "{}",
     sig_truncated: str = "",
     amount_cents: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Insert the webhook event, link the transaction, and apply the atomic
     order status transition. Extracted from `handle_meeza_webhook` to keep
     cognitive complexity below the SonarCloud S3776 threshold (15).
@@ -1037,7 +1037,7 @@ def _apply_order_status_transition(
     order_status: str,
     idem_key: str,
     now: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Atomically flip the order status from 'pending' to the terminal
     state. Returns the appropriate webhook result.
 
@@ -1129,7 +1129,7 @@ def _expire_order(order_id: str) -> None:
     """Mark an order as expired (called when checkout is attempted on a stale
     order)."""
     _init_schema()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with _get_conn() as conn:
         conn.execute(
             "UPDATE orders SET status = 'expired', updated_at = ? "
@@ -1138,7 +1138,7 @@ def _expire_order(order_id: str) -> None:
         )
 
 
-def get_transaction(txn_id: str) -> Optional[Dict[str, Any]]:
+def get_transaction(txn_id: str) -> dict[str, Any] | None:
     """Fetch a transaction by id."""
     _init_schema()
     with _get_conn() as conn:
@@ -1152,8 +1152,8 @@ def get_transaction(txn_id: str) -> Optional[Dict[str, Any]]:
     return d
 
 
-def list_transactions_for_order(order_id: str) -> List[Dict[str, Any]]:
-    """List all transactions for an order."""
+def list_transactions_for_order(order_id: str) -> list[dict[str, Any]]:
+    """list all transactions for an order."""
     _init_schema()
     with _get_conn() as conn:
         rows = conn.execute(
@@ -1169,8 +1169,8 @@ def list_transactions_for_order(order_id: str) -> List[Dict[str, Any]]:
     return out
 
 
-def list_events_for_order(order_id: str) -> List[Dict[str, Any]]:
-    """List all webhook events for an order (audit trail)."""
+def list_events_for_order(order_id: str) -> list[dict[str, Any]]:
+    """list all webhook events for an order (audit trail)."""
     _init_schema()
     with _get_conn() as conn:
         rows = conn.execute(
@@ -1181,7 +1181,7 @@ def list_events_for_order(order_id: str) -> List[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def _row_to_order_dict(row: sqlite3.Row) -> Dict[str, Any]:
+def _row_to_order_dict(row: sqlite3.Row) -> dict[str, Any]:
     d = dict(row)
     try:
         d["metadata"] = json.loads(d.get("metadata") or "{}")
@@ -1195,8 +1195,8 @@ def _row_to_order_dict(row: sqlite3.Row) -> Dict[str, Any]:
 def simulate_webhook(
     order_id: str,
     txn_status: TxnStatus = TxnStatus.SUCCESS,
-    amount_cents: Optional[int] = None,
-) -> Dict[str, Any]:
+    amount_cents: int | None = None,
+) -> dict[str, Any]:
     """Simulate a Meeza webhook delivery (sandbox / test mode only).
 
     Builds a synthetic PayMob-shaped payload, signs it with the configured
@@ -1224,7 +1224,7 @@ def simulate_webhook(
         hashlib.sha256(order_id.encode("utf-8")).hexdigest()[:12], 16
     ) % 1_000_000
 
-    obj: Dict[str, Any] = {
+    obj: dict[str, Any] = {
         "id": psp_txn_id_int,
         "order": {"id": psp_order_id_int, "merchant_order_id": order_id},
         "amount_cents": amount,

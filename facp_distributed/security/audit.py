@@ -5,10 +5,10 @@ import json
 import os
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class EventType(Enum):
@@ -42,12 +42,12 @@ class DistributedEventLogger:
         log_path = Path(self.log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def log_event(self, event_type: EventType, details: Dict[str, Any], severity: str = "INFO", source_node: Optional[str] = None):
+    def log_event(self, event_type: EventType, details: dict[str, Any], severity: str = "INFO", source_node: str | None = None):
         """Log an event in distributed context"""
         with self.lock:
             event = {
             # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "event_type": event_type.value,
                 "severity": severity,
                 "source_node": source_node or self.node_id,
@@ -78,7 +78,7 @@ class DistributedEventLogger:
         except OSError:
             pass  # If rotation fails, continue with current log
 
-    def read_recent_events(self, count: int = 10) -> List[Dict[str, Any]]:
+    def read_recent_events(self, count: int = 10) -> list[dict[str, Any]]:
         """Read recent events from log file"""
         try:
             with open(self.log_file, encoding="utf-8") as f:
@@ -124,7 +124,7 @@ class AuditLogger:
         if not success:
             self._track_failed_auth(user_id, source_node)
 
-    def log_authorization(self, user_id: str, method: str, allowed: bool, permissions: List[str],
+    def log_authorization(self, user_id: str, method: str, allowed: bool, permissions: list[str],
                          source_node: str = "unknown", target_node: str = "unknown"):
         """Log authorization check in distributed context"""
         details = {
@@ -176,7 +176,7 @@ class AuditLogger:
         self.event_logger.log_event(event_type, details, severity, source_node)
 
     def log_node_communication(self, from_node: str, to_node: str, message_type: str,
-                             success: bool, latency: float, request_id: Optional[str] = None):
+                             success: bool, latency: float, request_id: str | None = None):
         """Log communication between nodes"""
         details = {
             "from_node": from_node,
@@ -199,7 +199,7 @@ class AuditLogger:
             self.node_communication_log[comm_key] = []
         self.node_communication_log[comm_key].append(details)
 
-    def log_security_violation(self, violation_type: str, details: Dict[str, Any],
+    def log_security_violation(self, violation_type: str, details: dict[str, Any],
                              source_node: str = "unknown"):
         """Log security violation in distributed context"""
         details["violation_type"] = violation_type
@@ -216,7 +216,7 @@ class AuditLogger:
         })
 
     def log_compliance_check(self, check_type: str, resource: str, compliant: bool,
-                           details: Dict[str, Any], node_context: str = "unknown"):
+                           details: dict[str, Any], node_context: str = "unknown"):
         """Log compliance check in distributed context"""
         compliance_details = {
             "check_type": check_type,
@@ -230,7 +230,7 @@ class AuditLogger:
         severity = "INFO" if compliant else "WARNING"
         self.event_logger.log_event(EventType.REQUEST_VALIDATED, compliance_details, severity, node_context)
 
-    def log_cluster_sync(self, sync_operation: str, nodes_involved: List[str],
+    def log_cluster_sync(self, sync_operation: str, nodes_involved: list[str],
                         success: bool, sync_time: float):
         """Log cluster synchronization events"""
         details = {
@@ -267,7 +267,7 @@ class AuditLogger:
         recent_attempts = [t for t in self.session_tracking[key] if t > time.time() - 300]  # 5 minutes
         return len(recent_attempts) >= threshold
 
-    def get_audit_summary(self) -> Dict[str, Any]:
+    def get_audit_summary(self) -> dict[str, Any]:
         """Get audit summary statistics for distributed system"""
         recent_events = self.event_logger.read_recent_events(100)
 
@@ -321,7 +321,7 @@ class AuditLogger:
 
             report = {
                 # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
-                "report_date": datetime.now(timezone.utc).isoformat(),
+                "report_date": datetime.now(UTC).isoformat(),
                 "period_days": days,
                 "total_events": len(filtered_events),
                 "events": filtered_events,
@@ -345,7 +345,7 @@ class AuditLogger:
         cutoff = time.time() - (max_age_hours * 3600)
         self.security_alerts = [alert for alert in self.security_alerts if alert["alert_time"] > cutoff]
 
-    def generate_security_insights(self) -> Dict[str, Any]:
+    def generate_security_insights(self) -> dict[str, Any]:
         """Generate security insights from audit logs"""
         summary = self.get_audit_summary()
 

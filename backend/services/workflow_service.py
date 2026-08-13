@@ -46,9 +46,10 @@ import logging
 import math
 import os
 import time
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable, TypedDict, TypeVar
+from collections.abc import Callable
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any, TypedDict, TypeVar
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
@@ -69,7 +70,7 @@ except ImportError:
     STUCK_DETECTION_AVAILABLE = False
     # Fallback: no-op decorator
     _F = TypeVar("_F", bound=Callable[..., Any])
-    def with_stuck_detection(func: _F) -> _F:
+    def with_stuck_detection[F: Callable[..., Any]](func: _F) -> _F:
         return func
 
 try:
@@ -87,7 +88,7 @@ except ImportError:
 
 # ── Workflow State Definition ────────────────────────────────────────────────
 
-class WorkflowStatus(str, Enum):
+class WorkflowStatus(StrEnum):
     """Workflow execution status — matches agent.md V13 status terminology + V77 STUCK."""
 
     PENDING = "PENDING"
@@ -190,7 +191,7 @@ def _log_transition(state: PipelineState, from_node: str, to_node: str,
     - Engineering Evidence Contract: claims require evidence
     """
     log_entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "from_node": from_node,
         "to_node": to_node,
         "evidence": evidence,
@@ -275,7 +276,7 @@ def node_initialize(state: PipelineState) -> PipelineState:
         "file_type": file_type,
         "workflow_id": workflow_id,
         "status": WorkflowStatus.RUNNING.value,
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": datetime.now(UTC).isoformat(),
         "transition_log": [],
     }
 
@@ -1228,7 +1229,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     # Add timestamp AFTER hash computation (for display, not for integrity)
     # pollute the deterministic report dict. This makes golden file comparison
     # and regression testing possible — the report dict is purely deterministic.
-    generated_utc = datetime.now(timezone.utc).isoformat()
+    generated_utc = datetime.now(UTC).isoformat()
 
     # Final status
     final_status = WorkflowStatus.COMPLETED.value
@@ -1282,7 +1283,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
         "report_sha256": report_sha256,
         "report_generated_utc": generated_utc,  # V85: Timestamp outside report dict for determinism
         "status": final_status,
-        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": datetime.now(UTC).isoformat(),
     }
 
     state = {**state, **updates}
@@ -1651,7 +1652,7 @@ class WorkflowService:
             "workflow_id": workflow_id,
             "engineer_id": engineer_id,  # V85: Dynamic engineer scoping for Mem0
             "status": WorkflowStatus.PENDING.value,
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
             "completed_at": None,
             "transition_log": [],
             "error_message": None,
@@ -1969,7 +1970,7 @@ class WorkflowService:
             # Update state with reviewer decision
             state["reviewer_decision"] = "approved"
             state["reviewer_comments"] = reviewer_comments
-            state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+            state["review_timestamp"] = datetime.now(UTC).isoformat()
             state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
             state["status"] = WorkflowStatus.APPROVED.value
 
@@ -2033,10 +2034,10 @@ class WorkflowService:
 
             state["reviewer_decision"] = "rejected"
             state["reviewer_comments"] = reviewer_comments
-            state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+            state["review_timestamp"] = datetime.now(UTC).isoformat()
             state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
             state["status"] = WorkflowStatus.REJECTED.value
-            state["completed_at"] = datetime.now(timezone.utc).isoformat()
+            state["completed_at"] = datetime.now(UTC).isoformat()
 
             # Log the rejection
             state = _log_transition(

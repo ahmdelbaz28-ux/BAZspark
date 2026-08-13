@@ -17,12 +17,12 @@ Standards mapped:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # ─── Ship Classification (SOLAS II-2 / IMO) ─────────────────────────────────
 
-class ShipType(str, Enum):
+class ShipType(StrEnum):
     """
     SOLAS ship-type classification per SOLAS Ch. II-2/2.2.
 
@@ -41,7 +41,7 @@ class ShipType(str, Enum):
     SMALL_CRAFT = "small_craft"    # <24m load line — NFPA 302 applies
 
 
-class ShipService(str, Enum):
+class ShipService(StrEnum):
     """Ship service category — refines ShipType for rule selection."""
 
     CONTAINER = "container"
@@ -60,7 +60,7 @@ class ShipService(str, Enum):
 
 # ─── Fire Divisions (SOLAS II-2 Reg. 9) ─────────────────────────────────────
 
-class FireClass(str, Enum):
+class FireClass(StrEnum):
     """
     SOLAS II-2/9.2 fire division classification.
 
@@ -96,7 +96,7 @@ class FireClass(str, Enum):
         return mapping[self]
 
 
-class SpaceCategory(str, Enum):
+class SpaceCategory(StrEnum):
     """
     SOLAS II-2 space categories for fire-rating assignment.
 
@@ -119,7 +119,7 @@ class SpaceCategory(str, Enum):
 
 # ─── Fire Detection (IEC 60092-502 / FSS Code Ch. 9) ────────────────────────
 
-class DetectorType(str, Enum):
+class DetectorType(StrEnum):
     """
     Marine fire detector types per IEC 60092-502 and FSS Code Ch. 9.
 
@@ -145,7 +145,7 @@ class DetectorType(str, Enum):
     ASPIRATING = "aspirating"               # ASD — high-sensitivity sampling
 
 
-class AlarmLevel(str, Enum):
+class AlarmLevel(StrEnum):
     """SOLAS II-2/5 alarm action levels."""
 
     FAULT = "fault"             # Detector fault (open/short circuit)
@@ -156,7 +156,7 @@ class AlarmLevel(str, Enum):
 
 # ─── Extinguishing Systems (IMO MSC.1/Circ.1316/1165) ───────────────────────
 
-class ExtinguishingSystem(str, Enum):
+class ExtinguishingSystem(StrEnum):
     """
     Marine fixed fire-extinguishing systems per SOLAS II-2/10.
 
@@ -181,7 +181,7 @@ class ExtinguishingSystem(str, Enum):
     INERT_GAS = "inert_gas"
 
 
-class FireHazardClass(str, Enum):
+class FireHazardClass(StrEnum):
     """NFPA 10 + marine fire hazard classification."""
 
     A = "A"  # Ordinary combustibles (wood, paper, textiles)
@@ -193,7 +193,7 @@ class FireHazardClass(str, Enum):
 
 # ─── Thermal Alarms (ISO 15370) ─────────────────────────────────────────────
 
-class ThermalAlarmClass(str, Enum):
+class ThermalAlarmClass(StrEnum):
     """ISO 15370 thermal alarm classes for passenger-ship escape routes."""
 
     CLASS_A = "thermal_a"   # Responds at 70°C ± 5°C

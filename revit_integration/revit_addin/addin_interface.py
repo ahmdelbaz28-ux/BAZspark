@@ -8,7 +8,8 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from datetime import UTC
+from typing import Any
 
 _NOT_AUTHENTICATED_MSG = "Not authenticated"
 
@@ -80,12 +81,12 @@ class RevitAddinManager:
             self.logger.error(f"Authentication error: {e}")
             return False
 
-    async def sync_current_model(self) -> Dict[str, Any]:
+    async def sync_current_model(self) -> dict[str, Any]:
         """
         Sync the current Revit model with the Digital Twin.
 
         Returns:
-            Dict: Sync status and results
+            dict: Sync status and results
         """
         if not self.authenticated:
             return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
@@ -110,7 +111,7 @@ class RevitAddinManager:
                 "elements_successful": random.randint(45, 195),  # NOSONAR
                 "elements_failed": random.randint(0, 5),  # NOSONAR
                 "duration_seconds": round(random.uniform(1.0, 5.0), 2),  # NOSONAR
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
 
             self.logger.info(f"Sync completed: {sync_result['elements_successful']} successful, {sync_result['elements_failed']} failed")
@@ -120,12 +121,12 @@ class RevitAddinManager:
             self.logger.error(f"Sync error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def get_model_status(self) -> Dict[str, Any]:
+    async def get_model_status(self) -> dict[str, Any]:
         """
         Get the synchronization status of the current model.
 
         Returns:
-            Dict: Model status information
+            dict: Model status information
         """
         if not self.authenticated:
             return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
@@ -135,7 +136,7 @@ class RevitAddinManager:
             # For now, we'll simulate the status
             status = {
                 "project_id": self.current_project_id,
-                "last_sync": datetime.now(timezone.utc).isoformat(),
+                "last_sync": datetime.now(UTC).isoformat(),
                 "sync_status": "up_to_date",
                 "element_count": random.randint(100, 1000),
                 "pending_changes": random.randint(0, 10),
@@ -148,15 +149,15 @@ class RevitAddinManager:
             self.logger.error(f"Get status error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def push_to_digital_twin(self, elements: list) -> Dict[str, Any]:
+    async def push_to_digital_twin(self, elements: list) -> dict[str, Any]:
         """
         Push specific elements to the Digital Twin.
 
         Args:
-            elements: List of elements to push
+            elements: list of elements to push
 
         Returns:
-            Dict: Push results
+            dict: Push results
         """
         if not self.authenticated:
             return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
@@ -170,7 +171,7 @@ class RevitAddinManager:
                 "success": True,
                 "elements_pushed": len(elements),
                 "elements_successful": len(elements),  # Assume all succeed in simulation
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
 
             return result
@@ -179,12 +180,12 @@ class RevitAddinManager:
             self.logger.error(f"Push error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def pull_analysis_results(self) -> Dict[str, Any]:
+    async def pull_analysis_results(self) -> dict[str, Any]:
         """
         Pull analysis results from the Digital Twin.
 
         Returns:
-            Dict: Analysis results
+            dict: Analysis results
         """
         if not self.authenticated:
             return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
@@ -196,7 +197,7 @@ class RevitAddinManager:
                 "success": True,
                 "analysis_type": "load_flow",
                 "results_available": True,
-                "last_analysis_date": datetime.now(timezone.utc).isoformat(),
+                "last_analysis_date": datetime.now(UTC).isoformat(),
                 "critical_elements": [],
                 "summary": {
                     "total_elements_analyzed": random.randint(50, 150),
@@ -231,4 +232,4 @@ class RevitAddinManager:
 
 # Import asyncio and datetime for the simulation
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime

@@ -21,7 +21,8 @@ conservative (protective) technology whenever occupancy is uncertain.
 from __future__ import annotations
 
 import logging
-from typing import Any, Mapping, Union
+from collections.abc import Mapping
+from typing import Any
 
 from fireai.core.contracts import DetectorType, Room
 
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Callers may hand either a canonical ``Room`` or the raw dict shape
 # ``{"name", "occupancy_type", "area_sqm"}`` that travels in pipeline
 # state. The adapter maps both to a canonical ``Room`` before deciding.
-Roomish = Union[Room, Mapping[str, Any]]
+Roomish = Room | Mapping[str, Any]
 
 
 def _as_room(room: Roomish) -> Room:

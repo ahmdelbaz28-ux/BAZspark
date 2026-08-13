@@ -9,8 +9,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional
+from datetime import UTC, datetime, timedelta
 
 try:
     import aiohttp
@@ -25,7 +24,7 @@ except ImportError:
 class APSToken:
     """Represents an APS access token."""
     access_token: str
-    refresh_token: Optional[str]
+    refresh_token: str | None
     expires_in: int
     token_type: str
     scope: str
@@ -46,14 +45,14 @@ class APSAuthService:
         self.token_url = f"{self.base_url}/authentication/v2/token"
         self.refresh_url = f"{self.base_url}/authentication/v2/refresh"
         self.logger = logging.getLogger(__name__)
-        self._access_token: Optional[APSToken] = None
+        self._access_token: APSToken | None = None
 
-    async def authenticate_two_legged(self, scopes: list = None) -> Optional[APSToken]:
+    async def authenticate_two_legged(self, scopes: list = None) -> APSToken | None:
         """
         Authenticate using 2-legged OAuth (app-to-app).
 
         Args:
-            scopes: List of required scopes
+            scopes: list of required scopes
 
         Returns:
             APSToken: Authentication token or None if failed
@@ -62,7 +61,7 @@ class APSAuthService:
             scopes = ['data:read', 'data:write', 'data:create', 'bucket:read', 'bucket:create']
 
         headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-type': 'application/x-www-form-urlencoded'
         }
 
         data = {
@@ -86,7 +85,7 @@ class APSAuthService:
                             expires_in=token_data['expires_in'],
                             token_type=token_data['token_type'],
                             scope=token_data['scope'],
-                            issued_at=datetime.now(timezone.utc)
+                            issued_at=datetime.now(UTC)
                         )
                         self.logger.info("Successfully authenticated with 2-legged OAuth")
                         return self._access_token
@@ -97,7 +96,7 @@ class APSAuthService:
             self.logger.error(f"Error during 2-legged authentication: {e}")
             return None
 
-    async def get_access_token(self) -> Optional[str]:
+    async def get_access_token(self) -> str | None:
         """
         Get a valid access token, refreshing if necessary.
 
@@ -111,7 +110,7 @@ class APSAuthService:
 
         # Check if token is expired
         expiry_time = self._access_token.issued_at + timedelta(seconds=self._access_token.expires_in)
-        if datetime.now(timezone.utc) >= expiry_time:
+        if datetime.now(UTC) >= expiry_time:
             # Token expired, need to refresh or re-authenticate
             if self._access_token.refresh_token:
                 # Refresh token (for 3-legged auth)
@@ -124,7 +123,7 @@ class APSAuthService:
 
         return self._access_token.access_token
 
-    async def _refresh_token(self, refresh_token: str) -> Optional[APSToken]:
+    async def _refresh_token(self, refresh_token: str) -> APSToken | None:
         """
         Refresh access token using refresh token.
 
@@ -135,7 +134,7 @@ class APSAuthService:
             APSToken: New access token or None if failed
         """
         headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-type': 'application/x-www-form-urlencoded'
         }
 
         data = {
@@ -159,7 +158,7 @@ class APSAuthService:
                             expires_in=token_data['expires_in'],
                             token_type=token_data['token_type'],
                             scope=token_data['scope'],
-                            issued_at=datetime.now(timezone.utc)
+                            issued_at=datetime.now(UTC)
                         )
                         self.logger.info("Successfully refreshed access token")
                         return self._access_token
@@ -170,22 +169,22 @@ class APSAuthService:
             self.logger.error(f"Error during token refresh: {e}")
             return None
 
-    def get_auth_headers(self) -> Dict[str, str]:
+    def get_auth_headers(self) -> dict[str, str]:
         """
         Get authentication headers for API requests.
 
         Returns:
-            Dict[str, str]: Authentication headers
+            dict[str, str]: Authentication headers
         """
         token = asyncio.run(self.get_access_token()) if self._access_token else None
         if token:
             return {
                 'Authorization': f'Bearer {token}',
-                'Content-Type': 'application/json'
+                'Content-type': 'application/json'
             }
         else:
             return {
-                'Content-Type': 'application/json'
+                'Content-type': 'application/json'
             }
 
 

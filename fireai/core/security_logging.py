@@ -47,7 +47,7 @@ import logging
 import os
 import re
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -587,7 +587,7 @@ class SecurityAuditLogger:
 
         """
         with self._lock:
-            timestamp = datetime.now(timezone.utc).isoformat()
+            timestamp = datetime.now(UTC).isoformat()
 
             # Generate event ID
             event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode()).hexdigest()[:16]

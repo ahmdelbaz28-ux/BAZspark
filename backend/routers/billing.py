@@ -30,12 +30,12 @@ Security
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated  # type: ignore[attr-defined]
+    from typing import Annotated  # type: ignore[attr-defined]
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/billing", tags=["Billing & Meeza Payments"])
 
 # ── Annotated dependency aliases ─────────────────────────────────────────────
-Principal = Annotated[Optional[str], Depends(get_current_principal)]
+Principal = Annotated[str | None, Depends(get_current_principal)]
 BillingManageRole = Annotated[None, Depends(require_permission(Permission.BILLING_MANAGE))]
 
 # ── Reused constants (SonarCloud S1192 — avoid literal duplication) ─────────
@@ -67,17 +67,17 @@ class OrderCreateRequest(BaseModel):
         description="Amount in smallest currency unit (piastres for EGP).",
         examples=[50000],  # 500.00 EGP
     )
-    currency: Optional[str] = Field(
+    currency: str | None = Field(
         default=None, min_length=3, max_length=3,
         description="ISO 4217 currency code. Defaults to EGP.",
     )
     description: str = Field(default="", max_length=500)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     expires_in_seconds: int = Field(default=1800, ge=60, le=86400)
 
 
 class CheckoutRequest(BaseModel):
-    billing_data: Dict[str, Any] = Field(
+    billing_data: dict[str, Any] = Field(
         default_factory=dict,
         description=(
             "Optional billing details passed to the PSP (email, first_name, "
@@ -93,11 +93,11 @@ class OrderResponse(BaseModel):
     currency: str
     status: str
     description: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     created_at: str
     updated_at: str
-    expires_at: Optional[str] = None
-    paid_at: Optional[str] = None
+    expires_at: str | None = None
+    paid_at: str | None = None
 
 
 class CheckoutResponse(BaseModel):
@@ -105,17 +105,17 @@ class CheckoutResponse(BaseModel):
     transaction_id: str
     checkout_url: str
     method: str  # "iframe" | "redirect" | "sandbox"
-    raw: Dict[str, Any]
+    raw: dict[str, Any]
 
 
 class WebhookResponse(BaseModel):
     status: str   # "processed" | "duplicate" | "rejected"
     http_status: int
-    order_id: Optional[str] = None
-    transaction_status: Optional[str] = None
-    order_status: Optional[str] = None
-    idempotency_key: Optional[str] = None
-    reason: Optional[str] = None
+    order_id: str | None = None
+    transaction_status: str | None = None
+    order_status: str | None = None
+    idempotency_key: str | None = None
+    reason: str | None = None
 
 
 # ── Shared HTTPException helpers ─────────────────────────────────────────────
@@ -123,7 +123,7 @@ class WebhookResponse(BaseModel):
 # via the `responses=` parameter. Centralising the exception instances here
 # keeps the response docs DRY (one place to update status codes / examples).
 
-def _require_principal(principal: Optional[str]) -> str:
+def _require_principal(principal: str | None) -> str:
     """Return the principal or raise 401. Used by every authenticated endpoint."""
     if not principal:
         raise HTTPException(
@@ -162,7 +162,7 @@ _ERROR_502 = {"description": "PSP communication error", "content": {_CONTENT_TYP
 async def create_order(
     body: OrderCreateRequest,
     principal: Principal,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new order. The caller's principal is taken from the auth
     middleware — never trust a client-supplied user id."""
     user = _require_principal(principal)
@@ -183,16 +183,16 @@ async def create_order(
 
 @router.get(
     "/orders",
-    response_model=List[OrderResponse],
-    summary="List caller's orders",
+    response_model=list[OrderResponse],
+    summary="list caller's orders",
     responses={401: _ERROR_401},
 )
 async def list_orders(
     principal: Principal,
     limit: int = 50,
     offset: int = 0,
-    status_filter: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    status_filter: str | None = None,
+) -> list[dict[str, Any]]:
     user = _require_principal(principal)
     return svc.list_orders(
         user_principal=user,
@@ -210,7 +210,7 @@ async def list_orders(
 async def get_order(
     order_id: str,
     principal: Principal,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     user = _require_principal(principal)
     order = svc.get_order(order_id, user_principal=user)
     if order is None:
@@ -231,7 +231,7 @@ async def initiate_checkout(
     order_id: str,
     body: CheckoutRequest,
     principal: Principal,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     user = _require_principal(principal)
     try:
         return svc.initiate_checkout(
@@ -266,7 +266,7 @@ async def get_transaction(
     txn_id: str,
     principal: Principal,
     _: BillingManageRole,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a single transaction. Restricted to BILLING_MANAGE role because
     transactions may span multiple users (e.g. admin reconciliation)."""
     _require_principal(principal)
@@ -278,13 +278,13 @@ async def get_transaction(
 
 @router.get(
     "/orders/{order_id}/transactions",
-    summary="List transactions for an order",
+    summary="list transactions for an order",
     responses={401: _ERROR_401, 404: _ERROR_404},
 )
 async def list_transactions_for_order(
     order_id: str,
     principal: Principal,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     user = _require_principal(principal)
     # Authorise: caller must own the order
     order = svc.get_order(order_id, user_principal=user)
@@ -295,14 +295,14 @@ async def list_transactions_for_order(
 
 @router.get(
     "/orders/{order_id}/events",
-    summary="List webhook events for an order (audit trail)",
+    summary="list webhook events for an order (audit trail)",
     responses={401: _ERROR_401, 403: _ERROR_403, 404: _ERROR_404},
 )
 async def list_events_for_order(
     order_id: str,
     principal: Principal,
     _: BillingManageRole,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     user = _require_principal(principal)
     order = svc.get_order(order_id, user_principal=user)
     if order is None:
@@ -323,7 +323,7 @@ async def meeza_webhook(
     x_meeza_signature: Annotated[str, Header(alias="X-Meeza-Signature")] = "",
     # Common alternative header names used by PSPs:
     signature: Annotated[str, Header()] = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Receive a Meeza webhook from the PSP.
 
     The raw body is read BEFORE any parsing so HMAC verification uses the
@@ -361,7 +361,7 @@ async def simulate_webhook(
     order_id: str,
     _: BillingManageRole,
     txn_status: str = "SUCCESS",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Test-only endpoint to drive webhook flow without a live PSP.
 
     Only included in the OpenAPI schema when MEEZA_PSP_PROVIDER=sandbox.

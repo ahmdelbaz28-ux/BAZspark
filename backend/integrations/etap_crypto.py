@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -25,7 +24,7 @@ def _get_key() -> bytes:
       2. ENCRYPTION_KEY (shared master key, already configured in deploy.yml)
       3. Raise OSError if neither is set
     """
-    key: Optional[str] = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
+    key: str | None = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
     if not key:
         is_production = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
         if is_production:

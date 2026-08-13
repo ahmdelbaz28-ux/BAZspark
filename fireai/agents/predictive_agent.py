@@ -13,7 +13,7 @@ import json
 import logging
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fireai.agents.learning_agent import LearningAgent
@@ -75,7 +75,7 @@ class FutureState:
     risks: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
     confidence: float = 0.0
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -92,7 +92,7 @@ class WhatIfResult:
     delta_coverage: float = 0.0
     delta_compliance: str = "no_change"
     recommendation: str = ""
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

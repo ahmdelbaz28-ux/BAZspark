@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import logging
 import os
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 # Re-export BIMRoom from revit_bim_sync for backward compatibility.
@@ -82,7 +82,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class BIMProviderCapability(str, Enum):
+class BIMProviderCapability(StrEnum):
     """
     Capabilities a BIM provider may declare.
 

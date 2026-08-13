@@ -18,7 +18,7 @@ import sqlite3
 import threading
 import uuid
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from backend.schemas import (
@@ -347,7 +347,7 @@ class DatabaseService:
         """Create a new project."""
         with self._service_lock:
             project_id = str(uuid.uuid4())
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
 
             project_dict = {
                 "project_id": project_id,
@@ -435,7 +435,7 @@ class DatabaseService:
             if project is None:
                 return None
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
 
             # Apply updates
             if update_data.name is not None:
@@ -1592,7 +1592,7 @@ class DatabaseService:
             projects = list(self._projects.values())
 
             return {
-                "export_timestamp": datetime.now(timezone.utc).isoformat(),
+                "export_timestamp": datetime.now(UTC).isoformat(),
                 "projects": projects,
                 "elements": exported_elements,
                 "connections": connections,

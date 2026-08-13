@@ -40,7 +40,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class UniversalDataModel:
     and concurrent access.
     """
 
-    def __init__(self, db_path: Union[str, Path] = ":memory:"):
+    def __init__(self, db_path: str | Path = ":memory:"):
         """
         Initialize the Universal Data Model.
 
@@ -162,7 +162,7 @@ class UniversalDataModel:
             conn.isolation_level = old_isolation
 
     def add_element(self, element_id: str, name: str = None, type: str = None,
-                    properties: Dict[str, Any] = None, geometry: Dict[str, Any] = None) -> bool:
+                    properties: dict[str, Any] = None, geometry: dict[str, Any] = None) -> bool:
         """Add a new element to the database."""
         with self._lock:
             conn = self._get_connection()
@@ -185,7 +185,7 @@ class UniversalDataModel:
                 # Element ID already exists
                 return False
 
-    def get_element(self, element_id: str) -> Optional[Dict[str, Any]]:
+    def get_element(self, element_id: str) -> dict[str, Any] | None:
         """Retrieve an element by ID."""
         conn = self._get_connection()
         cursor = conn.execute("""
@@ -260,7 +260,7 @@ class UniversalDataModel:
 
     def add_relationship(self, relationship_id: str, source_element_id: str,
                         target_element_id: str, relationship_type: str,
-                        properties: Dict[str, Any] = None) -> bool:
+                        properties: dict[str, Any] = None) -> bool:
         """Add a relationship between two elements."""
         with self._lock:
             conn = self._get_connection()
@@ -284,7 +284,7 @@ class UniversalDataModel:
                 # Relationship ID already exists
                 return False
 
-    def get_relationships(self, element_id: str, relationship_type: str = None) -> List[Dict[str, Any]]:
+    def get_relationships(self, element_id: str, relationship_type: str = None) -> list[dict[str, Any]]:
         """Get relationships for an element."""
         conn = self._get_connection()
 
@@ -312,7 +312,7 @@ class UniversalDataModel:
 
         return results
 
-    def get_elements_by_type(self, element_type: str) -> List[Dict[str, Any]]:
+    def get_elements_by_type(self, element_type: str) -> list[dict[str, Any]]:
         """Get all elements of a specific type."""
         conn = self._get_connection()
         cursor = conn.execute("""
@@ -359,7 +359,7 @@ class UniversalDataModel:
             except Exception:
                 return False
 
-    def get_semantic_properties(self, element_id: str) -> Dict[str, Any]:
+    def get_semantic_properties(self, element_id: str) -> dict[str, Any]:
         """Get all semantic properties for an element."""
         conn = self._get_connection()
         cursor = conn.execute("""

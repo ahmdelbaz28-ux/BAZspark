@@ -8,7 +8,7 @@ shared between v1 project-scoped connections and v2 relationship connections.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Optional
+from typing import Any
 
 from backend.database import get_db
 
@@ -16,7 +16,7 @@ from backend.database import get_db
 class ConnectionService:
     """Unified service layer for connection operations."""
 
-    SORT_MAP: Dict[str, str] = {
+    SORT_MAP: dict[str, str] = {
         "createdAt": "created_at",
         "cableSize": "cable_size",
         "length": "length",
@@ -42,7 +42,7 @@ class ConnectionService:
         return db.get_project(project_id) is not None
 
     @classmethod
-    def get_device(cls, project_id: str, device_id: str) -> Optional[Any]:
+    def get_device(cls, project_id: str, device_id: str) -> Any | None:
         """Fetch device by project ID and device ID."""
         db = get_db()
         return db.get_device(project_id, device_id)

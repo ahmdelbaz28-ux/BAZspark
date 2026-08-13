@@ -25,7 +25,6 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 logger = logging.getLogger("fireai.integration.document_intelligence")
 
@@ -48,29 +47,29 @@ class OCRWord:
     """A single word detected by OCR with bounding box."""
     value: str
     confidence: float
-    geometry: List[List[float]]  # [[x1,y1], [x2,y2]] normalized 0-1
+    geometry: list[list[float]]  # [[x1,y1], [x2,y2]] normalized 0-1
 
 
 @dataclass
 class OCRLine:
     """A line of text detected by OCR."""
-    words: List[OCRWord]
-    geometry: List[List[float]]
+    words: list[OCRWord]
+    geometry: list[list[float]]
 
 
 @dataclass
 class OCRBlock:
     """A text block detected by OCR."""
-    lines: List[OCRLine]
-    geometry: List[List[float]]
+    lines: list[OCRLine]
+    geometry: list[list[float]]
 
 
 @dataclass
 class OCRPageResult:
     """OCR result for a single page."""
     page_idx: int
-    dimensions: Tuple[int, int]  # (width, height) in pixels
-    blocks: List[OCRBlock]
+    dimensions: tuple[int, int]  # (width, height) in pixels
+    blocks: list[OCRBlock]
     processing_time: float
 
     @property
@@ -88,7 +87,7 @@ class OCRPageResult:
 class SegmentBox:
     """A layout segment detected by YOLO."""
     segment_type: str  # "text", "title", "table", "figure", "list", "caption", etc.
-    bbox: Tuple[float, float, float, float]  # (left, top, width, height) in pixels
+    bbox: tuple[float, float, float, float]  # (left, top, width, height) in pixels
     confidence: float
 
 
@@ -96,18 +95,18 @@ class SegmentBox:
 class SegmentationResult:
     """YOLO layout segmentation result for a single page."""
     page_idx: int
-    image_size: Tuple[int, int]  # (height, width)
-    segments: List[SegmentBox]
+    image_size: tuple[int, int]  # (height, width)
+    segments: list[SegmentBox]
 
 
 @dataclass
 class DocumentIntelligenceResult:
     """Combined OCR + segmentation result."""
     success: bool
-    ocr_pages: List[OCRPageResult] = field(default_factory=list)
-    segmentation_pages: List[SegmentationResult] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    ocr_pages: list[OCRPageResult] = field(default_factory=list)
+    segmentation_pages: list[SegmentationResult] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def full_text(self) -> str:
@@ -141,7 +140,7 @@ def is_yolo_available() -> bool:
 
 # ─── DocTR OCR Integration ───────────────────────────────────────────────────
 
-def ocr_image(image_bytes: bytes) -> Optional[List[OCRPageResult]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def ocr_image(image_bytes: bytes) -> list[OCRPageResult] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Send image bytes to DocTR OCR service and get structured text back.
 
@@ -149,7 +148,7 @@ def ocr_image(image_bytes: bytes) -> Optional[List[OCRPageResult]]:  # NOSONAR �
         image_bytes: Raw image bytes (PNG/JPEG)
 
     Returns:
-        List of OCRPageResult, or None if service unavailable.
+        list of OCRPageResult, or None if service unavailable.
     """
     try:
         import requests
@@ -208,7 +207,7 @@ def ocr_image(image_bytes: bytes) -> Optional[List[OCRPageResult]]:  # NOSONAR �
 
 # ─── YOLO Segmentation Integration ──────────────────────────────────────────
 
-def segment_image(image_bytes: bytes) -> Optional[List[SegmentationResult]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def segment_image(image_bytes: bytes) -> list[SegmentationResult] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Send image bytes to YOLO segmentation service and get layout segments.
 
@@ -216,7 +215,7 @@ def segment_image(image_bytes: bytes) -> Optional[List[SegmentationResult]]:  # 
         image_bytes: Raw image bytes (PNG/JPEG)
 
     Returns:
-        List of SegmentationResult, or None if service unavailable.
+        list of SegmentationResult, or None if service unavailable.
     """
     try:
         import requests
@@ -274,7 +273,7 @@ def segment_image(image_bytes: bytes) -> Optional[List[SegmentationResult]]:  # 
 # ─── Combined Document Intelligence ──────────────────────────────────────────
 
 def analyze_document(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    page_images: List[bytes],
+    page_images: list[bytes],
     enable_ocr: bool = True,
     enable_segmentation: bool = True,
 ) -> DocumentIntelligenceResult:
@@ -282,7 +281,7 @@ def analyze_document(  # NOSONAR — S3776: cognitive complexity is inherent to 
     Analyze a document (list of page images) using DocTR OCR + YOLO segmentation.
 
     Args:
-        page_images: List of page image bytes (PNG/JPEG)
+        page_images: list of page image bytes (PNG/JPEG)
         enable_ocr: Whether to run OCR (default True)
         enable_segmentation: Whether to run layout segmentation (default True)
 
@@ -337,7 +336,7 @@ def analyze_document(  # NOSONAR — S3776: cognitive complexity is inherent to 
 
 # ─── Helper: Render PDF page to image ────────────────────────────────────────
 
-def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -> Optional[bytes]:
+def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -> bytes | None:
     """
     Render a PDF page as a PNG image for OCR/segmentation.
 
@@ -375,7 +374,7 @@ def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -
         return None
 
 
-def render_all_pdf_pages(pdf_path: str, dpi: int = 200) -> List[bytes]:
+def render_all_pdf_pages(pdf_path: str, dpi: int = 200) -> list[bytes]:
     """
     Render all pages of a PDF as PNG images.
 
@@ -384,7 +383,7 @@ def render_all_pdf_pages(pdf_path: str, dpi: int = 200) -> List[bytes]:
         dpi: Resolution for rendering
 
     Returns:
-        List of PNG image bytes (one per page).
+        list of PNG image bytes (one per page).
     """
     try:
         import fitz

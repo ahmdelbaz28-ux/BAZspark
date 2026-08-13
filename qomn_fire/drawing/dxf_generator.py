@@ -12,7 +12,6 @@ try:
 except ImportError:
     ezdxf = None
 
-from typing import Tuple
 
 
 def create_document():
@@ -41,9 +40,9 @@ def setup_layers(doc):
 
 def add_viewport(
     doc,
-    center: Tuple[float, float],
-    size: Tuple[float, float],
-    view_center: Tuple[float, float],
+    center: tuple[float, float],
+    size: tuple[float, float],
+    view_center: tuple[float, float],
     view_height: float
 ):
     if ezdxf is None:

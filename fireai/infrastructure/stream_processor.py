@@ -19,9 +19,10 @@ import logging
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fireai.infrastructure.event_bus import Event
 
@@ -79,13 +80,13 @@ class WindowedAggregation:
         self._lock = threading.Lock()
 
     def add(self, key: str, value: float, timestamp: datetime | None = None) -> None:
-        ts = timestamp or datetime.now(timezone.utc)
+        ts = timestamp or datetime.now(UTC)
         with self._lock:
             self._windows[key].append((ts, value))
             self._prune(key)
 
     def _prune(self, key: str) -> None:
-        cutoff = datetime.now(timezone.utc) - self._window_spec.duration
+        cutoff = datetime.now(UTC) - self._window_spec.duration
         self._windows[key] = [
             (ts, v) for ts, v in self._windows[key] if ts >= cutoff
         ]

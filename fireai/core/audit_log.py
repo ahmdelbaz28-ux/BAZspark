@@ -29,7 +29,7 @@ import sqlite3
 import threading
 import uuid
 from dataclasses import asdict, dataclass, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # Sentinel: first entry in the chain has this as prev_entry_hash
 GENESIS_PREV_HASH = "0" * 64
@@ -147,7 +147,7 @@ def create_audit_entry(
     if entry_id is None:
         entry_id = str(uuid.uuid4())
     if timestamp is None:
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
 
     entry = AuditEntry(
         entry_id=entry_id,
@@ -356,7 +356,7 @@ class AuditLog:
         col_names = [desc[0] for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description]
 
         for row in all_rows:
-            row_dict = dict(zip(col_names, row))
+            row_dict = dict(zip(col_names, row, strict=False))
             try:
                 entry = self._row_to_entry(row_dict)
             except Exception as exc:
@@ -395,7 +395,7 @@ class AuditLog:
             if row is None:
                 return None
             col_names = [desc[0] for desc in cur.description]
-            return self._row_to_entry(dict(zip(col_names, row)))
+            return self._row_to_entry(dict(zip(col_names, row, strict=False)))
 
     def get_analysis(self, analysis_id: str) -> list[AuditEntry]:
         """
@@ -414,7 +414,7 @@ class AuditLog:
                 (analysis_id,),
             )
             col_names = [desc[0] for desc in cur.description]
-            return [self._row_to_entry(dict(zip(col_names, row))) for row in cur.fetchall()]
+            return [self._row_to_entry(dict(zip(col_names, row, strict=False))) for row in cur.fetchall()]
 
     def export_json(self, analysis_id: str) -> str:
         """

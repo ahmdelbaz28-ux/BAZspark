@@ -23,8 +23,8 @@ import io
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -68,7 +68,7 @@ def _verify_project(project_id: str) -> None:
 
 def _compute_voltage_drop_for_circuit(
     conn: dict, from_dev: dict, to_dev: dict, qomn_available: bool
-) -> Tuple[dict, str]:
+) -> tuple[dict, str]:
     """Compute voltage-drop fields for a single circuit.
 
     Returns ``(circuit, status)`` where status is one of:
@@ -246,7 +246,7 @@ _MM2_TO_AWG = {
 }
 
 
-def _cable_size_to_awg(cable_size: str) -> Optional[str]:
+def _cable_size_to_awg(cable_size: str) -> str | None:
     """
     Convert a cable size string to an AWG gauge string.
 
@@ -550,7 +550,7 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     }
 
 
-def _verify_cable_ampacity(conn: dict, to_dev: dict, nec_table: dict) -> Tuple[dict, str]:
+def _verify_cable_ampacity(conn: dict, to_dev: dict, nec_table: dict) -> tuple[dict, str]:
     """Verify NEC ampacity for a single cable connection.
 
     Returns ``(fields, status)`` where status is one of:
@@ -631,12 +631,12 @@ def _generate_cable_sizing_report(connections: list, devices: list, now: str) ->
     ``"verification": "skipped"`` so the user can see them.
 
     Args:
-        connections: List of connection dicts from DB (with cableSize, length, type).
-        devices: List of device dicts from DB (to resolve load currents).
+        connections: list of connection dicts from DB (with cableSize, length, type).
+        devices: list of device dicts from DB (to resolve load currents).
         now: ISO timestamp for the report.
 
     Returns:
-        Dict with report content including per-connection ampacity verification.
+        dict with report content including per-connection ampacity verification.
     """
     # Build device lookup to resolve load currents
     device_map = {d["id"]: d for d in devices}
@@ -741,7 +741,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
     devices = db.get_all_devices_for_project(project_id)
     connections = db.get_all_connections_for_project(project_id)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     if report_type == "voltage_drop":
         return _generate_voltage_drop_report(devices, connections, now)
@@ -758,7 +758,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
 
 def _count_by_category(devices: list) -> dict:
     """Count devices by category."""
-    counts: Dict[str, int] = {}
+    counts: dict[str, int] = {}
     for d in devices:
         cat = d.get("category", "unknown")
         counts[cat] = counts.get(cat, 0) + 1
@@ -793,7 +793,7 @@ async def list_reports(
 ):
     if order not in ("asc", "desc"):
         order = "desc"
-    """List all reports for a project."""
+    """list all reports for a project."""
     _verify_project(project_id)
     db = get_db()
     result = db.list_reports(
@@ -828,7 +828,7 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
     # Generate report content (synchronously for simplicity)
     try:
         content = _generate_report_content(report_type, project_id)
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         db.update_report(
             project_id,
             report["id"],
@@ -902,7 +902,7 @@ async def generate_global_report(request: Request, input_data: GenerateReportInp
 
     try:
         content = _generate_report_content(report_type, project_id)
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         db.update_report(
             project_id,
             report["id"],
@@ -1009,7 +1009,7 @@ def _build_pdf_report(report, report_id):
 
     story.append(Paragraph(f"FireAI Report: {report['name']}", styles["Title"]))
     story.append(
-        Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles["Normal"])
+        Paragraph(f"type: {report['type']} | Status: {report['status']}", styles["Normal"])
     )
     story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles["Normal"]))
     story.append(Spacer(1, 10 * mm))
@@ -1048,7 +1048,7 @@ def _build_dxf_report(report, report_id):
         dxfattribs={"height": 0.5, "insert": (0, 10)},
     )
     msp.add_text(
-        f"Type: {report['type']}",
+        f"type: {report['type']}",
         dxfattribs={"height": 0.3, "insert": (0, 9)},
     )
     msp.add_text(
@@ -1169,7 +1169,7 @@ class AhjSubmittalRequest(BaseModel):
     designer: str = PydField("", description="Designer name + PE license #")
     jurisdiction: str = PydField("", description="AHJ jurisdiction name")
     nfpa_edition: str = PydField("2022", description="NFPA 72 edition")
-    rooms: Optional[List[AhjRoomInput]] = PydField(
+    rooms: list[AhjRoomInput] | None = PydField(
         None,
         description="Optional list of rooms. If omitted, a single room is "
         "derived from the device bounding box.",

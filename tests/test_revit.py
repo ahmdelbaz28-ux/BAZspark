@@ -267,7 +267,7 @@ class TestRevitFileOperations:
             )
 
             # Verify the IFC file contains the element names
-            with open(ifc_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(ifc_path, encoding="utf-8", errors="ignore") as f:
                 ifc_content = f.read()
             assert "Exterior Wall" in ifc_content, "IFC file must contain 'Exterior Wall'"
             assert "Foundation Slab" in ifc_content, "IFC file must contain 'Foundation Slab'"
@@ -723,7 +723,7 @@ class TestV214ReadRvtNoHardcodedElements:
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "revit_service.py")
         src_path = os.path.normpath(src_path)
-        with open(src_path, "r", encoding="utf-8") as f:
+        with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
         # Look for "id": "12345" or "id": "12346" or "id": "12347" in code

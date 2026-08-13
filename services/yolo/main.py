@@ -14,7 +14,6 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from typing import List
 
 import torch
 import uvicorn
@@ -82,10 +81,10 @@ class BoundingBoxOutput(BaseModel):
 
 
 class InstanceOutput(BaseModel):
-    boxes: List[BoundingBoxOutput]
-    scores: List[float]
-    classes: List[str]
-    image_size: List[int]
+    boxes: list[BoundingBoxOutput]
+    scores: list[float]
+    classes: list[str]
+    image_size: list[int]
 
 
 class FinalPrediction(BaseModel):
@@ -116,10 +115,10 @@ def map_yolo_class(cls_idx: int) -> str:
 # ─── Processing ──────────────────────────────────────────────────────────────
 
 async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    image_data_list: List[bytes],
+    image_data_list: list[bytes],
     conf: float = None,
     img_size: int = None,
-) -> List[FinalPrediction]:
+) -> list[FinalPrediction]:
     if conf is None:
         conf = conf_threshold
     if img_size is None:
@@ -189,7 +188,7 @@ async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inh
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 @app.post("/batch")
-async def batch_segment(files: List[UploadFile] = File(...)):  # NOSONAR - python:S8410
+async def batch_segment(files: list[UploadFile] = File(...)):  # NOSONAR - python:S8410
     """Process a batch of images and return layout segmentation results."""
     image_data_list = []
     for file in files:

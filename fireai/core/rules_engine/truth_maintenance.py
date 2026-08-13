@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class DependencyRecord:
     derived_fact_id: str
     supporting_fact_ids: list[str]
     producing_rule_id: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def is_still_valid(self, existing_fact_ids: set[str]) -> bool:
         """Check if all supporting facts still exist."""
@@ -172,7 +172,7 @@ class TruthMaintenanceSystem:
                     "fact_id": affected_id,
                     "retracted_because": retracted_fact_id,
                     "producing_rule": dep.producing_rule_id if dep else "unknown",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "reason": reason,
                 }
             )

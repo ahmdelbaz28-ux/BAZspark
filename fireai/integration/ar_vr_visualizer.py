@@ -35,7 +35,7 @@ import math
 import struct
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -45,14 +45,14 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class SceneFormat(str, Enum):
+class SceneFormat(StrEnum):
     THREEJS = "THREEJS"
     GLTF = "GLTF"
     AFRAME = "AFRAME"
     USDZ = "USDZ"
 
 
-class DetectorColor(str, Enum):
+class DetectorColor(StrEnum):
     SMOKE = "#2196F3"
     HEAT = "#F44336"
     COMBINATION = "#9C27B0"

@@ -13,7 +13,7 @@ import asyncio
 import os
 import time
 from contextlib import asynccontextmanager
-from typing import Generic, List, Optional, TypeVar
+from typing import TypeVar
 
 import torch
 from dotenv import load_dotenv
@@ -67,38 +67,40 @@ os.environ["USE_TF"] = "NO"
 
 # ─── Models ──────────────────────────────────────────────────────────────────
 
-class Detection(GenericModel, Generic[TypeVar("T")]):
-    value: Optional[TypeVar("T")]
-    confidence: Optional[float]
+T = TypeVar("T")
+
+class Detection[T](GenericModel):
+    value: T | None
+    confidence: float | None
 
 
 class Word(BaseModel):
     value: str
     confidence: float
-    geometry: List[List[float]]
+    geometry: list[list[float]]
     objectness_score: float
     crop_orientation: Detection[int]
 
 
 class Line(BaseModel):
-    geometry: List[List[float]]
+    geometry: list[list[float]]
     objectness_score: float
-    words: List[Word]
+    words: list[Word]
 
 
 class Block(BaseModel):
-    geometry: List[List[float]]
+    geometry: list[list[float]]
     objectness_score: float
-    lines: List[Line]
-    artefacts: List[str]
+    lines: list[Line]
+    artefacts: list[str]
 
 
 class PageContent(BaseModel):
     page_idx: int
-    dimensions: List[int]
+    dimensions: list[int]
     orientation: Detection[float]
     language: Detection[str]
-    blocks: List[Block]
+    blocks: list[Block]
 
 
 class OCRResponse(BaseModel):
@@ -108,7 +110,7 @@ class OCRResponse(BaseModel):
 
 # ─── Processing ──────────────────────────────────────────────────────────────
 
-async def process_ocr_batch(image_bytes_list: List[bytes]) -> List[OCRResponse]:
+async def process_ocr_batch(image_bytes_list: list[bytes]) -> list[OCRResponse]:
     from doctr.io import DocumentFile
 
     doc = await asyncio.get_event_loop().run_in_executor(
@@ -180,7 +182,7 @@ app = FastAPI(lifespan=lifespan, title="FireAI DocTR OCR Service")
 
 
 @app.post("/batch")
-async def batch_ocr(files: List[UploadFile] = File(...)):  # NOSONAR - python:S8410
+async def batch_ocr(files: list[UploadFile] = File(...)):  # NOSONAR - python:S8410
     """Process a batch of images and return OCR results with bounding boxes."""
     tasks = []
     for file in files:

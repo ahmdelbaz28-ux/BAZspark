@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Generic, List, Set, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from parsers._path_security import UnsafePathError, validate_file_size, validate_input_path
 
@@ -13,15 +13,15 @@ T = TypeVar('T')
 
 
 @dataclass
-class ParseResult(Generic[T]):
+class ParseResult[T]:
     """Generic parse result with typed data payload.
 
-    T is the parser-specific data type (e.g., List[ParsedRoom], BuildingModel).
+    T is the parser-specific data type (e.g., list[ParsedRoom], BuildingModel).
     Common metadata (source_file, success, errors, warnings) is lifted out
     of individual result types.
 
     Usage:
-        def parse(self, path: str) -> ParseResult[List[ParsedRoom]]:
+        def parse(self, path: str) -> ParseResult[list[ParsedRoom]]:
             data = parse_internal(path)
             return ParseResult(source_file=path, success=True, data=data)
     """
@@ -29,12 +29,12 @@ class ParseResult(Generic[T]):
     source_file: str
     success: bool
     data: T
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class ParserBase(ABC):
-    allowed_extensions: ClassVar[Set[str]] = set()
+    allowed_extensions: ClassVar[set[str]] = set()
     max_file_size_bytes: ClassVar[int] = 50 * 1024 * 1024
 
     def validate_input(self, filepath: str) -> str:

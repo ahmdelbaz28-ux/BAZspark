@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path("/home/z/my-project/work/revit")
@@ -100,11 +100,11 @@ def classify_ruff_issues(issues: list) -> dict:
 def main() -> int:  # NOSONAR
     print("=" * 70)
     print("LOCAL STATIC ANALYSIS — Proxy for SonarQube Scan")
-    print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
+    print(f"Timestamp: {datetime.now(UTC).isoformat()}")
     print("=" * 70)
 
     report = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "tools": {"ruff": subprocess.run([RUFF, "--version"], capture_output=True, text=True).stdout.strip(),
                   "bandit": "1.9.4"},
         "critical_files": {},

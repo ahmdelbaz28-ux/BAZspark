@@ -7,8 +7,8 @@ AI agent for inspecting BIM models, extracting electrical assets, and synchroniz
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from revit_integration.dto.revit_dto import ElectricalAssetDTO, RevitElementDTO
 from revit_integration.events.event_publisher import RevitEventPublisher
@@ -36,22 +36,22 @@ class RevitAgent:
             "digital_twin_synchronization"
         ]
 
-    async def inspect_bim_model(self, project_id: str, model_data: List[RevitElementDTO]) -> Dict[str, Any]:
+    async def inspect_bim_model(self, project_id: str, model_data: list[RevitElementDTO]) -> dict[str, Any]:
         """
         Inspect BIM model for completeness and quality.
 
         Args:
             project_id: ID of the project
-            model_data: List of model elements
+            model_data: list of model elements
 
         Returns:
-            Dict: Inspection results
+            dict: Inspection results
         """
         self.logger.info(f"Inspecting BIM model for project {project_id}")
 
         inspection_results = {
             "project_id": project_id,
-            "inspection_date": datetime.now(timezone.utc).isoformat(),
+            "inspection_date": datetime.now(UTC).isoformat(),
             "total_elements": len(model_data),
             "categories_found": [],
             "issues_found": [],
@@ -124,20 +124,20 @@ class RevitAgent:
             "total_elements": total_elements,
             "issues_found": len(issues),
             "completeness_score": inspection_results["completeness_score"],
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
 
         return inspection_results
 
-    async def extract_electrical_assets(self, model_data: List[RevitElementDTO]) -> List[ElectricalAssetDTO]:
+    async def extract_electrical_assets(self, model_data: list[RevitElementDTO]) -> list[ElectricalAssetDTO]:
         """
         Extract electrical assets from BIM model.
 
         Args:
-            model_data: List of model elements
+            model_data: list of model elements
 
         Returns:
-            List[ElectricalAssetDTO]: Extracted electrical assets
+            list[ElectricalAssetDTO]: Extracted electrical assets
         """
         self.logger.info(f"Extracting electrical assets from model with {len(model_data)} elements")
 
@@ -169,20 +169,20 @@ class RevitAgent:
         # Publish electrical assets extracted event
         await self.event_publisher.publish_event("ElectricalAssetsExtracted", {
             "asset_count": len(electrical_assets),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
 
         return electrical_assets
 
-    async def prepare_clash_detection_data(self, model_data: List[RevitElementDTO]) -> Dict[str, Any]:  # NOSONAR — S3776: clash detection must process all element types
+    async def prepare_clash_detection_data(self, model_data: list[RevitElementDTO]) -> dict[str, Any]:  # NOSONAR — S3776: clash detection must process all element types
         """
         Prepare data for clash detection analysis.
 
         Args:
-            model_data: List of model elements
+            model_data: list of model elements
 
         Returns:
-            Dict: Clash detection data
+            dict: Clash detection data
         """
         self.logger.info(f"Preparing clash detection data for {len(model_data)} elements")
 
@@ -215,7 +215,7 @@ class RevitAgent:
             "systems": systems,
             "element_count_by_system": {sys: len(elems) for sys, elems in systems.items()},
             "potential_conflict_zones": [],  # Would be populated with actual clash detection logic
-            "analysis_date": datetime.now(timezone.utc).isoformat()
+            "analysis_date": datetime.now(UTC).isoformat()
         }
 
         # Identify potential conflict zones based on overlapping locations
@@ -247,15 +247,15 @@ class RevitAgent:
 
         return clash_detection_data
 
-    async def validate_model(self, model_data: List[RevitElementDTO]) -> Dict[str, Any]:
+    async def validate_model(self, model_data: list[RevitElementDTO]) -> dict[str, Any]:
         """
         Validate BIM model against standards and requirements.
 
         Args:
-            model_data: List of model elements
+            model_data: list of model elements
 
         Returns:
-            Dict: Validation results
+            dict: Validation results
         """
         self.logger.info(f"Validating BIM model with {len(model_data)} elements")
 
@@ -266,7 +266,7 @@ class RevitAgent:
             "validation_rules_applied": [],
             "errors": [],
             "warnings": [],
-            "validation_date": datetime.now(timezone.utc).isoformat()
+            "validation_date": datetime.now(UTC).isoformat()
         }
 
         valid_count = 0
@@ -331,16 +331,16 @@ class RevitAgent:
 
         return validation_results
 
-    async def synchronize_with_digital_twin(self, project_id: str, model_data: List[RevitElementDTO]) -> Dict[str, Any]:
+    async def synchronize_with_digital_twin(self, project_id: str, model_data: list[RevitElementDTO]) -> dict[str, Any]:
         """
         Synchronize model data with the Digital Twin.
 
         Args:
             project_id: ID of the project
-            model_data: List of model elements to sync
+            model_data: list of model elements to sync
 
         Returns:
-            Dict: Synchronization results
+            dict: Synchronization results
         """
         self.logger.info(f"Synchronizing project {project_id} with {len(model_data)} elements to Digital Twin")
 
@@ -371,15 +371,15 @@ class RevitAgent:
 
         return sync_results
 
-    async def analyze_electrical_system(self, electrical_assets: List[ElectricalAssetDTO]) -> Dict[str, Any]:
+    async def analyze_electrical_system(self, electrical_assets: list[ElectricalAssetDTO]) -> dict[str, Any]:
         """
         Analyze the electrical system based on extracted assets.
 
         Args:
-            electrical_assets: List of electrical assets
+            electrical_assets: list of electrical assets
 
         Returns:
-            Dict: Electrical system analysis
+            dict: Electrical system analysis
         """
         self.logger.info(f"Analyzing electrical system with {len(electrical_assets)} assets")
 
@@ -390,7 +390,7 @@ class RevitAgent:
             "by_power_rating": {},
             "critical_assets": [],
             "system_topology": {},
-            "analysis_date": datetime.now(timezone.utc).isoformat()
+            "analysis_date": datetime.now(UTC).isoformat()
         }
 
         # Count by type
@@ -437,9 +437,9 @@ class RevitAgent:
 
         return analysis
 
-    async def generate_report(self, inspection_results: Dict[str, Any],
-                             validation_results: Dict[str, Any],
-                             analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_report(self, inspection_results: dict[str, Any],
+                             validation_results: dict[str, Any],
+                             analysis_results: dict[str, Any]) -> dict[str, Any]:
         """
         Generate a comprehensive report combining all analysis results.
 
@@ -449,12 +449,12 @@ class RevitAgent:
             analysis_results: Results from electrical analysis
 
         Returns:
-            Dict: Comprehensive report
+            dict: Comprehensive report
         """
         self.logger.info("Generating comprehensive Revit integration report")
 
         report = {
-            "report_date": datetime.now(timezone.utc).isoformat(),
+            "report_date": datetime.now(UTC).isoformat(),
             "executive_summary": {
                 "model_quality_score": inspection_results.get("completeness_score", 0),
                 "validation_score": validation_results.get("validation_score", 0),
@@ -490,9 +490,9 @@ class RevitAgent:
 
         return report
 
-    def _assess_risk(self, inspection_results: Dict[str, Any],
-                     validation_results: Dict[str, Any],
-                     analysis_results: Dict[str, Any]) -> str:
+    def _assess_risk(self, inspection_results: dict[str, Any],
+                     validation_results: dict[str, Any],
+                     analysis_results: dict[str, Any]) -> str:
         """
         Assess overall risk level based on all analysis results.
 

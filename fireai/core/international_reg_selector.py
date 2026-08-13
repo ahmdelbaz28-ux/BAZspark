@@ -28,7 +28,7 @@ Q3 (HIGH):         Unknown country raises UnknownCountryError (not silent warnin
 from __future__ import annotations
 
 import logging
-from enum import Enum
+from enum import StrEnum
 
 from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class HazardSystem(str, Enum):
+class HazardSystem(StrEnum):
     NEC_DIVISION = "NEC_DIVISION"  # USA (NFPA 70 Art. 500-506)
     CEC_ZONE = "CEC_ZONE"  # Canada (CEC Section 18, CSA C22.1)
     ATEX_ZONE = "ATEX_ZONE"  # EU, UK (2014/34/EU, EN 60079)
@@ -50,7 +50,7 @@ class HazardSystem(str, Enum):
     GB_ZONE = "GB_ZONE"  # China (GB 3836)
 
 
-class JurisdictionRegion(str, Enum):
+class JurisdictionRegion(StrEnum):
     USA = "USA"
     CANADA = "CANADA"
     EU = "EU"
@@ -76,7 +76,7 @@ class JurisdictionRegion(str, Enum):
     GLOBAL = "GLOBAL"
 
 
-class HazardClass(str, Enum):
+class HazardClass(StrEnum):
     CLASS_I = "CLASS_I"  # Flammable gases/vapors (NEC Art. 501)
     CLASS_II = "CLASS_II"  # Combustible dust (NEC Art. 502)
     CLASS_III = "CLASS_III"  # Ignitable fibers (NEC Art. 503)
@@ -84,12 +84,12 @@ class HazardClass(str, Enum):
     DUST = "DUST"  # Zone 20/21/22 or Div 1/2
 
 
-class NECDivision(str, Enum):
+class NECDivision(StrEnum):
     DIVISION_1 = "DIVISION_1"
     DIVISION_2 = "DIVISION_2"
 
 
-class ATEXZone(str, Enum):
+class ATEXZone(StrEnum):
     ZONE_0 = "ZONE_0"
     ZONE_1 = "ZONE_1"
     ZONE_2 = "ZONE_2"

@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ except ImportError:
 
 # ── Singleton Pattern ──────────────────────────────────────────────────────────
 
-_instance: Optional[SpeckleService] = None
+_instance: SpeckleService | None = None
 _lock = threading.Lock()
 
 
@@ -50,10 +50,10 @@ class SpeckleService:
 
     def __init__(self) -> None:
         self.simulation_mode = not HAS_SPECKLE
-        self._last_stream_id: Optional[str] = None
-        self._last_commit_id: Optional[str] = None
+        self._last_stream_id: str | None = None
+        self._last_commit_id: str | None = None
 
-    def push_to_speckle(self, stream_id: str, server_url: str, token: str, elements: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def push_to_speckle(self, stream_id: str, server_url: str, token: str, elements: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Push a list of element dictionaries to a Speckle stream.
         """
@@ -106,7 +106,7 @@ class SpeckleService:
             logger.exception("Error pushing data to Speckle: %s", e)
             return {"success": False, "error": str(e)}
 
-    def receive_from_speckle(self, stream_id: str, server_url: str, token: str) -> Dict[str, Any]:
+    def receive_from_speckle(self, stream_id: str, server_url: str, token: str) -> dict[str, Any]:
         """
         Pull the latest commit elements list from the main branch of a Speckle stream.
         """

@@ -1,9 +1,9 @@
 """Shared NFPA 170 device type enumeration for all parsers."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class DeviceType(str, Enum):
+class DeviceType(StrEnum):
     """NFPA 170 device classification symbols used across all parsers."""
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"

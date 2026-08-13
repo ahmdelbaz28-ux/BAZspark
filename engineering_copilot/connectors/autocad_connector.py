@@ -19,7 +19,7 @@ except ImportError:
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Add references to AutoCAD assemblies (these would be available when running inside AutoCAD)
 if HAS_CLR:
@@ -207,12 +207,12 @@ class AutoCADConnector:
             self.logger.error(f"Error saving drawing: {e}")
             raise
 
-    def read_drawing(self) -> Dict[str, Any]:
+    def read_drawing(self) -> dict[str, Any]:
         """
         Read the current drawing and extract entities.
 
         Returns:
-            Dict: Drawing data with entities
+            dict: Drawing data with entities
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -257,7 +257,7 @@ class AutoCADConnector:
             self.logger.error(f"Error creating layer {layer_name}: {e}")
             raise
 
-    def update_layer(self, layer_name: str, properties: Dict[str, Any]) -> bool:
+    def update_layer(self, layer_name: str, properties: dict[str, Any]) -> bool:
         """
         Update properties of an existing layer.
 
@@ -279,13 +279,13 @@ class AutoCADConnector:
             self.logger.error(f"Error updating layer {layer_name}: {e}")
             raise
 
-    def create_block(self, block_name: str, entities: List[BaseEntity]) -> str:
+    def create_block(self, block_name: str, entities: list[BaseEntity]) -> str:
         """
         Create a new block definition in AutoCAD.
 
         Args:
             block_name: Name of the block
-            entities: List of entities to include in the block
+            entities: list of entities to include in the block
 
         Returns:
             str: Block ID
@@ -358,12 +358,12 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing line: {e}")
             raise
 
-    def draw_polyline(self, points: List[Coordinates], _layer: str = "0") -> str:
+    def draw_polyline(self, points: list[Coordinates], _layer: str = "0") -> str:
         """
         Draw a polyline in AutoCAD.
 
         Args:
-            points: List of coordinate points
+            points: list of coordinate points
             layer: Layer to draw on
 
         Returns:
@@ -435,7 +435,7 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing text: {e}")
             raise
 
-    def read_geometry(self, entity_id: str) -> Optional[Dict[str, Any]]:
+    def read_geometry(self, entity_id: str) -> dict[str, Any] | None:
         """
         Read geometric properties of an entity.
 
@@ -443,7 +443,7 @@ class AutoCADConnector:
             entity_id: ID of the entity to read
 
         Returns:
-            Dict: Geometry properties or None
+            dict: Geometry properties or None
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -462,7 +462,7 @@ class AutoCADConnector:
             self.logger.error(f"Error reading geometry for entity {entity_id}: {e}")
             return None
 
-    def read_attributes(self, entity_id: str) -> Dict[str, Any]:
+    def read_attributes(self, entity_id: str) -> dict[str, Any]:
         """
         Read attributes of an entity.
 
@@ -470,7 +470,7 @@ class AutoCADConnector:
             entity_id: ID of the entity to read
 
         Returns:
-            Dict: Attribute dictionary
+            dict: Attribute dictionary
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -511,7 +511,7 @@ class AutoCADConnector:
             self.logger.error(f"Error deleting entity {entity_id}: {e}")
             return False
 
-    def update_entity(self, entity_id: str, properties: Dict[str, Any]) -> bool:
+    def update_entity(self, entity_id: str, properties: dict[str, Any]) -> bool:
         """
         Update properties of an existing entity.
 
@@ -533,7 +533,7 @@ class AutoCADConnector:
             self.logger.error(f"Error updating entity {entity_id}: {e}")
             return False
 
-    def convert_to_unified_model(self, _drawing_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _drawing_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert AutoCAD drawing data to unified engineering model.
 
@@ -579,7 +579,7 @@ class AutoCADConnector:
         self.logger.info(f"Converted drawing to unified model with {len(model.entities)} entities")
         return model
 
-    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Convert unified engineering model to AutoCAD drawing commands.
 
@@ -587,7 +587,7 @@ class AutoCADConnector:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: AutoCAD drawing commands
+            dict: AutoCAD drawing commands
         """
         drawing_commands = {
             "operations": [],
@@ -633,15 +633,15 @@ class AutoCADConnector:
         self.logger.info(f"Converted unified model to {len(drawing_commands['operations'])} drawing operations")
         return drawing_commands
 
-    def batch_operation(self, operations: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def batch_operation(self, operations: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Execute a batch of operations in AutoCAD.
 
         Args:
-            operations: List of operation dictionaries
+            operations: list of operation dictionaries
 
         Returns:
-            Dict: Operation results
+            dict: Operation results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)

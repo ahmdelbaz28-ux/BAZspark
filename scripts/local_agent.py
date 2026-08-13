@@ -28,7 +28,7 @@ import os
 import sys
 import tempfile
 import time
-from typing import Any, Dict
+from typing import Any
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -119,7 +119,7 @@ class RevitNamedPipeDispatcher:
         except Exception:
             return False
 
-    def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def send(self, action: str, params: dict[str, Any]) -> dict[str, Any]:
         """Send a command and return the response dict."""
         import pywintypes  # type: ignore
         import win32file  # type: ignore
@@ -193,7 +193,7 @@ class AutoCADNamedPipeDispatcher:
         except Exception:
             return False
 
-    def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def send(self, action: str, params: dict[str, Any]) -> dict[str, Any]:
         """Send a command and return the response dict."""
         # V291 SAFETY FIX: pywintypes/win32file/win32pipe are Windows-only.
         # Previously this method imported them unconditionally at the top,
@@ -447,7 +447,7 @@ def _handle_autocad_modify_entity(svc, args):
         return {"error": "Failed to modify entity"}
     return {"success": True, "message": "Entity modified successfully"}
 
-def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _dispatch_autocad(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch an AutoCAD action locally and return the result dict.
 
@@ -640,7 +640,7 @@ def _handle_revit_execute_ai_command(svc, args):
     """Handle the 'execute_ai_command' action for Revit."""
     return svc.execute_ai_command(args.get("command", ""), args.get("context", {}))
 
-def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _dispatch_revit(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch a Revit action locally and return the result dict.
 
@@ -706,7 +706,7 @@ def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:  # NOSONAR — S3
         return {"error": f"Unknown Revit action: {action}"}
 
 
-def _dispatch(action_full: str, args: Dict[str, Any]) -> Any:
+def _dispatch(action_full: str, args: dict[str, Any]) -> Any:
     """Route action 'autocad/draw_line' or 'revit/create_wall' to the right service."""
     if "/" not in action_full:
         return {"error": f"Malformed action: {action_full!r}"}

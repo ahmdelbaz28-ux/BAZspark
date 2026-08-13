@@ -6,7 +6,7 @@ V214: Generates a structured report per MSHA 30 CFR Part 75 + NFPA 120.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fireai.mining.core.msha_compliance import MSHAComplianceReport
 
@@ -30,7 +30,7 @@ def generate_msha_report(
         return json.dumps({
             "mine_name": report.mine_name,
             "section_name": report.section_name,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "overall_status": report.overall_status,
             "checks": [
                 {
@@ -49,7 +49,7 @@ def generate_msha_report(
     lines = [
         f"# MSHA Compliance Report — {report.mine_name}",
         f"**Section:** {report.section_name}",
-        f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
         f"**Overall Status:** {report.overall_status}",
         "",
         "## Compliance Checks",

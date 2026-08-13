@@ -23,7 +23,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +38,10 @@ class SimReadyPipelineConfig:
     simready_profile: str = "Prop-Robotics-Neutral"
     profile_version: str = "1.0.0"
     property_assignment_intent: str = "run"  # "run", "skip", or "blocked"
-    content_agents_base_url: Optional[str] = None
+    content_agents_base_url: str | None = None
     render_preview: bool = True
     package_deliverable: bool = True
-    output_root: Optional[str] = None
+    output_root: str | None = None
 
 
 @dataclass
@@ -52,15 +52,15 @@ class SimReadyPipelineResult:
     source_asset_path: str
     source_format: str
     output_root: str
-    output_usd_path: Optional[str] = None
-    conformed_usd_path: Optional[str] = None
+    output_usd_path: str | None = None
+    conformed_usd_path: str | None = None
     simready_profile: str = "Prop-Robotics-Neutral"
     property_assignment_status: str = "skipped"
-    render_preview_path: Optional[str] = None
-    deliverable_root: Optional[str] = None
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    stage_reports: Dict[str, Any] = field(default_factory=dict)
+    render_preview_path: str | None = None
+    deliverable_root: str | None = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    stage_reports: dict[str, Any] = field(default_factory=dict)
 
 
 class SimReadyAdapter:
@@ -71,7 +71,7 @@ class SimReadyAdapter:
     for simulation/testing environments.
     """
 
-    def __init__(self, skill_path: Optional[str] = None, workspace_root: Optional[str] = None) -> None:
+    def __init__(self, skill_path: str | None = None, workspace_root: str | None = None) -> None:
         """Initialize the SimReadyAdapter.
 
         Args:
@@ -109,7 +109,7 @@ class SimReadyAdapter:
         }
         return mapping.get(ext, "unknown")
 
-    def run_preflight(self, output_dir: Path) -> Dict[str, Any]:
+    def run_preflight(self, output_dir: Path) -> dict[str, Any]:
         """Execute or verify preflight manifest setup."""
         preflight_script = self.references_dir / "preflight" / "scripts" / "preflight.py"
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -131,7 +131,7 @@ class SimReadyAdapter:
             try:
                 res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                 if res.returncode == 0 and json_report.exists():
-                    with open(json_report, "r", encoding="utf-8") as f:
+                    with open(json_report, encoding="utf-8") as f:
                         return json.load(f)
             except Exception as e:
                 logger.warning(f"Preflight execution exception: {e}")
@@ -146,7 +146,7 @@ class SimReadyAdapter:
     def run_pipeline(
         self,
         source_asset: str,
-        config: Optional[SimReadyPipelineConfig] = None,
+        config: SimReadyPipelineConfig | None = None,
     ) -> SimReadyPipelineResult:
         """Execute end-to-end CAD to SimReady pipeline on a source asset.
 
@@ -176,9 +176,9 @@ class SimReadyAdapter:
         pipeline_dir = output_root / "pipeline"
         pipeline_dir.mkdir(parents=True, exist_ok=True)
 
-        stage_reports: Dict[str, Any] = {}
-        errors: List[str] = []
-        warnings: List[str] = []
+        stage_reports: dict[str, Any] = {}
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Step 1: Preflight
         preflight_report = self.run_preflight(pipeline_dir / "00_preflight")
@@ -207,7 +207,7 @@ class SimReadyAdapter:
                 try:
                     res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
                     if conv_report_file.exists():
-                        with open(conv_report_file, "r", encoding="utf-8") as f:
+                        with open(conv_report_file, encoding="utf-8") as f:
                             stage_reports["conversion"] = json.load(f)
                     else:
                         stage_reports["conversion"] = {"status": "executed", "stdout": res.stdout}
@@ -248,7 +248,7 @@ class SimReadyAdapter:
         conformed_usd_path = conform_dir / f"sm_{source_path.stem}_01.usd"
 
         if authored_usd_path.exists():
-            with open(authored_usd_path, "r", encoding="utf-8") as src, open(conformed_usd_path, "w", encoding="utf-8") as dst:
+            with open(authored_usd_path, encoding="utf-8") as src, open(conformed_usd_path, "w", encoding="utf-8") as dst:
                 content = src.read()
                 if "simready_profile" not in content:
                     content += f'\n# SimReady Metadata Stamped\n# Profile: {config.simready_profile}\n'
@@ -282,7 +282,7 @@ class SimReadyAdapter:
             simready_usd_dir.mkdir(parents=True, exist_ok=True)
 
             deliv_usd = simready_usd_dir / f"sm_{source_path.stem}_01.usd"
-            with open(conformed_usd_path, "r", encoding="utf-8") as src, open(deliv_usd, "w", encoding="utf-8") as dst:
+            with open(conformed_usd_path, encoding="utf-8") as src, open(deliv_usd, "w", encoding="utf-8") as dst:
                 dst.write(src.read())
 
             stage_reports["packaging"] = {

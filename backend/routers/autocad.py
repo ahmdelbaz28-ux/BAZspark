@@ -35,7 +35,7 @@ import os
 import re
 import tempfile
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -141,14 +141,14 @@ class ConnectResponse(BaseModel):
     message: str
     connected: bool
     simulation_mode: bool = False
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 class DocumentsResponse(BaseModel):
     """Response model for listing AutoCAD documents."""
 
     success: bool
-    documents: List[Dict[str, Any]]
+    documents: list[dict[str, Any]]
 
 
 class ReadDwgRequest(BaseModel):
@@ -161,14 +161,14 @@ class WriteDwgRequest(BaseModel):
     """Request model for writing DWG file."""
 
     filepath: str
-    entities: List[Dict[str, Any]]
+    entities: list[dict[str, Any]]
 
 
 class DrawLineRequest(BaseModel):
     """Request model for drawing a line."""
 
-    start_point: List[float]
-    end_point: List[float]
+    start_point: list[float]
+    end_point: list[float]
     layer: str = "0"
     color: int = 0
 
@@ -176,7 +176,7 @@ class DrawLineRequest(BaseModel):
 class DrawPolylineRequest(BaseModel):
     """Request model for drawing a polyline."""
 
-    vertices: List[List[float]]
+    vertices: list[list[float]]
     layer: str = "0"
     color: int = 0
     closed: bool = False
@@ -185,7 +185,7 @@ class DrawPolylineRequest(BaseModel):
 class DrawCircleRequest(BaseModel):
     """Request model for drawing a circle."""
 
-    center: List[float]
+    center: list[float]
     radius: float
     layer: str = "0"
     color: int = 0
@@ -195,7 +195,7 @@ class DrawTextRequest(BaseModel):
     """Request model for drawing text."""
 
     text: str
-    insertion_point: List[float]
+    insertion_point: list[float]
     height: float = 0.2
     layer: str = "0"
     color: int = 0
@@ -206,7 +206,7 @@ class StatusResponse(BaseModel):
 
     connected: bool
     message: str
-    document_info: Optional[Dict[str, Any]] = None
+    document_info: dict[str, Any] | None = None
 
 
 class SaveRequest(BaseModel):
@@ -219,7 +219,7 @@ class ModifyEntityRequest(BaseModel):
     """Request model for modifying an entity."""
 
     handle: str
-    properties: Dict[str, Any]
+    properties: dict[str, Any]
 
 
 class DeleteEntityResponse(BaseModel):
@@ -233,10 +233,10 @@ class ReadFileResponse(BaseModel):
     """Response from reading a DWG/DXF file."""
 
     filepath: str
-    metadata: Dict[str, Any]
-    layers: List[Dict[str, Any]]
-    entities: List[Dict[str, Any]]
-    blocks: Dict[str, List[Dict[str, Any]]]
+    metadata: dict[str, Any]
+    layers: list[dict[str, Any]]
+    entities: list[dict[str, Any]]
+    blocks: dict[str, list[dict[str, Any]]]
     entity_count: int
 
 
@@ -245,7 +245,7 @@ class OperationResponse(BaseModel):
 
     success: bool
     message: str
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
@@ -312,7 +312,7 @@ async def disconnect_from_autocad(request: Request) -> ConnectResponse:
 
 @router.get("/documents", response_model=DocumentsResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def list_autocad_documents() -> DocumentsResponse:
-    """List open documents in AutoCAD."""
+    """list open documents in AutoCAD."""
     try:
         service = get_autocad_service()
         # If not connected, return a simulated list in development mode

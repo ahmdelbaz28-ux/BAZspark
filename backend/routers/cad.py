@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -64,7 +64,7 @@ class CADDisconnectRequest(BaseModel):
 class CADStatusResponse(BaseModel):
     success: bool
     provider: str
-    status: Dict[str, Any]
+    status: dict[str, Any]
 
 class CADReadRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
@@ -75,12 +75,12 @@ class CADReadResponse(BaseModel):
     provider: str
     filepath: str
     element_count: int
-    elements: List[CADElement]
+    elements: list[CADElement]
 
 class CADWriteRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     filepath: str
-    elements: List[CADElement]
+    elements: list[CADElement]
 
 class CADWriteResponse(BaseModel):
     success: bool
@@ -88,21 +88,21 @@ class CADWriteResponse(BaseModel):
 
 class CADDrawLineRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
-    start_point: List[float]
-    end_point: List[float]
+    start_point: list[float]
+    end_point: list[float]
     layer: str = "0"
     color: int = 256
 
 class CADDrawPolylineRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
-    vertices: List[List[float]]
+    vertices: list[list[float]]
     layer: str = "0"
     color: int = 256
     closed: bool = False
 
 class CADDrawCircleRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
-    center: List[float]
+    center: list[float]
     radius: float
     layer: str = "0"
     color: int = 256
@@ -110,7 +110,7 @@ class CADDrawCircleRequest(BaseModel):
 class CADDrawTextRequest(BaseModel):
     provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     text: str
-    insertion_point: List[float]
+    insertion_point: list[float]
     height: float = 0.2
     layer: str = "0"
     color: int = 256
@@ -118,7 +118,7 @@ class CADDrawTextRequest(BaseModel):
 class CADOperationResponse(BaseModel):
     success: bool
     message: str
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 # ── REST Endpoints ───────────────────────────────────────────────────────────

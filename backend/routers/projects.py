@@ -11,7 +11,6 @@ and reports.
 import io
 import json
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -152,7 +151,7 @@ async def export_project_revit(project_id: str) -> StreamingResponse:
     return StreamingResponse(io.BytesIO(content), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
 
 @router.get("/{project_id}/export/ifc", responses={404: {"description": "Project not found"}, 422: {"description": "Invalid IFC version"}}, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_project_ifc(project_id: str, version: Optional[str] = None) -> StreamingResponse:
+async def export_project_ifc(project_id: str, version: str | None = None) -> StreamingResponse:
     """Export a project as IFC (placeholder).
     Accepts optional version parameter; only known versions are allowed.
     """

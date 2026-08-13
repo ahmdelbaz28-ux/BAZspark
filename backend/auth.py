@@ -17,8 +17,6 @@ LAYER NOTE (Phase 5 dedup):
 
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import HTTPException, Request, status
 
 from backend.rbac import Permission, Role, has_permission
@@ -34,7 +32,7 @@ def get_current_role(request: Request) -> Role:
     If no role is found (e.g., whitelisted paths or development mode),
     defaults to VIEWER for safety (least privilege).
     """
-    role: Optional[Role] = getattr(request.state, "fireai_role", None)
+    role: Role | None = getattr(request.state, "fireai_role", None)
     if role is not None:
         return role
     # Fallback: check for role in request scope (set by ASGI middleware)
@@ -72,7 +70,7 @@ def require_permission(permission: Permission):
     return checker
 
 
-def get_current_principal(request: Request) -> Optional[str]:
+def get_current_principal(request: Request) -> str | None:
     """
     Extract the current credential's opaque principal id from the request.
 
@@ -83,7 +81,7 @@ def get_current_principal(request: Request) -> Optional[str]:
     Returns None when the request is unauthenticated or the principal is
     absent (e.g. legacy middleware without the stamp).
     """
-    principal: Optional[str] = getattr(request.state, "fireai_principal", None)
+    principal: str | None = getattr(request.state, "fireai_principal", None)
     if principal is not None:
         return principal
     scope_principal = request.scope.get("fireai_principal")

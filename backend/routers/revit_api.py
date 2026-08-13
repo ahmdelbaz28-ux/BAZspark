@@ -9,13 +9,13 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import logging
 import os
 import tempfile
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 from fastapi import (
     APIRouter,
@@ -94,10 +94,10 @@ class RevitStatusResponse(BaseModel):
     """Response model for Revit status."""
     project_id: str
     sync_status: str
-    last_sync: Optional[datetime] = None
+    last_sync: datetime | None = None
     element_count: int
     electrical_elements: int
-    next_sync: Optional[datetime] = None
+    next_sync: datetime | None = None
     connection_status: str
 
 
@@ -105,18 +105,18 @@ class RevitModelResponse(BaseModel):
     """Response model for Revit model data."""
     model_id: str
     project_name: str
-    elements: List[RevitElementDTO]
+    elements: list[RevitElementDTO]
     metadata: ModelMetadataDTO
 
 
 class WebSocketMessage(BaseModel):
     """Model for WebSocket messages."""
     type: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
 # Track active WebSocket connections
-active_connections: Dict[str, WebSocket] = {}
+active_connections: dict[str, WebSocket] = {}
 
 
 @router.post("/upload", response_model=RevitSyncResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
@@ -279,8 +279,8 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
         raise HTTPException(status_code=500, detail="Model retrieval failed")
 
 
-@router.post("/export", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
+@router.post("/export", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+async def export_revit_data(request: RevitExportRequest) -> dict[str, Any]:
     """
     Export Revit data in various formats.
 
@@ -288,7 +288,7 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
         request: Export parameters
 
     Returns:
-        Dict: Export status and file information
+        dict: Export status and file information
     """
     try:
         # In a real implementation, this would:
@@ -379,7 +379,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
             type="connection_established",
             data={
                 "project_id": project_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "message": f"Connected to project {project_id}"
             }
         ).model_dump_json())
@@ -401,9 +401,9 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         await websocket.send_text(WebSocketMessage(
                             type="sync_started",
                             data={
-                                "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
+                                "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
                                 "project_id": project_id,
-                                "timestamp": datetime.now(timezone.utc).isoformat()
+                                "timestamp": datetime.now(UTC).isoformat()
                             }
                         ).model_dump_json())
 
@@ -412,9 +412,9 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                             await websocket.send_text(WebSocketMessage(
                                 type="sync_progress",
                                 data={
-                                    "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
+                                    "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
                                     "progress": progress,
-                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                    "timestamp": datetime.now(UTC).isoformat()
                                 }
                             ).model_dump_json())
 
@@ -424,19 +424,19 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         await websocket.send_text(WebSocketMessage(
                             type="sync_completed",
                             data={
-                                "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
+                                "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
                                 "project_id": project_id,
                                 "elements_processed": 100,
                                 "elements_successful": 98,
                                 "elements_failed": 2,
-                                "timestamp": datetime.now(timezone.utc).isoformat()
+                                "timestamp": datetime.now(UTC).isoformat()
                             }
                         ).model_dump_json())
 
                     elif message.type == "ping":
                         await websocket.send_text(WebSocketMessage(
                             type="pong",
-                            data={"timestamp": datetime.now(timezone.utc).isoformat()}
+                            data={"timestamp": datetime.now(UTC).isoformat()}
                         ).model_dump_json())
 
                 except Exception:
@@ -445,7 +445,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         type="error",
                         data={
                             "error": "Internal error",
-                            "timestamp": datetime.now(timezone.utc).isoformat()
+                            "timestamp": datetime.now(UTC).isoformat()
                         }
                     ).model_dump_json())
 

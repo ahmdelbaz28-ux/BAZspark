@@ -40,7 +40,7 @@ from __future__ import annotations
 import logging
 import math
 import threading
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -52,21 +52,21 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class VentilationLevel(str, Enum):
+class VentilationLevel(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     POOR = "POOR"
 
 
-class HazardType(str, Enum):
+class HazardType(StrEnum):
     GAS = "GAS"
     DUST = "DUST"
     HYBRID = "HYBRID"
     FIBER = "FIBER"
 
 
-class ZoneType(str, Enum):
+class ZoneType(StrEnum):
     ZONE_0 = "ZONE_0"
     ZONE_1 = "ZONE_1"
     ZONE_2 = "ZONE_2"
@@ -76,24 +76,24 @@ class ZoneType(str, Enum):
     UNCLASSIFIED = "UNCLASSIFIED"
 
 
-class EPLGas(str, Enum):
+class EPLGas(StrEnum):
     Ga = "Ga"  # highest protection
     Gb = "Gb"
     Gc = "Gc"  # lowest
 
 
-class EPLDust(str, Enum):
+class EPLDust(StrEnum):
     Da = "Da"
     Db = "Db"
     Dc = "Dc"
 
 
-class EPLMining(str, Enum):
+class EPLMining(StrEnum):
     Ma = "Ma"
     Mb = "Mb"
 
 
-class TemperatureClass(str, Enum):
+class TemperatureClass(StrEnum):
     """
     Temperature classes per IEC 60079-0:2017 §7.3.
     Includes extended subdivisions (T2A-T2D, T3A-T3C, T4A)
@@ -136,7 +136,7 @@ _T_CLASS_MAX: dict[str, float] = {
 }
 
 
-class WavelengthBand(str, Enum):
+class WavelengthBand(StrEnum):
     """Spectral bands for flame detector transparency analysis."""
 
     UV = "UV"  # 185-260 nm
@@ -145,7 +145,7 @@ class WavelengthBand(str, Enum):
     IR3 = "IR3"  # 3-5 um (mid-IR CO2 band)
 
 
-class RegulatoryFramework(str, Enum):
+class RegulatoryFramework(StrEnum):
     ATEX_EU = "ATEX_EU"
     IECEX = "IECEx"
     NEC_US = "NEC_US"
@@ -153,7 +153,7 @@ class RegulatoryFramework(str, Enum):
     EFTA = "EFTA"
 
 
-class PasquillStability(str, Enum):
+class PasquillStability(StrEnum):
     """
     Pasquill-Gifford atmospheric stability classes.
     A = extremely unstable (strong convection)
@@ -169,7 +169,7 @@ class PasquillStability(str, Enum):
     F = "F"
 
 
-class ThermalMarginRule(str, Enum):
+class ThermalMarginRule(StrEnum):
     """
     IEC 60079-14 thermal margin strategies.
     STRICT_5PCT: 5% margin with minimum 10K (Zone 0/20)
@@ -182,7 +182,7 @@ class ThermalMarginRule(str, Enum):
     BASIC = "BASIC"
 
 
-class RegionProfile(str, Enum):
+class RegionProfile(StrEnum):
     """
     Environmental region presets for HAC calculations.
 
@@ -215,7 +215,7 @@ class RegionProfile(str, Enum):
     USA_NFPA = "USA_NFPA"
 
 
-class Jurisdiction(str, Enum):
+class Jurisdiction(StrEnum):
     """
     Regulatory jurisdiction for safety audit rules.
     Each jurisdiction may impose requirements BEYOND the base IEC/NFPA standards.
@@ -243,7 +243,7 @@ class Jurisdiction(str, Enum):
     USA_NFPA = "USA_NFPA"
 
 
-class FoulingCategory(str, Enum):
+class FoulingCategory(StrEnum):
     """
     Categorical fouling environment classification.
     Used for advisory generation when combined with region profiles.
@@ -262,7 +262,7 @@ class FoulingCategory(str, Enum):
     SEVERE = "SEVERE"
 
 
-class ElevationTier(str, Enum):
+class ElevationTier(StrEnum):
     """
     Detector/gas elevation classification for Z-Axis audit.
     Based on vapor density ratio (MW_gas / MW_air) using ±3% band.

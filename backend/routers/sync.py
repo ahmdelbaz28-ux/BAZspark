@@ -24,7 +24,7 @@ import hmac as _hmac
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 
@@ -186,7 +186,7 @@ async def sync_project(request: Request, project_id: str):
     # Set status to syncing
     db.set_sync_status(project_id, {
         "status": "syncing",
-        "lastSync": datetime.now(timezone.utc).isoformat(),
+        "lastSync": datetime.now(UTC).isoformat(),
         "pendingChanges": 0,
     })
 
@@ -203,7 +203,7 @@ async def sync_project(request: Request, project_id: str):
         connections = db.get_all_connections_for_project(project_id)
         db.set_sync_status(project_id, {
             "status": "syncing",
-            "lastSync": datetime.now(timezone.utc).isoformat(),
+            "lastSync": datetime.now(UTC).isoformat(),
             "pendingChanges": 0,
             "deviceCount": len(devices),
             "connectionCount": len(connections),
@@ -212,7 +212,7 @@ async def sync_project(request: Request, project_id: str):
         logger.warning("DB sync read failed (non-fatal): %s", sync_err)
 
     # Mark as synced
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     db.set_sync_status(project_id, {
         "status": "synced",
         "lastSync": now,
@@ -438,7 +438,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                     })
                     await websocket.close(code=4003, reason="Authentication failed")
                     return
-            except (asyncio.TimeoutError, json.JSONDecodeError):
+            except (TimeoutError, json.JSONDecodeError):
                 await websocket.send_json({
                     "channel": "system",
                     "type": "auth_timeout",
@@ -480,7 +480,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                 await websocket.send_json({
                     "channel": "system",
                     "type": "pong",
-                    "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                    "data": {"timestamp": datetime.now(UTC).isoformat()},
                 })
             elif action == "subscribe":
                 project_id = message.get("projectId", "")
@@ -504,7 +504,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                         "projectId": project_id,
                     })
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"WebSocket client {client_ip} timed out after 30s of inactivity")
         await websocket.close(code=1000, reason="Idle timeout")
     except WebSocketDisconnect:

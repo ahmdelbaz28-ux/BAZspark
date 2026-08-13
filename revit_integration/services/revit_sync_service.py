@@ -9,8 +9,8 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from ..adapters.revit_adapter import RevitElementAdapter
 from ..aps.data_exchange import APSDataExchange
@@ -55,14 +55,14 @@ class RevitSyncService:
         Returns:
             SyncStatusDTO: Status of the synchronization
         """
-        sync_id = f"sync_{project_dto.project_id}_{int(datetime.now(timezone.utc).timestamp())}"
+        sync_id = f"sync_{project_dto.project_id}_{int(datetime.now(UTC).timestamp())}"
 
         # Create initial sync status
         sync_status = SyncStatusDTO(
             sync_id=sync_id,
             project_id=project_dto.project_id,
             status="in_progress",
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(UTC)
         )
 
         # Add to active syncs
@@ -73,7 +73,7 @@ class RevitSyncService:
             await self.event_publisher.publish_event("RevitSyncStarted", {
                 "sync_id": sync_id,
                 "project_id": project_dto.project_id,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             # Get model metadata
@@ -118,7 +118,7 @@ class RevitSyncService:
                         "sync_id": sync_id,
                         "element_id": element.id,
                         "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
+                        "timestamp": datetime.now(UTC).isoformat()
                     })
 
                     # Small delay to allow other operations
@@ -133,7 +133,7 @@ class RevitSyncService:
             sync_status.successful_elements = successful_count
             sync_status.failed_elements = failed_count
             sync_status.progress = 100.0
-            sync_status.end_time = datetime.now(timezone.utc)
+            sync_status.end_time = datetime.now(UTC)
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish sync completed event
@@ -144,18 +144,18 @@ class RevitSyncService:
                 "failed_elements": failed_count,
                 "total_elements": processed_count,
                 "duration": (sync_status.end_time - sync_status.start_time).total_seconds(),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             # Update project last sync time
-            project_dto.last_sync = datetime.now(timezone.utc)
+            project_dto.last_sync = datetime.now(UTC)
 
             return sync_status
 
         except Exception as e:
             self.logger.error(f"Error during project sync: {e}")
             sync_status.status = "failed"
-            sync_status.end_time = datetime.now(timezone.utc)
+            sync_status.end_time = datetime.now(UTC)
             sync_status.error_details = {"error": str(e)}
 
             # Publish sync failed event
@@ -163,7 +163,7 @@ class RevitSyncService:
                 "sync_id": sync_id,
                 "project_id": project_dto.project_id,
                 "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             return sync_status
@@ -173,25 +173,25 @@ class RevitSyncService:
             if sync_id in self.active_syncs:
                 del self.active_syncs[sync_id]
 
-    async def incremental_sync(self, project_id: str, changed_elements: List[RevitElementDTO]) -> SyncStatusDTO:
+    async def incremental_sync(self, project_id: str, changed_elements: list[RevitElementDTO]) -> SyncStatusDTO:
         """
         Perform an incremental sync of changed elements.
 
         Args:
             project_id: ID of the project
-            changed_elements: List of elements that have changed
+            changed_elements: list of elements that have changed
 
         Returns:
             SyncStatusDTO: Status of the incremental sync
         """
-        sync_id = f"incremental_{project_id}_{int(datetime.now(timezone.utc).timestamp())}"
+        sync_id = f"incremental_{project_id}_{int(datetime.now(UTC).timestamp())}"
 
         sync_status = SyncStatusDTO(
             sync_id=sync_id,
             project_id=project_id,
             status="in_progress",
             total_elements=len(changed_elements),
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(UTC)
         )
 
         try:
@@ -219,7 +219,7 @@ class RevitSyncService:
                         "sync_id": sync_id,
                         "element_id": element.id,
                         "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
+                        "timestamp": datetime.now(UTC).isoformat()
                     })
 
                 except Exception as e:
@@ -228,7 +228,7 @@ class RevitSyncService:
 
             sync_status.successful_elements = successful_count
             sync_status.failed_elements = failed_count
-            sync_status.end_time = datetime.now(timezone.utc)
+            sync_status.end_time = datetime.now(UTC)
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish incremental sync completed event
@@ -237,7 +237,7 @@ class RevitSyncService:
                 "project_id": project_id,
                 "successful_elements": successful_count,
                 "failed_elements": failed_count,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             return sync_status
@@ -245,11 +245,11 @@ class RevitSyncService:
         except Exception as e:
             self.logger.error(f"Error during incremental sync: {e}")
             sync_status.status = "failed"
-            sync_status.end_time = datetime.now(timezone.utc)
+            sync_status.end_time = datetime.now(UTC)
             sync_status.error_details = {"error": str(e)}
             return sync_status
 
-    async def _extract_elements_from_revit(self, project_dto: RevitProjectDTO) -> List[RevitElementDTO]:
+    async def _extract_elements_from_revit(self, project_dto: RevitProjectDTO) -> list[RevitElementDTO]:
         """
         Extract elements from Revit model.
         In a real implementation, this would connect to the Revit API.
@@ -258,7 +258,7 @@ class RevitSyncService:
             project_dto: Project information
 
         Returns:
-            List[RevitElementDTO]: Extracted elements
+            list[RevitElementDTO]: Extracted elements
         """
         # This is a simulation - in a real implementation, this would:
         # 1. Connect to Revit via the Revit API
@@ -286,7 +286,7 @@ class RevitSyncService:
 
         return elements
 
-    async def _process_element(self, element_dto: RevitElementDTO, _project_dto: Optional[RevitProjectDTO]) -> bool:
+    async def _process_element(self, element_dto: RevitElementDTO, _project_dto: RevitProjectDTO | None) -> bool:
         """
         Process a single Revit element for synchronization.
 
@@ -343,7 +343,7 @@ class RevitSyncService:
                 "element_id": element_dto.id,
                 "category": element_dto.category,
                 "target_model": target_model.value if target_model else "Unknown",
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             return True
@@ -352,7 +352,7 @@ class RevitSyncService:
             self.logger.error(f"Error processing element {element_dto.id}: {e}")
             return False
 
-    async def _sync_to_etap_model(self, etap_element: Dict[str, Any], model_type: str) -> bool:
+    async def _sync_to_etap_model(self, etap_element: dict[str, Any], model_type: str) -> bool:
         """
         Sync element to appropriate ETAP model.
 
@@ -373,7 +373,7 @@ class RevitSyncService:
                 "element_id": etap_element['id'],
                 "model_type": model_type,
                 "change_type": "element_added",
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
         return True
@@ -397,7 +397,7 @@ class RevitSyncService:
             "element_id": electrical_asset.element_id,
             "asset_type": electrical_asset.asset_type,
             "name": electrical_asset.name,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
 
         return True
@@ -430,7 +430,7 @@ class RevitSyncService:
             description="Simulated Revit Model"
         )
 
-    async def get_active_syncs(self) -> List[SyncStatusDTO]:
+    async def get_active_syncs(self) -> list[SyncStatusDTO]:
         """Get list of currently active sync operations."""
         return list(self.active_syncs.values())
 
@@ -447,12 +447,12 @@ class RevitSyncService:
         if sync_id in self.active_syncs:
             sync_status = self.active_syncs[sync_id]
             sync_status.status = "cancelled"
-            sync_status.end_time = datetime.now(timezone.utc)
+            sync_status.end_time = datetime.now(UTC)
 
             # Publish sync cancelled event
             await self.event_publisher.publish_event("RevitSyncCancelled", {
                 "sync_id": sync_id,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             })
 
             del self.active_syncs[sync_id]
@@ -483,7 +483,7 @@ class MockCategory:
 
 
 class MockParameters:
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         self.params = params
         # Create mock parameter objects
         self.mock_params = []
@@ -519,7 +519,7 @@ class MockParameter:
 
 
 class MockLocation:
-    def __init__(self, location_data: Optional[Dict[str, float]]):
+    def __init__(self, location_data: dict[str, float] | None):
         if location_data:
             from collections import namedtuple
             Point = namedtuple('Point', ['X', 'Y', 'Z'])

@@ -55,7 +55,7 @@ import os
 import re
 import tempfile
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
@@ -109,7 +109,7 @@ from backend.routers.agent_ws import has_active_agent, send_agent_command
 from parsers._path_security import UnsafePathError, validate_input_path
 
 
-def _sanitize_error(msg: Optional[str]) -> str:
+def _sanitize_error(msg: str | None) -> str:
     """Sanitize error messages to prevent stack trace exposure (CodeQL: py/stack-trace-exposure)."""
     if not msg:
         return "An error occurred"
@@ -199,7 +199,7 @@ class ConnectResponse(BaseModel):
     message: str
     connected: bool
     simulation_mode: bool = False
-    connection_method: Optional[str] = None
+    connection_method: str | None = None
 
 
 class StatusResponse(BaseModel):
@@ -207,8 +207,8 @@ class StatusResponse(BaseModel):
 
     connected: bool
     message: str
-    connection_method: Optional[str] = None
-    document_info: Optional[Dict[str, Any]] = None
+    connection_method: str | None = None
+    document_info: dict[str, Any] | None = None
 
 
 # =============================================================================
@@ -224,7 +224,7 @@ class DocumentOpenRequest(BaseModel):
 class DocumentSaveRequest(BaseModel):
     """Request to save the document."""
 
-    filepath: Optional[str] = Field(None, description="Optional new path to save as")
+    filepath: str | None = Field(None, description="Optional new path to save as")
 
 
 class DocumentCloseRequest(BaseModel):
@@ -250,8 +250,8 @@ class CreateWallRequest(BaseModel):
 
     """
 
-    start_point: List[float] = Field(..., description="Start point [x, y, z]")
-    end_point: List[float] = Field(..., description="End point [x, y, z]")
+    start_point: list[float] = Field(..., description="Start point [x, y, z]")
+    end_point: list[float] = Field(..., description="End point [x, y, z]")
     height: float = Field(3000.0, description="Wall height in mm")
     level: str = Field("Level 1", description="Level name")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     wall_type: str = Field("Basic Wall", description="Wall type name")
@@ -262,13 +262,13 @@ class CreateFloorRequest(BaseModel):
     Request to create a floor.
 
     Attributes:
-        boundary_points: List of [x, y, z] points forming closed boundary
+        boundary_points: list of [x, y, z] points forming closed boundary
         level: Level name (default "Level 1")
         floor_type: Floor type name (default "Floor")
 
     """
 
-    boundary_points: List[List[float]] = Field(
+    boundary_points: list[list[float]] = Field(
         ...,
         description="Boundary points [[x,y,z], ...]"
     )
@@ -289,7 +289,7 @@ class CreateDoorRequest(BaseModel):
     """
 
     host_wall_id: str = Field(..., description="Host wall element ID")
-    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    location_point: list[float] = Field(..., description="Insertion point [x, y, z]")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     family_type: str = Field("M_Single-Flush", description="Door family type")
     level: str = Field("Level 1", description="Level name")
 
@@ -298,7 +298,7 @@ class CreateWindowRequest(BaseModel):
     """Request to create a window in a wall."""
 
     host_wall_id: str = Field(..., description="Host wall element ID")
-    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")
+    location_point: list[float] = Field(..., description="Insertion point [x, y, z]")
     family_type: str = Field("M_Single-Flush", description="Window family type")
     level: str = Field("Level 1", description="Level name")
 
@@ -315,7 +315,7 @@ class CreateColumnRequest(BaseModel):
 
     """
 
-    location_point: List[float] = Field(..., description="Base location [x, y, z]")
+    location_point: list[float] = Field(..., description="Base location [x, y, z]")
     height: float = Field(3000.0, description="Column height in mm")
     level: str = Field("Level 1", description="Base level name")
     column_type: str = Field("M_Columns", description="Column type name")
@@ -324,8 +324,8 @@ class CreateColumnRequest(BaseModel):
 class CreateBeamRequest(BaseModel):
     """Request to create a structural beam."""
 
-    start_point: List[float] = Field(..., description="Start point [x, y, z]")
-    end_point: List[float] = Field(..., description="End point [x, y, z]")
+    start_point: list[float] = Field(..., description="Start point [x, y, z]")
+    end_point: list[float] = Field(..., description="End point [x, y, z]")
     level: str = Field("Level 1", description="Level name")
     beam_type: str = Field("W-Wide Flange", description="Beam type name")
 
@@ -345,15 +345,15 @@ class CreateFamilyRequest(BaseModel):
 
     family_name: str = Field(..., description="Family type name")
     category: str = Field(..., description="Category name")
-    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")
-    level: Optional[str] = Field(None, description="Level name (for hosted families)")
-    parameters: Optional[Dict[str, Any]] = Field(None, description="Parameter name/value pairs")
+    location_point: list[float] = Field(..., description="Insertion point [x, y, z]")
+    level: str | None = Field(None, description="Level name (for hosted families)")
+    parameters: dict[str, Any] | None = Field(None, description="Parameter name/value pairs")
 
 
 class ParameterUpdateRequest(BaseModel):
     """Request to update element parameters."""
 
-    parameters: Dict[str, Any] = Field(..., description="Parameter name/value pairs")
+    parameters: dict[str, Any] = Field(..., description="Parameter name/value pairs")
 
 
 class ElementResponse(BaseModel):
@@ -361,15 +361,15 @@ class ElementResponse(BaseModel):
 
     success: bool
     message: str
-    element_id: Optional[str] = None
-    element: Optional[Dict[str, Any]] = None
+    element_id: str | None = None
+    element: dict[str, Any] | None = None
 
 
 class ElementsResponse(BaseModel):
     """Response containing multiple elements."""
 
     success: bool
-    elements: List[Dict[str, Any]]
+    elements: list[dict[str, Any]]
     count: int
 
 
@@ -380,10 +380,10 @@ class ElementsResponse(BaseModel):
 class SearchAPIRequest(BaseModel):
     """Request to search local API data."""
 
-    keyword: Optional[str] = Field(None, description="Search keyword")
-    api_name: Optional[str] = Field(None, description="Filter by API name")
-    namespace: Optional[str] = Field(None, description="Filter by namespace")
-    api_type: Optional[str] = Field(None, description="Filter by type (property, method, class)")
+    keyword: str | None = Field(None, description="Search keyword")
+    api_name: str | None = Field(None, description="Filter by API name")
+    namespace: str | None = Field(None, description="Filter by namespace")
+    api_type: str | None = Field(None, description="Filter by type (property, method, class)")
 
 
 class SearchOnlineRequest(BaseModel):
@@ -397,7 +397,7 @@ class AICommandRequest(BaseModel):
     """Request to execute an AI command."""
 
     command: str = Field(..., description="Natural language command")
-    context: Optional[Dict[str, Any]] = Field(None, description="Optional context data")
+    context: dict[str, Any] | None = Field(None, description="Optional context data")
 
 
 class LoadAPIDataRequest(BaseModel):
@@ -410,7 +410,7 @@ class APIResultResponse(BaseModel):
     """Response from API search."""
 
     success: bool
-    results: List[Dict[str, Any]]
+    results: list[dict[str, Any]]
     count: int
 
 
@@ -418,7 +418,7 @@ class LoadFamilyRequest(BaseModel):
     """Request to load a family (.rfa) file."""
 
     family_path: str = Field(..., description="Path to family file")
-    category: Optional[str] = Field(None, description="Optional category")
+    category: str | None = Field(None, description="Optional category")
 
 
 class ReadRvtRequest(BaseModel):
@@ -431,7 +431,7 @@ class WriteRvtRequest(BaseModel):
     """Request to write elements to an RVT file."""
 
     filepath: str = Field(..., description="Path to save the RVT file")
-    elements: List[Dict[str, Any]] = Field(..., description="List of elements to write")
+    elements: list[dict[str, Any]] = Field(..., description="list of elements to write")
 
 # =============================================================================
 # CONNECTION ENDPOINTS
@@ -531,7 +531,7 @@ async def get_revit_status() -> StatusResponse:
 
 @router.post("/document/open", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def open_document(request: Request, body: DocumentOpenRequest) -> Dict[str, Any]:
+async def open_document(request: Request, body: DocumentOpenRequest) -> dict[str, Any]:
     """Open an RVT file."""
     svc = get_revit_service()
     if not svc.connected:
@@ -548,7 +548,7 @@ async def open_document(request: Request, body: DocumentOpenRequest) -> Dict[str
 
 @router.post("/document/save", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def save_document(request: Request, body: DocumentSaveRequest) -> Dict[str, Any]:
+async def save_document(request: Request, body: DocumentSaveRequest) -> dict[str, Any]:
     """Save the current document."""
     svc = get_revit_service()
     if not svc.connected:
@@ -566,7 +566,7 @@ async def save_document(request: Request, body: DocumentSaveRequest) -> Dict[str
 
 @router.post("/document/close", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def close_document(request: Request, body: DocumentCloseRequest) -> Dict[str, Any]:
+async def close_document(request: Request, body: DocumentCloseRequest) -> dict[str, Any]:
     """Close the current document."""
     svc = get_revit_service()
     if not svc.connected:
@@ -583,7 +583,7 @@ async def close_document(request: Request, body: DocumentCloseRequest) -> Dict[s
 
 @router.post("/read_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
-async def read_rvt_file(request: Request, body: ReadRvtRequest) -> Dict[str, Any]:
+async def read_rvt_file(request: Request, body: ReadRvtRequest) -> dict[str, Any]:
     """Read elements from an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
@@ -600,7 +600,7 @@ async def read_rvt_file(request: Request, body: ReadRvtRequest) -> Dict[str, Any
 
 @router.post("/write_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def write_rvt_file(request: Request, body: WriteRvtRequest) -> Dict[str, Any]:
+async def write_rvt_file(request: Request, body: WriteRvtRequest) -> dict[str, Any]:
     """Write elements to an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
@@ -630,7 +630,7 @@ async def write_rvt_file(request: Request, body: WriteRvtRequest) -> Dict[str, A
 @router.post("/upload_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @router.post("/upload", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
-async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:  # NOSONAR - python:S8410
+async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:  # NOSONAR - python:S8410
     """
     Upload an RVT file and read its contents.
 
@@ -675,8 +675,8 @@ async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) ->
 
 @router.get("/elements", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_elements(
-    category: Optional[str] = Query(None, description="Filter by category (Walls, Floors, Doors, etc.)"),  # NOSONAR - python:S8410
-    element_class: Optional[str] = Query(None, description="Filter by class name")  # NOSONAR - python:S8410
+    category: str | None = Query(None, description="Filter by category (Walls, Floors, Doors, etc.)"),  # NOSONAR - python:S8410
+    element_class: str | None = Query(None, description="Filter by class name")  # NOSONAR - python:S8410
 ) -> ElementsResponse:
     """Get elements using FilteredElementCollector pattern."""
     svc = get_revit_service()
@@ -699,7 +699,7 @@ async def get_selected_elements() -> ElementsResponse:
 
 
 @router.get("/elements/{element_id}", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def get_element(element_id: str) -> Dict[str, Any]:
+async def get_element(element_id: str) -> dict[str, Any]:
     """Get a single element by ID."""
     svc = get_revit_service()
     if not svc.connected:
@@ -712,7 +712,7 @@ async def get_element(element_id: str) -> Dict[str, Any]:
 
 
 @router.get("/elements/{element_id}/parameters", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def get_element_parameters(element_id: str) -> Dict[str, Any]:
+async def get_element_parameters(element_id: str) -> dict[str, Any]:
     """Get all parameters of an element."""
     svc = get_revit_service()
     if not svc.connected:
@@ -912,7 +912,7 @@ async def update_parameters(
     request: Request,
     element_id: str,
     body: ParameterUpdateRequest
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Update element parameters."""
     if has_active_agent():
         return await send_agent_command("revit", "update_parameters", {
@@ -936,7 +936,7 @@ async def update_parameters(
 
 @router.delete("/elements/{element_id}", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
 @limiter.limit("30/minute")
-async def delete_element(request: Request, element_id: str) -> Dict[str, Any]:
+async def delete_element(request: Request, element_id: str) -> dict[str, Any]:
     """Delete an element."""
     if has_active_agent():
         return await send_agent_command("revit", "delete_element", {"element_id": element_id})
@@ -1020,7 +1020,7 @@ async def get_worksets() -> ElementsResponse:
 # =============================================================================
 
 @router.get("/families/{category}/symbols", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def get_family_symbols(category: str) -> Dict[str, Any]:
+async def get_family_symbols(category: str) -> dict[str, Any]:
     """
     Get all family symbols for a category.
 
@@ -1036,7 +1036,7 @@ async def get_family_symbols(category: str) -> Dict[str, Any]:
 
 @router.post("/families/load", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def load_family(request: Request, body: LoadFamilyRequest) -> Dict[str, Any]:
+async def load_family(request: Request, body: LoadFamilyRequest) -> dict[str, Any]:
     """Load a family (.rfa) file into the project."""
     svc = get_revit_service()
     if not svc.connected:
@@ -1054,7 +1054,7 @@ async def load_family(request: Request, body: LoadFamilyRequest) -> Dict[str, An
 
 @router.post("/search/api/load", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
-async def load_api_data(request: Request, body: LoadAPIDataRequest) -> Dict[str, Any]:
+async def load_api_data(request: Request, body: LoadAPIDataRequest) -> dict[str, Any]:
     """
     Load Revit API data from JSON file.
 
@@ -1125,7 +1125,7 @@ async def search_online(
 
 @router.post("/execute", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
-async def execute_ai_command(request: Request, body: AICommandRequest) -> Dict[str, Any]:
+async def execute_ai_command(request: Request, body: AICommandRequest) -> dict[str, Any]:
     """
     Execute a natural language command from AI agent.
 

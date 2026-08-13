@@ -27,8 +27,8 @@ import hashlib
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class LayerCategory(str, Enum):
+class LayerCategory(StrEnum):
     ARCH_WALL = "ARCH-WALL"
     ARCH_DOOR = "ARCH-DOOR"
     ARCH_WINDOW = "ARCH-WINDOW"
@@ -331,7 +331,7 @@ class AutoCADBridge:
         design = DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DWG",
                 "file_size_bytes": file_size,
@@ -383,7 +383,7 @@ class AutoCADBridge:
             source_file=path,
             file_hash=file_hash,
             layers=classified_layers,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DXF",
                 "parser": "ezdxf" if self._has_ezdxf else "text_fallback",
@@ -720,7 +720,7 @@ if __name__ == "__main__":
     # Create a sample DXF for round-trip testing
     sample = DesignData(
         source_file="test.dxf",
-        imported_at=datetime.now(timezone.utc).isoformat(),
+        imported_at=datetime.now(UTC).isoformat(),
         layers=[
             LayerData(
                 name="ARCH-WALL",

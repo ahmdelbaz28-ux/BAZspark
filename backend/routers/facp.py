@@ -10,7 +10,7 @@ ENDPOINTS:
   POST /api/facp/verify      — Verify compliance of a panel recommendation
   POST /api/facp/schedule    — Generate DXF schedule table
   POST /api/facp/spec        — Generate CSI specification (Section 28 31 11)
-  GET  /api/facp/panels      — List all available panels in the database
+  GET  /api/facp/panels      — list all available panels in the database
 
 STANDARDS:
   NFPA_72_REF — FACP selection and listing requirements
@@ -32,7 +32,6 @@ SAFETY NOTE:
 """
 
 import logging
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, model_validator
@@ -104,7 +103,7 @@ class FACPSelectionRequest(BaseModel):
         "US",
         description="Jurisdiction code: US, Canada, FDNY, etc."
     )
-    preferred_manufacturer: Optional[str] =  Field(
+    preferred_manufacturer: str | None =  Field(
         None,
         description="Preferred FACP manufacturer (e.g., NOTIFIER, SIEMENS, SIMPLEX)"
     )
@@ -120,7 +119,7 @@ class FACPVerificationRequest(BaseModel):
     Accepts full requirement fields or simple panel_id payload from frontend.
     """
 
-    panel_id: Optional[str] = None
+    panel_id: str | None = None
     device_count: int = Field(50, gt=0)
     nac_circuit_count: int = Field(2, gt=0)
     building_size_m2: float = Field(1000.0, gt=0)
@@ -129,7 +128,7 @@ class FACPVerificationRequest(BaseModel):
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
-    preferred_manufacturer: Optional[str] = None
+    preferred_manufacturer: str | None = None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
     recommended_model: str = Field("NFS2-3030", description="Model name of the panel to verify")
     manufacturer: str = Field("NOTIFIER", description="Manufacturer of the panel")
@@ -171,7 +170,7 @@ class FACPVerificationRequest(BaseModel):
 class FACPScheduleRequest(BaseModel):
     """Input for DXF schedule table generation."""
 
-    panel_id: Optional[str] = None
+    panel_id: str | None = None
     recommended_model: str = Field("NFS2-3030", description="Panel model from selection result")
     manufacturer: str = Field("NOTIFIER", description="Panel manufacturer")
     capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
@@ -179,7 +178,7 @@ class FACPScheduleRequest(BaseModel):
     battery_size_ah: float = Field(26.0, gt=0)
     battery_derating_method: str = Field(BATTERY_DERATING_TEMP_COMPENSATED)
     power_supply_watts: int = Field(120, gt=0)
-    listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
+    listings: list[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
     signature_hash: str = Field("facp_sig_default", description="Cryptographic signature from selection")
     quantity: int = Field(1, gt=0, le=100, description="Number of panels (for schedule)")
 
@@ -187,7 +186,7 @@ class FACPScheduleRequest(BaseModel):
 class FACPSpecRequest(BaseModel):
     """Input for CSI specification generation."""
 
-    panel_id: Optional[str] = None
+    panel_id: str | None = None
     device_count: int = Field(50, gt=0)
     nac_circuit_count: int = Field(2, gt=0)
     building_size_m2: float = Field(1000.0, gt=0)
@@ -203,7 +202,7 @@ class FACPSpecRequest(BaseModel):
     battery_size_ah: float = Field(26.0, gt=0)
     battery_derating_method: str = Field(BATTERY_DERATING_TEMP_COMPENSATED)
     power_supply_watts: int = Field(120, gt=0)
-    listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
+    listings: list[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
     signature_hash: str = Field("facp_sig_default")
 
 
@@ -216,7 +215,7 @@ else:
     def _rate_limit(_s: str) -> object:
         return lambda f: f
 
-_facp_available: Optional[bool] =  None
+_facp_available: bool | None =  None
 
 
 def _check_facp_available() -> bool:
@@ -604,7 +603,7 @@ async def generate_facp_spec(request: Request, req: FACPSpecRequest):
 @router.get("/facp/panels", dependencies=[Depends(require_permission(Permission.FACP_READ))])
 async def list_available_panels():
     """
-    List all FACP panels in the database with full specifications.
+    list all FACP panels in the database with full specifications.
 
     Returns the complete panel database for manual review and
     engineering judgment. Each panel includes:

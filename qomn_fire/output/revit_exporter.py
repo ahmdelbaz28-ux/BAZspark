@@ -11,12 +11,11 @@ DOMAIN SCOPE (Phase 5 dedup):
 """
 
 import json
-from typing import List
 
 from qomn_fire.core.types import ConduitRun, Device, PanelRecommendation
 
 
-def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: PanelRecommendation) -> str:
+def export_to_revit_json(devices: list[Device], runs: list[ConduitRun], facp: PanelRecommendation) -> str:
     schema = {
         "SchemaVersion": "1.0",
         "Project": "QOMN-FIRE INTEGRATED EXPORT ENGINE",
@@ -34,7 +33,7 @@ def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: Pa
     for d in devices:
         schema["Devices"].append({
             "Id": d.id,
-            "Type": d.device_type.value,
+            "type": d.device_type.value,
             "Location": d.location.to_dict(),
             "ElevationFt": d.elevation_ft,
             "Circuit": d.circuit,

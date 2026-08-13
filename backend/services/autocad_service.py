@@ -29,7 +29,7 @@ USAGE:
 import logging
 import os
 import platform
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -48,8 +48,8 @@ class StrictCADEntitySchema(BaseModel):
     object_type: str = Field(..., min_length=1, max_length=50)
     layer: str = Field("0", max_length=100)
     color: int = Field(0, ge=0, le=256)
-    coordinates: List[List[float]] = Field(..., min_length=1)
-    properties: Optional[Dict[str, Any]] = None
+    coordinates: list[list[float]] = Field(..., min_length=1)
+    properties: dict[str, Any] | None = None
 
 
 # Cross-platform support: Real imports for Windows, mock for Linux/Mac
@@ -256,7 +256,7 @@ class AutoCADService:
         """
         return self.connect()
 
-    def _extract_entity_data(self, entity) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_entity_data(self, entity) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract detailed data from an AutoCAD entity.
 
@@ -264,7 +264,7 @@ class AutoCADService:
             entity: AutoCAD entity object
 
         Returns:
-            Dict containing entity data
+            dict containing entity data
 
         """
         try:
@@ -387,7 +387,7 @@ class AutoCADService:
                 "error": str(e)
             }
 
-    def read_dwg(self, filepath: str) -> Dict[str, Any]:
+    def read_dwg(self, filepath: str) -> dict[str, Any]:
         """
         Read entities from a DWG file.
 
@@ -512,7 +512,7 @@ class AutoCADService:
                 "count": 0
             }
 
-    def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def write_dwg(self, filepath: str, entities: list[dict[str, Any]]) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Write entities to a DWG file.
 
@@ -531,7 +531,7 @@ class AutoCADService:
 
         Args:
             filepath: Path to save the DWG file (MUST be validated by caller).
-            entities: List of entity dictionaries to write
+            entities: list of entity dictionaries to write
 
         Returns:
             bool: True if write successful, False otherwise (including
@@ -679,8 +679,8 @@ class AutoCADService:
             logger.exception("Error writing DWG file %s: %s", filepath, e)
             return False
 
-    def draw_line(self, start_point: List[float], end_point: List[float],
-                  layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_line(self, start_point: list[float], end_point: list[float],
+                  layer: str = "0", color: int = 0) -> Any | None:
         """
         Draw a line in the active AutoCAD document.
 
@@ -717,13 +717,13 @@ class AutoCADService:
             logger.exception("Error drawing line: %s", e)
             return None
 
-    def draw_polyline(self, vertices: List[List[float]],
-                      layer: str = "0", color: int = 0, closed: bool = False) -> Optional[Any]:
+    def draw_polyline(self, vertices: list[list[float]],
+                      layer: str = "0", color: int = 0, closed: bool = False) -> Any | None:
         """
         Draw a polyline in the active AutoCAD document.
 
         Args:
-            vertices: List of vertex coordinates [[x, y, z], [x, y, z], ...]
+            vertices: list of vertex coordinates [[x, y, z], [x, y, z], ...]
             layer: Layer name for the polyline
             color: Color index for the polyline
             closed: Whether the polyline should be closed
@@ -762,8 +762,8 @@ class AutoCADService:
             logger.exception("Error drawing polyline: %s", e)
             return None
 
-    def draw_circle(self, center: List[float], radius: float,
-                    layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_circle(self, center: list[float], radius: float,
+                    layer: str = "0", color: int = 0) -> Any | None:
         """
         Draw a circle in the active AutoCAD document.
 
@@ -800,8 +800,8 @@ class AutoCADService:
             logger.exception("Error drawing circle: %s", e)
             return None
 
-    def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
-                  layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_text(self, text: str, insertion_point: list[float], height: float = 0.2,
+                  layer: str = "0", color: int = 0) -> Any | None:
         """
         Draw text in the active AutoCAD document.
 
@@ -839,7 +839,7 @@ class AutoCADService:
             logger.exception("Error drawing text: %s", e)
             return None
 
-    def get_document_info(self) -> Dict[str, Any]:
+    def get_document_info(self) -> dict[str, Any]:
         """
         Get information about the active AutoCAD document.
 
@@ -987,7 +987,7 @@ class AutoCADService:
             logger.exception("Error deleting entity %s: %s", safe_handle, e)
             return False
 
-    def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
+    def modify_entity(self, handle: str, properties: dict[str, Any]) -> bool:
         """
         Modify an entity's properties by handle in the active AutoCAD document.
 
@@ -1005,7 +1005,7 @@ class AutoCADService:
 
         Args:
             handle: AutoCAD entity handle string (hex, e.g. "1A2F")
-            properties: Dict of attribute name → value to set on the entity.
+            properties: dict of attribute name → value to set on the entity.
 
         Returns:
             True only if the entity was found and at least one property set.

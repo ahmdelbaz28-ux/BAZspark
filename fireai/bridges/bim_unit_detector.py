@@ -47,7 +47,7 @@ import logging
 import math
 import os
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class UnitSystem(str, Enum):
+class UnitSystem(StrEnum):
     """
     Supported BIM unit systems with their scale-to-metres factors.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 prepare_dataset.py — BAZspark RAG Evaluation Dataset Preparer
 =============================================================
 Converts engineering data from various source formats (CSV, JSONL, JSON)
@@ -33,7 +33,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Validation
@@ -110,7 +109,7 @@ def validate_dataset(dataset_path: Path) -> bool:
                                 f"not found in corpus/"
                             )
         if ok:
-            print(f"[OK]   All required fields present. Dataset is valid.")
+            print("[OK]   All required fields present. Dataset is valid.")
 
     return ok
 

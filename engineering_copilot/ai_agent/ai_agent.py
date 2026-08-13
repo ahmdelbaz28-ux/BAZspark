@@ -9,7 +9,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from engineering_copilot.connectors.autocad_connector import AutoCADConnector
 from engineering_copilot.connectors.etap_connector import ETAPConnector
@@ -109,7 +109,7 @@ class EngineeringIntentProcessor:
             (r'(\d+)\s*watts?', lambda m: float(m.group(1)) / 1000.0)  # Convert W to kW
         ]
 
-    def parse_intent(self, request: str) -> Dict[str, Any]:
+    def parse_intent(self, request: str) -> dict[str, Any]:
         """
         Parse natural language engineering request into structured intent.
 
@@ -117,7 +117,7 @@ class EngineeringIntentProcessor:
             request: Natural language request string
 
         Returns:
-            Dict: Structured engineering intent
+            dict: Structured engineering intent
         """
         request_lower = request.lower()
 
@@ -188,7 +188,7 @@ class EngineeringIntentProcessor:
         self.logger.info(f"Parsed intent from request: {len(intent['entities'])} entities detected")
         return intent
 
-    def _extract_transformer_props(self, text: str, pos: int) -> Dict[str, Any]:
+    def _extract_transformer_props(self, text: str, pos: int) -> dict[str, Any]:
         """Extract transformer-specific properties from context."""
         props = {}
 
@@ -210,7 +210,7 @@ class EngineeringIntentProcessor:
 
         return props
 
-    def _extract_panel_props(self, text: str, pos: int) -> Dict[str, Any]:
+    def _extract_panel_props(self, text: str, pos: int) -> dict[str, Any]:
         """Extract panel-specific properties from context."""
         props = {}
 
@@ -230,7 +230,7 @@ class EngineeringIntentProcessor:
 
         return props
 
-    def _extract_breaker_props(self, text: str, pos: int) -> Dict[str, Any]:
+    def _extract_breaker_props(self, text: str, pos: int) -> dict[str, Any]:
         """Extract breaker-specific properties from context."""
         props = {}
 
@@ -272,16 +272,16 @@ class AICopilot:
         self.next_y = 10.0
         self.coord_increment = 5.0
 
-    def process_request(self, request: str, target_systems: Optional[List[str]] = None) -> Dict[str, Any]:
+    def process_request(self, request: str, target_systems: list[str] | None = None) -> dict[str, Any]:
         """
         Process a natural language engineering request and generate the required outputs.
 
         Args:
             request: Natural language request
-            target_systems: List of target systems to generate for (e.g., ['AutoCAD', 'ETAP', 'Revit'])
+            target_systems: list of target systems to generate for (e.g., ['AutoCAD', 'ETAP', 'Revit'])
 
         Returns:
-            Dict: Generation results with models for each requested system
+            dict: Generation results with models for each requested system
         """
         if target_systems is None:
             target_systems = ['AutoCAD', 'ETAP', 'Revit']
@@ -323,7 +323,7 @@ class AICopilot:
         self.logger.info(f"Engineering request processed successfully for {len(target_systems)} systems")
         return results
 
-    def _generate_unified_model(self, intent: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def _generate_unified_model(self, intent: dict[str, Any]) -> UnifiedEngineeringModel:
         """Generate a unified model based on parsed intent."""
         model = UnifiedEngineeringModel()
 
@@ -390,7 +390,7 @@ class AICopilot:
         self.logger.info(f"Generated unified model with {len(model.entities)} entities")
         return model
 
-    def _create_transformer(self, entity_info: Dict[str, Any], x: float, y: float) -> Transformer:
+    def _create_transformer(self, entity_info: dict[str, Any], x: float, y: float) -> Transformer:
         """Create a transformer entity from intent information."""
         # Get voltage ratings from intent
         primary_voltage = entity_info.get('primary_voltage', 13800.0)
@@ -410,7 +410,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_panel(self, entity_info: Dict[str, Any], x: float, y: float) -> Panel:
+    def _create_panel(self, entity_info: dict[str, Any], x: float, y: float) -> Panel:
         """Create a panel entity from intent information."""
         voltage_rating = entity_info.get('voltage_rating', 480.0)
         feeder_count = entity_info.get('feeder_count', 5)
@@ -426,7 +426,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_breaker(self, entity_info: Dict[str, Any], x: float, y: float) -> Breaker:
+    def _create_breaker(self, entity_info: dict[str, Any], x: float, y: float) -> Breaker:
         """Create a breaker entity from intent information."""
         voltage_rating = entity_info.get('voltage_rating', 480.0)
         current_rating = entity_info.get('current_rating', 200.0)
@@ -442,7 +442,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_cable(self, entity_info: Dict[str, Any], x: float, y: float) -> Cable:
+    def _create_cable(self, entity_info: dict[str, Any], x: float, y: float) -> Cable:
         """Create a cable entity from intent information."""
         voltage_rating = entity_info.get('voltage_rating', 600.0)
 
@@ -457,7 +457,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_bus(self, entity_info: Dict[str, Any], x: float, y: float) -> Bus:
+    def _create_bus(self, entity_info: dict[str, Any], x: float, y: float) -> Bus:
         """Create a bus entity from intent information."""
         voltage_rating = entity_info.get('voltage_rating', 480.0)
 
@@ -471,7 +471,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_load(self, entity_info: Dict[str, Any], x: float, y: float) -> Load:
+    def _create_load(self, entity_info: dict[str, Any], x: float, y: float) -> Load:
         """Create a load entity from intent information."""
         power_rating = entity_info.get('power_rating', 100.0)
 
@@ -485,7 +485,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_generator(self, entity_info: Dict[str, Any], x: float, y: float) -> Generator:
+    def _create_generator(self, entity_info: dict[str, Any], x: float, y: float) -> Generator:
         """Create a generator entity from intent information."""
         power_rating = entity_info.get('power_rating', 500.0)
         voltage_rating = entity_info.get('voltage_rating', 480.0)
@@ -500,7 +500,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _create_equipment(self, entity_info: Dict[str, Any], x: float, y: float) -> Equipment:
+    def _create_equipment(self, entity_info: dict[str, Any], x: float, y: float) -> Equipment:
         """Create an equipment entity from intent information."""
         return Equipment(
             id=f"equipment_{int(datetime.now().timestamp())}",
@@ -511,7 +511,7 @@ class AICopilot:
             source_system=SourceSystem.UNIFIED
         )
 
-    def _validate_engineering_model(self, model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def _validate_engineering_model(self, model: UnifiedEngineeringModel) -> dict[str, Any]:
         """Validate the engineering model for common issues."""
         validation_report = {
             'errors': [],
@@ -607,7 +607,7 @@ class AICopilot:
         self.logger.info(validation_report['summary'])
         return validation_report
 
-    def generate_reports(self, model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def generate_reports(self, model: UnifiedEngineeringModel) -> dict[str, Any]:
         """Generate various engineering reports from the model."""
         reports = {
             'bom': self._generate_bom(model),
@@ -619,7 +619,7 @@ class AICopilot:
         self.logger.info("Generated engineering reports")
         return reports
 
-    def _generate_bom(self, model: UnifiedEngineeringModel) -> List[Dict[str, Any]]:
+    def _generate_bom(self, model: UnifiedEngineeringModel) -> list[dict[str, Any]]:
         """Generate Bill of Materials from the model."""
         bom = []
 
@@ -644,7 +644,7 @@ class AICopilot:
 
         return bom
 
-    def _generate_panel_schedule(self, model: UnifiedEngineeringModel) -> List[Dict[str, Any]]:
+    def _generate_panel_schedule(self, model: UnifiedEngineeringModel) -> list[dict[str, Any]]:
         """Generate panel schedules from the model."""
         panels = model.get_entities_by_type(EntityType.PANEL)
         schedules = []
@@ -670,7 +670,7 @@ class AICopilot:
         # For now, we'll use a simple estimation
         return panel.feeder_count * 20.0  # Estimate 20kW per feeder
 
-    def _generate_electrical_schedule(self, model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def _generate_electrical_schedule(self, model: UnifiedEngineeringModel) -> dict[str, Any]:
         """Generate electrical schedule summary."""
         schedule = {
             'total_transformers': len(model.get_entities_by_type(EntityType.TRANSFORMER)),
@@ -715,7 +715,7 @@ class AICopilot:
 
         return "".join(doc_parts)
 
-    def detect_conflicts(self, model: UnifiedEngineeringModel) -> List[Dict[str, Any]]:
+    def detect_conflicts(self, model: UnifiedEngineeringModel) -> list[dict[str, Any]]:
         """Detect potential conflicts in the engineering model."""
         conflicts = []
 
@@ -747,7 +747,7 @@ class AICopilot:
 
         return conflicts
 
-    def detect_missing_equipment(self, model: UnifiedEngineeringModel) -> List[Dict[str, Any]]:
+    def detect_missing_equipment(self, model: UnifiedEngineeringModel) -> list[dict[str, Any]]:
         """Detect potentially missing equipment based on engineering rules."""
         missing = []
 
@@ -765,7 +765,7 @@ class AICopilot:
 
         return missing
 
-    def query_local_civil_defense_codes(self, query: str, jurisdiction: str = "auto") -> Dict[str, Any]:
+    def query_local_civil_defense_codes(self, query: str, jurisdiction: str = "auto") -> dict[str, Any]:
         """
         Query local Civil Defense engineering codes (Egyptian, Saudi SBC 801, GCC).
 
@@ -820,7 +820,7 @@ class LocalCodeRAGRetriever:
             ],
         }
 
-    def retrieve_code_clause(self, query: str, jurisdiction: str = "auto") -> Dict[str, Any]:
+    def retrieve_code_clause(self, query: str, jurisdiction: str = "auto") -> dict[str, Any]:
         """Retrieve matching clauses from local civil defense vector store."""
         query_lower = query.lower()
         matched_clauses = []

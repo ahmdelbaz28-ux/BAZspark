@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -9,13 +8,13 @@ from fireai.core.contracts import DEFAULT_FEATURE_FLAGS, get_feature_flags
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
 # 1. Feature Flags / Runtime Settings
-@router.get("/feature-flags", response_model=Dict[str, bool])
+@router.get("/feature-flags", response_model=dict[str, bool])
 async def read_feature_flags():
     """Get all current feature flags."""
     return get_feature_flags()
 
 @router.post("/feature-flags")
-async def update_feature_flags(flags: Dict[str, bool]):
+async def update_feature_flags(flags: dict[str, bool]):
     """
     Update feature flags.
     Saves to FIREAI_FEATURE_FLAGS environment variable.
@@ -38,13 +37,13 @@ async def update_feature_flags(flags: Dict[str, bool]):
     return {"status": "success", "flags": current_flags}
 
 # Runtime Settings Alias for 3-tier Security Settings UI
-@router.get("/runtime", response_model=Dict[str, bool])
+@router.get("/runtime", response_model=dict[str, bool])
 async def read_runtime_settings():
     """Get runtime feature flags (editable in UI)."""
     return get_feature_flags()
 
 @router.post("/runtime")
-async def update_runtime_settings(flags: Dict[str, bool]):
+async def update_runtime_settings(flags: dict[str, bool]):
     """Update runtime feature flags."""
     return await update_feature_flags(flags)
 

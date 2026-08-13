@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ETAPModelType(Enum):
@@ -102,7 +102,7 @@ class CategoryMapper:
             'Backup Generator': 'Generator',
         }
 
-    def get_target_model(self, revit_category: str) -> Optional[ETAPModelType]:
+    def get_target_model(self, revit_category: str) -> ETAPModelType | None:
         """
         Get the target ETAP model for a Revit category.
 
@@ -114,7 +114,7 @@ class CategoryMapper:
         """
         return self.category_to_model_map.get(revit_category)
 
-    def map_category_to_attributes(self, revit_category: str) -> Dict[str, Any]:
+    def map_category_to_attributes(self, revit_category: str) -> dict[str, Any]:
         """
         Map a Revit category to ETAP attributes.
 
@@ -122,7 +122,7 @@ class CategoryMapper:
             revit_category: Name of the Revit category
 
         Returns:
-            Dict: Mapped attributes for ETAP
+            dict: Mapped attributes for ETAP
         """
         attributes = {
             'etap_model_type': self.get_target_model(revit_category),
@@ -179,15 +179,15 @@ class CategoryMapper:
         else:
             return 'GeneralEquipment'
 
-    def get_required_parameters(self, equipment_type: str) -> List[str]:
+    def get_required_parameters(self, equipment_type: str) -> list[str]:
         """
         Get required parameters for specific equipment type.
 
         Args:
-            equipment_type: Type of equipment
+            equipment_type: type of equipment
 
         Returns:
-            List[str]: Required parameter names
+            list[str]: Required parameter names
         """
         required_params = {
             'Transformer': ['VoltageRating', 'PowerRating', 'Efficiency', 'Impedance'],
@@ -204,7 +204,7 @@ class CategoryMapper:
 
         return required_params.get(equipment_type, ['ModelNumber', 'Manufacturer'])
 
-    def validate_mapping(self, revit_element_data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_mapping(self, revit_element_data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate that Revit element data can be properly mapped to ETAP.
 
@@ -212,7 +212,7 @@ class CategoryMapper:
             revit_element_data: Raw Revit element data
 
         Returns:
-            Dict: Validation results
+            dict: Validation results
         """
         validation_result = {
             'valid': True,
@@ -251,7 +251,7 @@ class CategoryMapper:
 
         return validation_result
 
-    def transform_for_etap(self, revit_element_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_for_etap(self, revit_element_data: dict[str, Any]) -> dict[str, Any]:
         """
         Transform Revit element data to ETAP-compatible format.
 
@@ -259,7 +259,7 @@ class CategoryMapper:
             revit_element_data: Raw Revit element data
 
         Returns:
-            Dict: ETAP-compatible element data
+            dict: ETAP-compatible element data
         """
         category = revit_element_data.get('category', 'Unknown')
         name = revit_element_data.get('name', 'Unknown')
@@ -297,16 +297,16 @@ class CategoryMapper:
 
         return etap_element
 
-    def _transform_parameters(self, parameters: Dict[str, Any], _equipment_type: str) -> Dict[str, Any]:
+    def _transform_parameters(self, parameters: dict[str, Any], _equipment_type: str) -> dict[str, Any]:
         """
         Transform Revit parameters to ETAP-compatible parameters.
 
         Args:
             parameters: Original Revit parameters
-            equipment_type: Type of equipment
+            equipment_type: type of equipment
 
         Returns:
-            Dict: Transformed parameters
+            dict: Transformed parameters
         """
         transformed = {}
 

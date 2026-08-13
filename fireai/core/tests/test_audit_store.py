@@ -512,7 +512,7 @@ class TestAddEvent:
             fixed_ts = "2024-06-15T12:00:00Z"
             mock_dt.datetime.now.return_value.isoformat.return_value = fixed_ts.replace("Z", "+00:00")
             mock_dt.datetime.now.return_value = dt.datetime(
-                2024, 6, 15, 12, 0, 0, tzinfo=dt.timezone.utc
+                2024, 6, 15, 12, 0, 0, tzinfo=dt.UTC
             )
             mock_dt.timezone = dt.timezone
             # We'll verify the hash manually instead of mocking datetime

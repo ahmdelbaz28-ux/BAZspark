@@ -45,7 +45,6 @@ import os
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
 
 from fastapi import Header, HTTPException, Request, status
 
@@ -154,7 +153,7 @@ def _sanitize_log_detail(detail: str) -> str:
     return sanitized
 
 
-def _verify_master_token(provided: Optional[str]) -> bool:
+def _verify_master_token(provided: str | None) -> bool:
     """
     Verify the master admin token using constant-time comparison.
 
@@ -178,7 +177,7 @@ def _verify_master_token(provided: Optional[str]) -> bool:
 # ═══ FastAPI Dependency ═══════════════════════════════════════════════════
 async def require_master_admin(  # NOSONAR:S7503: async required by FastAPI Depends injection contract
     request: Request,
-    x_master_admin_token: Optional[str] = Header(None, alias="X-Master-Admin-Token"),
+    x_master_admin_token: str | None = Header(None, alias="X-Master-Admin-Token"),
 ) -> str:
     """
     FastAPI dependency that enforces master admin token + rate limit + audit.

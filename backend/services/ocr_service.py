@@ -33,7 +33,7 @@ import logging
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 try:  # OCR extras — optional so the module imports without Tesseract
     import pytesseract
@@ -136,7 +136,7 @@ class OCRService:
 
         return text
 
-    def _extract_room_names(self, text: str) -> List[Tuple[str, float]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_room_names(self, text: str) -> list[tuple[str, float]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract room names and associated area values from text.
 
@@ -144,7 +144,7 @@ class OCRService:
             text: Text to search for room names and areas
 
         Returns:
-            List of tuples (room_name, area_value)
+            list of tuples (room_name, area_value)
         """
         results = []
 
@@ -176,7 +176,7 @@ class OCRService:
 
         return results
 
-    def _extract_areas_only(self, text: str) -> List[float]:
+    def _extract_areas_only(self, text: str) -> list[float]:
         """
         Extract standalone area values from text.
 
@@ -184,7 +184,7 @@ class OCRService:
             text: Text to search for area values
 
         Returns:
-            List of area values
+            list of area values
         """
         results = []
 
@@ -199,7 +199,7 @@ class OCRService:
 
         return results
 
-    def _ocr_image(self, image: Image.Image, lang: str = "eng+ara") -> Dict[str, Any]:
+    def _ocr_image(self, image: Image.Image, lang: str = "eng+ara") -> dict[str, Any]:
         """
         Perform OCR on a single image.
 
@@ -254,7 +254,7 @@ class OCRService:
             'raw_data': data
         }
 
-    def process_file(self, file_path: str | Path, lang: str = "eng+ara") -> Dict[str, Any]:
+    def process_file(self, file_path: str | Path, lang: str = "eng+ara") -> dict[str, Any]:
         """
         Process a PDF or image file with OCR.
 

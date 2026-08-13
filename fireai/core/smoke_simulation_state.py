@@ -76,8 +76,8 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ PLACEHOLDER_VALIDATION_WARNING: str = (
 # ---------------------------------------------------------------------------
 
 
-class SimulationStatus(str, Enum):
+class SimulationStatus(StrEnum):
     """Status of smoke simulation data."""
 
     PLACEHOLDER = "placeholder"  # No real simulation run yet
@@ -329,7 +329,7 @@ class SmokeSimulationState:
     fds_config: FDSIntegrationConfig | None = None
     fds_run_id: str | None = None
     last_updated: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
     )
     validation_warning: str | None = PLACEHOLDER_VALIDATION_WARNING
 
@@ -456,7 +456,7 @@ class SmokeSimulationState:
         self.fds_run_id = fds_run_id
         self.status = SimulationStatus.VALIDATED
         self.validation_warning = None  # Validated = no warning
-        self.last_updated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.last_updated = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
         logger.info(
             "SmokeSimulationState updated with FDS results: room=%s fds_run=%s points=%d",
@@ -467,13 +467,13 @@ class SmokeSimulationState:
         """Mark state as pending FDS simulation completion."""
         self.fds_run_id = fds_run_id
         self.status = SimulationStatus.PENDING
-        self.last_updated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.last_updated = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     def mark_failed(self, error: str) -> None:
         """Mark FDS simulation as failed."""
         self.status = SimulationStatus.FAILED
         self.validation_warning = f"FDS simulation failed: {error}"
-        self.last_updated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.last_updated = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # ------------------------------------------------------------------
     # Safety Properties

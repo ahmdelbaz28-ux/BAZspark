@@ -4,7 +4,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from parsers._base import ParserBase
 from parsers._device_types import DeviceType
@@ -43,9 +42,9 @@ class PDFParseResult:
     source_file: str
     success: bool
     page_count: int = 0
-    devices: List[PDFDevice] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    devices: list[PDFDevice] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     text_content: str = ""
 
     @property
@@ -96,7 +95,7 @@ class PDFParser(ParserBase):
 
     def __init__(self, min_confidence: float = 0.5):
         self.min_confidence = min_confidence
-        self._device_cache: Dict[str, str] = {}
+        self._device_cache: dict[str, str] = {}
         self.max_file_size_bytes: int = int(
             os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024)
         )
@@ -196,7 +195,7 @@ class PDFParser(ParserBase):
             logger.exception("OCR failed: %s", e)
             return ""
 
-    def _find_devices(self, text: str, page: int) -> List[PDFDevice]:
+    def _find_devices(self, text: str, page: int) -> list[PDFDevice]:
         devices = []
         text_lower = text.lower()
 
@@ -217,7 +216,7 @@ class PDFParser(ParserBase):
 
         return devices
 
-    def _extract_location(self, text: str, position: int) -> Optional[str]:
+    def _extract_location(self, text: str, position: int) -> str | None:
         window = text[max(0, position - 50):position + 50]
 
         room_patterns = [
@@ -236,12 +235,12 @@ class PDFParser(ParserBase):
     def _guess_coordinates(self, _text: str, _position: int) -> tuple:
         return (0.0, 0.0)
 
-    def _extract_layout_devices(self, _page_num: int) -> List[PDFDevice]:
+    def _extract_layout_devices(self, _page_num: int) -> list[PDFDevice]:
         devices = []
         # TODO: Implement symbol detection for PDF layout devices (placeholder)
         return devices
 
-    def _deduplicate_devices(self, devices: List[PDFDevice]) -> List[PDFDevice]:
+    def _deduplicate_devices(self, devices: list[PDFDevice]) -> list[PDFDevice]:
         seen = set()
         unique = []
 
@@ -267,7 +266,7 @@ class PDFReportGenerator:
     def generate_report(self, pdf_path: str) -> dict:
         result = self.parser.parse(pdf_path)
 
-        device_counts: Dict[str, int] = {}
+        device_counts: dict[str, int] = {}
         for d in result.devices:
             device_counts[d.device_type] = device_counts.get(d.device_type, 0) + 1
 

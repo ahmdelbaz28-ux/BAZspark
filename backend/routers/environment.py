@@ -33,7 +33,6 @@ LIFE-SAFETY NOTE:
 import asyncio
 import logging
 import time
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -608,7 +607,7 @@ async def get_full_phase2_context(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),  # NOSONAR - python:S8410
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),  # NOSONAR - python:S8410
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),  # NOSONAR - python:S8410
-    material: Optional[str] =  Query(  # NOSONAR - python:S8410
+    material: str | None =  Query(  # NOSONAR - python:S8410
         None, max_length=200,
         description="Optional hazardous material name for HAC data"
     ),

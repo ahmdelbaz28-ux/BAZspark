@@ -38,7 +38,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class ConversionConfig:
     """Configuration for AutoCAD ↔ Revit conversion."""
 
     # AutoCAD → Revit mapping rules
-    layer_to_category: Dict[str, str] = field(default_factory=lambda: {
+    layer_to_category: dict[str, str] = field(default_factory=lambda: {
         "Walls": "Walls",
         "A-WALL": "Walls",
         "Doors": "Doors",
@@ -70,7 +70,7 @@ class ConversionConfig:
     })
 
     # Line type to element mapping
-    linetype_to_element: Dict[str, str] = field(default_factory=lambda: {
+    linetype_to_element: dict[str, str] = field(default_factory=lambda: {
         "Continuous": "Wall",
         "Hidden": "Wall",
         "Center": "Grid",
@@ -78,7 +78,7 @@ class ConversionConfig:
     })
 
     # Block to family mapping
-    block_to_family: Dict[str, str] = field(default_factory=lambda: {
+    block_to_family: dict[str, str] = field(default_factory=lambda: {
         "Door": "Single-Flush",
         "Window": "Fixed",
         "Furniture": "Desk",
@@ -95,7 +95,7 @@ class ConversionConfig:
     level_height: float = 3000.0  # mm
 
     # Revit → AutoCAD mapping
-    category_to_layer: Dict[str, str] = field(default_factory=lambda: {
+    category_to_layer: dict[str, str] = field(default_factory=lambda: {
         "Walls": "A-WALL",
         "Doors": "A-DOOR",
         "Windows": "A-GLAZ",
@@ -106,7 +106,7 @@ class ConversionConfig:
         "Text Notes": "A-ANNO-TEXT",
     })
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "layer_to_category": self.layer_to_category,
@@ -121,7 +121,7 @@ class ConversionConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ConversionConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "ConversionConfig":
         """Create from dictionary."""
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
@@ -134,12 +134,12 @@ class ConversionResult:
     source_file: str
     target_file: str
     elements_converted: int
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "success": self.success,
@@ -165,7 +165,7 @@ class VersionInfo:
     elements_count: int
     status: str  # "success", "failed", "partial"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "version_id": self.version_id,
@@ -196,7 +196,7 @@ class SemanticMapper:
     def __init__(self, config: ConversionConfig) -> None:
         self.config = config
 
-    def map_autocad_to_revit(self, autocad_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def map_autocad_to_revit(self, autocad_entity: dict[str, Any]) -> dict[str, Any] | None:
         """
         Map a single AutoCAD entity to Revit element specification.
 
@@ -240,7 +240,7 @@ class SemanticMapper:
         logger.debug("Unsupported entity type: %s", entity_type)
         return None
 
-    def _map_line_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _map_line_to_revit(self, entity: dict[str, Any], category: str) -> dict[str, Any]:
         """Map AutoCAD line to Revit element."""
         start = entity.get("start_point", [0, 0, 0])
         end = entity.get("end_point", [1, 0, 0])
@@ -264,7 +264,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_polyline_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _map_polyline_to_revit(self, entity: dict[str, Any], category: str) -> dict[str, Any]:
         """Map AutoCAD polyline to Revit element."""
         # Extract vertices from coordinates array
         coords = entity.get("coordinates", [])
@@ -295,7 +295,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_circle_to_revit(self, entity: Dict[str, Any], _category: str) -> Dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
+    def _map_circle_to_revit(self, entity: dict[str, Any], _category: str) -> dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
         """Map AutoCAD circle to Revit element."""
         center = entity.get("center", [0, 0, 0])
         radius = entity.get("radius", 1000.0)
@@ -308,7 +308,7 @@ class SemanticMapper:
             "column_type": "Circular",
         }
 
-    def _map_arc_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _map_arc_to_revit(self, entity: dict[str, Any], category: str) -> dict[str, Any]:
         """Map AutoCAD arc to Revit element."""
         center = entity.get("center", [0, 0, 0])
         radius = entity.get("radius", 1000.0)
@@ -325,7 +325,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_text_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    def _map_text_to_revit(self, entity: dict[str, Any]) -> dict[str, Any]:
         """Map AutoCAD text to Revit text note."""
         text = entity.get("text_string", "")
         insert = entity.get("insertion_point", [0, 0, 0])
@@ -338,7 +338,7 @@ class SemanticMapper:
             "font_size": height,
         }
 
-    def _map_mtext_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    def _map_mtext_to_revit(self, entity: dict[str, Any]) -> dict[str, Any]:
         """Map AutoCAD MTEXT to Revit text note."""
         text = entity.get("contents", "")
         insert = entity.get("insertion_point", [0, 0, 0])
@@ -351,7 +351,7 @@ class SemanticMapper:
             "font_size": height,
         }
 
-    def _map_block_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    def _map_block_to_revit(self, entity: dict[str, Any]) -> dict[str, Any]:
         """Map AutoCAD block to Revit family instance."""
         block_name = entity.get("name", "")
         insert = entity.get("insertion_point", [0, 0, 0])
@@ -366,7 +366,7 @@ class SemanticMapper:
             "level": self.config.default_level,
         }
 
-    def _map_spline_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _map_spline_to_revit(self, entity: dict[str, Any], category: str) -> dict[str, Any]:
         """Map AutoCAD spline to Revit element."""
         return {
             "element_type": "ModelLine",
@@ -375,7 +375,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_hatch_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+    def _map_hatch_to_revit(self, entity: dict[str, Any], category: str) -> dict[str, Any]:
         """Map AutoCAD hatch to Revit element."""
         if category == "Floors":
             # For now, treat hatches as potential floor boundaries
@@ -392,7 +392,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_dimension_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    def _map_dimension_to_revit(self, entity: dict[str, Any]) -> dict[str, Any]:
         """Map AutoCAD dimension to Revit dimension."""
         return {
             "element_type": "Dimension",
@@ -400,7 +400,7 @@ class SemanticMapper:
             "text_override": entity.get("dimension_text", ""),
         }
 
-    def map_revit_to_autocad(self, revit_element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def map_revit_to_autocad(self, revit_element: dict[str, Any]) -> dict[str, Any] | None:
         """
         Map a single Revit element to AutoCAD entity specification.
 
@@ -439,7 +439,7 @@ class SemanticMapper:
         # Generic element — create block reference
         return self._map_generic_to_autocad(revit_element, layer)
 
-    def _map_wall_to_autocad(self, element: Dict[str, Any], layer: str) -> Optional[Dict[str, Any]]:
+    def _map_wall_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any] | None:
         """Map Revit wall to AutoCAD lines."""
         curve = element.get("location_curve", [])
 
@@ -452,7 +452,7 @@ class SemanticMapper:
             }
         return None
 
-    def _map_floor_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_floor_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit floor to AutoCAD polyline."""
         boundary = element.get("boundary", [])
 
@@ -463,7 +463,7 @@ class SemanticMapper:
             "closed": True,
         }
 
-    def _map_door_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_door_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit door to AutoCAD block."""
         location = element.get("location_point", [0, 0, 0])
 
@@ -474,7 +474,7 @@ class SemanticMapper:
             "insertion_point": location,
         }
 
-    def _map_window_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_window_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit window to AutoCAD block."""
         location = element.get("location_point", [0, 0, 0])
 
@@ -485,7 +485,7 @@ class SemanticMapper:
             "insertion_point": location,
         }
 
-    def _map_roof_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_roof_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit roof to AutoCAD polyline."""
         boundary = element.get("boundary", [])
 
@@ -496,7 +496,7 @@ class SemanticMapper:
             "closed": True,
         }
 
-    def _map_furniture_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_furniture_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit furniture to AutoCAD block."""
         location = element.get("location_point", [0, 0, 0])
 
@@ -507,7 +507,7 @@ class SemanticMapper:
             "insertion_point": location,
         }
 
-    def _map_text_note_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_text_note_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit text note to AutoCAD text."""
         text = element.get("text", "Sample Text")
         location = element.get("location", [0, 0, 0])
@@ -521,7 +521,7 @@ class SemanticMapper:
             "height": font_size,
         }
 
-    def _map_dimension_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_dimension_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map Revit dimension to AutoCAD dimension."""
         measurement = element.get("measurement", 0)
 
@@ -532,7 +532,7 @@ class SemanticMapper:
             "text_override": element.get("text_override", str(measurement)),
         }
 
-    def _map_generic_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_generic_to_autocad(self, element: dict[str, Any], layer: str) -> dict[str, Any]:
         """Map generic Revit element to AutoCAD block."""
         location = element.get("location_point", [0, 0, 0])
 
@@ -561,13 +561,13 @@ class DigitalTwinEngine:
     6. Record version history
     """
 
-    def __init__(self, config: Optional[ConversionConfig] = None) -> None:
+    def __init__(self, config: ConversionConfig | None = None) -> None:
         self.config = config or ConversionConfig()
         self.mapper = SemanticMapper(self.config)
         self.version_manager = VersionManager()
 
     def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
-                                  _template_path: Optional[str] = None) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
+                                  _template_path: str | None = None) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
         """
         Convert AutoCAD DWG to Revit RVT.
 
@@ -1074,7 +1074,7 @@ class VersionManager:
 
     VERSION_FILE = "conversion_history.json"
 
-    def __init__(self, history_dir: Optional[str] = None) -> None:
+    def __init__(self, history_dir: str | None = None) -> None:
         self.history_dir = Path(history_dir or os.getenv("CONVERSION_HISTORY_DIR", "."))
         self.history_file = self.history_dir / self.VERSION_FILE
 
@@ -1093,7 +1093,7 @@ class VersionManager:
             Path(tempfile.gettempdir()).resolve(),
         ]
 
-        def _is_safe(p_str: Optional[str]) -> bool:
+        def _is_safe(p_str: str | None) -> bool:
             if not p_str:
                 return True
             try:
@@ -1144,7 +1144,7 @@ class VersionManager:
         logger.info("Recorded version %s", version_id)
         return version_id
 
-    def get_history(self) -> List[Dict[str, Any]]:
+    def get_history(self) -> list[dict[str, Any]]:
         """Get full version history."""
         return self._load_history()
 
@@ -1177,7 +1177,7 @@ class VersionManager:
         logger.error("Version %s not found", version_id)
         return False
 
-    def _load_history(self) -> List[Dict[str, Any]]:
+    def _load_history(self) -> list[dict[str, Any]]:
         """Load version history from file."""
         if not self.history_file.exists():
             return []
@@ -1189,7 +1189,7 @@ class VersionManager:
             logger.exception("History file corrupted: %s", self.history_file)
             return []
 
-    def _save_history(self, history: List[Dict[str, Any]]) -> None:
+    def _save_history(self, history: list[dict[str, Any]]) -> None:
         """Save version history to file."""
         self.history_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1218,12 +1218,12 @@ class DigitalTwinService:
         history = service.get_conversion_history()
     """
 
-    def __init__(self, config: Optional[ConversionConfig] = None) -> None:
+    def __init__(self, config: ConversionConfig | None = None) -> None:
         self.config = config or ConversionConfig()
         self.engine = DigitalTwinEngine(self.config)
 
     def convert_autocad_to_revit(self, dwg_path: str, rvt_path: str,
-                                  template: Optional[str] = None) -> ConversionResult:
+                                  template: str | None = None) -> ConversionResult:
         """Convert AutoCAD to Revit."""
         return self.engine.convert_autocad_to_revit(dwg_path, rvt_path, template)
 
@@ -1232,7 +1232,7 @@ class DigitalTwinService:
         return self.engine.convert_revit_to_autocad(rvt_path, dwg_path)
 
     def convert_cad_to_simready(self, source_asset: str, profile: str = "Prop-Robotics-Neutral",
-                                property_assignment: str = "run", output_root: Optional[str] = None) -> Dict[str, Any]:
+                                property_assignment: str = "run", output_root: str | None = None) -> dict[str, Any]:
         """Convert CAD/BIM source asset to NVIDIA SimReady OpenUSD package."""
         from backend.services.simready_adapter import SimReadyAdapter, SimReadyPipelineConfig
 
@@ -1259,7 +1259,7 @@ class DigitalTwinService:
             "stage_reports": res.stage_reports,
         }
 
-    def get_conversion_history(self) -> List[Dict[str, Any]]:
+    def get_conversion_history(self) -> list[dict[str, Any]]:
         """Get conversion history."""
         return self.engine.version_manager.get_history()
 
@@ -1277,7 +1277,7 @@ class ConversionConfigManager:
 
     CONFIG_FILE = "conversion_config.json"
 
-    def __init__(self, config_dir: Optional[str] = None) -> None:
+    def __init__(self, config_dir: str | None = None) -> None:
         self.config_dir = Path(config_dir or os.getenv("CONVERSION_CONFIG_DIR", "."))
         self.config_path = self.config_dir / self.CONFIG_FILE
 
@@ -1336,7 +1336,7 @@ class ConversionConfigManager:
             logger.exception("Failed to update mapping: %s", e)
             return False
 
-    def get_available_mappings(self) -> Dict[str, Any]:
+    def get_available_mappings(self) -> dict[str, Any]:
         """Get all available mapping configurations."""
         config = self.load_config()
         return {

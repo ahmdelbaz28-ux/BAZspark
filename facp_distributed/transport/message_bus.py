@@ -6,7 +6,8 @@ import logging
 import threading
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class MessageBusTransport(TransportLayer):
         raise NotImplementedError("Subclasses must implement disconnect()")
 
     @abstractmethod
-    def publish(self, topic: str, message: Dict[str, Any]):
+    def publish(self, topic: str, message: dict[str, Any]):
         """Publish a message to a topic"""
         raise NotImplementedError("Subclasses must implement publish()")
 
@@ -44,7 +45,7 @@ class MessageBusTransport(TransportLayer):
         """Subscribe to a topic with a handler"""
         raise NotImplementedError("Subclasses must implement subscribe()")
 
-    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
+    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
         """
         Send request via message bus
         target_node can specify routing information
@@ -136,7 +137,7 @@ class RedisMessageBus(MessageBusTransport):
             self.redis_client.close()
         self.running = False
 
-    def publish(self, topic: str, message: Dict[str, Any]):
+    def publish(self, topic: str, message: dict[str, Any]):
         """Publish a message to Redis channel"""
         message_str = json.dumps(message)
         self.redis_client.publish(topic, message_str)
@@ -194,7 +195,7 @@ class RedisMessageBus(MessageBusTransport):
 class NATSMessageBus(MessageBusTransport):
     """NATS-based message bus implementation"""
 
-    def __init__(self, servers: Optional[list] = None, node_type: str = "l2_orchestrator"):
+    def __init__(self, servers: list | None = None, node_type: str = "l2_orchestrator"):
         super().__init__(node_type)
         self.servers = servers or ["nats://localhost:4222"]
         self.nc = None  # NATS connection
@@ -230,7 +231,7 @@ class NATSMessageBus(MessageBusTransport):
             asyncio.run(self.nc.close())
         self.running = False
 
-    async def async_publish(self, topic: str, message: Dict[str, Any]):
+    async def async_publish(self, topic: str, message: dict[str, Any]):
         """Async publish to NATS"""
         if not self.nc:
             raise RuntimeError("Not connected to NATS")
@@ -238,7 +239,7 @@ class NATSMessageBus(MessageBusTransport):
         message_str = json.dumps(message)
         await self.nc.publish(topic, message_str.encode())
 
-    def publish(self, topic: str, message: Dict[str, Any]):
+    def publish(self, topic: str, message: dict[str, Any]):
         """Publish a message to NATS subject"""
         # Run the async publish method
         loop = asyncio.new_event_loop()
@@ -312,7 +313,7 @@ class InMemoryMessageBus(MessageBusTransport):
         self.message_queues.clear()
         self.running = False
 
-    def publish(self, topic: str, message: Dict[str, Any]):
+    def publish(self, topic: str, message: dict[str, Any]):
         """Publish a message to in-memory channel"""
         if topic not in self.message_queues:
             self.message_queues[topic] = []

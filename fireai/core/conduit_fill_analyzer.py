@@ -52,7 +52,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ except ImportError:
 # ============================================================================
 
 
-class InsulationType(str, Enum):
+class InsulationType(StrEnum):
     """Fire alarm cable insulation types per NEC Chapter 9 Table 5."""
 
     FPLP = "FPLP"  # Fire Power Limited Plenum — most common for FA
@@ -92,7 +92,7 @@ class InsulationType(str, Enum):
     XHHW = "XHHW"  # Cross-linked Polyethylene
 
 
-class CircuitClass(str, Enum):
+class CircuitClass(StrEnum):
     """
     Fire alarm circuit classification per NEC 760.
 
@@ -154,7 +154,7 @@ WIRE_DIAMETERS_MM: dict[tuple[str, int], float] = {
 # ============================================================================
 
 
-class ConduitType(str, Enum):
+class ConduitType(StrEnum):
     """Conduit types per NEC Chapter 9 Table 4."""
 
     EMT = "EMT"  # Electrical Metallic Tubing

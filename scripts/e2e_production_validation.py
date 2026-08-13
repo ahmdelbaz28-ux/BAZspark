@@ -6,7 +6,6 @@ Runs comprehensive checks to verify production readiness.
 import asyncio
 import os
 import sys
-from typing import List, Tuple
 
 import httpx
 import psycopg2
@@ -14,7 +13,7 @@ import psycopg2
 # Load .env file if present
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 if os.path.exists(env_path):
-    with open(env_path, 'r') as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#') and '=' in line:
@@ -58,7 +57,7 @@ def print_info(text: str):
 
 class ProductionValidator:
     def __init__(self):
-        self.results: List[Tuple[str, bool, str]] = []
+        self.results: list[tuple[str, bool, str]] = []
         self.base_url = os.getenv("BASE_URL", "http://localhost:8000")
 
     def check(self, name: str, success: bool, message: str):
@@ -223,7 +222,7 @@ class ProductionValidator:
     def test_gitignore(self) -> bool:
         """Test .gitignore properly excludes .env"""
         try:
-            with open(".gitignore", "r") as f:
+            with open(".gitignore") as f:
                 content = f.read()
 
             checks = [
@@ -281,7 +280,7 @@ class ProductionValidator:
                 continue
 
             try:
-                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                with open(filepath, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 for pattern in secret_patterns:

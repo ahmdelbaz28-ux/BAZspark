@@ -24,10 +24,11 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,7 @@ class RuleApplication:
     value_found: Any | None = None
     value_expected: Any | None = None
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 
@@ -172,7 +173,7 @@ class ValidationReport:
     design_id: str = ""
     design_name: str = ""
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     standards_validated: list[ValidationStandard] = field(default_factory=list)
     standard_reports: dict[str, StandardReport] = field(default_factory=dict)

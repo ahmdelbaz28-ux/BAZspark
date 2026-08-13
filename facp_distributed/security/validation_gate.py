@@ -4,7 +4,7 @@ import hashlib
 import logging
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..protocol.message_schema import FACPMessageValidator, FACPRequest
 from .auth import AuthProvider
@@ -27,7 +27,7 @@ class SecurityMiddleware:
         self.payload_size_limit = 1024 * 1024  # 1MB
         self.rate_limits = {}  # user_id -> [(timestamp, count)]
 
-    def validate_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, List[str], Dict[str, Any]]:
+    def validate_request(self, request_data: dict[str, Any], source_node: str | None = None) -> tuple[bool, list[str], dict[str, Any]]:
         """
         Validate incoming request against security rules in distributed context
         :param request_data: Raw request data
@@ -82,7 +82,7 @@ class SecurityMiddleware:
             "source_node": source_node
         }
 
-    def _check_payload_size(self, params: Dict[str, Any]) -> Tuple[bool, str]:
+    def _check_payload_size(self, params: dict[str, Any]) -> tuple[bool, str]:
         """Check if payload exceeds size limits"""
         try:
             import json
@@ -93,7 +93,7 @@ class SecurityMiddleware:
         except Exception as e:
             return False, f"Could not measure payload size: {e!s}"
 
-    def _check_rate_limits(self, token: str, source_node: str) -> Tuple[bool, str]:
+    def _check_rate_limits(self, token: str, source_node: str) -> tuple[bool, str]:
         """Check if request rate is within limits"""
         # Create user identifier based on token or source node
         user_id = hashlib.sha256((token or source_node or "unknown").encode()).hexdigest()
@@ -124,7 +124,7 @@ class SecurityMiddleware:
 
         return True, ""
 
-    def _apply_security_policy(self, request: FACPRequest, risk_level: str, source_node: str) -> Tuple[bool, List[str]]:
+    def _apply_security_policy(self, request: FACPRequest, risk_level: str, source_node: str) -> tuple[bool, list[str]]:
         """Apply security policies based on risk level and source node"""
         errors = []
 
@@ -159,7 +159,7 @@ class ValidationFirewall:
         self.distributed_idempotency_store = {}  # Shared idempotency store
         self.idempotency_ttl = 3600  # 1 hour TTL
 
-    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, Dict[str, Any], List[str]]:
+    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> tuple[bool, dict[str, Any], list[str]]:
         """
         Process an incoming request through the validation firewall
         :param request_data: Raw request data
@@ -203,7 +203,7 @@ class ValidationFirewall:
 
         return True, processed_request, []
 
-    def validate_target_access(self, auth_context: Dict[str, Any], target: str, source_node: str) -> bool:
+    def validate_target_access(self, auth_context: dict[str, Any], target: str, source_node: str) -> bool:
         """
         Validate if authenticated user can access target in distributed context
         :param auth_context: Authentication context
@@ -227,13 +227,13 @@ class ValidationFirewall:
         # Orchestrator access requires basic permissions
         return len(user_permissions) > 0
 
-    def log_security_event(self, event_type: str, details: Dict[str, Any], source_node: Optional[str] = None):
+    def log_security_event(self, event_type: str, details: dict[str, Any], source_node: str | None = None):
         """Log security-related events in distributed context"""
         details["source_node"] = source_node
         details["timestamp"] = time.time()
         self.logger.info("DIST_SECURITY_EVENT: %s - %s", event_type, details)
 
-    def get_security_stats(self) -> Dict[str, Any]:
+    def get_security_stats(self) -> dict[str, Any]:
         """Get security statistics for distributed system"""
         return {
             "blocked_requests": getattr(self, '_blocked_count', 0),

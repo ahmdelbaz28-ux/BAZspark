@@ -17,11 +17,11 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Sequence, Tuple
 
-Point = Tuple[float, float]
-Polygon = List[Point]
+Point = tuple[float, float]
+Polygon = list[Point]
 
 
 # ─────────────────────────────────────────────
@@ -367,7 +367,7 @@ def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon
         origin: Bottom-left corner (default (0,0)).
 
     Returns:
-        List of 4 vertices in CCW order.
+        list of 4 vertices in CCW order.
 
     Raises:
         ValueError: If width or height is not positive.
@@ -447,7 +447,7 @@ def grid_points_in_polygon(
                 Use 0.10 for NFPA 72 §17.6.3.1.1 wall distance compliance.
 
     Returns:
-        List of (x, y) points inside the polygon.
+        list of (x, y) points inside the polygon.
 
     Raises:
         ValueError: If step <= 0 or margin < 0.
@@ -676,7 +676,7 @@ def sanitize_room_geometry(coords: list[Point], min_area: float = 1.0) -> Saniti
         SanitizeResult with:
           - coords: Cleaned coordinates (if not rejected)
           - was_modified: True if any changes were made
-          - modifications: List of changes applied
+          - modifications: list of changes applied
           - rejected: True if room should be rejected entirely
           - rejection_reason: Why the room was rejected
 

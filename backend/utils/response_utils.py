@@ -6,22 +6,22 @@ Centralizes response formatting and pagination validation used across backend ro
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
-def build_success_response(data: Any, message: str | None = None) -> Dict[str, Any]:
+def build_success_response(data: Any, message: str | None = None) -> dict[str, Any]:
     """Build a standard success API response dictionary."""
-    res: Dict[str, Any] = {"success": True, "data": data}
+    res: dict[str, Any] = {"success": True, "data": data}
     if message:
         res["message"] = message
     return res
 
 
-def build_error_response(error_code: str, detail: str, action: str | None = None) -> Dict[str, Any]:
+def build_error_response(error_code: str, detail: str, action: str | None = None) -> dict[str, Any]:
     """Build a standard error API response dictionary."""
-    res: Dict[str, Any] = {
+    res: dict[str, Any] = {
         "success": False,
         "error": error_code,
         "detail": detail,
@@ -32,11 +32,11 @@ def build_error_response(error_code: str, detail: str, action: str | None = None
 
 
 def build_paginated_response(
-    items: List[Any],
+    items: list[Any],
     total: int,
     page: int,
     page_size: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a standard paginated data structure."""
     import math
 

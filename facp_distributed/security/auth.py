@@ -17,7 +17,7 @@ import os
 import secrets
 import time
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 import jwt  # PyJWT
 from cryptography.hazmat.primitives import serialization
@@ -59,7 +59,7 @@ class TokenManager:
         random key generation that would invalidate tokens on restart).
         """
         self.active_tokens = {}  # token_hash -> token_data
-        self.revoked_tokens = set()  # Set of revoked token hashes
+        self.revoked_tokens = set()  # set of revoked token hashes
         self._signing_mode = None  # 'rsa' or 'hmac'
         self._hmac_secret = None
         self.private_key = None
@@ -123,8 +123,8 @@ class TokenManager:
         """
         Generate a new authentication token with expiration
         :param user_id: User identifier
-        :param permissions: List of permissions
-        :param roles: List of roles
+        :param permissions: list of permissions
+        :param roles: list of roles
         :param expires_in: Token expiration time in seconds (default 1 hour)
         :return: Generated token string
         """
@@ -158,7 +158,7 @@ class TokenManager:
 
         return token_str
 
-    def validate_token(self, token: str) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def validate_token(self, token: str) -> tuple[bool, dict[str, Any] | None]:
         """
         Validate an authentication token
         :param token: Token string to validate
@@ -251,7 +251,7 @@ class AuthProvider:
         self.users = {}  # user_id -> user_data
         self.distributed_cache = {}  # For sharing auth state across nodes
 
-    def register_user(self, user_id: str, roles: list, permissions: list, node_id: Optional[str] = None):
+    def register_user(self, user_id: str, roles: list, permissions: list, node_id: str | None = None):
         """Register a new user"""
         self.users[user_id] = {
             "roles": roles,
@@ -260,7 +260,7 @@ class AuthProvider:
             "node_id": node_id  # Which node registered this user
         }
 
-    def authenticate_request(self, security_block: Dict[str, Any], _source_node: Optional[str] = None) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def authenticate_request(self, security_block: dict[str, Any], _source_node: str | None = None) -> tuple[bool, dict[str, Any] | None]:
         """
         Authenticate a request based on security block
         :param security_block: Security information from request

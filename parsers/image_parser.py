@@ -11,7 +11,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 from parsers._base import ParserBase
 from parsers._path_security import (  # V125/Rule #23
@@ -57,7 +56,7 @@ class ImageRoom:
     confidence: float = 1.0
 
     @property
-    def centroid(self) -> Tuple[int, int]:
+    def centroid(self) -> tuple[int, int]:
         return (self.x + self.width // 2, self.y + self.height // 2)
 
 
@@ -68,11 +67,11 @@ class ImageParseResult:
     source_file: str
     success: bool
     room_count: int = 0
-    rooms: List[ImageRoom] = field(default_factory=list)
-    image_size: Tuple[int, int] = (0, 0)
+    rooms: list[ImageRoom] = field(default_factory=list)
+    image_size: tuple[int, int] = (0, 0)
     scale_factor: float = 0.1
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 ROOM_KEYWORDS = {
@@ -222,7 +221,7 @@ class ImageParser(ParserBase):
             logger.debug("YOLO segmentation unavailable: %s", e)
             return []
 
-    def _preprocess(self, img) -> Tuple[np.ndarray, np.ndarray]:
+    def _preprocess(self, img) -> tuple[np.ndarray, np.ndarray]:
         _lazy_import_cv2()
         if len(img.shape) == 3:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -236,7 +235,7 @@ class ImageParser(ParserBase):
 
         return gray, edges
 
-    def _find_contours(self, edges) -> List:
+    def _find_contours(self, edges) -> list:
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         valid = []
@@ -248,7 +247,7 @@ class ImageParser(ParserBase):
         valid.sort(key=cv2.contourArea, reverse=True)
         return valid[:20]
 
-    def _process_contour(self, contour, img, _image_size=None) -> Optional[ImageRoom]:
+    def _process_contour(self, contour, img, _image_size=None) -> ImageRoom | None:
         x, y, w, h = cv2.boundingRect(contour)
 
         width_m = w * self.scale_factor

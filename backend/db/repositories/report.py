@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 
@@ -12,7 +12,7 @@ class ReportRepository(BaseRepository):
 
     def create_report(self, project_id: str, report_data: dict) -> dict:
         """Insert a new report and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         report_data.setdefault("id", str(uuid.uuid4()))
         report_data["projectId"] = project_id
         report_data["createdAt"] = now

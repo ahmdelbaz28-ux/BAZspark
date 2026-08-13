@@ -35,7 +35,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 # compute_hmac as audit_log so that evidence package signatures are
@@ -485,7 +485,7 @@ class OverrideRecord:
     authorizer_role: OverrideRole
     justification: str
     risk_assessment: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def __post_init__(self):
         # The justification field is still required (non-empty) for audit trail.
@@ -697,7 +697,7 @@ class EngineeringEvidencePackage:
     system_certificate: str | None = None
 
     # Metadata
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     algorithm_version: str = "V20.2"
 
     def __post_init__(self):

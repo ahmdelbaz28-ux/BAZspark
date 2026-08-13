@@ -30,10 +30,11 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -45,7 +46,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class CheckSeverity(str, Enum):
+class CheckSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -53,14 +54,14 @@ class CheckSeverity(str, Enum):
     INFO = "INFO"
 
 
-class CheckStatus(str, Enum):
+class CheckStatus(StrEnum):
     PASSED = "PASSED"
     FAILED = "FAILED"
     WARNING = "WARNING"
     SKIPPED = "SKIPPED"
 
 
-class RuleSeverity(str, Enum):
+class RuleSeverity(StrEnum):
     MANDATORY = "MANDATORY"
     RECOMMENDED = "RECOMMENDED"
     ADVISORY = "ADVISORY"
@@ -247,7 +248,7 @@ class QAEngine:
             warnings=warnings,
             checks=checks,
             design_id=design.design_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         self._event_bus.publish(

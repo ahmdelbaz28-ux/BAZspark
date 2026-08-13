@@ -20,7 +20,7 @@ Reference: NFPA 72-2022 §12.2.2, NEC 760.154
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,7 +31,7 @@ import fireai.core.routing_global_class_a as routing_mod
 # Mock provenance classes that accept BOTH old and new field names
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class _MockConfidenceLevel(str, Enum):
+class _MockConfidenceLevel(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"

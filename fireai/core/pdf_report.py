@@ -24,7 +24,7 @@ Usage:
 from __future__ import annotations
 
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from reportlab.lib import colors
@@ -218,7 +218,7 @@ def _cover_page(report: BuildingReport) -> list:
     elems.append(Spacer(1, 0.3 * cm))
     elems.append(HRFlowable(width="100%", thickness=1, color=C_BLUE_MID, spaceAfter=14))
 
-    date_str = datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC")  # V54 FIX (AUDIT-012): timezone-aware UTC
+    date_str = datetime.now(UTC).strftime("%d %B %Y, %H:%M UTC")  # V54 FIX (AUDIT-012): timezone-aware UTC
     meta = [
         ("Building ID", report.building_id),
         ("Date Generated", date_str),
@@ -724,7 +724,7 @@ def generate_civil_defense_submittal_pdf(
         f"Project: {getattr(report, 'building_id', 'BAZspark Project')}",
         f"Accredited Authority: {authority_name}",
         f"Engineering License: {license_number}",
-        f"Timestamp: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+        f"Timestamp: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
         "--------------------------------------------------------------------------",
         "VERDICT: SAFE TO SUBMIT / معتمد للتقديم والدراسة الفنية",
         "--------------------------------------------------------------------------",

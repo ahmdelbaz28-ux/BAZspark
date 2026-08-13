@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -6,7 +6,7 @@ from fireai.audit.merkle import get_audit_tree
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
 
-@router.get("/chain", response_model=List[Dict[str, Any]])
+@router.get("/chain", response_model=list[dict[str, Any]])
 async def get_audit_chain():
     """
     Get the full Merkle Tree hash chain.

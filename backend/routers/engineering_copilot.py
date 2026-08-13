@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -44,7 +44,7 @@ class ChatRequest(BaseModel):
 class EngineeringRequest(BaseModel):
     """Request model for engineering operations."""
     request: str
-    target_systems: List[str] = ["AutoCAD", "ETAP", "Revit"]
+    target_systems: list[str] = ["AutoCAD", "ETAP", "Revit"]
     generate_reports: bool = True
     validate_model: bool = True
 
@@ -54,19 +54,19 @@ class EntityRequest(BaseModel):
     name: str
     entity_type: str
     description: str = ""
-    coordinates: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
-    properties: Dict[str, Any] = {}
+    coordinates: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+    properties: dict[str, Any] = {}
 
 
 class SyncRequest(BaseModel):
     """Request model for synchronization operations."""
     source_system: str
     target_system: str
-    model_data: Dict[str, Any] = {}
+    model_data: dict[str, Any] = {}
 
 
-@router.post("/chat", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
-async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
+@router.post("/chat", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+async def chat_with_copilot(request: ChatRequest) -> dict[str, Any]:
     """
     Chat with the Engineering Copilot using natural language.
 
@@ -78,7 +78,7 @@ async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
         request: Chat request with natural language message
 
     Returns:
-        Dict: Response with AI-generated answer
+        dict: Response with AI-generated answer
     """
     try:
         logger.info("Processing engineering chat request")
@@ -102,8 +102,8 @@ async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error processing chat request") from exc
 
 
-@router.post("/process-request", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
-async def process_engineering_request(request: EngineeringRequest) -> Dict[str, Any]:
+@router.post("/process-request", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+async def process_engineering_request(request: EngineeringRequest) -> dict[str, Any]:
     """
     Process a natural language engineering request.
 
@@ -111,7 +111,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         request: Engineering request with natural language description
 
     Returns:
-        Dict: Processing results with models for each requested system
+        dict: Processing results with models for each requested system
     """
     try:
         logger.info("Processing engineering request")  # nosec: S5145 — request details not logged to avoid user-controlled data in logs
@@ -143,8 +143,8 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         raise HTTPException(status_code=500, detail="Error processing request") from exc
 
 
-@router.post("/create-entity", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
-async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
+@router.post("/create-entity", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
     """
     Create a specific engineering entity.
 
@@ -152,7 +152,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         request: Entity creation request
 
     Returns:
-        Dict: Creation results
+        dict: Creation results
     """
     try:
         logger.info("Creating %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
@@ -291,8 +291,8 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error creating entity") from exc
 
 
-@router.post("/translate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
-async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
+@router.post("/translate-model", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+async def translate_engineering_model(request: SyncRequest) -> dict[str, Any]:
     """
     Translate engineering model between systems.
 
@@ -300,7 +300,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         request: Translation request with source and target systems
 
     Returns:
-        Dict: Translation results
+        dict: Translation results
     """
     try:
         logger.info("Translating from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
@@ -343,8 +343,8 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error translating model") from exc
 
 
-@router.post("/validate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
-async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, Any]:
+@router.post("/validate-model", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+async def validate_engineering_model(model_data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate an engineering model for common issues.
 
@@ -352,7 +352,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         model_data: Engineering model data to validate
 
     Returns:
-        Dict: Validation results
+        dict: Validation results
     """
     try:
         logger.info("Validating engineering model")
@@ -376,8 +376,8 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         raise HTTPException(status_code=500, detail="Error validating model") from exc
 
 
-@router.post("/generate-reports", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
-async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, Any]:
+@router.post("/generate-reports", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+async def generate_engineering_reports(model_data: dict[str, Any]) -> dict[str, Any]:
     """
     Generate engineering reports from a model.
 
@@ -385,7 +385,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         model_data: Engineering model data
 
     Returns:
-        Dict: Generated reports
+        dict: Generated reports
     """
     try:
         logger.info("Generating engineering reports")
@@ -409,13 +409,13 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         raise HTTPException(status_code=500, detail="Error generating reports") from exc
 
 
-@router.get("/health", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
-async def health_check() -> Dict[str, Any]:
+@router.get("/health", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
+async def health_check() -> dict[str, Any]:
     """
     Health check endpoint for the Engineering Copilot.
 
     Returns:
-        Dict: Health status
+        dict: Health status
     """
     try:
         health_status = {
@@ -439,13 +439,13 @@ async def health_check() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="Health check failed") from exc
 
 
-@router.get("/capabilities", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
-async def get_capabilities() -> Dict[str, Any]:
+@router.get("/capabilities", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
+async def get_capabilities() -> dict[str, Any]:
     """
     Get the capabilities of the Engineering Copilot.
 
     Returns:
-        Dict: Available capabilities
+        dict: Available capabilities
     """
     capabilities = {
         "natural_language_processing": True,

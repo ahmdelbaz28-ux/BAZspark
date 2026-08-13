@@ -63,7 +63,7 @@ import math
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .digital_twin import DigitalTwin
@@ -745,14 +745,14 @@ class AnalysisPipeline:
                     "coverage_pct": layout.coverage_pct,
                     "nfpa_valid": layout.nfpa_valid,
                     "method": layout.method,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 if result.consensus is not None:
                     hash_payload["consensus_confidence"] = result.consensus.confidence.value
                     hash_payload["consensus_safe"] = result.consensus.is_safe
                 pipeline_hash = hashlib.sha256(json.dumps(hash_payload, sort_keys=True).encode()).hexdigest()
                 result.metadata["pipeline_hash"] = pipeline_hash
-                result.metadata["pipeline_timestamp"] = datetime.now(timezone.utc).isoformat()
+                result.metadata["pipeline_timestamp"] = datetime.now(UTC).isoformat()
                 logger.info("  SIGNING: pipeline_hash=%s (no certificate — hash from layout)", pipeline_hash)
 
             result.stage_reached = PipelineStage.SIGNING

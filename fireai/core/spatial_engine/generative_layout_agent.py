@@ -94,7 +94,7 @@ import multiprocessing
 import os
 import time
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from fireai.core.boq_generator import UNIT_COSTS
@@ -139,7 +139,7 @@ _MP_CONTEXT = "fork"
 # ---------------------------------------------------------------------------
 
 
-class LayoutVariant(str, Enum):
+class LayoutVariant(StrEnum):
     """The three generative design variants."""
 
     COST_MINIMIZED = "cost_minimized"

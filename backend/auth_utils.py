@@ -34,7 +34,6 @@ import hmac as _hmac
 import logging
 import os
 import time
-from typing import Optional, Tuple
 
 from backend.api_keys import validate_api_key as _validate_api_key
 from backend.rbac import Role
@@ -49,7 +48,7 @@ _SESSION_COOKIE_NAME = "__Host-fireai_session"
 
 def extract_session_token_from_headers(
     headers: list[tuple[bytes, bytes]],
-) -> Optional[str]:
+) -> str | None:
     """
     Parse raw ASGI headers to extract the session cookie token.
 
@@ -85,7 +84,7 @@ def extract_session_token_from_headers(
     return None
 
 
-def validate_api_key_credential(api_key: str) -> Optional[Role]:
+def validate_api_key_credential(api_key: str) -> Role | None:
     """
     Validate an API key credential and return the associated Role.
 
@@ -110,7 +109,7 @@ def validate_api_key_credential(api_key: str) -> Optional[Role]:
     return None
 
 
-def resolve_credential(api_key: str) -> Optional[Tuple[Role, str]]:
+def resolve_credential(api_key: str) -> tuple[Role, str] | None:
     """
     Validate an API key credential and return ``(role, principal)``.
 
@@ -140,7 +139,7 @@ def resolve_credential(api_key: str) -> Optional[Tuple[Role, str]]:
     return None
 
 
-def verify_session_token(token: str) -> Optional[str]:
+def verify_session_token(token: str) -> str | None:
     """
     Verify a signed session token and return the session_id if valid.
 

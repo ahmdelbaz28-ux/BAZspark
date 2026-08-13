@@ -26,9 +26,10 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ class DeadLetterRecord:
     error: str
     failed_handler: str
     attempt_count: int
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     replayed: bool = False
     replay_count: int = 0
 
@@ -832,7 +833,7 @@ class EventBusMiddleware:
                 "trace_id": trace_id,
                 "query_string": scope.get("query_string", b"").decode("utf-8", errors="replace"),
             },
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             trace_id=trace_id,
         )
 
@@ -853,7 +854,7 @@ class EventBusMiddleware:
                         "duration_ms": duration_ms,
                         "trace_id": trace_id,
                     },
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     trace_id=trace_id,
                 )
                 await self._event_bus.publish(response_event)

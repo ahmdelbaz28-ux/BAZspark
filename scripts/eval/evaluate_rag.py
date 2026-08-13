@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 evaluate_rag.py — BAZspark RAG Evaluation Driver
 =================================================
 Evaluates the quality of the BAZspark Engineering Copilot (GraphRAG Engine)
@@ -220,13 +220,13 @@ def run_ragas_evaluation(
 
     try:
         from datasets import Dataset
+        from langchain_openai import ChatOpenAI, OpenAIEmbeddings
         from ragas import evaluate
         from ragas.metrics import (
             answer_correctness,
             context_precision,
             faithfulness,
         )
-        from langchain_openai import ChatOpenAI, OpenAIEmbeddings
     except ImportError as e:
         print(f"[ERROR] RAGAS dependencies not installed: {e}")
         print("        Run: uv sync --project scripts/eval")
@@ -296,13 +296,12 @@ def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Collection name
-    collection = args.collection or label
 
     # Skip ingestion?
     if not args.skip_ingestion:
-        print(f"[INFO] Skipping corpus ingestion (use a live ingestor for full pipeline).")
+        print("[INFO] Skipping corpus ingestion (use a live ingestor for full pipeline).")
         print(f"       Corpus has {len(corpus_files)} files in {dataset_path / CORPUS_DIRECTORY}/")
-        print(f"       To ingest: point --ingestor_server_url at a running BAZspark/NV-Ingest service.")
+        print("       To ingest: point --ingestor_server_url at a running BAZspark/NV-Ingest service.")
 
     # Query RAG for each row
     base_url = build_rag_url(args.host, args.port)

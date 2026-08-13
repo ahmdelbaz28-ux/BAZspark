@@ -64,8 +64,8 @@ import logging
 import struct
 import zipfile
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ USDZ_USDA_FILENAME = "scene.usda"
 # ---------------------------------------------------------------------------
 
 
-class ARExportFormat(str, Enum):
+class ARExportFormat(StrEnum):
     """AR export format options."""
 
     GLB = "glb"      # Binary glTF 2.0 — Unity/Web/Android
@@ -96,7 +96,7 @@ class ARExportFormat(str, Enum):
     BOTH = "both"    # Export both formats
 
 
-class ARVisibilityMode(str, Enum):
+class ARVisibilityMode(StrEnum):
     """AR visibility modes for behind-the-wall display."""
 
     NORMAL = "normal"             # Only visible elements shown
@@ -198,7 +198,7 @@ class ARSnapshot:
     nodes: list[ARSceneNode] = field(default_factory=list)
     visibility_mode: ARVisibilityMode = ARVisibilityMode.NORMAL
     created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -299,7 +299,7 @@ class ARMetadataExporter:
             building_id=getattr(twin, "building_id", "UNKNOWN"),
             metadata={
                 "source": "digital_twin",
-                "export_timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "export_timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             },
         )
 

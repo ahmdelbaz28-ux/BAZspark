@@ -3,9 +3,10 @@
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from ..protocol.message_schema import FACPRequest
 from .cluster_communicator import ClusterCommunicator
@@ -53,8 +54,8 @@ class EventProcessor:
             "avg_processing_time": 0.0
         }
         self.stage_processors = {}  # stage -> processor function
-        self.filters = []  # List of filter functions
-        self.enrichers = []  # List of enricher functions
+        self.filters = []  # list of filter functions
+        self.enrichers = []  # list of enricher functions
         self.processing_timeout = 30  # seconds
         self.max_retries = 3
         self.retry_delay = 1  # seconds
@@ -98,19 +99,19 @@ class EventProcessor:
         """Register a processor function for a specific stage"""
         self.stage_processors[stage.value] = processor_func
 
-    def add_filter(self, filter_func: Callable[[Dict[str, Any]], bool]):
+    def add_filter(self, filter_func: Callable[[dict[str, Any]], bool]):
         """Add a filter function to determine if an event should be processed"""
         self.filters.append(filter_func)
 
-    def add_enricher(self, enricher_func: Callable[[Dict[str, Any]], Dict[str, Any]]):
+    def add_enricher(self, enricher_func: Callable[[dict[str, Any]], dict[str, Any]]):
         """Add an enricher function to add data to events"""
         self.enrichers.append(enricher_func)
 
-    def add_metrics_collector(self, collector_func: Callable[[Dict[str, Any]], None]):
+    def add_metrics_collector(self, collector_func: Callable[[dict[str, Any]], None]):
         """Add a metrics collector function"""
         self.metrics_collectors.append(collector_func)
 
-    def submit_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
+    def submit_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
         """Submit an event for processing"""
         message = Message(
             topic="events",
@@ -133,7 +134,7 @@ class EventProcessor:
 
         return message.id
 
-    def submit_facp_request(self, facp_request: Dict[str, Any]) -> str:
+    def submit_facp_request(self, facp_request: dict[str, Any]) -> str:
         """Submit a FACP request for processing"""
         event_data = {
             "event_type": "facp_request",
@@ -300,11 +301,11 @@ class EventProcessor:
         self.circuit_state = "closed"
         self.failure_counts.clear()
 
-    def _log_failure(self, event_data: Dict[str, Any], stage: str):
+    def _log_failure(self, event_data: dict[str, Any], stage: str):
         """Log a processing failure"""
         print(f"Processing failure at stage {stage}: {event_data.get('event_type', 'unknown')}")
 
-    def _update_stats(self, stat_type: str, processing_time: Optional[float] = None):
+    def _update_stats(self, stat_type: str, processing_time: float | None = None):
         """Update processing statistics"""
         with self.lock:
             if stat_type == "processed":
@@ -322,7 +323,7 @@ class EventProcessor:
             elif stat_type == "dropped":
                 self.stats["dropped"] += 1
 
-    def _add_to_history(self, event_data: Dict[str, Any], result: ProcessingResult):
+    def _add_to_history(self, event_data: dict[str, Any], result: ProcessingResult):
         """Add processed event to history"""
         with self.lock:
             self.processed_events.append({
@@ -335,7 +336,7 @@ class EventProcessor:
             if len(self.processed_events) > self.max_event_history:
                 self.processed_events = self.processed_events[-self.max_event_history:]
 
-    def get_processor_status(self) -> Dict[str, Any]:
+    def get_processor_status(self) -> dict[str, Any]:
         """Get status of the event processor"""
         with self.lock:
             return {
@@ -357,7 +358,7 @@ class EventProcessor:
                 "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
             }
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get detailed statistics for the processor"""
         with self.lock:
             return {
@@ -385,7 +386,7 @@ class EventProcessor:
                 }
             }
 
-    def get_recent_events(self, count: int = 10) -> List[Dict[str, Any]]:
+    def get_recent_events(self, count: int = 10) -> list[dict[str, Any]]:
         """Get recent processed events"""
         with self.lock:
             return self.processed_events[-count:]
@@ -431,7 +432,7 @@ class EventProcessor:
         self.circuit_state = "closed"
         self.failure_counts.clear()
 
-    def get_dead_letter_queue_contents(self) -> List[Dict[str, Any]]:
+    def get_dead_letter_queue_contents(self) -> list[dict[str, Any]]:
         """Get contents of the dead letter queue"""
         # This is a simplified version - in reality, we'd need a way to access DLQ messages
         return []
@@ -457,7 +458,7 @@ class DistributedEventProcessor(EventProcessor):
     """Distributed event processor with cluster awareness"""
 
     def __init__(self, name: str = "distributed_processor", max_workers: int = 5,
-                 node_id: Optional[str] = None, cluster_communicator: ClusterCommunicator = None):
+                 node_id: str | None = None, cluster_communicator: ClusterCommunicator = None):
         super().__init__(name, max_workers)
         self.node_id = node_id or f"node_{uuid.uuid4().hex[:8]}"
         self.cluster_communicator = cluster_communicator
@@ -475,7 +476,7 @@ class DistributedEventProcessor(EventProcessor):
         if self.cluster_communicator:
             self.cluster_communicator.register_message_handler("event_forward", self._handle_cluster_event)
 
-    def submit_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
+    def submit_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
         """Override to support distributed event submission"""
         # Determine if this should be processed locally or distributed
         if self._should_process_locally(event_data):
@@ -483,7 +484,7 @@ class DistributedEventProcessor(EventProcessor):
         # Forward to another node
         return self._forward_to_cluster_node(event_data, priority)
 
-    def _should_process_locally(self, _event_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(self, _event_data: dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if an event should be processed locally"""
         if not self.task_distribution_enabled:
             return True
@@ -492,7 +493,7 @@ class DistributedEventProcessor(EventProcessor):
         import random
         return random.random() < self.local_processing_ratio  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
 
-    def _forward_to_cluster_node(self, event_data: Dict[str, Any], priority: MessagePriority) -> str:
+    def _forward_to_cluster_node(self, event_data: dict[str, Any], priority: MessagePriority) -> str:
         """Forward an event to another node in the cluster"""
         if not self.cluster_communicator:
             # No cluster available, process locally
@@ -516,7 +517,7 @@ class DistributedEventProcessor(EventProcessor):
         # No suitable node found, process locally
         return super().submit_event(event_data, priority)
 
-    def _select_target_node(self, _event_data: Dict[str, Any]) -> Optional[str]:  # NOSONAR — S1172: parameter retained for API stability
+    def _select_target_node(self, _event_data: dict[str, Any]) -> str | None:  # NOSONAR — S1172: parameter retained for API stability
         """Select a target node for event processing"""
         if not self.cluster_communicator:
             return None
@@ -542,7 +543,7 @@ class DistributedEventProcessor(EventProcessor):
 
         return best_node
 
-    def _handle_cluster_event(self, message: Dict[str, Any], sender_node: str, addr):
+    def _handle_cluster_event(self, message: dict[str, Any], sender_node: str, addr):
         """Handle an event forwarded from another cluster node"""
         event_data = message.get("event_data", {})
         priority_value = message.get("priority", MessagePriority.NORMAL.value)
@@ -559,7 +560,7 @@ class DistributedEventProcessor(EventProcessor):
         """Register a handler for events received from the cluster"""
         self.cluster_event_handlers[event_type] = handler
 
-    def process_cluster_event(self, event_data: Dict[str, Any], source_node: str):
+    def process_cluster_event(self, event_data: dict[str, Any], source_node: str):
         """Process an event that came from the cluster"""
         event_type = event_data.get("event_type", "unknown")
 
@@ -586,7 +587,7 @@ class DistributedEventProcessor(EventProcessor):
             # If local load is low, increase local processing ratio
             self.local_processing_ratio = min(0.9, self.local_processing_ratio + 0.05)
 
-    def get_distributed_status(self) -> Dict[str, Any]:
+    def get_distributed_status(self) -> dict[str, Any]:
         """Get status including distributed information"""
         base_status = self.get_processor_status()
 
@@ -637,7 +638,7 @@ class FACPEventProcessor(DistributedEventProcessor):
     """Specialized event processor for FACP messages in distributed system"""
 
     def __init__(self, name: str = "facp_processor", max_workers: int = 5,
-                 node_id: Optional[str] = None, cluster_communicator: ClusterCommunicator = None):
+                 node_id: str | None = None, cluster_communicator: ClusterCommunicator = None):
         super().__init__(name, max_workers, node_id, cluster_communicator)
         self.facp_request_handlers = {}
         self.facp_response_handlers = {}
@@ -656,7 +657,7 @@ class FACPEventProcessor(DistributedEventProcessor):
         """Register a handler for a specific FACP response"""
         self.facp_response_handlers[request_id] = handler
 
-    def submit_facp_request(self, facp_request: Dict[str, Any]) -> str:
+    def submit_facp_request(self, facp_request: dict[str, Any]) -> str:
         """Override to handle FACP-specific processing"""
         # Check for idempotency
         idempotency_key = facp_request.get("security", {}).get("idempotency_key")
@@ -688,7 +689,7 @@ class FACPEventProcessor(DistributedEventProcessor):
         return super().submit_event(event_data, MessagePriority.HIGH)
 
 
-    def _validate_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
+    def _validate_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Validate FACP request"""
         if not self.validation_enabled:
             return True
@@ -712,7 +713,7 @@ class FACPEventProcessor(DistributedEventProcessor):
             event_data["validation_error"] = str(e)
             return False
 
-    def _authenticate_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
+    def _authenticate_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Authenticate FACP request"""
         if not self.authentication_enabled:
             return True
@@ -732,7 +733,7 @@ class FACPEventProcessor(DistributedEventProcessor):
 
         return True
 
-    def _authorize_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
+    def _authorize_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Authorize FACP request"""
         if not self.authorization_enabled:
             return True
@@ -754,7 +755,7 @@ class FACPEventProcessor(DistributedEventProcessor):
 
         return True
 
-    def _route_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
+    def _route_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Route FACP request to appropriate handler"""
         facp_request = event_data.get("facp_request", {})
         method = facp_request.get("method", "")
@@ -770,7 +771,7 @@ class FACPEventProcessor(DistributedEventProcessor):
 
         return True
 
-    def _process_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
+    def _process_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Process FACP request with registered handler"""
         facp_request = event_data.get("facp_request", {})
         method = facp_request.get("method", "")
@@ -807,7 +808,7 @@ class FACPEventProcessor(DistributedEventProcessor):
             items = list(self.idempotency_store.items())
             self.idempotency_store = dict(items[-5000:])  # Keep last 5000
 
-    def get_facp_processor_status(self) -> Dict[str, Any]:
+    def get_facp_processor_status(self) -> dict[str, Any]:
         """Get status specific to FACP processing"""
         base_status = self.get_distributed_status()
         base_status.update({

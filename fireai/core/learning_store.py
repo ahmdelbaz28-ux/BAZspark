@@ -14,7 +14,7 @@ confidence estimation based on real-world analysis results.
 
 import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # Constants from V10 (never go below these)
 _CONFIDENCE_HIGH_THRESHOLD: float = 0.90  # ≥ 90 % → HIGH
@@ -272,7 +272,7 @@ class LearningStore:
             (
                 high,
                 medium,
-                datetime.now(timezone.utc).isoformat(),  # V54 FIX (AUDIT-012): timezone-aware UTC
+                datetime.now(UTC).isoformat(),  # V54 FIX (AUDIT-012): timezone-aware UTC
                 count,
             ),
         )

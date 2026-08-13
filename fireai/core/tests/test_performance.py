@@ -21,7 +21,7 @@ from __future__ import annotations
 import math
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -72,7 +72,7 @@ def _make_element(idx: int) -> UniversalElement:
             polyline_closed=True,
         ),
         source_file="test_perf.py",
-        created_timestamp=datetime.now(timezone.utc),
+        created_timestamp=datetime.now(UTC),
     )
 
 

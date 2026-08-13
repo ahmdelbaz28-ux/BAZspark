@@ -9,7 +9,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 from parsers._device_types import DeviceType
 from parsers.parser_confidence import ConfidenceResult, GateDecision, ParserConfidence
@@ -37,9 +36,9 @@ class ExtractedDevice:
     x: float
     y: float
     page: int
-    room: Optional[str] = None
-    zone: Optional[str] = None
-    elevation: Optional[float] = None
+    room: str | None = None
+    zone: str | None = None
+    elevation: float | None = None
     confidence: float = 1.0
 
     def to_dict(self) -> dict:
@@ -64,7 +63,7 @@ class RoomBoundary:
     center_x: float
     center_y: float
     ceiling_height: float = 9.0
-    boundary_points: List[Tuple[float, float]] = field(default_factory=list)
+    boundary_points: list[tuple[float, float]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -81,12 +80,12 @@ class RoomBoundary:
 class DrawingMetadata:
     """Metadata extracted from drawing."""
 
-    building_name: Optional[str] = None
-    floor_level: Optional[str] = None
-    drawing_scale: Optional[str] = None
-    date: Optional[str] = None
-    designer: Optional[str] = None
-    revision: Optional[str] = None
+    building_name: str | None = None
+    floor_level: str | None = None
+    drawing_scale: str | None = None
+    date: str | None = None
+    designer: str | None = None
+    revision: str | None = None
     north_arrow: bool = False
 
     def to_dict(self) -> dict:
@@ -107,11 +106,11 @@ class InputLayerResult:
 
     source_pdf: str
     confidence_result: ConfidenceResult
-    devices: List[ExtractedDevice] = field(default_factory=list)
-    rooms: List[RoomBoundary] = field(default_factory=list)
-    metadata: Optional[DrawingMetadata] = None
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    devices: list[ExtractedDevice] = field(default_factory=list)
+    rooms: list[RoomBoundary] = field(default_factory=list)
+    metadata: DrawingMetadata | None = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def is_accepted(self) -> bool:
@@ -294,7 +293,7 @@ class PDFInputLayer:
 
         return metadata
 
-    def _extract_devices(self, page, page_num: int) -> List[ExtractedDevice]:
+    def _extract_devices(self, page, page_num: int) -> list[ExtractedDevice]:
         devices = []
         text = page.get_text().lower()
 
@@ -320,7 +319,7 @@ class PDFInputLayer:
         return self._deduplicate_devices(devices)
 
     def _extract_coordinates_near(self, text: str, position: int,
-                              _page_width: float, _page_height: float) -> Tuple[float, float]:
+                              _page_width: float, _page_height: float) -> tuple[float, float]:
         window = text[max(0, position - 30):position + 30]
 
         coord_match = re.search(r'(\d+(?:\.\d+)?)[,\s]+(\d+(?:\.\d+)?)', window)
@@ -338,7 +337,7 @@ class PDFInputLayer:
 
         return (0.0, 0.0)
 
-    def _extract_room_near(self, text: str, position: int) -> Optional[str]:
+    def _extract_room_near(self, text: str, position: int) -> str | None:
         window = text[max(0, position - 50):position + 50]
 
         room_patterns = [
@@ -354,7 +353,7 @@ class PDFInputLayer:
 
         return None
 
-    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:  # NOSONAR:S3776: PDF room extraction must handle many layout patterns
+    def _extract_rooms(self, page, _page_num: int) -> list[RoomBoundary]:  # NOSONAR:S3776: PDF room extraction must handle many layout patterns
         rooms = []
         text = page.get_text()
         text_lower = text.lower()
@@ -430,7 +429,7 @@ class PDFInputLayer:
 
         return rooms
 
-    def _extract_room_area(self, text: str, position: int) -> Optional[float]:
+    def _extract_room_area(self, text: str, position: int) -> float | None:
         window = text[position:position + 200]
 
         area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf)', window)
@@ -469,7 +468,7 @@ class PDFInputLayer:
 
         return 9.0
 
-    def _deduplicate_devices(self, devices: List[ExtractedDevice]) -> List[ExtractedDevice]:
+    def _deduplicate_devices(self, devices: list[ExtractedDevice]) -> list[ExtractedDevice]:
         seen = {}
         unique = []
 
@@ -491,7 +490,7 @@ def process_drawing(pdf_path: str) -> InputLayerResult:
     return layer.process(pdf_path)
 
 
-def quick_accept_check(pdf_path: str) -> Tuple[bool, str]:
+def quick_accept_check(pdf_path: str) -> tuple[bool, str]:
     try:
         confidence = ParserConfidence(pdf_path).evaluate()
         return (

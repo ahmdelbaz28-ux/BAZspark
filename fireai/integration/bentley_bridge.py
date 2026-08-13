@@ -45,8 +45,8 @@ import hashlib
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class BentleyProduct(str, Enum):
+class BentleyProduct(StrEnum):
     OPENBUILDINGS = "OPENBUILDINGS"
     STAAD_PRO = "STAAD_PRO"
     AECOsim = "AECOSIM"
@@ -68,13 +68,13 @@ class BentleyProduct(str, Enum):
     iTWIN = "iTWIN"
 
 
-class SyncDirection(str, Enum):
+class SyncDirection(StrEnum):
     IMPORT = "IMPORT"
     EXPORT = "EXPORT"
     BIDIRECTIONAL = "BIDIRECTIONAL"
 
 
-class SyncState(str, Enum):
+class SyncState(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -82,7 +82,7 @@ class SyncState(str, Enum):
     CONFLICT = "CONFLICT"
 
 
-class BentleyElementType(str, Enum):
+class BentleyElementType(StrEnum):
     BEAM = "BEAM"
     COLUMN = "COLUMN"
     SLAB = "SLAB"
@@ -257,7 +257,7 @@ class BentleyBridge:
         project_id = design.metadata.get(
             "bentley_project_id", "unknown"
         )
-        started = datetime.now(timezone.utc).isoformat()
+        started = datetime.now(UTC).isoformat()
 
         try:
             design_layers = design.layers
@@ -278,7 +278,7 @@ class BentleyBridge:
                 direction=SyncDirection.BIDIRECTIONAL,
                 elements_synced=len(design_entities) + len(design_layers),
                 started_at=started,
-                completed_at=datetime.now(timezone.utc).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
                 details={
                     "layers": len(design_layers),
                     "entities": len(design_entities),
@@ -310,7 +310,7 @@ class BentleyBridge:
                 direction=SyncDirection.BIDIRECTIONAL,
                 errors=[str(exc)],
                 started_at=started,
-                completed_at=datetime.now(timezone.utc).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
             )
             self._sync_history[project_id] = status
             logger.exception("Bentley sync failed: %s", exc)
@@ -457,7 +457,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "IFC (Bentley)",
                 "note": "Full IFC parsing requires HeadlessIFCBridge. "
@@ -482,7 +482,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DGN",
                 "file_size_bytes": len(raw),
@@ -506,7 +506,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "iModel",
                 "file_size_bytes": len(raw),
@@ -525,7 +525,7 @@ if __name__ == "__main__":
 
     design = DesignData(
         source_file="sample.ifc",
-        imported_at=datetime.now(timezone.utc).isoformat(),
+        imported_at=datetime.now(UTC).isoformat(),
         metadata={"bentley_project_id": "PRJ-B-001"},
         layers=[
             {

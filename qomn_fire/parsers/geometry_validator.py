@@ -19,7 +19,6 @@ Standards: NFPA 72 (2022) §17, ISO 16739 (IFC Spatial Schemas)
 """
 
 import logging
-from typing import Tuple, Union
 
 from qomn_fire.core.errors import GeometryError, Result, UnitError
 from qomn_fire.core.types import Building, Point3D
@@ -39,7 +38,7 @@ class GeometryValidator:
     MIN_ROOM_AREA_M2 = 1.0
 
     @staticmethod
-    def calculate_polygon_area_2d(poly: Tuple[Point3D, ...]) -> float:
+    def calculate_polygon_area_2d(poly: tuple[Point3D, ...]) -> float:
         """Determines polygon area using the Shoelace algorithm."""
         n = len(poly)
         if n < 3:
@@ -52,7 +51,7 @@ class GeometryValidator:
         return abs(area) / 2.0
 
     @classmethod
-    def validate_building(cls, b: Building) -> Result[Building, Union[GeometryError, UnitError]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def validate_building(cls, b: Building) -> Result[Building, GeometryError | UnitError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Enforces strict compliance rules against raw extracted spatial entities.
 

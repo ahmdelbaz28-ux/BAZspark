@@ -7,8 +7,8 @@ Service for validating Revit models against standards.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 
 class ModelValidationService:
@@ -20,7 +20,7 @@ class ModelValidationService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def validate_model_completeness(self, _model_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_model_completeness(self, _model_data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate the completeness of a Revit model.
 
@@ -28,13 +28,13 @@ class ModelValidationService:
             model_data: Model data to validate
 
         Returns:
-            Dict: Validation results
+            dict: Validation results
         """
         validation_results = {
             "completeness_score": 0.0,
             "missing_elements": [],
             "incomplete_parameters": [],
-            "validation_date": datetime.now(timezone.utc).isoformat(),
+            "validation_date": datetime.now(UTC).isoformat(),
             "passed": True
         }
 
@@ -44,22 +44,22 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_electrical_parameters(self, electrical_elements: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def validate_electrical_parameters(self, electrical_elements: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Validate electrical parameters in the model.
 
         Args:
-            electrical_elements: List of electrical elements to validate
+            electrical_elements: list of electrical elements to validate
 
         Returns:
-            Dict: Validation results for electrical parameters
+            dict: Validation results for electrical parameters
         """
         validation_results = {
             "valid_elements": 0,
             "invalid_elements": 0,
             "errors": [],
             "warnings": [],
-            "validation_date": datetime.now(timezone.utc).isoformat()
+            "validation_date": datetime.now(UTC).isoformat()
         }
 
         # Placeholder implementation
@@ -79,7 +79,7 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_geometric_accuracy(self, _model_geometry: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_geometric_accuracy(self, _model_geometry: dict[str, Any]) -> dict[str, Any]:
         """
         Validate geometric accuracy of model elements.
 
@@ -87,12 +87,12 @@ class ModelValidationService:
             model_geometry: Geometric data to validate
 
         Returns:
-            Dict: Validation results for geometric accuracy
+            dict: Validation results for geometric accuracy
         """
         validation_results = {
             "accuracy_score": 0.0,
             "geometric_issues": [],
-            "validation_date": datetime.now(timezone.utc).isoformat(),
+            "validation_date": datetime.now(UTC).isoformat(),
             "passed": True
         }
 
@@ -101,23 +101,23 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_standards_compliance(self, _model_data: Dict[str, Any], standards: List[str]) -> Dict[str, Any]:
+    async def validate_standards_compliance(self, _model_data: dict[str, Any], standards: list[str]) -> dict[str, Any]:
         """
         Validate model compliance with specified standards.
 
         Args:
             model_data: Model data to validate
-            standards: List of standards to check against
+            standards: list of standards to check against
 
         Returns:
-            Dict: Validation results for standards compliance
+            dict: Validation results for standards compliance
         """
         validation_results = {
             "compliant_standards": [],
             "non_compliant_standards": [],
             "issues": [],
             "compliance_score": 0.0,
-            "validation_date": datetime.now(timezone.utc).isoformat()
+            "validation_date": datetime.now(UTC).isoformat()
         }
 
         # Placeholder implementation

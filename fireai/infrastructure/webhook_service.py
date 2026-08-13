@@ -90,8 +90,8 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 from urllib.parse import urlparse
 
@@ -125,7 +125,7 @@ WEBHOOK_EVENT_TYPES = frozenset({
 # ---------------------------------------------------------------------------
 
 
-class WebhookStatus(str, Enum):
+class WebhookStatus(StrEnum):
     """Status of a webhook subscription."""
 
     ACTIVE = "active"
@@ -133,7 +133,7 @@ class WebhookStatus(str, Enum):
     DISABLED = "disabled"
 
 
-class DeliveryStatus(str, Enum):
+class DeliveryStatus(StrEnum):
     """Status of a single webhook delivery attempt."""
 
     PENDING = "pending"
@@ -171,7 +171,7 @@ class WebhookSubscription:
     event_types: tuple[str, ...] = field(default_factory=tuple)
     status: WebhookStatus = WebhookStatus.ACTIVE
     created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -203,7 +203,7 @@ class WebhookDeliveryAttempt:
     response_body_snippet: str | None = None  # first 500 chars
     error: str | None = None
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
     )
     duration_ms: float = 0.0
 
@@ -228,7 +228,7 @@ class DeadLetterEntry:
     payload: bytes = b""
     source: str = ""
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
     )
 
 
@@ -498,7 +498,7 @@ class WebhookDeliveryService:
 
         """
         event_id = str(uuid.uuid4())
-        timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         trace_id = trace_id or event_id
 
         # Find matching subscriptions

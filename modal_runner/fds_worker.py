@@ -21,7 +21,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import modal
 
@@ -60,7 +60,7 @@ def run_fds_simulation(
     fds_input: str,
     webhook_url: str,
     webhook_secret: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Execute a full FDS simulation and POST results to the BAZspark webhook.
 
@@ -84,7 +84,7 @@ def run_fds_simulation(
 
         # ── Run FDS ───────────────────────────────────────────────────────────
         fds_binary = "/opt/fds/bin/fds"
-        result_payload: Dict[str, Any] = {}
+        result_payload: dict[str, Any] = {}
 
         try:
             proc = subprocess.run(
@@ -142,7 +142,7 @@ def run_fds_simulation(
                 webhook_url,
                 json=result_payload,
                 timeout=30.0,
-                headers={"Content-Type": "application/json"},
+                headers={"Content-type": "application/json"},
             )
         except Exception as exc:  # noqa: BLE001
             print(f"[FDS Worker] Webhook POST failed: {exc}")
@@ -152,12 +152,12 @@ def run_fds_simulation(
 
 # ── Output parser ─────────────────────────────────────────────────────────────
 
-def _parse_fds_output(workdir: str, stdout: str) -> Dict[str, Any]:
+def _parse_fds_output(workdir: str, stdout: str) -> dict[str, Any]:
     """
     Extract key safety metrics from FDS output files.
     Reads .csv device outputs if present; falls back to stdout parsing.
     """
-    metrics: Dict[str, Any] = {}
+    metrics: dict[str, Any] = {}
     work = Path(workdir)
 
     # Try to read _devc.csv (device outputs — temperature, visibility, CO, etc.)
@@ -217,6 +217,6 @@ if __name__ == "__main__":
 
     print("Running local FDS simulation test (Modal not required)...")
     print(json.dumps(
-        {"note": "Set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET to run on Modal cloud"},
+        {"note": "set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET to run on Modal cloud"},
         indent=2
     ))

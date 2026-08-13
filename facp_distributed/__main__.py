@@ -3,7 +3,7 @@ import argparse
 import logging
 import sys
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .l1_gateway.client_interface import create_client_interface_with_gateway
 
@@ -21,7 +21,7 @@ from .security.validation_gate import ValidationFirewall
 
 
 def setup_logging():
-    """Set up logging for the distributed system"""
+    """set up logging for the distributed system"""
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -32,7 +32,7 @@ def setup_logging():
     )
 
 
-def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Create and configure the distributed FACP system"""
     config = config or {}
 
@@ -57,16 +57,16 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
     permission_checker = PermissionChecker(rbac_engine)
     audit_logger = AuditLogger()
 
-    # Set up validation firewall
+    # set up validation firewall
     validation_firewall = ValidationFirewall(auth_provider)
 
-    # Set up L2 orchestrator components
+    # set up L2 orchestrator components
     agent_manager = DistributedAgentManager()
     task_scheduler = DistributedTaskScheduler()
     load_balancer = AdaptiveLoadBalancer()
     agent_registry = DistributedAgentRegistry()
 
-    # Set up orchestrator
+    # set up orchestrator
     orchestrator = Orchestrator(
         agent_manager=agent_manager,
         task_scheduler=task_scheduler,
@@ -75,14 +75,14 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
         agent_registry=agent_registry
     )
 
-    # Set up L3 engine controller
+    # set up L3 engine controller
     engine_controller = DistributedEngineController(
         pool_size=config.get("engine_pool_size", 3),
         max_pool_size=config.get("engine_max_pool_size", 10),
         node_location=config.get("node_location", "primary")
     )
 
-    # Set up L1 gateway with transport
+    # set up L1 gateway with transport
     transport_config = {
         "host": config.get("l2_host", "0.0.0.0"),
         "gateway_port": config.get("l2_port", 8001),
@@ -95,13 +95,13 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
     )
 
     # Connect components together
-    # Set up cluster sync callbacks
+    # set up cluster sync callbacks
     agent_manager.set_cluster_sync_callback(lambda msg: print(f"Agent sync: {msg}"))
     task_scheduler.set_cluster_sync_callback(lambda msg: print(f"Task sync: {msg}"))
     agent_registry.set_cluster_sync_callback(lambda msg: print(f"Registry sync: {msg}"))
     engine_controller.set_cluster_sync_callback(lambda msg: print(f"Engine sync: {msg}"))
 
-    # Set up the distributed engine controller
+    # set up the distributed engine controller
     engine_controller.start()
 
     return {
@@ -120,12 +120,12 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
     }
 
 
-def run_distributed_system(config: Optional[Dict[str, Any]] = None):
+def run_distributed_system(config: dict[str, Any] | None = None):
     """Run the distributed FACP system"""
     print("🚀 Starting Distributed FACP System v1.1")
     print("=" * 50)
 
-    # Set up logging
+    # set up logging
     setup_logging()
     logging.getLogger(__name__)
 

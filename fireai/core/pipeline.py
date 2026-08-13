@@ -43,7 +43,7 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 try:
@@ -1368,7 +1368,7 @@ def analyze_room(  # NOSONAR - python:S3776
         errors=errors,
         warnings=warnings,
         nfpa_references=nfpa_refs,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1824,7 +1824,7 @@ def _failed_result(
         errors=errors,
         warnings=warnings,
         nfpa_references=[],
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1888,7 +1888,7 @@ def analyze_building(
         },
         "total_ms": round(total_ms, 2),
         "total_detectors": sum(r.detector_count for r in results if r),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

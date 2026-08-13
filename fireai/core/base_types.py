@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from enum import Enum
-from typing import Dict, Generic, Tuple, TypeVar
+from enum import StrEnum
+from typing import TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E")
 
 
-class Result(Generic[T, E]):
+class Result[T, E]:
     __slots__ = ("_error", "_ok", "_value")
 
     def __init__(self, value: T | None = None, error: E | None = None, *, ok: bool | None = None):
@@ -109,7 +109,7 @@ class Result(Generic[T, E]):
         return f"Result.err({self._error!r})"
 
 
-class DeviceType(str, Enum):
+class DeviceType(StrEnum):
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     MANUAL_PULL_STATION = "MANUAL_PULL_STATION"
@@ -125,7 +125,7 @@ class DeviceType(str, Enum):
     SPRINKLER = "SPRINKLER"
 
 
-class ConduitType(str, Enum):
+class ConduitType(StrEnum):
     EMT = "EMT"
     RMC = "RMC"
     FMC = "FMC"
@@ -134,7 +134,7 @@ class ConduitType(str, Enum):
     RGD = "RGD"
 
 
-class FittingType(str, Enum):
+class FittingType(StrEnum):
     ELBOW_90 = "ELBOW_90"
     ELBOW_45 = "ELBOW_45"
     COUPLING = "COUPLING"
@@ -169,10 +169,10 @@ class Point3D:
     def manhattan_to(self, other: Point3D) -> float:
         return abs(self.x - other.x) + abs(self.y - other.y) + abs(self.z - other.z)
 
-    def to_tuple(self) -> Tuple[float, float, float]:
+    def to_tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         return {"X": self.x, "Y": self.y, "Z": self.z}
 
     def __repr__(self) -> str:

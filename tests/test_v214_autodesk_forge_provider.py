@@ -251,7 +251,7 @@ class TestV214AutodeskForgeProviderRealImplementation:
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "fireai", "bridges", "bim_provider.py")
         src_path = os.path.normpath(src_path)
-        with open(src_path, "r", encoding="utf-8") as f:
+        with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
         # Check for actual STUB return patterns as CODE (not in comments)

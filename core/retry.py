@@ -23,8 +23,9 @@ USAGE:
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional, Tuple, Type
+from typing import Any
 
 from tenacity import (
     after_log,
@@ -55,8 +56,8 @@ class CircuitBreaker:
         self.max_failures = max_failures
         self.reset_timeout = reset_timeout
         self.failures = 0
-        self.opened_at: Optional[float] = None
-        self.last_failure_time: Optional[float] = None
+        self.opened_at: float | None = None
+        self.last_failure_time: float | None = None
         self.is_open_flag = False
         self._lock = asyncio.Lock()  # Add async lock for thread safety
 
@@ -108,7 +109,7 @@ def network_retry(
     max_attempts: int = 3,
     max_delay: int = 300,  # 5 minutes max
     multiplier: float = 1.0,
-    exceptions: Tuple[Type[BaseException], ...] = (
+    exceptions: tuple[type[BaseException], ...] = (
         ConnectionError,
         TimeoutError,
         OSError
@@ -121,7 +122,7 @@ def network_retry(
         max_attempts: Maximum number of retry attempts
         max_delay: Maximum delay between retries in seconds
         multiplier: Multiplier for exponential backoff
-        exceptions: Tuple of exception types to retry on
+        exceptions: tuple of exception types to retry on
 
     """
     def retry_decorator(func):
@@ -147,7 +148,7 @@ def skill_retry(
     max_attempts: int = 5,
     max_delay: int = 30,  # 30 seconds max
     multiplier: float = 0.5,
-    exceptions: Tuple[Type[BaseException], ...] = (
+    exceptions: tuple[type[BaseException], ...] = (
         ImportError,
         ModuleNotFoundError,
         AttributeError,
@@ -161,7 +162,7 @@ def skill_retry(
         max_attempts: Maximum number of retry attempts
         max_delay: Maximum delay between retries in seconds
         multiplier: Multiplier for exponential backoff
-        exceptions: Tuple of exception types to retry on
+        exceptions: tuple of exception types to retry on
 
     """
     def retry_decorator(func):
@@ -215,7 +216,7 @@ def conditional_retry(
 def timeout_retry(
     timeout_seconds: int = 60,
     max_delay: int = 10,
-    exceptions: Tuple[Type[BaseException], ...] = (TimeoutError,)
+    exceptions: tuple[type[BaseException], ...] = (TimeoutError,)
 ):
     """
     Retry decorator with total timeout constraint.
@@ -223,7 +224,7 @@ def timeout_retry(
     Args:
         timeout_seconds: Total timeout in seconds
         max_delay: Maximum delay between retries in seconds
-        exceptions: Tuple of exception types to retry on
+        exceptions: tuple of exception types to retry on
 
     """
     def retry_decorator(func):
@@ -243,7 +244,7 @@ def timeout_retry(
 
 def persistent_retry(
     max_attempts: int = 10,
-    exceptions: Tuple[Type[BaseException], ...] = (
+    exceptions: tuple[type[BaseException], ...] = (
         ConnectionError,
         TimeoutError,
         OSError,
@@ -255,7 +256,7 @@ def persistent_retry(
 
     Args:
         max_attempts: Maximum number of retry attempts (high for critical ops)
-        exceptions: Tuple of exception types to retry on
+        exceptions: tuple of exception types to retry on
 
     """
     def retry_decorator(func):
@@ -277,7 +278,7 @@ def async_network_retry(
     max_attempts: int = 3,
     max_delay: int = 300,
     multiplier: float = 1.0,
-    exceptions: Tuple[Type[BaseException], ...] = (
+    exceptions: tuple[type[BaseException], ...] = (
         TimeoutError,
         ConnectionError,
         OSError,

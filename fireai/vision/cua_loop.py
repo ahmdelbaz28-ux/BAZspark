@@ -45,7 +45,7 @@ import base64
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +69,11 @@ class VisionAnalysisResult:
     ok: bool
     description: str = ""
     elements: list = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
-    masked_key: Optional[str] = None  # only set for openai-db / openai-env
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    masked_key: str | None = None  # only set for openai-db / openai-env
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "provider": self.provider,
             "ok": self.ok,
@@ -88,7 +88,7 @@ class VisionAnalysisResult:
 # ── DB key loader (lazy import to avoid circular deps) ───────────────────────
 
 
-def _load_active_db_key() -> Optional[Dict[str, Any]]:
+def _load_active_db_key() -> dict[str, Any] | None:
     """
     Load the active OpenAI key from the vision_api_keys table.
 
@@ -182,7 +182,7 @@ def _call_openai_vision(
     }
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
+        "Content-type": "application/json",
     }
 
     try:

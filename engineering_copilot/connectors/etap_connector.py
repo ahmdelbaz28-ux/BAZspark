@@ -19,7 +19,7 @@ except ImportError:
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 # ETAP API would be loaded here in a real implementation
 if HAS_CLR:
@@ -123,12 +123,12 @@ class ETAPConnector:
             self.logger.error(f"Error disconnecting from ETAP: {e}")
             return False
 
-    def read_etap_project(self) -> Dict[str, Any]:
+    def read_etap_project(self) -> dict[str, Any]:
         """
         Read the current ETAP project and extract elements.
 
         Returns:
-            Dict: ETAP project data with elements
+            dict: ETAP project data with elements
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -155,12 +155,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading ETAP project: {e}")
             raise
 
-    def read_single_line_diagrams(self) -> List[Dict[str, Any]]:
+    def read_single_line_diagrams(self) -> list[dict[str, Any]]:
         """
         Read single line diagrams from the ETAP project.
 
         Returns:
-            List[Dict]: List of SLD information
+            list[dict]: list of SLD information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -178,12 +178,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading single line diagrams: {e}")
             raise
 
-    def read_buses(self) -> List[Dict[str, Any]]:
+    def read_buses(self) -> list[dict[str, Any]]:
         """
         Read buses from the ETAP project.
 
         Returns:
-            List[Dict]: List of bus information
+            list[dict]: list of bus information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -201,12 +201,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading buses: {e}")
             raise
 
-    def read_transformers(self) -> List[Dict[str, Any]]:
+    def read_transformers(self) -> list[dict[str, Any]]:
         """
         Read transformers from the ETAP project.
 
         Returns:
-            List[Dict]: List of transformer information
+            list[dict]: list of transformer information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -224,12 +224,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading transformers: {e}")
             raise
 
-    def read_cables(self) -> List[Dict[str, Any]]:
+    def read_cables(self) -> list[dict[str, Any]]:
         """
         Read cables from the ETAP project.
 
         Returns:
-            List[Dict]: List of cable information
+            list[dict]: list of cable information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -247,12 +247,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading cables: {e}")
             raise
 
-    def read_panels(self) -> List[Dict[str, Any]]:
+    def read_panels(self) -> list[dict[str, Any]]:
         """
         Read panels from the ETAP project.
 
         Returns:
-            List[Dict]: List of panel information
+            list[dict]: list of panel information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -270,12 +270,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading panels: {e}")
             raise
 
-    def read_breakers(self) -> List[Dict[str, Any]]:
+    def read_breakers(self) -> list[dict[str, Any]]:
         """
         Read breakers from the ETAP project.
 
         Returns:
-            List[Dict]: List of breaker information
+            list[dict]: list of breaker information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -293,12 +293,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading breakers: {e}")
             raise
 
-    def read_loads(self) -> List[Dict[str, Any]]:
+    def read_loads(self) -> list[dict[str, Any]]:
         """
         Read loads from the ETAP project.
 
         Returns:
-            List[Dict]: List of load information
+            list[dict]: list of load information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -316,12 +316,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading loads: {e}")
             raise
 
-    def read_generators(self) -> List[Dict[str, Any]]:
+    def read_generators(self) -> list[dict[str, Any]]:
         """
         Read generators from the ETAP project.
 
         Returns:
-            List[Dict]: List of generator information
+            list[dict]: list of generator information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -339,12 +339,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading generators: {e}")
             raise
 
-    def read_protection_studies(self) -> Dict[str, Any]:
+    def read_protection_studies(self) -> dict[str, Any]:
         """
         Read protection studies from the ETAP project.
 
         Returns:
-            Dict: Protection study results
+            dict: Protection study results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -363,12 +363,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading protection studies: {e}")
             raise
 
-    def read_short_circuit_results(self) -> Dict[str, Any]:
+    def read_short_circuit_results(self) -> dict[str, Any]:
         """
         Read short circuit analysis results from ETAP.
 
         Returns:
-            Dict: Short circuit results
+            dict: Short circuit results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -389,12 +389,12 @@ class ETAPConnector:
             self.logger.error(f"Error reading short circuit results: {e}")
             raise
 
-    def read_load_flow_results(self) -> Dict[str, Any]:
+    def read_load_flow_results(self) -> dict[str, Any]:
         """
         Read load flow analysis results from ETAP.
 
         Returns:
-            Dict: Load flow results
+            dict: Load flow results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -414,15 +414,15 @@ class ETAPConnector:
             self.logger.error(f"Error reading load flow results: {e}")
             raise
 
-    def run_study(self, study_type: str) -> Dict[str, Any]:
+    def run_study(self, study_type: str) -> dict[str, Any]:
         """
         Run an analysis study in ETAP.
 
         Args:
-            study_type: Type of study to run
+            study_type: type of study to run
 
         Returns:
-            Dict: Study results
+            dict: Study results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -446,7 +446,7 @@ class ETAPConnector:
             self.logger.error(f"Error running {study_type} study: {e}")
             raise
 
-    def convert_to_unified_model(self, _etap_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _etap_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert ETAP project data to unified engineering model.
 
@@ -532,7 +532,7 @@ class ETAPConnector:
         self.logger.info(f"Converted ETAP data to unified model with {len(model.entities)} entities")
         return model
 
-    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Convert unified engineering model to ETAP operations.
 
@@ -540,7 +540,7 @@ class ETAPConnector:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: ETAP operations
+            dict: ETAP operations
         """
         etap_operations = {
             "operations": [],
@@ -650,7 +650,7 @@ class ETAPConnector:
         self.logger.info(f"Converted unified model to {len(etap_operations['operations'])} ETAP operations")
         return etap_operations
 
-    def sync_with_unified_model(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def sync_with_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Synchronize ETAP project with unified engineering model.
 
@@ -658,7 +658,7 @@ class ETAPConnector:
             unified_model: Unified model to sync with ETAP
 
         Returns:
-            Dict: Sync results
+            dict: Sync results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)

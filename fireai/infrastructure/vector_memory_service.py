@@ -38,9 +38,9 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ EMBEDDING_DIMENSIONS = 384
 # ---------------------------------------------------------------------------
 
 
-class MemoryType(str, Enum):
+class MemoryType(StrEnum):
     """Types of semantic memory stored in Qdrant."""
 
     CONVERSATION = "conversation"
@@ -92,7 +92,7 @@ class MemoryEntry:
     Attributes:
         id: Unique UUID for the memory entry.
         content: The text content to be embedded.
-        memory_type: Type of memory (conversation, study, document, etc.).
+        memory_type: type of memory (conversation, study, document, etc.).
         metadata: Additional metadata (user_id, project_id, timestamp, etc.).
         score: Similarity score when retrieved (0.0 to 1.0).
     """
@@ -100,10 +100,10 @@ class MemoryEntry:
     id: str
     content: str
     memory_type: MemoryType
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     score: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "content": self.content,
@@ -120,17 +120,17 @@ class SearchResult:
 
     Attributes:
         query: The original query text.
-        results: List of MemoryEntry matches, sorted by score (descending).
+        results: list of MemoryEntry matches, sorted by score (descending).
         total: Total number of matches found.
         collection: Which collection was searched.
     """
 
     query: str
-    results: List[MemoryEntry]
+    results: list[MemoryEntry]
     total: int
     collection: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "query": self.query,
             "total": self.total,
@@ -168,8 +168,8 @@ class VectorMemoryService:
 
     def __init__(
         self,
-        qdrant_url: Optional[str] = None,
-        qdrant_api_key: Optional[str] = None,
+        qdrant_url: str | None = None,
+        qdrant_api_key: str | None = None,
     ) -> None:
         """
         Initialize the vector memory service.
@@ -257,7 +257,7 @@ class VectorMemoryService:
     # Embedding
     # ------------------------------------------------------------------
 
-    def _embed(self, text: str) -> List[float]:
+    def _embed(self, text: str) -> list[float]:
         """
         Generate embedding vector for text.
 
@@ -288,14 +288,14 @@ class VectorMemoryService:
         self,
         content: str,
         memory_type: MemoryType,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Optional[str]:
+        metadata: dict[str, Any] | None = None,
+    ) -> str | None:
         """
         Store a memory entry in Qdrant.
 
         Args:
             content: Text content to embed and store.
-            memory_type: Type of memory (determines collection).
+            memory_type: type of memory (determines collection).
             metadata: Optional metadata dict.
 
         Returns:
@@ -321,7 +321,7 @@ class VectorMemoryService:
                     "content": content,
                     "memory_type": memory_type.value,
                     "metadata": metadata or {},
-                    "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 },
             )
 
@@ -350,14 +350,14 @@ class VectorMemoryService:
         memory_type: MemoryType,
         limit: int = 5,
         score_threshold: float = 0.0,
-        filter_metadata: Optional[Dict[str, Any]] = None,
+        filter_metadata: dict[str, Any] | None = None,
     ) -> SearchResult:
         """
         Search for similar memories.
 
         Args:
             query: Search query text.
-            memory_type: Type of memory to search.
+            memory_type: type of memory to search.
             limit: Maximum number of results.
             score_threshold: Minimum similarity score (0.0 to 1.0).
             filter_metadata: Optional metadata filters.
@@ -396,7 +396,7 @@ class VectorMemoryService:
                 query_filter=search_filter,
             )
 
-            entries: List[MemoryEntry] = []
+            entries: list[MemoryEntry] = []
             # query_points returns QueryResponse with .points attribute
             points = results.points if hasattr(results, 'points') else results
             for hit in points:
@@ -453,7 +453,7 @@ class VectorMemoryService:
     # Health Check
     # ------------------------------------------------------------------
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check Qdrant connectivity and collection status."""
         self._initialize()
         if self._client is None:
@@ -502,7 +502,7 @@ class VectorMemoryService:
 # Singleton
 # ---------------------------------------------------------------------------
 
-_vector_memory: Optional[VectorMemoryService] = None
+_vector_memory: VectorMemoryService | None = None
 
 
 def get_vector_memory() -> VectorMemoryService:

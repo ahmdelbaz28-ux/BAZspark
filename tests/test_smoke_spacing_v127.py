@@ -205,6 +205,6 @@ class TestTableLengthAndAlignment:
     def test_table_lengths_and_alignment(self):
         assert len(NFPA72_SMOKE_SPACING_TABLE) == 9, f"SMOKE table has {len(NFPA72_SMOKE_SPACING_TABLE)} rows, expected 9"
         assert len(NFPA72_HEIGHT_SPACING_TABLE) == 9, f"COMBINED table has {len(NFPA72_HEIGHT_SPACING_TABLE)} rows, expected 9"
-        for i, (smoke, combined) in enumerate(zip(NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE)):
+        for i, (smoke, combined) in enumerate(zip(NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE, strict=False)):
             assert abs(smoke[0] - combined[0]) < 0.01, f"Row {i} height mismatch: SMOKE={smoke[0]} COMBINED={combined[0]}"
             # Spacing may differ: SMOKE is flat 9.1m per V130, COMBINED includes heat reduction

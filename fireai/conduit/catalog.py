@@ -36,7 +36,6 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Tuple
 
 from fireai.conduit.errors import CatalogError
 from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
@@ -66,7 +65,7 @@ class Fitting:
     Weight in kg for structural load calculations.
 
     Attributes:
-        fitting_type:        Type classification.
+        fitting_type:        type classification.
         conduit_type:        NEC wiring method (EMT, UPVC Sch40/80, RGD).
         trade_size:          Nominal trade size.
         od_in:               Outer diameter in inches.
@@ -140,7 +139,7 @@ class Fitting:
 # Internal catalog — keyed by (ConduitType, TradeSize, FittingType)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_CatalogKey = Tuple[ConduitType, TradeSize, FittingType]
+_CatalogKey = tuple[ConduitType, TradeSize, FittingType]
 
 # Developed length formula verification:
 # L = π × R × angle/180
@@ -357,7 +356,7 @@ _reg(Fitting(
 ))
 
 # ══════════════════════════════════════════════════════════════════════════════
-# EMT COUPLINGS — Compression (EC) and Set-Screw (ES) types
+# EMT COUPLINGS — Compression (EC) and set-Screw (ES) types
 # ══════════════════════════════════════════════════════════════════════════════
 
 # EMT Compression Couplings

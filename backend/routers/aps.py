@@ -9,12 +9,12 @@ Exposes endpoints to:
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 try:
     from typing import Annotated
 except ImportError:
-    from typing_extensions import Annotated
+    from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -34,14 +34,14 @@ class ApsProcessRequest(BaseModel):
     bucket_key: str = Field(default="bazspark_bucket", description="Autodesk OSS bucket key")
     object_key: str = Field(..., description="File name/object key inside the bucket")
     activity_id: str = Field(..., description="Autodesk Design Automation Activity ID")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Command line parameter overrides")
+    params: dict[str, Any] = Field(default_factory=dict, description="Command line parameter overrides")
 
 
 @router.post("/process", dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))])
 async def process_file_in_cloud(
     body: ApsProcessRequest,
     service: ApsServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Submits a design automation task (WorkItem) to Autodesk Platform Services.
     """
@@ -92,7 +92,7 @@ async def process_file_in_cloud(
 async def get_work_item_status(
     work_item_id: str,
     service: ApsServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves the execution status and report URL for a dispatched WorkItem job.
     """

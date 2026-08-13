@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 class CADElement(BaseModel):
     id: str = Field(..., description="Unique element/entity identifier or handle")
     provider: str = Field(..., description="Provider: autocad or revit")
-    type: str = Field(..., description="Type of element (e.g. Wall, Line, Circle)")
-    layer: Optional[str] = Field(None, description="Layer or category of the element")
-    color: Optional[int] = Field(None, description="Color code if applicable")
-    properties: Dict[str, Any] = Field(default_factory=dict, description="Custom parameters or geometries")
+    type: str = Field(..., description="type of element (e.g. Wall, Line, Circle)")
+    layer: str | None = Field(None, description="Layer or category of the element")
+    color: int | None = Field(None, description="Color code if applicable")
+    properties: dict[str, Any] = Field(default_factory=dict, description="Custom parameters or geometries")
 
 
 class CADGateway:
@@ -26,7 +26,7 @@ class CADGateway:
     Exposes a unified interface for connection, status checking, reading,
     writing, and drawing operations, routing them to AutoCAD or Revit.
     """
-    _instance: Optional[CADGateway] = None
+    _instance: CADGateway | None = None
     _lock = threading.Lock()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> CADGateway:
@@ -46,7 +46,7 @@ class CADGateway:
         self._initialized = True
         logger.info("CADGateway initialized.")
 
-    def get_service(self, provider: str) -> Union[RevitService, AutoCADService]:
+    def get_service(self, provider: str) -> RevitService | AutoCADService:
         provider_lower = provider.lower()
         if provider_lower == "autocad":
             return self._autocad_service
@@ -79,7 +79,7 @@ class CADGateway:
             return True
         return False
 
-    def get_status(self, provider: str) -> Dict[str, Any]:
+    def get_status(self, provider: str) -> dict[str, Any]:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -96,7 +96,7 @@ class CADGateway:
             }
         return {"connected": False}
 
-    def read_drawing(self, provider: str, filepath: str) -> List[CADElement]:  # NOSONAR — S3776: multi-format CAD reading requires provider-specific branching
+    def read_drawing(self, provider: str, filepath: str) -> list[CADElement]:  # NOSONAR — S3776: multi-format CAD reading requires provider-specific branching
         service = self.get_service(provider)
         elements = []
         provider_lower = provider.lower()
@@ -132,7 +132,7 @@ class CADGateway:
                 ))
         return elements
 
-    def write_drawing(self, provider: str, filepath: str, elements: List[CADElement]) -> bool:
+    def write_drawing(self, provider: str, filepath: str, elements: list[CADElement]) -> bool:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -150,7 +150,7 @@ class CADGateway:
             return True
         return False
 
-    def draw_line(self, provider: str, start_point: List[float], end_point: List[float], layer: str = "0", color: int = 256) -> str:
+    def draw_line(self, provider: str, start_point: list[float], end_point: list[float], layer: str = "0", color: int = 256) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -159,7 +159,7 @@ class CADGateway:
             return service.create_wall(start_point, end_point)
         return ""
 
-    def draw_polyline(self, provider: str, vertices: List[List[float]], layer: str = "0", color: int = 256, closed: bool = False) -> str:
+    def draw_polyline(self, provider: str, vertices: list[list[float]], layer: str = "0", color: int = 256, closed: bool = False) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -168,7 +168,7 @@ class CADGateway:
             return service.create_floor(vertices)
         return ""
 
-    def draw_circle(self, provider: str, center: List[float], radius: float, layer: str = "0", color: int = 256) -> str:
+    def draw_circle(self, provider: str, center: list[float], radius: float, layer: str = "0", color: int = 256) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -177,7 +177,7 @@ class CADGateway:
             return service.create_column(center, "Round Column")
         return ""
 
-    def draw_text(self, provider: str, text: str, insertion_point: List[float], height: float = 0.2, layer: str = "0", color: int = 256) -> str:
+    def draw_text(self, provider: str, text: str, insertion_point: list[float], height: float = 0.2, layer: str = "0", color: int = 256) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":

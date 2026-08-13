@@ -4,7 +4,7 @@ import base64
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 
@@ -29,7 +29,7 @@ class DeviceRepository(BaseRepository):
 
     def create_device(self, project_id: str, device_data: dict) -> dict:
         """Insert a new device and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         device_data.setdefault("id", str(uuid.uuid4()))
         device_data["projectId"] = project_id
         device_data["createdAt"] = now
@@ -129,7 +129,7 @@ class DeviceRepository(BaseRepository):
         if not existing:
             return None
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         set_clauses = [f"updated_at = {self.db._ph()}"]
         values = [now]
 

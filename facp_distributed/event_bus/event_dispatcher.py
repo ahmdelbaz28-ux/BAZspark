@@ -3,7 +3,8 @@
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from .message_queue import Message, MessagePriority, MessageQueue
 
@@ -11,8 +12,8 @@ from .message_queue import Message, MessagePriority, MessageQueue
 class EventListener:
     """Represents an event listener in the distributed system"""
 
-    def __init__(self, name: str, callback: Callable[[Dict[str, Any]], None],
-                 event_types: Optional[List[str]] = None, node_filters: Optional[List[str]] = None):
+    def __init__(self, name: str, callback: Callable[[dict[str, Any]], None],
+                 event_types: list[str] | None = None, node_filters: list[str] | None = None):
         self.id = f"listener_{name}_{uuid.uuid4().hex[:8]}"
         self.name = name
         self.callback = callback
@@ -24,7 +25,7 @@ class EventListener:
         self.invocation_count = 0
         self.errors = 0
 
-    def can_handle_event(self, event_data: Dict[str, Any]) -> bool:
+    def can_handle_event(self, event_data: dict[str, Any]) -> bool:
         """Check if this listener can handle the given event"""
         if not self.is_active:
             return False
@@ -40,7 +41,7 @@ class EventListener:
 
         return type_match and node_match
 
-    def invoke(self, event_data: Dict[str, Any]) -> bool:
+    def invoke(self, event_data: dict[str, Any]) -> bool:
         """Invoke the listener callback with event data"""
         try:
             self.callback(event_data)
@@ -59,7 +60,7 @@ class EventDispatcher:
     def __init__(self, name: str = "main_dispatcher"):
         self.name = name
         self.dispatcher_id = f"dispatcher_{name}_{uuid.uuid4().hex[:8]}"
-        self.listeners: Dict[str, EventListener] = {}
+        self.listeners: dict[str, EventListener] = {}
         self.event_queue = MessageQueue(f"dispatcher_{name}_queue", max_size=5000)
         self.routing_rules = {}  # event_type -> [listener_ids]
         self.lock = threading.Lock()
@@ -74,10 +75,10 @@ class EventDispatcher:
         self.max_dispatch_workers = 10
         self.dispatch_workers = []
         self.worker_queue = queue.Queue()
-        self.broadcast_targets = set()  # Set of target identifiers for broadcasting
+        self.broadcast_targets = set()  # set of target identifiers for broadcasting
 
-    def register_listener(self, name: str, callback: Callable[[Dict[str, Any]], None],
-                         event_types: Optional[List[str]] = None, node_filters: Optional[List[str]] = None) -> str:
+    def register_listener(self, name: str, callback: Callable[[dict[str, Any]], None],
+                         event_types: list[str] | None = None, node_filters: list[str] | None = None) -> str:
         """Register a new event listener"""
         with self.lock:
             listener = EventListener(name, callback, event_types, node_filters)
@@ -107,7 +108,7 @@ class EventDispatcher:
                 return True
             return False
 
-    def dispatch_event(self, event_data: Dict[str, Any]) -> List[str]:
+    def dispatch_event(self, event_data: dict[str, Any]) -> list[str]:
         """Dispatch an event to interested listeners"""
         event_type = event_data.get("event_type", "unknown")
         _ = event_data.get("source_node", "unknown")  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
@@ -151,7 +152,7 @@ class EventDispatcher:
 
         return invoked_listeners
 
-    def dispatch_fcep_message(self, facp_message: Dict[str, Any]) -> List[str]:
+    def dispatch_fcep_message(self, facp_message: dict[str, Any]) -> list[str]:
         """Dispatch a FACP message as an event"""
         # Convert FACP message to event format
         event_data = {
@@ -166,7 +167,7 @@ class EventDispatcher:
 
         return self.dispatch_event(event_data)
 
-    def broadcast_event(self, event_data: Dict[str, Any], targets: Optional[List[str]] = None) -> Dict[str, List[str]]:
+    def broadcast_event(self, event_data: dict[str, Any], targets: list[str] | None = None) -> dict[str, list[str]]:
         """Broadcast an event to multiple targets (simulated for distributed system)"""
         if targets is None:
             targets = list(self.broadcast_targets)
@@ -184,7 +185,7 @@ class EventDispatcher:
 
         return results
 
-    def queue_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> bool:
+    def queue_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> bool:
         """Queue an event for later processing"""
         message = Message(
             topic="events",
@@ -260,7 +261,7 @@ class EventDispatcher:
         with self.lock:
             self.broadcast_targets.discard(target)
 
-    def get_listener_status(self, listener_id: str) -> Optional[Dict[str, Any]]:
+    def get_listener_status(self, listener_id: str) -> dict[str, Any] | None:
         """Get status of a specific listener"""
         with self.lock:
             if listener_id in self.listeners:
@@ -278,12 +279,12 @@ class EventDispatcher:
                 }
         return None
 
-    def get_all_listeners_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_listeners_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all listeners"""
         with self.lock:
             return {lid: self.get_listener_status(lid) for lid in self.listeners}
 
-    def get_dispatcher_status(self) -> Dict[str, Any]:
+    def get_dispatcher_status(self) -> dict[str, Any]:
         """Get status of the event dispatcher"""
         with self.lock:
             return {
@@ -298,7 +299,7 @@ class EventDispatcher:
                 "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
             }
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get detailed statistics for the dispatcher"""
         with self.lock:
             listener_stats = {}
@@ -324,7 +325,7 @@ class EventDispatcher:
                 }
             }
 
-    def filter_event(self, event_data: Dict[str, Any]) -> bool:
+    def filter_event(self, event_data: dict[str, Any]) -> bool:
         """Determine if an event should be filtered out"""
         # In a real system, this could implement complex filtering logic
         # For now, implement basic filtering based on event properties
@@ -355,8 +356,8 @@ class EventDispatcher:
                 return True
         return False
 
-    def update_listener_filters(self, listener_id: str, event_types: Optional[List[str]] = None,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-                               node_filters: Optional[List[str]] = None) -> bool:
+    def update_listener_filters(self, listener_id: str, event_types: list[str] | None = None,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+                               node_filters: list[str] | None = None) -> bool:
         """Update filters for a listener"""
         with self.lock:
             if listener_id in self.listeners:
@@ -399,7 +400,7 @@ class EventDispatcher:
 class DistributedEventDispatcher(EventDispatcher):
     """Distributed event dispatcher with cluster awareness"""
 
-    def __init__(self, name: str = "distributed_dispatcher", node_id: Optional[str] = None):
+    def __init__(self, name: str = "distributed_dispatcher", node_id: str | None = None):
         super().__init__(name)
         self.node_id = node_id or f"node_{uuid.uuid4().hex[:8]}"
         self.cluster_sync_callback = None
@@ -409,10 +410,10 @@ class DistributedEventDispatcher(EventDispatcher):
         self.local_only_events = set()  # Events that should not be federated
 
     def set_cluster_sync_callback(self, callback):
-        """Set callback for cluster synchronization"""
+        """set callback for cluster synchronization"""
         self.cluster_sync_callback = callback
 
-    def dispatch_event(self, event_data: Dict[str, Any]) -> List[str]:
+    def dispatch_event(self, event_data: dict[str, Any]) -> list[str]:
         """Override to support distributed event dispatching"""
         # Check if this event should be federated
         event_type = event_data.get("event_type", "")
@@ -433,7 +434,7 @@ class DistributedEventDispatcher(EventDispatcher):
         # Process locally as usual
         return super().dispatch_event(event_data)
 
-    def receive_cluster_event(self, event_data: Dict[str, Any], source_node: str):
+    def receive_cluster_event(self, event_data: dict[str, Any], source_node: str):
         """Receive an event from another cluster node"""
         # Add source node information
         event_data["source_cluster_node"] = source_node
@@ -445,7 +446,7 @@ class DistributedEventDispatcher(EventDispatcher):
         # Process the event locally
         return self.dispatch_event(event_data)
 
-    def sync_with_cluster(self, cluster_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_state: dict[str, Any]):
         """Sync dispatcher state with cluster"""
         # Update cluster listeners
         cluster_listeners = cluster_state.get("listeners", {})
@@ -464,7 +465,7 @@ class DistributedEventDispatcher(EventDispatcher):
         """Remove an event type from the local-only list"""
         self.local_only_events.discard(event_type)
 
-    def get_cluster_aware_status(self) -> Dict[str, Any]:
+    def get_cluster_aware_status(self) -> dict[str, Any]:
         """Get status including cluster information"""
         base_status = self.get_dispatcher_status()
         base_status.update({

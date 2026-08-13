@@ -22,7 +22,7 @@ import os
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from fireai.core.fireai_kernel_v30 import KernelCore
@@ -41,7 +41,7 @@ class NFPA72Constants:
     DEAD_AIR_OFFSET_M: float = 0.102  # 4 inches from peak
 
     # Smoke detector spacing table
-    SMOKE_RADIUS_TABLE: Dict[float, float] = {
+    SMOKE_RADIUS_TABLE: dict[float, float] = {
         3.0: 6.37,  # Up to 10 ft ceiling → conservative 6.37m
         4.3: 6.37,  # Up to 14 ft
         6.1: 7.62,  # Up to 20 ft → 25 ft × 0.7
@@ -51,7 +51,7 @@ class NFPA72Constants:
     SMOKE_DEFAULT_RADIUS_M: float = 6.37
 
     # Heat detector spacing table
-    HEAT_RADIUS_TABLE: Dict[float, float] = {
+    HEAT_RADIUS_TABLE: dict[float, float] = {
         3.0: 4.57,  # 15 ft radius at standard ceiling
         4.3: 4.57,
         6.1: 5.49,
@@ -80,9 +80,9 @@ class GenerativeDesignVariant:
     """Represents a single design variant from the generative engine."""
     id: str
     name: str
-    layout: List[Dict[str, Any]]
+    layout: list[dict[str, Any]]
     score: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class GenerativeDesignEngine:
@@ -106,7 +106,7 @@ class GenerativeDesignEngine:
         occupancy_type: str = "office",
         detector_type: str = "smoke",
         num_variants: int = 3
-    ) -> List[GenerativeDesignVariant]:
+    ) -> list[GenerativeDesignVariant]:
         """
         Generate multiple design variants for the given room parameters.
 
@@ -114,12 +114,12 @@ class GenerativeDesignEngine:
             room_width: Width of the room in meters
             room_length: Length of the room in meters
             ceiling_height: Ceiling height in meters
-            occupancy_type: Type of occupancy (affects safety requirements)
-            detector_type: Type of detector ('smoke', 'heat', 'combo')
+            occupancy_type: type of occupancy (affects safety requirements)
+            detector_type: type of detector ('smoke', 'heat', 'combo')
             num_variants: Number of variants to generate
 
         Returns:
-            List of design variants with scores
+            list of design variants with scores
         """
         variants = []
 
@@ -161,7 +161,7 @@ class GenerativeDesignEngine:
         _occupancy_type: str,  # NOSONAR — S1172: parameter retained for API stability
         detector_type: str,
         strategy: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate a layout based on the specified strategy."""
         # Calculate base spacing based on ceiling height and detector type
         base_radius = self._get_base_radius(detector_type, ceiling_height)
@@ -223,7 +223,7 @@ class GenerativeDesignEngine:
         # If ceiling is lower than minimum, return default
         return default_radius
 
-    def _calculate_layout_score(self, layout: List[Dict[str, Any]], strategy: str) -> float:
+    def _calculate_layout_score(self, layout: list[dict[str, Any]], strategy: str) -> float:
         """Calculate a score for the layout based on the strategy."""
         if not layout:
             return 0.0
@@ -271,15 +271,15 @@ class WebhookPublisher:
         self,
         url: str,
         event_type: str,
-        data: Dict[str, Any],
-        secret: Optional[str] = None
+        data: dict[str, Any],
+        secret: str | None = None
     ) -> bool:
         """
         Publish an event to the specified webhook URL.
 
         Args:
             url: Webhook URL to send the event to
-            event_type: Type of event being published
+            event_type: type of event being published
             data: Event data payload
             secret: Optional secret for HMAC signature
 
@@ -310,13 +310,13 @@ class WebhookPublisher:
         if secret:
             signature = self._generate_signature(payload, secret)
             headers = {
-                "Content-Type": "application/json",
+                "Content-type": "application/json",
                 "X-FireAI-Signature": signature,
                 "X-FireAI-Event-ID": payload["event_id"]
             }
         else:
             headers = {
-                "Content-Type": "application/json",
+                "Content-type": "application/json",
                 "X-FireAI-Event-ID": payload["event_id"]
             }
 
@@ -355,7 +355,7 @@ class WebhookPublisher:
         except Exception:
             return False
 
-    def _generate_signature(self, payload: Dict[str, Any], secret: str) -> str:
+    def _generate_signature(self, payload: dict[str, Any], secret: str) -> str:
         """Generate HMAC signature for the payload."""
         import hmac
 
@@ -369,7 +369,7 @@ class WebhookPublisher:
 
         return signature
 
-    def _safe_serialize(self, obj: Any, depth: int = 0) -> Optional[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _safe_serialize(self, obj: Any, depth: int = 0) -> str | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Safely serialize an object to JSON, preventing circular references and security issues."""
         if depth > NFPA72Constants.MAX_SERIALIZATION_DEPTH:
             self.logger.error("Serialization depth exceeded maximum allowed")
@@ -421,10 +421,10 @@ class ARHookManager:
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.ARHookManager")
-        self.active_sessions: Dict[str, Dict[str, Any]] = {}
-        self.visualization_cache: Dict[str, bytes] = {}
+        self.active_sessions: dict[str, dict[str, Any]] = {}
+        self.visualization_cache: dict[str, bytes] = {}
 
-    async def create_session(self, building_id: str, session_config: Optional[Dict[str, Any]] = None) -> str:  # NOSONAR - python:S7503
+    async def create_session(self, building_id: str, session_config: dict[str, Any] | None = None) -> str:  # NOSONAR - python:S7503
         """
         Create a new AR session for the specified building.
 
@@ -455,7 +455,7 @@ class ARHookManager:
 
         return session_id
 
-    async def update_visualization_data(self, session_id: str, data: Dict[str, Any]) -> bool:
+    async def update_visualization_data(self, session_id: str, data: dict[str, Any]) -> bool:
         """
         Update visualization data for the specified AR session.
 
@@ -489,7 +489,7 @@ class ARHookManager:
 
         return True
 
-    async def get_visualization_data(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_visualization_data(self, session_id: str) -> dict[str, Any] | None:
         """
         Get visualization data for the specified AR session.
 
@@ -535,7 +535,7 @@ class ARHookManager:
 
         return False
 
-    async def generate_ar_visualization(self, building_data: Dict[str, Any], format_type: str = "glb") -> Optional[bytes]:  # NOSONAR - python:S7503
+    async def generate_ar_visualization(self, building_data: dict[str, Any], format_type: str = "glb") -> bytes | None:  # NOSONAR - python:S7503
         """
         Generate AR visualization data in the specified format.
 
@@ -595,7 +595,7 @@ class V131KernelExtension:
         ceiling_height: float,
         occupancy_type: str = "office",
         detector_type: str = "smoke"
-    ) -> List[GenerativeDesignVariant]:
+    ) -> list[GenerativeDesignVariant]:
         """
         V131: Generate multiple design variants for the given room parameters.
 
@@ -603,11 +603,11 @@ class V131KernelExtension:
             room_width: Width of the room in meters
             room_length: Length of the room in meters
             ceiling_height: Ceiling height in meters
-            occupancy_type: Type of occupancy (affects safety requirements)
-            detector_type: Type of detector ('smoke', 'heat', 'combo')
+            occupancy_type: type of occupancy (affects safety requirements)
+            detector_type: type of detector ('smoke', 'heat', 'combo')
 
         Returns:
-            List of design variants with scores
+            list of design variants with scores
         """
         return await self.generative_engine.generate_variants(
             room_width, room_length, ceiling_height,
@@ -618,15 +618,15 @@ class V131KernelExtension:
         self,
         url: str,
         event_type: str,
-        data: Dict[str, Any],
-        secret: Optional[str] = None
+        data: dict[str, Any],
+        secret: str | None = None
     ) -> bool:
         """
         V131: Publish an event to an external webhook.
 
         Args:
             url: Webhook URL to send the event to
-            event_type: Type of event being published
+            event_type: type of event being published
             data: Event data payload
             secret: Optional secret for HMAC signature
 
@@ -638,7 +638,7 @@ class V131KernelExtension:
     async def create_ar_session(
         self,
         building_id: str,
-        session_config: Optional[Dict[str, Any]] = None
+        session_config: dict[str, Any] | None = None
     ) -> str:
         """
         V131: Create a new AR session for visualization.
@@ -655,7 +655,7 @@ class V131KernelExtension:
     async def update_ar_visualization(
         self,
         session_id: str,
-        data: Dict[str, Any]
+        data: dict[str, Any]
     ) -> bool:
         """
         V131: Update visualization data for an AR session.

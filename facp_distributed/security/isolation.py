@@ -9,8 +9,9 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 
 class ExecutionEnvironment(Enum):
@@ -36,8 +37,8 @@ class ExecutionIsolationManager:
         self.lock = threading.Lock()
         self.sandbox_base_path = tempfile.mkdtemp(prefix="facp_sandbox_")
 
-    def create_sandboxed_execution(self, func: Callable, args: tuple = (), kwargs: Optional[dict] = None,
-                                   timeout: int = 8000, max_memory_mb: int = 512) -> Dict[str, Any]:
+    def create_sandboxed_execution(self, func: Callable, args: tuple = (), kwargs: dict | None = None,
+                                   timeout: int = 8000, max_memory_mb: int = 512) -> dict[str, Any]:
         """Create a sandboxed execution environment for a function"""
         kwargs = kwargs or {}
 
@@ -65,7 +66,7 @@ import marshal
 import types
 import resource
 
-# Set resource limits
+# set resource limits
 try:
     # Limit virtual memory (in bytes)
     resource.setrlimit(resource.RLIMIT_AS, ({max_memory_mb * 1024 * 1024}, {max_memory_mb * 1024 * 1024}))
@@ -131,7 +132,7 @@ except Exception as e:
             import json
             result_path = os.path.join(exec_dir, "result.json")
             if os.path.exists(result_path):
-                with open(result_path, "r") as f:
+                with open(result_path) as f:
                     status, result = json.load(f)
             else:
                 status = "error"
@@ -229,7 +230,7 @@ except Exception as e:
         except Exception:
             pass
 
-    def get_execution_stats(self) -> Dict[str, Any]:
+    def get_execution_stats(self) -> dict[str, Any]:
         """Get statistics about sandboxed executions"""
         return {
             "total_executions": len(self.execution_logs),
@@ -253,7 +254,7 @@ class SandboxController:
         self.sandbox_templates = {}  # template_name -> config
         self.lock = threading.Lock()
 
-    def create_sandbox_template(self, name: str, config: Dict[str, Any]):
+    def create_sandbox_template(self, name: str, config: dict[str, Any]):
         """Create a template for sandboxes with specific configurations"""
         self.sandbox_templates[name] = {
             "timeout_ms": config.get("timeout_ms", 8000),
@@ -263,7 +264,7 @@ class SandboxController:
             "created_at": time.time()
         }
 
-    def provision_sandbox(self, template_name: str, task_id: Optional[str] = None) -> str:
+    def provision_sandbox(self, template_name: str, task_id: str | None = None) -> str:
         """Provision a new sandbox based on a template"""
         if template_name not in self.sandbox_templates:
             raise ValueError(f"Sandbox template '{template_name}' not found")
@@ -293,7 +294,7 @@ class SandboxController:
         return sandbox_id
 
     def execute_in_sandbox(self, sandbox_id: str, func: Callable, args: tuple = (),
-                          kwargs: Optional[dict] = None, custom_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                          kwargs: dict | None = None, custom_config: dict[str, Any] | None = None) -> dict[str, Any]:
         """Execute a function in a specific sandbox"""
         if sandbox_id not in self.active_sandboxes:
             raise ValueError(f"Sandbox '{sandbox_id}' not found")
@@ -335,7 +336,7 @@ class SandboxController:
         with self.lock:
             del self.active_sandboxes[sandbox_id]
 
-    def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
+    def enforce_execution_constraints(self, request_data: dict[str, Any]) -> tuple[bool, str]:
         """Enforce execution constraints based on request data"""
         constraints = request_data.get("constraints", {})
 
@@ -377,7 +378,7 @@ class SandboxController:
 
         return len(violations) == 0, violations
 
-    def get_sandbox_health(self) -> Dict[str, Any]:
+    def get_sandbox_health(self) -> dict[str, Any]:
         """Get health status of all sandboxes"""
         healthy_count = 0
         total_count = len(self.active_sandboxes)
@@ -413,7 +414,7 @@ class SandboxController:
 def create_deterministic_execution_wrapper(func: Callable) -> Callable:
     """Create a wrapper that ensures deterministic execution"""
     def wrapper(*args, **kwargs):
-        # Set a fixed random seed based on input to ensure deterministic behavior
+        # set a fixed random seed based on input to ensure deterministic behavior
         import hashlib
         import random
 

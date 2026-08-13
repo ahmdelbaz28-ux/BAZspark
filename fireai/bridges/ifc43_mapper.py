@@ -43,7 +43,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from datetime import UTC
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ IFC43_IMPLEMENTATION_LEVEL = "official"
 # ---------------------------------------------------------------------------
 
 
-class IFC43ElementType(str, Enum):
+class IFC43ElementType(StrEnum):
     """
     IFC 4.3 element types for fire alarm system components.
 
@@ -499,9 +500,9 @@ class IFC43Mapper:
             Suitable for ifcopenshell.file() header setup.
 
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
         return {
             "file_description": {

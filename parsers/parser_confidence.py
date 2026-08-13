@@ -21,7 +21,6 @@ except ImportError:
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Optional, Tuple
 
 
 class GateDecision(Enum):
@@ -35,7 +34,7 @@ class ConfidenceResult:
     score: float
     gate: GateDecision
     message: str
-    details: Dict = field(default_factory=dict)
+    details: dict = field(default_factory=dict)
 
 
 class ParserConfidence:
@@ -67,12 +66,12 @@ class ParserConfidence:
         if len(self.doc) == 0:
             raise ValueError("PDF contains no pages")
         self.page = self.doc[0]
-        self._text_cache: Optional[str] = None
+        self._text_cache: str | None = None
 
     # ──────────────────────────────────────────────
     # 1. جودة الملف (File Quality)
     # ──────────────────────────────────────────────
-    def _score_file_quality(self) -> Tuple[float, Dict]:
+    def _score_file_quality(self) -> tuple[float, dict]:
         score = 0.0
         details = {}
 
@@ -116,7 +115,7 @@ class ParserConfidence:
             self._text_cache = self.page.get_text().lower()
         return self._text_cache
 
-    def _score_completeness(self) -> Tuple[float, Dict]:
+    def _score_completeness(self) -> tuple[float, dict]:
         score = 0.0
         details = {}
 

@@ -217,7 +217,7 @@ class TestScanToBIMService:
             # Check that the file was created and contains expected data
             assert tmp_path.exists()
 
-            with open(tmp_path, 'r', encoding='utf-8') as f:
+            with open(tmp_path, encoding='utf-8') as f:
                 data = json.load(f)
 
             assert 'header' in data

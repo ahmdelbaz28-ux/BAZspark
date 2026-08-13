@@ -45,7 +45,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fireai.integration.external_api_base import ExternalApiAdapter
 
@@ -215,7 +215,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
         if not (1 <= lookback_days <= 365):
             raise ValueError(f"lookback_days must be 1..365, got {lookback_days}")
 
-        end = datetime.now(timezone.utc)
+        end = datetime.now(UTC)
         start = end - timedelta(days=lookback_days)
         params = {
             "format": "geojson",
@@ -255,7 +255,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
                     depth_km=float(coords[2]) if len(coords) > 2 else 0.0,
                     place=props.get("place", "") or "",
                     time_utc=datetime.fromtimestamp(
-                        props["time"] / 1000.0, tz=timezone.utc
+                        props["time"] / 1000.0, tz=UTC
                     ).isoformat(),
                     event_url=props.get("url", "") or "",
                     coordinates=(float(coords[0]), float(coords[1]),

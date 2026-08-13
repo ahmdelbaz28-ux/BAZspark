@@ -6,7 +6,6 @@ backend/integrations/etap_schemas.py — Pydantic schemas for ETAP integration.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -47,8 +46,8 @@ class EtapConnectionTestResponse(BaseModel):
 
     success: bool
     message: str
-    latency_ms: Optional[int] = None
-    server_version: Optional[str] = None
+    latency_ms: int | None = None
+    server_version: str | None = None
 
 
 class EtapProjectInfo(BaseModel):
@@ -56,8 +55,8 @@ class EtapProjectInfo(BaseModel):
 
     project_id: str
     name: str
-    modified_at: Optional[datetime] = None
-    size_mb: Optional[float] = None
+    modified_at: datetime | None = None
+    size_mb: float | None = None
     is_remote: bool = True
 
 
@@ -88,14 +87,14 @@ class EtapSyncLog(BaseModel):
     direction: str  # 'export' | 'import'
     status: str  # 'success' | 'error' | 'partial'
     records_synced: int
-    error_message: Optional[str] = None
+    error_message: str | None = None
     created_at: datetime
 
 
 class EtapSyncLogResponse(BaseModel):
     """Paginated sync logs response."""
 
-    items: List[EtapSyncLog]
+    items: list[EtapSyncLog]
     total: int
     page: int
     page_size: int
@@ -110,7 +109,7 @@ class EtapSettingsResponse(BaseModel):
     port: int
     username: str
     enabled: bool
-    last_sync: Optional[datetime] = None
+    last_sync: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -118,23 +117,23 @@ class EtapSettingsResponse(BaseModel):
 class EtapSettingsUpdate(BaseModel):
     """Update ETAP settings (password is optional — only update if provided)."""
 
-    host: Optional[str] = Field(None, min_length=1, max_length=255)
-    port: Optional[int] = Field(None, ge=1, le=65535)
-    username: Optional[str] = Field(None, min_length=1, max_length=255)
-    password: Optional[str] = Field(None, min_length=1, max_length=255)
-    timeout_seconds: Optional[int] = Field(None, ge=5, le=300)
-    enabled: Optional[bool] = None
+    host: str | None = Field(None, min_length=1, max_length=255)
+    port: int | None = Field(None, ge=1, le=65535)
+    username: str | None = Field(None, min_length=1, max_length=255)
+    password: str | None = Field(None, min_length=1, max_length=255)
+    timeout_seconds: int | None = Field(None, ge=5, le=300)
+    enabled: bool | None = None
 
     @field_validator("host")
     @classmethod
-    def validate_host(cls, v: Optional[str]) -> Optional[str]:
+    def validate_host(cls, v: str | None) -> str | None:
         if v is not None:
             v = validate_host_for_user_input(v.strip())
         return v
 
     @field_validator("username")
     @classmethod
-    def validate_username(cls, v: Optional[str]) -> Optional[str]:
+    def validate_username(cls, v: str | None) -> str | None:
         if v is not None:
             v = v.strip()
             if not v:

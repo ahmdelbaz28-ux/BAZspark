@@ -8,8 +8,8 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 import math
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 class GeometryTransformationService:
@@ -21,7 +21,7 @@ class GeometryTransformationService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def transform_to_2d_footprint(self, geometry_3d: Dict[str, Any]) -> Dict[str, Any]:
+    async def transform_to_2d_footprint(self, geometry_3d: dict[str, Any]) -> dict[str, Any]:
         """
         Transform 3D geometry to 2D footprint for GIS applications.
 
@@ -29,7 +29,7 @@ class GeometryTransformationService:
             geometry_3d: 3D geometry data
 
         Returns:
-            Dict: 2D footprint geometry
+            dict: 2D footprint geometry
         """
         # Extract 2D footprint from 3D geometry
         footprint = {
@@ -58,15 +58,15 @@ class GeometryTransformationService:
 
         return footprint
 
-    async def transform_to_gis_format(self, model_elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def transform_to_gis_format(self, model_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Transform model elements to GIS-compatible format.
 
         Args:
-            model_elements: List of model elements to transform
+            model_elements: list of model elements to transform
 
         Returns:
-            List[Dict]: GIS-compatible features
+            list[dict]: GIS-compatible features
         """
         gis_features = []
 
@@ -93,9 +93,9 @@ class GeometryTransformationService:
         self.logger.info(f"Transformed {len(gis_features)} elements to GIS format")
         return gis_features
 
-    async def transform_coordinate_system(self, coordinates: List[float],
+    async def transform_coordinate_system(self, coordinates: list[float],
                                        from_crs: str = "Revit_Local",
-                                       to_crs: str = "WGS84") -> List[float]:
+                                       to_crs: str = "WGS84") -> list[float]:
         """
         Transform coordinates from one coordinate system to another.
 
@@ -105,7 +105,7 @@ class GeometryTransformationService:
             to_crs: Target coordinate reference system
 
         Returns:
-            List[float]: Transformed coordinates
+            list[float]: Transformed coordinates
         """
         # For now, implement a basic offset transformation
         # In a real implementation, this would use proper CRS transformation libraries
@@ -121,7 +121,7 @@ class GeometryTransformationService:
 
         return transformed
 
-    async def simplify_geometry(self, geometry: Dict[str, Any], tolerance: float = 0.1) -> Dict[str, Any]:
+    async def simplify_geometry(self, geometry: dict[str, Any], tolerance: float = 0.1) -> dict[str, Any]:
         """
         Simplify complex geometry using Douglas-Peucker algorithm or similar.
 
@@ -130,7 +130,7 @@ class GeometryTransformationService:
             tolerance: Simplification tolerance
 
         Returns:
-            Dict: Simplified geometry
+            dict: Simplified geometry
         """
         simplified = geometry.copy()
 
@@ -148,7 +148,7 @@ class GeometryTransformationService:
 
         return simplified
 
-    async def _simplify_polygon_ring(self, ring: List[List[float]], tolerance: float) -> List[List[float]]:
+    async def _simplify_polygon_ring(self, ring: list[list[float]], tolerance: float) -> list[list[float]]:
         """Simplify a polygon ring using distance-based simplification."""
         if len(ring) <= 2:
             return ring
@@ -170,7 +170,7 @@ class GeometryTransformationService:
         simplified.append(ring[-1])  # Always keep last point
         return simplified
 
-    async def _simplify_line_string(self, coords: List[List[float]], tolerance: float) -> List[List[float]]:
+    async def _simplify_line_string(self, coords: list[list[float]], tolerance: float) -> list[list[float]]:
         """Simplify a line string using distance-based simplification."""
         if len(coords) <= 2:
             return coords
@@ -191,7 +191,7 @@ class GeometryTransformationService:
         simplified.append(coords[-1])  # Always keep last point
         return simplified
 
-    def _point_to_line_distance(self, point: List[float], line_start: List[float], line_end: List[float]) -> float:
+    def _point_to_line_distance(self, point: list[float], line_start: list[float], line_end: list[float]) -> float:
         """Calculate perpendicular distance from point to line."""
         x, y = point[0], point[1]
         x1, y1 = line_start[0], line_start[1]
@@ -206,7 +206,7 @@ class GeometryTransformationService:
 
         return nom / denom
 
-    async def calculate_centroid(self, geometry: Dict[str, Any]) -> Optional[List[float]]:
+    async def calculate_centroid(self, geometry: dict[str, Any]) -> list[float] | None:
         """
         Calculate centroid of a geometry.
 
@@ -214,7 +214,7 @@ class GeometryTransformationService:
             geometry: Input geometry
 
         Returns:
-            Optional[List[float]]: Centroid coordinates [X, Y] or None
+            Optional[list[float]]: Centroid coordinates [X, Y] or None
         """
         if geometry.get("type") == "Point":
             return geometry.get("coordinates")
@@ -239,7 +239,7 @@ class GeometryTransformationService:
 
         return None
 
-    async def calculate_area(self, geometry: Dict[str, Any]) -> float:
+    async def calculate_area(self, geometry: dict[str, Any]) -> float:
         """
         Calculate area of a polygon geometry.
 
@@ -265,7 +265,7 @@ class GeometryTransformationService:
 
         return 0.0
 
-    async def calculate_length(self, geometry: Dict[str, Any]) -> float:
+    async def calculate_length(self, geometry: dict[str, Any]) -> float:
         """
         Calculate length of a line geometry.
 
@@ -288,8 +288,8 @@ class GeometryTransformationService:
 
         return 0.0
 
-    async def transform_for_gis_export(self, model_elements: List[Dict[str, Any]],
-                                     target_format: str = "geojson") -> Dict[str, Any]:
+    async def transform_for_gis_export(self, model_elements: list[dict[str, Any]],
+                                     target_format: str = "geojson") -> dict[str, Any]:
         """
         Transform model data for GIS export in specified format.
 
@@ -298,7 +298,7 @@ class GeometryTransformationService:
             target_format: Target format ('geojson', 'shapefile', 'kml', etc.)
 
         Returns:
-            Dict: Transformed data in target format
+            dict: Transformed data in target format
         """
         if target_format.lower() == "geojson":
             # Create GeoJSON FeatureCollection
@@ -313,7 +313,7 @@ class GeometryTransformationService:
                     }
                 },
                 "metadata": {
-                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "generated_at": datetime.now(UTC).isoformat(),
                     "source": "Revit Model",
                     "format": "GeoJSON"
                 }
@@ -323,10 +323,10 @@ class GeometryTransformationService:
         return {
             "elements": model_elements,
             "format": target_format,
-            "transformed_at": datetime.now(timezone.utc).isoformat()
+            "transformed_at": datetime.now(UTC).isoformat()
         }
 
-    async def _element_to_geometry(self, element: Dict[str, Any]) -> Dict[str, Any]:
+    async def _element_to_geometry(self, element: dict[str, Any]) -> dict[str, Any]:
         """Convert a model element to geometry representation."""
         # This is a simplified implementation
         # In a real implementation, this would handle complex geometry conversion

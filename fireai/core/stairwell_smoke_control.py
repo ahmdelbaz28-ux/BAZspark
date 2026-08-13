@@ -48,7 +48,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # Import smoke control primitives from building_systems_integration — these
@@ -130,7 +130,7 @@ _CITE_NFPA72_21_6 = "NFPA 72-2022 §21.6"
 # ============================================================================
 
 
-class FanStatus(str, Enum):
+class FanStatus(StrEnum):
     """
     Pressurization fan operational status per NFPA 72 supervisory signal.
 
@@ -151,7 +151,7 @@ class FanStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class FailSafeState(str, Enum):
+class FailSafeState(StrEnum):
     """
     Fail-safe state for stairwell pressurization on power loss.
 
@@ -175,7 +175,7 @@ class FailSafeState(str, Enum):
     ALARM_ONLY = "ALARM_ONLY"
 
 
-class VestibuleType(str, Enum):
+class VestibuleType(StrEnum):
     """
     Vestibule classification for smoke-proof enclosures.
 

@@ -33,7 +33,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from backend.services.ocr_service import OCRService, ocr_service
 
@@ -130,9 +130,9 @@ class BIMRoom:
     area: float
     room_type: str
     confidence: float
-    coordinates: Optional[Tuple[float, float, float, float]] = None  # x1, y1, x2, y2
-    audit_info: Dict[str, Any] = field(default_factory=dict)
-    notes: List[str] = field(default_factory=list)
+    coordinates: tuple[float, float, float, float] | None = None  # x1, y1, x2, y2
+    audit_info: dict[str, Any] = field(default_factory=dict)
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -142,18 +142,18 @@ class ScanToBIMResult:
 
     Attributes:
         success: Whether the process was successful
-        rooms: List of extracted BIM rooms
+        rooms: list of extracted BIM rooms
         statistics: Processing statistics
         audit_trail: Complete audit trail per NFPA 72-2022 §10.6
         requires_human_review: Always True for OCR-derived data
-        warnings: List of any warnings during processing
+        warnings: list of any warnings during processing
     """
     success: bool
-    rooms: List[BIMRoom]
-    statistics: Dict[str, Any]
-    audit_trail: Dict[str, Any]
+    rooms: list[BIMRoom]
+    statistics: dict[str, Any]
+    audit_trail: dict[str, Any]
     requires_human_review: bool = True  # OCR results always require review
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class ScanToBIMService:
@@ -168,7 +168,7 @@ class ScanToBIMService:
         result = scanner.process_scan("floor_plan.pdf")
     """
 
-    def __init__(self, ocr_service_instance: Optional[OCRService] = None) -> None:
+    def __init__(self, ocr_service_instance: OCRService | None = None) -> None:
         self.logger = logging.getLogger(f"{__name__}.ScanToBIMService")
         self.ocr_service = ocr_service_instance or ocr_service
 
@@ -218,7 +218,7 @@ class ScanToBIMService:
         # If no specific type found, return 'OTHER'
         return 'OTHER'
 
-    def _validate_area(self, area: float, room_name: str) -> Tuple[bool, str]:
+    def _validate_area(self, area: float, room_name: str) -> tuple[bool, str]:
         """
         Validate that the area is within reasonable bounds.
 
@@ -227,7 +227,7 @@ class ScanToBIMService:
             room_name: Room name for context
 
         Returns:
-            Tuple of (is_valid, reason) where is_valid is True if area is valid
+            tuple of (is_valid, reason) where is_valid is True if area is valid
         """
         if area < BIM_MIN_ROOM_AREA:
             return False, f"Area {area}m² too small for room '{room_name}' (minimum: {BIM_MIN_ROOM_AREA}m²)"
@@ -237,7 +237,7 @@ class ScanToBIMService:
 
         return True, ""
 
-    def _convert_units(self, value_str: str) -> Tuple[float, str]:
+    def _convert_units(self, value_str: str) -> tuple[float, str]:
         """
         Convert area values with units to square meters.
 
@@ -245,7 +245,7 @@ class ScanToBIMService:
             value_str: String containing value and unit (e.g., "25.5 m2", "300 sqft")
 
         Returns:
-            Tuple of (value_in_square_meters, original_unit)
+            tuple of (value_in_square_meters, original_unit)
         """
         # Extract number and unit
         match = re.match(r'(\d+\.?\d*)\s*(.*)', value_str.strip())
@@ -417,12 +417,12 @@ class ScanToBIMService:
 
         return result
 
-    def export_to_ifc(self, rooms: List[BIMRoom], output_path: str | Path) -> bool:
+    def export_to_ifc(self, rooms: list[BIMRoom], output_path: str | Path) -> bool:
         """
         Export BIM rooms to IFC format (placeholder implementation).
 
         Args:
-            rooms: List of BIM rooms to export
+            rooms: list of BIM rooms to export
             output_path: Path for the output IFC file
 
         Returns:
@@ -465,12 +465,12 @@ class ScanToBIMService:
             self.logger.exception("Failed to export to IFC")
             return False
 
-    def validate_bim_data(self, rooms: List[BIMRoom]) -> Dict[str, Any]:
+    def validate_bim_data(self, rooms: list[BIMRoom]) -> dict[str, Any]:
         """
         Validate BIM data for consistency and completeness.
 
         Args:
-            rooms: List of BIM rooms to validate
+            rooms: list of BIM rooms to validate
 
         Returns:
             Dictionary with validation results

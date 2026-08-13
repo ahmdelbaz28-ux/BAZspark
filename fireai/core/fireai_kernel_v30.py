@@ -33,14 +33,12 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
     Any,
-    AsyncGenerator,
-    AsyncIterator,
-    Callable,
     Protocol,
     TypeVar,
 )
@@ -1254,7 +1252,7 @@ class KernelCore:
         all_detectors: list[dict] = []
         all_violations: list[str] = []
 
-        for room, prob, sol in zip(rooms, problems, solutions):
+        for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             if not sol.placements:
                 all_violations.append(f"Room {room.name}: no detectors placed")
                 continue
@@ -1494,7 +1492,7 @@ class AdapterBridge:
         solutions = self._kernel._solver.solve_batch(problems)
 
         detectors: list[dict] = []
-        for room, prob, sol in zip(rooms, problems, solutions):
+        for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             for i, (x, y) in enumerate(sol.placements):
                 detectors.append(
                     {

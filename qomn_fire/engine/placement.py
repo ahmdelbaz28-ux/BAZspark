@@ -7,7 +7,6 @@ Reference Standard: NFPA 72 (2022) Section 17.7.3.2 (Spacing and Coverage).
 
 import logging
 import math
-from typing import List
 
 from qomn_fire.core.constants import (
     NFPA_MAX_WALL_DISTANCE_M,
@@ -24,7 +23,7 @@ def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is in
     height_ft: float,
     circuit_prefix: str,
     zone: str
-) -> Result[List[Device], PhysicalConstraintError]:
+) -> Result[list[Device], PhysicalConstraintError]:
     # SAFETY FIX (V58): Validate inputs for NaN/Inf per IEEE 754 bypass risk.
     # NaN comparisons always return False — NaN room dimensions would silently
     # bypass all validation checks, producing detectors at invalid positions.

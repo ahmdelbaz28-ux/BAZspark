@@ -533,7 +533,7 @@ class TestDwgConverter(unittest.TestCase):
         self.assertTrue(res.is_success)
         self.assertTrue(os.path.exists(dxf_path))
         # The mock DXF must contain the honest "not installed" note
-        with open(dxf_path, "r", encoding="utf-8") as f:
+        with open(dxf_path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn("dwg2dxf not installed", content)
 
@@ -566,7 +566,7 @@ class TestDwgConverter(unittest.TestCase):
         self.assertTrue(res.is_success, f"Real dwg2dxf path failed: {res.error() if res.is_failure else ''}")
         self.assertTrue(os.path.exists(dxf_path))
         # The output must NOT contain the mock warning
-        with open(dxf_path, "r", encoding="utf-8") as f:
+        with open(dxf_path, encoding="utf-8") as f:
             content = f.read()
         self.assertNotIn("dwg2dxf not installed", content)
         self.assertIn("$ACADVER", content)  # Real DXF content
@@ -607,7 +607,7 @@ class TestDwgConverter(unittest.TestCase):
 
         self.assertTrue(res.is_success, f"ODA path failed: {res.error() if res.is_failure else ''}")
         self.assertTrue(os.path.exists(dxf_path))
-        with open(dxf_path, "r", encoding="utf-8") as f:
+        with open(dxf_path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn("AC1024", content)  # ODA wrote AC1024 (2010)
         self.assertNotIn("dwg2dxf not installed", content)

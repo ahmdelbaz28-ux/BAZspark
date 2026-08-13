@@ -14,7 +14,6 @@ Supports:
 
 import json
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -24,10 +23,10 @@ class RevitProject:
     name: str
     version: str
     units: str
-    levels: List[Dict]
-    categories: List[str]
-    families: Dict[str, List[str]]
-    parameters: Dict
+    levels: list[dict]
+    categories: list[str]
+    families: dict[str, list[str]]
+    parameters: dict
 
 
 class RevitJSONParser:
@@ -37,7 +36,7 @@ class RevitJSONParser:
         self.json_path = json_path
         self.data = None
 
-    def _load_json(self) -> Dict:
+    def _load_json(self) -> dict:
         """Load JSON file."""
         from parsers._path_security import validate_file_size, validate_input_path
         safe_path = validate_input_path(self.json_path, parser_name='revit_json')
@@ -49,7 +48,7 @@ class RevitJSONParser:
         with open(self.json_path) as f:
             return json.load(f)
 
-    def parse(self) -> Optional[RevitProject]:
+    def parse(self) -> RevitProject | None:
         """Parse Revit JSON."""
         try:
             if self.data is None:
@@ -75,7 +74,7 @@ class RevitJSONParser:
             return len(self.data.get('levels', []))
         return 0
 
-    def get_fire_alarm_families(self) -> List[str]:
+    def get_fire_alarm_families(self) -> list[str]:
         """Get fire alarm device families."""
         if self.data:
             families = self.data.get('families', {})
@@ -86,14 +85,14 @@ class RevitJSONParser:
             return fa_families
         return []
 
-    def get_parameters(self) -> Dict:
+    def get_parameters(self) -> dict:
         """Get project parameters."""
         if self.data:
             return self.data.get('parameters', {})
         return {}
 
 
-def parse_revit_json(json_path: str) -> Optional[RevitProject]:
+def parse_revit_json(json_path: str) -> RevitProject | None:
     """Convenience function."""
     parser = RevitJSONParser(json_path)
     return parser.parse()

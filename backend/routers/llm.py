@@ -7,7 +7,7 @@ ENDPOINTS
 * ``POST /api/v1/llm/explain``       — Explain an NFPA 72 calculation result
 * ``POST /api/v1/llm/compliance-narrative`` — Draft a compliance narrative
 * ``GET  /api/v1/llm/health``        — Service status
-* ``GET  /api/v1/llm/models``        — List available models (passthrough)
+* ``GET  /api/v1/llm/models``        — list available models (passthrough)
 
 All endpoints require ``CALCULATION_EXECUTE`` (chat/explain/narrative) or
 ``HEALTH_READ`` (health/models) permission. Rate-limited to 30/min for write
@@ -21,7 +21,8 @@ reminding the engineer that AI output must be verified against the published cod
 """
 import json
 import logging
-from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
+from collections.abc import AsyncGenerator
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -103,7 +104,7 @@ class ChatRequest(BaseModel):
                         "are not accepted; the server resolves the persona text."
                 ),
         )
-        history: Optional[List[ChatMessage]] = Field(
+        history: list[ChatMessage] | None = Field(
                 None,
                 max_length=20,
                 description=(
@@ -112,7 +113,7 @@ class ChatRequest(BaseModel):
                         "sent separately as prompt)."
                 ),
         )
-        model: Optional[str] =  Field(
+        model: str | None =  Field(
                 None,
                 description="Override the default model (e.g. 'z-ai/glm-4.7-flash-free').",
         )
@@ -122,7 +123,7 @@ class ChatRequest(BaseModel):
                 le=2.0,
                 description="Sampling temperature. Low values = more deterministic.",
         )
-        max_tokens: Optional[int] =  Field(
+        max_tokens: int | None =  Field(
                 None,
                 ge=1,
                 le=8000,
@@ -138,7 +139,7 @@ class ExplainRequest(BaseModel):
                 max_length=100,
                 description="e.g. 'smoke_spacing', 'voltage_drop', 'battery_sizing'",
         )
-        calculation_result: Dict[str, Any] = Field(
+        calculation_result: dict[str, Any] = Field(
                 ...,
                 description="The JSON result returned by the qomn/analyze endpoint.",
         )
@@ -154,7 +155,7 @@ class ComplianceNarrativeRequest(BaseModel):
 
         project_name: str = Field(..., max_length=200)
         building_description: str = Field(..., max_length=2000)
-        calculations_summary: Dict[str, Any] = Field(
+        calculations_summary: dict[str, Any] = Field(
                 ...,
                 description="Summary of key calculations (spacing, voltage, battery, FACP).",
         )
@@ -187,7 +188,7 @@ class LLMResponseModel(BaseModel):
         responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("30/minute")
-async def llm_chat(request: Request, req: ChatRequest) -> Dict[str, Any]:
+async def llm_chat(request: Request, req: ChatRequest) -> dict[str, Any]:
         """Send a chat completion request to the LLM.
 
         The LLM acts as an engineering assistant. It can answer NFPA 72 / NEC
@@ -244,7 +245,7 @@ async def llm_chat(request: Request, req: ChatRequest) -> Dict[str, Any]:
         responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("30/minute")
-async def llm_explain(request: Request, req: ExplainRequest) -> Dict[str, Any]:
+async def llm_explain(request: Request, req: ExplainRequest) -> dict[str, Any]:
         """Explain a calculation result in plain language.
 
         Takes a calculation result (e.g. from ``/api/v1/qomn/smoke-spacing``) and
@@ -283,7 +284,7 @@ async def llm_explain(request: Request, req: ExplainRequest) -> Dict[str, Any]:
 @limiter.limit("20/minute")
 async def llm_compliance_narrative(
         request: Request, req: ComplianceNarrativeRequest
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
         """Draft a compliance narrative for a submittal package.
 
         Generates a narrative paragraph summarizing the fire-alarm design's
@@ -323,7 +324,7 @@ async def llm_compliance_narrative(
         dependencies=[Depends(require_permission(Permission.HEALTH_READ))],
 )
 @limiter.limit("60/minute")
-async def llm_health(request: Request) -> Dict[str, Any]:
+async def llm_health(request: Request) -> dict[str, Any]:
         """Return the LLM service configuration status (never raises)."""
         svc = get_llm_service()
         status = await svc.health()
@@ -336,8 +337,8 @@ async def llm_health(request: Request) -> Dict[str, Any]:
         responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("60/minute")
-async def llm_models(request: Request) -> Dict[str, Any]:
-        """List models available on the configured LLM provider (passthrough)."""
+async def llm_models(request: Request) -> dict[str, Any]:
+        """list models available on the configured LLM provider (passthrough)."""
         svc = get_llm_service()
         if not svc.available:
                 raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
@@ -412,7 +413,7 @@ async def llm_chat_stream(
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
-def _build_response_data(result: LLMResponse, prompt: str = "") -> Dict[str, Any]:
+def _build_response_data(result: LLMResponse, prompt: str = "") -> dict[str, Any]:
         """Build the standard response data dict from an LLMResponse with NeMo Guardrails validation."""
         from fireai.infrastructure.nemo_guardrails_service import default_guardrails_service
         _is_safe, _violations, validated_content = default_guardrails_service.validate_llm_response(prompt, result.content)

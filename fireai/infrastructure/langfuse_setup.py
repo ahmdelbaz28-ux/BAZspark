@@ -34,13 +34,13 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # ── Lazy globals ────────────────────────────────────────────────────────────
-_langfuse_client: Optional[Any] = None
-_langfuse_available: Optional[bool] = None
+_langfuse_client: Any | None = None
+_langfuse_available: bool | None = None
 
 
 def _check_langfuse_available() -> bool:
@@ -73,7 +73,7 @@ def _check_langfuse_available() -> bool:
     return _langfuse_available
 
 
-def get_langfuse() -> Optional[Any]:
+def get_langfuse() -> Any | None:
     """
     Get the lazy-initialized Langfuse client.
 
@@ -104,11 +104,11 @@ def get_langfuse() -> Optional[Any]:
 
 def get_langfuse_callback_handler(
     name: str = "fireai_workflow",
-    trace_id: Optional[str] = None,
-    user_id: Optional[str] = None,
-    workflow_id: Optional[str] = None,
-    project_id: Optional[str] = None,
-) -> Optional[Any]:
+    trace_id: str | None = None,
+    user_id: str | None = None,
+    workflow_id: str | None = None,
+    project_id: str | None = None,
+) -> Any | None:
     """
     Create a LangGraph CallbackHandler for auto-tracing.
 
@@ -164,7 +164,7 @@ def log_verification_score(
     trace_id: str,
     name: str,
     value: float,
-    comment: Optional[str] = None,
+    comment: str | None = None,
 ) -> bool:
     """
     Create a tamper-evident score on a Langfuse trace.
@@ -196,7 +196,7 @@ def log_verification_score(
         return False
 
 
-def log_workflow_scores(result: Any, handler: Optional[Any]) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def log_workflow_scores(result: Any, handler: Any | None) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Log all 5 verification scores to Langfuse after workflow completion.
 

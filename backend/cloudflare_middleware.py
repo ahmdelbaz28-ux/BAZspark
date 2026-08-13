@@ -44,7 +44,7 @@ import hmac
 import json
 import logging
 import os
-from typing import Iterable
+from collections.abc import Iterable
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 

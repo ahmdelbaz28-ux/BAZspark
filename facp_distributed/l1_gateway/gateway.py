@@ -3,7 +3,7 @@
 import logging
 import time
 import uuid
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from ..protocol.message_schema import FACPMessageValidator, FACPRequest, FACPResponse
 from ..security.validation_gate import ValidationFirewall
@@ -24,7 +24,7 @@ class L1Gateway:
         self.request_counter = 0
         self.active_requests = {}  # request_id -> request_info
 
-    def handle_client_request(self, request_data: Dict[str, Any], source_ip: str = "unknown") -> Tuple[bool, Dict[str, Any]]:
+    def handle_client_request(self, request_data: dict[str, Any], source_ip: str = "unknown") -> tuple[bool, dict[str, Any]]:
         """
         Handle an incoming request from external client
         :param request_data: Raw request data from external client
@@ -160,7 +160,7 @@ class L1Gateway:
 
             return False, error_response
 
-    def handle_client_response(self, request_id: str, response_data: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_client_response(self, request_id: str, response_data: dict[str, Any]) -> dict[str, Any]:
         """Handle response from downstream services and prepare for client delivery"""
         self.logger.info("L1[%s]: Preparing response for client request %s", self.node_id, request_id)
 
@@ -181,7 +181,7 @@ class L1Gateway:
 
         return response_data
 
-    def get_gateway_status(self) -> Dict[str, Any]:
+    def get_gateway_status(self) -> dict[str, Any]:
         """Get status of the L1 gateway"""
         return {
             "node_id": self.node_id,
@@ -206,7 +206,7 @@ class L1Gateway:
             self.logger.warning("L1[%s]: Cleaning up expired request %s", self.node_id, req_id)
             del self.active_requests[req_id]
 
-    def validate_client_request_format(self, request_data: Dict[str, Any]) -> Tuple[bool, list]:
+    def validate_client_request_format(self, request_data: dict[str, Any]) -> tuple[bool, list]:
         """Validate client request format before forwarding to validation firewall"""
         try:
             request = FACPRequest.from_dict(request_data)
@@ -216,11 +216,11 @@ class L1Gateway:
         except Exception as e:
             return False, [f"Request format validation failed: {e!s}"]
 
-    def get_security_stats(self) -> Dict[str, Any]:
+    def get_security_stats(self) -> dict[str, Any]:
         """Get security statistics from validation firewall"""
         return self.validation_firewall.get_security_stats()
 
-    def get_request_metrics(self) -> Dict[str, Any]:
+    def get_request_metrics(self) -> dict[str, Any]:
         """Get metrics about requests processed by this gateway"""
         return {
             "total_requests": self.request_counter,

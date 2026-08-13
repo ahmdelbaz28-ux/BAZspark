@@ -25,7 +25,6 @@ except ImportError:
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Tuple
 
 from shapely.geometry import Point, Polygon
 
@@ -231,9 +230,9 @@ class IFCBridge:
         self._build_spatial_index()
 
         # Initialize resolution ledger
-        self.resolution_log: List[ResolutionEntry] = []
+        self.resolution_log: list[ResolutionEntry] = []
 
-    def _resolve_placement(self, placement) -> Tuple[float, float, float]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _resolve_placement(self, placement) -> tuple[float, float, float]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Resolve accumulated IfcLocalPlacement chain and return final coordinates.
         If unable to resolve, returns (0.0, 0.0, 0.0).
@@ -299,7 +298,7 @@ class IFCBridge:
         lines.append(f"Total logged: {len(self.resolution_log)}")
         return "\n".join(lines)
 
-    def extract_and_normalize(self) -> Tuple[List[Room], List[Device], List[Obstruction]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def extract_and_normalize(self) -> tuple[list[Room], list[Device], list[Obstruction]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Full pipeline:
         1. Extract rooms from IfcSpace
@@ -388,7 +387,7 @@ class IFCBridge:
 
         return all_rooms, all_devices, all_obs
 
-    def _extract_rooms(self) -> List[Room]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_rooms(self) -> list[Room]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Extract rooms from IfcSpace with Shapely Polygon geometry."""
         rooms = []
 
@@ -488,7 +487,7 @@ class IFCBridge:
 
         return rooms
 
-    def _extract_devices(self) -> List[Device]:
+    def _extract_devices(self) -> list[Device]:
         """Extract fire sensors from IfcSensor using placement chain resolution."""
         devices = []
 
@@ -512,7 +511,7 @@ class IFCBridge:
 
         return devices
 
-    def _extract_obstructions(self) -> List[Obstruction]:
+    def _extract_obstructions(self) -> list[Obstruction]:
         """Extract obstructions from columns and beams."""
         obstructions = []
 

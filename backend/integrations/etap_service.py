@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 
 from backend.database import Database
 from backend.integrations._ssrf_guard import SSRFError, resolve_to_safe_ip
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _uuid() -> str:
@@ -41,7 +40,7 @@ class EtapService:
     # Settings CRUD
     # ------------------------------------------------------------------
 
-    def get_settings(self, project_id: str) -> Optional[dict]:
+    def get_settings(self, project_id: str) -> dict | None:
         """Get ETAP settings for a project (without password)."""
         with self._db._transaction() as cur:
             cur.execute(
@@ -86,7 +85,7 @@ class EtapService:
             "updated_at": now,
         }
 
-    def update_settings(self, project_id: str, update: EtapSettingsUpdate) -> Optional[dict]:
+    def update_settings(self, project_id: str, update: EtapSettingsUpdate) -> dict | None:
         """Update ETAP settings for a project."""
         existing = self.get_settings(project_id)
         if not existing:
@@ -203,16 +202,16 @@ class EtapService:
     # Projects
     # ------------------------------------------------------------------
 
-    def list_etap_projects(self, project_id: str) -> List[dict]:
-        """List ETAP projects (simulated for now)."""
+    def list_etap_projects(self, project_id: str) -> list[dict]:
+        """list ETAP projects (simulated for now)."""
         # In a real implementation, this would query ETAP API
         return [
             {"project_id": "etap-1", "name": "Fire Alarm System v2", "modified_at": "2026-07-20T10:00:00Z", "size_mb": 12.5, "is_remote": True},
             {"project_id": "etap-2", "name": "Building Power Distribution", "modified_at": "2026-07-19T15:30:00Z", "size_mb": 8.3, "is_remote": True},
         ]
 
-    def list_local_projects(self) -> List[dict]:
-        """List local BAZSPARK projects."""
+    def list_local_projects(self) -> list[dict]:
+        """list local BAZSPARK projects."""
         with self._db._transaction() as cur:
             cur.execute("SELECT id, name, status, created_at, updated_at FROM projects ORDER BY updated_at DESC")
             rows = cur.fetchall()
@@ -319,7 +318,7 @@ class EtapService:
     # Logs
     # ------------------------------------------------------------------
 
-    def _log_sync(self, project_id: str, direction: str, status: str, records_synced: int, error_message: Optional[str] = None) -> None:
+    def _log_sync(self, project_id: str, direction: str, status: str, records_synced: int, error_message: str | None = None) -> None:
         """Log a sync operation."""
         log_id = _uuid()
         now = _now()

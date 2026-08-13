@@ -33,7 +33,6 @@ Standards: AutoCAD DXF Specification, NFPA 72 (2022)
 import logging
 import os
 import re
-from typing import List, Tuple
 
 from parsers._path_security import (
     UnsafePathError,
@@ -63,9 +62,9 @@ class DxfParser:
         V128 SECURITY: Validates path BEFORE any file access via ezdxf.
         Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        walls: List[Wall] = []
-        rooms: List[Room] = []
-        openings: List[Opening] = []
+        walls: list[Wall] = []
+        rooms: list[Room] = []
+        openings: list[Opening] = []
 
         # This catches argument injection, path traversal, null bytes,
         # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
@@ -165,7 +164,7 @@ class DxfParser:
             )
             DxfParser._parse_dxf_text(filepath, walls, rooms)
 
-        # BUG-9 FIX: Set has_fallback_geometry flag when fallback room is injected.
+        # BUG-9 FIX: set has_fallback_geometry flag when fallback room is injected.
         # Downstream systems MUST check this flag — fire protection design based
         # on fallback geometry is INVALID and must be rejected.
         has_fallback = False
@@ -206,7 +205,7 @@ class DxfParser:
         return Result(value=b)
 
     @staticmethod
-    def _parse_dxf_text(filepath: str, walls: List[Wall], rooms: List[Room]) -> None:
+    def _parse_dxf_text(filepath: str, walls: list[Wall], rooms: list[Room]) -> None:
         """
         Simple text-based DXF parser for environments without ezdxf.
         Extracts LWPOLYLINE and LINE entities from DXF text format.
@@ -271,7 +270,7 @@ class DxfParser:
                     pass
 
     @staticmethod
-    def _dxf_group_pairs(lines: List[str]) -> List[dict]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _dxf_group_pairs(lines: list[str]) -> list[dict]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Parse DXF text into group code/value pair dictionaries.
 
@@ -332,7 +331,7 @@ class DxfParser:
         return entities
 
     @staticmethod
-    def _extract_polyline_points(entity: dict) -> List[Point3D]:
+    def _extract_polyline_points(entity: dict) -> list[Point3D]:
         """
         Extract 2D points from LWPOLYLINE group codes.
 
@@ -380,7 +379,7 @@ class DxfParser:
         return points
 
     @staticmethod
-    def _calculate_polygon_area(boundary: Tuple[Point3D, ...]) -> float:
+    def _calculate_polygon_area(boundary: tuple[Point3D, ...]) -> float:
         """Calculate polygon area using the Shoelace formula."""
         n = len(boundary)
         if n < 3:

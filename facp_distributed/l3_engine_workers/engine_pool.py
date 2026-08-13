@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .engine_worker import EngineWorker
 
@@ -16,9 +16,9 @@ class EnginePool:
         self.pool_id = f"engine_pool_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.initial_size = initial_size
         self.max_size = max_size
-        self.workers: List[EngineWorker] = []
-        self.active_workers: Dict[str, EngineWorker] = {}
-        self.worker_status: Dict[str, Dict[str, Any]] = {}
+        self.workers: list[EngineWorker] = []
+        self.active_workers: dict[str, EngineWorker] = {}
+        self.worker_status: dict[str, dict[str, Any]] = {}
         self.lock = threading.Lock()
         self.logger = logging.getLogger(__name__)
         self.is_initialized = False
@@ -56,7 +56,7 @@ class EnginePool:
             max_concurrent_tasks=5
         )
 
-    def get_available_worker(self) -> Optional[EngineWorker]:
+    def get_available_worker(self) -> EngineWorker | None:
         """Get an available worker from the pool"""
         with self.lock:
             for _worker_id, worker in self.active_workers.items():
@@ -78,7 +78,7 @@ class EnginePool:
 
             return least_busy
 
-    def execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Execute a request using an available worker from the pool"""
         worker = self.get_available_worker()
 
@@ -201,7 +201,7 @@ class EnginePool:
 
             self.last_scaling_decision = current_time
 
-    def get_pool_status(self) -> Dict[str, Any]:
+    def get_pool_status(self) -> dict[str, Any]:
         """Get the status of the entire pool"""
         with self.lock:
             worker_statuses = {}
@@ -226,7 +226,7 @@ class EnginePool:
                 "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
             }
 
-    def get_worker_statistics(self) -> Dict[str, Any]:
+    def get_worker_statistics(self) -> dict[str, Any]:
         """Get statistics for all workers in the pool"""
         with self.lock:
             stats = {}
@@ -256,7 +256,7 @@ class EnginePool:
 
         self.logger.info("Engine Pool %s shutdown complete", self.pool_id)
 
-    def get_queue_status(self) -> Dict[str, Any]:
+    def get_queue_status(self) -> dict[str, Any]:
         """Get the combined queue status of all workers in the pool"""
         with self.lock:
             total_queue_size = 0
@@ -297,7 +297,7 @@ class EnginePool:
                 self.active_workers[worker_id].update_resource_usage(cpu_usage, memory_usage)
                 self.worker_status[worker_id] = self.active_workers[worker_id].get_worker_status()
 
-    def get_load_distribution(self) -> Dict[str, Any]:
+    def get_load_distribution(self) -> dict[str, Any]:
         """Get load distribution across all workers"""
         with self.lock:
             loads = {}
@@ -363,7 +363,7 @@ class AdaptiveEnginePool(EnginePool):
 
             time.sleep(self.scale_check_interval)
 
-    def execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Override to include auto-scaling considerations"""
         # Check if we need to scale before executing
         if self.adaptive_scaling_enabled:
@@ -372,7 +372,7 @@ class AdaptiveEnginePool(EnginePool):
         return super().execute_request(request_data)
 
     def set_scaling_parameters(self, high_threshold: float, low_threshold: float, interval: int):
-        """Set parameters for adaptive scaling"""
+        """set parameters for adaptive scaling"""
         with self.lock:
             self.load_threshold_high = high_threshold
             self.load_threshold_low = low_threshold

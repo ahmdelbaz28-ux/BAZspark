@@ -19,7 +19,7 @@ except ImportError:
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Add references to Revit assemblies (these would be available when running inside Revit)
 if HAS_CLR:
@@ -134,12 +134,12 @@ class RevitConnector:
             self.logger.error(f"Error disconnecting from Revit: {e}")
             return False
 
-    def read_bim_model(self) -> Dict[str, Any]:
+    def read_bim_model(self) -> dict[str, Any]:
         """
         Read the current BIM model and extract elements.
 
         Returns:
-            Dict: BIM model data with elements
+            dict: BIM model data with elements
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -163,12 +163,12 @@ class RevitConnector:
             raise
 
     def create_element(self, element_type: str, coordinates: Coordinates,
-                      parameters: Dict[str, Any] = None) -> str:
+                      parameters: dict[str, Any] = None) -> str:
         """
         Create a new element in Revit.
 
         Args:
-            element_type: Type of element to create
+            element_type: type of element to create
             coordinates: Position coordinates
             parameters: Element parameters
 
@@ -188,7 +188,7 @@ class RevitConnector:
             self.logger.error(f"Error creating element {element_type}: {e}")
             raise
 
-    def update_element(self, element_id: str, _parameters: Dict[str, Any]) -> bool:
+    def update_element(self, element_id: str, _parameters: dict[str, Any]) -> bool:
         """
         Update an existing element in Revit.
 
@@ -210,12 +210,12 @@ class RevitConnector:
             self.logger.error(f"Error updating element {element_id}: {e}")
             return False
 
-    def read_families(self) -> List[Dict[str, Any]]:
+    def read_families(self) -> list[dict[str, Any]]:
         """
         Read available families in the current Revit document.
 
         Returns:
-            List[Dict]: List of family information
+            list[dict]: list of family information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -235,7 +235,7 @@ class RevitConnector:
             raise
 
     def place_family_instance(self, family_name: str, coordinates: Coordinates,
-                            parameters: Dict[str, Any] = None) -> str:
+                            parameters: dict[str, Any] = None) -> str:
         """
         Place a family instance in the Revit model.
 
@@ -260,7 +260,7 @@ class RevitConnector:
             self.logger.error(f"Error placing family instance {family_name}: {e}")
             raise
 
-    def update_parameters(self, element_id: str, parameters: Dict[str, Any]) -> bool:
+    def update_parameters(self, element_id: str, parameters: dict[str, Any]) -> bool:
         """
         Update parameters of an element in Revit.
 
@@ -282,7 +282,7 @@ class RevitConnector:
             self.logger.error(f"Error updating parameters for element {element_id}: {e}")
             return False
 
-    def read_parameters(self, element_id: str) -> Dict[str, Any]:
+    def read_parameters(self, element_id: str) -> dict[str, Any]:
         """
         Read parameters of an element in Revit.
 
@@ -290,7 +290,7 @@ class RevitConnector:
             element_id: ID of element to read
 
         Returns:
-            Dict: Parameter dictionary
+            dict: Parameter dictionary
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -308,7 +308,7 @@ class RevitConnector:
             self.logger.error(f"Error reading parameters for element {element_id}: {e}")
             return {}
 
-    def read_coordinates(self, element_id: str) -> Optional[Coordinates]:
+    def read_coordinates(self, element_id: str) -> Coordinates | None:
         """
         Read coordinates of an element in Revit.
 
@@ -331,12 +331,12 @@ class RevitConnector:
             self.logger.error(f"Error reading coordinates for element {element_id}: {e}")
             return None
 
-    def read_levels(self) -> List[Dict[str, Any]]:
+    def read_levels(self) -> list[dict[str, Any]]:
         """
         Read levels in the Revit model.
 
         Returns:
-            List[Dict]: List of level information
+            list[dict]: list of level information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -354,12 +354,12 @@ class RevitConnector:
             self.logger.error(f"Error reading levels: {e}")
             raise
 
-    def read_rooms(self) -> List[Dict[str, Any]]:
+    def read_rooms(self) -> list[dict[str, Any]]:
         """
         Read rooms in the Revit model.
 
         Returns:
-            List[Dict]: List of room information
+            list[dict]: list of room information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -377,12 +377,12 @@ class RevitConnector:
             self.logger.error(f"Error reading rooms: {e}")
             raise
 
-    def read_mep_data(self) -> Dict[str, Any]:
+    def read_mep_data(self) -> dict[str, Any]:
         """
         Read MEP (MEP stands for Mechanical, Electrical, Plumbing) data from the model.
 
         Returns:
-            Dict: MEP data
+            dict: MEP data
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -401,12 +401,12 @@ class RevitConnector:
             self.logger.error(f"Error reading MEP data: {e}")
             raise
 
-    def read_electrical_systems(self) -> List[Dict[str, Any]]:
+    def read_electrical_systems(self) -> list[dict[str, Any]]:
         """
         Read electrical systems in the Revit model.
 
         Returns:
-            List[Dict]: List of electrical system information
+            list[dict]: list of electrical system information
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -424,15 +424,15 @@ class RevitConnector:
             self.logger.error(f"Error reading electrical systems: {e}")
             raise
 
-    def generate_documentation(self, element_ids: List[str]) -> Dict[str, Any]:
+    def generate_documentation(self, element_ids: list[str]) -> dict[str, Any]:
         """
         Generate documentation for specified elements.
 
         Args:
-            element_ids: List of element IDs to document
+            element_ids: list of element IDs to document
 
         Returns:
-            Dict: Generated documentation
+            dict: Generated documentation
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -451,7 +451,7 @@ class RevitConnector:
             self.logger.error(f"Error generating documentation: {e}")
             raise
 
-    def bidirectional_sync(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def bidirectional_sync(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Perform bidirectional synchronization between Revit and unified model.
 
@@ -459,7 +459,7 @@ class RevitConnector:
             unified_model: Unified model to sync with Revit
 
         Returns:
-            Dict: Sync results
+            dict: Sync results
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
@@ -497,7 +497,7 @@ class RevitConnector:
             self.logger.error(f"Error during bidirectional sync: {e}")
             raise
 
-    def convert_to_unified_model(self, _bim_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _bim_data: dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert Revit BIM data to unified engineering model.
 
@@ -552,7 +552,7 @@ class RevitConnector:
         self.logger.info(f"Converted BIM data to unified model with {len(model.entities)} entities")
         return model
 
-    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
         """
         Convert unified engineering model to Revit operations.
 
@@ -560,7 +560,7 @@ class RevitConnector:
             unified_model: Unified model to convert
 
         Returns:
-            Dict: Revit operations
+            dict: Revit operations
         """
         revit_operations = {
             "operations": [],

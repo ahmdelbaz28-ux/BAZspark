@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 from parsers._base import ParserBase
 from parsers._path_security import UnsafePathError
@@ -55,7 +54,7 @@ class ExcelRoom:
     def floor_area(self) -> float:
         return self.width_m * self.depth_m
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "name": self.name,
             "width_m": self.width_m,
@@ -74,9 +73,9 @@ class ExcelParseResult:
     source_file: str
     success: bool
     room_count: int = 0
-    rooms: List[ExcelRoom] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    rooms: list[ExcelRoom] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class ExcelParser(ParserBase):

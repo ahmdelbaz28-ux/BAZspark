@@ -9,7 +9,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 from parsers._base import ParserBase
 from parsers._path_security import UnsafePathError
@@ -27,10 +26,10 @@ class WordParseResult:
     project_name: str = ""
     floor: str = ""
     building: str = ""
-    ceiling_specs: List[Dict] = field(default_factory=list)
-    requirements: List[str] = field(default_factory=list)
-    notes: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    ceiling_specs: list[dict] = field(default_factory=list)
+    requirements: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class WordParser(ParserBase):
@@ -138,7 +137,7 @@ class WordParser(ParserBase):
                 return f"Building {match.group(1)}"
         return ""
 
-    def _extract_ceiling_specs(self, text: str) -> List[Dict]:
+    def _extract_ceiling_specs(self, text: str) -> list[dict]:
         specs = []
 
         for pattern in self.CEILING_PATTERNS:
@@ -155,7 +154,7 @@ class WordParser(ParserBase):
 
         return specs
 
-    def _extract_requirements(self, paragraphs) -> List[str]:
+    def _extract_requirements(self, paragraphs) -> list[str]:
         requirements = []
 
         for para in paragraphs:
@@ -172,7 +171,7 @@ class WordParser(ParserBase):
 
         return requirements
 
-    def _extract_notes(self, paragraphs) -> List[str]:
+    def _extract_notes(self, paragraphs) -> list[str]:
         notes = []
         in_notes = False
 
