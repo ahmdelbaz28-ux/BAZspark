@@ -64,7 +64,8 @@ class SpeckleService:
 
         try:
             from urllib.parse import urlsplit
-            from backend.integrations._ssrf_guard import validate_host_for_user_input, SSRFError
+
+            from backend.integrations._ssrf_guard import validate_host_for_user_input
             parts = urlsplit(server_url)
             if parts.hostname:
                 validate_host_for_user_input(parts.hostname)
