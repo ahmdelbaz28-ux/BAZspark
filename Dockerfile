@@ -133,28 +133,30 @@ RUN pip install --no-cache-dir --upgrade --force-reinstall \
 # (and any future SARIF discrepancy investigation) can confirm Trivy will see
 # the fixed versions. This step exits 0 unless the installed version is BELOW the
 # required minimum — in which case the build fails fast with a clear error.
-RUN python -c "
-import sys
-import setuptools, msgpack, pip
-required = {
-    'setuptools': (83, 0, 0),
-    'msgpack': (1, 2, 1),
-    'pip': (26, 1, 2),
-}
-installed = {
-    'setuptools': tuple(int(p) for p in setuptools.__version__.split('.')[:3]),
-    'msgpack': tuple(int(p) for p in msgpack.version.split('.')[:3]),
-    'pip': tuple(int(p) for p in pip.__version__.split('.')[:3]),
-}
-for pkg, req in required.items():
-    inst = installed[pkg]
-    status = 'OK' if inst >= req else 'FAIL'
-    print(f'{pkg}: installed={inst} required>={req} -> {status}')
-    if inst < req:
-        print(f'ERROR: {pkg} {inst} < required {req} — Trivy will flag CVEs', file=sys.stderr)
-        sys.exit(1)
-print('All required versions satisfied.')
-"
+# NOTE: The Python script is written to /tmp first and then executed. The previous
+# inline `RUN python -c "..."` with bare newlines failed on HF Spaces builder
+# because its Docker parser treated `import` (a Python keyword on line 2) as a
+# Dockerfile instruction → "unknown instruction: import". Writing to a temp file
+# avoids all Dockerfile parse ambiguity and works on every Docker version.
+RUN printf '%s\n' \
+    'import sys, setuptools, msgpack, pip' \
+    'required = {"setuptools": (83,0,0), "msgpack": (1,2,1), "pip": (26,1,2)}' \
+    'installed = {' \
+    '  "setuptools": tuple(int(p) for p in setuptools.__version__.split(".")[:3]),' \
+    '  "msgpack": msgpack.version[:3] if isinstance(msgpack.version, tuple) else tuple(int(p) for p in msgpack.version.split(".")[:3]),' \
+    '  "pip": tuple(int(p) for p in pip.__version__.split(".")[:3]),' \
+    '}' \
+    'for pkg, req in required.items():' \
+    '    inst = installed[pkg]' \
+    '    status = "OK" if inst >= req else "FAIL"' \
+    '    print(f"{pkg}: installed={inst} required>={req} -> {status}")' \
+    '    if inst < req:' \
+    '        print(f"ERROR: {pkg} {inst} < required {req} — Trivy will flag CVEs", file=sys.stderr)' \
+    '        sys.exit(1)' \
+    'print("All required versions satisfied.")' \
+    > /tmp/verify_versions.py && \
+    python /tmp/verify_versions.py && \
+    rm /tmp/verify_versions.py
 
 # Copy application code (only what's needed for production)
 COPY --chown=fireai:fireai backend/ backend/
