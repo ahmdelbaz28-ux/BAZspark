@@ -105,6 +105,8 @@ async function expectNoConsoleErrors(page: Page, route: string) {
                 // Real 404s (missing chunks, broken assets) would still fail because
                 // they don't match this exact text-only pattern.
                 /^Failed to load resource: the server responded with a status of 404 \(Not Found\)$/,
+                // V291: Chrome sometimes reports 404 with empty parentheses instead of "(Not Found)"
+                /^Failed to load resource: the server responded with a status of 404 \(\)$/,
         ];
 
         page.on("console", (msg) => {

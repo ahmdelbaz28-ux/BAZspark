@@ -147,14 +147,19 @@ test.describe("Settings Page — Placebo Settings Backend Sync", () => {
 
     // Click API tab
     const apiTab = page.getByRole("tab", { name: /api/i });
+    await expect(apiTab).toBeVisible({ timeout: 10000 });
     await apiTab.click();
+    await page.waitForLoadState('networkidle');
 
     // Click Save button
     const saveButton = page.getByRole("button", { name: /save/i }).first();
+    await expect(saveButton).toBeVisible({ timeout: 10000 });
     await saveButton.click();
 
-    // Wait for the save request
-    await page.waitForLoadState('networkidle');
+    // Wait for the save request (poll for up to 5s)
+    for (let i = 0; i < 50 && !settingsRequestCaptured; i++) {
+      await page.waitForTimeout(100);
+    }
 
     // Verify the PUT request was sent
     expect(settingsRequestCaptured, "Settings save should send PUT request to backend").toBe(true);
@@ -192,14 +197,19 @@ test.describe("Settings Page — Placebo Settings Backend Sync", () => {
 
     // Click Reports tab
     const reportsTab = page.getByRole("tab", { name: /report/i });
+    await expect(reportsTab).toBeVisible({ timeout: 10000 });
     await reportsTab.click();
+    await page.waitForLoadState('networkidle');
 
     // Click Save button
     const saveButton = page.getByRole("button", { name: /save/i }).first();
+    await expect(saveButton).toBeVisible({ timeout: 10000 });
     await saveButton.click();
 
-    // Wait for the save request
-    await page.waitForLoadState('networkidle');
+    // Wait for the save request (poll for up to 5s)
+    for (let i = 0; i < 50 && !settingsRequestCaptured; i++) {
+      await page.waitForTimeout(100);
+    }
 
     // Verify the PUT request was sent
     expect(settingsRequestCaptured, "Reports settings save should send PUT request to backend").toBe(true);
