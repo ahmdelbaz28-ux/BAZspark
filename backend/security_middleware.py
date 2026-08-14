@@ -271,6 +271,18 @@ _PUBLIC_PATHS_EXACT = frozenset({
     "/favicon.ico",
     "/manifest.json",
     "/robots.txt",
+    # V207 FIX: Frontend public static assets referenced from index.html.
+    # Without these, browsers get 401 on /critical.css, /favicon.svg, etc.
+    # These are inert static files (CSS, icons, PWA manifest) with no secrets.
+    "/critical.css",
+    "/favicon.svg",
+    "/favicon-16.png",
+    "/favicon-32.png",
+    "/favicon-180.png",
+    "/apple-touch-icon.png",
+    "/site.webmanifest",
+    "/_headers",       # Cloudflare/Vercel headers config (public)
+    "/_redirects",     # Cloudflare/Vercel redirects config (public)
     # FDS Webhook: receives callbacks from Modal cloud worker.
     # Auth is handled internally via HMAC secret (not API key).
     "/api/v2/fds/webhook",
@@ -286,9 +298,20 @@ _PUBLIC_PATHS_EXACT = frozenset({
 _PUBLIC_PATH_PREFIXES = (
     "/docs/",
     "/redoc/",
-    # names (e.g. /assets/index-a1b2c3.js). These are safe to serve publicly.
+    # Vite JS/CSS bundles with content-hashed filenames
+    # (e.g. /assets/index-a1b2c3.js). These are safe to serve publicly.
     "/assets/",
 )
+
+
+# V207 FIX: When BAZSPARK_FRONTEND_DIST is set (HF Space mode), the
+# _spa_fallback route in app.py serves index.html for ALL non-/api paths.
+# This means every SPA route (/login, /dashboard, /projects, etc.) must be
+# treated as public by the auth middleware — otherwise the middleware
+# returns 401 JSON before the SPA fallback can serve the HTML shell.
+# The HTML/JS/CSS contain NO secrets; all sensitive data flows through
+# /api/* which still requires X-API-Key.
+_SPA_MODE = bool(os.getenv("BAZSPARK_FRONTEND_DIST", ""))
 
 
 def _is_public_path(path: str) -> bool:
@@ -303,6 +326,12 @@ def _is_public_path(path: str) -> bool:
       - /Health (case-insensitive)
     ASGI normalizes /../ and //, so we don't need to handle those.
 
+    V207 FIX: In SPA mode (BAZSPARK_FRONTEND_DIST set), ALL non-/api
+    paths are public because the _spa_fallback route serves index.html
+    for them. This enables SPA deep linking (/dashboard, /login, etc.)
+    without listing every React Router path individually. API routes
+    (/api/*) still require X-API-Key regardless of SPA mode.
+
     NOTE: We do NOT normalize trailing slashes here. /health and /health/
     are DIFFERENT paths in FastAPI (the router defines /health, so
     /health/ returns 404 unless redirect_slashes=True). Treating /health/
@@ -316,7 +345,18 @@ def _is_public_path(path: str) -> bool:
     if path in _PUBLIC_PATHS_EXACT:
         return True
     # Prefix match for documented sub-paths (e.g. /docs/static/*)
-    return any(path.startswith(prefix) for prefix in _PUBLIC_PATH_PREFIXES)
+    if any(path.startswith(prefix) for prefix in _PUBLIC_PATH_PREFIXES):
+        return True
+    # V207 FIX: SPA mode — any non-API path is public (served by SPA fallback).
+    # This is safe because:
+    #   1. The SPA fallback only serves index.html (static HTML/JS/CSS shell)
+    #   2. All sensitive data requires /api/* which still needs X-API-Key
+    #   3. The fallback explicitly skips api/ paths (returns 404 instead)
+    # Without this, SPA deep linking returns 401 JSON — users can only
+    # access the app from the root URL.
+    if _SPA_MODE and not path.startswith("api/") and not path.startswith("/api"):
+        return True
+    return False
 
 
 class ApiKeyMiddleware:
