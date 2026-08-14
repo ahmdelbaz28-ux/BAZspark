@@ -294,6 +294,23 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
 ]
 
 
+def _truthy(value: str | None) -> bool:
+    """Return True if value looks like an enabled boolean."""
+    return (value or "").strip().lower() in {"true", "1", "yes"}
+
+
+# Variables gated by an enable-flag: when the flag is OFF, these vars
+# downgrade from HARD → SOFT so an operator can opt out of an integration
+# without having to supply dummy credentials. The enable-flag itself stays
+# SOFT (it is always valid to leave it unset, which means "off").
+_GATED_HARD_VARS: dict[str, str] = {
+    # var_name → enable_flag
+    "LANGFUSE_PUBLIC_KEY": "LANGFUSE_ENABLED",
+    "LANGFUSE_SECRET_KEY": "LANGFUSE_ENABLED",
+    "LANGFUSE_HOST": "LANGFUSE_ENABLED",
+}
+
+
 def validate_environment() -> list[ValidationIssue]:
     """Validate the current process environment against the required registry.
 
@@ -307,6 +324,17 @@ def validate_environment() -> list[ValidationIssue]:
         value = os.environ.get(name)
         ok, message = validator(value)
         if not ok:
+            # Conditional downgrade: if this HARD var is gated by an
+            # enable-flag and that flag is explicitly OFF, treat as SOFT
+            # so operators can opt out of the integration.
+            gate = _GATED_HARD_VARS.get(name)
+            if (
+                gate is not None
+                and severity is Severity.HARD
+                and os.environ.get(gate) is not None
+                and not _truthy(os.environ.get(gate))
+            ):
+                severity = Severity.SOFT
             issues.append(
                 ValidationIssue(
                     name=name,
