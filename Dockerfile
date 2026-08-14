@@ -38,7 +38,7 @@ RUN ls -la dist/ && test -f dist/index.html
 # rotate as Python's Docker library ships new patch tags; pinning to a specific
 # patch makes builds reproducible AND picks up the latest upstream security
 # fixes (CVE-2026-8643 pip, CVE-2025-47273 setuptools, etc.).
-FROM python:3.12.14-slim-bookworm AS python-builder
+FROM python:3.14.7-slim-bookworm AS python-builder
 
 WORKDIR /build
 
@@ -62,7 +62,7 @@ RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 # Issue #366 FIX (Option B): pin to python:3.12.14-slim-bookworm to match the
 # builder stage and pick up the latest upstream security fixes.
-FROM python:3.12.14-slim-bookworm
+FROM python:3.14.7-slim-bookworm
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
