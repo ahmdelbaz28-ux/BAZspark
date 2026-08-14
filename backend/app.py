@@ -266,9 +266,13 @@ async def lifespan(app: FastAPI):
         logger.warning("Config validation skipped (import failed): %s", exc)
 
     # Start the UptimeRobot Keep-Awake Heartbeat Loop
+    # NOTE: start_heartbeat_loop() is a SYNCHRONOUS method that internally calls
+    # asyncio.create_task(self._heartbeat_loop()). Wrapping it in another
+    # asyncio.create_task() raised "a coroutine was expected, got None" — which
+    # silently dropped the heartbeat. Call it directly instead.
     try:
         from backend.services.uptime_service import get_uptime_service
-        _uptime_task = asyncio.create_task(get_uptime_service().start_heartbeat_loop())  # NOSONAR - python:S7502
+        get_uptime_service().start_heartbeat_loop()
         logger.info("UptimeRobot keep-awake heartbeat loop initiated")
     except Exception as exc:
         logger.warning("Could not start UptimeRobot keep-awake heartbeat: %s", exc)
@@ -301,10 +305,15 @@ async def lifespan(app: FastAPI):
     # Stop the UptimeRobot Keep-Awake Heartbeat Loop
     try:
         from backend.services.uptime_service import get_uptime_service
-        # We run it synchronously or create task during shutdown
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(get_uptime_service().stop_heartbeat_loop())  # NOSONAR - python:S7502
+        # `stop_heartbeat_loop()` uses `asyncio.wait({task})` internally, which
+        # does NOT propagate CancelledError from the cancelled child task.
+        # Therefore we no longer need to catch `CancelledError` here — that
+        # catch was a Sonar S7497 violation (swallowing CancelledError without
+        # re-raising). If the lifespan shutdown itself is cancelled (e.g.
+        # shutdown timeout), `CancelledError` will correctly propagate up
+        # through `stop_heartbeat_loop` and bypass this `except Exception`
+        # (CancelledError inherits from BaseException, not Exception).
+        await get_uptime_service().stop_heartbeat_loop()
     except Exception as exc:
         logger.warning("Could not stop UptimeRobot keep-awake heartbeat cleanly: %s", exc)
     # C-08: Cancel the session cleanup task explicitly on shutdown.

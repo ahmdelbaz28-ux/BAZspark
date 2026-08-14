@@ -204,3 +204,67 @@ def test_escape_hatch_warn_allows_startup_in_production():
     os.environ["FIREAI_ENV_VALIDATION"] = "warn"
     os.environ.pop("LANGFUSE_PUBLIC_KEY", None)  # HARD var
     assert_environment()  # degraded mode: must NOT raise
+
+
+# ─── LANGFUSE_ENABLED gating (V303 — clean-launch fix) ──────────────────────
+
+def test_langfuse_disabled_downgrades_keys_to_soft(monkeypatch):
+    """LANGFUSE_ENABLED=false must demote LANGFUSE_* from HARD to SOFT.
+
+    Operators who opt out of Langfuse should NOT be forced to supply dummy
+    keys just to satisfy the validator — the runtime already skips Langfuse
+    when the flag is off (see fireai/env_config.py:151-153).
+    """
+    env = dict(RUNTIME_MINIMAL)
+    del env["LANGFUSE_PUBLIC_KEY"]
+    del env["LANGFUSE_SECRET_KEY"]
+    del env["LANGFUSE_HOST"]
+    # Use monkeypatch (Sonar S8997): avoids leaking global-state mutations
+    # across tests and auto-restores env after the test exits.
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    for absent in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
+        monkeypatch.delenv(absent, raising=False)
+    monkeypatch.setenv("LANGFUSE_ENABLED", "false")
+    issues = validate_environment()
+    hard = {i.name for i in issues if i.severity is Severity.HARD}
+    soft = {i.name for i in issues if i.severity is Severity.SOFT}
+    # All three LANGFUSE_* must be SOFT, NOT HARD
+    assert "LANGFUSE_PUBLIC_KEY" not in hard
+    assert "LANGFUSE_SECRET_KEY" not in hard
+    assert "LANGFUSE_HOST" not in hard
+    assert "LANGFUSE_PUBLIC_KEY" in soft
+    assert "LANGFUSE_SECRET_KEY" in soft
+    assert "LANGFUSE_HOST" in soft
+
+
+def test_langfuse_enabled_keeps_keys_hard(monkeypatch):
+    """LANGFUSE_ENABLED=true (or unset) must keep LANGFUSE_* as HARD.
+
+    Regression guard: the gating logic must only trigger when the flag is
+    EXPLICITLY set to a falsy value. Unset or truthy values preserve HARD.
+    """
+    # Case 1: LANGFUSE_ENABLED=true → HARD (keys missing)
+    env = dict(RUNTIME_MINIMAL)
+    del env["LANGFUSE_PUBLIC_KEY"]
+    del env["LANGFUSE_SECRET_KEY"]
+    del env["LANGFUSE_HOST"]
+    # Use monkeypatch (Sonar S8997) for all env mutations.
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    for absent in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
+        monkeypatch.delenv(absent, raising=False)
+    monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+    issues = validate_environment()
+    hard = {i.name for i in issues if i.severity is Severity.HARD}
+    assert "LANGFUSE_PUBLIC_KEY" in hard
+    assert "LANGFUSE_SECRET_KEY" in hard
+    assert "LANGFUSE_HOST" in hard
+
+    # Case 2: LANGFUSE_ENABLED unset → HARD (default posture is fail-closed)
+    monkeypatch.delenv("LANGFUSE_ENABLED", raising=False)
+    issues = validate_environment()
+    hard = {i.name for i in issues if i.severity is Severity.HARD}
+    assert "LANGFUSE_PUBLIC_KEY" in hard
+    assert "LANGFUSE_SECRET_KEY" in hard
+    assert "LANGFUSE_HOST" in hard
