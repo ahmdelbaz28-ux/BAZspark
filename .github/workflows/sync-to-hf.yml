@@ -39,10 +39,21 @@ permissions:
 env:
   HF_USERNAME: "ahmdelbaz28"
   HF_SPACE_NAME: "BAZSPARK"
+  # P0-12 + Issue #366 follow-up: alembic.ini + alembic/ are required by the
+  # Dockerfile (lines 119-120: `COPY --chown=fireai:fireai alembic.ini ./`
+  # and `COPY --chown=fireai:fireai alembic/ alembic/`). The Dockerfile's
+  # CMD runs `alembic upgrade head` at container start (idempotent schema
+  # migration), so without these files the HF Space build FAILS with:
+  #   ERROR: failed to calculate checksum of ref ... "/alembic.ini": not found
+  # This was the root cause of the HF Space BUILD_ERROR observed on
+  # 2026-08-14 after PR #365 (which introduced the alembic COPY statements)
+  # was merged. Adding them to RUNTIME_PATHS ensures they're synced to the
+  # HF Space alongside the rest of the runtime subset.
   RUNTIME_PATHS: >-
     Dockerfile pyproject.toml requirements.txt .dockerignore
     adapters backend core facp_system fireai frontend
     integration marine parsers qomn_conduit qomn_fire
+    alembic.ini alembic
 
 jobs:
   sync-to-hf:
