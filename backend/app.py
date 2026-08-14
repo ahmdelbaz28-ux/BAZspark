@@ -305,17 +305,15 @@ async def lifespan(app: FastAPI):
     # Stop the UptimeRobot Keep-Awake Heartbeat Loop
     try:
         from backend.services.uptime_service import get_uptime_service
-        # stop_heartbeat_loop() is a coroutine that cancels its internal task
-        # and then awaits it. The await re-raises CancelledError per Sonar
-        # S7497 — that is expected here (we just cancelled it), so swallow it.
-        # The previous pattern `loop.create_task(...)` without await masked
-        # this by being fire-and-forget, which meant the task was GC'd before
-        # completing cleanup.
-        try:
-            await get_uptime_service().stop_heartbeat_loop()
-        except asyncio.CancelledError:
-            # Expected — the heartbeat task was just cancelled by stop().
-            pass
+        # `stop_heartbeat_loop()` uses `asyncio.wait({task})` internally, which
+        # does NOT propagate CancelledError from the cancelled child task.
+        # Therefore we no longer need to catch `CancelledError` here — that
+        # catch was a Sonar S7497 violation (swallowing CancelledError without
+        # re-raising). If the lifespan shutdown itself is cancelled (e.g.
+        # shutdown timeout), `CancelledError` will correctly propagate up
+        # through `stop_heartbeat_loop` and bypass this `except Exception`
+        # (CancelledError inherits from BaseException, not Exception).
+        await get_uptime_service().stop_heartbeat_loop()
     except Exception as exc:
         logger.warning("Could not stop UptimeRobot keep-awake heartbeat cleanly: %s", exc)
     # C-08: Cancel the session cleanup task explicitly on shutdown.

@@ -208,7 +208,7 @@ def test_escape_hatch_warn_allows_startup_in_production():
 
 # ─── LANGFUSE_ENABLED gating (V303 — clean-launch fix) ──────────────────────
 
-def test_langfuse_disabled_downgrades_keys_to_soft():
+def test_langfuse_disabled_downgrades_keys_to_soft(monkeypatch):
     """LANGFUSE_ENABLED=false must demote LANGFUSE_* from HARD to SOFT.
 
     Operators who opt out of Langfuse should NOT be forced to supply dummy
@@ -219,9 +219,13 @@ def test_langfuse_disabled_downgrades_keys_to_soft():
     del env["LANGFUSE_PUBLIC_KEY"]
     del env["LANGFUSE_SECRET_KEY"]
     del env["LANGFUSE_HOST"]
+    # Use monkeypatch (Sonar S8997): avoids leaking global-state mutations
+    # across tests and auto-restores env after the test exits.
     for k, v in env.items():
-        os.environ[k] = v
-    os.environ["LANGFUSE_ENABLED"] = "false"
+        monkeypatch.setenv(k, v)
+    for absent in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
+        monkeypatch.delenv(absent, raising=False)
+    monkeypatch.setenv("LANGFUSE_ENABLED", "false")
     issues = validate_environment()
     hard = {i.name for i in issues if i.severity is Severity.HARD}
     soft = {i.name for i in issues if i.severity is Severity.SOFT}
@@ -234,7 +238,7 @@ def test_langfuse_disabled_downgrades_keys_to_soft():
     assert "LANGFUSE_HOST" in soft
 
 
-def test_langfuse_enabled_keeps_keys_hard():
+def test_langfuse_enabled_keeps_keys_hard(monkeypatch):
     """LANGFUSE_ENABLED=true (or unset) must keep LANGFUSE_* as HARD.
 
     Regression guard: the gating logic must only trigger when the flag is
@@ -245,9 +249,12 @@ def test_langfuse_enabled_keeps_keys_hard():
     del env["LANGFUSE_PUBLIC_KEY"]
     del env["LANGFUSE_SECRET_KEY"]
     del env["LANGFUSE_HOST"]
+    # Use monkeypatch (Sonar S8997) for all env mutations.
     for k, v in env.items():
-        os.environ[k] = v
-    os.environ["LANGFUSE_ENABLED"] = "true"
+        monkeypatch.setenv(k, v)
+    for absent in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
+        monkeypatch.delenv(absent, raising=False)
+    monkeypatch.setenv("LANGFUSE_ENABLED", "true")
     issues = validate_environment()
     hard = {i.name for i in issues if i.severity is Severity.HARD}
     assert "LANGFUSE_PUBLIC_KEY" in hard
@@ -255,7 +262,7 @@ def test_langfuse_enabled_keeps_keys_hard():
     assert "LANGFUSE_HOST" in hard
 
     # Case 2: LANGFUSE_ENABLED unset → HARD (default posture is fail-closed)
-    os.environ.pop("LANGFUSE_ENABLED", None)
+    monkeypatch.delenv("LANGFUSE_ENABLED", raising=False)
     issues = validate_environment()
     hard = {i.name for i in issues if i.severity is Severity.HARD}
     assert "LANGFUSE_PUBLIC_KEY" in hard

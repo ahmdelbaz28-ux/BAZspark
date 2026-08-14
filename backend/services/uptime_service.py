@@ -75,17 +75,39 @@ class UptimeService:
         logger.info("UptimeRobot Heartbeat background task started.")
 
     async def stop_heartbeat_loop(self) -> None:
-        """Stop the background heartbeat task."""
+        """Stop the background heartbeat task.
+
+        Uses ``asyncio.wait({task})`` instead of ``await task`` so that the
+        ``CancelledError`` raised by the *cancelled child task* is NOT
+        propagated to the caller. This distinction matters:
+
+        * If the child task is cancelled (our intent here — we called
+          ``self._task.cancel()`` above), ``asyncio.wait`` returns it in the
+          ``done`` set and does not re-raise. Swallowing is safe and correct
+          because the cancellation was initiated by us, not by the event loop
+          cancelling the current coroutine.
+
+        * If the *current* coroutine (``stop_heartbeat_loop`` itself) is
+          cancelled while awaiting (e.g. a shutdown timeout), ``asyncio.wait``
+          raises ``CancelledError`` which correctly propagates up — satisfying
+          Sonar S7497 without forcing every caller to catch-and-re-raise in a
+          chain.
+
+        The previous implementation awaited the task directly and re-raised
+        ``CancelledError``, which forced ``app.py`` to swallow it (S7497
+        violation). This refactor removes that violation at the source.
+        """
         self._loop_running = False
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                # S7497: Re-raise CancelledError after cleanup per asyncio guidelines
-                self._task = None
-                raise
-            self._task = None
+        task = self._task
+        if task is not None and not task.done():
+            task.cancel()
+            # `asyncio.wait` does NOT re-raise exceptions from the awaited
+            # tasks; it returns them in the `done` set. The current coroutine
+            # can still be cancelled externally (CancelEvent on shutdown),
+            # in which case `asyncio.wait` raises CancelledError — that one
+            # MUST propagate (and does, automatically).
+            await asyncio.wait({task})
+        self._task = None
         logger.info("UptimeRobot Heartbeat background task stopped.")
 
     async def _heartbeat_loop(self) -> None:
