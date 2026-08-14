@@ -67,7 +67,15 @@ pytz>=2023.0.0,<2027.0.0  # V265: bump upper bound (PR #148)
 pytesseract>=0.3.10,<1.0.0  # V301 FIX: OCR service hard-imports pytesseract (was missing from runtime deps)
 tenacity>=8.2.0,<10.0.0
 hypothesis>=6.82.0,<7.0.0
-msgpack>=1.2.1  # P0-14 FIX: resolve GHSA-6v7p-g79w-8964 (HIGH) found by Trivy
+msgpack>=1.2.1,<2.0.0  # P0-14 FIX: resolve GHSA-6v7p-g79w-8964 (HIGH) found by Trivy
+# Issue #366 FIX: pin setuptools>=83.0.0 to resolve CVE-2025-47273 (HIGH, fix 78.1.1)
+# AND CVE-2026-59890 (MEDIUM, fix 83.0.0). Even though the Dockerfile installs
+# setuptools>=78.1.1 via `pip install --prefix=/install`, Trivy was still
+# detecting setuptools 70.3.0 in the runtime image (likely from the python:3.12-slim
+# base image's leftover dist-info that the COPY overlay didn't fully overwrite).
+# Listing setuptools explicitly here ensures it's part of the standard requirements
+# install flow AND gets a runtime-stage --upgrade in the Dockerfile.
+setuptools>=83.0.0,<86.0.0
 
 # ── LangGraph (Workflow + Crash Recovery Checkpointing) ─────────────────────
 # V141.3: Upgraded to langgraph 1.x + langgraph-checkpoint-sqlite 3.x
