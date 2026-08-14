@@ -84,50 +84,39 @@ RUN groupadd -r fireai && \
 
 WORKDIR /app
 
-# P0-14d FIX: purge the BASE image's stale setuptools BEFORE the /install overlay
-# is copied. python:3.12-slim ships setuptools <78.1.1 in /usr/local, which carries
-# CVE-2025-47273 (HIGH, fixed in 78.1.1). `COPY --from=python-builder /install
-# /usr/local` only MERGES the upgraded dist-info NEXT TO the vulnerable base one,
-# so Trivy still flags the old dist-info and the container gate fails (all runs
-# after the Trivy DB recorded this advisory). Deleting the base remnants here
-# means the overlay brings in exactly one, clean setuptools (>=78.1.1).
-# Issue #366 FIX (Option A, hardened): the original rm only matched
-# setuptools / setuptools-*.dist-info / pkg_resources at /usr/local/lib/python3.12/site-packages.
-# Trivy was STILL reporting setuptools 70.3.0 after this step (per the SARIF uploaded
-# from the 2026-08-14 main run), suggesting leftover dist-info somewhere in the
-# scan path (TRIVY_PYTHON_PACKAGES_DIR=/usr/local/lib/python3.12/site-packages).
-# The `find`-based purge below catches EVERY setuptools-* and pkg_resources across
-# all site-packages locations — including any stragglers from older image layers
-# that the simple `rm -rf` glob missed (e.g. partial dist-info dirs left by pip
-# upgrade downgrades, or duplicated setuptools-* dirs from base image history).
-RUN find /usr/local/lib -type d -name 'setuptools*' -prune -exec rm -rf {} + && \
-    find /usr/local/lib -type d -name 'pkg_resources' -exec rm -rf {} + && \
-    find /usr/local/lib -type d -name 'msgpack*.dist-info' -exec rm -rf {} + && \
-    find /usr/local/lib -type d -name 'msgpack' -path '*/site-packages/msgpack' -exec rm -rf {} +
-
-# Copy installed Python packages
+# Copy installed Python packages from builder stage.
 COPY --from=python-builder /install /usr/local
 
-# Issue #366 FIX (Option A — runtime-stage enforcement): even with the find-purge
-# above + COPY overlay, Trivy was still detecting setuptools 70.3.0 and msgpack 1.1.2
-# in the runtime image (per the SARIF uploaded from commit afaab6b9, 2026-08-14).
-# Root cause is suspected to be the COPY overlay merging the upgraded dist-info
-# NEXT TO the base image's stale dist-info — Trivy scans the dist-info dir names
-# and reports the version it finds there, regardless of which one Python actually
-# imports at runtime.
-# The reliable fix is to REINSTALL setuptools + msgpack + pip directly in the
-# runtime stage (NOT via the /install prefix). This creates a single, clean
-# dist-info per package in /usr/local/lib/python3.12/site-packages/, overwriting
-# any stale version. The versions are pinned to:
-#   - setuptools >=83.0.0 → fixes CVE-2025-47273 (HIGH, fix 78.1.1) AND
-#                          CVE-2026-59890 (MEDIUM, fix 83.0.0)
-#   - msgpack     >=1.2.1  → fixes GHSA-6v7p-g79w-8964 (HIGH, fix 1.2.1)
-#   - pip         >=26.1.2 → fixes CVE-2026-8643 (HIGH, fix 26.1.2) and friends
-# --force-reinstall ensures pip overwrites — not skips — the existing install.
+# Issue #366 FIX: REINSTALL setuptools, msgpack, and pip directly in the runtime
+# stage. This creates a single, clean dist-info per package, overwriting stale
+# versions from the base image. --force-reinstall is done FIRST (while pip works).
+#   - setuptools >=83.0.0 → fixes CVE-2025-47273 (HIGH) AND CVE-2026-59890 (MEDIUM)
+#   - msgpack     >=1.2.1  → fixes GHSA-6v7p-g79w-8964 (HIGH)
+#   - pip         >=26.1.2 → fixes CVE-2026-8643 (HIGH) and friends
 RUN pip install --no-cache-dir --upgrade --force-reinstall \
     "setuptools>=83.0.0,<86.0.0" \
     "msgpack>=1.2.1,<2.0.0" \
     "pip>=26.1.2"
+
+# Post-reinstall cleanup: remove stale dist-info dirs from the base image layer
+# overlay. Docker COPY merges directories, so old setuptools-70*.dist-info or
+# msgpack-1.1*.dist-info might still exist as ghosts. This runs AFTER
+# --force-reinstall (pip/pkg_resources are intact). We never delete pkg_resources
+# itself — pip depends on it.
+RUN cd /usr/local/lib/python3.12/site-packages && \
+    for d in setuptools-*.dist-info; do \
+        case "$$d" in \
+            setuptools-8[3-9]*.dist-info|setuptools-9*.dist-info) ;; \
+            *) echo "Purging stale: $$d"; rm -rf "$$d" ;; \
+        esac; \
+    done && \
+    for d in msgpack-*.dist-info; do \
+        case "$$d" in \
+            msgpack-1.[2-9]*.dist-info|msgpack-[2-9]*.dist-info) ;; \
+            *) echo "Purging stale: $$d"; rm -rf "$$d" ;; \
+        esac; \
+    done; \
+    true
 
 # Issue #366 verification step: print the installed versions so the build log
 # (and any future SARIF discrepancy investigation) can confirm Trivy will see
