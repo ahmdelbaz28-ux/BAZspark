@@ -33,7 +33,12 @@ RUN ls -la dist/ && test -f dist/index.html
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
 # P0-10 FIX: unified on python:3.12-slim — matches deploy/docker/Dockerfile.api
 # and Dockerfile.worker (3.14 drifted and broke --only-binary wheel parity).
-FROM python:3.12-slim AS python-builder
+# Issue #366 FIX (Option B): pin to python:3.12.14-slim-bookworm instead of the
+# rolling python:3.12-slim tag. The base image's bundled pip/setuptools/wheel
+# rotate as Python's Docker library ships new patch tags; pinning to a specific
+# patch makes builds reproducible AND picks up the latest upstream security
+# fixes (CVE-2026-8643 pip, CVE-2025-47273 setuptools, etc.).
+FROM python:3.12.14-slim-bookworm AS python-builder
 
 WORKDIR /build
 
@@ -55,7 +60,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --ignore-installed --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR:S8544 — requirements.txt pins all versions
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.12-slim
+# Issue #366 FIX (Option B): pin to python:3.12.14-slim-bookworm to match the
+# builder stage and pick up the latest upstream security fixes.
+FROM python:3.12.14-slim-bookworm
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
@@ -84,21 +91,70 @@ WORKDIR /app
 # so Trivy still flags the old dist-info and the container gate fails (all runs
 # after the Trivy DB recorded this advisory). Deleting the base remnants here
 # means the overlay brings in exactly one, clean setuptools (>=78.1.1).
-RUN rm -rf /usr/local/lib/python3.12/site-packages/setuptools \
-           /usr/local/lib/python3.12/site-packages/setuptools-*.dist-info \
-           /usr/local/lib/python3.12/site-packages/pkg_resources
+# Issue #366 FIX (Option A, hardened): the original rm only matched
+# setuptools / setuptools-*.dist-info / pkg_resources at /usr/local/lib/python3.12/site-packages.
+# Trivy was STILL reporting setuptools 70.3.0 after this step (per the SARIF uploaded
+# from the 2026-08-14 main run), suggesting leftover dist-info somewhere in the
+# scan path (TRIVY_PYTHON_PACKAGES_DIR=/usr/local/lib/python3.12/site-packages).
+# The `find`-based purge below catches EVERY setuptools-* and pkg_resources across
+# all site-packages locations — including any stragglers from older image layers
+# that the simple `rm -rf` glob missed (e.g. partial dist-info dirs left by pip
+# upgrade downgrades, or duplicated setuptools-* dirs from base image history).
+RUN find /usr/local/lib -type d -name 'setuptools*' -prune -exec rm -rf {} + && \
+    find /usr/local/lib -type d -name 'pkg_resources' -exec rm -rf {} + && \
+    find /usr/local/lib -type d -name 'msgpack*.dist-info' -exec rm -rf {} + && \
+    find /usr/local/lib -type d -name 'msgpack' -path '*/site-packages/msgpack' -exec rm -rf {} +
 
 # Copy installed Python packages
 COPY --from=python-builder /install /usr/local
 
-# P0 FIX: upgrade pip in the RUNTIME stage. The /install overlay above only carries
-# setuptools/wheel/requirements from the builder — the base python:3.12-slim pip
-# (25.0.1) is still present in the runtime and Trivy flags it (CVE-2026-8643 [HIGH,
-# fixed 26.1.2] plus CVE-2026-1703/6357/3219/2025-8869), failing the pipeline.
-# Upgrading pip here REMOVES the stale 25.0.1 dist-info so the image is clean.
-# (The builder's `pip install --upgrade pip` on line 40 does NOT reach the runtime
-# because only /install is copied — it lands in the discarded builder /usr/local.)
-RUN pip install --no-cache-dir --upgrade pip
+# Issue #366 FIX (Option A — runtime-stage enforcement): even with the find-purge
+# above + COPY overlay, Trivy was still detecting setuptools 70.3.0 and msgpack 1.1.2
+# in the runtime image (per the SARIF uploaded from commit afaab6b9, 2026-08-14).
+# Root cause is suspected to be the COPY overlay merging the upgraded dist-info
+# NEXT TO the base image's stale dist-info — Trivy scans the dist-info dir names
+# and reports the version it finds there, regardless of which one Python actually
+# imports at runtime.
+# The reliable fix is to REINSTALL setuptools + msgpack + pip directly in the
+# runtime stage (NOT via the /install prefix). This creates a single, clean
+# dist-info per package in /usr/local/lib/python3.12/site-packages/, overwriting
+# any stale version. The versions are pinned to:
+#   - setuptools >=83.0.0 → fixes CVE-2025-47273 (HIGH, fix 78.1.1) AND
+#                          CVE-2026-59890 (MEDIUM, fix 83.0.0)
+#   - msgpack     >=1.2.1  → fixes GHSA-6v7p-g79w-8964 (HIGH, fix 1.2.1)
+#   - pip         >=26.1.2 → fixes CVE-2026-8643 (HIGH, fix 26.1.2) and friends
+# --force-reinstall ensures pip overwrites — not skips — the existing install.
+RUN pip install --no-cache-dir --upgrade --force-reinstall \
+    "setuptools>=83.0.0,<86.0.0" \
+    "msgpack>=1.2.1,<2.0.0" \
+    "pip>=26.1.2"
+
+# Issue #366 verification step: print the installed versions so the build log
+# (and any future SARIF discrepancy investigation) can confirm Trivy will see
+# the fixed versions. This step exits 0 unless the installed version is BELOW the
+# required minimum — in which case the build fails fast with a clear error.
+RUN python -c "
+import sys
+import setuptools, msgpack, pip
+required = {
+    'setuptools': (83, 0, 0),
+    'msgpack': (1, 2, 1),
+    'pip': (26, 1, 2),
+}
+installed = {
+    'setuptools': tuple(int(p) for p in setuptools.__version__.split('.')[:3]),
+    'msgpack': tuple(int(p) for p in msgpack.version.split('.')[:3]),
+    'pip': tuple(int(p) for p in pip.__version__.split('.')[:3]),
+}
+for pkg, req in required.items():
+    inst = installed[pkg]
+    status = 'OK' if inst >= req else 'FAIL'
+    print(f'{pkg}: installed={inst} required>={req} -> {status}')
+    if inst < req:
+        print(f'ERROR: {pkg} {inst} < required {req} — Trivy will flag CVEs', file=sys.stderr)
+        sys.exit(1)
+print('All required versions satisfied.')
+"
 
 # Copy application code (only what's needed for production)
 COPY --chown=fireai:fireai backend/ backend/
