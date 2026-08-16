@@ -138,15 +138,20 @@ _REDACT_REPLACE = [
     _re.compile(r"sbp_[A-Za-z0-9_\-]{10,}"),
     _re.compile(r"sb_secret_[A-Za-z0-9_\-]{10,}"),
     _re.compile(r"napi_[A-Za-z0-9_\-]{10,}"),
-    _re.compile(r"u\d{7}-[A-Za-z0-9]{10,}"),   # UptimeRobot user key
-    _re.compile(r"m\d{7}-[A-Za-z0-9]{10,}"),   # UptimeRobot monitor key
-    _re.compile(r"box_[a-f0-9]{20,}"),          # Box developer token
-    _re.compile(r"(?i)(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*[\"']?[A-Za-z0-9_\-\.]{12,}"),
+    _re.compile(r"u\d{7}-[A-Za-z0-9]{10,}"),  # UptimeRobot user key
+    _re.compile(r"m\d{7}-[A-Za-z0-9]{10,}"),  # UptimeRobot monitor key
+    _re.compile(r"box_[a-f0-9]{20,}"),  # Box developer token
+    _re.compile(
+        r"(?i)(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*[\"']?[A-Za-z0-9_\-\.]{12,}"
+    ),
 ]
 
 # Patterns whose match is replaced preserving a leading group (e.g. URL scheme).
 _REDACT_KEEP_GROUP = [
-    (_re.compile(r"(://)([^:\s/@]+):([^@\s/]+)@"), r"\1<redacted>:<redacted>@"),  # user:pass@ in URLs
+    (
+        _re.compile(r"(://)([^:\s/@]+):([^@\s/]+)@"),
+        r"\1<redacted>:<redacted>@",
+    ),  # user:pass@ in URLs
 ]
 
 
@@ -199,8 +204,7 @@ class IntegrationDiagnostic:
     ) -> Check:
         # Central redaction gate: every upstream-captured string is scrubbed
         # here, so no token can reach console output, --json, or CI artifacts.
-        c = Check(service, status, code, redact(detail), latency,
-                  redact(sub) if sub else [])
+        c = Check(service, status, code, redact(detail), latency, redact(sub) if sub else [])
         self.results.append(c)
         return c
 
@@ -236,15 +240,29 @@ class IntegrationDiagnostic:
             lat = getattr(resp, "_baz_latency", 0)
             if resp.status_code == 200:
                 data = resp.json()
-                return self._check("FastAPI Backend", "OK", 200,
-                                   f"status={data.get('status')} db={data.get('database')}",
-                                   lat)
-            return self._check("FastAPI Backend", "FAIL", resp.status_code,
-                               f"expected 200, got {resp.status_code}", lat)
+                return self._check(
+                    "FastAPI Backend",
+                    "OK",
+                    200,
+                    f"status={data.get('status')} db={data.get('database')}",
+                    lat,
+                )
+            return self._check(
+                "FastAPI Backend",
+                "FAIL",
+                resp.status_code,
+                f"expected 200, got {resp.status_code}",
+                lat,
+            )
         except httpx.ConnectError as exc:
             lat = getattr(exc, "_baz_latency", 0)
-            return self._check("FastAPI Backend", "WARN", None,
-                               "server not running locally (expected in diagnostic-only mode)", lat)
+            return self._check(
+                "FastAPI Backend",
+                "WARN",
+                None,
+                "server not running locally (expected in diagnostic-only mode)",
+                lat,
+            )
         except Exception as exc:
             lat = getattr(exc, "_baz_latency", 0)
             return self._check("FastAPI Backend", "FAIL", None, str(exc)[:120], lat)
@@ -253,11 +271,11 @@ class IntegrationDiagnostic:
     def check_supabase_postgres(self) -> Check:
         url = os.environ.get("DATABASE_URL", "")
         if not url or url.startswith("sqlite"):
-            return self._check("Supabase Postgres", "SKIP",
-                               detail="DATABASE_URL not set or sqlite (dev mode)")
+            return self._check(
+                "Supabase Postgres", "SKIP", detail="DATABASE_URL not set or sqlite (dev mode)"
+            )
         if psycopg2 is None:
-            return self._check("Supabase Postgres", "SKIP",
-                               detail="psycopg2 not installed")
+            return self._check("Supabase Postgres", "SKIP", detail="psycopg2 not installed")
         try:
             start = time.perf_counter()
             conn = psycopg2.connect(url, connect_timeout=8)
@@ -275,9 +293,14 @@ class IntegrationDiagnostic:
             # unreachable from some networks → NEON_DATABASE_URL is the
             # automatic IPv4 fallback (see backend/database.py).
             if "could not translate host name" in msg or "getaddrinfo" in msg:
-                neon = "NEON fallback configured" if os.environ.get("NEON_DATABASE_URL") else "NEON fallback NOT configured"
-                return self._check("Supabase Postgres", "WARN", None,
-                                   f"DNS unreachable ({neon}): {msg}", lat)
+                neon = (
+                    "NEON fallback configured"
+                    if os.environ.get("NEON_DATABASE_URL")
+                    else "NEON fallback NOT configured"
+                )
+                return self._check(
+                    "Supabase Postgres", "WARN", None, f"DNS unreachable ({neon}): {msg}", lat
+                )
             return self._check("Supabase Postgres", "FAIL", None, msg, lat)
 
     # ── 3. Supabase REST + Auth ──────────────────────────────────────────
@@ -292,8 +315,14 @@ class IntegrationDiagnostic:
         dns_issue = False
         # 3a. REST health probe (public table list is auth-gated; use root)
         try:
-            resp = self._http("GET", f"{url}/rest/v1/",
-                              headers={"apikey": anon or service or "", "Authorization": f"Bearer {anon or service}"})
+            resp = self._http(
+                "GET",
+                f"{url}/rest/v1/",
+                headers={
+                    "apikey": anon or service or "",
+                    "Authorization": f"Bearer {anon or service}",
+                },
+            )
             code = resp.status_code
             sub.append({"REST /rest/v1/": f"HTTP {code}"})
             if code in (200, 404):  # 404 w/o table is still an authenticated reachable API
@@ -312,9 +341,12 @@ class IntegrationDiagnostic:
                 sub.append({"REST": msg})
         # 3b. Auth token handshake (password grant — health-only, no real creds)
         try:
-            resp = self._http("POST", f"{url}/auth/v1/token?grant_type=password",
-                              headers={"apikey": anon or service or ""},
-                              json={"email": "none@invalid.invalid", "password": "x"})
+            resp = self._http(
+                "POST",
+                f"{url}/auth/v1/token?grant_type=password",
+                headers={"apikey": anon or service or ""},
+                json={"email": "none@invalid.invalid", "password": "x"},
+            )
             code = resp.status_code
             sub.append({"Auth /auth/v1/token": f"HTTP {code} (400/401=reachable)"})
             if code in (400, 401, 422):
@@ -333,13 +365,22 @@ class IntegrationDiagnostic:
         # WARN only when BOTH probes failed with the documented DNS issue and
         # nothing else failed. A genuine non-DNS failure keeps FAIL.
         status = "WARN" if (dns_issue and ok) else ("OK" if ok else "FAIL")
-        return self._check("Supabase REST/Auth", status, 200 if ok else None,
-                           "; ".join(f"{k}={v}" for d in sub for k, v in d.items()),
-                           latency=0, sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+        return self._check(
+            "Supabase REST/Auth",
+            status,
+            200 if ok else None,
+            "; ".join(f"{k}={v}" for d in sub for k, v in d.items()),
+            latency=0,
+            sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+        )
 
     # ── 4. Langfuse ──────────────────────────────────────────────────────
     async def check_langfuse(self) -> Check:
-        base = os.environ.get("LANGFUSE_BASE_URL") or os.environ.get("LANGFUSE_HOST") or "https://cloud.langfuse.com"
+        base = (
+            os.environ.get("LANGFUSE_BASE_URL")
+            or os.environ.get("LANGFUSE_HOST")
+            or "https://cloud.langfuse.com"
+        )
         pub = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
         sec = os.environ.get("LANGFUSE_SECRET_KEY", "")
         if not (pub and sec):
@@ -358,10 +399,14 @@ class IntegrationDiagnostic:
         auth_detail = ""
         try:
             import uuid
+
             trace_id = str(uuid.uuid4())
-            resp = self._http("POST", f"{base}/api/public/traces",
-                              auth=auth,
-                              json={"id": trace_id, "name": "bazspark-diagnostic"})
+            resp = self._http(
+                "POST",
+                f"{base}/api/public/traces",
+                auth=auth,
+                json={"id": trace_id, "name": "bazspark-diagnostic"},
+            )
             sub.append({"create trace": f"HTTP {resp.status_code}"})
             if resp.status_code == 200:
                 auth_ok = True
@@ -380,9 +425,14 @@ class IntegrationDiagnostic:
             status, code = "FAIL", None
         else:
             status, code = "FAIL", None
-        return self._check("Langfuse", status, code,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           latency=0, sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "Langfuse",
+            status,
+            code,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            latency=0,
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 5. GitHub ────────────────────────────────────────────────────────
     async def check_github(self) -> Check:
@@ -406,28 +456,41 @@ class IntegrationDiagnostic:
                 sub.append({"default_branch": data.get("default_branch", "")})
                 sub.append({"private": str(data.get("private", ""))})
             else:
-                return self._check("GitHub", "FAIL", resp.status_code,
-                                   f"repo fetch HTTP {resp.status_code}", lat,
-                                   sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+                return self._check(
+                    "GitHub",
+                    "FAIL",
+                    resp.status_code,
+                    f"repo fetch HTTP {resp.status_code}",
+                    lat,
+                    sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+                )
         except Exception as exc:
             return self._check("GitHub", "FAIL", None, str(exc)[:100], sub=[str(exc)[:100]])
         # workflow runs status (CI/CD pipeline health)
         try:
-            resp = self._http("GET", f"https://api.github.com/repos/{repo}/actions/runs?per_page=3",
-                              headers=headers)
+            resp = self._http(
+                "GET",
+                f"https://api.github.com/repos/{repo}/actions/runs?per_page=3",
+                headers=headers,
+            )
             if resp.status_code == 200:
                 runs = resp.json().get("workflow_runs", [])
                 sub.append({"recent workflow runs": str(len(runs))})
                 if runs:
-                    sub.append({"latest run": f"{runs[0].get('name')} -> {runs[0].get('status')}/{runs[0].get('conclusion')}"})
+                    sub.append(
+                        {
+                            "latest run": f"{runs[0].get('name')} -> {runs[0].get('status')}/{runs[0].get('conclusion')}"
+                        }
+                    )
             else:
                 sub.append({"workflow runs": f"HTTP {resp.status_code}"})
         except Exception as exc:
             sub.append({"workflow runs": str(exc)[:80]})
         # secrets visibility (names only, never values)
         try:
-            resp = self._http("GET", f"https://api.github.com/repos/{repo}/actions/secrets",
-                              headers=headers)
+            resp = self._http(
+                "GET", f"https://api.github.com/repos/{repo}/actions/secrets", headers=headers
+            )
             if resp.status_code == 200:
                 names = [s["name"] for s in resp.json().get("secrets", [])]
                 sub.append({"secrets": f"{len(names)} configured: {', '.join(sorted(names)[:8])}"})
@@ -435,14 +498,20 @@ class IntegrationDiagnostic:
                 sub.append({"secrets": f"HTTP {resp.status_code}"})
         except Exception as exc:
             sub.append({"secrets": str(exc)[:80]})
-        return self._check("GitHub", "OK", 200,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "GitHub",
+            "OK",
+            200,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 6. Hugging Face ──────────────────────────────────────────────────
     async def check_huggingface(self) -> Check:
         token = os.environ.get("HF_TOKEN", "")
-        space = os.environ.get("HF_SPACE_REPO", "https://huggingface.co/spaces/ahmdelbaz28/BAZSPARK")
+        space = os.environ.get(
+            "HF_SPACE_REPO", "https://huggingface.co/spaces/ahmdelbaz28/BAZSPARK"
+        )
         # normalize to owner/name
         owner_name = space.rstrip("/").split("/spaces/")[-1] if "/spaces/" in space else space
         if not token:
@@ -450,19 +519,31 @@ class IntegrationDiagnostic:
         headers = {"Authorization": f"Bearer {token}"}
         sub: list[dict[str, Any]] = []
         try:
-            resp = self._http("GET", f"https://huggingface.co/api/spaces/{owner_name}",
-                              headers=headers)
+            resp = self._http(
+                "GET", f"https://huggingface.co/api/spaces/{owner_name}", headers=headers
+            )
             lat = getattr(resp, "_baz_latency", 0)
             sub.append({"space fetch": f"HTTP {resp.status_code}"})
             if resp.status_code == 200:
                 data = resp.json()
                 sub.append({"space": data.get("id", owner_name)})
-                sub.append({"runtime": data.get("runtime", {}).get("stage", "?") if data.get("runtime") else "?"})
+                sub.append(
+                    {
+                        "runtime": data.get("runtime", {}).get("stage", "?")
+                        if data.get("runtime")
+                        else "?"
+                    }
+                )
                 sub.append({"sdk": data.get("sdk", "?")})
             else:
-                return self._check("HuggingFace Space", "FAIL", resp.status_code,
-                                   f"HTTP {resp.status_code} {resp.text[:80]}", lat,
-                                   sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+                return self._check(
+                    "HuggingFace Space",
+                    "FAIL",
+                    resp.status_code,
+                    f"HTTP {resp.status_code} {resp.text[:80]}",
+                    lat,
+                    sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+                )
         except Exception as exc:
             return self._check("HuggingFace Space", "FAIL", None, str(exc)[:100])
         # whoami (token validity)
@@ -475,9 +556,13 @@ class IntegrationDiagnostic:
                 sub.append({"whoami": f"HTTP {resp.status_code} (token invalid?)"})
         except Exception as exc:
             sub.append({"whoami": str(exc)[:80]})
-        return self._check("HuggingFace Space", "OK", 200,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "HuggingFace Space",
+            "OK",
+            200,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 7. Vercel ────────────────────────────────────────────────────────
     async def check_vercel(self) -> Check:
@@ -496,15 +581,24 @@ class IntegrationDiagnostic:
             if resp.status_code == 200:
                 sub.append({"user": resp.json().get("user", {}).get("username", "?")})
             else:
-                return self._check("Vercel", "FAIL", resp.status_code,
-                                   f"auth HTTP {resp.status_code}", lat,
-                                   sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+                return self._check(
+                    "Vercel",
+                    "FAIL",
+                    resp.status_code,
+                    f"auth HTTP {resp.status_code}",
+                    lat,
+                    sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+                )
         except Exception as exc:
             return self._check("Vercel", "FAIL", None, str(exc)[:100])
         if project_id:
             try:
-                resp = self._http("GET", f"https://api.vercel.com/v9/projects/{project_id}",
-                                  headers=headers, params=params)
+                resp = self._http(
+                    "GET",
+                    f"https://api.vercel.com/v9/projects/{project_id}",
+                    headers=headers,
+                    params=params,
+                )
                 if resp.status_code == 200:
                     data = resp.json()
                     sub.append({"project": data.get("name", project_id)})
@@ -512,8 +606,12 @@ class IntegrationDiagnostic:
                     sub.append({"git repo": str(data.get("link", {}).get("repo", "?"))})
                     # env vars (names only)
                     try:
-                        eresp = self._http("GET", f"https://api.vercel.com/v9/projects/{project_id}/env",
-                                           headers=headers, params=params)
+                        eresp = self._http(
+                            "GET",
+                            f"https://api.vercel.com/v9/projects/{project_id}/env",
+                            headers=headers,
+                            params=params,
+                        )
                         if eresp.status_code == 200:
                             envs = [e.get("key") for e in eresp.json().get("envs", [])]
                             sub.append({"env vars": f"{len(envs)}: {', '.join(sorted(envs)[:8])}"})
@@ -525,16 +623,22 @@ class IntegrationDiagnostic:
                     sub.append({"project fetch": f"HTTP {resp.status_code}"})
             except Exception as exc:
                 sub.append({"project fetch": str(exc)[:80]})
-        return self._check("Vercel", "OK", 200,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "Vercel",
+            "OK",
+            200,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 8. Cloudflare ────────────────────────────────────────────────────
     async def check_cloudflare(self) -> Check:
-        token = (os.environ.get("CLOUDFLARE_API_TOKEN")
-                 or os.environ.get("CLOUDFLARE_USER_TOKEN_1")
-                 or os.environ.get("CLOUDFLARE_USER_TOKEN_2")
-                 or os.environ.get("CLOUDFLARE_USER_TOKEN_3"))
+        token = (
+            os.environ.get("CLOUDFLARE_API_TOKEN")
+            or os.environ.get("CLOUDFLARE_USER_TOKEN_1")
+            or os.environ.get("CLOUDFLARE_USER_TOKEN_2")
+            or os.environ.get("CLOUDFLARE_USER_TOKEN_3")
+        )
         zone_id = os.environ.get("CLOUDFLARE_ZONE_ID", "")
         if not token:
             return self._check("Cloudflare", "SKIP", detail="Cloudflare token not set")
@@ -545,15 +649,21 @@ class IntegrationDiagnostic:
             lat = getattr(resp, "_baz_latency", 0)
             sub.append({"user verify": f"HTTP {resp.status_code}"})
             if resp.status_code != 200:
-                return self._check("Cloudflare", "FAIL", resp.status_code,
-                                   f"auth HTTP {resp.status_code}", lat,
-                                   sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+                return self._check(
+                    "Cloudflare",
+                    "FAIL",
+                    resp.status_code,
+                    f"auth HTTP {resp.status_code}",
+                    lat,
+                    sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+                )
         except Exception as exc:
             return self._check("Cloudflare", "FAIL", None, str(exc)[:100])
         if zone_id:
             try:
-                resp = self._http("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}",
-                                  headers=headers)
+                resp = self._http(
+                    "GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}", headers=headers
+                )
                 if resp.status_code == 200:
                     z = resp.json().get("result", {})
                     sub.append({"zone": z.get("name", zone_id)})
@@ -565,16 +675,21 @@ class IntegrationDiagnostic:
         else:
             # list zones (first 3 names)
             try:
-                resp = self._http("GET", "https://api.cloudflare.com/client/v4/zones?per_page=3",
-                                  headers=headers)
+                resp = self._http(
+                    "GET", "https://api.cloudflare.com/client/v4/zones?per_page=3", headers=headers
+                )
                 if resp.status_code == 200:
                     zones = [z.get("name") for z in resp.json().get("result", [])]
                     sub.append({"zones": ", ".join(zones) or "none"})
             except Exception as exc:
                 sub.append({"zones": str(exc)[:80]})
-        return self._check("Cloudflare", "OK", 200,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "Cloudflare",
+            "OK",
+            200,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 9. Autodesk APS ──────────────────────────────────────────────────
     async def check_autodesk_aps(self) -> Check:
@@ -585,9 +700,14 @@ class IntegrationDiagnostic:
         scopes = "data:read data:write bucket:create bucket:read"
         try:
             resp = self._http(
-                "POST", "https://developer.api.autodesk.com/authentication/v2/token",
-                data={"client_id": cid, "client_secret": secret,
-                      "grant_type": "client_credentials", "scope": scopes},
+                "POST",
+                "https://developer.api.autodesk.com/authentication/v2/token",
+                data={
+                    "client_id": cid,
+                    "client_secret": secret,
+                    "grant_type": "client_credentials",
+                    "scope": scopes,
+                },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
             lat = getattr(resp, "_baz_latency", 0)
@@ -596,8 +716,13 @@ class IntegrationDiagnostic:
                 exp = tok.get("expires_in", 0)
                 sub = [f"token_type: {tok.get('token_type')}", f"expires_in: {exp}s"]
                 return self._check("Autodesk APS", "OK", 200, "; ".join(sub), lat, sub)
-            return self._check("Autodesk APS", "FAIL", resp.status_code,
-                               f"HTTP {resp.status_code} {resp.text[:100]}", lat)
+            return self._check(
+                "Autodesk APS",
+                "FAIL",
+                resp.status_code,
+                f"HTTP {resp.status_code} {resp.text[:100]}",
+                lat,
+            )
         except Exception as exc:
             return self._check("Autodesk APS", "FAIL", None, str(exc)[:100])
 
@@ -607,17 +732,24 @@ class IntegrationDiagnostic:
         if not key:
             return self._check("Resend Email", "SKIP", detail="RESEND_API_KEY not set")
         try:
-            resp = self._http("GET", "https://api.resend.com/emails",
-                              headers={"Authorization": f"Bearer {key}"})
+            resp = self._http(
+                "GET", "https://api.resend.com/emails", headers={"Authorization": f"Bearer {key}"}
+            )
             lat = getattr(resp, "_baz_latency", 0)
             if resp.status_code == 200:
                 data = resp.json().get("data", [])
-                return self._check("Resend Email", "OK", 200,
-                                   f"auth OK, {len(data)} recent emails", lat)
+                return self._check(
+                    "Resend Email", "OK", 200, f"auth OK, {len(data)} recent emails", lat
+                )
             if resp.status_code == 401:
                 return self._check("Resend Email", "FAIL", 401, "invalid API key", lat)
-            return self._check("Resend Email", "WARN", resp.status_code,
-                               f"HTTP {resp.status_code} {resp.text[:80]}", lat)
+            return self._check(
+                "Resend Email",
+                "WARN",
+                resp.status_code,
+                f"HTTP {resp.status_code} {resp.text[:80]}",
+                lat,
+            )
         except Exception as exc:
             return self._check("Resend Email", "FAIL", None, str(exc)[:100])
 
@@ -630,8 +762,11 @@ class IntegrationDiagnostic:
         auth = (token, "") if token else None
         sub: list[dict[str, Any]] = []
         try:
-            resp = self._http("GET", f"{host}/api/projects/search?q={key.split(':')[-1]}&organization={org}",
-                              auth=auth)
+            resp = self._http(
+                "GET",
+                f"{host}/api/projects/search?q={key.split(':')[-1]}&organization={org}",
+                auth=auth,
+            )
             lat = getattr(resp, "_baz_latency", 0)
             sub.append({"project search": f"HTTP {resp.status_code}"})
             if resp.status_code == 200:
@@ -641,15 +776,21 @@ class IntegrationDiagnostic:
                 else:
                     sub.append({"project": "not found — check SONAR_PROJECT_KEY"})
             else:
-                return self._check("SonarCloud", "FAIL", resp.status_code,
-                                   f"HTTP {resp.status_code} {resp.text[:80]}", lat,
-                                   sub=[f"{k}: {v}" for d in sub for k, v in d.items()])
+                return self._check(
+                    "SonarCloud",
+                    "FAIL",
+                    resp.status_code,
+                    f"HTTP {resp.status_code} {resp.text[:80]}",
+                    lat,
+                    sub=[f"{k}: {v}" for d in sub for k, v in d.items()],
+                )
         except Exception as exc:
             return self._check("SonarCloud", "FAIL", None, str(exc)[:100])
         # quality gate status
         try:
-            resp = self._http("GET", f"{host}/api/qualitygates/project_status?projectKey={key}",
-                              auth=auth)
+            resp = self._http(
+                "GET", f"{host}/api/qualitygates/project_status?projectKey={key}", auth=auth
+            )
             if resp.status_code == 200:
                 st = resp.json().get("projectStatus", {})
                 sub.append({"quality gate": st.get("status", "?")})
@@ -657,9 +798,13 @@ class IntegrationDiagnostic:
                 sub.append({"quality gate": f"HTTP {resp.status_code}"})
         except Exception as exc:
             sub.append({"quality gate": str(exc)[:80]})
-        return self._check("SonarCloud", "OK", 200,
-                           "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
-                           sub=[f"{k}: {v}" for s in sub for k, v in s.items()])
+        return self._check(
+            "SonarCloud",
+            "OK",
+            200,
+            "; ".join(f"{k}={v}" for s in sub for k, v in s.items()),
+            sub=[f"{k}: {v}" for s in sub for k, v in s.items()],
+        )
 
     # ── 12. Daytona ──────────────────────────────────────────────────────
     async def check_daytona(self) -> Check:
@@ -668,17 +813,24 @@ class IntegrationDiagnostic:
         if not token:
             return self._check("Daytona VPS", "SKIP", detail="DAYTONA_API_TOKEN not set")
         try:
-            resp = self._http("GET", f"{base}/",
-                              headers={"Authorization": f"Bearer {token}"})
+            resp = self._http("GET", f"{base}/", headers={"Authorization": f"Bearer {token}"})
             lat = getattr(resp, "_baz_latency", 0)
             # 200/401/403 all prove endpoint reachability; 200 proves auth
             if resp.status_code in (200, 201):
-                return self._check("Daytona VPS", "OK", 200, f"reachable + authed (HTTP {resp.status_code})", lat)
+                return self._check(
+                    "Daytona VPS", "OK", 200, f"reachable + authed (HTTP {resp.status_code})", lat
+                )
             if resp.status_code in (401, 403):
-                return self._check("Daytona VPS", "WARN", resp.status_code,
-                                   "reachable, auth failed (check token)", lat)
-            return self._check("Daytona VPS", "WARN", resp.status_code,
-                               f"reachable HTTP {resp.status_code}", lat)
+                return self._check(
+                    "Daytona VPS",
+                    "WARN",
+                    resp.status_code,
+                    "reachable, auth failed (check token)",
+                    lat,
+                )
+            return self._check(
+                "Daytona VPS", "WARN", resp.status_code, f"reachable HTTP {resp.status_code}", lat
+            )
         except Exception as exc:
             return self._check("Daytona VPS", "FAIL", None, str(exc)[:100])
 
@@ -688,17 +840,27 @@ class IntegrationDiagnostic:
         if not token:
             return self._check("CodeSandbox VPS", "SKIP", detail="CODESANDBOX_TOKEN not set")
         try:
-            resp = self._http("GET", "https://api.codesandbox.io/v1/sandboxes",
-                              headers={"Authorization": f"Bearer {token}"})
+            resp = self._http(
+                "GET",
+                "https://api.codesandbox.io/v1/sandboxes",
+                headers={"Authorization": f"Bearer {token}"},
+            )
             lat = getattr(resp, "_baz_latency", 0)
             if resp.status_code == 200:
-                return self._check("CodeSandbox VPS", "OK", 200,
-                                   f"auth OK (HTTP {resp.status_code})", lat)
+                return self._check(
+                    "CodeSandbox VPS", "OK", 200, f"auth OK (HTTP {resp.status_code})", lat
+                )
             if resp.status_code in (401, 403):
-                return self._check("CodeSandbox VPS", "WARN", resp.status_code,
-                                   "reachable, auth failed", lat)
-            return self._check("CodeSandbox VPS", "WARN", resp.status_code,
-                               f"reachable HTTP {resp.status_code}", lat)
+                return self._check(
+                    "CodeSandbox VPS", "WARN", resp.status_code, "reachable, auth failed", lat
+                )
+            return self._check(
+                "CodeSandbox VPS",
+                "WARN",
+                resp.status_code,
+                f"reachable HTTP {resp.status_code}",
+                lat,
+            )
         except Exception as exc:
             return self._check("CodeSandbox VPS", "FAIL", None, str(exc)[:100])
 
@@ -740,6 +902,7 @@ def main() -> int:
 
     diag = IntegrationDiagnostic(args.endpoint, args.timeout, args.json)
     import asyncio
+
     asyncio.run(diag.run_all())
 
     if args.json:
@@ -767,8 +930,10 @@ def main() -> int:
         fail = sum(1 for r in diag.results if r.status == "FAIL")
         skip = sum(1 for r in diag.results if r.status == "SKIP")
         print(_blue("=" * 72))
-        print(f"  OK: {_green(str(ok))}   WARN: {_yellow(str(warn))}   "
-              f"FAIL: {_red(str(fail))}   SKIP: {_yellow(str(skip))}")
+        print(
+            f"  OK: {_green(str(ok))}   WARN: {_yellow(str(warn))}   "
+            f"FAIL: {_red(str(fail))}   SKIP: {_yellow(str(skip))}"
+        )
         print(_blue("=" * 72))
         if fail == 0:
             print(_green("  [PASS] ALL REACHABLE INTEGRATIONS HEALTHY - 100% SYNC READY"))

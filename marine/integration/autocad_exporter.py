@@ -7,6 +7,7 @@ drawings. Layers per ISO 1101 fire-safety drawing convention:
 
 v3: Replaced hand-rolled DXF group-code generation with ezdxf library.
 """
+
 from __future__ import annotations
 
 import math
@@ -20,11 +21,11 @@ from ezdxf.enums import TextEntityAlignment
 from marine.core.types import DetectorPlacement, MarineZone
 
 LAYER_SPECS: list[dict] = [
-    {"name": "F-ZONES",        "color": 5, "linetype": "CONTINUOUS"},
-    {"name": "F-DETECTORS",    "color": 1, "linetype": "CONTINUOUS"},
-    {"name": "F-EXTINGUISH",   "color": 2, "linetype": "CONTINUOUS"},
-    {"name": "F-DIVISIONS",    "color": 6, "linetype": "PHANTOM"},
-    {"name": "F-ESCAPE-ROUTES","color": 3, "linetype": "DASHED"},
+    {"name": "F-ZONES", "color": 5, "linetype": "CONTINUOUS"},
+    {"name": "F-DETECTORS", "color": 1, "linetype": "CONTINUOUS"},
+    {"name": "F-EXTINGUISH", "color": 2, "linetype": "CONTINUOUS"},
+    {"name": "F-DIVISIONS", "color": 6, "linetype": "PHANTOM"},
+    {"name": "F-ESCAPE-ROUTES", "color": 3, "linetype": "DASHED"},
 ]
 
 DXF_LAYERS = LAYER_SPECS

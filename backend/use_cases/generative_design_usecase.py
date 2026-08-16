@@ -22,7 +22,7 @@ class GenerativeDesignUseCase:
         base_spacing = 9.1 if hazard == "LIGHT" else 6.1
         if height > 3.0:
             reduction = min(0.4, (height - 3.0) * 0.05)
-            base_spacing *= (1.0 - reduction)
+            base_spacing *= 1.0 - reduction
 
         variant_optimal = {
             "variant_id": "var_optimal",
@@ -36,7 +36,9 @@ class GenerativeDesignUseCase:
             "variant_id": "var_cost_effective",
             "name": "Cost-Effective Layout",
             "spacing_meters": round(base_spacing * 1.1, 2),
-            "total_detectors": max(1, int((length / (base_spacing * 1.1)) * (width / (base_spacing * 1.1)))),
+            "total_detectors": max(
+                1, int((length / (base_spacing * 1.1)) * (width / (base_spacing * 1.1)))
+            ),
             "estimated_cost_usd": 950.0,
         }
 
@@ -44,7 +46,9 @@ class GenerativeDesignUseCase:
             "variant_id": "var_high_redundancy",
             "name": "High Redundancy & Life-Safety",
             "spacing_meters": round(base_spacing * 0.85, 2),
-            "total_detectors": max(1, int((length / (base_spacing * 0.85)) * (width / (base_spacing * 0.85)))),
+            "total_detectors": max(
+                1, int((length / (base_spacing * 0.85)) * (width / (base_spacing * 0.85)))
+            ),
             "estimated_cost_usd": 1650.0,
         }
 

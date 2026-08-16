@@ -251,8 +251,7 @@ class TopologyGraphService:
             logger.info("Neo4j connected to %s", self._uri)
         except Exception as exc:
             logger.warning(
-                "Neo4j initialization failed (%s). "
-                "Topology graph will use in-memory fallback.",
+                "Neo4j initialization failed (%s). Topology graph will use in-memory fallback.",
                 exc,
             )
             self._driver = None
@@ -367,6 +366,7 @@ class TopologyGraphService:
             ImpactAnalysisResult with affected loads and buses.
         """
         import time
+
         t_start = time.perf_counter()
 
         self._initialize()
@@ -521,12 +521,14 @@ class TopologyGraphService:
                         et = ElementType(type_str)
                     except ValueError:
                         et = ElementType.BUS
-                    elements.append(NetworkElement(
-                        element_id=record["id"],
-                        element_type=et,
-                        name=record["name"] or "",
-                        properties=dict(record["props"]) if record["props"] else {},
-                    ))
+                    elements.append(
+                        NetworkElement(
+                            element_id=record["id"],
+                            element_type=et,
+                            name=record["name"] or "",
+                            properties=dict(record["props"]) if record["props"] else {},
+                        )
+                    )
                 return elements
 
         except Exception as exc:
@@ -553,8 +555,7 @@ class TopologyGraphService:
         try:
             with self._driver.session() as session:
                 result = session.run(
-                    "MATCH (n) RETURN count(n) AS node_count, "
-                    "count {()-[]->()} AS edge_count"
+                    "MATCH (n) RETURN count(n) AS node_count, count {()-[]->()} AS edge_count"
                 )
                 record = result.single()
 

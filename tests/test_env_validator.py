@@ -50,6 +50,7 @@ def _clean_env(monkeypatch):
 
 # ─── Placeholder detection ───────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -71,6 +72,7 @@ def test_is_placeholder(value, expected):
 
 
 # ─── Full / minimal / broken environments ────────────────────────────────────
+
 
 def test_full_env_has_zero_issues():
     full = dict(RUNTIME_MINIMAL)
@@ -168,6 +170,7 @@ def test_cors_wildcard_forbidden_in_production():
 
 # ─── assert_environment() mode detection ─────────────────────────────────────
 
+
 def test_unset_fireai_env_never_blocks_startup():
     """FIREAI_ENV=development ⇒ HARD issues warn, never raise.
 
@@ -207,6 +210,7 @@ def test_escape_hatch_warn_allows_startup_in_production():
 
 
 # ─── LANGFUSE_ENABLED gating (V303 — clean-launch fix) ──────────────────────
+
 
 def test_langfuse_disabled_downgrades_keys_to_soft(monkeypatch):
     """LANGFUSE_ENABLED=false must demote LANGFUSE_* from HARD to SOFT.

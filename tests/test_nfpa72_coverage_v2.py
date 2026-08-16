@@ -77,9 +77,7 @@ def ceiling_flat() -> CeilingSpec:
 @pytest.fixture
 def l_shaped_polygon() -> Polygon:
     """L-shaped room polygon: 10m x 10m with a 5m x 5m corner cut."""
-    return Polygon([
-        (0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)
-    ])
+    return Polygon([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
 
 
 # Constants
@@ -186,16 +184,17 @@ class TestValidateWallDistances:
     def test_polygon_mode_with_l_shaped_room(self):
         """V49 FIX: Polygon boundary mode for L-shaped rooms."""
         room_spec = RoomSpec(
-            room_id="L-001", name="L-Room", width_m=10.0, depth_m=10.0,
+            room_id="L-001",
+            name="L-Room",
+            width_m=10.0,
+            depth_m=10.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         l_poly = Polygon([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
 
         # Detector near the inner corner (5, 5) — close to polygon boundary
         positions = [(5.05, 5.05)]
-        violations = validate_wall_distances(
-            positions, room_spec, room_polygon=l_poly
-        )
+        violations = validate_wall_distances(positions, room_spec, room_polygon=l_poly)
         # Should detect proximity to polygon boundary, not bounding box
         assert len(violations) >= 1
         assert any(v["wall"] == "polygon_boundary" for v in violations)
@@ -321,8 +320,12 @@ class TestSuggestDuctDetectors:
     def test_with_hvac_ducts(self):
         """Room with HVAC ducts should suggest duct detectors."""
         from fireai.core.nfpa72_models import HVACDuct
+
         room = RoomSpec(
-            room_id="DUCT-001", name="Duct Room", width_m=10.0, depth_m=10.0,
+            room_id="DUCT-001",
+            name="Duct Room",
+            width_m=10.0,
+            depth_m=10.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
             hvac_duct_list=[
                 HVACDuct(centerline=[(5.0, 3.0, 3.5)]),
@@ -337,8 +340,12 @@ class TestSuggestDuctDetectors:
 
     def test_heat_type_parameter(self):
         from fireai.core.nfpa72_models import HVACDuct
+
         room = RoomSpec(
-            room_id="DUCT-002", name="Duct Room", width_m=10.0, depth_m=10.0,
+            room_id="DUCT-002",
+            name="Duct Room",
+            width_m=10.0,
+            depth_m=10.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
             hvac_duct_list=[HVACDuct(centerline=[(5.0, 3.0, 3.5)])],
         )
@@ -359,7 +366,10 @@ class TestRoomPolygon:
 
     def test_custom_polygon(self):
         room = RoomSpec(
-            room_id="CUSTOM-001", name="Custom", width_m=10.0, depth_m=10.0,
+            room_id="CUSTOM-001",
+            name="Custom",
+            width_m=10.0,
+            depth_m=10.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
             polygon=[(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)],
         )
@@ -396,8 +406,10 @@ class TestCheckCoveragePolygon:
         # At 3m ceiling, R=6.37m. One detector at center covers most of a 10x10 room,
         # but corners (7.07m from center) are outside R=6.37m. Use a smaller room.
         small_room = RoomSpec(
-            room_id="SM-001", name="Small",
-            width_m=8.0, depth_m=8.0,
+            room_id="SM-001",
+            name="Small",
+            width_m=8.0,
+            depth_m=8.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         positions = [(4.0, 4.0)]
@@ -416,8 +428,10 @@ class TestCheckCoveragePolygon:
         """Heat detectors use SQUARE (Chebyshev) geometry, not circular."""
         # Heat detector at 3m ceiling: half_spacing ~ 3.05m. Use 6x6 room.
         small_room = RoomSpec(
-            room_id="HT-001", name="Heat Room",
-            width_m=5.0, depth_m=5.0,
+            room_id="HT-001",
+            name="Heat Room",
+            width_m=5.0,
+            depth_m=5.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         positions = [(2.5, 2.5)]
@@ -428,8 +442,10 @@ class TestCheckCoveragePolygon:
     def test_multiple_detectors_coverage(self, ceiling_flat):
         """Multiple detectors should provide coverage."""
         small_room = RoomSpec(
-            room_id="ML-001", name="Multi",
-            width_m=8.0, depth_m=8.0,
+            room_id="ML-001",
+            name="Multi",
+            width_m=8.0,
+            depth_m=8.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         positions = [(2.5, 2.5), (5.5, 5.5)]
@@ -483,8 +499,10 @@ class TestCheckVoronoiCoverage:
     def test_heat_detector_voronoi(self, ceiling_flat):
         """V49 FIX: Heat detectors use square geometry in Voronoi check."""
         small_room = RoomSpec(
-            room_id="VH-001", name="Voronoi Heat",
-            width_m=5.0, depth_m=5.0,
+            room_id="VH-001",
+            name="Voronoi Heat",
+            width_m=5.0,
+            depth_m=5.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         positions = [(2.5, 2.5)]
@@ -503,9 +521,7 @@ class TestRidgeZoneCompliance:
 
     def test_flat_ceiling_no_ridge_required(self, ceiling_flat):
         """Flat ceiling doesn't require ridge zone detectors."""
-        result = check_ridge_zone_compliance(
-            [(5.0, 5.0)], ceiling_flat, (0, 5, 10, 5)
-        )
+        result = check_ridge_zone_compliance([(5.0, 5.0)], ceiling_flat, (0, 5, 10, 5))
         assert result.is_compliant is True
 
     def test_sloped_ceiling_no_detectors_in_ridge(self):
@@ -516,9 +532,7 @@ class TestRidgeZoneCompliance:
             ceiling_type=CeilingType.SLOPED,
         )
         # Detectors far from ridge
-        result = check_ridge_zone_compliance(
-            [(5.0, 1.0)], sloped, (0, 10, 10, 10)
-        )
+        result = check_ridge_zone_compliance([(5.0, 1.0)], sloped, (0, 10, 10, 10))
         # May or may not be compliant depending on slope calculation
         assert isinstance(result, NFPAComplianceResult)
 
@@ -566,23 +580,17 @@ class TestCheckLShapedCoverage:
 
     def test_single_detector_covers_l_shape(self, l_shaped_polygon):
         """One detector at center may cover L-shape if room small enough."""
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE)
         assert isinstance(result, CoverageResult)
 
     def test_heat_detector_l_shape(self, l_shaped_polygon):
         """Heat detector coverage in L-shaped room uses square geometry."""
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.HEAT
-        )
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.HEAT)
         assert isinstance(result, CoverageResult)
 
     def test_no_detectors_l_shape(self, l_shaped_polygon):
         """No detectors — coverage should be 0."""
-        result = check_l_shaped_coverage(
-            [], l_shaped_polygon, 3.0, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([], l_shaped_polygon, 3.0, DetectorType.SMOKE)
         assert result.is_covered is False
         assert result.coverage_percentage == pytest.approx(0.0, abs=0.1)
 
@@ -594,8 +602,10 @@ class TestCheckLShapedCoverage:
 class TestCheckNFPA72Compliance:
     def test_compliant_room(self, ceiling_flat):
         small_room = RoomSpec(
-            room_id="CM-001", name="Compliant",
-            width_m=8.0, depth_m=8.0,
+            room_id="CM-001",
+            name="Compliant",
+            width_m=8.0,
+            depth_m=8.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
         positions = [(4.0, 4.0)]
@@ -622,7 +632,10 @@ class TestVerifyFullCoverage:
         # Use 8x8 room where one detector at center (R=6.37m) covers fully
         room = box(0, 0, 8, 8)
         result = verify_full_coverage(
-            room, [(4.0, 4.0)], "circular", 6.37,
+            room,
+            [(4.0, 4.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["compliance_status"] == "PASS"
@@ -631,7 +644,10 @@ class TestVerifyFullCoverage:
     def test_no_detectors_fails(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [], "circular", 6.37,
+            room,
+            [],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["coverage_percentage"] == pytest.approx(0.0, abs=0.1)
@@ -639,7 +655,10 @@ class TestVerifyFullCoverage:
     def test_heat_detector_square_geometry(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "square_grid", 3.05,
+            room,
+            [(5.0, 5.0)],
+            "square_grid",
+            3.05,
             detector_type=DetectorType.HEAT,
         )
         assert "coverage_percentage" in result
@@ -648,12 +667,17 @@ class TestVerifyFullCoverage:
     def test_result_keys(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "circular", 6.37,
+            room,
+            [(5.0, 5.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         expected_keys = [
-            "coverage_percentage", "worst_case_distance_m",
-            "compliance_status", "coverage_geometry",
+            "coverage_percentage",
+            "worst_case_distance_m",
+            "compliance_status",
+            "coverage_geometry",
         ]
         for key in expected_keys:
             assert key in result, f"Missing key: {key}"

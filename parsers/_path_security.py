@@ -59,7 +59,8 @@ def _resolve_allowed_bases() -> list[Path]:
             # Skip the malformed entry rather than crashing the whole list.
             logger.warning(
                 "Skipping malformed FIREAI_ALLOWED_UPLOAD_DIRS entry %r: %s",
-                entry, e,
+                entry,
+                e,
             )
 
     # Always include the system temp dir (tests, parser intermediate files)
@@ -121,21 +122,13 @@ def validate_input_path(
         UnsafePathError: Any security check failed (hard rejection).
 
     """
-    if (
-        input_path is None
-        or not isinstance(input_path, str)
-        or not input_path.strip()
-    ):
-        raise UnsafePathError(
-            f"{parser_name}: input_path must be a non-empty string"
-        )
+    if input_path is None or not isinstance(input_path, str) or not input_path.strip():
+        raise UnsafePathError(f"{parser_name}: input_path must be a non-empty string")
 
     # (5) Null byte check — must happen BEFORE any path operations.
     # A path containing \x00 can truncate when passed through C APIs.
     if "\x00" in input_path:
-        raise UnsafePathError(
-            f"{parser_name}: input path contains null byte (\\x00) — rejected"
-        )
+        raise UnsafePathError(f"{parser_name}: input path contains null byte (\\x00) — rejected")
 
     # (4) Argument-injection guard — must happen BEFORE we hand the
     # string to a subprocess. The check is on the RAW string, not the
@@ -204,7 +197,9 @@ def validate_input_path(
     if input_path_obj.is_symlink():  # NOSONAR — S6549: acceptable
         logger.info(  # NOSONAR - pythonsecurity:S5145
             "%s: input path is a symlink: %s → %s (resolved target verified)",
-            parser_name, input_path_obj, safe_path,
+            parser_name,
+            input_path_obj,
+            safe_path,
         )
 
     # (3) Extension check (if requested)
@@ -258,7 +253,9 @@ def validate_output_path(
     # the whole purpose of this function is to make user-provided paths
     # safe. Suppressing the false positive.
     try:
-        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller  # NOSONAR — S7632: test function documented via class name / module path
+        safe_path = output_path_obj.resolve(
+            strict=False
+        )  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller  # NOSONAR — S7632: test function documented via class name / module path
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve output path '{output_path}' "
@@ -325,9 +322,7 @@ def validate_file_size(
     try:
         size = safe_path.stat().st_size
     except OSError as e:
-        raise UnsafePathError(
-            f"{parser_name}: cannot stat '{safe_path}': {e}"
-        )
+        raise UnsafePathError(f"{parser_name}: cannot stat '{safe_path}': {e}")
     if size > max_size_bytes:
         raise UnsafePathError(
             f"{parser_name}: file '{safe_path}' size {size} bytes exceeds "

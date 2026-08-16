@@ -171,7 +171,9 @@ class SimReadyAdapter:
             )
 
         fmt = self.detect_source_format(str(source_path))
-        output_root = Path(config.output_root or (source_path.parent / f"{source_path.stem}_simready")).resolve()
+        output_root = Path(
+            config.output_root or (source_path.parent / f"{source_path.stem}_simready")
+        ).resolve()
         output_root.mkdir(parents=True, exist_ok=True)
         pipeline_dir = output_root / "pipeline"
         pipeline_dir.mkdir(parents=True, exist_ok=True)
@@ -248,10 +250,15 @@ class SimReadyAdapter:
         conformed_usd_path = conform_dir / f"sm_{source_path.stem}_01.usd"
 
         if authored_usd_path.exists():
-            with open(authored_usd_path, encoding="utf-8") as src, open(conformed_usd_path, "w", encoding="utf-8") as dst:
+            with (
+                open(authored_usd_path, encoding="utf-8") as src,
+                open(conformed_usd_path, "w", encoding="utf-8") as dst,
+            ):
                 content = src.read()
                 if "simready_profile" not in content:
-                    content += f'\n# SimReady Metadata Stamped\n# Profile: {config.simready_profile}\n'
+                    content += (
+                        f"\n# SimReady Metadata Stamped\n# Profile: {config.simready_profile}\n"
+                    )
                 dst.write(content)
         stage_reports["conformance"] = {
             "status": "passed",
@@ -282,7 +289,10 @@ class SimReadyAdapter:
             simready_usd_dir.mkdir(parents=True, exist_ok=True)
 
             deliv_usd = simready_usd_dir / f"sm_{source_path.stem}_01.usd"
-            with open(conformed_usd_path, encoding="utf-8") as src, open(deliv_usd, "w", encoding="utf-8") as dst:
+            with (
+                open(conformed_usd_path, encoding="utf-8") as src,
+                open(deliv_usd, "w", encoding="utf-8") as dst,
+            ):
                 dst.write(src.read())
 
             stage_reports["packaging"] = {

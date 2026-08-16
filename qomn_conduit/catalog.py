@@ -60,6 +60,7 @@ from qomn_conduit.types import ConduitType, FittingType, Result, TradeSize
 # Fitting — immutable catalog entry
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class Fitting:
     """
@@ -106,7 +107,9 @@ class Fitting:
     weight_kg: float
     nec_reference: str
 
-    def __post_init__(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def __post_init__(
+        self,
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validate physical consistency of catalog entry.
 
@@ -122,8 +125,7 @@ class Fitting:
             )
         if self.od_in <= 0.0:
             raise PhysicsError(
-                f"Fitting {self.catalog_number}: od_in must be positive, "
-                f"got {self.od_in}.",
+                f"Fitting {self.catalog_number}: od_in must be positive, got {self.od_in}.",
                 "Check catalog data for typos or corrupted OD values.",
             )
         if self.weight_kg < 0.0:
@@ -147,7 +149,9 @@ class Fitting:
                     f"be positive for elbows, got {self.developed_length_in}.",
                     "Check catalog data or computation of developed length.",
                 )
-            if self.body_length_in != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+            if (
+                self.body_length_in != 0.0
+            ):  # NOSONAR — S1244: import retained for re-export / API surface
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: body_length_in must be "
                     f"0.0 for elbows, got {self.body_length_in}.",
@@ -156,13 +160,17 @@ class Fitting:
 
         # ── Coupling-specific checks ───────────────────────────────
         if self.fitting_type == FittingType.COUPLING:
-            if self.bend_radius_in != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+            if (
+                self.bend_radius_in != 0.0
+            ):  # NOSONAR — S1244: import retained for re-export / API surface
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: bend_radius_in must be "
                     f"0.0 for couplings, got {self.bend_radius_in}.",
                     "Couplings are straight fittings with no bend.",
                 )
-            if self.developed_length_in != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+            if (
+                self.developed_length_in != 0.0
+            ):  # NOSONAR — S1244: import retained for re-export / API surface
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: developed_length_in must "
                     f"be 0.0 for couplings, got {self.developed_length_in}.",
@@ -174,7 +182,9 @@ class Fitting:
                     f"positive for couplings, got {self.body_length_in}.",
                     "Check catalog data for coupling body length.",
                 )
-            if self.angle_deg != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+            if (
+                self.angle_deg != 0.0
+            ):  # NOSONAR — S1244: import retained for re-export / API surface
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: angle_deg must be 0.0 "
                     f"for couplings, got {self.angle_deg}.",
@@ -219,6 +229,7 @@ type by default.
 # ─────────────────────────────────────────────────────────────────────────────
 # _reg — registration helper
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _reg(
     fitting_type: FittingType,
@@ -270,9 +281,7 @@ def _reg(
         elif angle_deg == 45.0:  # NOSONAR — S1244: import retained for re-export / API surface
             developed_length_in = round(math.pi * bend_radius_in / 4, 3)
         else:
-            developed_length_in = round(
-                math.pi * bend_radius_in * angle_deg / 180.0, 3
-            )
+            developed_length_in = round(math.pi * bend_radius_in * angle_deg / 180.0, 3)
     else:
         developed_length_in = 0.0
 
@@ -307,23 +316,83 @@ def _reg(
 #
 # Developed length = round(π × R / 2, 3) for 90° elbows.
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.HALF_INCH,
-     0.706, 4.0, 0.0, 90.0, "E90-050", 0.045, "NEC 358.24")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.HALF_INCH,
+    0.706,
+    4.0,
+    0.0,
+    90.0,
+    "E90-050",
+    0.045,
+    "NEC 358.24",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.THREE_QUARTER,
-     0.922, 4.5, 0.0, 90.0, "E90-075", 0.068, "NEC 358.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.THREE_QUARTER,
+    0.922,
+    4.5,
+    0.0,
+    90.0,
+    "E90-075",
+    0.068,
+    "NEC 358.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.ONE_INCH,
-     1.163, 5.75, 0.0, 90.0, "E90-100", 0.113, "NEC 358.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.ONE_INCH,
+    1.163,
+    5.75,
+    0.0,
+    90.0,
+    "E90-100",
+    0.113,
+    "NEC 358.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.ONE_QUARTER,
-     1.510, 7.25, 0.0, 90.0, "E90-125", 0.181, "NEC 358.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.ONE_QUARTER,
+    1.510,
+    7.25,
+    0.0,
+    90.0,
+    "E90-125",
+    0.181,
+    "NEC 358.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.ONE_HALF,
-     1.740, 8.25, 0.0, 90.0, "E90-150", 0.249, "NEC 358.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.ONE_HALF,
+    1.740,
+    8.25,
+    0.0,
+    90.0,
+    "E90-150",
+    0.249,
+    "NEC 358.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.TWO_INCH,
-     2.197, 9.5, 0.0, 90.0, "E90-200", 0.408, "NEC 358.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.EMT,
+    TradeSize.TWO_INCH,
+    2.197,
+    9.5,
+    0.0,
+    90.0,
+    "E90-200",
+    0.408,
+    "NEC 358.24",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -335,23 +404,83 @@ _reg(FittingType.ELBOW_90, ConduitType.EMT, TradeSize.TWO_INCH,
 #
 # OD and bend radius from NEC Chapter 9, Table 4 (RNC Schedule 40).
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.HALF_INCH,
-     0.840, 4.5, 0.0, 90.0, "P90-050", 0.038, "NEC 352.24")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.HALF_INCH,
+    0.840,
+    4.5,
+    0.0,
+    90.0,
+    "P90-050",
+    0.038,
+    "NEC 352.24",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.THREE_QUARTER,
-     1.050, 5.25, 0.0, 90.0, "P90-075", 0.059, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    5.25,
+    0.0,
+    90.0,
+    "P90-075",
+    0.059,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.ONE_INCH,
-     1.315, 6.5, 0.0, 90.0, "P90-100", 0.091, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_INCH,
+    1.315,
+    6.5,
+    0.0,
+    90.0,
+    "P90-100",
+    0.091,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.ONE_QUARTER,
-     1.660, 8.0, 0.0, 90.0, "P90-125", 0.145, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    8.0,
+    0.0,
+    90.0,
+    "P90-125",
+    0.145,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.ONE_HALF,
-     1.900, 9.0, 0.0, 90.0, "P90-150", 0.190, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_HALF,
+    1.900,
+    9.0,
+    0.0,
+    90.0,
+    "P90-150",
+    0.190,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.TWO_INCH,
-     2.375, 11.0, 0.0, 90.0, "P90-200", 0.318, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH40,
+    TradeSize.TWO_INCH,
+    2.375,
+    11.0,
+    0.0,
+    90.0,
+    "P90-200",
+    0.318,
+    "NEC 352.24",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -362,23 +491,83 @@ _reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH40, TradeSize.TWO_INCH,
 # outside dimensions are identical. Catalog prefix 'S90-' distinguishes
 # Sch 80 from Sch 40 ('P90-').
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.HALF_INCH,
-     0.840, 4.5, 0.0, 90.0, "S90-050", 0.045, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.HALF_INCH,
+    0.840,
+    4.5,
+    0.0,
+    90.0,
+    "S90-050",
+    0.045,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.THREE_QUARTER,
-     1.050, 5.25, 0.0, 90.0, "S90-075", 0.072, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    5.25,
+    0.0,
+    90.0,
+    "S90-075",
+    0.072,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.ONE_INCH,
-     1.315, 6.5, 0.0, 90.0, "S90-100", 0.110, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_INCH,
+    1.315,
+    6.5,
+    0.0,
+    90.0,
+    "S90-100",
+    0.110,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.ONE_QUARTER,
-     1.660, 8.0, 0.0, 90.0, "S90-125", 0.175, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    8.0,
+    0.0,
+    90.0,
+    "S90-125",
+    0.175,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.ONE_HALF,
-     1.900, 9.0, 0.0, 90.0, "S90-150", 0.230, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_HALF,
+    1.900,
+    9.0,
+    0.0,
+    90.0,
+    "S90-150",
+    0.230,
+    "NEC 352.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.TWO_INCH,
-     2.375, 11.0, 0.0, 90.0, "S90-200", 0.385, "NEC 352.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.UPVC_SCH80,
+    TradeSize.TWO_INCH,
+    2.375,
+    11.0,
+    0.0,
+    90.0,
+    "S90-200",
+    0.385,
+    "NEC 352.24",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -390,23 +579,83 @@ _reg(FittingType.ELBOW_90, ConduitType.UPVC_SCH80, TradeSize.TWO_INCH,
 #
 # OD and bend radius from NEC Chapter 9, Table 4 (RMC).
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.HALF_INCH,
-     0.840, 4.5, 0.0, 90.0, "R90-050", 0.136, "NEC 344.24")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.HALF_INCH,
+    0.840,
+    4.5,
+    0.0,
+    90.0,
+    "R90-050",
+    0.136,
+    "NEC 344.24",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.THREE_QUARTER,
-     1.050, 5.25, 0.0, 90.0, "R90-075", 0.204, "NEC 344.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    5.25,
+    0.0,
+    90.0,
+    "R90-075",
+    0.204,
+    "NEC 344.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.ONE_INCH,
-     1.315, 6.5, 0.0, 90.0, "R90-100", 0.340, "NEC 344.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.ONE_INCH,
+    1.315,
+    6.5,
+    0.0,
+    90.0,
+    "R90-100",
+    0.340,
+    "NEC 344.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.ONE_QUARTER,
-     1.660, 8.0, 0.0, 90.0, "R90-125", 0.544, "NEC 344.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    8.0,
+    0.0,
+    90.0,
+    "R90-125",
+    0.544,
+    "NEC 344.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.ONE_HALF,
-     1.900, 9.0, 0.0, 90.0, "R90-150", 0.725, "NEC 344.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.ONE_HALF,
+    1.900,
+    9.0,
+    0.0,
+    90.0,
+    "R90-150",
+    0.725,
+    "NEC 344.24",
+)
 
-_reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.TWO_INCH,
-     2.375, 11.0, 0.0, 90.0, "R90-200", 1.134, "NEC 344.24")
+_reg(
+    FittingType.ELBOW_90,
+    ConduitType.RGD,
+    TradeSize.TWO_INCH,
+    2.375,
+    11.0,
+    0.0,
+    90.0,
+    "R90-200",
+    1.134,
+    "NEC 344.24",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -422,18 +671,58 @@ _reg(FittingType.ELBOW_90, ConduitType.RGD, TradeSize.TWO_INCH,
 # catalog number.
 
 # EMT Compression couplings (EMT-C) — default for get_fitting()
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.HALF_INCH,
-     0.706, 0.0, 1.5, 0.0, "EC-050", 0.023, "NEC 358.42")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.HALF_INCH,
+    0.706,
+    0.0,
+    1.5,
+    0.0,
+    "EC-050",
+    0.023,
+    "NEC 358.42",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.THREE_QUARTER,
-     0.922, 0.0, 1.75, 0.0, "EC-075", 0.036, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.THREE_QUARTER,
+    0.922,
+    0.0,
+    1.75,
+    0.0,
+    "EC-075",
+    0.036,
+    "NEC 358.42",
+)
 
 # EMT Set-screw couplings (EMT-S) — stored in catalog, not in _INDEX
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.HALF_INCH,
-     0.706, 0.0, 1.25, 0.0, "ES-050", 0.018, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.HALF_INCH,
+    0.706,
+    0.0,
+    1.25,
+    0.0,
+    "ES-050",
+    0.018,
+    "NEC 358.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.THREE_QUARTER,
-     0.922, 0.0, 1.5, 0.0, "ES-075", 0.029, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.THREE_QUARTER,
+    0.922,
+    0.0,
+    1.5,
+    0.0,
+    "ES-075",
+    0.029,
+    "NEC 358.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -443,11 +732,31 @@ _reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.THREE_QUARTER,
 # threaded type. Registered under UPVC_SCH40 as the primary schedule.
 # The same coupling dimensions apply to Sch 80 conduit (identical OD).
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.HALF_INCH,
-     0.840, 0.0, 2.0, 0.0, "PC-050", 0.018, "NEC 352.42")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.HALF_INCH,
+    0.840,
+    0.0,
+    2.0,
+    0.0,
+    "PC-050",
+    0.018,
+    "NEC 352.42",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.THREE_QUARTER,
-     1.050, 0.0, 2.25, 0.0, "PC-075", 0.027, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    0.0,
+    2.25,
+    0.0,
+    "PC-075",
+    0.027,
+    "NEC 352.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -456,58 +765,198 @@ _reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.THREE_QUARTER,
 # NEC 344.42: RMC couplings shall be threaded or threadless.
 # Standard threaded couplings for rigid metal conduit.
 
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.HALF_INCH,
-     0.840, 0.0, 1.75, 0.0, "RC-050", 0.068, "NEC 344.42")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.HALF_INCH,
+    0.840,
+    0.0,
+    1.75,
+    0.0,
+    "RC-050",
+    0.068,
+    "NEC 344.42",
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.THREE_QUARTER,
-     1.050, 0.0, 2.0, 0.0, "RC-075", 0.113, "NEC 344.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    0.0,
+    2.0,
+    0.0,
+    "RC-075",
+    0.113,
+    "NEC 344.42",
+)
 
 # RGD couplings — larger sizes (NEC 344.42)
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_INCH,
-     1.315, 0.0, 2.25, 0.0, "RC-100", 0.181, "NEC 344.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.ONE_INCH,
+    1.315,
+    0.0,
+    2.25,
+    0.0,
+    "RC-100",
+    0.181,
+    "NEC 344.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_QUARTER,
-     1.660, 0.0, 2.5, 0.0, "RC-125", 0.272, "NEC 344.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    0.0,
+    2.5,
+    0.0,
+    "RC-125",
+    0.272,
+    "NEC 344.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_HALF,
-     1.900, 0.0, 2.75, 0.0, "RC-150", 0.363, "NEC 344.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.ONE_HALF,
+    1.900,
+    0.0,
+    2.75,
+    0.0,
+    "RC-150",
+    0.363,
+    "NEC 344.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.TWO_INCH,
-     2.375, 0.0, 3.0, 0.0, "RC-200", 0.567, "NEC 344.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.RGD,
+    TradeSize.TWO_INCH,
+    2.375,
+    0.0,
+    3.0,
+    0.0,
+    "RC-200",
+    0.567,
+    "NEC 344.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EMT COUPLINGS — Larger sizes (NEC 358.42)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_INCH,
-     1.163, 0.0, 2.0, 0.0, "EC-100", 0.057, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.ONE_INCH,
+    1.163,
+    0.0,
+    2.0,
+    0.0,
+    "EC-100",
+    0.057,
+    "NEC 358.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_QUARTER,
-     1.510, 0.0, 2.25, 0.0, "EC-125", 0.091, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.ONE_QUARTER,
+    1.510,
+    0.0,
+    2.25,
+    0.0,
+    "EC-125",
+    0.091,
+    "NEC 358.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_HALF,
-     1.740, 0.0, 2.5, 0.0, "EC-150", 0.125, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.ONE_HALF,
+    1.740,
+    0.0,
+    2.5,
+    0.0,
+    "EC-150",
+    0.125,
+    "NEC 358.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.TWO_INCH,
-     2.197, 0.0, 2.75, 0.0, "EC-200", 0.204, "NEC 358.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.EMT,
+    TradeSize.TWO_INCH,
+    2.197,
+    0.0,
+    2.75,
+    0.0,
+    "EC-200",
+    0.204,
+    "NEC 358.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # UPVC SCH40 COUPLINGS — Larger sizes (NEC 352.42)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_INCH,
-     1.315, 0.0, 2.5, 0.0, "PC-100", 0.046, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_INCH,
+    1.315,
+    0.0,
+    2.5,
+    0.0,
+    "PC-100",
+    0.046,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_QUARTER,
-     1.660, 0.0, 2.75, 0.0, "PC-125", 0.073, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    0.0,
+    2.75,
+    0.0,
+    "PC-125",
+    0.073,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_HALF,
-     1.900, 0.0, 3.0, 0.0, "PC-150", 0.096, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.ONE_HALF,
+    1.900,
+    0.0,
+    3.0,
+    0.0,
+    "PC-150",
+    0.096,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.TWO_INCH,
-     2.375, 0.0, 3.25, 0.0, "PC-200", 0.160, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH40,
+    TradeSize.TWO_INCH,
+    2.375,
+    0.0,
+    3.25,
+    0.0,
+    "PC-200",
+    0.160,
+    "NEC 352.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -516,28 +965,89 @@ _reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.TWO_INCH,
 # Same OD as Sch40 but catalogued separately under UPVC_SCH80.
 # Schedule 80 couplings use the same body dimensions.
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.HALF_INCH,
-     0.840, 0.0, 2.0, 0.0, "SC-050", 0.022, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.HALF_INCH,
+    0.840,
+    0.0,
+    2.0,
+    0.0,
+    "SC-050",
+    0.022,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.THREE_QUARTER,
-     1.050, 0.0, 2.25, 0.0, "SC-075", 0.034, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.THREE_QUARTER,
+    1.050,
+    0.0,
+    2.25,
+    0.0,
+    "SC-075",
+    0.034,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_INCH,
-     1.315, 0.0, 2.5, 0.0, "SC-100", 0.055, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_INCH,
+    1.315,
+    0.0,
+    2.5,
+    0.0,
+    "SC-100",
+    0.055,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_QUARTER,
-     1.660, 0.0, 2.75, 0.0, "SC-125", 0.088, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_QUARTER,
+    1.660,
+    0.0,
+    2.75,
+    0.0,
+    "SC-125",
+    0.088,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_HALF,
-     1.900, 0.0, 3.0, 0.0, "SC-150", 0.115, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.ONE_HALF,
+    1.900,
+    0.0,
+    3.0,
+    0.0,
+    "SC-150",
+    0.115,
+    "NEC 352.42",
+)
 
-_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.TWO_INCH,
-     2.375, 0.0, 3.25, 0.0, "SC-200", 0.193, "NEC 352.42")
+_reg(
+    FittingType.COUPLING,
+    ConduitType.UPVC_SCH80,
+    TradeSize.TWO_INCH,
+    2.375,
+    0.0,
+    3.25,
+    0.0,
+    "SC-200",
+    0.193,
+    "NEC 352.42",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_fitting(
     conduit_type: ConduitType,
@@ -583,19 +1093,23 @@ def get_fitting(
     key = (conduit_type, trade_size, fitting_type)
     catalog_number = _INDEX.get(key)
     if catalog_number is None:
-        return Result.err(CatalogError(
-            conduit_type=conduit_type.name,
-            trade_size=trade_size.value,
-            fitting_type=fitting_type.name,
-        ))
+        return Result.err(
+            CatalogError(
+                conduit_type=conduit_type.name,
+                trade_size=trade_size.value,
+                fitting_type=fitting_type.name,
+            )
+        )
     fitting = _CATALOG.get(catalog_number)
     if fitting is None:
         # Defensive: index points to missing catalog entry (should never happen)
-        return Result.err(CatalogError(
-            conduit_type=conduit_type.name,
-            trade_size=trade_size.value,
-            fitting_type=fitting_type.name,
-        ))
+        return Result.err(
+            CatalogError(
+                conduit_type=conduit_type.name,
+                trade_size=trade_size.value,
+                fitting_type=fitting_type.name,
+            )
+        )
     return Result.ok(fitting)
 
 

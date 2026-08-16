@@ -16,14 +16,20 @@ from datetime import datetime
 from pathlib import Path
 
 
-def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def extract_endpoints(
+    routers_dir: Path,
+) -> dict[
+    str, list[dict[str, object]]
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Extract all endpoints from router files."""
     endpoints = defaultdict(list)
 
-    http_methods = ['get', 'post', 'put', 'patch', 'delete', 'ws']
+    http_methods = ["get", "post", "put", "patch", "delete", "ws"]
 
     for router_file in routers_dir.glob("*.py"):
-        if router_file.name.startswith("_") or router_file.name.startswith("test_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+        if router_file.name.startswith("_") or router_file.name.startswith(
+            "test_"
+        ):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             continue
 
         content = router_file.read_text()
@@ -33,23 +39,25 @@ def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]: 
             pattern = rf'@router\.{method}\("([^"]+)"'
             for match in re.finditer(pattern, content):
                 path = match.group(1)
-                line_num = content[:match.start()].count('\n') + 1
+                line_num = content[: match.start()].count("\n") + 1
 
                 # Extract docstring
                 docstring = ""
                 doc_pattern = rf'@router\.{method}\("[^"]+"(.*?)(?:def |@router|\Z)'
-                doc_match = re.search(doc_pattern, content[match.end():], re.DOTALL)
+                doc_match = re.search(doc_pattern, content[match.end() :], re.DOTALL)
                 if doc_match:
-                    docstring = re.sub(r'#.*', '', doc_match.group(1)).strip()
+                    docstring = re.sub(r"#.*", "", doc_match.group(1)).strip()
                     if docstring:
-                        docstring = docstring.split('\n')[0][:60]
+                        docstring = docstring.split("\n")[0][:60]
 
-                endpoints[module_name].append({
-                    "method": method.upper(),
-                    "path": path,
-                    "line": line_num,
-                    "doc": docstring,
-                })
+                endpoints[module_name].append(
+                    {
+                        "method": method.upper(),
+                        "path": path,
+                        "line": line_num,
+                        "doc": docstring,
+                    }
+                )
 
     return endpoints
 
@@ -111,10 +119,7 @@ def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
 
 ---
 
-""".format(
-        date=datetime.now().strftime('%Y-%m-%d'),
-        total=sum(len(v) for v in endpoints.values())
-    )
+""".format(date=datetime.now().strftime("%Y-%m-%d"), total=sum(len(v) for v in endpoints.values()))
 
     for category, routes in categories.items():
         if not routes:
@@ -125,7 +130,7 @@ def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
         md += "|--------|----------|---------|-------------|\n"
 
         for route in routes:
-            doc = route['doc'] or ""
+            doc = route["doc"] or ""
             md += f"| {route['method']} | `{route['path']}` | {category} | {doc} |\n"
 
         md += "\n"
@@ -154,4 +159,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

@@ -35,8 +35,12 @@ class TestSafeBuildingEngineInit:
         engine = SafeBuildingEngine()
         assert engine.max_threads == 4
         assert engine.coverage_radius > 0
-        assert engine.candidate_step == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine.time_limit_s == 60.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine.candidate_step == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine.time_limit_s == 60.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_init(self):
         engine = SafeBuildingEngine(
@@ -46,9 +50,15 @@ class TestSafeBuildingEngineInit:
             time_limit_s=30.0,
         )
         assert engine.max_threads == 2
-        assert engine.coverage_radius == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine.candidate_step == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine.time_limit_s == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine.coverage_radius == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine.candidate_step == 0.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine.time_limit_s == 30.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_has_rlock(self):
         engine = SafeBuildingEngine()
@@ -188,8 +198,7 @@ class TestRunMultiFloorSafetyAnalysis:
             {
                 "floor_id": "F1",
                 "rooms": [
-                    {"room_id": f"RM-{i:03d}", "width_m": 8.0, "length_m": 8.0}
-                    for i in range(3)
+                    {"room_id": f"RM-{i:03d}", "width_m": 8.0, "length_m": 8.0} for i in range(3)
                 ],
             }
         ]

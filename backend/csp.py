@@ -14,6 +14,7 @@ SAFETY: A safety-critical fire alarm engineering UI must not be vulnerable
 to XSS amplification via 'unsafe-eval'. Modern frontend libraries
 (recharts >=2.x, three.js >=0.150) work without it in production builds.
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,7 +23,9 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def build_csp() -> (
+    str
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Build a Content-Security-Policy header value.
 
@@ -72,7 +75,9 @@ def build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent t
     # connect-src: development allows localhost (Vite HMR / websockets);
     # production uses CSP_CONNECT_SRC env var if provided, else 'self'.
     if is_dev:
-        connect_src = "'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+        connect_src = (
+            "'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+        )
         custom_connect = os.getenv("CSP_CONNECT_SRC")
         if custom_connect:
             connect_src += f" {custom_connect}"

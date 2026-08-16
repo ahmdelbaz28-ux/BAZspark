@@ -45,6 +45,7 @@ from marine.core.types import (
 
 # ─── Main Vertical Zone Validation ──────────────────────────────────────────
 
+
 def validate_main_vertical_zones(
     zones: list[MarineZone],
     ship: ShipProject,
@@ -64,9 +65,7 @@ def validate_main_vertical_zones(
         ComplianceResult with findings for each violation.
 
     """
-    result = ComplianceResult(
-        compliant=True, standard_reference="SOLAS II-2/2.2.1"
-    )
+    result = ComplianceResult(compliant=True, standard_reference="SOLAS II-2/2.2.1")
 
     if not zones:
         result.add_finding("No zones provided — cannot validate MVZ division.")
@@ -75,8 +74,7 @@ def validate_main_vertical_zones(
     # Small craft → NFPA 302 applies, SOLAS MVZ rules do not.
     if ship.is_small_craft:
         result.warnings.append(
-            "Small craft (<24m LOA) — SOLAS MVZ rules do not apply. "
-            "Apply NFPA 302 instead."
+            "Small craft (<24m LOA) — SOLAS MVZ rules do not apply. Apply NFPA 302 instead."
         )
         return result
 
@@ -86,12 +84,10 @@ def validate_main_vertical_zones(
     # passenger ships carrying >36 passengers. The previous code applied
     # 40 m uniformly, under-protecting large cruise ships and ferries.
     is_large_passenger = (
-        ship.is_passenger_ship
-        and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
+        ship.is_passenger_ship and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
     )
     mvz_max_m = (
-        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger
-        else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
+        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
     )
     for zone in zones:
         zone_length_m = _frames_to_meters(zone.frame_end - zone.frame_start)
@@ -99,7 +95,8 @@ def validate_main_vertical_zones(
         if zone_length_m > mvz_max_m + 0.5:
             rule = (
                 f"SOLAS II-2/2.2.1.1 (passenger >{PASSENGER_MVZ_PAX_THRESHOLD} pax)"
-                if is_large_passenger else "SOLAS II-2/2.2.1"
+                if is_large_passenger
+                else "SOLAS II-2/2.2.1"
             )
             result.add_finding(
                 f"Zone {zone.zone_id} ({zone.name}) spans {zone_length_m:.1f} m, "
@@ -114,9 +111,7 @@ def validate_main_vertical_zones(
 
     # Passenger ships >36 passengers require MVZs by II-2/2.2.2.
     if ship.is_passenger_ship and ship.passenger_capacity > 36:
-        mvz_count = sum(
-            1 for z in zones if z.space_category != SpaceCategory.OPEN_DECK
-        )
+        mvz_count = sum(1 for z in zones if z.space_category != SpaceCategory.OPEN_DECK)
         if mvz_count < 2:
             result.add_finding(
                 f"Passenger ship with {ship.passenger_capacity} passengers "
@@ -128,6 +123,7 @@ def validate_main_vertical_zones(
 
 
 # ─── Fire Division Classification (SOLAS II-2/9.2 Table 9.1) ────────────────
+
 
 def required_fire_class_between(
     from_category: SpaceCategory,
@@ -164,13 +160,15 @@ def required_fire_class_between(
         # Default: A-60 for any unlisted combination involving machinery
         # or cargo spaces; A-0 otherwise; B-0 for accommodation-only pairs.
         cats = {from_category, to_category}
-        if SpaceCategory.MACHINERY_SPACE_A in cats or \
-           SpaceCategory.CARGO_SPACE in cats:
+        if SpaceCategory.MACHINERY_SPACE_A in cats or SpaceCategory.CARGO_SPACE in cats:
             class_str = "A-60"
         elif SpaceCategory.MACHINERY_SPACE_OTHER in cats or SpaceCategory.CONTROL_STATION in cats:
             class_str = "A-30"
-        elif cats <= {SpaceCategory.ACCOMMODATION, SpaceCategory.SERVICE_SPACE_MINOR,
-                      SpaceCategory.ESCAPE_ROUTE}:
+        elif cats <= {
+            SpaceCategory.ACCOMMODATION,
+            SpaceCategory.SERVICE_SPACE_MINOR,
+            SpaceCategory.ESCAPE_ROUTE,
+        }:
             class_str = "B-15"  # Passenger ships; B-0 for cargo ships
         elif SpaceCategory.OPEN_DECK in cats:
             class_str = "A-0"
@@ -200,9 +198,7 @@ def validate_fire_divisions(  # NOSONAR — S3776: cognitive complexity is inher
         ComplianceResult listing any under-rated divisions.
 
     """
-    result = ComplianceResult(
-        compliant=True, standard_reference="SOLAS II-2/9.2 Table 9.1"
-    )
+    result = ComplianceResult(compliant=True, standard_reference="SOLAS II-2/9.2 Table 9.1")
     zone_map = {z.zone_id: z for z in zones}
 
     for spec in division_specs:
@@ -233,11 +229,8 @@ def validate_fire_divisions(  # NOSONAR — S3776: cognitive complexity is inher
             )
 
         # Check insulation thickness if A-class with insulation.
-        if spec.required_class.value.startswith("A-") and \
-           spec.required_class != FireClass.A_0:
-            required_thickness = INSULATION_THICKNESS_MM.get(
-                spec.required_class.value, 0.0
-            )
+        if spec.required_class.value.startswith("A-") and spec.required_class != FireClass.A_0:
+            required_thickness = INSULATION_THICKNESS_MM.get(spec.required_class.value, 0.0)
             if spec.insulation_thickness_mm < required_thickness:
                 result.add_finding(
                     f"Division {spec.division_id}: insulation thickness "
@@ -257,7 +250,12 @@ def validate_fire_divisions(  # NOSONAR — S3776: cognitive complexity is inher
 
 # ─── Escape Route Geometry (SOLAS II-2/13) ──────────────────────────────────
 
-def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+def validate_escape_routes(
+    zones: list[MarineZone],
+) -> (
+    ComplianceResult
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate escape-route geometry per SOLAS II-2/13.
 
@@ -275,15 +273,11 @@ def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:  # NOSO
         ComplianceResult listing each violation.
 
     """
-    result = ComplianceResult(
-        compliant=True, standard_reference="SOLAS II-2/13.3"
-    )
+    result = ComplianceResult(compliant=True, standard_reference="SOLAS II-2/13.3")
 
     for zone in zones:
         # Skip open decks and empty spaces — no escape-route requirements.
-        if zone.space_category in (
-            SpaceCategory.OPEN_DECK, SpaceCategory.EMPTY_SPACE
-        ):
+        if zone.space_category in (SpaceCategory.OPEN_DECK, SpaceCategory.EMPTY_SPACE):
             continue
 
         # Rule 1: every space has ≥1 escape route.
@@ -317,14 +311,15 @@ def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:  # NOSO
                     f"{MAX_DISTANCE_TO_STAIRWAY_M} m (II-2/13.3.2.1)."
                 )
             else:
-                result.details.setdefault(zone.zone_id, {})[
-                    "max_distance_to_stairway_m"
-                ] = zone.max_distance_to_stairway_m
+                result.details.setdefault(zone.zone_id, {})["max_distance_to_stairway_m"] = (
+                    zone.max_distance_to_stairway_m
+                )
 
     return result
 
 
 # ─── Detection Requirements per Space (SOLAS II-2/7) ────────────────────────
+
 
 def required_detection_for_space(
     category: SpaceCategory,
@@ -363,9 +358,9 @@ def required_detection_for_space(
         SpaceCategory.CARGO_SPACE: ["smoke_duct", "heat_ror"],
         SpaceCategory.MACHINERY_SPACE_A: ["heat_fixed", "flame_uv_ir", "smoke_photo"],
         SpaceCategory.MACHINERY_SPACE_OTHER: ["heat_fixed", "smoke_photo"],
-        SpaceCategory.TANK_SPACE: [],   # Tanks use level alarms, not fire detection
+        SpaceCategory.TANK_SPACE: [],  # Tanks use level alarms, not fire detection
         SpaceCategory.EMPTY_SPACE: [],
-        SpaceCategory.OPEN_DECK: [],    # Open decks use manual + flame for special cargo
+        SpaceCategory.OPEN_DECK: [],  # Open decks use manual + flame for special cargo
     }
 
     required = detection_required.get(category, [])
@@ -373,7 +368,8 @@ def required_detection_for_space(
     result.details["detection_required"] = len(required) > 0
 
     if not required and category not in (
-        SpaceCategory.TANK_SPACE, SpaceCategory.EMPTY_SPACE,
+        SpaceCategory.TANK_SPACE,
+        SpaceCategory.EMPTY_SPACE,
         SpaceCategory.OPEN_DECK,
     ):
         result.add_warning(
@@ -393,6 +389,7 @@ def required_detection_for_space(
 
 
 # ─── Extinguishing Requirements per Space (SOLAS II-2/10) ───────────────────
+
 
 def required_extinguishing_for_space(
     category: SpaceCategory,
@@ -431,12 +428,10 @@ def required_extinguishing_for_space(
         # GT rule uniformly — passenger ships with GT=0 (default!) got
         # nothing, violating SOLAS II-2/10.7.1.1.
         SpaceCategory.CARGO_SPACE: (
-            ["co2_total"]
-            if (ship.is_passenger_ship or ship.gross_tonnage > 2000)
-            else []
+            ["co2_total"] if (ship.is_passenger_ship or ship.gross_tonnage > 2000) else []
         ),
         SpaceCategory.SERVICE_SPACE_MAJOR: ["dry_chemical"],  # Galley hood
-        SpaceCategory.CONTROL_STATION: [],   # Portable only
+        SpaceCategory.CONTROL_STATION: [],  # Portable only
         SpaceCategory.ESCAPE_ROUTE: [],
         SpaceCategory.ACCOMMODATION: ["sprinkler"] if ship.is_passenger_ship else [],
         SpaceCategory.SERVICE_SPACE_MINOR: [],
@@ -450,14 +445,13 @@ def required_extinguishing_for_space(
     result.details["fixed_required"] = len(required) > 0
 
     if not required:
-        result.details["note"] = (
-            "Portable extinguishers only — no fixed system required."
-        )
+        result.details["note"] = "Portable extinguishers only — no fixed system required."
 
     return result
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
+
 
 def _frames_to_meters(frames: int) -> float:
     """Convert ship frame count to meters (approximate)."""
@@ -475,8 +469,13 @@ def _fire_class_meets_or_exceeds(provided: FireClass, required: FireClass) -> bo
     satisfies an A-30 requirement, but A-15 does NOT satisfy A-30).
     """
     hierarchy = [
-        FireClass.A_60, FireClass.A_30, FireClass.A_15, FireClass.A_0,
-        FireClass.B_15, FireClass.B_0, FireClass.C,
+        FireClass.A_60,
+        FireClass.A_30,
+        FireClass.A_15,
+        FireClass.A_0,
+        FireClass.B_15,
+        FireClass.B_0,
+        FireClass.C,
     ]
     return hierarchy.index(provided) <= hierarchy.index(required)
 

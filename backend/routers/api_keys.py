@@ -47,8 +47,12 @@ class UpdateKeyRoleRequest(BaseModel):
 
 @router.get("")
 async def list_keys(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-    ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _role: Role = Depends(
+        require_permission(Permission.USER_MANAGE)
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    ip: str = Depends(
+        require_master_admin
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ) -> dict[str, Any]:
     """list all API keys (admin only). Key values are never returned."""
     keys = list_api_keys()
@@ -61,8 +65,12 @@ async def list_keys(
 async def create_key(
     request: Request,
     body: GenerateKeyRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-    ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _role: Role = Depends(
+        require_permission(Permission.USER_MANAGE)
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    ip: str = Depends(
+        require_master_admin
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ) -> dict[str, Any]:
     """
     Generate a new API key with the specified role (admin only).
@@ -102,14 +110,20 @@ async def create_key(
 async def delete_key(
     request: Request,
     key_hash: str,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-    ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _role: Role = Depends(
+        require_permission(Permission.USER_MANAGE)
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    ip: str = Depends(
+        require_master_admin
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ) -> dict[str, Any]:
     """Delete an API key by its hash (admin only)."""
     deleted = delete_api_key(key_hash)
     if not deleted:
         await audit_operation(ip, "delete_key", False, target=key_hash[:32], detail="Key not found")
-        raise HTTPException(status_code=404, detail="API key not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="API key not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     await audit_operation(ip, "delete_key", True, target=key_hash[:32])
     return {"success": True, "message": "API key deleted"}
 
@@ -120,14 +134,22 @@ async def update_key_role_endpoint(
     request: Request,
     key_hash: str,
     body: UpdateKeyRoleRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-    ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _role: Role = Depends(
+        require_permission(Permission.USER_MANAGE)
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    ip: str = Depends(
+        require_master_admin
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ) -> dict[str, Any]:
     """Update an API key's role (admin only)."""
     updated = update_api_key_role(key_hash, body.role)
     if not updated:
-        await audit_operation(ip, "update_key_role", False, target=key_hash[:32], detail="Key not found")
-        raise HTTPException(status_code=404, detail="API key not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        await audit_operation(
+            ip, "update_key_role", False, target=key_hash[:32], detail="Key not found"
+        )
+        raise HTTPException(
+            status_code=404, detail="API key not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     await audit_operation(
         ip,
         "update_key_role",
@@ -140,8 +162,12 @@ async def update_key_role_endpoint(
 
 @router.get("/roles")
 async def list_roles(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-    _ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _role: Role = Depends(
+        require_permission(Permission.USER_MANAGE)
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
+    _ip: str = Depends(
+        require_master_admin
+    ),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ) -> dict[str, Any]:
     """list available roles and their permissions (admin only)."""
     roles_info = {}

@@ -4,6 +4,7 @@ test_websocket_manager.py — Tests for fireai/core/websocket_manager.py
 Verifies WebSocket connection management, API key authentication, and
 message broadcasting.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

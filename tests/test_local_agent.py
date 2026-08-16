@@ -7,6 +7,7 @@ Tests verify:
   2. Cloud server returns 503 when no agent is connected
   3. Cloud server correctly forwards commands to a mock agent
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -16,10 +17,12 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def app():
     """Import and return the FastAPI app with agent_ws registered."""
     from backend.app import app as _app
+
     return _app
 
 
@@ -35,6 +38,7 @@ def authed_headers(app):
     Falls back to bypassing auth middleware via patching if DB is unavailable.
     """
     import os
+
     key = os.getenv("TEST_API_KEY", "")
     if key:
         return {"X-API-Key": key}
@@ -44,6 +48,7 @@ def authed_headers(app):
 
 # ── Agent WS Module Tests (no HTTP auth required) ────────────────────────────
 
+
 class TestAgentWsModule:
     """Test agent_ws module helper functions directly."""
 
@@ -52,6 +57,7 @@ class TestAgentWsModule:
         import importlib.util
         import sys
         from pathlib import Path
+
         module_name = "backend.routers.agent_ws"
         # Resolve the file path relative to this test file location
         file_path = Path(__file__).resolve().parents[1] / "backend" / "routers" / "agent_ws.py"
@@ -79,6 +85,7 @@ class TestAgentWsModule:
     @pytest.mark.asyncio
     async def test_send_agent_command_raises_503_when_no_agent(self):
         from fastapi import HTTPException
+
         agent_ws = self._import_agent_ws()
         agent_ws.active_agents.clear()
         with pytest.raises(HTTPException) as exc_info:
@@ -99,6 +106,7 @@ class TestAgentWsModule:
 
 # ── Command Forwarding Tests (bypass auth) ────────────────────────────────────
 
+
 class TestCommandForwarding:
     """Test that AutoCAD/Revit endpoints forward to connected agent."""
 
@@ -118,7 +126,9 @@ class TestCommandForwarding:
         mock_ws = MagicMock()
         mock_ws.send_json = AsyncMock()
 
-        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR — S7503 mock must be async to replace async method
+        async def fake_send_command(
+            agent_type, action, args, **kwargs
+        ):  # NOSONAR — S7503 mock must be async to replace async method
             return {
                 "success": True,
                 "message": "Connected to AutoCAD via agent",
@@ -145,7 +155,9 @@ class TestCommandForwarding:
 
         mock_ws = MagicMock()
 
-        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR — S7503 mock must be async to replace async method
+        async def fake_send_command(
+            agent_type, action, args, **kwargs
+        ):  # NOSONAR — S7503 mock must be async to replace async method
             return {
                 "success": True,
                 "message": "Connected to Revit via agent",
@@ -182,6 +194,7 @@ class TestCommandForwarding:
 
 
 # ── WebSocket Authentication Tests ───────────────────────────────────────────
+
 
 class TestAgentWebSocketAuth:
     """Test the /api/v1/agent/ws WebSocket authentication."""

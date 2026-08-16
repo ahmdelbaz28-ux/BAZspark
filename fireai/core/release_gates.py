@@ -250,12 +250,16 @@ def verify_and_evaluate(  # NOSONAR — S3776: cognitive complexity is inherent 
     input_payload: dict | None = None,
     nfpa_results: dict | None = None,
     evidence_envelope: Any | None = None,
-    drift_records: list[dict] | None = None,  # NOSONAR — S1172: accepted for API stability; digital-twin drift data flows here when IFC sync runs
+    drift_records: list[dict]
+    | None = None,  # NOSONAR — S1172: accepted for API stability; digital-twin drift data flows here when IFC sync runs
     loop_data: dict | None = None,
-    aset_rset_result: dict | None = None,  # NOSONAR — S1172: accepted for API stability; ASET/RSET result flows here when tenability analysis runs
+    aset_rset_result: dict
+    | None = None,  # NOSONAR — S1172: accepted for API stability; ASET/RSET result flows here when tenability analysis runs
     battery_result: dict | None = None,
-    stale_detector_ids: list[str] | None = None,  # NOSONAR — S1172: accepted for API stability; stale detector list flows here from sync
-    evidence_secret_key: str | None = None,  # NOSONAR — S1172: accepted for API stability; HMAC key flows here when evidence signing is enabled
+    stale_detector_ids: list[str]
+    | None = None,  # NOSONAR — S1172: accepted for API stability; stale detector list flows here from sync
+    evidence_secret_key: str
+    | None = None,  # NOSONAR — S1172: accepted for API stability; HMAC key flows here when evidence signing is enabled
 ) -> dict[str, Any]:
     """
     Evaluate all 8 release gates.

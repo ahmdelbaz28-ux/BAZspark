@@ -14,6 +14,7 @@ Exit codes:
   1 = HIGH findings detected (gate fails) — summary file written
   2 = error parsing bandit.json (gate fails — fail-safe)
 """
+
 from __future__ import annotations
 
 import json

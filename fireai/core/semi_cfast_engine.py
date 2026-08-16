@@ -182,10 +182,14 @@ class FireScenario:
         if self.room_height_m <= 0:
             raise ValueError(f"room_height_m must be positive, got {self.room_height_m}")
         if self.ventilation_opening_m2 < 0:
-            raise ValueError(f"ventilation_opening_m2 must be non-negative, got {self.ventilation_opening_m2}")
+            raise ValueError(
+                f"ventilation_opening_m2 must be non-negative, got {self.ventilation_opening_m2}"
+            )
         valid_ceilings = {"FLAT", "SLOPED", "BEAM"}
         if self.ceiling_type.upper() not in valid_ceilings:
-            raise ValueError(f"ceiling_type must be one of {valid_ceilings}, got '{self.ceiling_type}'")
+            raise ValueError(
+                f"ceiling_type must be one of {valid_ceilings}, got '{self.ceiling_type}'"
+            )
         self.ceiling_type = self.ceiling_type.upper()
 
 
@@ -307,7 +311,9 @@ def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
     if time_seconds < 0:
         raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
     if growth_rate not in FIRE_GROWTH_RATES:
-        raise ValueError(f"growth_rate must be one of {list(FIRE_GROWTH_RATES)}, got '{growth_rate}'")
+        raise ValueError(
+            f"growth_rate must be one of {list(FIRE_GROWTH_RATES)}, got '{growth_rate}'"
+        )
 
     alpha = FIRE_GROWTH_RATES[growth_rate]
     return alpha * time_seconds**2
@@ -384,7 +390,11 @@ def calculate_smoke_layer_height(
     H = room_height_m
     A = room_area_m2
 
-    if not math.isfinite(fire_hrr_kw) or not math.isfinite(room_height_m) or not math.isfinite(room_area_m2):
+    if (
+        not math.isfinite(fire_hrr_kw)
+        or not math.isfinite(room_height_m)
+        or not math.isfinite(room_area_m2)
+    ):
         # Fail-safe: smoke at floor level (most dangerous assumption)
         return 0.0
 
@@ -435,7 +445,6 @@ def calculate_smoke_layer_height(
 
     # Clamp to physical bounds
     return max(0.0, min(H, Y))
-
 
 
 def calculate_smoke_layer_temp(
@@ -549,7 +558,9 @@ def calculate_visibility(smoke_optical_density_per_m: float) -> float:
 
     """
     if smoke_optical_density_per_m < 0:
-        raise ValueError(f"smoke_optical_density_per_m must be non-negative, got {smoke_optical_density_per_m}")
+        raise ValueError(
+            f"smoke_optical_density_per_m must be non-negative, got {smoke_optical_density_per_m}"
+        )
 
     if smoke_optical_density_per_m < 1e-10:
         return float("inf")  # Clear air, essentially infinite visibility
@@ -587,7 +598,9 @@ def _compute_optical_density(
         Optical density per metre (1/m) in the upper smoke layer.
 
     """
-    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg  # NOSONAR - python:S117
+    Delta_H_c = PHYSICAL_CONSTANTS[
+        "EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"
+    ]  # 20 MJ/kg  # NOSONAR - python:S117
     y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
     alpha_ext = PHYSICAL_CONSTANTS["SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG"]  # 8700
 
@@ -633,7 +646,9 @@ def _compute_optical_density(
     # Using Thomas correlation: t_fill ≈ V / (0.21 * Q^(1/3) * h^(5/3))
     # Simplified for engineering estimate:
     if fire_hrr_kw > 0:
-        t_fill = room_volume / (0.21 * (fire_hrr_kw ** (1.0 / 3.0)) * (room_height_m ** (5.0 / 3.0)) + 1e-9)
+        t_fill = room_volume / (
+            0.21 * (fire_hrr_kw ** (1.0 / 3.0)) * (room_height_m ** (5.0 / 3.0)) + 1e-9
+        )
         t_fill = max(t_fill, 60.0)  # Minimum 60s filling time
         layer_fraction = 1.0 / 3.0 + 2.0 / 3.0 * (1.0 - math.exp(-time_seconds / t_fill))
     else:
@@ -648,7 +663,6 @@ def _compute_optical_density(
 
     # Optical density (1/m)
     return alpha_ext * C_soot
-
 
 
 def estimate_co_concentration(
@@ -711,7 +725,9 @@ def estimate_co_concentration(
         return 0.0
 
     # Physical constants
-    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg  # NOSONAR - python:S117
+    Delta_H_c = PHYSICAL_CONSTANTS[
+        "EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"
+    ]  # 20 MJ/kg  # NOSONAR - python:S117
     y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]  # 0.020  # NOSONAR - python:S117
     M_CO = PHYSICAL_CONSTANTS["CO_MOLAR_MASS_G_MOL"]  # 28.01
     M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]  # 28.96  # NOSONAR - python:S117
@@ -740,7 +756,9 @@ def estimate_co_concentration(
     # CO concentration in the room (well-mixed, kg/m³)
     # Effective ventilation reduces concentration
     effective_volume = room_volume_m3 * (1.0 + ventilation_factor * time_seconds / room_volume_m3)
-    CO_mass_concentration = total_CO_mass / max(effective_volume, 1e-6)  # kg/m³  # NOSONAR - python:S117
+    CO_mass_concentration = total_CO_mass / max(
+        effective_volume, 1e-6
+    )  # kg/m³  # NOSONAR - python:S117
 
     # Convert to ppm by volume:
     # ppm = (mass_conc / M_CO) / (rho_air / M_air) * 1e6
@@ -827,7 +845,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     aset_seconds = max_time_s  # NOSONAR — S1854: assignment kept for debug / future use
 
     # Values at ASET (will be overwritten when criterion is violated)
-    layer_height_at_aset = scenario.room_height_m  # NOSONAR — S1854: assignment kept for debug / future use
+    layer_height_at_aset = (
+        scenario.room_height_m
+    )  # NOSONAR — S1854: assignment kept for debug / future use
     layer_temp_at_aset = 20.0  # NOSONAR — S1854: assignment kept for debug / future use
     visibility_at_aset = float("inf")  # NOSONAR — S1854: assignment kept for debug / future use
     co_at_aset = 0.0
@@ -847,7 +867,8 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
             # For conservative estimate, maintain peak HRR
             # (In reality, fire would decay, but conservative assumption)
             hrr = calculate_fire_hrr(
-                scenario.fire_growth_rate, (3.0 * scenario.fire_load_MJ * 1000.0 / alpha) ** (1.0 / 3.0)
+                scenario.fire_growth_rate,
+                (3.0 * scenario.fire_load_MJ * 1000.0 / alpha) ** (1.0 / 3.0),
             )
 
         # Smoke layer interface height
@@ -895,7 +916,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
                     "hrr_kW": round(hrr, 2),
                     "layer_height_m": round(layer_height, 4),
                     "layer_temp_c": round(layer_temp, 2),
-                    "visibility_m": round(visibility, 4) if visibility != float("inf") else float("inf"),
+                    "visibility_m": round(visibility, 4)
+                    if visibility != float("inf")
+                    else float("inf"),
                     "co_ppm": round(co_ppm, 2),
                     "o2_pct": round(o2_pct, 2),
                     "optical_density_per_m": round(od, 6),
@@ -907,27 +930,37 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
 
         # 1. Temperature
         if layer_temp > criteria.max_temp_c:
-            limiting_criterion = f"Temperature exceeded {criteria.max_temp_c} °C (reached {layer_temp:.1f} °C)"
+            limiting_criterion = (
+                f"Temperature exceeded {criteria.max_temp_c} °C (reached {layer_temp:.1f} °C)"
+            )
             violated = True
 
         # 2. Visibility
         if not violated and visibility < criteria.min_vis_m:
-            limiting_criterion = f"Visibility below {criteria.min_vis_m} m (reached {visibility:.2f} m)"
+            limiting_criterion = (
+                f"Visibility below {criteria.min_vis_m} m (reached {visibility:.2f} m)"
+            )
             violated = True
 
         # 3. CO
         if not violated and co_ppm > criteria.max_co_ppm:
-            limiting_criterion = f"CO concentration exceeded {criteria.max_co_ppm} ppm (reached {co_ppm:.1f} ppm)"
+            limiting_criterion = (
+                f"CO concentration exceeded {criteria.max_co_ppm} ppm (reached {co_ppm:.1f} ppm)"
+            )
             violated = True
 
         # 4. O₂
         if not violated and o2_pct < criteria.max_o2_pct:
-            limiting_criterion = f"O₂ concentration below {criteria.max_o2_pct}% (reached {o2_pct:.1f}%)"
+            limiting_criterion = (
+                f"O₂ concentration below {criteria.max_o2_pct}% (reached {o2_pct:.1f}%)"
+            )
             violated = True
 
         # 5. HCl (only if criterion is set > 0)
         if not violated and criteria.max_hcl_ppm > 0 and hcl_ppm > criteria.max_hcl_ppm:
-            limiting_criterion = f"HCl concentration exceeded {criteria.max_hcl_ppm} ppm (reached {hcl_ppm:.1f} ppm)"
+            limiting_criterion = (
+                f"HCl concentration exceeded {criteria.max_hcl_ppm} ppm (reached {hcl_ppm:.1f} ppm)"
+            )
             violated = True
 
         # 6. Smoke layer interface reaching typical occupant height (1.8 m)
@@ -995,7 +1028,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
         limiting_criterion=limiting_criterion,
         layer_height_at_aset_m=round(layer_height_at_aset, 4),
         layer_temp_at_aset_c=round(layer_temp_at_aset, 2),
-        visibility_at_aset_m=(round(visibility_at_aset, 4) if visibility_at_aset != float("inf") else float("inf")),
+        visibility_at_aset_m=(
+            round(visibility_at_aset, 4) if visibility_at_aset != float("inf") else float("inf")
+        ),
         co_concentration_ppm=round(co_at_aset, 2),
         details=details,
     )
@@ -1080,7 +1115,6 @@ def _estimate_o2_depletion(
     return max(0.0, min(21.0, o2_vol_pct))
 
 
-
 def calculate_rset(
     room_area_m2: float,
     room_height_m: float,
@@ -1147,7 +1181,9 @@ def calculate_rset(
     if travel_distance_m < 0:
         raise ValueError(f"travel_distance_m must be non-negative, got {travel_distance_m}")
     if occupancy_type not in OCCUPANCY_TRAVEL_SPEEDS:
-        raise ValueError(f"occupancy_type must be one of {list(OCCUPANCY_TRAVEL_SPEEDS)}, got '{occupancy_type}'")
+        raise ValueError(
+            f"occupancy_type must be one of {list(OCCUPANCY_TRAVEL_SPEEDS)}, got '{occupancy_type}'"
+        )
     if pre_movement_s < 0:
         raise ValueError(f"pre_movement_s must be non-negative, got {pre_movement_s}")
     if mobility_factor <= 0:

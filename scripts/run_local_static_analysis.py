@@ -54,9 +54,13 @@ PRODUCTION_DIRS = [
 CRITICAL_FILES = [
     "fireai/core/fireai_kernel_v30.py",
     "fireai/core/scenario_engine.py",
-    "fireai/core/proof_certificate.py" if Path("fireai/core/proof_certificate.py").exists() else None,
+    "fireai/core/proof_certificate.py"
+    if Path("fireai/core/proof_certificate.py").exists()
+    else None,
     "fireai/core/hac_classification_engine.py",
-    "fireai/core/nfpa72_calculations.py" if Path("fireai/core/nfpa72_calculations.py").exists() else None,
+    "fireai/core/nfpa72_calculations.py"
+    if Path("fireai/core/nfpa72_calculations.py").exists()
+    else None,
 ]
 
 
@@ -105,8 +109,12 @@ def main() -> int:  # NOSONAR
 
     report = {
         "timestamp": datetime.now(UTC).isoformat(),
-        "tools": {"ruff": subprocess.run([RUFF, "--version"], capture_output=True, text=True).stdout.strip(),
-                  "bandit": "1.9.4"},
+        "tools": {
+            "ruff": subprocess.run(
+                [RUFF, "--version"], capture_output=True, text=True
+            ).stdout.strip(),
+            "bandit": "1.9.4",
+        },
         "critical_files": {},
         "production_summary": {},
         "bandit_security": {},
@@ -125,8 +133,14 @@ def main() -> int:  # NOSONAR
         report["critical_files"][f] = {
             "total_issues": len(issues),
             "real_bugs": len(f_bugs),
-            "bugs": [{"line": b.get("location", {}).get("row"), "code": b.get("code"),
-                       "message": b.get("message")} for b in f_bugs],
+            "bugs": [
+                {
+                    "line": b.get("location", {}).get("row"),
+                    "code": b.get("code"),
+                    "message": b.get("message"),
+                }
+                for b in f_bugs
+            ],
         }
         critical_issues.extend(f_bugs)
         if f_bugs:
@@ -173,9 +187,15 @@ def main() -> int:  # NOSONAR
             "MEDIUM": metrics.get("SEVERITY.MEDIUM", 0),
             "LOW": metrics.get("SEVERITY.LOW", 0),
         },
-        "issues": [{"line": r.get("line_number"), "test": r.get("test_id"),
-                     "severity": r.get("issue_severity"), "message": r.get("issue_text")}
-                    for r in results],
+        "issues": [
+            {
+                "line": r.get("line_number"),
+                "test": r.get("test_id"),
+                "severity": r.get("issue_severity"),
+                "message": r.get("issue_text"),
+            }
+            for r in results
+        ],
     }
     high_count = metrics.get("SEVERITY.HIGH", 0)
     med_count = metrics.get("SEVERITY.MEDIUM", 0)
@@ -186,13 +206,17 @@ def main() -> int:  # NOSONAR
 
     # ── Verdict ──
     if critical_issues:
-        report["verdict"] = f"❌ FAIL: {len(critical_issues)} real bugs (F-series) found in critical files"
+        report["verdict"] = (
+            f"❌ FAIL: {len(critical_issues)} real bugs (F-series) found in critical files"
+        )
         verdict_emoji = "❌"
     elif high_count > 0:
         report["verdict"] = f"❌ FAIL: {high_count} HIGH severity security issues found"
         verdict_emoji = "❌"
     else:
-        report["verdict"] = f"✅ PASS: No real bugs in critical files, {total_bugs} bugs in production, {high_count} HIGH security issues"
+        report["verdict"] = (
+            f"✅ PASS: No real bugs in critical files, {total_bugs} bugs in production, {high_count} HIGH security issues"
+        )
         verdict_emoji = "✅"
 
     print("\n" + "=" * 70)
@@ -246,56 +270,66 @@ def generate_markdown(report: dict) -> str:
             for bug in data["bugs"]:
                 lines.append(f"  - Line {bug['line']}: `{bug['code']}` — {bug['message']}")
 
-    lines.extend([
-        "",
-        "## 2. Production-Wide Summary",
-        "",
-        "| Module | Files | Total Issues | Real Bugs | Status |",
-        "|--------|-------|-------------|-----------|--------|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 2. Production-Wide Summary",
+            "",
+            "| Module | Files | Total Issues | Real Bugs | Status |",
+            "|--------|-------|-------------|-----------|--------|",
+        ]
+    )
     for d, data in report["production_summary"].items():
         status = "❌" if data["real_bugs"] > 0 else "✅"
-        lines.append(f"| `{d}/` | {data['files']} | {data['total_issues']} | {data['real_bugs']} | {status} |")
+        lines.append(
+            f"| `{d}/` | {data['files']} | {data['total_issues']} | {data['real_bugs']} | {status} |"
+        )
 
-    lines.extend([
-        "",
-        "## 3. Bandit Security Scan (Critical Files)",
-        "",
-        f"- **Lines scanned:** {report['bandit_security']['files_scanned']}",
-        f"- **HIGH severity:** {report['bandit_security']['by_severity']['HIGH']}",
-        f"- **MEDIUM severity:** {report['bandit_security']['by_severity']['MEDIUM']}",
-        f"- **LOW severity:** {report['bandit_security']['by_severity']['LOW']}",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 3. Bandit Security Scan (Critical Files)",
+            "",
+            f"- **Lines scanned:** {report['bandit_security']['files_scanned']}",
+            f"- **HIGH severity:** {report['bandit_security']['by_severity']['HIGH']}",
+            f"- **MEDIUM severity:** {report['bandit_security']['by_severity']['MEDIUM']}",
+            f"- **LOW severity:** {report['bandit_security']['by_severity']['LOW']}",
+            "",
+        ]
+    )
     if report["bandit_security"]["issues"]:
         lines.append("### Security Issues Found:")
         lines.append("")
         for issue in report["bandit_security"]["issues"]:
-            lines.append(f"- Line {issue['line']}: `{issue['test']}` [{issue['severity']}] — {issue['message']}")
+            lines.append(
+                f"- Line {issue['line']}: `{issue['test']}` [{issue['severity']}] — {issue['message']}"
+            )
     else:
         lines.append("✅ No security issues found in critical files.")
 
-    lines.extend([
-        "",
-        "## Interpretation",
-        "",
-        "- **F-series (pyflakes)**: Real bugs — undefined names, unused imports,",
-        "  syntax errors. These MUST be fixed.",
-        "- **E-series (pycodestyle)**: Code style — line length, whitespace.",
-        "  Pre-existing; not blocking.",
-        "- **PLR2004 (magic values)**: Code smell — numeric literals in comparisons.",
-        "  Pre-existing; not blocking.",
-        "- **C901 (complexity)**: Code smell — function too complex. Pre-existing;",
-        "  documented in NOSONAR_AUDIT.md as S3776.",
-        "- **Bandit HIGH/MEDIUM**: Security issues. MUST be investigated.",
-        "",
-        "## Next Steps",
-        "",
-        "1. If any F-series bugs found above → fix immediately",
-        "2. If any Bandit HIGH/MEDIUM found → investigate and fix",
-        "3. For full SonarCloud analysis → follow OPS_RUNBOOK.md Task 2",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Interpretation",
+            "",
+            "- **F-series (pyflakes)**: Real bugs — undefined names, unused imports,",
+            "  syntax errors. These MUST be fixed.",
+            "- **E-series (pycodestyle)**: Code style — line length, whitespace.",
+            "  Pre-existing; not blocking.",
+            "- **PLR2004 (magic values)**: Code smell — numeric literals in comparisons.",
+            "  Pre-existing; not blocking.",
+            "- **C901 (complexity)**: Code smell — function too complex. Pre-existing;",
+            "  documented in NOSONAR_AUDIT.md as S3776.",
+            "- **Bandit HIGH/MEDIUM**: Security issues. MUST be investigated.",
+            "",
+            "## Next Steps",
+            "",
+            "1. If any F-series bugs found above → fix immediately",
+            "2. If any Bandit HIGH/MEDIUM found → investigate and fix",
+            "3. For full SonarCloud analysis → follow OPS_RUNBOOK.md Task 2",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 

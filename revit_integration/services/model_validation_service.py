@@ -6,6 +6,7 @@ Service for validating Revit models against standards.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -35,7 +36,7 @@ class ModelValidationService:
             "missing_elements": [],
             "incomplete_parameters": [],
             "validation_date": datetime.now(UTC).isoformat(),
-            "passed": True
+            "passed": True,
         }
 
         # Placeholder implementation - in a real implementation, this would
@@ -44,7 +45,9 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_electrical_parameters(self, electrical_elements: list[dict[str, Any]]) -> dict[str, Any]:
+    async def validate_electrical_parameters(
+        self, electrical_elements: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Validate electrical parameters in the model.
 
@@ -59,22 +62,26 @@ class ModelValidationService:
             "invalid_elements": 0,
             "errors": [],
             "warnings": [],
-            "validation_date": datetime.now(UTC).isoformat()
+            "validation_date": datetime.now(UTC).isoformat(),
         }
 
         # Placeholder implementation
         for element in electrical_elements:
             # Check for required electrical parameters
-            required_params = ['Voltage', 'Power', 'Current']
+            required_params = ["Voltage", "Power", "Current"]
             for param in required_params:
-                if param not in element.get('parameters', {}):
-                    validation_results["warnings"].append({
-                        "element_id": element.get('id', 'unknown'),
-                        "parameter": param,
-                        "issue": "Missing required parameter"
-                    })
+                if param not in element.get("parameters", {}):
+                    validation_results["warnings"].append(
+                        {
+                            "element_id": element.get("id", "unknown"),
+                            "parameter": param,
+                            "issue": "Missing required parameter",
+                        }
+                    )
 
-        validation_results["valid_elements"] = len(electrical_elements) - len(validation_results["warnings"])
+        validation_results["valid_elements"] = len(electrical_elements) - len(
+            validation_results["warnings"]
+        )
         validation_results["passed"] = len(validation_results["warnings"]) == 0
 
         return validation_results
@@ -93,7 +100,7 @@ class ModelValidationService:
             "accuracy_score": 0.0,
             "geometric_issues": [],
             "validation_date": datetime.now(UTC).isoformat(),
-            "passed": True
+            "passed": True,
         }
 
         # Placeholder implementation
@@ -101,7 +108,9 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_standards_compliance(self, _model_data: dict[str, Any], standards: list[str]) -> dict[str, Any]:
+    async def validate_standards_compliance(
+        self, _model_data: dict[str, Any], standards: list[str]
+    ) -> dict[str, Any]:
         """
         Validate model compliance with specified standards.
 
@@ -117,7 +126,7 @@ class ModelValidationService:
             "non_compliant_standards": [],
             "issues": [],
             "compliance_score": 0.0,
-            "validation_date": datetime.now(UTC).isoformat()
+            "validation_date": datetime.now(UTC).isoformat(),
         }
 
         # Placeholder implementation

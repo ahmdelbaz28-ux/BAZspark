@@ -54,9 +54,7 @@ def _make_ifc_json(data: dict, suffix=".json") -> str:
     return path
 
 
-def _make_valid_ifc_json(
-    num_spaces=2, num_devices=1, num_floors=2, negative_area=False
-) -> dict:
+def _make_valid_ifc_json(num_spaces=2, num_devices=1, num_floors=2, negative_area=False) -> dict:
     """
     Create a valid IFC JSON data structure.
 
@@ -70,48 +68,54 @@ def _make_valid_ifc_json(
     instances = []
 
     # Building
-    instances.append({
-        "id": "IFC_BUILDING_1",
-        "type": "IfcBuilding",
-        "attributes": {
-            "Name": "Test Hospital",
-            "LongName": "City General Hospital",
-        },
-    })
+    instances.append(
+        {
+            "id": "IFC_BUILDING_1",
+            "type": "IfcBuilding",
+            "attributes": {
+                "Name": "Test Hospital",
+                "LongName": "City General Hospital",
+            },
+        }
+    )
 
     # Floors
     for i in range(num_floors):
-        instances.append({
-            "id": f"FLOOR_{i+1}",
-            "type": "IfcBuildingStorey",
-            "attributes": {"Name": f"Level {i+1}"},
-        })
+        instances.append(
+            {
+                "id": f"FLOOR_{i + 1}",
+                "type": "IfcBuildingStorey",
+                "attributes": {"Name": f"Level {i + 1}"},
+            }
+        )
 
     # Spaces
     for i in range(num_spaces):
         area = 25.0 * (i + 1)
         if negative_area and i == 0:
             area = -10.0  # V79 test: negative area
-        instances.append({
-            "id": f"SPACE_{i+1}",
-            "type": "IfcSpace",
-            "attributes": {
-                "Name": f"Room {i+1}",
-                "LongName": f"Office {i+1}",
-                "Area": area,
-                "Elevation": 0.0,
-            },
-            "geometry": {
-                "bounds": {
-                    "origin": {"x": i * 10, "y": 0, "z": 0},
-                    "dimensions": {
-                        "width": 5.0,
-                        "length": 5.0 * (i + 1),
-                        "height": 3.0,
-                    },
-                }
-            },
-        })
+        instances.append(
+            {
+                "id": f"SPACE_{i + 1}",
+                "type": "IfcSpace",
+                "attributes": {
+                    "Name": f"Room {i + 1}",
+                    "LongName": f"Office {i + 1}",
+                    "Area": area,
+                    "Elevation": 0.0,
+                },
+                "geometry": {
+                    "bounds": {
+                        "origin": {"x": i * 10, "y": 0, "z": 0},
+                        "dimensions": {
+                            "width": 5.0,
+                            "length": 5.0 * (i + 1),
+                            "height": 3.0,
+                        },
+                    }
+                },
+            }
+        )
 
     # Fire protection devices
     device_types = [
@@ -122,18 +126,20 @@ def _make_valid_ifc_json(
     ]
     for i in range(num_devices):
         dtype, name = device_types[i % len(device_types)]
-        instances.append({
-            "id": f"DEVICE_{i+1}",
-            "type": dtype,
-            "attributes": {
-                "Name": name,
-                "DetectorType": name.upper().replace(" ", "_"),
-                "Sensitivity": 0.5,
-                "CoverageRadius": 6.37,
-                "MountingHeight": 3.0,
-            },
-            "applicable_to": ["SPACE_1"],
-        })
+        instances.append(
+            {
+                "id": f"DEVICE_{i + 1}",
+                "type": dtype,
+                "attributes": {
+                    "Name": name,
+                    "DetectorType": name.upper().replace(" ", "_"),
+                    "Sensitivity": 0.5,
+                    "CoverageRadius": 6.37,
+                    "MountingHeight": 3.0,
+                },
+                "applicable_to": ["SPACE_1"],
+            }
+        )
 
     return {"instances": instances}
 
@@ -147,11 +153,17 @@ class TestIFCParserInit:
     """IFCParser initialization and state."""
 
     def test_init_stores_path(self):
-        parser = IFCParser("/tmp/test.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
-        assert parser.ifc_path == "/tmp/test.ifc"  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        parser = IFCParser(
+            "/tmp/test.ifc"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        assert (
+            parser.ifc_path == "/tmp/test.ifc"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_init_data_is_none(self):
-        parser = IFCParser("/tmp/test.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        parser = IFCParser(
+            "/tmp/test.ifc"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert parser.data is None
 
 
@@ -175,7 +187,9 @@ class TestIFCAnalysis:
         assert analysis.floors == 3
         assert len(analysis.spaces) == 1
         assert len(analysis.devices) == 1
-        assert analysis.total_area == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            analysis.total_area == 150.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_empty_analysis(self):
         analysis = IFCAnalysis(
@@ -187,7 +201,9 @@ class TestIFCAnalysis:
         )
         assert analysis.building_name == "Unknown"
         assert analysis.floors == 0
-        assert analysis.total_area == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            analysis.total_area == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -228,14 +244,18 @@ class TestJSONLoading:
     def test_parse_instances(self):
         """_parse_instances extracts instance list from data."""
         data = {"instances": [{"id": 1}, {"id": 2}]}
-        parser = IFCParser("/tmp/test.json")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        parser = IFCParser(
+            "/tmp/test.json"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         instances = parser._parse_instances(data)
         assert len(instances) == 2
 
     def test_parse_empty_instances(self):
         """Missing 'instances' key returns empty list."""
         data = {}
-        parser = IFCParser("/tmp/test.json")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        parser = IFCParser(
+            "/tmp/test.json"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         instances = parser._parse_instances(data)
         assert instances == []
 
@@ -287,15 +307,19 @@ class TestSpaceExtraction:
 
     def test_no_spaces_still_works(self):
         """IFC file with no IfcSpace produces empty spaces list."""
-        data = {"instances": [
-            {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Empty"}},
-        ]}
+        data = {
+            "instances": [
+                {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Empty"}},
+            ]
+        }
         p = _make_ifc_json(data)
         try:
             parser = IFCParser(p)
             result = parser.parse()
             assert result.spaces == []
-            assert result.total_area == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+            assert (
+                result.total_area == 0.0
+            )  # NOSONAR — S1244: import retained for re-export / API surface
         finally:
             os.unlink(p)
 
@@ -337,9 +361,12 @@ class TestDeviceExtraction:
         """V79 FIX: coverage_radius is None by default (not 0)."""
         instances = [
             {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Test"}},
-            {"id": "D1", "type": "IfcAlarm",
-             "attributes": {"Name": "SD", "DetectorType": "SMOKE"},
-             "applicable_to": []},
+            {
+                "id": "D1",
+                "type": "IfcAlarm",
+                "attributes": {"Name": "SD", "DetectorType": "SMOKE"},
+                "applicable_to": [],
+            },
         ]
         data = {"instances": instances}
         p = _make_ifc_json(data)
@@ -469,10 +496,17 @@ class TestNegativeAreaRejection:
         """Spaces with zero area are accepted (edge case)."""
         instances = [
             {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Test"}},
-            {"id": "S1", "type": "IfcSpace",
-             "attributes": {"Name": "Zero Room", "Area": 0},
-             "geometry": {"bounds": {"origin": {"x": 0, "y": 0, "z": 0},
-                                     "dimensions": {"width": 0, "length": 0, "height": 3}}}},
+            {
+                "id": "S1",
+                "type": "IfcSpace",
+                "attributes": {"Name": "Zero Room", "Area": 0},
+                "geometry": {
+                    "bounds": {
+                        "origin": {"x": 0, "y": 0, "z": 0},
+                        "dimensions": {"width": 0, "length": 0, "height": 3},
+                    }
+                },
+            },
         ]
         data = {"instances": instances}
         p = _make_ifc_json(data)
@@ -555,10 +589,17 @@ class TestToStandardFormat:
         """Space with zero width/length produces no wall."""
         instances = [
             {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Test"}},
-            {"id": "S1", "type": "IfcSpace",
-             "attributes": {"Name": "Zero Room", "Area": 0},
-             "geometry": {"bounds": {"origin": {"x": 0, "y": 0, "z": 0},
-                                     "dimensions": {"width": 0, "length": 0, "height": 3}}}},
+            {
+                "id": "S1",
+                "type": "IfcSpace",
+                "attributes": {"Name": "Zero Room", "Area": 0},
+                "geometry": {
+                    "bounds": {
+                        "origin": {"x": 0, "y": 0, "z": 0},
+                        "dimensions": {"width": 0, "length": 0, "height": 3},
+                    }
+                },
+            },
         ]
         data = {"instances": instances}
         p = _make_ifc_json(data)
@@ -582,13 +623,19 @@ class TestIFCParserPathSecurity:
 
     def test_leading_dash_rejected(self):
         """Path starting with '-' is rejected."""
-        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="SECURITY"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             IFCParser("--evil.ifc").parse()
 
     def test_null_byte_rejected(self):
         """Null byte in path is rejected."""
-        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            IFCParser("/tmp/x\x00.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        with pytest.raises(
+            ValueError, match="SECURITY"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            IFCParser(
+                "/tmp/x\x00.ifc"
+            ).parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_wrong_extension_rejected(self):
         """Non-IFC/JSON extension is rejected."""
@@ -596,15 +643,21 @@ class TestIFCParserPathSecurity:
         try:
             os.write(fd, b"test")
             os.close(fd)
-            with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(
+                ValueError, match="SECURITY"
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
 
     def test_missing_file_raises_valueerror(self):
         """Missing file raises ValueError (not raw FileNotFoundError)."""
-        with pytest.raises(ValueError, match="not found"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            IFCParser("/tmp/does_not_exist_xyzzy.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        with pytest.raises(
+            ValueError, match="not found"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            IFCParser(
+                "/tmp/does_not_exist_xyzzy.ifc"
+            ).parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_ifc_extension_accepted(self):
         """.ifc extension passes validation (may fail at load)."""
@@ -636,7 +689,9 @@ class TestIFCParserErrorHandling:
         try:
             os.write(fd, b"{broken json")
             os.close(fd)
-            with pytest.raises(ValueError, match="Failed to load IFC file"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(
+                ValueError, match="Failed to load IFC file"
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
@@ -662,7 +717,9 @@ class TestIFCParserErrorHandling:
             os.close(fd)
             # The _load_json returns a list, _parse_instances expects dict
             # This should raise an AttributeError or similar
-            with pytest.raises((ValueError, AttributeError, TypeError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(
+                (ValueError, AttributeError, TypeError)
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
@@ -695,7 +752,9 @@ class TestParseIfcConvenienceFunction:
     def test_parse_ifc_missing_file(self):
         """parse_ifc() raises ValueError for missing file."""
         with pytest.raises(ValueError, match="not found"):
-            parse_ifc("/tmp/does_not_exist_xyzzy.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parse_ifc(
+                "/tmp/does_not_exist_xyzzy.ifc"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -708,9 +767,7 @@ class TestIFCIntegration:
 
     def test_hospital_building(self):
         """Full hospital building with multiple floors and devices."""
-        data = _make_valid_ifc_json(
-            num_spaces=10, num_devices=4, num_floors=3
-        )
+        data = _make_valid_ifc_json(num_spaces=10, num_devices=4, num_floors=3)
         p = _make_ifc_json(data)
         try:
             parser = IFCParser(p)
@@ -736,25 +793,56 @@ class TestIFCIntegration:
         instances = [
             {"id": "B1", "type": "IfcBuilding", "attributes": {"Name": "Office Tower"}},
             {"id": "F1", "type": "IfcBuildingStorey", "attributes": {"Name": "Ground"}},
-            {"id": "S1", "type": "IfcSpace",
-             "attributes": {"Name": "Lobby", "Area": 200.0, "Elevation": 0},
-             "geometry": {"bounds": {"origin": {"x": 0, "y": 0, "z": 0},
-                                     "dimensions": {"width": 20, "length": 10, "height": 4}}}},
-            {"id": "D1", "type": "IfcFireSuppressionDevice_Type",
-             "attributes": {"Name": "Sprinkler", "DetectorType": "SPRINKLER",
-                           "CoverageRadius": 2.1, "MountingHeight": 4.0},
-             "applicable_to": ["S1"]},
-            {"id": "D2", "type": "IfcAlarm",
-             "attributes": {"Name": "Smoke Detector", "DetectorType": "SMOKE",
-                           "CoverageRadius": 6.37, "MountingHeight": 4.0},
-             "applicable_to": ["S1"]},
-            {"id": "D3", "type": "IfcSensor",
-             "attributes": {"Name": "Heat Detector", "DetectorType": "HEAT",
-                           "CoverageRadius": 4.9, "MountingHeight": 4.0},
-             "applicable_to": ["S1"]},
-            {"id": "D4", "type": "IfcProtectiveDevice",
-             "attributes": {"Name": "Fire Damper", "DetectorType": "DAMPER"},
-             "applicable_to": ["S1"]},
+            {
+                "id": "S1",
+                "type": "IfcSpace",
+                "attributes": {"Name": "Lobby", "Area": 200.0, "Elevation": 0},
+                "geometry": {
+                    "bounds": {
+                        "origin": {"x": 0, "y": 0, "z": 0},
+                        "dimensions": {"width": 20, "length": 10, "height": 4},
+                    }
+                },
+            },
+            {
+                "id": "D1",
+                "type": "IfcFireSuppressionDevice_Type",
+                "attributes": {
+                    "Name": "Sprinkler",
+                    "DetectorType": "SPRINKLER",
+                    "CoverageRadius": 2.1,
+                    "MountingHeight": 4.0,
+                },
+                "applicable_to": ["S1"],
+            },
+            {
+                "id": "D2",
+                "type": "IfcAlarm",
+                "attributes": {
+                    "Name": "Smoke Detector",
+                    "DetectorType": "SMOKE",
+                    "CoverageRadius": 6.37,
+                    "MountingHeight": 4.0,
+                },
+                "applicable_to": ["S1"],
+            },
+            {
+                "id": "D3",
+                "type": "IfcSensor",
+                "attributes": {
+                    "Name": "Heat Detector",
+                    "DetectorType": "HEAT",
+                    "CoverageRadius": 4.9,
+                    "MountingHeight": 4.0,
+                },
+                "applicable_to": ["S1"],
+            },
+            {
+                "id": "D4",
+                "type": "IfcProtectiveDevice",
+                "attributes": {"Name": "Fire Damper", "DetectorType": "DAMPER"},
+                "applicable_to": ["S1"],
+            },
         ]
         data = {"instances": instances}
         p = _make_ifc_json(data)
@@ -766,6 +854,8 @@ class TestIFCIntegration:
             assert result.floors == 1
             assert len(result.spaces) == 1
             assert len(result.devices) == 4
-            assert result.total_area == 200.0  # NOSONAR — S1244: import retained for re-export / API surface
+            assert (
+                result.total_area == 200.0
+            )  # NOSONAR — S1244: import retained for re-export / API surface
         finally:
             os.unlink(p)

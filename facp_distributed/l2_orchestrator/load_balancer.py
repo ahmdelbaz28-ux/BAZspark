@@ -1,5 +1,6 @@
 # NOSONAR
 """Load Balancer for L2 Orchestrator in Distributed FACP System"""
+
 import logging
 import random
 import threading
@@ -19,8 +20,13 @@ class LoadBalancingStrategy(Enum):
 class EngineWorker:
     """Represents an engine worker node in the distributed system"""
 
-    def __init__(self, worker_id: str, capabilities: list[str],
-                 max_concurrent_tasks: int = 10, current_load: float = 0.0):
+    def __init__(
+        self,
+        worker_id: str,
+        capabilities: list[str],
+        max_concurrent_tasks: int = 10,
+        current_load: float = 0.0,
+    ):
         self.worker_id = worker_id
         self.capabilities = capabilities
         self.max_concurrent_tasks = max_concurrent_tasks
@@ -38,9 +44,11 @@ class EngineWorker:
 
     def can_accept_task(self) -> bool:
         """Check if worker can accept a new task"""
-        return (self.status == "online" and
-                self.current_tasks < self.max_concurrent_tasks and
-                self.current_load < 0.95)  # Don't overload beyond 95%
+        return (
+            self.status == "online"
+            and self.current_tasks < self.max_concurrent_tasks
+            and self.current_load < 0.95
+        )  # Don't overload beyond 95%
 
     def register_task_start(self):
         """Register that a task has started on this worker"""
@@ -76,7 +84,7 @@ class EngineWorker:
             "failure_count": self.failure_count,
             "last_heartbeat": self.last_heartbeat,
             "is_healthy": self.is_healthy(),
-            "location": self.location
+            "location": self.location,
         }
 
 
@@ -95,14 +103,19 @@ class LoadBalancer:
         self.cluster_workers = {}  # cluster-wide worker info
         self.worker_selection_history = {}  # worker_id -> selection_count
 
-    def register_engine_worker(self, worker_id: str, capabilities: list[str],
-                              max_concurrent_tasks: int = 10, location: str = "unknown"):
+    def register_engine_worker(
+        self,
+        worker_id: str,
+        capabilities: list[str],
+        max_concurrent_tasks: int = 10,
+        location: str = "unknown",
+    ):
         """Register a new engine worker with the load balancer"""
         with self.lock:
             worker = EngineWorker(
                 worker_id=worker_id,
                 capabilities=capabilities,
-                max_concurrent_tasks=max_concurrent_tasks
+                max_concurrent_tasks=max_concurrent_tasks,
             )
             worker.location = location
             self.workers[worker_id] = worker
@@ -116,7 +129,9 @@ class LoadBalancer:
             if worker_id in self.worker_selection_history:
                 del self.worker_selection_history[worker_id]
 
-    def select_engine_worker(self, method: str, request_data: dict[str, Any] | None = None) -> str | None:
+    def select_engine_worker(
+        self, method: str, request_data: dict[str, Any] | None = None
+    ) -> str | None:
         """Select an appropriate engine worker for a method"""
         with self.lock:
             # First, filter workers that can handle this method
@@ -157,7 +172,7 @@ class LoadBalancer:
 
         # Check for wildcard matches
         for capability in worker.capabilities:
-            if capability.endswith('.*') and method.startswith(capability[:-2]):
+            if capability.endswith(".*") and method.startswith(capability[:-2]):
                 return True
 
         return False
@@ -204,7 +219,9 @@ class LoadBalancer:
         # Fallback to last worker
         return workers[-1]
 
-    def _resource_based_selection(self, workers: list[EngineWorker], request_data: dict[str, Any]) -> EngineWorker | None:
+    def _resource_based_selection(
+        self, workers: list[EngineWorker], request_data: dict[str, Any]
+    ) -> EngineWorker | None:
         """Select worker based on resource availability and request requirements"""
         if not workers:
             return None
@@ -212,15 +229,22 @@ class LoadBalancer:
         # Get request constraints
         constraints = request_data.get("constraints", {}) if request_data else {}
         constraints.get("max_memory_mb", 512)
-        constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds  # NOSONAR: S905 intentional expression  # NOSONAR — S7632: test function documented via class name / module path
+        constraints.get(
+            "timeout_ms", 8000
+        ) / 1000.0  # Convert to seconds  # NOSONAR: S905 intentional expression  # NOSONAR — S7632: test function documented via class name / module path
 
         # Score each worker based on available resources
         scored_workers = []
         for worker in workers:
             # Calculate available resources
-            memory_available = (1.0 - worker.memory_usage) * worker.max_concurrent_tasks * 512  # Estimate
+            memory_available = (
+                (1.0 - worker.memory_usage) * worker.max_concurrent_tasks * 512
+            )  # Estimate
             load_score = 1.0 - worker.current_load
-            task_score = max(0, (worker.max_concurrent_tasks - worker.current_tasks) / worker.max_concurrent_tasks)
+            task_score = max(
+                0,
+                (worker.max_concurrent_tasks - worker.current_tasks) / worker.max_concurrent_tasks,
+            )
 
             # Combined score (higher is better)
             score = (load_score * 0.4) + (task_score * 0.4) + (memory_available / 1000 * 0.2)
@@ -241,8 +265,13 @@ class LoadBalancer:
             if worker_id in self.workers:
                 self.workers[worker_id].status = status
 
-    def update_worker_resources(self, worker_id: str, cpu_usage: float | None = None,
-                               memory_usage: float | None = None, network_latency: float | None = None):
+    def update_worker_resources(
+        self,
+        worker_id: str,
+        cpu_usage: float | None = None,
+        memory_usage: float | None = None,
+        network_latency: float | None = None,
+    ):
         """Update resource usage information for a worker"""
         with self.lock:
             if worker_id in self.workers:
@@ -296,8 +325,11 @@ class LoadBalancer:
                 "strategy": self.strategy.value,
                 "worker_selection_history": self.worker_selection_history.copy(),
                 "task_assignment_history_size": len(self.task_assignment_history),
-                "avg_worker_load": sum(w.current_load for w in self.workers.values()) / len(self.workers) if self.workers else 0,
-                "last_health_check": self.last_health_check
+                "avg_worker_load": sum(w.current_load for w in self.workers.values())
+                / len(self.workers)
+                if self.workers
+                else 0,
+                "last_health_check": self.last_health_check,
             }
 
     def perform_health_check(self):
@@ -333,7 +365,9 @@ class LoadBalancer:
                         "Worker %s marked OFFLINE (heartbeat timeout). "
                         "Failure count: %d, previous status: %s. "
                         "Redistributing tasks to healthy workers.",
-                        worker_id, worker.failure_count, previous_status
+                        worker_id,
+                        worker.failure_count,
+                        previous_status,
                     )
 
                     # Redistribute in-flight tasks from failed worker
@@ -353,7 +387,9 @@ class LoadBalancer:
         tasks_to_redistribute = {}
 
         # Find tasks assigned to the failed worker
-        for task_id, assigned_worker_id in list(self.task_assignment_history.items()):  # NOSONAR - python:S7504
+        for task_id, assigned_worker_id in list(
+            self.task_assignment_history.items()
+        ):  # NOSONAR - python:S7504
             if assigned_worker_id == failed_worker_id:
                 tasks_to_redistribute[task_id] = assigned_worker_id
 
@@ -368,8 +404,7 @@ class LoadBalancer:
 
         # Find healthy workers that can accept tasks
         healthy_workers = [
-            w for w in self.workers.values()
-            if w.is_healthy() and w.can_accept_task()
+            w for w in self.workers.values() if w.is_healthy() and w.can_accept_task()
         ]
 
         if not healthy_workers:
@@ -377,7 +412,8 @@ class LoadBalancer:
             logger.error(
                 "No healthy workers available to redistribute %d tasks from failed worker %s. "
                 "Tasks will be queued for retry.",
-                len(tasks_to_redistribute), failed_worker_id
+                len(tasks_to_redistribute),
+                failed_worker_id,
             )
             # Store failed tasks for later retry when a worker recovers
             self._pending_redistribution.update(tasks_to_redistribute)
@@ -388,13 +424,16 @@ class LoadBalancer:
             best_worker = min(healthy_workers, key=lambda w: (w.current_tasks, w.current_load))
             best_worker.register_task_start()
             self.task_assignment_history[task_id] = best_worker.worker_id
-            self.worker_selection_history[best_worker.worker_id] = \
+            self.worker_selection_history[best_worker.worker_id] = (
                 self.worker_selection_history.get(best_worker.worker_id, 0) + 1
+            )
 
         logger = logging.getLogger(__name__)
         logger.info(
             "Redistributed %d tasks from failed worker %s to %d healthy workers.",
-            len(tasks_to_redistribute), failed_worker_id, len(healthy_workers)
+            len(tasks_to_redistribute),
+            failed_worker_id,
+            len(healthy_workers),
         )
 
     # Storage for tasks that couldn't be redistributed (no healthy workers available)
@@ -418,10 +457,14 @@ class LoadBalancer:
                 "average_worker_load": avg_load,
                 "average_cpu_usage": avg_cpu,
                 "average_memory_usage": avg_memory,
-                "most_selected_worker": max(self.worker_selection_history.items(),
-                                          key=lambda x: x[1])[0] if self.worker_selection_history else None,
-                "selection_distribution": dict(sorted(self.worker_selection_history.items(),
-                                                   key=lambda x: x[1], reverse=True))
+                "most_selected_worker": max(
+                    self.worker_selection_history.items(), key=lambda x: x[1]
+                )[0]
+                if self.worker_selection_history
+                else None,
+                "selection_distribution": dict(
+                    sorted(self.worker_selection_history.items(), key=lambda x: x[1], reverse=True)
+                ),
             }
 
     def update_worker_weight(self, worker_id: str, new_weight: float):
@@ -473,13 +516,15 @@ class LoadBalancer:
                 logger.info(
                     "Worker %s recovered — status: online, weight: 1.0. "
                     "Checking for pending tasks to redistribute.",
-                    worker_id
+                    worker_id,
                 )
 
                 # Redistribute pending tasks that were queued during failure
                 if self._pending_redistribution:
                     pending_count = len(self._pending_redistribution)
-                    for task_id, _original_worker_id in list(self._pending_redistribution.items()):  # NOSONAR - python:S7504
+                    for task_id, _original_worker_id in list(
+                        self._pending_redistribution.items()
+                    ):  # NOSONAR - python:S7504
                         if worker.can_accept_task():
                             worker.register_task_start()
                             self.task_assignment_history[task_id] = worker_id
@@ -488,13 +533,16 @@ class LoadBalancer:
                     logger.info(
                         "Redistributed %d/%d pending tasks to recovered worker %s.",
                         pending_count - len(self._pending_redistribution),
-                        pending_count, worker_id
+                        pending_count,
+                        worker_id,
                     )
 
     def cleanup_old_assignments(self, max_age_minutes: int = 60):
         """Clean up old task assignment records"""
         current_time = time.time()
-        current_time - (max_age_minutes * 60)  # NOSONAR: S905 intentional expression  # NOSONAR — S7632: test function documented via class name / module path
+        (
+            current_time - (max_age_minutes * 60)
+        )  # NOSONAR: S905 intentional expression  # NOSONAR — S7632: test function documented via class name / module path
 
         # In a real implementation, we'd track assignment times
         # For now, we'll just maintain the size
@@ -523,7 +571,9 @@ class AdaptiveLoadBalancer(LoadBalancer):
         self.adaptation_threshold = 0.1  # Threshold for changing strategy
         self.monitoring_window = 100  # Number of requests to consider for adaptation
 
-    def select_engine_worker(self, method: str, request_data: dict[str, Any] | None = None) -> str | None:
+    def select_engine_worker(
+        self, method: str, request_data: dict[str, Any] | None = None
+    ) -> str | None:
         """Select worker with adaptive strategy selection"""
         # Periodically evaluate if we should change strategy
         self._evaluate_strategy()
@@ -546,7 +596,9 @@ class AdaptiveLoadBalancer(LoadBalancer):
                 # Switch to resource-based strategy for better optimization
                 self.strategy = LoadBalancingStrategy.RESOURCE_BASED
 
-    def record_task_completion(self, task_id: str, worker_id: str, response_time: float | None = None):
+    def record_task_completion(
+        self, task_id: str, worker_id: str, response_time: float | None = None
+    ):
         """Override to record performance metrics"""
         super().record_task_completion(task_id, worker_id)
 
@@ -558,4 +610,6 @@ class AdaptiveLoadBalancer(LoadBalancer):
 
                 # Keep only recent performance data
                 if len(self.performance_history[worker_id]) > self.monitoring_window:
-                    self.performance_history[worker_id] = self.performance_history[worker_id][-50:]  # Last 50 measurements
+                    self.performance_history[worker_id] = self.performance_history[worker_id][
+                        -50:
+                    ]  # Last 50 measurements

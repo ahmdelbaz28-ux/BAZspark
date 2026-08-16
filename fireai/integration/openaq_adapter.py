@@ -53,11 +53,11 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 DEFAULT_BASE_URL = "https://api.openaq.org/v3/measurements"
-DEFAULT_RADIUS_M = 25_000     # 25 km
+DEFAULT_RADIUS_M = 25_000  # 25 km
 DEFAULT_LIMIT = 100
 
 # Same breakpoints as wildfire_smoke_adapter for consistency.
-PM25_HIGH_THRESHOLD = 35.5   # EPA "Unhealthy for Sensitive Groups"
+PM25_HIGH_THRESHOLD = 35.5  # EPA "Unhealthy for Sensitive Groups"
 
 
 # ===========================================================================
@@ -68,14 +68,15 @@ PM25_HIGH_THRESHOLD = 35.5   # EPA "Unhealthy for Sensitive Groups"
 @dataclass(frozen=True)
 class AirQualityReading:
     """One measurement from one OpenAQ station."""
-    parameter: str           # "pm25", "pm10", "co", "no2", "so2", "o3"
-    value: float             # µg/m³ (or ppm for CO — check `unit`)
+
+    parameter: str  # "pm25", "pm10", "co", "no2", "so2", "o3"
+    value: float  # µg/m³ (or ppm for CO — check `unit`)
     unit: str
     station_name: str
     station_id: str
-    timestamp_utc: str       # ISO-8601
+    timestamp_utc: str  # ISO-8601
     coordinates: tuple[float, float]
-    distance_m: int          # distance from query point
+    distance_m: int  # distance from query point
 
 
 @dataclass(frozen=True)
@@ -170,7 +171,6 @@ class OpenAQAdapter(ExternalApiAdapter):
             # (since the service may be fine, just our config).
             raise ValueError("OPENAQ_API_KEY environment variable not set")
 
-
         params = {
             "coordinates": f"{lat},{lon}",
             "radius": radius_m,
@@ -188,11 +188,11 @@ class OpenAQAdapter(ExternalApiAdapter):
         from urllib.parse import urlencode
 
         from backend.integrations._ssrf_guard import validate_url
+
         _request_url = f"{self._base_url}?{urlencode(params)}"
         validate_url(_request_url)
 
         resp = await client.get(self._base_url, params=params, headers=headers)
-
 
         resp.raise_for_status()
         data = resp.json()
@@ -209,19 +209,21 @@ class OpenAQAdapter(ExternalApiAdapter):
                 value = r.get("value")
                 if value is None or parameter is None:
                     continue
-                readings.append(AirQualityReading(
-                    parameter=str(parameter),
-                    value=float(value),
-                    unit=r.get("unit", "µg/m³"),
-                    station_name=str(r.get("location", "") or r.get("city", "") or ""),
-                    station_id=str(r.get("locationId", "") or r.get("id", "")),
-                    timestamp_utc=str(r.get("date", {}).get("utc", "") or ""),
-                    coordinates=(
-                        float(r.get("coordinates", {}).get("latitude", lat)),
-                        float(r.get("coordinates", {}).get("longitude", lon)),
-                    ),
-                    distance_m=int(r.get("distanceMeters", 0) or 0),
-                ))
+                readings.append(
+                    AirQualityReading(
+                        parameter=str(parameter),
+                        value=float(value),
+                        unit=r.get("unit", "µg/m³"),
+                        station_name=str(r.get("location", "") or r.get("city", "") or ""),
+                        station_id=str(r.get("locationId", "") or r.get("id", "")),
+                        timestamp_utc=str(r.get("date", {}).get("utc", "") or ""),
+                        coordinates=(
+                            float(r.get("coordinates", {}).get("latitude", lat)),
+                            float(r.get("coordinates", {}).get("longitude", lon)),
+                        ),
+                        distance_m=int(r.get("distanceMeters", 0) or 0),
+                    )
+                )
             except (KeyError, ValueError, TypeError) as e:
                 logger.debug("Skipping malformed OpenAQ reading: %s", e)
                 continue

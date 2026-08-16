@@ -57,9 +57,7 @@ def tmpdir():
 
 def _make_temp_file(suffix=".dwg", content=b"fake", directory=None):
     """Create a temp file with given content and extension."""
-    fd, path = tempfile.mkstemp(
-        suffix=suffix, prefix="dwg_test_", dir=directory
-    )
+    fd, path = tempfile.mkstemp(suffix=suffix, prefix="dwg_test_", dir=directory)
     try:
         os.write(fd, content)
     finally:
@@ -99,7 +97,10 @@ class TestDWGParserInit:
     def test_check_tool_returns_false_on_timeout(self, parser):
         """Tool check returns False on timeout."""
         import subprocess
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="dxf-out", timeout=5)):
+
+        with patch(
+            "subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="dxf-out", timeout=5)
+        ):
             assert parser._check_tool() is False
 
     def test_check_tool_returns_false_on_nonzero(self, parser):
@@ -160,10 +161,10 @@ class TestAssembleClosedPolygons:
     def test_single_closed_square(self, parser):
         """4 LINE segments forming a 10x10 square produce 1 polygon."""
         lines = [
-            ((0, 0), (10, 0)),   # bottom
-            ((10, 0), (10, 10)), # right
-            ((10, 10), (0, 10)), # top
-            ((0, 10), (0, 0)),   # left
+            ((0, 0), (10, 0)),  # bottom
+            ((10, 0), (10, 10)),  # right
+            ((10, 10), (0, 10)),  # top
+            ((0, 10), (0, 0)),  # left
         ]
         polygons = parser._assemble_closed_polygons(lines, tolerance=0.1)
         assert len(polygons) == 1
@@ -185,9 +186,7 @@ class TestAssembleClosedPolygons:
             ((25, 5), (20, 5)),
             ((20, 5), (20, 0)),
         ]
-        polygons = parser._assemble_closed_polygons(
-            room1 + room2, tolerance=0.1
-        )
+        polygons = parser._assemble_closed_polygons(room1 + room2, tolerance=0.1)
         assert len(polygons) == 2
 
     def test_unclosed_segments_produce_no_polygon(self, parser):
@@ -257,7 +256,9 @@ class TestDWGParserPathSecurity:
 
     def test_parse_rejects_null_byte(self, parser):
         """Null byte in path is rejected (C-string truncation defense)."""
-        result = parser.parse("/tmp/x\x00.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = parser.parse(
+            "/tmp/x\x00.dwg"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("SECURITY" in e for e in result.errors)
 
@@ -273,7 +274,9 @@ class TestDWGParserPathSecurity:
 
     def test_parse_rejects_missing_file(self, parser):
         """Missing file produces a friendly error."""
-        result = parser.parse("/tmp/does_not_exist_xyzzy.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = parser.parse(
+            "/tmp/does_not_exist_xyzzy.dwg"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("not found" in e for e in result.errors)
 
@@ -285,7 +288,9 @@ class TestDWGParserPathSecurity:
     def test_parse_dwg_alias_rejects_null_byte(self, parser):
         """parse_dwg() rejects null bytes."""
         with pytest.raises(UnsafePathError, match="null byte"):
-            parser.parse_dwg("/tmp/x\x00.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parser.parse_dwg(
+                "/tmp/x\x00.dxf"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_parse_dwg_alias_rejects_wrong_extension(self, parser):
         """parse_dwg() rejects wrong extension."""
@@ -304,7 +309,9 @@ class TestDWGParserPathSecurity:
     def test_convert_to_dxf_rejects_null_byte(self, parser):
         """_convert_to_dxf rejects null bytes."""
         with pytest.raises(DWGConversionError, match="SECURITY"):
-            parser._convert_to_dxf("/tmp/x\x00")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parser._convert_to_dxf(
+                "/tmp/x\x00"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -346,7 +353,9 @@ class TestDWGParserErrorHandling:
 
     def test_parse_returns_dwg_parse_result_on_error(self, parser):
         """parse() always returns DWGParseResult, never raises."""
-        result = parser.parse("/tmp/does_not_exist.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = parser.parse(
+            "/tmp/does_not_exist.dwg"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert isinstance(result, DWGParseResult)
         assert result.success is False
 
@@ -385,7 +394,9 @@ class TestDWGParseResultDataClass:
     def test_default_values(self):
         result = DWGParseResult(source_file="test.dwg", success=False)
         assert result.room_count == 0
-        assert result.conversion_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.conversion_time_s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.errors == []
         assert result.warnings == []
 
@@ -398,7 +409,9 @@ class TestDWGParseResultDataClass:
             warnings=["minor issue"],
         )
         assert result.room_count == 5
-        assert result.conversion_time_s == 1.23  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.conversion_time_s == 1.23
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert len(result.warnings) == 1
 
 

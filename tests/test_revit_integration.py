@@ -6,6 +6,7 @@ Tests for the Revit integration functionality.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from datetime import UTC, datetime
 
 import pytest
@@ -36,9 +37,9 @@ def sample_revit_elements():
                 "VoltageRating": 480,
                 "PowerRating": 1000,
                 "Manufacturer": "ABB",
-                "Model": "DRY1000"
+                "Model": "DRY1000",
             },
-            location={"x": 10.0, "y": 20.0, "z": 0.0}
+            location={"x": 10.0, "y": 20.0, "z": 0.0},
         ),
         RevitElementDTO(
             id="ele_2",
@@ -46,12 +47,8 @@ def sample_revit_elements():
             category="Electrical Panel",
             family="Distribution Panels",
             type="Main Lug",
-            parameters={
-                "VoltageRating": 480,
-                "CurrentRating": 200,
-                "PoleCount": 42
-            },
-            location={"x": 15.0, "y": 25.0, "z": 0.0}
+            parameters={"VoltageRating": 480, "CurrentRating": 200, "PoleCount": 42},
+            location={"x": 15.0, "y": 25.0, "z": 0.0},
         ),
         RevitElementDTO(
             id="ele_3",
@@ -59,12 +56,9 @@ def sample_revit_elements():
             category="Rooms",
             family="Architecture",
             type="Office",
-            parameters={
-                "Area": 200.0,
-                "Level": "Level 1"
-            },
-            location={"x": 5.0, "y": 5.0, "z": 0.0}
-        )
+            parameters={"Area": 200.0, "Level": "Level 1"},
+            location={"x": 5.0, "y": 5.0, "z": 0.0},
+        ),
     ]
     return elements
 
@@ -81,7 +75,7 @@ def sample_electrical_assets():
             power_rating=1000.0,
             manufacturer="ABB",
             model="DRY1000",
-            connections=["ele_2"]
+            connections=["ele_2"],
         ),
         ElectricalAssetDTO(
             element_id="ele_2",
@@ -91,8 +85,8 @@ def sample_electrical_assets():
             power_rating=200.0,
             manufacturer="Siemens",
             model="P1234",
-            connections=[]
-        )
+            connections=[],
+        ),
     ]
     return assets
 
@@ -104,7 +98,7 @@ async def test_revit_element_dto_creation():
         id="test_1",
         name="Test Element",
         category="Electrical Equipment",
-        parameters={"Voltage": 480, "Power": 100}
+        parameters={"Voltage": 480, "Power": 100},
     )
 
     assert element.id == "test_1"
@@ -124,7 +118,7 @@ async def test_electrical_asset_dto_creation():
         name="Test Transformer",
         voltage_rating=480.0,
         power_rating=1000.0,
-        manufacturer="Test Manufacturer"
+        manufacturer="Test Manufacturer",
     )
 
     assert asset.element_id == "test_1"
@@ -191,15 +185,15 @@ async def test_revit_sync_service_sync_project(sample_revit_elements):
 
     # Create a test project
     project = RevitProjectDTO(
-        project_id="test_project_1",
-        project_name="Test Project",
-        status="active"
+        project_id="test_project_1", project_name="Test Project", status="active"
     )
 
     # Mock the element extraction to return our sample elements
     original_extract = sync_service._extract_elements_from_revit
+
     async def mock_extract(proj_dto):
         return sample_revit_elements
+
     sync_service._extract_elements_from_revit = mock_extract
 
     try:
@@ -344,7 +338,7 @@ async def test_sync_status_dto():
         successful_elements=95,
         failed_elements=5,
         progress=100.0,
-        start_time=datetime.now(UTC)
+        start_time=datetime.now(UTC),
     )
 
     assert sync_status.sync_id == "test_sync_1"
@@ -367,7 +361,7 @@ async def test_model_metadata_dto():
         total_elements=500,
         electrical_elements=100,
         geometry_elements=400,
-        file_size=1024000
+        file_size=1024000,
     )
 
     assert metadata.model_id == "test_model_1"
@@ -381,10 +375,7 @@ async def test_model_metadata_dto():
 async def test_revit_project_dto():
     """Test RevitProjectDTO functionality."""
     project = RevitProjectDTO(
-        project_id="test_proj_1",
-        project_name="Test Project",
-        sync_enabled=True,
-        status="active"
+        project_id="test_proj_1", project_name="Test Project", sync_enabled=True, status="active"
     )
 
     assert project.project_id == "test_proj_1"

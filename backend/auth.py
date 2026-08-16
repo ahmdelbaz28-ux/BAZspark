@@ -60,10 +60,7 @@ def require_permission(permission: Permission):
         if not has_permission(role, permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Permission denied: {permission.value} required. "
-                    f"Your role: {role.value}"
-                ),
+                detail=(f"Permission denied: {permission.value} required. Your role: {role.value}"),
             )
         return role
 

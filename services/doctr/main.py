@@ -38,6 +38,7 @@ from doctr.models import ocr_predictor
 
 if detection_model_name == "db_resnet50":
     from doctr.models import db_resnet50
+
     detection_model = db_resnet50(pretrained=True).eval()
 else:
     detection_module = __import__("doctr.models", fromlist=[detection_model_name])
@@ -45,14 +46,14 @@ else:
 
 if recognition_model_name == "parseq":
     from doctr.models import parseq
+
     recognition_model = parseq(pretrained=True).eval()
 else:
     recognition_module = __import__("doctr.models", fromlist=[recognition_model_name])
     recognition_model = getattr(recognition_module, recognition_model_name)(pretrained=True).eval()
 
 predictor = ocr_predictor(
-    detection_model, recognition_model, pretrained=True,
-    export_as_straight_boxes=True
+    detection_model, recognition_model, pretrained=True, export_as_straight_boxes=True
 )
 
 if torch.cuda.is_available():
@@ -68,6 +69,7 @@ os.environ["USE_TF"] = "NO"
 # ─── Models ──────────────────────────────────────────────────────────────────
 
 T = TypeVar("T")
+
 
 class Detection[T](GenericModel):
     value: T | None
@@ -110,6 +112,7 @@ class OCRResponse(BaseModel):
 
 # ─── Processing ──────────────────────────────────────────────────────────────
 
+
 async def process_ocr_batch(image_bytes_list: list[bytes]) -> list[OCRResponse]:
     from doctr.io import DocumentFile
 
@@ -133,35 +136,43 @@ async def process_ocr_batch(image_bytes_list: list[bytes]) -> list[OCRResponse]:
             for line in block.lines:
                 words = []
                 for word in line.words:
-                    words.append(Word(
-                        value=word.value,
-                        confidence=word.confidence,
-                        geometry=word.geometry,
+                    words.append(
+                        Word(
+                            value=word.value,
+                            confidence=word.confidence,
+                            geometry=word.geometry,
+                            objectness_score=1.0,
+                            crop_orientation=Detection(value=0, confidence=1.0),
+                        )
+                    )
+                lines.append(
+                    Line(
+                        geometry=line.geometry,
                         objectness_score=1.0,
-                        crop_orientation=Detection(value=0, confidence=1.0),
-                    ))
-                lines.append(Line(
-                    geometry=line.geometry,
+                        words=words,
+                    )
+                )
+            blocks.append(
+                Block(
+                    geometry=block.geometry,
                     objectness_score=1.0,
-                    words=words,
-                ))
-            blocks.append(Block(
-                geometry=block.geometry,
-                objectness_score=1.0,
-                lines=lines,
-                artefacts=[],
-            ))
+                    lines=lines,
+                    artefacts=[],
+                )
+            )
 
-        responses.append(OCRResponse(
-            page_content=PageContent(
-                page_idx=page_idx,
-                dimensions=page.dimensions,
-                orientation=Detection(value=0.0, confidence=1.0),
-                language=Detection(value="en", confidence=1.0),
-                blocks=blocks,
-            ),
-            processing_time=time.time() - start_time,
-        ))
+        responses.append(
+            OCRResponse(
+                page_content=PageContent(
+                    page_idx=page_idx,
+                    dimensions=page.dimensions,
+                    orientation=Detection(value=0.0, confidence=1.0),
+                    language=Detection(value="en", confidence=1.0),
+                    blocks=blocks,
+                ),
+                processing_time=time.time() - start_time,
+            )
+        )
 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -170,6 +181,7 @@ async def process_ocr_batch(image_bytes_list: list[bytes]) -> list[OCRResponse]:
 
 
 # ─── FastAPI App ─────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

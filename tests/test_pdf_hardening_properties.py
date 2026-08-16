@@ -47,6 +47,7 @@ from fireai.core.nfpa72_schemas import (
 # Property-Based Tests — Coverage Radius
 # ============================================================================
 
+
 @settings(max_examples=500, deadline=1000, suppress_health_check=[HealthCheck.too_slow])
 @given(
     spacing=st.floats(min_value=0.1, max_value=30.0, allow_nan=False, allow_infinity=False),
@@ -145,6 +146,7 @@ def test_coverage_radius_from_height_properties(height):
 # Property-Based Tests — Voltage Drop
 # ============================================================================
 
+
 @settings(max_examples=500, deadline=1000, suppress_health_check=[HealthCheck.too_slow])
 @given(
     supply_v=st.floats(min_value=12.0, max_value=48.0, allow_nan=False, allow_infinity=False),
@@ -184,7 +186,7 @@ def test_voltage_drop_properties(supply_v, current_a, resistance, length_m):
         # Account for rounding at 4 decimal places
         assert result["drop_v"] >= result_shorter["drop_v"] - 0.0001, (
             f"Longer cable should have >= drop: {length_m}m → {result['drop_v']}V, "
-            f"{length_m/2}m → {result_shorter['drop_v']}V"
+            f"{length_m / 2}m → {result_shorter['drop_v']}V"
         )
 
     # Property 3: DC return path factor is included (2×)
@@ -210,7 +212,9 @@ def test_voltage_drop_properties(supply_v, current_a, resistance, length_m):
     length_m=st.floats(min_value=1.0, max_value=200.0, allow_nan=False, allow_infinity=False),
     temp_c=st.floats(min_value=20.0, max_value=70.0, allow_nan=False, allow_infinity=False),
 )
-def test_voltage_drop_with_temperature_correction(supply_v, current_a, resistance, length_m, temp_c):
+def test_voltage_drop_with_temperature_correction(
+    supply_v, current_a, resistance, length_m, temp_c
+):
     """
     Test that Pydantic VoltageDropInput includes temperature correction.
 
@@ -248,6 +252,7 @@ def test_voltage_drop_with_temperature_correction(supply_v, current_a, resistanc
 # Property-Based Tests — Convergence Config
 # ============================================================================
 
+
 @settings(max_examples=100, deadline=500)
 @given(
     epsilon=st.floats(min_value=1e-8, max_value=1.0, allow_nan=False, allow_infinity=False),
@@ -266,7 +271,8 @@ def test_convergence_config_properties(epsilon, max_iter):
 # Property-Based Tests — NaN/Inf Rejection
 # ============================================================================
 
-@given(value=st.one_of(st.just(float('nan')), st.just(float('inf')), st.just(float('-inf'))))
+
+@given(value=st.one_of(st.just(float("nan")), st.just(float("inf")), st.just(float("-inf"))))
 def test_nan_inf_rejected_in_schemas(value):
     """
     NaN and Inf values MUST be rejected in all Pydantic schemas.
@@ -283,9 +289,12 @@ def test_nan_inf_rejected_in_schemas(value):
 # Invariant Tests — Constants Consistency
 # ============================================================================
 
+
 def test_coverage_factor_equals_0_7():
     """Coverage factor must be 0.7 per NFPA 72 §17.7.4.2.3.1."""
-    assert COVERAGE_FACTOR_FLAT_CEILING == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
+    assert (
+        COVERAGE_FACTOR_FLAT_CEILING == 0.7
+    )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 def test_smoke_radius_equals_0_7_times_spacing():
@@ -296,13 +305,15 @@ def test_smoke_radius_equals_0_7_times_spacing():
 
 def test_dc_return_path_factor_is_2():
     """DC return path factor must be 2.0 per NFPA 72 §10.14."""
-    assert DC_RETURN_PATH_FACTOR == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+    assert (
+        DC_RETURN_PATH_FACTOR == 2.0
+    )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 def test_spacing_table_decreases_with_height():
     """Spacing must decrease as ceiling height increases per NFPA 72 Table 17.6.3.1.1."""
-    prev_smoke = float('inf')
-    prev_heat = float('inf')
+    prev_smoke = float("inf")
+    prev_heat = float("inf")
     for h_max, smoke_s, heat_s in NFPA72_HEIGHT_SPACING_TABLE:
         assert smoke_s <= prev_smoke, (
             f"Smoke spacing must decrease with height: {smoke_s}m at h≤{h_max}m "

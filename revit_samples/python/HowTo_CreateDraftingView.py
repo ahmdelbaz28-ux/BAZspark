@@ -22,10 +22,12 @@ from Autodesk.Revit.DB import (
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-t = Transaction(doc, 'Create Drafting View')
+t = Transaction(doc, "Create Drafting View")
 t.Start()
 
 """Create a Drafting View"""
+
+
 def get_drafting_type_id():
     """Selects First available ViewType that Matches Drafting Type."""
     viewfamily_types = FilteredElementCollector(doc).OfClass(ViewFamilyType)
@@ -33,6 +35,7 @@ def get_drafting_type_id():
         if i.ViewFamily == ViewFamily.Drafting:
             return i.Id
     return None
+
 
 drafting_type_id = get_drafting_type_id()
 drafting_view = ViewDrafting.Create(doc, drafting_type_id)

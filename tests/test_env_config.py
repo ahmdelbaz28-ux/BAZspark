@@ -5,6 +5,7 @@ test_env_config.py — Tests for fireai/env_config.py.
 
 Verifies configuration loading, validation, defaults, and environment handling.
 """
+
 from __future__ import annotations
 
 import pytest

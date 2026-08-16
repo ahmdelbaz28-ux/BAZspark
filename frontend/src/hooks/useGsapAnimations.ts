@@ -12,82 +12,26 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { CustomEase } from "gsap/CustomEase";
+import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/SplitText";
 import { type RefObject, useEffect } from "react";
-
-// ─── Register GSAP Plugins (Core plugins only - Club plugins are optional) ──────────────────────────────────────────
-gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
-
-// ─── Optional Club GSAP Plugins (loaded dynamically if available) ──────────────────────────────────────────
-// NOSONAR - typescript:S6564: Club GSAP plugins have no published TS types; `any` is needed because
-// these are dynamically imported at runtime and passed to gsap.registerPlugin() which expects object types.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
-type SplitTextType = any; // NOSONAR
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
-type DrawSVGPluginType = any; // NOSONAR
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Club GSAP plugins have no published TS types
-type CustomEaseType = any; // NOSONAR
-
-let SplitText: SplitTextType | null = null;
-let DrawSVGPlugin: DrawSVGPluginType | null = null;
-let CustomEase: CustomEaseType | null = null;
-
-async function loadClubPlugins() {
-	if (typeof window === "undefined") return;
-	try {
-		// V216/V287 FIX (Gate 4b — Visual Regression):
-		// Root cause: `external: ["gsap/SplitText","gsap/DrawSVGPlugin","gsap/CustomEase"]`
-		// in vite.config.ts (now removed) told Rollup to leave these subpaths as
-		// bare specifiers in the production bundle. Vite also statically analyzed
-		// the string literal specs of `await import("gsap/CustomEase")` (the
-		// `/* webpackIgnore: true */` magic comment is webpack-only, Vite ignores
-		// it), so the bundler HOISTED the dynamic imports to top-level STATIC
-		// imports in the production bundle:
-		//     import { CustomEase as i } from "gsap/CustomEase";
-		//     import "gsap/SplitText";
-		//     import "gsap/DrawSVGPlugin";
-		// The browser then failed to resolve the bare specifier (no import map in
-		// production HTML) and threw:
-		//     TypeError: Failed to resolve module specifier "gsap/CustomEase".
-		//     Relative references must start with "/", "./", or "../".
-		// This error propagated to React's ErrorRecovery boundary (logged as
-		// "[BAZSPARK] Fatal error caught by boundary"), which the visual smoke
-		// tests' expectNoConsoleErrors helper caught → Gate 4b failed.
-		//
-		// FIX: Removed the `external` line in vite.config.ts so Rollup bundles
-		// these subpaths into chunks (they ship as proper ES modules in
-		// node_modules/gsap/ via the package.json exports map). The bare
-		// specifiers (without `.js` — adding `.js` broke TypeScript, see
-		// gsap-club.d.ts) resolve correctly at build time and runtime. The
-		// try/catch still gracefully degrades if a plugin is unavailable.
-		const splitTextModule = await import("gsap/SplitText");
-		const drawSVGModule = await import("gsap/DrawSVGPlugin");
-		const customEaseModule = await import("gsap/CustomEase");
-
-		SplitText = splitTextModule.SplitText;
-		DrawSVGPlugin = drawSVGModule.DrawSVGPlugin;
-		CustomEase = customEaseModule.CustomEase;
-
-		gsap.registerPlugin(SplitText, DrawSVGPlugin, CustomEase);
-	} catch {
-		// Club plugins not available - animations using them will gracefully degrade
-		console.warn(
-			"[GSAP] Club plugins (SplitText, DrawSVGPlugin, CustomEase) not available. Some animations will be disabled.",
-		);
-	}
-}
-
-// Load club plugins on client side
-if (typeof window !== "undefined") {
-	void loadClubPlugins();
-}
 
 // ─── Import Centralized Presets ─────────────────────────────────────
 import { initCustomEases } from "@/lib/gsap-presets";
 
-// ─── Initialize Custom Eases (client-side only) ─────────────────────
+// ─── Register GSAP Plugins & Initialize Eases (client-side only) ────
 if (typeof window !== "undefined") {
+	gsap.registerPlugin(
+		useGSAP,
+		ScrollTrigger,
+		MotionPathPlugin,
+		CustomEase,
+		DrawSVGPlugin,
+		SplitText,
+	);
 	initCustomEases();
 }
 

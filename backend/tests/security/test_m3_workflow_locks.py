@@ -13,6 +13,7 @@ FIXES APPLIED (this round):
 These tests verify the FIXES are in place. They serve as regression
 guards: if someone removes the cleanup logic, the tests will FAIL.
 """
+
 from __future__ import annotations
 
 import ast
@@ -175,13 +176,10 @@ def test_m3_claim_text_exists_in_worklog():
 
     worklog_text = WORKLOG.read_text(encoding="utf-8")
     expected_substring = (
-        "M-3: workflow_service _workflow_locks memory leak "
-        "(no race, just unbounded dict growth)"
+        "M-3: workflow_service _workflow_locks memory leak (no race, just unbounded dict growth)"
     )
 
-    assert expected_substring in worklog_text, (
-        "M-3 claim text removed from worklog.md."
-    )
+    assert expected_substring in worklog_text, "M-3 claim text removed from worklog.md."
 
 
 if __name__ == "__main__":

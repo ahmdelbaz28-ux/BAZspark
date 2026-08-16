@@ -78,9 +78,7 @@ def classify_hazardous_zone(
         classification = "zone_2"
 
     result.details["zone_classification"] = classification
-    result.details["description"] = HAZARDOUS_ZONE_DEFINITIONS.get(
-        classification, "Non-hazardous"
-    )
+    result.details["description"] = HAZARDOUS_ZONE_DEFINITIONS.get(classification, "Non-hazardous")
 
     return result
 

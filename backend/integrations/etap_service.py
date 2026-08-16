@@ -3,6 +3,7 @@
 """
 backend/integrations/etap_service.py — ETAP integration service layer.
 """
+
 from __future__ import annotations
 
 import logging
@@ -72,7 +73,18 @@ class EtapService:
             cur.execute(
                 """INSERT INTO etap_integrations (id, project_id, host, port, username, password, enabled, last_sync, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (settings_id, project_id, settings.host, settings.port, settings.username, password_encrypted, False, None, now, now),
+                (
+                    settings_id,
+                    project_id,
+                    settings.host,
+                    settings.port,
+                    settings.username,
+                    password_encrypted,
+                    False,
+                    None,
+                    now,
+                    now,
+                ),
             )
         return {
             "id": settings_id,
@@ -160,6 +172,7 @@ class EtapService:
             # socket.create_connection, which uses it directly without
             # any further DNS lookup.
             import socket as _socket
+
             safe_ip = resolve_to_safe_ip(settings["host"])
             timeout = settings.get("timeout_seconds", 30)
             if not isinstance(timeout, int | float):
@@ -182,7 +195,10 @@ class EtapService:
             }
         except Exception:
             logger.exception("ETAP connection test failed")
-            return {"success": False, "message": "Connection failed: unable to reach the specified host and port"}
+            return {
+                "success": False,
+                "message": "Connection failed: unable to reach the specified host and port",
+            }
 
     def get_status(self, project_id: str) -> dict:
         """Get ETAP integration status."""
@@ -206,14 +222,28 @@ class EtapService:
         """list ETAP projects (simulated for now)."""
         # In a real implementation, this would query ETAP API
         return [
-            {"project_id": "etap-1", "name": "Fire Alarm System v2", "modified_at": "2026-07-20T10:00:00Z", "size_mb": 12.5, "is_remote": True},
-            {"project_id": "etap-2", "name": "Building Power Distribution", "modified_at": "2026-07-19T15:30:00Z", "size_mb": 8.3, "is_remote": True},
+            {
+                "project_id": "etap-1",
+                "name": "Fire Alarm System v2",
+                "modified_at": "2026-07-20T10:00:00Z",
+                "size_mb": 12.5,
+                "is_remote": True,
+            },
+            {
+                "project_id": "etap-2",
+                "name": "Building Power Distribution",
+                "modified_at": "2026-07-19T15:30:00Z",
+                "size_mb": 8.3,
+                "is_remote": True,
+            },
         ]
 
     def list_local_projects(self) -> list[dict]:
         """list local BAZSPARK projects."""
         with self._db._transaction() as cur:
-            cur.execute("SELECT id, name, status, created_at, updated_at FROM projects ORDER BY updated_at DESC")
+            cur.execute(
+                "SELECT id, name, status, created_at, updated_at FROM projects ORDER BY updated_at DESC"
+            )
             rows = cur.fetchall()
         return [
             {
@@ -318,7 +348,14 @@ class EtapService:
     # Logs
     # ------------------------------------------------------------------
 
-    def _log_sync(self, project_id: str, direction: str, status: str, records_synced: int, error_message: str | None = None) -> None:
+    def _log_sync(
+        self,
+        project_id: str,
+        direction: str,
+        status: str,
+        records_synced: int,
+        error_message: str | None = None,
+    ) -> None:
         """Log a sync operation."""
         log_id = _uuid()
         now = _now()

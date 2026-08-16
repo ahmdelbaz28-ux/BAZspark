@@ -122,10 +122,15 @@ class TestMandatoryInputValidation:
 
     def _is_path_safe(self, path: str) -> bool:
         from urllib.parse import unquote
+
         # Decode URL-encoded characters first
         decoded = unquote(path)
         normalized = os.path.normpath(decoded)
-        return ".." not in normalized and not normalized.startswith("/") and not normalized.startswith("\\")
+        return (
+            ".." not in normalized
+            and not normalized.startswith("/")
+            and not normalized.startswith("\\")
+        )
 
     def _sanitize_input(self, input_str: str) -> str:
         return input_str.replace("\x00", "")
@@ -134,7 +139,9 @@ class TestMandatoryInputValidation:
         sql_keywords = ["DROP", "DELETE", "INSERT", "UPDATE", "UNION", "SELECT"]
         sql_operators = ["--", ";--", "';", "1' OR"]
         upper_input = input_str.upper()
-        return any(kw in upper_input for kw in sql_keywords) or any(op in input_str for op in sql_operators)
+        return any(kw in upper_input for kw in sql_keywords) or any(
+            op in input_str for op in sql_operators
+        )
 
     def _detect_xss(self, input_str: str) -> bool:
         xss_indicators = ["<script", "javascript:", "onerror=", "onload=", "constructor"]
@@ -153,10 +160,14 @@ class TestMandatoryCryptographicSecurity:
         rotator.register("FIREAI_API_KEY", initial_key)
         # After rotation, old key should still work during grace period
         rotator.rotate("FIREAI_API_KEY", initial_key, new_key)
-        assert rotator.validate("FIREAI_API_KEY", initial_key), "Old key should be valid during grace period"
+        assert rotator.validate("FIREAI_API_KEY", initial_key), (
+            "Old key should be valid during grace period"
+        )
         # After grace period, old key should no longer be valid
         time.sleep(0.2)
-        assert not rotator.validate("FIREAI_API_KEY", initial_key), "Old key should be invalid after grace period"
+        assert not rotator.validate("FIREAI_API_KEY", initial_key), (
+            "Old key should be invalid after grace period"
+        )
         # New key should always be valid
         assert rotator.validate("FIREAI_API_KEY", new_key), "New key should always be valid"
 
@@ -221,10 +232,12 @@ class TestMandatoryAuditLogging:
         rotator.rotate("TEST_KEY", initial_key, secrets.token_hex(32))
         events_logged = []
         lock = threading.Lock()
+
         def log_event(event_id: int):
             rotator.validate("TEST_KEY", initial_key)
             with lock:
                 events_logged.append(event_id)
+
         threads = [threading.Thread(target=log_event, args=(i,)) for i in range(10)]
         for t in threads:
             t.start()
@@ -251,8 +264,9 @@ class TestMandatoryAuditLogging:
         ]
         for original in test_cases:
             masked = mask_sensitive(original)
-            assert "REDACTED" in masked or masked != original, \
+            assert "REDACTED" in masked or masked != original, (
                 f"Masking failed for: {original} -> {masked}"
+            )
 
 
 # MANDATORY SECURITY TEST 6: Data Protection & Privacy
@@ -266,10 +280,10 @@ class TestMandatoryDataProtection:
         test_data = "api_key=sk_live_abc123xyz789secretkey"
         masked_data = mask_sensitive(test_data)
         # The API key pattern should be masked
-        assert "sk_live_abc123xyz789secretkey" not in masked_data, \
+        assert "sk_live_abc123xyz789secretkey" not in masked_data, (
             f"API key not masked in logs: {test_data} -> {masked_data}"
-        assert "REDACTED" in masked_data, \
-            f"Data should be masked: {test_data} -> {masked_data}"
+        )
+        assert "REDACTED" in masked_data, f"Data should be masked: {test_data} -> {masked_data}"
 
     def test_encryption_key_storage(self):
         """CRITICAL: Encryption keys must not be stored in code."""

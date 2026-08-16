@@ -58,6 +58,7 @@ class TestFirestoppingAnnotatorInit:
 
     def test_fire_lines_are_linestrings(self):
         from shapely.geometry import LineString
+
         annotator = FirestoppingAnnotator([((0, 0), (10, 0))])
         assert isinstance(annotator.fire_lines[0], LineString)
 
@@ -95,10 +96,12 @@ class TestLocatePenetrations:
 
     def test_cable_crosses_two_walls(self):
         """Cable crossing two fire-rated walls → two penetration points."""
-        annotator = FirestoppingAnnotator([
-            ((3, 0), (3, 10)),
-            ((7, 0), (7, 10)),
-        ])
+        annotator = FirestoppingAnnotator(
+            [
+                ((3, 0), (3, 10)),
+                ((7, 0), (7, 10)),
+            ]
+        )
         penetrations = annotator.locate_penetrations([(0, 5), (10, 5)])
         assert len(penetrations) == 2
 
@@ -189,10 +192,12 @@ class TestDraftCalloutsToDxf:
         msp.add_circle.assert_not_called()
 
     def test_two_penetrations_two_callouts(self):
-        annotator = FirestoppingAnnotator([
-            ((3, 0), (3, 10)),
-            ((7, 0), (7, 10)),
-        ])
+        annotator = FirestoppingAnnotator(
+            [
+                ((3, 0), (3, 10)),
+                ((7, 0), (7, 10)),
+            ]
+        )
         msp = MagicMock()
         count = annotator.draft_callouts_to_dxf(msp, [(0, 5), (10, 5)])
         assert count == 2

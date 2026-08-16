@@ -6,6 +6,7 @@ Event types and definitions for Revit integration.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from enum import Enum
 from typing import Any
 
@@ -51,76 +52,90 @@ class RevitEventType(Enum):
 EVENT_SCHEMAS: dict[RevitEventType, dict[str, Any]] = {
     RevitEventType.REVIT_MODEL_IMPORTED: {
         "required": ["model_id", "project_id", "element_count", "timestamp"],
-        "optional": ["file_path", "user_id", "client_ip"]
+        "optional": ["file_path", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_MODEL_SYNC_STARTED: {
         "required": ["sync_id", "project_id", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.REVIT_MODEL_SYNC_COMPLETED: {
-        "required": ["sync_id", "project_id", "successful_elements", "failed_elements", "total_elements", "duration", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "required": [
+            "sync_id",
+            "project_id",
+            "successful_elements",
+            "failed_elements",
+            "total_elements",
+            "duration",
+            "timestamp",
+        ],
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.REVIT_INCREMENTAL_SYNC_COMPLETED: {
-        "required": ["sync_id", "project_id", "successful_elements", "failed_elements", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "required": [
+            "sync_id",
+            "project_id",
+            "successful_elements",
+            "failed_elements",
+            "timestamp",
+        ],
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.REVIT_SYNC_FAILED: {
         "required": ["sync_id", "project_id", "error", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.REVIT_SYNC_CANCELLED: {
         "required": ["sync_id", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.REVIT_ELEMENT_IMPORTED: {
         "required": ["element_id", "category", "target_model", "timestamp"],
-        "optional": ["project_id", "user_id", "client_ip"]
+        "optional": ["project_id", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_ELEMENT_UPDATED: {
         "required": ["element_id", "status", "timestamp"],
-        "optional": ["project_id", "user_id", "client_ip", "changes"]
+        "optional": ["project_id", "user_id", "client_ip", "changes"],
     },
     RevitEventType.REVIT_ELEMENT_PROCESSED: {
         "required": ["sync_id", "element_id", "status", "timestamp"],
-        "optional": ["project_id", "user_id", "client_ip"]
+        "optional": ["project_id", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_TOPOLOGY_CHANGED: {
         "required": ["element_id", "model_type", "change_type", "timestamp"],
-        "optional": ["project_id", "user_id", "client_ip"]
+        "optional": ["project_id", "user_id", "client_ip"],
     },
     RevitEventType.ELECTRICAL_ASSET_SYNCED: {
         "required": ["element_id", "asset_type", "name", "timestamp"],
-        "optional": ["project_id", "user_id", "client_ip"]
+        "optional": ["project_id", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_CONNECTION_ESTABLISHED: {
         "required": ["connection_id", "timestamp"],
-        "optional": ["revit_version", "user_id", "client_ip"]
+        "optional": ["revit_version", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_CONNECTION_LOST: {
         "required": ["connection_id", "timestamp"],
-        "optional": ["reason", "user_id", "client_ip"]
+        "optional": ["reason", "user_id", "client_ip"],
     },
     RevitEventType.REVIT_ADDIN_LOADED: {
         "required": ["addin_id", "version", "timestamp"],
-        "optional": ["revit_version", "user_id", "client_ip"]
+        "optional": ["revit_version", "user_id", "client_ip"],
     },
     RevitEventType.APS_UPLOAD_STARTED: {
         "required": ["upload_id", "project_id", "file_path", "timestamp"],
-        "optional": ["user_id", "client_ip"]
+        "optional": ["user_id", "client_ip"],
     },
     RevitEventType.APS_UPLOAD_COMPLETED: {
         "required": ["upload_id", "project_id", "file_path", "status", "timestamp"],
-        "optional": ["duration", "user_id", "client_ip"]
+        "optional": ["duration", "user_id", "client_ip"],
     },
     RevitEventType.APS_DERIVATIVE_JOB_STARTED: {
         "required": ["job_id", "urn", "timestamp"],
-        "optional": ["formats", "project_id", "user_id", "client_ip"]
+        "optional": ["formats", "project_id", "user_id", "client_ip"],
     },
     RevitEventType.APS_DERIVATIVE_JOB_COMPLETED: {
         "required": ["job_id", "urn", "status", "timestamp"],
-        "optional": ["progress", "outputs", "project_id", "user_id", "client_ip"]
-    }
+        "optional": ["progress", "outputs", "project_id", "user_id", "client_ip"],
+    },
 }
 
 
@@ -196,7 +211,7 @@ EVENT_CATEGORIES = {
         RevitEventType.APS_DOWNLOAD_COMPLETED,
         RevitEventType.APS_DERIVATIVE_JOB_STARTED,
         RevitEventType.APS_DERIVATIVE_JOB_COMPLETED,
-    ]
+    ],
 }
 
 

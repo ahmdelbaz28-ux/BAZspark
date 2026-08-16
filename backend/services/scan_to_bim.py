@@ -46,68 +46,72 @@ BIM_AREA_TOLERANCE = 0.1  # 10% tolerance for area validation
 
 # Room type classification patterns
 ROOM_TYPE_PATTERNS = {
-    'OFFICE': [
-        re.compile(r'(?:office|bureau|مكتب)', re.IGNORECASE),
-        re.compile(r'work', re.IGNORECASE),
-        re.compile(r'admin', re.IGNORECASE),
+    "OFFICE": [
+        re.compile(r"(?:office|bureau|مكتب)", re.IGNORECASE),
+        re.compile(r"work", re.IGNORECASE),
+        re.compile(r"admin", re.IGNORECASE),
     ],
-    'BEDROOM': [
-        re.compile(r'(?:bedroom|chambre|غرفة\s+نوم)', re.IGNORECASE),
-        re.compile(r'bed', re.IGNORECASE),
+    "BEDROOM": [
+        re.compile(r"(?:bedroom|chambre|غرفة\s+نوم)", re.IGNORECASE),
+        re.compile(r"bed", re.IGNORECASE),
     ],
-    'KITCHEN': [
-        re.compile(r'(?:kitchen|cuisine|مطبخ)', re.IGNORECASE),
-        re.compile(r'cook', re.IGNORECASE),
+    "KITCHEN": [
+        re.compile(r"(?:kitchen|cuisine|مطبخ)", re.IGNORECASE),
+        re.compile(r"cook", re.IGNORECASE),
     ],
-    'BATHROOM': [
-        re.compile(r'(?:bathroom|toilet|wc|restroom|حمام|دورة\s+ماء)', re.IGNORECASE),
-        re.compile(r'bath', re.IGNORECASE),
-        re.compile(r'toilet', re.IGNORECASE),
+    "BATHROOM": [
+        re.compile(r"(?:bathroom|toilet|wc|restroom|حمام|دورة\s+ماء)", re.IGNORECASE),
+        re.compile(r"bath", re.IGNORECASE),
+        re.compile(r"toilet", re.IGNORECASE),
     ],
-    'MEETING': [
-        re.compile(r'(?:meeting|conference|conférence|اجتماع|لقاء)', re.IGNORECASE),
-        re.compile(r'mtg', re.IGNORECASE),
-        re.compile(r'conf', re.IGNORECASE),
+    "MEETING": [
+        re.compile(r"(?:meeting|conference|conférence|اجتماع|لقاء)", re.IGNORECASE),
+        re.compile(r"mtg", re.IGNORECASE),
+        re.compile(r"conf", re.IGNORECASE),
     ],
-    'CORRIDOR': [
-        re.compile(r'(?:corridor|hallway|passage|corridor|ممر)', re.IGNORECASE),  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-        re.compile(r'hall', re.IGNORECASE),  # NOSONAR: S5855 regex reviewed  # NOSONAR — S7632: test function documented via class name / module path
-        re.compile(r'pass', re.IGNORECASE),
+    "CORRIDOR": [
+        re.compile(
+            r"(?:corridor|hallway|passage|corridor|ممر)", re.IGNORECASE
+        ),  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        re.compile(
+            r"hall", re.IGNORECASE
+        ),  # NOSONAR: S5855 regex reviewed  # NOSONAR — S7632: test function documented via class name / module path
+        re.compile(r"pass", re.IGNORECASE),
     ],
-    'STORAGE': [
-        re.compile(r'(?:storage|stockage|warehouse|مخزن)', re.IGNORECASE),
-        re.compile(r'store', re.IGNORECASE),
-        re.compile(r'ware', re.IGNORECASE),
+    "STORAGE": [
+        re.compile(r"(?:storage|stockage|warehouse|مخزن)", re.IGNORECASE),
+        re.compile(r"store", re.IGNORECASE),
+        re.compile(r"ware", re.IGNORECASE),
     ],
-    'RECEPTION': [
-        re.compile(r'(?:reception|accueil|استقبال)', re.IGNORECASE),
-        re.compile(r'recep', re.IGNORECASE),
+    "RECEPTION": [
+        re.compile(r"(?:reception|accueil|استقبال)", re.IGNORECASE),
+        re.compile(r"recep", re.IGNORECASE),
     ],
-    'CLASSROOM': [
-        re.compile(r'(?:classroom|salle\s+de\s+classe|فصل)', re.IGNORECASE),
-        re.compile(r'class', re.IGNORECASE),
-        re.compile(r'school', re.IGNORECASE),
+    "CLASSROOM": [
+        re.compile(r"(?:classroom|salle\s+de\s+classe|فصل)", re.IGNORECASE),
+        re.compile(r"class", re.IGNORECASE),
+        re.compile(r"school", re.IGNORECASE),
     ],
-    'LABORATORY': [
-        re.compile(r'(?:laboratory|labo|laboratoire|مختبر)', re.IGNORECASE),
-        re.compile(r'lab', re.IGNORECASE),
-    ]
+    "LABORATORY": [
+        re.compile(r"(?:laboratory|labo|laboratoire|مختبر)", re.IGNORECASE),
+        re.compile(r"lab", re.IGNORECASE),
+    ],
 }
 
 # Unit conversion factors
 UNIT_CONVERSION = {
-    'm2': 1.0,
-    'sqm': 1.0,
-    'square_meter': 1.0,
-    'square_metres': 1.0,
-    'sqft': 0.092903,  # Square feet to square meters
-    'square_feet': 0.092903,
-    'ft2': 0.092903,
-    'sq_yard': 0.836127,  # Square yards to square meters
-    'square_yards': 0.836127,
-    'yd2': 0.836127,
-    'hectare': 10000.0,
-    'acres': 4046.86,
+    "m2": 1.0,
+    "sqm": 1.0,
+    "square_meter": 1.0,
+    "square_metres": 1.0,
+    "sqft": 0.092903,  # Square feet to square meters
+    "square_feet": 0.092903,
+    "ft2": 0.092903,
+    "sq_yard": 0.836127,  # Square yards to square meters
+    "square_yards": 0.836127,
+    "yd2": 0.836127,
+    "hectare": 10000.0,
+    "acres": 4046.86,
 }
 
 
@@ -125,6 +129,7 @@ class BIMRoom:
         coordinates: Approximate coordinates if available
         audit_info: Audit trail information
     """
+
     id: str
     name: str
     area: float
@@ -148,6 +153,7 @@ class ScanToBIMResult:
         requires_human_review: Always True for OCR-derived data
         warnings: list of any warnings during processing
     """
+
     success: bool
     rooms: list[BIMRoom]
     statistics: dict[str, Any]
@@ -184,8 +190,10 @@ class ScanToBIMService:
         """
         # Remove special characters and extra whitespace, keeping hyphens so
         # room identifiers like "A-101" survive normalization.
-        normalized = re.sub(r'[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\-]', ' ', name)
-        normalized = ' '.join(normalized.split()).strip()
+        normalized = re.sub(
+            r"[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\-]", " ", name
+        )
+        normalized = " ".join(normalized.split()).strip()
 
         # Convert to title case for consistency
         if normalized:
@@ -193,8 +201,8 @@ class ScanToBIMService:
 
         # Keep known type keywords uppercase so acronyms like "ROOM" survive
         # title-casing ("Office room 101" -> "Office ROOM 101").
-        for keyword in ('ROOM', 'RM'):
-            normalized = re.sub(rf'\b{keyword}\b', keyword, normalized, flags=re.IGNORECASE)
+        for keyword in ("ROOM", "RM"):
+            normalized = re.sub(rf"\b{keyword}\b", keyword, normalized, flags=re.IGNORECASE)
 
         return normalized
 
@@ -216,7 +224,7 @@ class ScanToBIMService:
                     return room_type
 
         # If no specific type found, return 'OTHER'
-        return 'OTHER'
+        return "OTHER"
 
     def _validate_area(self, area: float, room_name: str) -> tuple[bool, str]:
         """
@@ -230,10 +238,16 @@ class ScanToBIMService:
             tuple of (is_valid, reason) where is_valid is True if area is valid
         """
         if area < BIM_MIN_ROOM_AREA:
-            return False, f"Area {area}m² too small for room '{room_name}' (minimum: {BIM_MIN_ROOM_AREA}m²)"
+            return (
+                False,
+                f"Area {area}m² too small for room '{room_name}' (minimum: {BIM_MIN_ROOM_AREA}m²)",
+            )
 
         if area > BIM_MAX_ROOM_AREA:
-            return False, f"Area {area}m² too large for room '{room_name}' (maximum: {BIM_MAX_ROOM_AREA}m²)"
+            return (
+                False,
+                f"Area {area}m² too large for room '{room_name}' (maximum: {BIM_MAX_ROOM_AREA}m²)",
+            )
 
         return True, ""
 
@@ -248,9 +262,9 @@ class ScanToBIMService:
             tuple of (value_in_square_meters, original_unit)
         """
         # Extract number and unit
-        match = re.match(r'(\d+\.?\d*)\s*(.*)', value_str.strip())
+        match = re.match(r"(\d+\.?\d*)\s*(.*)", value_str.strip())
         if not match:
-            return 0.0, ''
+            return 0.0, ""
 
         value = float(match.group(1))
         unit_part = match.group(2).lower().strip()
@@ -262,7 +276,7 @@ class ScanToBIMService:
                 return converted_value, unit
 
         # If no unit found, assume square meters
-        return value, 'm2'
+        return value, "m2"
 
     def _create_bim_room(self, name: str, area: float, confidence: float) -> BIMRoom:
         """
@@ -290,10 +304,14 @@ class ScanToBIMService:
             area=round(area, 2),
             room_type=room_type,
             confidence=round(confidence, 2),
-            notes=notes
+            notes=notes,
         )
 
-    def process_scan(self, file_path: str | Path, lang: str = "eng+ara") -> ScanToBIMResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def process_scan(
+        self, file_path: str | Path, lang: str = "eng+ara"
+    ) -> (
+        ScanToBIMResult
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Process a scanned document to extract BIM-ready room data.
 
@@ -317,25 +335,25 @@ class ScanToBIMService:
             return ScanToBIMResult(
                 success=False,
                 rooms=[],
-                statistics={'error': str(e)},
-                audit_trail={'error': str(e), 'file_path': str(file_path)},
-                requires_human_review=True
+                statistics={"error": str(e)},
+                audit_trail={"error": str(e), "file_path": str(file_path)},
+                requires_human_review=True,
             )
 
-        if not ocr_result['success']:
+        if not ocr_result["success"]:
             return ScanToBIMResult(
                 success=False,
                 rooms=[],
-                statistics={'error': 'OCR processing failed'},
-                audit_trail=ocr_result.get('audit_trail', {}),
-                requires_human_review=True
+                statistics={"error": "OCR processing failed"},
+                audit_trail=ocr_result.get("audit_trail", {}),
+                requires_human_review=True,
             )
 
         # Extract room-area pairs from OCR results
-        room_area_pairs = ocr_result.get('room_areas', [])
-        standalone_areas = ocr_result.get('areas_only', [])
-        extracted_text = ocr_result.get('extracted_text', '')
-        avg_confidence = ocr_result['statistics']['average_confidence']
+        room_area_pairs = ocr_result.get("room_areas", [])
+        standalone_areas = ocr_result.get("areas_only", [])
+        extracted_text = ocr_result.get("extracted_text", "")
+        avg_confidence = ocr_result["statistics"]["average_confidence"]
 
         # Create BIM rooms from room-area pairs
         bim_rooms = []
@@ -351,8 +369,12 @@ class ScanToBIMService:
             # Extract potential room names from the text
             potential_names = []
             for pattern in [
-                re.compile(r'(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+)', re.IGNORECASE),  # NOSONAR — S8786: assert kept for test clarity
-                re.compile(r'([A-Z][A-Z0-9]*\s*[A-Z0-9]*)\s+(?:ROOM|RM)', re.IGNORECASE),  # NOSONAR — S8786: assert kept for test clarity
+                re.compile(
+                    r"(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+)", re.IGNORECASE
+                ),  # NOSONAR — S8786: assert kept for test clarity
+                re.compile(
+                    r"([A-Z][A-Z0-9]*\s*[A-Z0-9]*)\s+(?:ROOM|RM)", re.IGNORECASE
+                ),  # NOSONAR — S8786: assert kept for test clarity
             ]:
                 matches = pattern.findall(extracted_text)
                 potential_names.extend(matches)
@@ -363,23 +385,38 @@ class ScanToBIMService:
                     room_name = potential_names[i]
                 else:
                     # If no names available, create generic name
-                    room_name = f"Room_{i+1}"
+                    room_name = f"Room_{i + 1}"
 
-                bim_room = self._create_bim_room(room_name, area_value, avg_confidence * 0.8)  # Lower confidence for inferred rooms
+                bim_room = self._create_bim_room(
+                    room_name, area_value, avg_confidence * 0.8
+                )  # Lower confidence for inferred rooms
                 bim_rooms.append(bim_room)
 
         # Generate statistics
-        valid_rooms = [room for room in bim_rooms if not room.notes or all('too small' not in note and 'too large' not in note for note in room.notes)]
-        invalid_rooms = [room for room in bim_rooms if room.notes and any('too small' in note or 'too large' in note for note in room.notes)]
+        valid_rooms = [
+            room
+            for room in bim_rooms
+            if not room.notes
+            or all("too small" not in note and "too large" not in note for note in room.notes)
+        ]
+        invalid_rooms = [
+            room
+            for room in bim_rooms
+            if room.notes and any("too small" in note or "too large" in note for note in room.notes)
+        ]
 
         statistics = {
-            'total_rooms_identified': len(bim_rooms),
-            'valid_rooms': len(valid_rooms),
-            'invalid_rooms': len(invalid_rooms),
-            'total_area': sum(room.area for room in valid_rooms),
-            'average_area': sum(room.area for room in valid_rooms) / len(valid_rooms) if valid_rooms else 0,
-            'average_confidence': avg_confidence,
-            'room_types_found': list({room.room_type for room in bim_rooms}),  # NOSONAR - python:S7494
+            "total_rooms_identified": len(bim_rooms),
+            "valid_rooms": len(valid_rooms),
+            "invalid_rooms": len(invalid_rooms),
+            "total_area": sum(room.area for room in valid_rooms),
+            "average_area": sum(room.area for room in valid_rooms) / len(valid_rooms)
+            if valid_rooms
+            else 0,
+            "average_confidence": avg_confidence,
+            "room_types_found": list(
+                {room.room_type for room in bim_rooms}
+            ),  # NOSONAR - python:S7494
         }
 
         # Add warnings for invalid rooms
@@ -389,15 +426,15 @@ class ScanToBIMService:
 
         # Prepare audit trail per NFPA 72-2022 §10.6
         audit_trail = {
-            'timestamp': __import__('time').time(),
-            'process_type': 'ScanToBIM',
-            'input_file': str(file_path.absolute()),
-            'ocr_audit': ocr_result.get('audit_trail', {}),
-            'requires_human_review': True,  # Always true for OCR-derived data
-            'total_rooms_extracted': len(bim_rooms),
-            'valid_rooms': len(valid_rooms),
-            'invalid_rooms': len(invalid_rooms),
-            'processing_notes': 'OCR-derived BIM data requires professional review',
+            "timestamp": __import__("time").time(),
+            "process_type": "ScanToBIM",
+            "input_file": str(file_path.absolute()),
+            "ocr_audit": ocr_result.get("audit_trail", {}),
+            "requires_human_review": True,  # Always true for OCR-derived data
+            "total_rooms_extracted": len(bim_rooms),
+            "valid_rooms": len(valid_rooms),
+            "invalid_rooms": len(invalid_rooms),
+            "processing_notes": "OCR-derived BIM data requires professional review",
         }
 
         result = ScanToBIMResult(
@@ -406,7 +443,7 @@ class ScanToBIMService:
             statistics=statistics,
             audit_trail=audit_trail,
             requires_human_review=True,  # OCR results always require human review
-            warnings=warnings
+            warnings=warnings,
         )
 
         self.logger.info(
@@ -435,26 +472,26 @@ class ScanToBIMService:
 
             # Create a simple JSON representation as a placeholder
             ifc_data = {
-                'header': {
-                    'name': 'FireAI ScanToBIM Export',
-                    'timestamp': __import__('time').time(),
-                    'software': 'FireAI ScanToBIM Service',
-                    'version': '1.0.0'
+                "header": {
+                    "name": "FireAI ScanToBIM Export",
+                    "timestamp": __import__("time").time(),
+                    "software": "FireAI ScanToBIM Service",
+                    "version": "1.0.0",
                 },
-                'rooms': [
+                "rooms": [
                     {
-                        'global_id': room.id,
-                        'name': room.name,
-                        'area': room.area,
-                        'type': room.room_type,
-                        'confidence': room.confidence,
-                        'notes': room.notes
+                        "global_id": room.id,
+                        "name": room.name,
+                        "area": room.area,
+                        "type": room.room_type,
+                        "confidence": room.confidence,
+                        "notes": room.notes,
                     }
                     for room in rooms
-                ]
+                ],
             }
 
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(ifc_data, f, indent=2, ensure_ascii=False)
 
             self.logger.info(f"Exported {len(rooms)} rooms to IFC-compatible JSON: {output_path}")
@@ -476,32 +513,41 @@ class ScanToBIMService:
             Dictionary with validation results
         """
         validation_results = {
-            'total_rooms': len(rooms),
-            'valid_rooms': 0,
-            'issues': [],
-            'summary': {}
+            "total_rooms": len(rooms),
+            "valid_rooms": 0,
+            "issues": [],
+            "summary": {},
         }
 
         for room in rooms:
             # Check for required fields
             if not room.name:
-                validation_results['issues'].append(f"Room {room.id} has no name")
+                validation_results["issues"].append(f"Room {room.id} has no name")
 
             if room.area <= 0:
-                validation_results['issues'].append(f"Room {room.name} has invalid area: {room.area}")
+                validation_results["issues"].append(
+                    f"Room {room.name} has invalid area: {room.area}"
+                )
 
             # Check confidence threshold
             if room.confidence < 50:  # Low confidence
-                validation_results['issues'].append(f"Room {room.name} has low confidence: {room.confidence}%")
+                validation_results["issues"].append(
+                    f"Room {room.name} has low confidence: {room.confidence}%"
+                )
 
             # If no issues for this room, increment valid counter
-            room_issues = [issue for issue in validation_results['issues'] if room.name in issue]
+            room_issues = [issue for issue in validation_results["issues"] if room.name in issue]
             if not room_issues:
-                validation_results['valid_rooms'] += 1
+                validation_results["valid_rooms"] += 1
 
-        validation_results['summary'] = {
-            'valid_percentage': (validation_results['valid_rooms'] / validation_results['total_rooms']) * 100 if validation_results['total_rooms'] > 0 else 0,
-            'has_issues': len(validation_results['issues']) > 0
+        validation_results["summary"] = {
+            "valid_percentage": (
+                validation_results["valid_rooms"] / validation_results["total_rooms"]
+            )
+            * 100
+            if validation_results["total_rooms"] > 0
+            else 0,
+            "has_issues": len(validation_results["issues"]) > 0,
         }
 
         return validation_results

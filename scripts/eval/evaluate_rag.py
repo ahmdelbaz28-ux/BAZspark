@@ -40,6 +40,7 @@ import httpx
 # CLI Arguments
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="BAZspark RAG Evaluation Driver — RAGAS quality benchmarks"
@@ -60,32 +61,52 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output_dir", default="results", help="Output directory (default: results)")
     p.add_argument("--collection", default=None, help="Vector DB collection name override")
     p.add_argument("--top_k", type=int, default=5, help="Reranker top-k (default: 5)")
-    p.add_argument("--vdb_top_k", type=int, default=20, help="Vector DB candidate pool size (default: 20)")
+    p.add_argument(
+        "--vdb_top_k", type=int, default=20, help="Vector DB candidate pool size (default: 20)"
+    )
     p.add_argument("--temperature", type=float, default=None, help="LLM temperature for generation")
     p.add_argument("--top_p", type=float, default=None, help="LLM top-p for generation")
     p.add_argument("--max_tokens", type=int, default=None, help="Max generation tokens")
     p.add_argument("--skip_ingestion", action="store_true", help="Skip corpus ingestion")
-    p.add_argument("--skip_evaluation", action="store_true", help="Skip RAGAS evaluation (ingest only)")
-    p.add_argument("--force_ingestion", action="store_true", help="Delete existing collection and re-ingest")
     p.add_argument(
-        "--enable_reranker", action="store_true", default=None,
-        help="Enable reranker on generate endpoint"
+        "--skip_evaluation", action="store_true", help="Skip RAGAS evaluation (ingest only)"
     )
     p.add_argument(
-        "--disable_reranker", action="store_true", default=None,
-        help="Disable reranker on generate endpoint"
+        "--force_ingestion", action="store_true", help="Delete existing collection and re-ingest"
     )
     p.add_argument(
-        "--enable_query_rewriting", action="store_true", default=None,
-        help="Enable query rewriting"
+        "--enable_reranker",
+        action="store_true",
+        default=None,
+        help="Enable reranker on generate endpoint",
     )
     p.add_argument(
-        "--disable_query_rewriting", action="store_true", default=None,
-        help="Disable query rewriting"
+        "--disable_reranker",
+        action="store_true",
+        default=None,
+        help="Disable reranker on generate endpoint",
+    )
+    p.add_argument(
+        "--enable_query_rewriting", action="store_true", default=None, help="Enable query rewriting"
+    )
+    p.add_argument(
+        "--disable_query_rewriting",
+        action="store_true",
+        default=None,
+        help="Disable query rewriting",
     )
     p.add_argument("--file_type", default="txt", help="Corpus file type (default: txt)")
-    p.add_argument("--dry_run", action="store_true", help="Validate dataset and print config without running eval")
-    p.add_argument("--timeout", type=float, default=60.0, help="HTTP timeout per request in seconds (default: 60)")
+    p.add_argument(
+        "--dry_run",
+        action="store_true",
+        help="Validate dataset and print config without running eval",
+    )
+    p.add_argument(
+        "--timeout",
+        type=float,
+        default=60.0,
+        help="HTTP timeout per request in seconds (default: 60)",
+    )
     return p.parse_args()
 
 
@@ -105,7 +126,9 @@ def load_dataset(dataset_path: Path) -> list[dict[str, Any]]:
     with open(train_file, encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, list):
-        raise ValueError(f"train.json must be a JSON array (top-level list), got {type(data).__name__}")
+        raise ValueError(
+            f"train.json must be a JSON array (top-level list), got {type(data).__name__}"
+        )
     if not all(isinstance(row, dict) for row in data):
         raise ValueError("train.json must be a list of objects (dicts)")
     missing = [i for i, row in enumerate(data) if "question" not in row or "answer" not in row]
@@ -127,6 +150,7 @@ def list_corpus_files(dataset_path: Path, file_type: str) -> list[Path]:
 # ──────────────────────────────────────────────────────────────────────────────
 # RAG Server Client (BAZspark GraphRAG endpoint)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def build_rag_url(host: str, port: int) -> str:
     return f"http://{host}:{port}"
@@ -170,8 +194,7 @@ def query_rag(
             # Normalise contexts to list of strings
             if isinstance(contexts, list):
                 ctx_strings = [
-                    c["text"] if isinstance(c, dict) and "text" in c else str(c)
-                    for c in contexts
+                    c["text"] if isinstance(c, dict) and "text" in c else str(c) for c in contexts
                 ]
             else:
                 ctx_strings = []
@@ -192,6 +215,7 @@ def query_rag(
 # ──────────────────────────────────────────────────────────────────────────────
 # RAGAS Evaluation
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def run_ragas_evaluation(
     eval_data: list[dict[str, Any]],
@@ -238,12 +262,14 @@ def run_ragas_evaluation(
     generated_answers = [row.get("generated_answer", "") for row in eval_data]
     contexts = [row.get("generated_contexts", []) or [""] for row in eval_data]
 
-    ragas_ds = Dataset.from_dict({
-        "question": questions,
-        "answer": generated_answers,
-        "contexts": contexts,
-        "ground_truth": ground_truths,
-    })
+    ragas_ds = Dataset.from_dict(
+        {
+            "question": questions,
+            "answer": generated_answers,
+            "contexts": contexts,
+            "ground_truth": ground_truths,
+        }
+    )
 
     judge = judge_model or os.environ.get("RAG_EVAL_JUDGE_MODEL", "gpt-4o-mini")
     print(f"[INFO] Running RAGAS evaluation with judge model: {judge}")
@@ -264,7 +290,9 @@ def run_ragas_evaluation(
     df = result.to_pandas()
     return {
         "nv_accuracy": df["answer_correctness"].tolist(),
-        "nv_context_relevance": df["context_precision"].tolist() if "context_precision" in df else [],
+        "nv_context_relevance": df["context_precision"].tolist()
+        if "context_precision" in df
+        else [],
         "nv_response_groundedness": df["faithfulness"].tolist() if "faithfulness" in df else [],
     }
 
@@ -273,13 +301,14 @@ def run_ragas_evaluation(
 # Main Evaluation Loop
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
     label = dataset_path.name
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Evaluating dataset: {label}")
     print(f"Dataset path: {dataset_path}")
     print(f"RAG server: http://{args.host}:{args.port}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Load dataset
     train_data = load_dataset(dataset_path)
@@ -301,12 +330,16 @@ def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
     if not args.skip_ingestion:
         print("[INFO] Skipping corpus ingestion (use a live ingestor for full pipeline).")
         print(f"       Corpus has {len(corpus_files)} files in {dataset_path / CORPUS_DIRECTORY}/")
-        print("       To ingest: point --ingestor_server_url at a running BAZspark/NV-Ingest service.")
+        print(
+            "       To ingest: point --ingestor_server_url at a running BAZspark/NV-Ingest service."
+        )
 
     # Query RAG for each row
     base_url = build_rag_url(args.host, args.port)
     enable_reranker = True if args.enable_reranker else (False if args.disable_reranker else None)
-    enable_qr = True if args.enable_query_rewriting else (False if args.disable_query_rewriting else None)
+    enable_qr = (
+        True if args.enable_query_rewriting else (False if args.disable_query_rewriting else None)
+    )
 
     eval_rows: list[dict[str, Any]] = []
     error_count = 0
@@ -333,21 +366,25 @@ def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
             print(f"  [ERROR] Row {i}: {exc}")
             result = {"answer": "", "generated_contexts": [], "retrieved_docs": []}
 
-        eval_rows.append({
-            "id": row.get("id", i),
-            "question": row["question"],
-            "answer": row["answer"],
-            "generated_answer": result.get("answer", ""),
-            "generated_contexts": result.get("generated_contexts", []),
-            "retrieved_docs": result.get("retrieved_docs", []),
-        })
+        eval_rows.append(
+            {
+                "id": row.get("id", i),
+                "question": row["question"],
+                "answer": row["answer"],
+                "generated_answer": result.get("answer", ""),
+                "generated_contexts": result.get("generated_contexts", []),
+                "retrieved_docs": result.get("retrieved_docs", []),
+            }
+        )
 
         if (i + 1) % 10 == 0:
-            print(f"  Progress: {i+1}/{len(train_data)} rows queried")
+            print(f"  Progress: {i + 1}/{len(train_data)} rows queried")
 
     # Warn on high error rate
     if error_count > len(train_data) * 0.5:
-        print(f"\n[WARN] >50% failure rate ({error_count}/{len(train_data)}). Check RAG server connectivity.")
+        print(
+            f"\n[WARN] >50% failure rate ({error_count}/{len(train_data)}). Check RAG server connectivity."
+        )
 
     # Write evaluation_data.json
     data_path = out_dir / f"rag_{label}_evaluation_data.json"
@@ -389,22 +426,26 @@ def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
     with open(results_path, "w", encoding="utf-8") as f:
         json.dump(scores, f, indent=2)
     with open(metrics_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "dataset": label,
-            "ingestion_metrics_list": [],
-            "evaluation_metrics": summary,
-        }, f, indent=2)
+        json.dump(
+            {
+                "dataset": label,
+                "ingestion_metrics_list": [],
+                "evaluation_metrics": summary,
+            },
+            f,
+            indent=2,
+        )
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"RESULTS — {label}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  nv_accuracy_mean              : {summary['nv_accuracy_mean']}")
     print(f"  nv_context_relevance_mean     : {summary['nv_context_relevance_mean']}")
     print(f"  nv_response_groundedness_mean : {summary['nv_response_groundedness_mean']}")
     print(f"  mock_scores                   : {summary['mock_scores']}")
     print(f"\n  Summary: {summary_path}")
     print(f"  Data:    {data_path}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # Quality gate warning
     acc = summary["nv_accuracy_mean"]
@@ -416,6 +457,7 @@ def evaluate_dataset(args: argparse.Namespace, dataset_path: Path) -> None:
 # ──────────────────────────────────────────────────────────────────────────────
 # Entry Point
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     args = parse_args()

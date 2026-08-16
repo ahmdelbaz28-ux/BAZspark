@@ -40,7 +40,9 @@ import logging
 import sys
 import warnings
 
-warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
+warnings.filterwarnings(
+    "ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning
+)
 import tempfile
 from pathlib import Path
 
@@ -136,6 +138,7 @@ def _enforce_root_test_api_key(request, monkeypatch):
 # Generate a stable test secret at import time (safe — test-only, no prod access).
 if not _os.environ.get("FIREAI_SESSION_SECRET"):
     import secrets as _secrets
+
     _os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
 
 # a PRIVATE temp directory with mode 0o700. Hardcoded /tmp paths are flagged
@@ -181,10 +184,10 @@ if _fireai_dir in sys.path:
     sys.path.remove(_fireai_dir)
 
 # Clear cached 'core' module if it resolved to fireai/core/ instead of project root
-if 'core' in sys.modules:
-    mod_file = getattr(sys.modules['core'], '__file__', '')
-    if mod_file and 'fireai/core' in mod_file:
-        del sys.modules['core']
+if "core" in sys.modules:
+    mod_file = getattr(sys.modules["core"], "__file__", "")
+    if mod_file and "fireai/core" in mod_file:
+        del sys.modules["core"]
 
 
 # ─── Logging Configuration ──────────────────────────────────────────────────
@@ -216,9 +219,10 @@ def _reset_audit_store():
     """
     try:
         import fireai.core.audit_store as _as
-        if hasattr(_as, '_store'):
+
+        if hasattr(_as, "_store"):
             _as._store.clear()
-        if hasattr(_as, 'reset'):
+        if hasattr(_as, "reset"):
             _as.reset()
     except (ImportError, AttributeError):
         pass
@@ -226,25 +230,27 @@ def _reset_audit_store():
     # Post-import cleanup (V27: Python re-adds fireai/ to sys.path)
     if _fireai_dir in sys.path:
         sys.path.remove(_fireai_dir)
-    if 'core' in sys.modules:
-        mod_file = getattr(sys.modules['core'], '__file__', '')
-        if mod_file and 'fireai/core' in mod_file:
-            del sys.modules['core']
+    if "core" in sys.modules:
+        mod_file = getattr(sys.modules["core"], "__file__", "")
+        if mod_file and "fireai/core" in mod_file:
+            del sys.modules["core"]
 
     yield  # Test runs here
 
     # Cleanup after test
     try:
         import fireai.core.audit_store as _as
-        if hasattr(_as, '_store'):
+
+        if hasattr(_as, "_store"):
             _as._store.clear()
-        if hasattr(_as, 'reset'):
+        if hasattr(_as, "reset"):
             _as.reset()
     except (ImportError, AttributeError):
         pass
 
 
 # ─── Geometry Fixtures ──────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def safe_room_polygon():
@@ -255,6 +261,7 @@ def safe_room_polygon():
     and NFPA compliance tests. Does NOT contain obstructions.
     """
     from shapely.geometry import Polygon
+
     return Polygon([(0, 0), (10, 0), (10, 8), (0, 8)])
 
 
@@ -267,6 +274,7 @@ def large_room_polygon():
     multiple detectors per NFPA 72 spacing rules.
     """
     from shapely.geometry import Polygon
+
     return Polygon([(0, 0), (30, 0), (30, 30), (0, 30)])
 
 
@@ -278,6 +286,7 @@ def corridor_polygon():
     Tests corridor-specific NFPA 72 spacing rules (narrow width).
     """
     from shapely.geometry import Polygon
+
     return Polygon([(0, 0), (20, 0), (20, 2), (0, 2)])
 
 
@@ -290,9 +299,8 @@ def l_shaped_polygon():
     where a single detector may not cover all corners.
     """
     from shapely.geometry import Polygon
-    return Polygon([
-        (0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)
-    ])
+
+    return Polygon([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
 
 
 @pytest.fixture
@@ -304,10 +312,12 @@ def sample_obstruction():
     to be placed away from them per NFPA 72.
     """
     from shapely.geometry import Polygon
+
     return Polygon([(4, 4), (6, 4), (6, 6), (4, 6)])
 
 
 # ─── NFPA 72 Standard Value Fixtures ───────────────────────────────────────
+
 
 @pytest.fixture
 def smoke_detector_radius():
@@ -353,6 +363,7 @@ def max_heat_spacing():
 
 # ─── Electrical Fixtures ────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def standard_wire_resistances():
     """
@@ -385,6 +396,7 @@ def standard_supply_voltages():
 
 
 # ─── Environment Fixtures ──────────────────────────────────────────────────
+
 
 @pytest.fixture
 def clean_env(monkeypatch):
@@ -439,6 +451,7 @@ def temp_directory():
 
 # ─── Database Fixtures ──────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def in_memory_db():
     """
@@ -449,15 +462,17 @@ def in_memory_db():
     """
     try:
         from fireai.core.database import UniversalDataModel
+
         db = UniversalDataModel(db_path=":memory:")
         yield db
-        if hasattr(db, 'close'):
+        if hasattr(db, "close"):
             db.close()
     except ImportError:
         pytest.skip("UniversalDataModel not available")
 
 
 # ─── Safety-Critical Markers ────────────────────────────────────────────────
+
 
 def pytest_collection_modifyitems(config, items):
     """

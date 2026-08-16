@@ -14,6 +14,7 @@ However, any user with INTEGRATION_MANAGE can:
   2. Reach AWS/GCP metadata endpoints (169.254.169.254, metadata.google.internal)
   3. Pivot to internal services (Redis on 6379, Qdrant on 6333, Neo4j on 7687)
 """
+
 import socket
 import sys
 from pathlib import Path
@@ -35,13 +36,16 @@ DNS_REBINDING_HOST = "localtest.me"
 try:
     resolved = socket.gethostbyname(DNS_REBINDING_HOST)
     if not resolved.startswith("127."):
-        print(f"WARNING: {DNS_REBINDING_HOST} resolved to {resolved}, not 127.0.0.1. "
-              f"Test may not be meaningful.")
+        print(
+            f"WARNING: {DNS_REBINDING_HOST} resolved to {resolved}, not 127.0.0.1. "
+            f"Test may not be meaningful."
+        )
 except socket.gaierror:
     pass  # Test will still fail at validation layer
 
 
 # ─── Tests for EtapConnectionSettings ──────────────────────────────────────
+
 
 def test_etap_connection_settings_rejects_literal_loopback():
     """Baseline: literal 127.0.0.1 IS rejected (existing fix works)."""
@@ -66,6 +70,7 @@ def test_etap_connection_settings_rejects_dns_rebinding_to_loopback():
         _reset_dns_state_for_testing,
         resolve_to_safe_ip,
     )
+
     _reset_dns_state_for_testing()
 
     # Step 1: validator accepts (pure — no DNS)
@@ -94,6 +99,7 @@ def test_etap_connection_settings_rejects_aws_metadata_literal():
 
 
 # ─── Tests for EtapSettingsUpdate ──────────────────────────────────────────
+
 
 def test_etap_settings_update_rejects_literal_loopback():
     """EtapSettingsUpdate must reject 127.0.0.1 (currently has NO SSRF check)."""
@@ -134,6 +140,7 @@ def test_etap_settings_update_rejects_dns_rebinding():
         _reset_dns_state_for_testing,
         resolve_to_safe_ip,
     )
+
     _reset_dns_state_for_testing()
 
     # Step 1: validator accepts (pure — no DNS)
@@ -143,14 +150,13 @@ def test_etap_settings_update_rejects_dns_rebinding():
     # Step 2: service-layer resolver rejects
     try:
         resolve_to_safe_ip(DNS_REBINDING_HOST)
-        raise AssertionError(
-            f"SSRF bypass: resolve_to_safe_ip accepted '{DNS_REBINDING_HOST}'."
-        )
+        raise AssertionError(f"SSRF bypass: resolve_to_safe_ip accepted '{DNS_REBINDING_HOST}'.")
     except SSRFError:
         pass  # Good: service layer rejected it
 
 
 # ─── Tests for legitimate public hostnames (regression guard) ──────────────
+
 
 def test_etap_connection_settings_accepts_public_hostname():
     """Regression: legitimate public hostnames (e.g. example.com) must still work."""
@@ -166,4 +172,5 @@ def test_etap_settings_update_accepts_public_hostname():
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

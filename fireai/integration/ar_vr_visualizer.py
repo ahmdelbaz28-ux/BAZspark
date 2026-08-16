@@ -608,7 +608,11 @@ class ARVRVisualizer:
 
         return scene
 
-    def _compute_bounding_box(self, design: DesignData) -> BoundingBox:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _compute_bounding_box(
+        self, design: DesignData
+    ) -> (
+        BoundingBox
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Compute the bounding box from room polygons."""
         all_points: list[tuple[float, float, float]] = []
 
@@ -802,7 +806,9 @@ class ARVRVisualizer:
             return "cylinder"
         return "sphere"
 
-    def _add_detectors(self, scene: Scene, design: DesignData) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _add_detectors(
+        self, scene: Scene, design: DesignData
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Add detector nodes to the scene."""
         for det in design.detectors:
             det_id = det.get("detector_id", str(uuid.uuid4()))
@@ -812,7 +818,11 @@ class ARVRVisualizer:
             if isinstance(pos_raw, list | tuple):
                 x = float(pos_raw[0]) if len(pos_raw) >= 1 else 0.0
                 z = float(pos_raw[1]) if len(pos_raw) >= 2 else 0.0
-                y = float(pos_raw[2]) if len(pos_raw) >= 3 else self.FLOOR_Y + self.DEFAULT_CEILING_HEIGHT
+                y = (
+                    float(pos_raw[2])
+                    if len(pos_raw) >= 3
+                    else self.FLOOR_Y + self.DEFAULT_CEILING_HEIGHT
+                )
             else:
                 x, y, z = 0.0, self.FLOOR_Y + self.DEFAULT_CEILING_HEIGHT, 0.0
 
@@ -935,7 +945,9 @@ class ARVRVisualizer:
             )
             scene.nodes.append(panel_node)
 
-    def _add_cables(self, scene: Scene, design: DesignData) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _add_cables(
+        self, scene: Scene, design: DesignData
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Add cable routing visualization nodes to the scene."""
         cable_mat = Material(
             name="cable_routing",
@@ -957,11 +969,13 @@ class ARVRVisualizer:
             route_len = len(route)
             if route_len >= 6 and route_len % 3 == 0:
                 for i in range(0, route_len, 3):
-                    points.append((
-                        float(route[i]),
-                        float(route[i + 1]),
-                        float(route[i + 2]),
-                    ))
+                    points.append(
+                        (
+                            float(route[i]),
+                            float(route[i + 1]),
+                            float(route[i + 2]),
+                        )
+                    )
             elif route_len >= 6:
                 for i in range(0, route_len - 2, 2):
                     x = float(route[i])
@@ -1106,7 +1120,9 @@ class ARVRVisualizer:
 
     # ── Format: Three.js ─────────────────────────────────────────────────
 
-    def _scene_to_threejs(self, scene: Scene) -> dict:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _scene_to_threejs(
+        self, scene: Scene
+    ) -> dict:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Convert the scene graph to Three.js JSON Object format (v3.1)."""
         geometries: list[dict] = []
         materials_list: list[dict] = []
@@ -1198,7 +1214,11 @@ class ARVRVisualizer:
 
     # ── Format: glTF 2.0 binary ──────────────────────────────────────────
 
-    def _scene_to_glb(self, scene: Scene) -> bytes:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _scene_to_glb(
+        self, scene: Scene
+    ) -> (
+        bytes
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Generate a minimal binary glTF (GLB) representation.
 
@@ -1221,24 +1241,28 @@ class ARVRVisualizer:
         # Collect vertex data for each node
         for _node_idx, node in enumerate(scene.nodes):
             if not node.geometry:
-                nodes_json.append({
-                    "name": node.name,
-                    "translation": node.position.to_list(),
-                    "rotation": [0, 0, 0, 1],
-                    "scale": node.scale.to_list(),
-                })
+                nodes_json.append(
+                    {
+                        "name": node.name,
+                        "translation": node.position.to_list(),
+                        "rotation": [0, 0, 0, 1],
+                        "scale": node.scale.to_list(),
+                    }
+                )
                 mat_refs.append(None)
                 continue
 
             # Generate primitive geometry
             verts, tris = self._generate_primitive_mesh(node.geometry)
             if not verts or not tris:
-                nodes_json.append({
-                    "name": node.name,
-                    "translation": node.position.to_list(),
-                    "rotation": [0, 0, 0, 1],
-                    "scale": node.scale.to_list(),
-                })
+                nodes_json.append(
+                    {
+                        "name": node.name,
+                        "translation": node.position.to_list(),
+                        "rotation": [0, 0, 0, 1],
+                        "scale": node.scale.to_list(),
+                    }
+                )
                 mat_refs.append(None)
                 continue
 
@@ -1255,65 +1279,79 @@ class ARVRVisualizer:
             all_positions.extend(translated)
             all_indices.extend(tri + offset_pos for tri in tris)
 
-            accessors_json.append({
-                "bufferView": 0,
-                "componentType": 5126,
-                "count": len(translated) // 3,
-                "type": "VEC3",
-                "max": [
-                    max(translated[i] for i in range(0, len(translated), 3)),
-                    max(translated[i + 1] for i in range(0, len(translated), 3)),
-                    max(translated[i + 2] for i in range(0, len(translated), 3)),
-                ],
-                "min": [
-                    min(translated[i] for i in range(0, len(translated), 3)),
-                    min(translated[i + 1] for i in range(0, len(translated), 3)),
-                    min(translated[i + 2] for i in range(0, len(translated), 3)),
-                ],
-            })
+            accessors_json.append(
+                {
+                    "bufferView": 0,
+                    "componentType": 5126,
+                    "count": len(translated) // 3,
+                    "type": "VEC3",
+                    "max": [
+                        max(translated[i] for i in range(0, len(translated), 3)),
+                        max(translated[i + 1] for i in range(0, len(translated), 3)),
+                        max(translated[i + 2] for i in range(0, len(translated), 3)),
+                    ],
+                    "min": [
+                        min(translated[i] for i in range(0, len(translated), 3)),
+                        min(translated[i + 1] for i in range(0, len(translated), 3)),
+                        min(translated[i + 2] for i in range(0, len(translated), 3)),
+                    ],
+                }
+            )
 
-            accessors_json.append({
-                "bufferView": 1,
-                "componentType": 5123,
-                "count": len(tris),
-                "type": "SCALAR",
-            })
+            accessors_json.append(
+                {
+                    "bufferView": 1,
+                    "componentType": 5123,
+                    "count": len(tris),
+                    "type": "SCALAR",
+                }
+            )
 
             mesh_idx = len(meshes_json)
 
             if node.material:
                 mat_idx = len(materials_json)
-                materials_json.append({
-                    "pbrMetallicRoughness": {
-                        "baseColorFactor": self._hex_to_rgba(node.material.color, node.material.opacity),
-                        "metallicFactor": node.material.metallic,
-                        "roughnessFactor": node.material.roughness,
-                    },
-                    "alphaMode": "BLEND" if node.material.transparent else "OPAQUE",
-                    "doubleSided": node.material.side == "double",
-                    "name": node.material.name,
-                })
+                materials_json.append(
+                    {
+                        "pbrMetallicRoughness": {
+                            "baseColorFactor": self._hex_to_rgba(
+                                node.material.color, node.material.opacity
+                            ),
+                            "metallicFactor": node.material.metallic,
+                            "roughnessFactor": node.material.roughness,
+                        },
+                        "alphaMode": "BLEND" if node.material.transparent else "OPAQUE",
+                        "doubleSided": node.material.side == "double",
+                        "name": node.material.name,
+                    }
+                )
             else:
                 mat_idx = -1
 
-            meshes_json.append({
-                "primitives": [{
-                    "attributes": {"POSITION": len(accessors_json) - 2},
-                    "indices": len(accessors_json) - 1,
-                    "material": mat_idx if mat_idx >= 0 else None,
-                }],
-                "name": node.name,
-            })
+            meshes_json.append(
+                {
+                    "primitives": [
+                        {
+                            "attributes": {"POSITION": len(accessors_json) - 2},
+                            "indices": len(accessors_json) - 1,
+                            "material": mat_idx if mat_idx >= 0 else None,
+                        }
+                    ],
+                    "name": node.name,
+                }
+            )
 
             mat_refs.append(mat_idx if mat_idx >= 0 else None)
 
-            nodes_json.append({
-                "name": node.name,
-                "mesh": mesh_idx,
-                "translation": [0, 0, 0],
-                "rotation": [0, 0, 0, 1],
-                "scale": [1, 1, 1],
-            })
+            nodes_json.append(
+                {
+                    "name": node.name,
+                    "mesh": mesh_idx,
+                    "translation": [0, 0, 0],
+                    "rotation": [0, 0, 0, 1],
+                    "scale": [1, 1, 1],
+                }
+            )
 
         # Build buffer (positions + indices)
         pos_bytes = struct.pack(f"{len(all_positions)}f", *all_positions)
@@ -1325,7 +1363,12 @@ class ARVRVisualizer:
 
         buffer_views = [
             {"buffer": 0, "byteOffset": 0, "byteLength": pos_byte_length, "target": 34962},
-            {"buffer": 0, "byteOffset": idx_byte_offset, "byteLength": len(idx_bytes), "target": 34963},
+            {
+                "buffer": 0,
+                "byteOffset": idx_byte_offset,
+                "byteLength": len(idx_bytes),
+                "target": 34963,
+            },
         ]
 
         scene_json: dict = {
@@ -1352,7 +1395,9 @@ class ARVRVisualizer:
         # GLB header: magic (4), version (4), length (4)
         glb_length = 12 + 8 + len(json_bytes) + json_pad + 8 + len(total_buffer)
 
-        header = struct.pack("<IIII", 0x46546C67, 2, glb_length, 12 + 8 + len(json_bytes) + json_pad)
+        header = struct.pack(
+            "<IIII", 0x46546C67, 2, glb_length, 12 + 8 + len(json_bytes) + json_pad
+        )
 
         # JSON chunk
         json_chunk_header = struct.pack("<II", len(json_bytes) + json_pad, 0x4E4F534A)
@@ -1408,16 +1453,68 @@ class ARVRVisualizer:
     ) -> tuple[list[float], list[int]]:
         hw, hh, hd = w / 2, h / 2, d / 2
         verts = [
-            -hw, -hh, -hd,  hw, -hh, -hd,  hw,  hh, -hd, -hw,  hh, -hd,
-            -hw, -hh,  hd,  hw, -hh,  hd,  hw,  hh,  hd, -hw,  hh,  hd,
+            -hw,
+            -hh,
+            -hd,
+            hw,
+            -hh,
+            -hd,
+            hw,
+            hh,
+            -hd,
+            -hw,
+            hh,
+            -hd,
+            -hw,
+            -hh,
+            hd,
+            hw,
+            -hh,
+            hd,
+            hw,
+            hh,
+            hd,
+            -hw,
+            hh,
+            hd,
         ]
         indices = [
-            0, 1, 2,  0, 2, 3,
-            1, 5, 6,  1, 6, 2,
-            5, 4, 7,  5, 7, 6,
-            4, 0, 3,  4, 3, 7,
-            3, 2, 6,  3, 6, 7,
-            4, 5, 1,  4, 1, 0,
+            0,
+            1,
+            2,
+            0,
+            2,
+            3,
+            1,
+            5,
+            6,
+            1,
+            6,
+            2,
+            5,
+            4,
+            7,
+            5,
+            7,
+            6,
+            4,
+            0,
+            3,
+            4,
+            3,
+            7,
+            3,
+            2,
+            6,
+            3,
+            6,
+            7,
+            4,
+            5,
+            1,
+            4,
+            1,
+            0,
         ]
         return verts, indices
 
@@ -1522,26 +1619,30 @@ class ARVRVisualizer:
     def _scene_to_aframe(self, scene: Scene) -> str:
         """Generate a self-contained A-Frame HTML document."""
         html_parts: list[str] = []
-        html_parts.append('<!DOCTYPE html>')
-        html_parts.append('<html>')
-        html_parts.append('<head>')
+        html_parts.append("<!DOCTYPE html>")
+        html_parts.append("<html>")
+        html_parts.append("<head>")
         html_parts.append('<meta charset="utf-8">')
         html_parts.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
-        html_parts.append('<title>Fire Alarm Design - AR/VR View</title>')
+        html_parts.append("<title>Fire Alarm Design - AR/VR View</title>")
         html_parts.append('<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>')
-        html_parts.append('<script src="https://unpkg.com/aframe-event-set-component@3.0.0/dist/aframe-event-set-component.min.js"></script>')
-        html_parts.append('<script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>')
-        html_parts.append('<style>')
-        html_parts.append('  body { margin: 0; overflow: hidden; }')
-        html_parts.append('  .annotation-label {')
-        html_parts.append('    color: white; font-family: monospace; font-size: 14px;')
-        html_parts.append('    background: rgba(0,0,0,0.7); padding: 4px 8px;')
-        html_parts.append('    border-radius: 4px; pointer-events: none;')
-        html_parts.append('    text-align: center; white-space: nowrap;')
-        html_parts.append('  }')
-        html_parts.append('</style>')
-        html_parts.append('</head>')
-        html_parts.append('<body>')
+        html_parts.append(
+            '<script src="https://unpkg.com/aframe-event-set-component@3.0.0/dist/aframe-event-set-component.min.js"></script>'
+        )
+        html_parts.append(
+            '<script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>'
+        )
+        html_parts.append("<style>")
+        html_parts.append("  body { margin: 0; overflow: hidden; }")
+        html_parts.append("  .annotation-label {")
+        html_parts.append("    color: white; font-family: monospace; font-size: 14px;")
+        html_parts.append("    background: rgba(0,0,0,0.7); padding: 4px 8px;")
+        html_parts.append("    border-radius: 4px; pointer-events: none;")
+        html_parts.append("    text-align: center; white-space: nowrap;")
+        html_parts.append("  }")
+        html_parts.append("</style>")
+        html_parts.append("</head>")
+        html_parts.append("<body>")
 
         # Scene
         bbox = scene.bounding_box
@@ -1552,35 +1653,59 @@ class ARVRVisualizer:
         else:
             camera_pos = "10 5 10"
 
-        html_parts.append('<a-scene background="color: #1a1a2e" renderer="antialias: true" vr-mode-ui="enabled: true">')
+        html_parts.append(
+            '<a-scene background="color: #1a1a2e" renderer="antialias: true" vr-mode-ui="enabled: true">'
+        )
 
         # Lighting
         html_parts.append('  <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>')
-        html_parts.append('  <a-light type="directional" color="#ffffff" intensity="0.8" position="10 20 10"></a-light>')
-        html_parts.append('  <a-light type="directional" color="#ffffff" intensity="0.4" position="-10 10 -10"></a-light>')
+        html_parts.append(
+            '  <a-light type="directional" color="#ffffff" intensity="0.8" position="10 20 10"></a-light>'
+        )
+        html_parts.append(
+            '  <a-light type="directional" color="#ffffff" intensity="0.4" position="-10 10 -10"></a-light>'
+        )
 
         # Camera with guided tour
         html_parts.append(f'  <a-entity id="camera-rig" position="{camera_pos}">')
-        html_parts.append('    <a-entity id="camera" camera="active: true" wasd-controls look-controls position="0 1.6 0">')
-        html_parts.append('      <a-cursor id="cursor" fuse="false" raycaster="objects: .clickable"></a-cursor>')
-        html_parts.append('    </a-entity>')
-        html_parts.append('  </a-entity>')  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        html_parts.append(
+            '    <a-entity id="camera" camera="active: true" wasd-controls look-controls position="0 1.6 0">'
+        )
+        html_parts.append(
+            '      <a-cursor id="cursor" fuse="false" raycaster="objects: .clickable"></a-cursor>'
+        )
+        html_parts.append("    </a-entity>")
+        html_parts.append(
+            "  </a-entity>"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
         # VR controller hints
-        html_parts.append('  <!-- VR Controller Support -->')
-        html_parts.append('  <a-entity id="left-hand" hand-controls="hand: left" controller-listeners>')
-        html_parts.append('    <a-entity id="laser-left" laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>')
-        html_parts.append('  </a-entity>')
-        html_parts.append('  <a-entity id="right-hand" hand-controls="hand: right" controller-listeners>')
-        html_parts.append('    <a-entity id="laser-right" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>')
-        html_parts.append('  </a-entity>')
-        html_parts.append('  <a-entity id="teleport-rig" movement-controls="cameraRig: #camera-rig; speed: 2"></a-entity>')
+        html_parts.append("  <!-- VR Controller Support -->")
+        html_parts.append(
+            '  <a-entity id="left-hand" hand-controls="hand: left" controller-listeners>'
+        )
+        html_parts.append(
+            '    <a-entity id="laser-left" laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>'
+        )
+        html_parts.append("  </a-entity>")
+        html_parts.append(
+            '  <a-entity id="right-hand" hand-controls="hand: right" controller-listeners>'
+        )
+        html_parts.append(
+            '    <a-entity id="laser-right" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>'
+        )
+        html_parts.append("  </a-entity>")
+        html_parts.append(
+            '  <a-entity id="teleport-rig" movement-controls="cameraRig: #camera-rig; speed: 2"></a-entity>'
+        )
 
         # Room geometry
         for node in scene.nodes:
             if node.name.startswith("room_"):
                 self._aframe_add_room_group(html_parts, node)
-            elif node.name.startswith("floor_") or node.name.startswith("ceiling_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+            elif node.name.startswith("floor_") or node.name.startswith(
+                "ceiling_"
+            ):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 self._aframe_add_box(html_parts, node)
             elif node.name.startswith("detector_"):
                 self._aframe_add_detector(html_parts, node)
@@ -1594,89 +1719,108 @@ class ARVRVisualizer:
                 self._aframe_add_coverage(html_parts, node)
 
         # Annotation overlay instructions
-        html_parts.append('  <!-- Annotation tooltip -->')
+        html_parts.append("  <!-- Annotation tooltip -->")
         html_parts.append('  <a-entity id="tooltip" position="0 0 0" visible="false">')
-        html_parts.append('    <a-plane color="#333" width="1.2" height="0.4" position="0 0.3 0" opacity="0.85"></a-plane>')
-        html_parts.append('    <a-text id="tooltip-text" value="" position="0 0.3 0.01" align="center" color="#FFF" width="1.1"></a-text>')
-        html_parts.append('  </a-entity>')
+        html_parts.append(
+            '    <a-plane color="#333" width="1.2" height="0.4" position="0 0.3 0" opacity="0.85"></a-plane>'
+        )
+        html_parts.append(
+            '    <a-text id="tooltip-text" value="" position="0 0.3 0.01" align="center" color="#FFF" width="1.1"></a-text>'
+        )
+        html_parts.append("  </a-entity>")
 
         # Guided tour button
-        html_parts.append('  <!-- Guided Tour Control -->')
+        html_parts.append("  <!-- Guided Tour Control -->")
         html_parts.append('  <a-entity position="-0.8 -0.6 -0.5" camera-parent>')
-        html_parts.append('    <a-plane id="tour-btn" color="#2196F3" width="0.3" height="0.12" shader="flat" class="clickable"')
-        html_parts.append('      event-set__click="_event: click; _target: #camera-rig; animation__guided_tour: property: position; dur: 0">')
-        html_parts.append('      <a-text value="TOUR" color="white" align="center" position="0 0 0.02" scale="0.01 0.01 0.01"></a-text>')
-        html_parts.append('    </a-plane>')
-        html_parts.append('  </a-entity>')
+        html_parts.append(
+            '    <a-plane id="tour-btn" color="#2196F3" width="0.3" height="0.12" shader="flat" class="clickable"'
+        )
+        html_parts.append(
+            '      event-set__click="_event: click; _target: #camera-rig; animation__guided_tour: property: position; dur: 0">'
+        )
+        html_parts.append(
+            '      <a-text value="TOUR" color="white" align="center" position="0 0 0.02" scale="0.01 0.01 0.01"></a-text>'
+        )
+        html_parts.append("    </a-plane>")
+        html_parts.append("  </a-entity>")
 
         # Scene transition hint for VR
         html_parts.append('  <a-entity position="0 0.2 -0.5" camera-parent>')
-        html_parts.append('    <a-text value="Press ENTER for VR mode" color="#888" align="center" scale="0.01 0.01 0.01" position="0 0 0"></a-text>')
-        html_parts.append('  </a-entity>')
+        html_parts.append(
+            '    <a-text value="Press ENTER for VR mode" color="#888" align="center" scale="0.01 0.01 0.01" position="0 0 0"></a-text>'
+        )
+        html_parts.append("  </a-entity>")
 
         # Guided tour animation (camera path)
         if scene.camera_paths:
             path = scene.camera_paths[0]
             if path.keyframes:
                 html_parts.append('  <a-animation id="guided-tour-anim" attribute="position"')
-                html_parts.append(f'    dur="{int(sum(kf.duration_sec for kf in path.keyframes) * 1000)}"')
+                html_parts.append(
+                    f'    dur="{int(sum(kf.duration_sec for kf in path.keyframes) * 1000)}"'
+                )
                 html_parts.append('    fill="backwards" repeat="indefinite"')
                 html_parts.append('    begin="tour-start"')
                 values = "; ".join(
-                    f"{kf.position.x} {kf.position.y} {kf.position.z}"
-                    for kf in path.keyframes
+                    f"{kf.position.x} {kf.position.y} {kf.position.z}" for kf in path.keyframes
                 )
                 html_parts.append(f'    values="{values}"')
-                html_parts.append('  ></a-animation>')
+                html_parts.append("  ></a-animation>")
 
-        html_parts.append('</a-scene>')
+        html_parts.append("</a-scene>")
 
         # JavaScript for annotations and tour
-        html_parts.append('<script>')
+        html_parts.append("<script>")
         html_parts.append('  AFRAME.registerComponent("controller-listeners", {')
-        html_parts.append('    init: function() {')
+        html_parts.append("    init: function() {")
         html_parts.append('      this.el.addEventListener("triggerdown", function(evt) {')
         html_parts.append('        console.log("VR trigger pressed");')
-        html_parts.append('      });')
-        html_parts.append('    }')
-        html_parts.append('  });')  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-        html_parts.append('')
-        html_parts.append('  // Click handler for device annotations')
+        html_parts.append("      });")
+        html_parts.append("    }")
+        html_parts.append(
+            "  });"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        html_parts.append("")
+        html_parts.append("  // Click handler for device annotations")
         html_parts.append('  document.addEventListener("click", function(evt) {')
-        html_parts.append('    var el = evt.target;')
+        html_parts.append("    var el = evt.target;")
         html_parts.append('    var annotation = el.getAttribute("data-annotation");')
-        html_parts.append('    if (annotation) {')
+        html_parts.append("    if (annotation) {")
         html_parts.append('      var tooltip = document.getElementById("tooltip");')
         html_parts.append('      var textEl = document.getElementById("tooltip-text");')
-        html_parts.append('      if (tooltip && textEl) {')
+        html_parts.append("      if (tooltip && textEl) {")
         html_parts.append('        textEl.setAttribute("value", annotation);')
         html_parts.append('        tooltip.setAttribute("visible", "true");')
-        html_parts.append('        // Position tooltip on object')
-        html_parts.append('        var objPos = new THREE.Vector3();')
-        html_parts.append('        el.object3D.getWorldPosition(objPos);')
-        html_parts.append('        tooltip.setAttribute("position", objPos.x + " " + (objPos.y + 0.5) + " " + objPos.z);')
-        html_parts.append('        // Hide after 3 seconds')
-        html_parts.append('        setTimeout(function() {')
+        html_parts.append("        // Position tooltip on object")
+        html_parts.append("        var objPos = new THREE.Vector3();")
+        html_parts.append("        el.object3D.getWorldPosition(objPos);")
+        html_parts.append(
+            '        tooltip.setAttribute("position", objPos.x + " " + (objPos.y + 0.5) + " " + objPos.z);'
+        )
+        html_parts.append("        // Hide after 3 seconds")
+        html_parts.append("        setTimeout(function() {")
         html_parts.append('          tooltip.setAttribute("visible", "false");')
-        html_parts.append('        }, 3000);')
-        html_parts.append('      }')
-        html_parts.append('    }')
-        html_parts.append('  });')
-        html_parts.append('')
-        html_parts.append('  // Guided tour toggle')
-        html_parts.append('  document.getElementById("tour-btn").addEventListener("click", function() {')
+        html_parts.append("        }, 3000);")
+        html_parts.append("      }")
+        html_parts.append("    }")
+        html_parts.append("  });")
+        html_parts.append("")
+        html_parts.append("  // Guided tour toggle")
+        html_parts.append(
+            '  document.getElementById("tour-btn").addEventListener("click", function() {'
+        )
         html_parts.append('    var anim = document.getElementById("guided-tour-anim");')
-        html_parts.append('    if (anim) {')
-        html_parts.append('      if (anim.isRunning) {')
-        html_parts.append('        anim.stop();')
-        html_parts.append('      } else {')
+        html_parts.append("    if (anim) {")
+        html_parts.append("      if (anim.isRunning) {")
+        html_parts.append("        anim.stop();")
+        html_parts.append("      } else {")
         html_parts.append('        anim.emit("tour-start");')
-        html_parts.append('      }')
-        html_parts.append('    }')
-        html_parts.append('  });')
-        html_parts.append('</script>')
-        html_parts.append('</body>')
-        html_parts.append('</html>')
+        html_parts.append("      }")
+        html_parts.append("    }")
+        html_parts.append("  });")
+        html_parts.append("</script>")
+        html_parts.append("</body>")
+        html_parts.append("</html>")
 
         return "\n".join(html_parts)
 
@@ -1685,7 +1829,7 @@ class ARVRVisualizer:
         parts.append(f'  <a-entity position="{pos.x} {pos.y} {pos.z}">')
         for child in node.children:
             self._aframe_add_box(parts, child, indent=4)
-        parts.append('  </a-entity>')
+        parts.append("  </a-entity>")
 
     def _aframe_add_box(
         self,
@@ -1709,7 +1853,7 @@ class ARVRVisualizer:
                 f'width="{geom.width}" height="{geom.height}" depth="{geom.depth}" '
                 f'color="{color}" opacity="{opacity}" transparent="{transparent}" '
                 f'side="{side}" class="clickable" data-annotation="{node.annotation_text}">'
-                f'</a-box>'
+                f"</a-box>"
             )
         elif geom and geom.type == "sphere":
             parts.append(
@@ -1717,7 +1861,7 @@ class ARVRVisualizer:
                 f'radius="{geom.radius}" '
                 f'color="{color}" opacity="{opacity}" transparent="{transparent}" '
                 f'side="{side}" class="clickable" data-annotation="{node.annotation_text}">'
-                f'</a-sphere>'
+                f"</a-sphere>"
             )
         elif geom and geom.type == "cylinder":
             parts.append(
@@ -1725,7 +1869,7 @@ class ARVRVisualizer:
                 f'radius="{geom.radius}" height="{geom.height}" '
                 f'color="{color}" opacity="{opacity}" transparent="{transparent}" '
                 f'side="{side}" class="clickable" data-annotation="{node.annotation_text}">'
-                f'</a-cylinder>'
+                f"</a-cylinder>"
             )
 
     def _aframe_add_detector(self, parts: list[str], node: SceneNode) -> None:
@@ -1736,7 +1880,7 @@ class ARVRVisualizer:
                 f'  <a-text value="{node.device_id}" position="{pos.x} {pos.y + 0.3} {pos.z}" '
                 f'align="center" color="white" scale="0.02 0.02 0.02" '
                 f'class="clickable" data-annotation="{node.annotation_text}">'
-                f'</a-text>'
+                f"</a-text>"
             )
 
     def _aframe_add_nac(self, parts: list[str], node: SceneNode) -> None:
@@ -1759,7 +1903,7 @@ class ARVRVisualizer:
                 f'radius="{geom.radius}" '
                 f'color="{mat.color}" opacity="0.5" transparent="true" '
                 f'side="double" wireframe="false">'
-                f'</a-sphere>'
+                f"</a-sphere>"
             )
         elif geom and geom.type == "box":
             parts.append(
@@ -1767,7 +1911,7 @@ class ARVRVisualizer:
                 f'width="{geom.width}" height="{geom.height}" depth="{geom.depth}" '
                 f'color="{mat.color}" opacity="0.5" transparent="true" '
                 f'side="double">'
-                f'</a-box>'
+                f"</a-box>"
             )
 
     # ── Format: USDZ ─────────────────────────────────────────────────────
@@ -1784,12 +1928,12 @@ class ARVRVisualizer:
         """
         lines: list[str] = []
         lines.append("#usda 1.0")
-        lines.append('(')
+        lines.append("(")
         lines.append('    defaultPrim = "FireAlarmScene"')
-        lines.append('    metersPerUnit = 1')
+        lines.append("    metersPerUnit = 1")
         lines.append('    upAxis = "Y"')
-        lines.append(')')
-        lines.append('')
+        lines.append(")")
+        lines.append("")
 
         # Define materials
         mat_defs: dict[str, str] = {}
@@ -1798,25 +1942,29 @@ class ARVRVisualizer:
             mat_defs[mat.name] = mat_name
             rgba = self._hex_to_rgba(mat.color, mat.opacity)
             lines.append(f'def Material "{mat_name}"')
-            lines.append('{')
-            lines.append('    token outputs:surface.connect = None')
-            lines.append(f'    token outputs:surface.connect = </{mat_name}/PBRShader.outputs:surface>')
-            lines.append('')
+            lines.append("{")
+            lines.append("    token outputs:surface.connect = None")
+            lines.append(
+                f"    token outputs:surface.connect = </{mat_name}/PBRShader.outputs:surface>"
+            )
+            lines.append("")
             lines.append('    def Shader "PBRShader"')
-            lines.append('    {')
+            lines.append("    {")
             lines.append('        uniform token info:id = "UsdPreviewSurface"')
-            lines.append(f'        color3f inputs:diffuseColor = ({rgba[0]:.4f}, {rgba[1]:.4f}, {rgba[2]:.4f})')
-            lines.append(f'        float inputs:opacity = {rgba[3]:.4f}')
-            lines.append(f'        float inputs:metallic = {mat.metallic:.4f}')
-            lines.append(f'        float inputs:roughness = {mat.roughness:.4f}')
-            lines.append('        token outputs:surface')
-            lines.append('    }')
-            lines.append('}')
-            lines.append('')
+            lines.append(
+                f"        color3f inputs:diffuseColor = ({rgba[0]:.4f}, {rgba[1]:.4f}, {rgba[2]:.4f})"
+            )
+            lines.append(f"        float inputs:opacity = {rgba[3]:.4f}")
+            lines.append(f"        float inputs:metallic = {mat.metallic:.4f}")
+            lines.append(f"        float inputs:roughness = {mat.roughness:.4f}")
+            lines.append("        token outputs:surface")
+            lines.append("    }")
+            lines.append("}")
+            lines.append("")
 
         # USDZ scene root
         lines.append('def Xform "FireAlarmScene"')
-        lines.append('{')
+        lines.append("{")
 
         for node in scene.nodes:
             self._usdz_add_node(lines, node, mat_defs, indent=4)
@@ -1825,26 +1973,28 @@ class ARVRVisualizer:
         if scene.camera_paths:
             path = scene.camera_paths[0]
             lines.append('    def Xform "CameraPath"')
-            lines.append('    {')
+            lines.append("    {")
             for kf_idx, kf in enumerate(path.keyframes):
                 lines.append(f'        def Camera "Keyframe_{kf_idx}"')
-                lines.append('        {')
-                lines.append(f'            double3 xformOp:translate = ({kf.position.x:.4f}, {kf.position.y:.4f}, {kf.position.z:.4f})')
+                lines.append("        {")
+                lines.append(
+                    f"            double3 xformOp:translate = ({kf.position.x:.4f}, {kf.position.y:.4f}, {kf.position.z:.4f})"
+                )
                 lines.append('            uniform token[] xformOpOrder = ["xformOp:translate"]')
-                lines.append('            float focalLength = 50')
-                lines.append('        }')
-                lines.append('')
-            lines.append('    }')
+                lines.append("            float focalLength = 50")
+                lines.append("        }")
+                lines.append("")
+            lines.append("    }")
 
-        lines.append('}')
-        lines.append('')
+        lines.append("}")
+        lines.append("")
 
         # Metadata
         lines.append('def Xform "SceneMetadata"')
-        lines.append('{')
+        lines.append("{")
         lines.append(f'    string design_id = "{scene.metadata.get("design_id", "")}"')
         lines.append('    string generator = "FireAI_ARVRVisualizer"')
-        lines.append('}')
+        lines.append("}")
 
         return "\n".join(lines)
 
@@ -1860,55 +2010,59 @@ class ARVRVisualizer:
         geom = node.geometry
         mat = node.material
 
-        lines.append(f'{prefix}# {node.name}')
+        lines.append(f"{prefix}# {node.name}")
 
         if geom is None:
             # Transform node with children
             lines.append(f'{prefix}def Xform "{node_name}"')
-            lines.append(f'{prefix}{{')
+            lines.append(f"{prefix}{{")
             pos = node.position
             if pos.x != 0 or pos.y != 0 or pos.z != 0:
-                lines.append(f'{prefix}    double3 xformOp:translate = ({pos.x:.4f}, {pos.y:.4f}, {pos.z:.4f})')
+                lines.append(
+                    f"{prefix}    double3 xformOp:translate = ({pos.x:.4f}, {pos.y:.4f}, {pos.z:.4f})"
+                )
                 lines.append(f'{prefix}    uniform token[] xformOpOrder = ["xformOp:translate"]')
             if node.device_id:
                 lines.append(f'{prefix}    string device_id = "{node.device_id}"')
                 lines.append(f'{prefix}    string annotation = "{node.annotation_text}"')
             for child in node.children:
                 self._usdz_add_node(lines, child, mat_defs, indent + 4)
-            lines.append(f'{prefix}}}')
-            lines.append('')
+            lines.append(f"{prefix}}}")
+            lines.append("")
             return
 
         # Determine USD geom type
         if geom.type == "box":
-            size_attr = f'size = {max(geom.width, geom.height, geom.depth):.4f}'
+            size_attr = f"size = {max(geom.width, geom.height, geom.depth):.4f}"
         elif geom.type == "sphere":
-            size_attr = f'radius = {geom.radius:.4f}'
+            size_attr = f"radius = {geom.radius:.4f}"
         elif geom.type == "cylinder":
-            size_attr = f'height = {geom.height:.4f}  radius = {geom.radius:.4f}'
+            size_attr = f"height = {geom.height:.4f}  radius = {geom.radius:.4f}"
         else:
             size_attr = "size = 1"
 
         lines.append(f'{prefix}def Mesh "{node_name}"')
-        lines.append(f'{prefix}{{')
-        lines.append(f'{prefix}    {size_attr}')
+        lines.append(f"{prefix}{{")
+        lines.append(f"{prefix}    {size_attr}")
 
         if mat:
             mat_name = mat_defs.get(mat.name, "")
             if mat_name:
-                lines.append(f'{prefix}    rel material:binding = </{mat_name}>')
+                lines.append(f"{prefix}    rel material:binding = </{mat_name}>")
 
         pos = node.position
         if pos.x != 0 or pos.y != 0 or pos.z != 0:
-            lines.append(f'{prefix}    double3 xformOp:translate = ({pos.x:.4f}, {pos.y:.4f}, {pos.z:.4f})')
+            lines.append(
+                f"{prefix}    double3 xformOp:translate = ({pos.x:.4f}, {pos.y:.4f}, {pos.z:.4f})"
+            )
             lines.append(f'{prefix}    uniform token[] xformOpOrder = ["xformOp:translate"]')
 
         if node.device_id:
             lines.append(f'{prefix}    string device_id = "{node.device_id}"')
             lines.append(f'{prefix}    string annotation = "{node.annotation_text}"')
 
-        lines.append(f'{prefix}}}')
-        lines.append('')
+        lines.append(f"{prefix}}}")
+        lines.append("")
 
 
 # ===========================================================================
@@ -1974,8 +2128,10 @@ if __name__ == "__main__":
 
     # Three.js
     threejs_scene = visualizer.generate_threejs(design)
-    print(f"Three.js: {len(json.dumps(threejs_scene))} bytes, "
-          f"{len(threejs_scene['object']['children'])} root nodes")
+    print(
+        f"Three.js: {len(json.dumps(threejs_scene))} bytes, "
+        f"{len(threejs_scene['object']['children'])} root nodes"
+    )
 
     # glTF
     glb = visualizer.generate_gltf(design)

@@ -58,13 +58,28 @@ logger = logging.getLogger(__name__)
 # 3. If future code uses sort_key in SQL (f-string interpolation),
 #    it becomes a full SQL injection
 # Per agent.md Rule 17: fix the root cause — use a strict whitelist.
-_SORT_WHITELIST = frozenset({
-    "created_at", "created_timestamp", "last_modified_timestamp",
-    "updated_at", "name", "description", "author", "status",
-    "type", "category", "voltage", "current", "load",
-    "element_type", "version", "project_id", "length",
-    "cable_size",
-})
+_SORT_WHITELIST = frozenset(
+    {
+        "created_at",
+        "created_timestamp",
+        "last_modified_timestamp",
+        "updated_at",
+        "name",
+        "description",
+        "author",
+        "status",
+        "type",
+        "category",
+        "voltage",
+        "current",
+        "load",
+        "element_type",
+        "version",
+        "project_id",
+        "length",
+        "cable_size",
+    }
+)
 
 # Map from camelCase (frontend) to snake_case (backend)
 _CAMEL_TO_SNAKE = {
@@ -214,7 +229,7 @@ class DatabaseService:
         with self._service_lock:
             try:
                 # 1. Projects table
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS projects (
                         project_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL,
@@ -224,10 +239,10 @@ class DatabaseService:
                         created_timestamp TEXT,
                         last_modified_timestamp TEXT
                     )
-                ''')
+                """)
 
                 # 2. Elements table
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS elements (
                         element_id TEXT PRIMARY KEY,
                         element_type TEXT NOT NULL,
@@ -238,26 +253,31 @@ class DatabaseService:
                         last_modified_timestamp TEXT,
                         is_deleted INTEGER DEFAULT 0
                     )
-                ''')
+                """)
 
                 # Migrate missing columns if table existed with older schema
-                for col in ["name TEXT", "position TEXT", "properties TEXT", "is_deleted INTEGER DEFAULT 0"]:
+                for col in [
+                    "name TEXT",
+                    "position TEXT",
+                    "properties TEXT",
+                    "is_deleted INTEGER DEFAULT 0",
+                ]:
                     try:
                         self._safe_db_execute(f"ALTER TABLE elements ADD COLUMN {col}")
                     except Exception:
                         pass
 
                 # 3. Element-Projects junction table
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS element_projects (
                         element_id TEXT,
                         project_id TEXT,
                         PRIMARY KEY (element_id, project_id)
                     )
-                ''')
+                """)
 
                 # 4. Relationships table
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS relationships (
                         relationship_id TEXT PRIMARY KEY,
                         from_element_id TEXT NOT NULL,
@@ -268,7 +288,7 @@ class DatabaseService:
                         is_deleted INTEGER DEFAULT 0,
                         last_modified_timestamp TEXT
                     )
-                ''')
+                """)
 
                 for col in ["is_deleted INTEGER DEFAULT 0", "last_modified_timestamp TEXT"]:
                     try:
@@ -277,8 +297,12 @@ class DatabaseService:
                         pass
 
                 # 5. Performance Indexes
-                self._safe_db_execute("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
-                self._safe_db_execute("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
+                self._safe_db_execute(
+                    "CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)"
+                )
+                self._safe_db_execute(
+                    "CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)"
+                )
 
                 # Enable foreign keys
                 self._safe_db_execute("PRAGMA foreign_keys=ON")
@@ -296,7 +320,9 @@ class DatabaseService:
         with self._service_lock:
             self._projects[project_id] = project_dict
 
-    def update_project_cache_fields(self, project_id: str, updates: dict[str, Any], last_modified: str) -> None:
+    def update_project_cache_fields(
+        self, project_id: str, updates: dict[str, Any], last_modified: str
+    ) -> None:
         """Thread-safe update of specific project cache fields."""
         with self._service_lock:
             if project_id in self._projects:
@@ -516,7 +542,11 @@ class DatabaseService:
                     )
                     conn.commit()
                 except Exception as e:
-                    logger.warning("Failed to delete project %s from DB after association error: %s", project_id, e)
+                    logger.warning(
+                        "Failed to delete project %s from DB after association error: %s",
+                        project_id,
+                        e,
+                    )
 
             # Remove from cache
             del self._projects[project_id]
@@ -529,7 +559,11 @@ class DatabaseService:
         try:
             element_count = self._count_project_elements(project_dict["project_id"])
         except Exception as e:
-            logger.debug("Failed to count elements for project %s: %s", project_dict.get('project_id', '?'), e)
+            logger.debug(
+                "Failed to count elements for project %s: %s",
+                project_dict.get("project_id", "?"),
+                e,
+            )
 
         return ProjectResponse(
             project_id=project_dict["project_id"],
@@ -636,7 +670,9 @@ class DatabaseService:
             geometry = None
             if element_data.geometry:
                 geometry = Geometry(
-                    points=tuple(Point3D(x=p.x, y=p.y, z=p.z) for p in element_data.geometry.points),
+                    points=tuple(
+                        Point3D(x=p.x, y=p.y, z=p.z) for p in element_data.geometry.points
+                    ),
                     polyline_closed=element_data.geometry.polyline_closed,
                 )
 
@@ -688,8 +724,15 @@ class DatabaseService:
             # Filter by element type
             if element_type:
                 elements = [
-                    elem for elem in elements
-                    if elem.properties and (elem.properties.element_type.value if hasattr(elem.properties.element_type, 'value') else str(elem.properties.element_type)) == element_type
+                    elem
+                    for elem in elements
+                    if elem.properties
+                    and (
+                        elem.properties.element_type.value
+                        if hasattr(elem.properties.element_type, "value")
+                        else str(elem.properties.element_type)
+                    )
+                    == element_type
                 ]
 
             # Filter by project
@@ -771,7 +814,7 @@ class DatabaseService:
         props_dict = existing_props.to_dict() if existing_props else {}
         for field_name, value in update_props.model_dump(exclude_unset=True).items():
             if value is not None:
-                if hasattr(value, 'value'):
+                if hasattr(value, "value"):
                     props_dict[field_name] = value.value
                 else:
                     props_dict[field_name] = value
@@ -784,12 +827,18 @@ class DatabaseService:
             "polyline_closed": geometry.polyline_closed,
         }
 
-    def _build_element_updates(self, element: UniversalElement, update_data: ElementUpdate) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _build_element_updates(
+        self, element: UniversalElement, update_data: ElementUpdate
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Build the updates dict for an element update."""
         updates: dict[str, Any] = {}
 
         if update_data.properties:
-            updates["properties"] = self._merge_properties(element.properties, update_data.properties)
+            updates["properties"] = self._merge_properties(
+                element.properties, update_data.properties
+            )
 
         if update_data.geometry:
             updates["geometry"] = self._build_geometry_update(update_data.geometry)
@@ -853,7 +902,9 @@ class DatabaseService:
         """Lock for bridge operations. Always acquire before bridge_sql()."""
         return self._service_lock
 
-    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False) -> Any:
+    def bridge_sql(
+        self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False
+    ) -> Any:
         """
         Execute raw SQL for bridge sync operations safely.
 
@@ -878,7 +929,9 @@ class DatabaseService:
 
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _element_to_response(self, element: UniversalElement, project_id: str | None = None) -> ElementResponse:
+    def _element_to_response(
+        self, element: UniversalElement, project_id: str | None = None
+    ) -> ElementResponse:
         """
         Convert UniversalElement to ElementResponse.
 
@@ -890,7 +943,9 @@ class DatabaseService:
         props_response = None
         if element.properties:
             props_response = SemanticPropertiesResponse(
-                element_type=element.properties.element_type.value if hasattr(element.properties.element_type, 'value') else str(element.properties.element_type),
+                element_type=element.properties.element_type.value
+                if hasattr(element.properties.element_type, "value")
+                else str(element.properties.element_type),
                 name=element.properties.name,
                 description=element.properties.description,
                 material=element.properties.material,
@@ -920,8 +975,12 @@ class DatabaseService:
             properties=props_response,
             geometry=geom_response,
             relationships=relationships,
-            created_timestamp=element.created_timestamp.isoformat() if element.created_timestamp else None,
-            last_modified_timestamp=element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else None,
+            created_timestamp=element.created_timestamp.isoformat()
+            if element.created_timestamp
+            else None,
+            last_modified_timestamp=element.last_modified_timestamp.isoformat()
+            if element.last_modified_timestamp
+            else None,
             last_modified_by=element.last_modified_by,
             source_file=element.source_file,
             version=element.version,
@@ -940,7 +999,7 @@ class DatabaseService:
         if not element.properties:
             return ""
         etype = element.properties.element_type
-        return etype.value if hasattr(etype, 'value') else str(etype)
+        return etype.value if hasattr(etype, "value") else str(etype)
 
     @staticmethod
     def _sort_by_created(element: UniversalElement) -> str:
@@ -948,7 +1007,9 @@ class DatabaseService:
 
     @staticmethod
     def _sort_by_modified(element: UniversalElement) -> str:
-        return element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else ""
+        return (
+            element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else ""
+        )
 
     @staticmethod
     def _sort_by_version(element: UniversalElement) -> Any:
@@ -973,7 +1034,7 @@ class DatabaseService:
         with self._service_lock:
             try:
                 # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS element_projects (
                         element_id TEXT,
                         project_id TEXT,
@@ -981,7 +1042,7 @@ class DatabaseService:
                         FOREIGN KEY (element_id) REFERENCES elements(element_id),
                         FOREIGN KEY (project_id) REFERENCES projects(project_id)
                     )
-                ''')
+                """)
                 self._safe_db_execute(
                     "INSERT OR IGNORE INTO element_projects (element_id, project_id) VALUES (?, ?)",
                     (element_id, project_id),
@@ -1100,15 +1161,17 @@ class DatabaseService:
                 )
             except Exception as e:
                 logger.warning(
-                    "Connection %s persisted, but from_element %s cache "
-                    "update raised: %s",
-                    connection_id, data.from_element_id, e,
+                    "Connection %s persisted, but from_element %s cache update raised: %s",
+                    connection_id,
+                    data.from_element_id,
+                    e,
                 )
             if not from_success:
                 logger.warning(
                     "Connection %s persisted, but from_element %s cache "
                     "update returned False (element may have been deleted)",
-                    connection_id, data.from_element_id,
+                    connection_id,
+                    data.from_element_id,
                 )
 
             to_success = False
@@ -1119,15 +1182,17 @@ class DatabaseService:
                 )
             except Exception as e:
                 logger.warning(
-                    "Connection %s persisted, but to_element %s cache "
-                    "update raised: %s",
-                    connection_id, data.to_element_id, e,
+                    "Connection %s persisted, but to_element %s cache update raised: %s",
+                    connection_id,
+                    data.to_element_id,
+                    e,
                 )
             if not to_success:
                 logger.warning(
                     "Connection %s persisted, but to_element %s cache "
                     "update returned False (element may have been deleted)",
-                    connection_id, data.to_element_id,
+                    connection_id,
+                    data.to_element_id,
                 )
 
             return ConnectionResponse(
@@ -1139,7 +1204,9 @@ class DatabaseService:
                 metadata=data.metadata,
             )
 
-    def _build_connection_query(self, element_id: str | None, relationship_type: str | None) -> tuple[str, list]:
+    def _build_connection_query(
+        self, element_id: str | None, relationship_type: str | None
+    ) -> tuple[str, list]:
         """Build the SQL query and parameters for listing connections."""
         query = (
             "SELECT relationship_id, from_element_id, to_element_id, "
@@ -1170,9 +1237,8 @@ class DatabaseService:
             # Build query and parameters
             query, params = self._build_connection_query(element_id, relationship_type)
 
-        # Project filter ignored: relationships table does not have a project_id column.
-        # If needed, implement proper join logic. For now, we simply ignore this filter.
-
+            # Project filter ignored: relationships table does not have a project_id column.
+            # If needed, implement proper join logic. For now, we simply ignore this filter.
 
             # Add ordering and pagination
             offset = (page - 1) * page_size
@@ -1241,7 +1307,9 @@ class DatabaseService:
                 )
                 row = cursor.fetchone()
             except sqlite3.Error as e:
-                raise RuntimeError(f"Database error checking connection {connection_id}: {e}") from e
+                raise RuntimeError(
+                    f"Database error checking connection {connection_id}: {e}"
+                ) from e
 
             if not row:
                 return False  # Legitimate "not found"
@@ -1258,7 +1326,9 @@ class DatabaseService:
                 )
                 conn.commit()
             except sqlite3.Error as e:
-                raise RuntimeError(f"Database error deleting connection {connection_id}: {e}") from e
+                raise RuntimeError(
+                    f"Database error deleting connection {connection_id}: {e}"
+                ) from e
 
             # Phase 3: Update the denormalized relationships cache on both
             # elements. Cache update failures are non-fatal (the relationships
@@ -1267,14 +1337,15 @@ class DatabaseService:
 
             for eid, src_eid, tgt_eid, rtype in (
                 (from_eid, from_eid, to_eid, rel_type),
-                (to_eid,   to_eid,   from_eid, reverse_type),
+                (to_eid, to_eid, from_eid, reverse_type),
             ):
                 element = self._data_model.get_element(eid)
                 if element is None:
                     continue
                 # Build a NEW tuple excluding the matching relationship.
                 new_rels = tuple(
-                    r for r in element.relationships
+                    r
+                    for r in element.relationships
                     if not (
                         r.from_element_id == src_eid
                         and r.to_element_id == tgt_eid
@@ -1293,13 +1364,16 @@ class DatabaseService:
                         logger.warning(  # NOSONAR
                             "update_element returned False for element %s "
                             "while cleaning up deleted connection %s cache",
-                            eid, connection_id,
+                            eid,
+                            connection_id,
                         )
                 except Exception as e:
                     logger.warning(  # NOSONAR
                         "Deleted relationship %s from SQL table, but failed "
                         "to update element %s relationships cache: %s",
-                        connection_id, eid, e,
+                        connection_id,
+                        eid,
+                        e,
                     )
 
             return True
@@ -1359,8 +1433,12 @@ class DatabaseService:
                     element_id=c.element_id,
                     conflict_type=c.conflict_type.value,
                     timestamp=c.timestamp.isoformat() if c.timestamp else None,
-                    source_a=c.source_a.value if hasattr(c.source_a, 'value') else (str(c.source_a) if c.source_a is not None else None),
-                    source_b=c.source_b.value if hasattr(c.source_b, 'value') else (str(c.source_b) if c.source_b is not None else None),
+                    source_a=c.source_a.value
+                    if hasattr(c.source_a, "value")
+                    else (str(c.source_a) if c.source_a is not None else None),
+                    source_b=c.source_b.value
+                    if hasattr(c.source_b, "value")
+                    else (str(c.source_b) if c.source_b is not None else None),
                     change_a=c.change_a,
                     change_b=c.change_b,
                     resolution=c.resolution,
@@ -1369,7 +1447,9 @@ class DatabaseService:
                 for c in conflicts
             ]
 
-    def _build_conflict_filters(self, resolved: bool | None, conflict_type: str | None) -> tuple[str, list]:
+    def _build_conflict_filters(
+        self, resolved: bool | None, conflict_type: str | None
+    ) -> tuple[str, list]:
         """Build filters for listing conflicts."""
         conditions = ["1=1"]  # Base condition
         params: list[Any] = []
@@ -1439,26 +1519,34 @@ class DatabaseService:
     def _convert_conflict_to_response(self, result: Any) -> ConflictResponse:
         """Convert conflict result to response format."""
         # Extract values with defaults
-        conflict_id = getattr(result, 'conflict_id', str(uuid.uuid4()))
-        element_id = getattr(result, 'element_id', '')
-        ct = getattr(result, 'conflict_type', 'UNKNOWN')
-        sa = getattr(result, 'source_a', None)
-        sb = getattr(result, 'source_b', None)
+        conflict_id = getattr(result, "conflict_id", str(uuid.uuid4()))
+        element_id = getattr(result, "element_id", "")
+        ct = getattr(result, "conflict_type", "UNKNOWN")
+        sa = getattr(result, "source_a", None)
+        sb = getattr(result, "source_b", None)
 
         return ConflictResponse(
             conflict_id=conflict_id,
             element_id=element_id,
-            conflict_type=ct if isinstance(ct, str) else (ct.value if hasattr(ct, 'value') else str(ct)),
-            timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),
-            source_a=sa.value if hasattr(sa, 'value') else (str(sa) if sa is not None else None),
-            source_b=sb.value if hasattr(sb, 'value') else (str(sb) if sb is not None else None),
+            conflict_type=ct
+            if isinstance(ct, str)
+            else (ct.value if hasattr(ct, "value") else str(ct)),
+            timestamp=result.timestamp.isoformat()
+            if hasattr(result.timestamp, "isoformat") and result.timestamp
+            else (str(result.timestamp) if result.timestamp else None),
+            source_a=sa.value if hasattr(sa, "value") else (str(sa) if sa is not None else None),
+            source_b=sb.value if hasattr(sb, "value") else (str(sb) if sb is not None else None),
             change_a=result.change_a,
             change_b=result.change_b,
             resolution=result.resolution,
             resolved=result.resolved,
         )
 
-    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def resolve_conflict(
+        self, conflict_id: str, strategy: str = "SEMANTIC_MERGE"
+    ) -> (
+        ConflictResponse | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Resolve a conflict by ID.
 
@@ -1483,9 +1571,7 @@ class DatabaseService:
 
             # Count projects
             total_projects = len(self._projects)
-            active_projects = sum(
-                1 for p in self._projects.values() if p.get("status") == "active"
-            )
+            active_projects = sum(1 for p in self._projects.values() if p.get("status") == "active")
 
             # Count connections
             total_connections = 0
@@ -1563,8 +1649,15 @@ class DatabaseService:
 
             if element_types:
                 elements = [
-                    e for e in elements
-                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) in element_types
+                    e
+                    for e in elements
+                    if e.properties
+                    and (
+                        e.properties.element_type.value
+                        if hasattr(e.properties.element_type, "value")
+                        else str(e.properties.element_type)
+                    )
+                    in element_types
                 ]
 
             exported_elements = [e.to_dict() for e in elements]
@@ -1577,14 +1670,16 @@ class DatabaseService:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM relationships")
                 for row in cursor.fetchall():
-                    connections.append({
-                        "relationship_id": row[0],
-                        "from_element_id": row[1],
-                        "to_element_id": row[2],
-                        "relationship_type": row[3],
-                        "is_parametric": row[4],
-                        "metadata": json.loads(row[5]) if row[5] else None,
-                    })
+                    connections.append(
+                        {
+                            "relationship_id": row[0],
+                            "from_element_id": row[1],
+                            "to_element_id": row[2],
+                            "relationship_type": row[3],
+                            "is_parametric": row[4],
+                            "metadata": json.loads(row[5]) if row[5] else None,
+                        }
+                    )
             except Exception as e:
                 logger.debug("Failed to query relationships for export: %s", e)
 

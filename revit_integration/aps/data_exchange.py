@@ -6,6 +6,7 @@ Data Exchange API service for Autodesk Platform Services.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import logging
 import os
 from typing import Any
@@ -37,7 +38,9 @@ class APSDataExchange:
             return False
         return True
 
-    async def create_project(self, project_name: str, description: str = "") -> dict[str, Any] | None:
+    async def create_project(
+        self, project_name: str, description: str = ""
+    ) -> dict[str, Any] | None:
         """
         Create a new project in APS.
 
@@ -53,9 +56,7 @@ class APSDataExchange:
         headers = self.auth_service.get_auth_headers()
 
         data = {
-            "jsonapi": {
-                "version": "1.0"
-            },
+            "jsonapi": {"version": "1.0"},
             "data": {
                 "type": "projects",
                 "attributes": {
@@ -63,21 +64,16 @@ class APSDataExchange:
                     "extension": {
                         "type": "projects:autodesk.bim360:Project",
                         "version": "1.0",
-                        "data": {
-                            "description": description,
-                            "region": "US"
-                        }
-                    }
-                }
-            }
+                        "data": {"description": description, "region": "US"},
+                    },
+                },
+            },
         }
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    f"{self.data_management_url}/projects",
-                    headers=headers,
-                    json=data
+                    f"{self.data_management_url}/projects", headers=headers, json=data
                 ) as response:
                     if response.status in [200, 201]:
                         result = await response.json()
@@ -92,7 +88,9 @@ class APSDataExchange:
             self.logger.error(f"Error creating project: {e}")
             return None
 
-    async def upload_file(self, project_id: str, file_path: str, folder_id: str = "root") -> dict[str, Any] | None:
+    async def upload_file(
+        self, project_id: str, file_path: str, folder_id: str = "root"
+    ) -> dict[str, Any] | None:
         """
         Upload a file to APS project.
 
@@ -111,7 +109,7 @@ class APSDataExchange:
             return None
 
         headers = self.auth_service.get_auth_headers()
-        headers.pop('Content-type', None)  # Remove content-type for multipart upload
+        headers.pop("Content-type", None)  # Remove content-type for multipart upload
 
         file_name = os.path.basename(file_path)
 
@@ -120,18 +118,9 @@ class APSDataExchange:
             "jsonapi": {"version": "1.0"},
             "data": {
                 "type": "objects",
-                "attributes": {
-                    "name": file_name
-                },
-                "relationships": {
-                    "target": {
-                        "data": {
-                            "type": "folders",
-                            "id": folder_id
-                        }
-                    }
-                }
-            }
+                "attributes": {"name": file_name},
+                "relationships": {"target": {"data": {"type": "folders", "id": folder_id}}},
+            },
         }
 
         try:
@@ -140,11 +129,11 @@ class APSDataExchange:
                 async with session.post(
                     f"{self.data_management_url}/projects/{project_id}/storage",
                     headers=headers,
-                    json=storage_data
+                    json=storage_data,
                 ) as storage_response:
                     if storage_response.status in [200, 201]:
                         storage_result = await storage_response.json()
-                        storage_id = storage_result['data']['id']
+                        storage_id = storage_result["data"]["id"]
 
                         # Step 2: Upload file to storage location
                         # NOSONAR:S7493 — aiohttp.FormData.add_field requires a
@@ -154,17 +143,19 @@ class APSDataExchange:
                         # (see backend/routers/digital_twin.py:401 comment). Blocking is
                         # bounded by aiohttp's own read buffer and does not stall the loop
                         # for typical BIM file sizes.
-                        with open(file_path, 'rb') as file:
+                        with open(file_path, "rb") as file:
                             form_data = aiohttp.FormData()
-                            form_data.add_field('file', file, filename=file_name)
+                            form_data.add_field("file", file, filename=file_name)
 
                             upload_headers = headers.copy()
-                            upload_headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
+                            upload_headers["Content-Disposition"] = (
+                                f'attachment; filename="{file_name}"'
+                            )
 
                             async with session.put(
                                 f"{self.data_management_url}/projects/{project_id}/storage/{storage_id}",
                                 headers=upload_headers,
-                                data=form_data
+                                data=form_data,
                             ) as upload_response:
                                 if upload_response.status in [200, 201]:
                                     upload_result = await upload_response.json()
@@ -184,7 +175,9 @@ class APSDataExchange:
             self.logger.error(f"Error uploading file: {e}")
             return None
 
-    async def get_project_contents(self, project_id: str, folder_id: str = "root") -> dict[str, Any] | None:
+    async def get_project_contents(
+        self, project_id: str, folder_id: str = "root"
+    ) -> dict[str, Any] | None:
         """
         Get contents of a project folder.
 
@@ -203,7 +196,7 @@ class APSDataExchange:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     f"{self.data_management_url}/projects/{project_id}/folders/{folder_id}/contents",
-                    headers=headers
+                    headers=headers,
                 ) as response:
                     if response.status == 200:
                         result = await response.json()
@@ -239,11 +232,11 @@ class APSDataExchange:
                 # Get download URL
                 async with session.get(
                     f"{self.data_management_url}/projects/{project_id}/items/{item_id}/download",
-                    headers=headers
+                    headers=headers,
                 ) as response:
                     if response.status == 200:
                         download_info = await response.json()
-                        download_url = download_info['href']
+                        download_url = download_info["href"]
 
                         # Download the file
                         async with session.get(download_url) as download_response:
@@ -257,7 +250,7 @@ class APSDataExchange:
                                 # avoided (see backend/routers/digital_twin.py:401). The
                                 # sync file.write() of an already-in-memory 8 KiB chunk is
                                 # a sub-microsecond operation and does not stall the loop.
-                                with open(local_path, 'wb') as file:
+                                with open(local_path, "wb") as file:
                                     async for chunk in download_response.content.iter_chunked(8192):
                                         file.write(chunk)
 
@@ -273,7 +266,9 @@ class APSDataExchange:
             self.logger.error(f"Error downloading file: {e}")
             return False
 
-    async def start_model_derivative_job(self, urn: str, output_formats: list[str] = None) -> dict[str, Any] | None:
+    async def start_model_derivative_job(
+        self, urn: str, output_formats: list[str] = None
+    ) -> dict[str, Any] | None:
         """
         Start a model derivative job to convert model to different formats.
 
@@ -287,17 +282,13 @@ class APSDataExchange:
         if not self._check_aiohttp():
             return None
         if output_formats is None:
-            output_formats = ['svf2']
+            output_formats = ["svf2"]
 
         headers = self.auth_service.get_auth_headers()
 
         payload = {
-            "input": {
-                "urn": urn
-            },
-            "output": {
-                "formats": [{"type": fmt} for fmt in output_formats]
-            }
+            "input": {"urn": urn},
+            "output": {"formats": [{"type": fmt} for fmt in output_formats]},
         }
 
         try:
@@ -305,7 +296,7 @@ class APSDataExchange:
                 async with session.post(
                     f"{self.base_url}/modelderivative/v2/designdata/job",
                     headers=headers,
-                    json=payload
+                    json=payload,
                 ) as response:
                     if response.status in [200, 202]:
                         result = await response.json()
@@ -338,7 +329,7 @@ class APSDataExchange:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     f"{self.base_url}/modelderivative/v2/designdata/{job_id}/manifest",
-                    headers=headers
+                    headers=headers,
                 ) as response:
                     if response.status == 200:
                         result = await response.json()
@@ -372,19 +363,19 @@ class APSDataExchange:
                 return False
 
             # Get the item ID from upload result
-            item_id = upload_result.get('data', {}).get('id')
+            item_id = upload_result.get("data", {}).get("id")
             if not item_id:
                 self.logger.error("Could not get item ID from upload result")
                 return False
 
             # Start model derivative job to process the Revit file
-            urn_encoded = item_id.replace('=', '')
-            derivative_job = await self.start_model_derivative_job(urn_encoded, ['svf2'])
+            urn_encoded = item_id.replace("=", "")
+            derivative_job = await self.start_model_derivative_job(urn_encoded, ["svf2"])
             if not derivative_job:
                 self.logger.error("Failed to start model derivative job")
                 return False
 
-            job_id = derivative_job.get('result')
+            job_id = derivative_job.get("result")
             if job_id:
                 self.logger.info(f"Started derivative job: {job_id}")
                 # Note: In a real implementation, you'd poll for job completion

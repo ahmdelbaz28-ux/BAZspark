@@ -33,9 +33,8 @@ logger = logging.getLogger(__name__)
 # ── Modal SDK (optional) ──────────────────────────────────────────────────────
 try:
     import modal  # type: ignore
-    _MODAL_AVAILABLE = bool(
-        os.getenv("MODAL_TOKEN_ID") and os.getenv("MODAL_TOKEN_SECRET")
-    )
+
+    _MODAL_AVAILABLE = bool(os.getenv("MODAL_TOKEN_ID") and os.getenv("MODAL_TOKEN_SECRET"))
 except ImportError:
     modal = None  # type: ignore
     _MODAL_AVAILABLE = False
@@ -50,10 +49,10 @@ if not _MODAL_AVAILABLE:
 
 # ── Job status enum ───────────────────────────────────────────────────────────
 class FDSJobStatus(StrEnum):
-    PENDING   = "pending"
-    RUNNING   = "running"
+    PENDING = "pending"
+    RUNNING = "running"
     COMPLETED = "completed"
-    FAILED    = "failed"
+    FAILED = "failed"
     SIMULATED = "simulated"  # Completed locally (demo mode)
 
 
@@ -73,6 +72,7 @@ def _get_job_store() -> dict[str, dict[str, Any]]:
 # ════════════════════════════════════════════════════════════════════════════════
 # Public API
 # ════════════════════════════════════════════════════════════════════════════════
+
 
 def submit_fds_job(
     fds_input: str,
@@ -103,18 +103,18 @@ def submit_fds_job(
     checksum = hashlib.md5(fds_input.encode(), usedforsecurity=False).hexdigest()
 
     job: dict[str, Any] = {
-        "job_id":          job_id,
-        "project_id":      project_id,
-        "user_id":         user_id,
-        "status":          FDSJobStatus.PENDING,
-        "submitted_at":    datetime.now(UTC).isoformat(),
-        "completed_at":    None,
-        "fds_checksum":    checksum,
-        "webhook_url":     webhook_url,
-        "result":          None,
-        "error":           None,
-        "metadata":        metadata or {},
-        "modal_call_id":   None,
+        "job_id": job_id,
+        "project_id": project_id,
+        "user_id": user_id,
+        "status": FDSJobStatus.PENDING,
+        "submitted_at": datetime.now(UTC).isoformat(),
+        "completed_at": None,
+        "fds_checksum": checksum,
+        "webhook_url": webhook_url,
+        "result": None,
+        "error": None,
+        "metadata": metadata or {},
+        "modal_call_id": None,
     }
     _get_job_store()[job_id] = job
 
@@ -125,14 +125,15 @@ def submit_fds_job(
 
     logger.info(
         "FDS Job %s submitted (modal=%s)",  # nosec: S5145 — job_id is server-generated UUID
-        job_id, _MODAL_AVAILABLE,
+        job_id,
+        _MODAL_AVAILABLE,
     )
     return {
-        "job_id":               job_id,
-        "status":               job["status"],
-        "modal_enabled":        _MODAL_AVAILABLE,
+        "job_id": job_id,
+        "status": job["status"],
+        "modal_enabled": _MODAL_AVAILABLE,
         "estimated_runtime_sec": 180 if _MODAL_AVAILABLE else 5,
-        "checksum":             checksum,
+        "checksum": checksum,
     }
 
 
@@ -143,13 +144,13 @@ def get_fds_job_status(job_id: str) -> dict[str, Any]:
         return {"error": f"Job {job_id} not found"}
 
     return {
-        "job_id":       job["job_id"],
-        "status":       job["status"],
+        "job_id": job["job_id"],
+        "status": job["status"],
         "submitted_at": job["submitted_at"],
         "completed_at": job["completed_at"],
-        "project_id":   job["project_id"],
-        "result":       job["result"],
-        "error":        job["error"],
+        "project_id": job["project_id"],
+        "result": job["result"],
+        "error": job["error"],
     }
 
 
@@ -198,10 +199,10 @@ def handle_fds_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     if not job:
         return {"error": f"Job {job_id} not found"}
 
-    job["status"]       = status
+    job["status"] = status
     job["completed_at"] = datetime.now(UTC).isoformat()
-    job["result"]       = payload.get("result")
-    job["error"]        = payload.get("error")
+    job["result"] = payload.get("result")
+    job["error"] = payload.get("error")
 
     logger.info("FDS Job %s → %s", job_id, status)
 
@@ -215,6 +216,7 @@ def handle_fds_webhook(payload: dict[str, Any]) -> dict[str, Any]:
 # ════════════════════════════════════════════════════════════════════════════════
 # Internal helpers
 # ════════════════════════════════════════════════════════════════════════════════
+
 
 def _compute_webhook_secret(job_id: str) -> str:
     """Deterministic HMAC-like secret tied to the job_id and a server secret."""
@@ -234,6 +236,7 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
         # Import the Modal app defined in modal_runner/fds_worker.py
         # modal_runner must be importable (ensure it's in the Python path)
         import importlib
+
         fds_worker = importlib.import_module("modal_runner.fds_worker")
 
         # Call the Modal function asynchronously (spawns a cloud container)
@@ -269,9 +272,9 @@ def _run_local_simulation(job_id: str, fds_input: str) -> None:
                 pass
 
     simulated_result = {
-        "simulation_type":  "LOCAL_SIMULATION",
-        "duration_s":       duration or 60.0,
-        "mesh_count":       mesh_count or 1,
+        "simulation_type": "LOCAL_SIMULATION",
+        "duration_s": duration or 60.0,
+        "mesh_count": mesh_count or 1,
         "max_temperature_c": 320.5,
         "smoke_layer_height_m": 2.1,
         "visibility_m": 8.4,
@@ -284,6 +287,6 @@ def _run_local_simulation(job_id: str, fds_input: str) -> None:
         ),
     }
 
-    _get_job_store()[job_id]["status"]       = FDSJobStatus.SIMULATED
+    _get_job_store()[job_id]["status"] = FDSJobStatus.SIMULATED
     _get_job_store()[job_id]["completed_at"] = datetime.now(UTC).isoformat()
-    _get_job_store()[job_id]["result"]       = simulated_result
+    _get_job_store()[job_id]["result"] = simulated_result

@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # Core Event Model
 # ════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class Event:
     """Immutable event envelope — every field is frozen after creation."""
@@ -70,7 +71,9 @@ class Event:
             type=d["type"],
             source=d.get("source", "unknown"),
             data=d.get("data", {}),
-            timestamp=datetime.fromisoformat(d["timestamp"]) if isinstance(d["timestamp"], str) else d["timestamp"],
+            timestamp=datetime.fromisoformat(d["timestamp"])
+            if isinstance(d["timestamp"], str)
+            else d["timestamp"],
             trace_id=d.get("trace_id", ""),
             version=d.get("version", 1),
             schema_version=d.get("schema_version", "1.0"),
@@ -80,6 +83,7 @@ class Event:
 # ════════════════════════════════════════════════════════════════════════════
 # Event Schema Validation
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class EventSchemaRegistry:
     """Central registry for event type schemas using JSON Schema draft-07."""
@@ -110,7 +114,11 @@ class EventSchemaRegistry:
         return True, None
 
 
-def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$") -> list[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _validate_against_schema(
+    data: Any, schema: dict[str, Any], path: str = "$"
+) -> list[
+    str
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Recursive JSON Schema validator — minimal implementation for common types."""
     errors: list[str] = []
 
@@ -161,6 +169,7 @@ def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$")
 
     if "pattern" in schema and isinstance(data, str):
         import re
+
         if not re.match(schema["pattern"], data):
             errors.append(f"{path}: does not match pattern {schema['pattern']}")
 
@@ -170,6 +179,7 @@ def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$")
 # ════════════════════════════════════════════════════════════════════════════
 # Retry with Exponential Backoff
 # ════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class RetryPolicy:
@@ -185,6 +195,7 @@ class RetryPolicy:
         d = min(self.base_delay_s * (self.backoff_multiplier ** (attempt - 1)), self.max_delay_s)
         if self.jitter:
             import random
+
             d = d * (0.5 + random.random() * 0.5)  # NOSONAR
         return d
 
@@ -192,6 +203,7 @@ class RetryPolicy:
 # ════════════════════════════════════════════════════════════════════════════
 # Dead Letter Queue
 # ════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class DeadLetterRecord:
@@ -269,24 +281,21 @@ class EventBus(ABC):
     """Abstract event bus — contract for publish/subscribe messaging."""
 
     @abstractmethod
-    async def publish(self, event: Event) -> None:
-        ...
+    async def publish(self, event: Event) -> None: ...
 
     @abstractmethod
-    async def subscribe(self, event_type: str, handler: HandlerFunc) -> None:
-        ...
+    async def subscribe(self, event_type: str, handler: HandlerFunc) -> None: ...
 
     @abstractmethod
-    async def start(self) -> None:
-        ...
+    async def start(self) -> None: ...
 
     @abstractmethod
-    async def stop(self) -> None:
-        ...
+    async def stop(self) -> None: ...
 
 
 # InMemoryEventBus
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class InMemoryEventBus(EventBus):
     """
@@ -300,7 +309,9 @@ class InMemoryEventBus(EventBus):
       - Event replay from in-memory store
     """
 
-    def __init__(self, retry_policy: RetryPolicy | None = None, dlq: DeadLetterQueue | None = None) -> None:
+    def __init__(
+        self, retry_policy: RetryPolicy | None = None, dlq: DeadLetterQueue | None = None
+    ) -> None:
         self._subscribers: dict[str, list[HandlerFunc]] = defaultdict(list)
         self._event_store: list[Event] = []
         self._max_store: int = 10000
@@ -315,14 +326,16 @@ class InMemoryEventBus(EventBus):
         valid, error = self._schema_registry.validate(event)
         if not valid:
             logger.error("Schema validation failed for event %s: %s", event.id, error)
-            self._dlq.add(DeadLetterRecord(
-                event_id=event.id,
-                event_type=event.type,
-                event_payload=event.to_dict(),
-                error=error or "schema_validation_failed",
-                failed_handler="schema_validator",
-                attempt_count=1,
-            ))
+            self._dlq.add(
+                DeadLetterRecord(
+                    event_id=event.id,
+                    event_type=event.type,
+                    event_payload=event.to_dict(),
+                    error=error or "schema_validation_failed",
+                    failed_handler="schema_validator",
+                    attempt_count=1,
+                )
+            )
             return
 
         async with self._lock:
@@ -370,20 +383,24 @@ class InMemoryEventBus(EventBus):
                     delay = self._retry_policy.delay(attempt)
                     await asyncio.sleep(delay)
 
-        self._dlq.add(DeadLetterRecord(
-            event_id=event.id,
-            event_type=event.type,
-            event_payload=event.to_dict(),
-            error=last_error or "unknown_error",
-            failed_handler=handler.__name__,
-            attempt_count=self._retry_policy.max_retries,
-        ))
+        self._dlq.add(
+            DeadLetterRecord(
+                event_id=event.id,
+                event_type=event.type,
+                event_payload=event.to_dict(),
+                error=last_error or "unknown_error",
+                failed_handler=handler.__name__,
+                attempt_count=self._retry_policy.max_retries,
+            )
+        )
         logger.error(
             f"Event {event.id} moved to DLQ after {self._retry_policy.max_retries} failed attempts "
             f"to handler {handler.__name__}: {last_error}"
         )
 
-    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
+    async def replay_events(
+        self, event_type: str | None = None, from_time: datetime | None = None
+    ) -> int:
         """
         Replay stored events — at-least-once delivery guarantee.
 
@@ -399,7 +416,7 @@ class InMemoryEventBus(EventBus):
                 continue
             await self._dispatch(event)
             count += 1
-        logger.info("Replayed %s events (type=%s)", count, event_type or 'all')
+        logger.info("Replayed %s events (type=%s)", count, event_type or "all")
         return count
 
     async def replay_dlq(self, max_events: int = 100) -> int:
@@ -437,6 +454,7 @@ class InMemoryEventBus(EventBus):
 # RedisEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class RedisEventBus(EventBus):
     """
     Redis Streams-based event bus for lightweight production deployments.
@@ -470,6 +488,7 @@ class RedisEventBus(EventBus):
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
+
                 self._redis = aioredis.from_url(self._redis_url, decode_responses=True)
                 logger.info("Connected to Redis at %s", self._redis_url)
             except ImportError:
@@ -494,7 +513,11 @@ class RedisEventBus(EventBus):
             try:
                 await r.xgroup_create(stream_key, self._consumer_group, id="0", mkstream=True)
             except Exception as e:
-                logger.debug("Redis stream group creation failed for %s (may already exist): %s", stream_key, e)
+                logger.debug(
+                    "Redis stream group creation failed for %s (may already exist): %s",
+                    stream_key,
+                    e,
+                )
         self._poll_task = asyncio.create_task(self._poll_loop())
         logger.info("RedisEventBus started (consumer=%s)", self._consumer_name)
 
@@ -510,7 +533,9 @@ class RedisEventBus(EventBus):
             await self._redis.close()
         logger.info("RedisEventBus stopped")
 
-    async def _poll_loop(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    async def _poll_loop(
+        self,
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Poll Redis Streams for new messages."""
         while self._running:
             try:
@@ -563,9 +588,15 @@ class RedisEventBus(EventBus):
                 dlq_key = f"{self._stream_prefix}dlq"
                 await r.lpush(dlq_key, json.dumps(event.to_dict()))
                 await r.ltrim(dlq_key, 0, self._dlq_max - 1)
-                logger.error("Event %s moved to Redis DLQ after failed delivery to %s", event.id, handler.__name__)
+                logger.error(
+                    "Event %s moved to Redis DLQ after failed delivery to %s",
+                    event.id,
+                    handler.__name__,
+                )
 
-    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
+    async def replay_events(
+        self, event_type: str | None = None, from_time: datetime | None = None
+    ) -> int:
         """Replay events from Redis Streams."""
         r = await self._get_redis()
         count = 0
@@ -605,6 +636,7 @@ class RedisEventBus(EventBus):
 # KafkaEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class KafkaEventBus(EventBus):
     """
     Apache Kafka-based event bus for high-throughput production deployments.
@@ -620,7 +652,9 @@ class KafkaEventBus(EventBus):
         retry_policy: RetryPolicy | None = None,
         dlq_topic_suffix: str = ".dlq",
     ) -> None:
-        self._bootstrap_servers = bootstrap_servers or os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+        self._bootstrap_servers = bootstrap_servers or os.getenv(
+            "KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
+        )
         self._consumer_group = consumer_group
         self._retry_policy = retry_policy or RetryPolicy()
         self._dlq_topic_suffix = dlq_topic_suffix
@@ -635,6 +669,7 @@ class KafkaEventBus(EventBus):
         if self._producer is None:
             try:
                 from aiokafka import AIOKafkaProducer
+
                 self._producer = AIOKafkaProducer(
                     bootstrap_servers=self._bootstrap_servers,
                     client_id=f"fireai-producer-{uuid.uuid4().hex[:8]}",
@@ -649,6 +684,7 @@ class KafkaEventBus(EventBus):
         if self._consumer is None and self._handlers:
             try:
                 from aiokafka import AIOKafkaConsumer
+
                 topics = [f"{self._topic_prefix}{et}" for et in self._handlers]
                 self._consumer = AIOKafkaConsumer(
                     *topics,
@@ -679,7 +715,9 @@ class KafkaEventBus(EventBus):
         _ = await self._get_producer()
         if self._handlers:
             _ = await self._get_consumer()
-        asyncio.create_task(self._consume_loop())  # NOSONAR — S7502: broad except kept for resilience
+        asyncio.create_task(
+            self._consume_loop()
+        )  # NOSONAR — S7502: broad except kept for resilience
         logger.info("KafkaEventBus started")
 
     async def stop(self) -> None:
@@ -733,7 +771,9 @@ class KafkaEventBus(EventBus):
                 await producer.send_and_wait(dlq_topic, json.dumps(event.to_dict()).encode("utf-8"))
                 logger.error("Event %s sent to Kafka DLQ topic %s", event.id, dlq_topic)
 
-    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    async def replay_events(
+        self, event_type: str | None = None, from_time: datetime | None = None
+    ) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Replay events by seeking to beginning on Kafka topics."""
         if not self._consumer:
             return 0
@@ -768,6 +808,7 @@ class KafkaEventBus(EventBus):
             dlq_topic = f"{self._topic_prefix}{event_type}{self._dlq_topic_suffix}"
             try:
                 from aiokafka import AIOKafkaConsumer
+
                 dlq_consumer = AIOKafkaConsumer(
                     dlq_topic,
                     bootstrap_servers=self._bootstrap_servers,
@@ -794,6 +835,7 @@ class KafkaEventBus(EventBus):
 # Event Bus Middleware for FastAPI
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class EventBusMiddleware:
     """
     FastAPI middleware that publishes request events to the event bus.
@@ -805,7 +847,12 @@ class EventBusMiddleware:
     def __init__(self, event_bus: EventBus, app, exclude_paths: set[str] | None = None) -> None:
         self._event_bus = event_bus
         self.app = app
-        self._exclude_paths = exclude_paths or {"/health", "/api/health", "/metrics", "/api/monitor/health"}
+        self._exclude_paths = exclude_paths or {
+            "/health",
+            "/api/health",
+            "/metrics",
+            "/api/monitor/health",
+        }
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -867,56 +914,82 @@ class EventBusMiddleware:
 # Convenience: register default schemas
 # ════════════════════════════════════════════════════════════════════════════
 
+
 def register_default_schemas() -> None:
     """Register common event type schemas."""
-    EventSchemaRegistry.register("http.request", {
-        "type": "object",
-        "properties": {
-            "method": {"type": "string", "required": True},
-            "path": {"type": "string", "required": True},
-            "client_ip": {"type": "string", "required": True},
-            "trace_id": {"type": "string", "required": True},
-            "query_string": {"type": "string"},
+    EventSchemaRegistry.register(
+        "http.request",
+        {
+            "type": "object",
+            "properties": {
+                "method": {"type": "string", "required": True},
+                "path": {"type": "string", "required": True},
+                "client_ip": {"type": "string", "required": True},
+                "trace_id": {"type": "string", "required": True},
+                "query_string": {"type": "string"},
+            },
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
-    })
+    )
 
-    EventSchemaRegistry.register("http.response", {
-        "type": "object",
-        "properties": {
-            "method": {"type": "string", "required": True},
-            "path": {"type": "string", "required": True},
-            "status_code": {"type": "integer", "required": True, "minimum": 100, "maximum": 599},
-            "duration_ms": {"type": "number", "required": True, "minimum": 0},
-            "trace_id": {"type": "string", "required": True},
+    EventSchemaRegistry.register(
+        "http.response",
+        {
+            "type": "object",
+            "properties": {
+                "method": {"type": "string", "required": True},
+                "path": {"type": "string", "required": True},
+                "status_code": {
+                    "type": "integer",
+                    "required": True,
+                    "minimum": 100,
+                    "maximum": 599,
+                },
+                "duration_ms": {"type": "number", "required": True, "minimum": 0},
+                "trace_id": {"type": "string", "required": True},
+            },
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
-    })
+    )
 
-    EventSchemaRegistry.register("engine.status", {
-        "type": "object",
-        "properties": {
-            "engine_id": {"type": "string", "required": True},
-            "status": {"type": "string", "required": True, "enum": ["running", "stopped", "error", "degraded"]},
-            "cpu_percent": {"type": "number", "minimum": 0, "maximum": 100},
-            "memory_mb": {"type": "number", "minimum": 0},
-            "uptime_seconds": {"type": "number", "minimum": 0},
+    EventSchemaRegistry.register(
+        "engine.status",
+        {
+            "type": "object",
+            "properties": {
+                "engine_id": {"type": "string", "required": True},
+                "status": {
+                    "type": "string",
+                    "required": True,
+                    "enum": ["running", "stopped", "error", "degraded"],
+                },
+                "cpu_percent": {"type": "number", "minimum": 0, "maximum": 100},
+                "memory_mb": {"type": "number", "minimum": 0},
+                "uptime_seconds": {"type": "number", "minimum": 0},
+            },
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
-    })
+    )
 
-    EventSchemaRegistry.register("security.alert", {
-        "type": "object",
-        "properties": {
-            "alert_id": {"type": "string", "required": True},
-            "severity": {"type": "string", "required": True, "enum": ["low", "medium", "high", "critical"]},
-            "category": {"type": "string", "required": True},
-            "message": {"type": "string", "required": True},
-            "source_ip": {"type": "string"},
-            "timestamp": {"type": "string", "required": True},
+    EventSchemaRegistry.register(
+        "security.alert",
+        {
+            "type": "object",
+            "properties": {
+                "alert_id": {"type": "string", "required": True},
+                "severity": {
+                    "type": "string",
+                    "required": True,
+                    "enum": ["low", "medium", "high", "critical"],
+                },
+                "category": {"type": "string", "required": True},
+                "message": {"type": "string", "required": True},
+                "source_ip": {"type": "string"},
+                "timestamp": {"type": "string", "required": True},
+            },
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
-    })
+    )
 
 
 register_default_schemas()

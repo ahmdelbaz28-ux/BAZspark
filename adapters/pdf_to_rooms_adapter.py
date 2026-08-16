@@ -101,12 +101,12 @@ def extract_rooms_from_walls(  # NOSONAR — S3776: cognitive complexity is inhe
 
         lines = []
         for wall in walls:
-            if hasattr(wall, 'coords'):
+            if hasattr(wall, "coords"):
                 try:
                     lines.append(LineString(wall.coords))
                 except Exception:
                     continue
-            elif hasattr(wall, 'geom_type'):
+            elif hasattr(wall, "geom_type"):
                 lines.append(wall)
 
         if lines:
@@ -115,24 +115,22 @@ def extract_rooms_from_walls(  # NOSONAR — S3776: cognitive complexity is inhe
                 if poly.is_valid and not poly.is_empty:
                     room_name = f"Room_{i + 1}"
                     occupancy = _classify_occupancy(room_name)
-                    rooms.append(Room(
-                        name=room_name,
-                        occupancy_type=occupancy,
-                        area_sqm=poly.area,
-                        polygon=poly,
-                    ))
+                    rooms.append(
+                        Room(
+                            name=room_name,
+                            occupancy_type=occupancy,
+                            area_sqm=poly.area,
+                            polygon=poly,
+                        )
+                    )
 
         if not rooms:
             report["status"] = "no_closed_loops"
-            report["warnings"].append(
-                "Walls found but no closed room loops could be formed"
-            )
+            report["warnings"].append("Walls found but no closed room loops could be formed")
 
     except ImportError:
         report["status"] = "shapely_unavailable"
-        report["warnings"].append(
-            "Shapely library not available for polygon reconstruction"
-        )
+        report["warnings"].append("Shapely library not available for polygon reconstruction")
         logger.warning("Shapely not available — room extraction limited")
     except Exception as e:
         report["status"] = "error"

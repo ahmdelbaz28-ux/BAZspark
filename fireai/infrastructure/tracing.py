@@ -13,6 +13,7 @@ try:
     from opentelemetry.trace.propagation.tracecontext import (
         TraceContextTextMapPropagator,
     )
+
     _OPENTELEMETRY_AVAILABLE = True
 except ImportError:
     trace = None  # type: ignore[assignment]
@@ -31,25 +32,27 @@ import os
 import typing as t
 from contextvars import ContextVar
 
-_current_span: ContextVar[t.Any | None] = ContextVar('current_span', default=None)
+_current_span: ContextVar[t.Any | None] = ContextVar("current_span", default=None)
 
 if _OPENTELEMETRY_AVAILABLE:
-    _propagator = CompositeHTTPPropagator([
-        TraceContextTextMapPropagator(),
-    ])
+    _propagator = CompositeHTTPPropagator(
+        [
+            TraceContextTextMapPropagator(),
+        ]
+    )
 else:
     _propagator = None
 
 
 def setup_tracing(
-    _service_name: str = 'fireai',  # NOSONAR — S1172: parameter retained for API stability
-    endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),  # NOSONAR
+    _service_name: str = "fireai",  # NOSONAR — S1172: parameter retained for API stability
+    endpoint: str = os.environ.get("TEMPO_ENDPOINT", "http://tempo:4318/v1/traces"),  # NOSONAR
     _sample_rate: float = 1.0,  # NOSONAR — S1172: parameter retained for API stability
 ) -> TracerProvider | None:
     if not _OPENTELEMETRY_AVAILABLE:
         # Tracing is optional; return None when the library is missing.
         logger = logging.getLogger(__name__)
-        logger.warning('OpenTelemetry not available – tracing disabled')
+        logger.warning("OpenTelemetry not available – tracing disabled")
         return None
     provider = TracerProvider()
     exporter = OTLPSpanExporter(endpoint=endpoint)
@@ -72,7 +75,7 @@ def traced(name: str | None = None):
         def wrapper(*args, **kwargs):
             span_name = name or fn.__qualname__
             with tracer.start_as_current_span(span_name) as span:
-                span.set_attribute('function', fn.__qualname__)
+                span.set_attribute("function", fn.__qualname__)
                 _current_span.set(span)
                 try:
                     return fn(*args, **kwargs)
@@ -80,7 +83,9 @@ def traced(name: str | None = None):
                     span.record_exception(exc)
                     span.set_status(trace.Status(trace.StatusCode.ERROR, str(exc)))
                     raise
+
         return wrapper
+
     return decorator
 
 
@@ -93,8 +98,8 @@ def extract_traceparent(headers: dict[str, str]) -> dict[str, str] | None:
         return None
     _propagator.extract(headers)
     for carrier in [headers]:
-        if 'traceparent' in {k.lower() for k in carrier}:
-            return {'traceparent': carrier.get('traceparent') or carrier.get('Traceparent', '')}
+        if "traceparent" in {k.lower() for k in carrier}:
+            return {"traceparent": carrier.get("traceparent") or carrier.get("Traceparent", "")}
     return None
 
 
@@ -105,7 +110,9 @@ def inject_traceparent(headers: dict[str, str] | None = None) -> dict[str, str]:
         return headers
     ctx = trace.get_current_span().get_span_context() if trace.get_current_span() else None
     if ctx and ctx.trace_id:
-        headers['traceparent'] = f'00-{format(ctx.trace_id, "032x")}-{format(ctx.span_id, "016x")}-01'
+        headers["traceparent"] = (
+            f"00-{format(ctx.trace_id, '032x')}-{format(ctx.span_id, '016x')}-01"
+        )
     return headers
 
 
@@ -123,11 +130,11 @@ class TraceContext:
             await self.app(scope, receive, send)
             return
 
-        if scope['type'] != 'http':
+        if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
-        headers = {k.decode(): v.decode() for k, v in scope.get('headers', [])}
+        headers = {k.decode(): v.decode() for k, v in scope.get("headers", [])}
         ctx = _propagator.extract(carrier=headers) if _propagator is not None else None
 
         token = None
@@ -136,13 +143,13 @@ class TraceContext:
 
         span_name = f"{scope.get('method', 'GET')} {scope.get('path', '/')}"
         with self.tracer.start_as_current_span(span_name, context=ctx) as span:
-            span.set_attribute('http.method', scope.get('method', 'GET'))
-            span.set_attribute('http.url', scope.get('path', '/'))
-            span.set_attribute('http.host', headers.get('host', ''))
+            span.set_attribute("http.method", scope.get("method", "GET"))
+            span.set_attribute("http.url", scope.get("path", "/"))
+            span.set_attribute("http.host", headers.get("host", ""))
 
             async def wrapped_send(message) -> None:
-                if message['type'] == 'http.response.start':
-                    span.set_attribute('http.status_code', message.get('status', 0))
+                if message["type"] == "http.response.start":
+                    span.set_attribute("http.status_code", message.get("status", 0))
                 await send(message)
 
             await self.app(scope, receive, wrapped_send)

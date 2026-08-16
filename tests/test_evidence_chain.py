@@ -62,7 +62,6 @@ def analysis():
 
 
 class TestCanonicalDumps:
-
     def test_deterministic(self):
         payload = {"b": 2, "a": 1}
         # Two independent calls of same key order must produce identical output.
@@ -84,7 +83,6 @@ class TestCanonicalDumps:
 
 
 class TestFloatRoundDefault:
-
     def test_finite_float_rounds(self):
         result = _float_round_default(3.141592653589793)
         assert isinstance(result, float)
@@ -112,7 +110,6 @@ class TestFloatRoundDefault:
 
 
 class TestSha256Payload:
-
     def test_returns_64_hex_chars(self):
         h = _sha256_payload({"key": "value"})
         assert len(h) == 64
@@ -134,7 +131,6 @@ class TestSha256Payload:
 
 
 class TestEvidenceChainInit:
-
     def test_valid_init(self):
         ec = EvidenceChain(secret_key=_SECRET, signer_id="test")
         assert ec._signer_id == "test"
@@ -197,7 +193,6 @@ class TestEvidenceChainInit:
 
 
 class TestBuildEnvelope:
-
     def test_returns_dict_with_required_fields(self, chain, snapshot, analysis):
         env = chain.build_envelope(snapshot, analysis)
         assert "schema_version" in env
@@ -250,7 +245,6 @@ class TestBuildEnvelope:
 
 
 class TestVerifyEnvelope:
-
     def test_valid_envelope_verifies(self, chain, snapshot, analysis):
         env = chain.build_envelope(snapshot, analysis)
         assert chain.verify_envelope(env, snapshot, analysis) is True
@@ -301,7 +295,6 @@ class TestVerifyEnvelope:
 
 
 class TestVerifyChain:
-
     def test_valid_chain(self, chain, snapshot, analysis):
         env1 = chain.build_envelope(snapshot, analysis)
         env2 = chain.build_envelope(snapshot, analysis, previous_envelope=env1)
@@ -346,7 +339,6 @@ class TestVerifyChain:
 
 
 class TestNamespaceSeparation:
-
     def test_different_namespaces_different_signatures(self, snapshot, analysis):
         """V59 FIX: Same payload in different projects → different signatures."""
         chain1 = EvidenceChain(secret_key=_SECRET, signer_id="test", namespace="project-A")
@@ -370,15 +362,12 @@ class TestNamespaceSeparation:
 
 
 class TestSignMethod:
-
     def test_sign_includes_namespace(self, chain):
         """V59 FIX: Namespace is included in HMAC input."""
         sig = chain._sign("test_hash")
         # Manually compute expected signature
         message = f"{chain._namespace}:test_hash".encode()
-        expected = hmac.new(
-            chain._secret_key, message, hashlib.sha256
-        ).hexdigest()
+        expected = hmac.new(chain._secret_key, message, hashlib.sha256).hexdigest()
         assert sig == expected
 
 
@@ -388,7 +377,6 @@ class TestSignMethod:
 
 
 class TestEdgeCases:
-
     def test_empty_snapshot(self, chain, analysis):
         env = chain.build_envelope({}, analysis)
         assert chain.verify_envelope(env, {}, analysis) is True

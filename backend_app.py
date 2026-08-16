@@ -76,7 +76,9 @@ class _RoleDevMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Any]]):  # noqa: ANN401
-        env = os.getenv("FIREAI_ENV", "development").lower()  # audit P1-2 fix (follow-up): aligned with config.py
+        env = os.getenv(
+            "FIREAI_ENV", "development"
+        ).lower()  # audit P1-2 fix (follow-up): aligned with config.py
         if env in ("development", "testing"):
             # Only set if not already set by an upstream middleware.
             if getattr(request.state, "fireai_role", None) is None:
@@ -125,9 +127,7 @@ if _env in ("production", "prod"):
         )
     _cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
     if "*" in _cors_origins:
-        raise RuntimeError(
-            "CORS_ORIGINS='*' is forbidden in production. List explicit origins."
-        )
+        raise RuntimeError("CORS_ORIGINS='*' is forbidden in production. List explicit origins.")
 else:
     # Development / testing — safe defaults (localhost only).
     _cors_origins = os.getenv(
@@ -152,7 +152,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID", "Authorization", "X-Request-ID", "X-CSRF-Token", "Accept"],  # audit P1-3 fix (follow-up),
+    allow_headers=[
+        "X-API-Key",
+        "Content-Type",
+        "X-Correlation-ID",
+        "Authorization",
+        "X-Request-ID",
+        "X-CSRF-Token",
+        "Accept",
+    ],  # audit P1-3 fix (follow-up),
     # NEVER enable allow_credentials=True with this design — API uses
     # X-API-Key header auth (not cookies), so cross-origin credentialed
     # requests are unnecessary and would expand the attack surface.
@@ -174,8 +182,12 @@ app.include_router(analyze_project_router, prefix="/api")
 # ----------------------------------------------------------------------------
 @app.get("/", include_in_schema=False)
 async def root():
-    return {"name": "FireAI QOMN-FIRE API", "version": "1.0.0",
-            "docs": "/docs", "health": "/api/health"}
+    return {
+        "name": "FireAI QOMN-FIRE API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
 
 
 @app.exception_handler(Exception)
@@ -186,8 +198,9 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
     Never leak internal exception text to clients -- fire-safety systems
     may have sensitive paths / connection strings in error messages.
     """
-    logger.error("Unhandled exception on %s %s: %s",
-                 request.method, request.url.path, exc, exc_info=True)
+    logger.error(
+        "Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "success": False},
@@ -196,6 +209,7 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
+
     # V129: Bind to 127.0.0.1 (loopback) by default. Production deployments
     # MUST use a reverse proxy (nginx, traefik, AWS ALB) to terminate TLS and
     # forward to this loopback address. Binding to 0.0.0.0 exposes the API

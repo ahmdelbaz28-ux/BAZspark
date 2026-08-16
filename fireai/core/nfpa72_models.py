@@ -176,7 +176,9 @@ class CeilingSpec:
     beam_spacing_m: float = 0.0
     slope_run_m: float | None = None  # V78: Horizontal run for slope calculation
 
-    def __post_init__(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def __post_init__(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
 
@@ -212,7 +214,10 @@ class CeilingSpec:
 
         # V78 FIX: Use 'is not None' instead of truthy — height_at_high_point_m
         # of 0.0 (ground level) is a valid value, but 0.0 is falsy in Python.
-        if self.height_at_high_point_m is not None and self.height_at_high_point_m > self.height_at_low_point_m:
+        if (
+            self.height_at_high_point_m is not None
+            and self.height_at_high_point_m > self.height_at_low_point_m
+        ):
             # V78 FIX: slope_run_m is required for meaningful slope calculation.
             # Hardcoded run=3.0m was arbitrary — a 10m wide room with 2m rise
             # got 33.7° instead of correct 11.3°, potentially misclassifying
@@ -325,7 +330,9 @@ class RoomSpec:
     width_m: float = 10.0
     depth_m: float = 10.0
     custom_polygon: list = None  # NEW: List of (x,y) tuples for custom room shape (sets polygon field)  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-    holes: list | None = None  # Interior rings (holes) — list of list of (x,y) tuples per NFPA 72 §17.7.4.2
+    holes: list | None = (
+        None  # Interior rings (holes) — list of list of (x,y) tuples per NFPA 72 §17.7.4.2
+    )
     polygon: ShapelyPolygon | None = None
     ceiling_spec: CeilingSpec | None = None
     detector_type: DetectorType | None = None
@@ -334,7 +341,9 @@ class RoomSpec:
     hvac_duct_list: list[HVACDuct] = field(default_factory=list)
     geometry_unresolved: bool = False  # V111: When True, NFPA analysis MUST be skipped
 
-    def __post_init__(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def __post_init__(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
 
@@ -376,7 +385,9 @@ class RoomSpec:
             elif len(self.custom_polygon) > MAX_POLYGON_VERTICES:
                 errors.append(f"custom_polygon exceeds max vertices ({MAX_POLYGON_VERTICES})")
             elif len(self.custom_polygon) < 4:
-                errors.append(f"custom_polygon must have at least 4 points, got {len(self.custom_polygon)}")
+                errors.append(
+                    f"custom_polygon must have at least 4 points, got {len(self.custom_polygon)}"
+                )
             else:
                 # Validate each point is a tuple
                 for i, pt in enumerate(self.custom_polygon):
@@ -400,7 +411,9 @@ class RoomSpec:
                 if len(self.polygon) > MAX_POLYGON_VERTICES:
                     errors.append(f"polygon exceeds max vertices ({MAX_POLYGON_VERTICES})")
                 elif len(self.polygon) < 3:
-                    errors.append(f"polygon list must have at least 3 points, got {len(self.polygon)}")
+                    errors.append(
+                        f"polygon list must have at least 3 points, got {len(self.polygon)}"
+                    )
                 else:
                     poly = ShapelyPolygon(self.polygon)
                     if not poly.is_valid or poly.area <= 0:
@@ -457,11 +470,15 @@ class RoomSpec:
         validated_holes = []
         if self.holes is not None:
             if not isinstance(self.holes, list):
-                errors.append("holes must be a list of hole polygons (each hole is a list of (x,y) tuples)")
+                errors.append(
+                    "holes must be a list of hole polygons (each hole is a list of (x,y) tuples)"
+                )
             else:
                 for hi, hole in enumerate(self.holes):
                     if not isinstance(hole, list) or len(hole) < 4:
-                        errors.append(f"hole {hi} must have at least 4 points, got {len(hole) if isinstance(hole, list) else 'non-list'}")
+                        errors.append(
+                            f"hole {hi} must have at least 4 points, got {len(hole) if isinstance(hole, list) else 'non-list'}"
+                        )
                     else:
                         try:
                             hole_poly = ShapelyPolygon(hole)
@@ -474,7 +491,9 @@ class RoomSpec:
 
         # Raise if ANY validation fails (including holes)
         if errors:
-            raise ValueError(f"RoomSpec validation failed for '{self.room_id}': " + "; ".join(errors))
+            raise ValueError(
+                f"RoomSpec validation failed for '{self.room_id}': " + "; ".join(errors)
+            )
 
         # ===== BUILD POLYGON FROM DIMENSIONS =====
         if self.polygon is None:
@@ -615,6 +634,7 @@ class HeatDetectorSpec:
 # ============================================================================
 # FIXED: DetectorPlacement - Reference Bug Resolved
 # ============================================================================
+
 
 @dataclass
 class DetectorPlacement:
@@ -804,9 +824,9 @@ class FireAlarmPanel:
 
         # calculate_voltage_drop returns a dict; extract the voltage_drop_v field.
         result = _calc_vdrop(
-            current_a=2.0,            # 2A NAC load (conservative default)
+            current_a=2.0,  # 2A NAC load (conservative default)
             one_way_length_m=distance_m,
-            awg="14",                 # AWG 14 stranded copper (standard FA)
+            awg="14",  # AWG 14 stranded copper (standard FA)
             nominal_voltage=24.0,
             temperature_c=75.0,
         )
@@ -1083,12 +1103,10 @@ def _get_radius_internal(h: float) -> float:
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern). Behavior
         # is preserved — final bracket uses inclusive upper bound.
-        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
-        within_bracket = (
-            (min_h <= h <= max_h)
-            if upper_inclusive
-            else (min_h <= h < max_h)
-        )
+        upper_inclusive = (
+            max_h == 18.288
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        within_bracket = (min_h <= h <= max_h) if upper_inclusive else (min_h <= h < max_h)
         if within_bracket:
             return r
     raise CeilingHeightError(f"Height {h}m outside NFPA range (3.0-18.288m for smoke detectors)")
@@ -1111,7 +1129,12 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
     except Exception:
         max_cov = _get_max_internal(3.0)
         flag = "FALLBACK"
-    details = {"input_height": actual, "effective_height": safe_h, "max_coverage": max_cov, "flag": flag}
+    details = {
+        "input_height": actual,
+        "effective_height": safe_h,
+        "max_coverage": max_cov,
+        "flag": flag,
+    }
     if _return_details:
         return max_cov, details
     return max_cov
@@ -1132,12 +1155,10 @@ def _get_max_internal(h: float) -> float:
     for (min_h, max_h), m in M.items():
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern).
-        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
-        within_bracket = (
-            (min_h <= h <= max_h)
-            if upper_inclusive
-            else (min_h <= h < max_h)
-        )
+        upper_inclusive = (
+            max_h == 18.288
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        within_bracket = (min_h <= h <= max_h) if upper_inclusive else (min_h <= h < max_h)
         if within_bracket:
             return m
     raise CeilingHeightError(f"Height {h}m outside NFPA range (3.0-18.288m for smoke detectors)")

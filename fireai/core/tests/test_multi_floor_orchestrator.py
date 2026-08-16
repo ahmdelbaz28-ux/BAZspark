@@ -120,7 +120,7 @@ def mock_floor_result_many_devices():
     for i in range(50):
         rooms.append(
             RoomResult(
-                room_id=f"R{i+1}",
+                room_id=f"R{i + 1}",
                 status="PASS",
                 detector_count=10,
             )
@@ -204,8 +204,12 @@ def tall_building_spec():
         "floors": {"GF": [], "F1": [], "F2": [], "F3": [], "F4": [], "F5": []},
         "occupancy_type": "business",
         "floor_elevations": {
-            "GF": 0.0, "F1": 4.0, "F2": 8.0,
-            "F3": 12.0, "F4": 16.0, "F5": 20.0,
+            "GF": 0.0,
+            "F1": 4.0,
+            "F2": 8.0,
+            "F3": 12.0,
+            "F4": 16.0,
+            "F5": 20.0,
         },
         "floor_areas": dict.fromkeys(["GF", "F1", "F2", "F3", "F4", "F5"], 600.0),
         "stairwells": [
@@ -687,7 +691,9 @@ class TestConstants:
         assert OTHER_FLOORS_PER_ZONE == 2
 
     def test_max_zone_area_sqft(self) -> None:
-        assert MAX_ZONE_AREA_SQFT == 20_000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_ZONE_AREA_SQFT == 20_000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_zone_area_sqm(self) -> None:
         assert pytest.approx(20_000.0 * 0.092903, rel=1e-4) == MAX_ZONE_AREA_SQM
@@ -750,6 +756,7 @@ class TestMultiFloorOrchestratorInit:
     def test_zero_building_height_logs_critical(self, caplog) -> None:
         """Zero building height should log a CRITICAL message about inactive smoke analysis."""
         import logging
+
         with caplog.at_level(logging.CRITICAL, logger="fireai.core.multi_floor_orchestrator"):
             MultiFloorOrchestrator(building_height_m=0.0)
         assert any("MFO-001" in rec.message for rec in caplog.records)
@@ -779,7 +786,9 @@ class TestOrchestrate:
         assert result.compliant is False
         assert any("No floors" in e for e in result.errors)
 
-    def test_basic_orchestration_with_empty_floors(self, orchestrator, sample_building_spec) -> None:
+    def test_basic_orchestration_with_empty_floors(
+        self, orchestrator, sample_building_spec
+    ) -> None:
         """Test orchestrate with a basic building spec where all rooms are empty."""
         result = orchestrator.orchestrate(**sample_building_spec)
         assert isinstance(result, BuildingAnalysis)
@@ -794,7 +803,9 @@ class TestOrchestrate:
         floor_ids = {fa.floor_id for fa in result.floor_assignments}
         assert floor_ids == {"GF", "L1", "L2"}
 
-    def test_floor_assignments_warnings_for_empty_rooms(self, orchestrator, sample_building_spec) -> None:
+    def test_floor_assignments_warnings_for_empty_rooms(
+        self, orchestrator, sample_building_spec
+    ) -> None:
         """Floors with no room specs should have a warning."""
         result = orchestrator.orchestrate(**sample_building_spec)
         for fa in result.floor_assignments:
@@ -812,8 +823,12 @@ class TestOrchestrate:
         """Floor areas should be propagated to floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         area_map = {fa.floor_id: fa.area_sqm for fa in result.floor_assignments}
-        assert area_map["GF"] == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert area_map["L1"] == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            area_map["GF"] == 500.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            area_map["L1"] == 500.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_occupancy_type_set(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
@@ -873,7 +888,9 @@ class TestOrchestrate:
 
     def test_analysis_time_recorded(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
-        assert result.analysis_time_s > 0.0 or result.analysis_time_s == 0.0  # May be very fast  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.analysis_time_s > 0.0 or result.analysis_time_s == 0.0
+        )  # May be very fast  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_disclaimer_present(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
@@ -930,8 +947,12 @@ class TestSLCLoopAssignment:
 
     def test_multi_floor_single_loop(self, orchestrator) -> None:
         """Multiple floors with few devices should share a single loop."""
-        fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=60, area_sqm=500.0, elevation_m=0.0)
-        fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=60, area_sqm=500.0, elevation_m=3.5)
+        fa1 = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=60, area_sqm=500.0, elevation_m=0.0
+        )
+        fa2 = FloorAssignment(
+            floor_id="L1", floor_index=1, total_devices=60, area_sqm=500.0, elevation_m=3.5
+        )
         loops = orchestrator._assign_slc_loops([fa1, fa2])
         assert len(loops) == 1
         assert loops[0].device_count == 120
@@ -956,7 +977,9 @@ class TestSLCLoopAssignment:
 
     def test_device_addresses_format(self, orchestrator) -> None:
         """Device addresses should follow the format SLC-N:MMM."""
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0
+        )
         loops = orchestrator._assign_slc_loops([fa])
         assert len(loops[0].device_addresses) == 5
         assert loops[0].device_addresses[0] == "SLC-1:001"
@@ -964,25 +987,35 @@ class TestSLCLoopAssignment:
 
     def test_loop_class_b_default(self, orchestrator) -> None:
         """Default loop class should be Class B."""
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0
+        )
         loops = orchestrator._assign_slc_loops([fa])
         assert loops[0].loop_class == SLCLoopClass.CLASS_B
 
     def test_loop_class_a(self, orchestrator_class_a) -> None:
         """Class A loops should be created when configured."""
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0
+        )
         loops = orchestrator_class_a._assign_slc_loops([fa])
         assert loops[0].loop_class == SLCLoopClass.CLASS_A
 
     def test_panel_id_set(self, orchestrator) -> None:
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0
+        )
         loops = orchestrator._assign_slc_loops([fa])
         assert loops[0].panel_id == "FACP-1"
 
     def test_floor_with_zero_devices_skipped(self, orchestrator) -> None:
         """Floors with 0 devices should not create loops."""
-        fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=0, area_sqm=500.0, elevation_m=0.0)
-        fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=20, area_sqm=500.0, elevation_m=3.5)
+        fa1 = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=0, area_sqm=500.0, elevation_m=0.0
+        )
+        fa2 = FloorAssignment(
+            floor_id="L1", floor_index=1, total_devices=20, area_sqm=500.0, elevation_m=3.5
+        )
         loops = orchestrator._assign_slc_loops([fa1, fa2])
         assert len(loops) == 1
         assert "GF" not in loops[0].floors_served
@@ -991,7 +1024,9 @@ class TestSLCLoopAssignment:
     def test_many_loops_creation(self) -> None:
         """A building with many devices should create the right number of loops."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=35, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=35, area_sqm=500.0, elevation_m=0.0
+        )
         loops = mo._assign_slc_loops([fa])
         assert len(loops) == 4  # 10 + 10 + 10 + 5
 
@@ -1008,8 +1043,11 @@ class TestSLCLoopAssignment:
     def test_cable_length_estimated(self, orchestrator) -> None:
         """Cable length should be estimated for loops."""
         fa = FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=10,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=10,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         loops = orchestrator._assign_slc_loops([fa])
         # Cable length should be > 0 when area is provided
@@ -1018,23 +1056,33 @@ class TestSLCLoopAssignment:
     def test_cable_length_class_a_doubled(self, orchestrator_class_a) -> None:
         """Class A loops should have approximately double the cable length of Class B."""
         FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=10,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=10,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         # Get Class B length
         fa_b = FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=10,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=10,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         mo_b = MultiFloorOrchestrator(
-            slc_loop_class=SLCLoopClass.CLASS_B, building_height_m=10.0,
+            slc_loop_class=SLCLoopClass.CLASS_B,
+            building_height_m=10.0,
         )
         loops_b = mo_b._assign_slc_loops([fa_b])
 
         # Get Class A length
         fa_a = FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=10,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=10,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         loops_a = orchestrator_class_a._assign_slc_loops([fa_a])
 
@@ -1043,14 +1091,20 @@ class TestSLCLoopAssignment:
 
     def test_floor_slc_loops_back_reference(self, orchestrator) -> None:
         """Floor assignments should have their SLC loops referenced."""
-        fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
+        fa = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0
+        )
         orchestrator._assign_slc_loops([fa])
         assert "SLC-1" in fa.slc_loops
 
     def test_floors_sorted_by_index_in_loop_assignment(self, orchestrator) -> None:
         """Floors should be processed in index order."""
-        fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=30, area_sqm=500.0, elevation_m=3.5)
-        fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=30, area_sqm=500.0, elevation_m=0.0)
+        fa2 = FloorAssignment(
+            floor_id="L1", floor_index=1, total_devices=30, area_sqm=500.0, elevation_m=3.5
+        )
+        fa1 = FloorAssignment(
+            floor_id="GF", floor_index=0, total_devices=30, area_sqm=500.0, elevation_m=0.0
+        )
         loops = orchestrator._assign_slc_loops([fa2, fa1])  # Out of order input
         # GF should be processed first, device addresses should start from 001
         assert "GF" in loops[0].floors_served
@@ -1076,7 +1130,9 @@ class TestVerticalZoneDesign:
             FloorAssignment(floor_id="L2", floor_index=2, total_devices=10, area_sqm=500.0),
             FloorAssignment(floor_id="L3", floor_index=3, total_devices=10, area_sqm=500.0),
         ]
-        zones = orchestrator._design_vertical_zones(floors, "business", {"GF": 500.0, "L1": 500.0, "L2": 500.0, "L3": 500.0})
+        zones = orchestrator._design_vertical_zones(
+            floors, "business", {"GF": 500.0, "L1": 500.0, "L2": 500.0, "L3": 500.0}
+        )
         # 4 floors, 2 per zone → 2 zones
         assert len(zones) == 2
         assert zones[0].floors_per_zone == 2
@@ -1119,9 +1175,7 @@ class TestVerticalZoneDesign:
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=800.0),
             FloorAssignment(floor_id="L1", floor_index=1, total_devices=10, area_sqm=800.0),
         ]
-        zones = orchestrator._design_vertical_zones(
-            floors, "business", {"GF": 800.0, "L1": 800.0}
-        )
+        zones = orchestrator._design_vertical_zones(floors, "business", {"GF": 800.0, "L1": 800.0})
         # 1600 sqm < MAX_ZONE_AREA_SQM ≈ 1858 sqm → area_compliant
         assert zones[0].area_compliant is True
 
@@ -1161,9 +1215,7 @@ class TestVerticalZoneDesign:
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=30, area_sqm=500.0),
             FloorAssignment(floor_id="L1", floor_index=1, total_devices=20, area_sqm=500.0),
         ]
-        zones = orchestrator._design_vertical_zones(
-            floors, "business", {"GF": 500.0, "L1": 500.0}
-        )
+        zones = orchestrator._design_vertical_zones(floors, "business", {"GF": 500.0, "L1": 500.0})
         assert zones[0].total_devices == 50
 
 
@@ -1177,8 +1229,12 @@ class TestSmokeSpreadAnalysis:
 
     def test_empty_floor_assignments(self, orchestrator) -> None:
         result = orchestrator._analyze_smoke_spread(
-            floor_assignments=[], elevators=[], stairwells=[],
-            hvac_ducts=[], smoke_barriers=[], building_height_m=45.0,
+            floor_assignments=[],
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=45.0,
         )
         assert result == []
 
@@ -1194,8 +1250,11 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=elevators,
-            stairwells=[], hvac_ducts=[], smoke_barriers=[],
+            floor_assignments=floors,
+            elevators=elevators,
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
             building_height_m=45.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
@@ -1215,8 +1274,11 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=elevators,
-            stairwells=[], hvac_ducts=[], smoke_barriers=[],
+            floor_assignments=floors,
+            elevators=elevators,
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
             building_height_m=30.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
@@ -1237,8 +1299,11 @@ class TestSmokeSpreadAnalysis:
         ]
         # building_height_m > 22.86 → pressurization required
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=elevators,
-            stairwells=[], hvac_ducts=[], smoke_barriers=[],
+            floor_assignments=floors,
+            elevators=elevators,
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
             building_height_m=30.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
@@ -1257,8 +1322,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=45.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=45.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert len(stair_results) == 1
@@ -1276,8 +1345,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert len(stair_results[0].violations) > 0
@@ -1296,8 +1369,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("lacks differential pressure monitoring" in w for w in stair_results[0].warnings)
@@ -1315,8 +1392,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("below minimum 25 Pa" in v for v in stair_results[0].violations)
@@ -1334,8 +1415,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("exceeds maximum 85 Pa" in v for v in stair_results[0].violations)
@@ -1352,8 +1437,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=hvac_ducts, smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=hvac_ducts,
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         duct_results = [r for r in results if r.pathway == SmokeSpreadPathway.HVAC_DUCT]
         assert len(duct_results) == 1
@@ -1372,8 +1461,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=hvac_ducts, smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=hvac_ducts,
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         duct_results = [r for r in results if r.pathway == SmokeSpreadPathway.HVAC_DUCT]
         assert duct_results[0].duct_detection_required is False
@@ -1391,8 +1484,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=hvac_ducts, smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=hvac_ducts,
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         duct_results = [r for r in results if r.pathway == SmokeSpreadPathway.HVAC_DUCT]
         assert duct_results[0].duct_detection_required is True
@@ -1410,8 +1507,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=hvac_ducts, smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=hvac_ducts,
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         duct_results = [r for r in results if r.pathway == SmokeSpreadPathway.HVAC_DUCT]
         assert duct_results[0].duct_detection_required is False
@@ -1428,8 +1529,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=[], smoke_barriers=barriers, building_height_m=10.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=barriers,
+            building_height_m=10.0,
         )
         barrier_results = [r for r in results if r.pathway == SmokeSpreadPathway.JOINT]
         assert len(barrier_results) == 1
@@ -1446,8 +1551,12 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=[], smoke_barriers=barriers, building_height_m=10.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=barriers,
+            building_height_m=10.0,
         )
         barrier_results = [r for r in results if r.pathway == SmokeSpreadPathway.JOINT]
         assert len(barrier_results[0].violations) == 0
@@ -1456,8 +1565,12 @@ class TestSmokeSpreadAnalysis:
         """Tall building with no shaft data should produce a general warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=[], smoke_barriers=[], building_height_m=45.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=45.0,
         )
         assert len(results) == 1
         assert results[0].pressurization_required is True
@@ -1467,8 +1580,12 @@ class TestSmokeSpreadAnalysis:
         """Short building with no shaft data should produce no results."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=[],
-            hvac_ducts=[], smoke_barriers=[], building_height_m=10.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=10.0,
         )
         assert len(results) == 0
 
@@ -1484,8 +1601,11 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=elevators,
-            stairwells=[], hvac_ducts=[], smoke_barriers=[],
+            floor_assignments=floors,
+            elevators=elevators,
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
             building_height_m=45.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
@@ -1503,12 +1623,17 @@ class TestSmokeSpreadAnalysis:
             }
         ]
         results = mo._analyze_smoke_spread(
-            floor_assignments=floors, elevators=elevators,
-            stairwells=[], hvac_ducts=[], smoke_barriers=[],
+            floor_assignments=floors,
+            elevators=elevators,
+            stairwells=[],
+            hvac_ducts=[],
+            smoke_barriers=[],
             building_height_m=0.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
-        assert elev_results[0].propagation_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            elev_results[0].propagation_time_s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ============================================================================
@@ -1520,9 +1645,7 @@ class TestElevatorRecall:
     """Tests for _check_elevator_recall."""
 
     def test_no_elevators(self, orchestrator) -> None:
-        result = orchestrator._check_elevator_recall(
-            elevators=[], floor_assignments=[]
-        )
+        result = orchestrator._check_elevator_recall(elevators=[], floor_assignments=[])
         assert result == []
 
     def test_fully_compliant_elevator(self, orchestrator) -> None:
@@ -1800,7 +1923,9 @@ class TestRiserRouting:
         """When floor elevations are the same, default 3.5m should be used."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
-            FloorAssignment(floor_id="L1", floor_index=1, elevation_m=0.0, area_sqm=500.0),  # Same elevation
+            FloorAssignment(
+                floor_id="L1", floor_index=1, elevation_m=0.0, area_sqm=500.0
+            ),  # Same elevation
         ]
         loops = [SLCLoop(loop_id="SLC-1", device_count=10, floors_served={"GF", "L1"})]
         result = orchestrator._route_risers(floor_assignments=floors, slc_loops=loops)
@@ -1870,9 +1995,7 @@ class TestComplianceEvaluation:
     def test_slc_loop_non_compliant(self) -> None:
         """Non-compliant SLC loop should make building non-compliant."""
         analysis = BuildingAnalysis()
-        analysis.slc_loops = [
-            SLCLoop(loop_id="SLC-1", device_count=300, max_devices=250)
-        ]
+        analysis.slc_loops = [SLCLoop(loop_id="SLC-1", device_count=300, max_devices=250)]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
     def test_slc_loop_voltage_drop_non_compliant(self) -> None:
@@ -1899,9 +2022,7 @@ class TestComplianceEvaluation:
     def test_smoke_spread_violations(self) -> None:
         """Smoke spread violations should make building non-compliant."""
         analysis = BuildingAnalysis()
-        analysis.smoke_spread_results = [
-            SmokeSpreadResult(violations=["Some critical violation"])
-        ]
+        analysis.smoke_spread_results = [SmokeSpreadResult(violations=["Some critical violation"])]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
     def test_elevator_recall_violations(self) -> None:
@@ -1915,9 +2036,7 @@ class TestComplianceEvaluation:
     def test_riser_voltage_drop_non_compliant(self) -> None:
         """Non-compliant riser voltage drop should make building non-compliant."""
         analysis = BuildingAnalysis()
-        analysis.riser_routing_results = [
-            RiserRoutingResult(voltage_drop_compliant=False)
-        ]
+        analysis.riser_routing_results = [RiserRoutingResult(voltage_drop_compliant=False)]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
     def test_fully_compliant(self) -> None:
@@ -1992,9 +2111,7 @@ class TestFailSafeBehavior:
 
     def test_riser_routing_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If riser routing fails, other subsystems should still run."""
-        with patch.object(
-            orchestrator, "_route_risers", side_effect=RuntimeError("Riser crashed")
-        ):
+        with patch.object(orchestrator, "_route_risers", side_effect=RuntimeError("Riser crashed")):
             result = orchestrator.orchestrate(**sample_building_spec)
         assert isinstance(result, BuildingAnalysis)
         assert any("Riser routing failed" in e for e in result.errors)
@@ -2110,7 +2227,9 @@ class TestResidentialBuilding:
             assert zone.floors_per_zone == 1
             assert len(zone.floor_ids) == 1
 
-    def test_residential_occupancy_type_in_zones(self, orchestrator, residential_building_spec) -> None:
+    def test_residential_occupancy_type_in_zones(
+        self, orchestrator, residential_building_spec
+    ) -> None:
         result = orchestrator.orchestrate(**residential_building_spec)
         for zone in result.vertical_zones:
             assert zone.occupancy_type == "residential"
@@ -2130,8 +2249,7 @@ class TestTallBuilding:
         result = mo.orchestrate(**tall_building_spec)
 
         stair_results = [
-            r for r in result.smoke_spread_results
-            if r.pathway == SmokeSpreadPathway.STAIRWELL
+            r for r in result.smoke_spread_results if r.pathway == SmokeSpreadPathway.STAIRWELL
         ]
         assert len(stair_results) > 0
         assert stair_results[0].pressurization_required is True
@@ -2142,8 +2260,7 @@ class TestTallBuilding:
         result = mo.orchestrate(**tall_building_spec)
 
         stair_results = [
-            r for r in result.smoke_spread_results
-            if r.pathway == SmokeSpreadPathway.STAIRWELL
+            r for r in result.smoke_spread_results if r.pathway == SmokeSpreadPathway.STAIRWELL
         ]
         assert len(stair_results[0].violations) > 0
         assert any("lacks pressurization fan" in v for v in stair_results[0].violations)
@@ -2196,7 +2313,9 @@ class TestEdgeCases:
         area_exactly_at_limit = MAX_ZONE_AREA_SQM
         floors = [
             FloorAssignment(
-                floor_id="GF", floor_index=0, total_devices=10,
+                floor_id="GF",
+                floor_index=0,
+                total_devices=10,
                 area_sqm=area_exactly_at_limit,
             ),
         ]
@@ -2211,21 +2330,24 @@ class TestEdgeCases:
         area_over_limit = MAX_ZONE_AREA_SQM + 1.0
         floors = [
             FloorAssignment(
-                floor_id="GF", floor_index=0, total_devices=10,
+                floor_id="GF",
+                floor_index=0,
+                total_devices=10,
                 area_sqm=area_over_limit,
             ),
         ]
-        zones = orchestrator._design_vertical_zones(
-            floors, "business", {"GF": area_over_limit}
-        )
+        zones = orchestrator._design_vertical_zones(floors, "business", {"GF": area_over_limit})
         assert zones[0].area_compliant is False
 
     def test_slc_loop_at_exact_capacity(self) -> None:
         """SLC loop with exactly max devices should be compliant."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
         fa = FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=10,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=10,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         loops = mo._assign_slc_loops([fa])
         assert len(loops) == 1
@@ -2236,8 +2358,11 @@ class TestEdgeCases:
         """SLC loop with max+1 devices should split into two loops."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
         fa = FloorAssignment(
-            floor_id="GF", floor_index=0, total_devices=11,
-            area_sqm=500.0, elevation_m=0.0,
+            floor_id="GF",
+            floor_index=0,
+            total_devices=11,
+            area_sqm=500.0,
+            elevation_m=0.0,
         )
         loops = mo._assign_slc_loops([fa])
         assert len(loops) == 2
@@ -2285,8 +2410,12 @@ class TestEdgeCases:
             }
         ]
         results = orchestrator._analyze_smoke_spread(
-            floor_assignments=floors, elevators=[], stairwells=stairwells,
-            hvac_ducts=[], smoke_barriers=[], building_height_m=30.0,
+            floor_assignments=floors,
+            elevators=[],
+            stairwells=stairwells,
+            hvac_ducts=[],
+            smoke_barriers=[],
+            building_height_m=30.0,
         )
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert len(stair_results) == 1

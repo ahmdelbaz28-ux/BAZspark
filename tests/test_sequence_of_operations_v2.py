@@ -33,8 +33,13 @@ import fireai.core.sequence_of_operations as _soo_mod
 @pytest.fixture(autouse=True)
 def _disable_provenance():
     originals = {}
-    for attr in ("DecisionProvenance", "RuleApplied", "Violation",
-                 "ConfidenceScore", "ConfidenceLevel"):
+    for attr in (
+        "DecisionProvenance",
+        "RuleApplied",
+        "Violation",
+        "ConfidenceScore",
+        "ConfidenceLevel",
+    ):
         originals[attr] = getattr(_soo_mod, attr, None)
         setattr(_soo_mod, attr, None)
     yield
@@ -90,19 +95,30 @@ class TestLogicFunction:
         assert LogicFunction.HVAC_SHUTDOWN_ZONE.value == "Shutdown AHU / Close Fire Dampers (Zone)"
 
     def test_hvac_shutdown_all(self):
-        assert LogicFunction.HVAC_SHUTDOWN_ALL.value == "Shutdown AHU / Close Fire Dampers (Building)"
+        assert (
+            LogicFunction.HVAC_SHUTDOWN_ALL.value == "Shutdown AHU / Close Fire Dampers (Building)"
+        )
 
     def test_elevator_recall_primary(self):
-        assert LogicFunction.ELEVATOR_RECALL_PRIMARY.value == "Elevator Phase I Recall (Designated Floor)"
+        assert (
+            LogicFunction.ELEVATOR_RECALL_PRIMARY.value
+            == "Elevator Phase I Recall (Designated Floor)"
+        )
 
     def test_elevator_recall_alternate(self):
-        assert LogicFunction.ELEVATOR_RECALL_ALTERNATE.value == "Elevator Phase I Recall (Alternate Floor)"
+        assert (
+            LogicFunction.ELEVATOR_RECALL_ALTERNATE.value
+            == "Elevator Phase I Recall (Alternate Floor)"
+        )
 
     def test_elevator_phase_ii(self):
         assert LogicFunction.ELEVATOR_PHASE_II.value == "Elevator Phase II (Independent Service)"
 
     def test_elevator_shunt_trip(self):
-        assert LogicFunction.ELEVATOR_SHUNT_TRIP.value == "Elevator Shunt-Trip Power Disconnect (NFPA 72 §21.4.1)"
+        assert (
+            LogicFunction.ELEVATOR_SHUNT_TRIP.value
+            == "Elevator Shunt-Trip Power Disconnect (NFPA 72 §21.4.1)"
+        )
 
     def test_door_release(self):
         assert LogicFunction.DOOR_RELEASE.value == "Release Magnetic Hold-Open Doors (Zone)"
@@ -123,13 +139,21 @@ class TestLogicFunction:
     def test_all_members_accounted(self):
         names = {m.name for m in LogicFunction}
         expected = {
-            "ALARM", "SUPERVISORY", "TROUBLE",
-            "NAC_ZONE", "NAC_ALL",
-            "HVAC_SHUTDOWN_ZONE", "HVAC_SHUTDOWN_ALL",
-            "ELEVATOR_RECALL_PRIMARY", "ELEVATOR_RECALL_ALTERNATE",
-            "ELEVATOR_PHASE_II", "ELEVATOR_SHUNT_TRIP",
-            "DOOR_RELEASE", "FIRE_PUMP_START",
-            "SMOKE_CONTROL", "STAIRWELL_PRESSURIZATION",
+            "ALARM",
+            "SUPERVISORY",
+            "TROUBLE",
+            "NAC_ZONE",
+            "NAC_ALL",
+            "HVAC_SHUTDOWN_ZONE",
+            "HVAC_SHUTDOWN_ALL",
+            "ELEVATOR_RECALL_PRIMARY",
+            "ELEVATOR_RECALL_ALTERNATE",
+            "ELEVATOR_PHASE_II",
+            "ELEVATOR_SHUNT_TRIP",
+            "DOOR_RELEASE",
+            "FIRE_PUMP_START",
+            "SMOKE_CONTROL",
+            "STAIRWELL_PRESSURIZATION",
         }
         assert names == expected, f"Missing or extra LogicFunction members: {names ^ expected}"
 
@@ -149,7 +173,10 @@ class TestDeviceInputType:
         assert DeviceInputType.SMOKE_ELEVATOR_LOBBY.value == "SMOKE_ELEVATOR_LOBBY"
 
     def test_smoke_elevator_lobby_designated(self):
-        assert DeviceInputType.SMOKE_ELEVATOR_LOBBY_DESIGNATED.value == "SMOKE_ELEVATOR_LOBBY_DESIGNATED"
+        assert (
+            DeviceInputType.SMOKE_ELEVATOR_LOBBY_DESIGNATED.value
+            == "SMOKE_ELEVATOR_LOBBY_DESIGNATED"
+        )
 
     def test_smoke_machine_room(self):
         assert DeviceInputType.SMOKE_MACHINE_ROOM.value == "SMOKE_MACHINE_ROOM"
@@ -187,13 +214,20 @@ class TestDeviceInputType:
     def test_all_members_accounted(self):
         names = {m.name for m in DeviceInputType}
         expected = {
-            "SMOKE_GENERAL", "SMOKE_ELEVATOR_LOBBY",
-            "SMOKE_ELEVATOR_LOBBY_DESIGNATED", "SMOKE_MACHINE_ROOM",
-            "SMOKE_ELEVATOR_SHAFT", "SMOKE_RETURN",
-            "HEAT", "HEAT_ELEVATOR_SHUNT_TRIP",
-            "MANUAL_CALL_POINT", "DUCT_DETECTOR",
-            "WATERFLOW", "VALVE_TAMPER",
-            "SPRINKLER_SUPERVISORY", "UNKNOWN",
+            "SMOKE_GENERAL",
+            "SMOKE_ELEVATOR_LOBBY",
+            "SMOKE_ELEVATOR_LOBBY_DESIGNATED",
+            "SMOKE_MACHINE_ROOM",
+            "SMOKE_ELEVATOR_SHAFT",
+            "SMOKE_RETURN",
+            "HEAT",
+            "HEAT_ELEVATOR_SHUNT_TRIP",
+            "MANUAL_CALL_POINT",
+            "DUCT_DETECTOR",
+            "WATERFLOW",
+            "VALVE_TAMPER",
+            "SPRINKLER_SUPERVISORY",
+            "UNKNOWN",
         }
         assert names == expected, f"Missing or extra DeviceInputType members: {names ^ expected}"
 
@@ -282,7 +316,9 @@ class TestMatrixRow:
 
     def test_basic_creation(self):
         row = MatrixRow(
-            "SD-01", "Z-1", "FL1",
+            "SD-01",
+            "Z-1",
+            "FL1",
             DeviceInputType.SMOKE_GENERAL,
             [LogicFunction.ALARM, LogicFunction.NAC_ZONE],
         )
@@ -298,7 +334,9 @@ class TestMatrixRow:
 
     def test_nfpa_references_provided(self):
         refs = ["NFPA 72-2022 §10.14"]
-        row = MatrixRow("SD-01", "Z-1", "FL1", DeviceInputType.SMOKE_GENERAL, [], nfpa_references=refs)
+        row = MatrixRow(
+            "SD-01", "Z-1", "FL1", DeviceInputType.SMOKE_GENERAL, [], nfpa_references=refs
+        )
         assert row.nfpa_references == refs
 
     def test_frozen_immutability_device_id(self):
@@ -851,9 +889,7 @@ class TestGenerateMatrix:
             result = matrix.generate_matrix(devices)
             outputs = result["matrix"][0]["outputs"]
             phase_ii_outputs = [o for o in outputs if "Phase II" in o]
-            assert len(phase_ii_outputs) == 0, (
-                f"{dt.value} must NOT auto-trigger ELEVATOR_PHASE_II"
-            )
+            assert len(phase_ii_outputs) == 0, f"{dt.value} must NOT auto-trigger ELEVATOR_PHASE_II"
 
     # ── V18 bug regression: FIRE_PUMP_START exists ──────────────────────
 
@@ -932,8 +968,7 @@ class TestGenerateMatrix:
             result = matrix.generate_matrix(devices)
             outputs = result["matrix"][0]["outputs"]
             has_primary = any(
-                "General Alarm" in o or "Supervisory" in o or "Trouble" in o
-                for o in outputs
+                "General Alarm" in o or "Supervisory" in o or "Trouble" in o for o in outputs
             )
             assert has_primary, f"{dt.value} must produce ALARM, SUPERVISORY, or TROUBLE"
 
@@ -959,9 +994,7 @@ class TestGenerateMatrix:
             devices = [DeviceInput(f"DEV-{dt.value}", dt, "Z-1")]
             result = matrix.generate_matrix(devices)
             actual = len(result["matrix"][0]["outputs"])
-            assert actual == expected, (
-                f"{dt.value}: expected {expected} outputs, got {actual}"
-            )
+            assert actual == expected, f"{dt.value}: expected {expected} outputs, got {actual}"
 
     # ── Matrix output values match LogicFunction enum values ─────────────
 
@@ -970,9 +1003,9 @@ class TestGenerateMatrix:
         result = matrix.generate_matrix(devices)
         for row in result["matrix"]:
             for output in row["outputs"]:
-                assert any(
-                    output == lf.value for lf in LogicFunction
-                ), f"Unknown output value: {output}"
+                assert any(output == lf.value for lf in LogicFunction), (
+                    f"Unknown output value: {output}"
+                )
 
     # ── Warnings for unknown devices ─────────────────────────────────────
 

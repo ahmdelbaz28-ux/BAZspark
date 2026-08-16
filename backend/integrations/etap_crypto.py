@@ -3,6 +3,7 @@
 """
 backend/integrations/etap_crypto.py — ETAP credential encryption utilities.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,7 +38,6 @@ def _get_key() -> bytes:
             "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
         )
     return key.encode("utf-8")
-
 
 
 def encrypt_password(plaintext: str) -> str:

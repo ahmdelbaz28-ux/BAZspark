@@ -4,6 +4,7 @@ ETAP-AI-WORK Engineering Copilot - Main Entry Point
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from fastapi import FastAPI
 
 from engineering_copilot import __author__, __version__
@@ -36,8 +37,8 @@ def create_app() -> FastAPI:
                 "ETAP Model Synchronization",
                 "Engineering Validation",
                 "Report Generation",
-                "Multi-Platform Translation"
-            ]
+                "Multi-Platform Translation",
+            ],
         }
 
     return app
@@ -46,10 +47,6 @@ def create_app() -> FastAPI:
 # For direct execution
 if __name__ == "__main__":
     import uvicorn
+
     app = create_app()
-    uvicorn.run(
-        "engineering_copilot.main:create_app",
-        host="127.0.0.1",
-        port=8001,
-        reload=True
-    )
+    uvicorn.run("engineering_copilot.main:create_app", host="127.0.0.1", port=8001, reload=True)

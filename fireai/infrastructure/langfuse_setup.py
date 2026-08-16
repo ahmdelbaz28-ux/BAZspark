@@ -51,6 +51,7 @@ def _check_langfuse_available() -> bool:
 
     try:
         import langfuse  # noqa: F401
+
         host = os.getenv("LANGFUSE_HOST")
         public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
         secret_key = os.getenv("LANGFUSE_SECRET_KEY")
@@ -88,6 +89,7 @@ def get_langfuse() -> Any | None:
     if _langfuse_client is None:
         try:
             from langfuse import Langfuse
+
             _langfuse_client = Langfuse(
                 host=os.getenv("LANGFUSE_HOST"),
                 public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
@@ -196,7 +198,9 @@ def log_verification_score(
         return False
 
 
-def log_workflow_scores(result: Any, handler: Any | None) -> None:  # NOSONAR â€” S3776: cognitive complexity is inherent to the safety-critical algorithm
+def log_workflow_scores(
+    result: Any, handler: Any | None
+) -> None:  # NOSONAR â€” S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Log all 5 verification scores to Langfuse after workflow completion.
 
@@ -233,9 +237,8 @@ def log_workflow_scores(result: Any, handler: Any | None) -> None:  # NOSONAR â€
             scores["nfpa_coverage_pct"] = float(min(max(coverage, 0.0), 1.0))
 
         # 2. NFPA compliant boolean
-        compliant = (
-            getattr(result, "nfpa_compliant", None)
-            or _nested_get(result, "safety_gates", "nfpa_compliant")
+        compliant = getattr(result, "nfpa_compliant", None) or _nested_get(
+            result, "safety_gates", "nfpa_compliant"
         )
         if compliant is not None:
             scores["nfpa_compliant"] = 1.0 if bool(compliant) else 0.0
@@ -250,17 +253,15 @@ def log_workflow_scores(result: Any, handler: Any | None) -> None:  # NOSONAR â€
             scores["conflict_severity"] = max(0.0, 1.0 - (float(conflicts) / 10.0))
 
         # 4. Validation passed
-        validation = (
-            getattr(result, "validation_passed", None)
-            or _nested_get(result, "safety_gates", "validation_passed")
+        validation = getattr(result, "validation_passed", None) or _nested_get(
+            result, "safety_gates", "validation_passed"
         )
         if validation is not None:
             scores["validation_passed"] = 1.0 if bool(validation) else 0.0
 
         # 5. Overall safety gate (most critical)
-        overall = (
-            getattr(result, "safety_gate_overall", None)
-            or _nested_get(result, "safety_gates", "overall")
+        overall = getattr(result, "safety_gate_overall", None) or _nested_get(
+            result, "safety_gates", "overall"
         )
         if overall is not None:
             scores["safety_gate_overall"] = 1.0 if bool(overall) else 0.0

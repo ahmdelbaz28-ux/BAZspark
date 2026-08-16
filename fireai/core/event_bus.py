@@ -415,7 +415,9 @@ class EventBus:
                 # unacceptable. We catch to survive, but we log to inform.
                 import logging as _logging
 
-                _logging.getLogger(__name__).error(  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+                _logging.getLogger(
+                    __name__
+                ).error(  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
                     "EventBus subscriber error on %s: %s: %s",
                     event_type,
                     type(exc).__name__,
@@ -516,8 +518,10 @@ if __name__ == "__main__":
 
     # Test 7: Unsubscribe
     counter: list[int] = []
+
     def cb(e):
         return counter.append(1)
+
     bus3.subscribe(Events.COVERAGE_VERIFIED, cb)
     bus3.publish(Events.COVERAGE_VERIFIED, {})
     assert len(counter) == 1

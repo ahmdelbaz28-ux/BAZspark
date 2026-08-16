@@ -11,6 +11,7 @@ Covers system requirement §4:
 
 References: NFPA 72 §23.6.2, NEC 760.24(A)
 """
+
 import os
 import sys
 
@@ -33,12 +34,39 @@ def sg():
 @pytest.fixture
 def sample_rows():
     return [
-        ScheduleRow("FACP->SD-01", "(0,0,0)", "(5,0,2.7)", 5.2, '14 AWG in 3/4" RED EMT',
-                    0.043, 23.957, 1, True),
-        ScheduleRow("FACP->SD-02", "(0,0,0)", "(5,5,2.7)", 7.8, '14 AWG in 3/4" RED EMT',
-                    0.065, 23.935, 2, True),
-        ScheduleRow("FACP->SD-03", "(0,0,0)", "(0,10,2.7)", 1600.0, '14 AWG in 3/4" RED EMT',
-                    13.3, 10.7, 0, False),  # Non-compliant long circuit
+        ScheduleRow(
+            "FACP->SD-01",
+            "(0,0,0)",
+            "(5,0,2.7)",
+            5.2,
+            '14 AWG in 3/4" RED EMT',
+            0.043,
+            23.957,
+            1,
+            True,
+        ),
+        ScheduleRow(
+            "FACP->SD-02",
+            "(0,0,0)",
+            "(5,5,2.7)",
+            7.8,
+            '14 AWG in 3/4" RED EMT',
+            0.065,
+            23.935,
+            2,
+            True,
+        ),
+        ScheduleRow(
+            "FACP->SD-03",
+            "(0,0,0)",
+            "(0,10,2.7)",
+            1600.0,
+            '14 AWG in 3/4" RED EMT',
+            13.3,
+            10.7,
+            0,
+            False,
+        ),  # Non-compliant long circuit
     ]
 
 
@@ -58,8 +86,8 @@ class TestScheduleGeneratorCSV:
 
     def test_csv_compliance_column(self, sg, sample_rows):
         csv = sg.to_csv(sample_rows)
-        assert "YES" in csv   # compliant routes
-        assert "NO" in csv    # non-compliant route
+        assert "YES" in csv  # compliant routes
+        assert "NO" in csv  # non-compliant route
 
     def test_csv_code_refs_column(self, sg, sample_rows):
         csv = sg.to_csv(sample_rows)
@@ -105,11 +133,13 @@ class TestScheduleReport:
     def test_empty_report(self, sg):
         rep = sg.to_report([])
         assert rep.route_count == 0
-        assert rep.total_cable_length_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            rep.total_cable_length_m == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert not rep.all_compliant
 
     def test_single_route_report(self, sg):
-        rows = [ScheduleRow("A->B","(0,0)","(1,0)", 50.0, "14 AWG", 0.41, 23.59, 0, True)]
+        rows = [ScheduleRow("A->B", "(0,0)", "(1,0)", 50.0, "14 AWG", 0.41, 23.59, 0, True)]
         rep = sg.to_report(rows)
         assert rep.route_count == 1
         assert rep.max_circuit_length_m == pytest.approx(50.0)
@@ -118,6 +148,7 @@ class TestScheduleReport:
 class TestScheduleJSON:
     def test_json_output(self, sg, sample_rows):
         import json
+
         j = sg.to_json(sample_rows)
         data = json.loads(j)
         assert "schedule" in data
@@ -126,6 +157,7 @@ class TestScheduleJSON:
 
     def test_json_compliant_field(self, sg, sample_rows):
         import json
+
         j = sg.to_json(sample_rows)
         data = json.loads(j)
         assert data["report"]["violations_count"] == 1

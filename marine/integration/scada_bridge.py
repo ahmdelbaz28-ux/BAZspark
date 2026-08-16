@@ -16,6 +16,7 @@ Topics/tags follow the unified schema:
 
 Supports PyScada (Python/Django), Scada-LTS (Java), and JSON-SCADA (Go).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,41 +32,62 @@ class SCADATag:
 
     tag_id: str
     zone_id: str
-    tag_type: str               # "alarm", "extinguish", "power", "diagnostic"
-    protocol: str               # "mqtt", "opcua", "modbus"
-    address: str                # MQTT topic / OPC-UA node ID / Modbus register
-    data_type: str = "BOOL"     # BOOL, INT, REAL, STRING
+    tag_type: str  # "alarm", "extinguish", "power", "diagnostic"
+    protocol: str  # "mqtt", "opcua", "modbus"
+    address: str  # MQTT topic / OPC-UA node ID / Modbus register
+    data_type: str = "BOOL"  # BOOL, INT, REAL, STRING
     description: str = ""
-    unit: str = ""              # Engineering unit
+    unit: str = ""  # Engineering unit
 
 
 def build_mqtt_topics(imo: str, zone_ids: list[str]) -> list[SCADATag]:
     """Generate the canonical MQTT topic tree for a ship."""
     tags: list[SCADATag] = []
     for zid in zone_ids:
-        tags.append(SCADATag(
-            tag_id=f"alarm_{zid}", zone_id=zid, tag_type="alarm",
-            protocol="mqtt",
-            address=f"ship/{imo}/fire/alarm/{zid}",
-            description=f"Fire alarm status for zone {zid}",
-        ))
-        tags.append(SCADATag(
-            tag_id=f"extinguish_{zid}", zone_id=zid, tag_type="extinguish",
-            protocol="mqtt",
-            address=f"ship/{imo}/fire/extinguish/{zid}",
-            description=f"Extinguishing release status for zone {zid}",
-        ))
+        tags.append(
+            SCADATag(
+                tag_id=f"alarm_{zid}",
+                zone_id=zid,
+                tag_type="alarm",
+                protocol="mqtt",
+                address=f"ship/{imo}/fire/alarm/{zid}",
+                description=f"Fire alarm status for zone {zid}",
+            )
+        )
+        tags.append(
+            SCADATag(
+                tag_id=f"extinguish_{zid}",
+                zone_id=zid,
+                tag_type="extinguish",
+                protocol="mqtt",
+                address=f"ship/{imo}/fire/extinguish/{zid}",
+                description=f"Extinguishing release status for zone {zid}",
+            )
+        )
     # Power/UPS
-    tags.append(SCADATag(
-        tag_id="ups_status", zone_id="ship", tag_type="power",
-        protocol="mqtt", address=f"ship/{imo}/power/ups/status",
-        data_type="STRING", description="UPS operational status",
-    ))
-    tags.append(SCADATag(
-        tag_id="insulation", zone_id="ship", tag_type="power",
-        protocol="mqtt", address=f"ship/{imo}/power/insulation/resistance_kohm",
-        data_type="REAL", unit="kΩ", description="Insulation resistance (IEC 60092-504)",
-    ))
+    tags.append(
+        SCADATag(
+            tag_id="ups_status",
+            zone_id="ship",
+            tag_type="power",
+            protocol="mqtt",
+            address=f"ship/{imo}/power/ups/status",
+            data_type="STRING",
+            description="UPS operational status",
+        )
+    )
+    tags.append(
+        SCADATag(
+            tag_id="insulation",
+            zone_id="ship",
+            tag_type="power",
+            protocol="mqtt",
+            address=f"ship/{imo}/power/insulation/resistance_kohm",
+            data_type="REAL",
+            unit="kΩ",
+            description="Insulation resistance (IEC 60092-504)",
+        )
+    )
     return tags
 
 
@@ -132,13 +154,15 @@ def build_modbus_registers(tags: list[SCADATag], start_addr: int = 40001) -> lis
     addr = start_addr
     for t in tags:
         width = REG_WIDTH.get(t.data_type, 2)
-        registers.append({
-            "tag_id": t.tag_id,
-            "register": addr,
-            "data_type": t.data_type,
-            "width": width,
-            "description": t.description,
-        })
+        registers.append(
+            {
+                "tag_id": t.tag_id,
+                "register": addr,
+                "data_type": t.data_type,
+                "width": width,
+                "description": t.description,
+            }
+        )
         addr += width
     return registers
 
@@ -162,9 +186,7 @@ def dashboard_payload(
     return {
         "ship_imo": imo,
         "timestamp": timestamp,
-        "zones": [
-            {"zone_id": zid, "status": s} for zid, s in zones_status.items()
-        ],
+        "zones": [{"zone_id": zid, "status": s} for zid, s in zones_status.items()],
         "summary": {
             "total_zones": len(zones_status),
             "alarms": sum(1 for s in zones_status.values() if s == "alarm"),

@@ -148,7 +148,11 @@ class TruthMaintenanceSystem:
 
         return retracted_ids
 
-    def _retract_support_inner(self, retracted_fact_id: str) -> list[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _retract_support_inner(
+        self, retracted_fact_id: str
+    ) -> list[
+        str
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Internal implementation of retract_support (without visited-set management)."""
         retracted_ids: list[str] = []
 
@@ -166,7 +170,9 @@ class TruthMaintenanceSystem:
 
             # Log the retraction
             dep = self._dependencies.get(affected_id)
-            reason = f"Supporting fact {retracted_fact_id} retracted" if dep else "Unknown dependency"
+            reason = (
+                f"Supporting fact {retracted_fact_id} retracted" if dep else "Unknown dependency"
+            )
             self._retraction_log.append(
                 {
                     "fact_id": affected_id,

@@ -135,9 +135,7 @@ def _build_room_queries(combined: str, occupancy: str, room_name: str) -> list[s
     if _is_hazardous_area(combined):
         queries.append("IEC 60079 hazardous area fire alarm detector selection")
 
-    queries.append(
-        f"{occupancy or room_name} fire alarm detector placement patterns NFPA 72"
-    )
+    queries.append(f"{occupancy or room_name} fire alarm detector placement patterns NFPA 72")
     return queries
 
 
@@ -154,9 +152,7 @@ def _is_hazardous_area(combined: str) -> bool:
 
 def _get_gulf_state_queries(region: str) -> list[str]:
     """Get queries for Gulf state regions."""
-    gulf_states = {
-        "gulf", "uae", "saudi", "ksa", "qatar", "kuwait", "oman", "bahrain"
-    }
+    gulf_states = {"gulf", "uae", "saudi", "ksa", "qatar", "kuwait", "oman", "bahrain"}
     if region in gulf_states:
         return ["Civil Defense fire alarm code Gulf state requirements"]
     return []
@@ -190,12 +186,12 @@ def _region_queries(env_context: dict[str, Any]) -> list[str]:
         queries.append("Civil Defense fire alarm code Gulf state requirements")
 
     # Seismic bracing (severe weather alerts present)
-    severe = env_context.get("severe_weather_alerts") or env_context.get(
-        "severe_weather"
-    )
+    severe = env_context.get("severe_weather_alerts") or env_context.get("severe_weather")
     if severe:
         queries.append("seismic bracing fire alarm equipment requirements")
     return queries
+
+
 def _dedupe_queries(queries: list[str]) -> list[str]:
     """Deduplicate, keep order, enforce cap."""
     seen: set[str] = set()
@@ -229,6 +225,8 @@ def _build_room_queries_list(rooms: list[dict[str, Any]]) -> list[str]:
     for room in rooms[:_MAX_QUERIES]:
         queries.extend(_room_query(room))
     return queries
+
+
 # ── Enrichment entrypoint ────────────────────────────────────────────────────
 
 
@@ -282,9 +280,7 @@ def _search_query(
             MemoryHint(
                 text=text[:_MEMORY_MAX_LEN],
                 category=str(meta.get("category", "general")),
-                confidence=(
-                    float(result.score) if result.score is not None else 0.5
-                ),
+                confidence=(float(result.score) if result.score is not None else 0.5),
                 metadata=meta,
             )
         )
@@ -320,9 +316,7 @@ def _process_search_results(
     total_searched = 0
 
     for query in queries:
-        query_hints, query_searched = _search_query(
-            service, query, engineer_id, workflow_id
-        )
+        query_hints, query_searched = _search_query(service, query, engineer_id, workflow_id)
         hints.extend(query_hints)
         total_searched += query_searched
 
@@ -343,8 +337,7 @@ def _log_enrichment_results(
     """Log and return enrichment results."""
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     logger.info(
-        "mem0_workflow_bridge: %d hints from %d memories in %.1fms "
-        "(engineer=%s, workflow=%s)",
+        "mem0_workflow_bridge: %d hints from %d memories in %.1fms (engineer=%s, workflow=%s)",
         len(hints),
         total_searched,
         elapsed_ms,
@@ -380,12 +373,8 @@ def enrich_with_memory_context(
     if error_result:
         return error_result
 
-    hints, total_searched = _process_search_results(
-        queries, service, engineer_id, workflow_id
-    )
-    return _log_enrichment_results(
-        hints, total_searched, started, engineer_id, workflow_id
-    )
+    hints, total_searched = _process_search_results(queries, service, engineer_id, workflow_id)
+    return _log_enrichment_results(hints, total_searched, started, engineer_id, workflow_id)
 
 
 __all__ = [

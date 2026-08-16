@@ -48,10 +48,24 @@ class RBACEngine:
         default_role_perms = {
             Role.VIEWER.value: [Permission.READ],
             Role.OPERATOR.value: [Permission.READ, Permission.WRITE, Permission.EXECUTE],
-            Role.ADMIN.value: [Permission.READ, Permission.WRITE, Permission.EXECUTE, Permission.ADMIN,
-                              Permission.ENGINE_ACCESS, Permission.CLIENT_ACCESS, Permission.ORCHESTRATOR_ACCESS],
-            Role.SYSTEM.value: [Permission.READ, Permission.WRITE, Permission.EXECUTE, Permission.ADMIN,
-                               Permission.ENGINE_ACCESS, Permission.CLIENT_ACCESS, Permission.ORCHESTRATOR_ACCESS]
+            Role.ADMIN.value: [
+                Permission.READ,
+                Permission.WRITE,
+                Permission.EXECUTE,
+                Permission.ADMIN,
+                Permission.ENGINE_ACCESS,
+                Permission.CLIENT_ACCESS,
+                Permission.ORCHESTRATOR_ACCESS,
+            ],
+            Role.SYSTEM.value: [
+                Permission.READ,
+                Permission.WRITE,
+                Permission.EXECUTE,
+                Permission.ADMIN,
+                Permission.ENGINE_ACCESS,
+                Permission.CLIENT_ACCESS,
+                Permission.ORCHESTRATOR_ACCESS,
+            ],
         }
 
         for role, perms in default_role_perms.items():
@@ -62,14 +76,16 @@ class RBACEngine:
             Role.VIEWER.value: 0,
             Role.OPERATOR.value: 1,
             Role.ADMIN.value: 2,
-            Role.SYSTEM.value: 3
+            Role.SYSTEM.value: 3,
         }
 
     def create_role(self, role_name: str, permissions: list[str]):
         """Create a new role with specified permissions"""
         self.roles[role_name] = permissions
 
-    def assign_role_to_user(self, user_id: str, role: str, expires_at: float | None = None, node_id: str | None = None):
+    def assign_role_to_user(
+        self, user_id: str, role: str, expires_at: float | None = None, node_id: str | None = None
+    ):
         """Assign a role to a user with optional node context"""
         if role not in self.roles:
             raise ValueError(f"Role '{role}' does not exist")
@@ -78,15 +94,22 @@ class RBACEngine:
             self.user_roles[user_id] = []
 
         # Check if role is already assigned
-        existing_assignment = next((r for r in self.user_roles[user_id] if r['role'] == role and r.get('node_id') == node_id), None)
+        existing_assignment = next(
+            (
+                r
+                for r in self.user_roles[user_id]
+                if r["role"] == role and r.get("node_id") == node_id
+            ),
+            None,
+        )
         if existing_assignment:
-            existing_assignment['expires_at'] = expires_at
+            existing_assignment["expires_at"] = expires_at
         else:
             assignment = {
-                'role': role,
-                'assigned_at': time.time(),
-                'expires_at': expires_at,
-                'node_id': node_id  # Assign role to specific node if specified
+                "role": role,
+                "assigned_at": time.time(),
+                "expires_at": expires_at,
+                "node_id": node_id,  # Assign role to specific node if specified
             }
             self.user_roles[user_id].append(assignment)
 
@@ -96,12 +119,15 @@ class RBACEngine:
             if node_id:
                 # Remove role only for specific node
                 self.user_roles[user_id] = [
-                    r for r in self.user_roles[user_id]
-                    if not (r['role'] == role and r.get('node_id') == node_id)
+                    r
+                    for r in self.user_roles[user_id]
+                    if not (r["role"] == role and r.get("node_id") == node_id)
                 ]
             else:
                 # Remove role for all nodes
-                self.user_roles[user_id] = [r for r in self.user_roles[user_id] if r['role'] != role]
+                self.user_roles[user_id] = [
+                    r for r in self.user_roles[user_id] if r["role"] != role
+                ]
 
     def get_user_permissions(self, user_id: str, node_context: str | None = None) -> list[str]:
         """Get permissions for a user based on their roles in specific node context"""
@@ -114,15 +140,17 @@ class RBACEngine:
 
         for assignment in self.user_roles[user_id]:
             # Check if assignment is for specific node or all nodes
-            node_matches = (assignment.get('node_id') is None or
-                           assignment.get('node_id') == node_context)
+            node_matches = (
+                assignment.get("node_id") is None or assignment.get("node_id") == node_context
+            )
 
             # Check if role hasn't expired
-            not_expired = (assignment['expires_at'] is None or
-                          assignment['expires_at'] > current_time)
+            not_expired = (
+                assignment["expires_at"] is None or assignment["expires_at"] > current_time
+            )
 
             if node_matches and not_expired:
-                active_roles.append(assignment['role'])
+                active_roles.append(assignment["role"])
 
         permissions = set()
         for role in active_roles:
@@ -131,7 +159,9 @@ class RBACEngine:
 
         return list(permissions)
 
-    def has_permission(self, user_id: str, required_permission: str, node_context: str | None = None) -> bool:
+    def has_permission(
+        self, user_id: str, required_permission: str, node_context: str | None = None
+    ) -> bool:
         """Check if a user has a specific permission in node context"""
         user_permissions = self.get_user_permissions(user_id, node_context)
         return required_permission in user_permissions
@@ -144,18 +174,22 @@ class RBACEngine:
         current_time = time.time()
         for assignment in self.user_roles[user_id]:
             # Check if role matches and is in correct context
-            role_matches = assignment['role'] == required_role
-            node_matches = (assignment.get('node_id') is None or
-                           assignment.get('node_id') == node_context)
-            not_expired = (assignment['expires_at'] is None or
-                          assignment['expires_at'] > current_time)
+            role_matches = assignment["role"] == required_role
+            node_matches = (
+                assignment.get("node_id") is None or assignment.get("node_id") == node_context
+            )
+            not_expired = (
+                assignment["expires_at"] is None or assignment["expires_at"] > current_time
+            )
 
             if role_matches and node_matches and not_expired:
                 return True
 
         return False
 
-    def is_authorized(self, user_id: str, required_permissions: list[str], node_context: str | None = None) -> bool:
+    def is_authorized(
+        self, user_id: str, required_permissions: list[str], node_context: str | None = None
+    ) -> bool:
         """Check if user has all required permissions in node context"""
         user_permissions = set(self.get_user_permissions(user_id, node_context))
         required_set = set(required_permissions)
@@ -171,14 +205,16 @@ class RBACEngine:
             "roles": self.roles,
             "role_hierarchy": self.role_hierarchy,
             "user_roles": self.user_roles,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         # In a real implementation, this would send the state to other nodes
         for node in target_nodes:
             self.distributed_cache[node] = rbac_state
 
-    def sync_with_cluster(self, cluster_rbac_state: dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def sync_with_cluster(
+        self, cluster_rbac_state: dict[str, Any]
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Sync RBAC state with cluster"""
         # Merge cluster state with local state
         cluster_roles = cluster_rbac_state.get("roles", {})
@@ -201,10 +237,15 @@ class RBACEngine:
                 self.user_roles[user_id] = assignments
             else:
                 # Merge assignments, preferring newer ones
-                local_assignments = {f"{a['role']}_{a.get('node_id', 'all')}": a for a in self.user_roles[user_id]}
+                local_assignments = {
+                    f"{a['role']}_{a.get('node_id', 'all')}": a for a in self.user_roles[user_id]
+                }
                 for assignment in assignments:
                     key = f"{assignment['role']}_{assignment.get('node_id', 'all')}"
-                    if key not in local_assignments or assignment['assigned_at'] > local_assignments[key]['assigned_at']:
+                    if (
+                        key not in local_assignments
+                        or assignment["assigned_at"] > local_assignments[key]["assigned_at"]
+                    ):
                         local_assignments[key] = assignment
 
                 self.user_roles[user_id] = list(local_assignments.values())
@@ -216,7 +257,9 @@ class PermissionChecker:
     def __init__(self, rbac_engine: RBACEngine):
         self.rbac_engine = rbac_engine
 
-    def check_method_access(self, user_id: str, method: str, node_context: str | None = None) -> tuple[bool, str]:
+    def check_method_access(
+        self, user_id: str, method: str, node_context: str | None = None
+    ) -> tuple[bool, str]:
         """
         Check if user can access a specific method in node context
         :param user_id: User ID
@@ -247,7 +290,7 @@ class PermissionChecker:
         else:
             # Check for wildcard matches
             for pattern, perms in method_permissions.items():
-                if pattern.endswith('*') and method.startswith(pattern[:-1]):
+                if pattern.endswith("*") and method.startswith(pattern[:-1]):
                     required_permissions = perms
                     break
 
@@ -260,7 +303,9 @@ class PermissionChecker:
             return True, "Access granted"
         return False, f"Insufficient permissions. Required: {required_permissions}"
 
-    def check_resource_access(self, user_id: str, resource: str, action: str, node_context: str | None = None) -> tuple[bool, str]:
+    def check_resource_access(
+        self, user_id: str, resource: str, action: str, node_context: str | None = None
+    ) -> tuple[bool, str]:
         """
         Check if user can perform an action on a resource in node context
         :param user_id: User ID
@@ -275,7 +320,9 @@ class PermissionChecker:
             return True, "Access granted"
         return False, f"Insufficient permissions for {action} on {resource}"
 
-    def get_user_capabilities(self, user_id: str, node_context: str | None = None) -> dict[str, Any]:
+    def get_user_capabilities(
+        self, user_id: str, node_context: str | None = None
+    ) -> dict[str, Any]:
         """Get all capabilities for a user in node context"""
         permissions = self.rbac_engine.get_user_permissions(user_id, node_context)
         roles = []
@@ -284,20 +331,22 @@ class PermissionChecker:
             current_time = time.time()
             for assignment in self.rbac_engine.user_roles[user_id]:
                 # Check if role is active in the specified context
-                node_matches = (assignment.get('node_id') is None or
-                               assignment.get('node_id') == node_context)
-                not_expired = (assignment['expires_at'] is None or
-                              assignment['expires_at'] > current_time)
+                node_matches = (
+                    assignment.get("node_id") is None or assignment.get("node_id") == node_context
+                )
+                not_expired = (
+                    assignment["expires_at"] is None or assignment["expires_at"] > current_time
+                )
 
                 if node_matches and not_expired:
-                    roles.append(assignment['role'])
+                    roles.append(assignment["role"])
 
         return {
             "user_id": user_id,
             "roles": roles,
             "permissions": permissions,
             "node_context": node_context,
-            "capabilities": self._derive_capabilities(permissions)
+            "capabilities": self._derive_capabilities(permissions),
         }
 
     def _derive_capabilities(self, permissions: list[str]) -> list[str]:
@@ -321,13 +370,16 @@ class PermissionChecker:
 
         return capabilities
 
-    def validate_cross_node_access(self, requesting_user: str, target_node: str,
-                                 action: str, resource: str) -> tuple[bool, str]:
+    def validate_cross_node_access(
+        self, requesting_user: str, target_node: str, action: str, resource: str
+    ) -> tuple[bool, str]:
         """Validate if a user can access resources on a different node"""
         # Check if user has permission to access the target node type
-        node_type = target_node.split('_', maxsplit=1)[0] if '_' in target_node else target_node
+        node_type = target_node.split("_", maxsplit=1)[0] if "_" in target_node else target_node
 
-        required_perm = f"{node_type}_access" if node_type in ['engine', 'client', 'orchestrator'] else "admin"
+        required_perm = (
+            f"{node_type}_access" if node_type in ["engine", "client", "orchestrator"] else "admin"
+        )
 
         if self.rbac_engine.has_permission(requesting_user, required_perm):
             # User has basic access to node type, now check specific resource/action

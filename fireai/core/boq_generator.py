@@ -128,7 +128,9 @@ class BOQItem:
 
     def __post_init__(self) -> None:
         # Auto-compute total if not explicitly provided
-        if self.total_cost_usd == 0.0 and self.unit_cost_usd != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+        if (
+            self.total_cost_usd == 0.0 and self.unit_cost_usd != 0.0
+        ):  # NOSONAR — S1244: import retained for re-export / API surface
             self.total_cost_usd = round(self.quantity * self.unit_cost_usd, 2)
 
 
@@ -305,9 +307,15 @@ def generate_detector_boq(  # NOSONAR — S3776: cognitive complexity is inheren
     for det_type, quantity in sorted(type_counts.items()):
         unit_cost = UNIT_COSTS.get(det_type, 0.0)
         nfpa_ref = (
-            "NFPA 72 §17.6" if "smoke" in det_type else "NFPA 72 §17.9" if "heat" in det_type else "NFPA 72 §17.13"  # NOSONAR — S3358: nested ternary acceptable in this localized context
+            "NFPA 72 §17.6"
+            if "smoke" in det_type
+            else "NFPA 72 §17.9"
+            if "heat" in det_type
+            else "NFPA 72 §17.13"  # NOSONAR — S3358: nested ternary acceptable in this localized context
         )
-        unit_label = "ea" if det_type != "duct_detector" else "ea"  # NOSONAR — S3923: branches intentionally differ in side-effect only
+        unit_label = (
+            "ea" if det_type != "duct_detector" else "ea"
+        )  # NOSONAR — S3923: branches intentionally differ in side-effect only
 
         items.append(
             BOQItem(
@@ -358,7 +366,9 @@ def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
     total_isolators_needed = 0
 
     for loop in loops:
-        loop.get("loop_id", "unknown")  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
+        loop.get(
+            "loop_id", "unknown"
+        )  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
         devices = loop.get("devices", [])
         max_between = loop.get("max_devices_between_isolators", 32)
 
@@ -369,7 +379,9 @@ def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
 
         existing = compliance.get("isolator_count", 0)
 
-        if not compliance.get("compliant", False):  # V111 FIX: Fail-safe default — missing key = NOT compliant
+        if not compliance.get(
+            "compliant", False
+        ):  # V111 FIX: Fail-safe default — missing key = NOT compliant
             # Estimate needed isolators from the worst segment
             worst_segment = compliance.get(
                 "max_segment_devices", 0
@@ -764,7 +776,9 @@ def generate_full_boq(  # NOSONAR — S3776: cognitive complexity is inherent to
             f"Verify voltage drop and signal integrity per NFPA 72 §12.2."
         )
     if detector_count == 0:
-        warnings.append("No detectors in BOQ. Verify that detection requirements are met per NFPA 72 §17.3.")
+        warnings.append(
+            "No detectors in BOQ. Verify that detection requirements are met per NFPA 72 §17.3."
+        )
     if panels > 3:
         warnings.append(
             f"Multiple panels ({panels}) – ensure network configuration complies with NFPA 72 §10.6.7 and §23.8."

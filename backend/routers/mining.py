@@ -29,24 +29,30 @@ router = APIRouter(prefix="/mining", tags=["mining"])
 
 class MethaneCheckRequest(BaseModel):
     """Request for methane hazard classification."""
+
     concentration_pct: float = Field(..., ge=0, le=100, description="CH4 % by volume")
     location: str = Field("working_face", description="Mine location")
 
 
 class VentilationCheckRequest(BaseModel):
     """Request for MSHA ventilation compliance check."""
+
     airflow_m3_s: float = Field(..., ge=0, description="Airflow in m³/s")
-    location_type: str = Field("working_face", description="working_face, last_open_crosscut, or belt_entry")
-    cross_sectional_area_m2: float | None =  Field(None, description="For velocity check")
+    location_type: str = Field(
+        "working_face", description="working_face, last_open_crosscut, or belt_entry"
+    )
+    cross_sectional_area_m2: float | None = Field(None, description="For velocity check")
 
 
 class CoCheckRequest(BaseModel):
     """Request for CO hazard classification."""
+
     co_ppm: float = Field(..., ge=0, description="CO in ppm")
 
 
 class ConveyorSuppressionRequest(BaseModel):
     """Request for conveyor suppression system design."""
+
     belt_length_m: float = Field(..., ge=0)
     belt_width_m: float = Field(..., ge=0)
     belt_speed_m_s: float = Field(0.0, ge=0)
@@ -58,6 +64,7 @@ class ConveyorSuppressionRequest(BaseModel):
 
 class ComplianceReportRequest(BaseModel):
     """Request for full MSHA compliance report."""
+
     mine_name: str
     section_name: str
     methane_pct: float = Field(0.0, ge=0)
@@ -112,9 +119,14 @@ async def methane_check(request: Request, body: MethaneCheckRequest):
     except Exception as e:  # NOSONAR: python:S8415
         logger.exception("Methane check failed: %s", e)
         raise HTTPException(status_code=500, detail="Methane check failed")
-  # NOSONAR: python:S8415
 
-@router.post("/ventilation-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+
+# NOSONAR: python:S8415
+
+
+@router.post(
+    "/ventilation-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))]
+)
 @limiter.limit("30/minute")
 async def ventilation_check(request: Request, body: VentilationCheckRequest):
     """Check MSHA ventilation compliance per 30 CFR §75.326-327."""
@@ -147,7 +159,10 @@ async def ventilation_check(request: Request, body: VentilationCheckRequest):
     except Exception as e:  # NOSONAR: python:S8415
         logger.exception("Ventilation check failed: %s", e)
         raise HTTPException(status_code=500, detail="Ventilation check failed")
-  # NOSONAR: python:S8415
+
+
+# NOSONAR: python:S8415
+
 
 @router.post("/co-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
@@ -181,9 +196,14 @@ async def co_check(request: Request, body: CoCheckRequest):
     except Exception as e:  # NOSONAR: python:S8415
         logger.exception("CO check failed: %s", e)
         raise HTTPException(status_code=500, detail="CO check failed")
-  # NOSONAR: python:S8415
 
-@router.post("/conveyor-suppression", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+
+# NOSONAR: python:S8415
+
+
+@router.post(
+    "/conveyor-suppression", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))]
+)
 @limiter.limit("30/minute")
 async def conveyor_suppression(request: Request, body: ConveyorSuppressionRequest):
     """Design conveyor belt fire suppression per NFPA 120 §8.4."""
@@ -219,9 +239,14 @@ async def conveyor_suppression(request: Request, body: ConveyorSuppressionReques
     except Exception as e:  # NOSONAR: python:S8415
         logger.exception("Conveyor suppression design failed: %s", e)
         raise HTTPException(status_code=500, detail="Conveyor suppression design failed")
-  # NOSONAR: python:S8415
 
-@router.post("/compliance-report", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+
+# NOSONAR: python:S8415
+
+
+@router.post(
+    "/compliance-report", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
+)
 @limiter.limit("10/minute")
 async def compliance_report(request: Request, body: ComplianceReportRequest):
     """Generate full MSHA + NFPA 120 compliance report."""
@@ -264,4 +289,6 @@ async def compliance_report(request: Request, body: ComplianceReportRequest):
     except Exception as e:  # NOSONAR: python:S8415
         logger.exception("Compliance report failed: %s", e)
         raise HTTPException(status_code=500, detail="Compliance report generation failed")
-  # NOSONAR: python:S8415
+
+
+# NOSONAR: python:S8415

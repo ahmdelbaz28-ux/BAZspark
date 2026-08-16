@@ -568,16 +568,22 @@ class TestScenarioLibrary:
 
     def test_wall_midpoint_fire_ignition_inside_polygon(self, square_room_polygon):
         """Wall midpoint fire must be pushed 0.5m inside the polygon."""
-        sc = ScenarioLibrary.wall_midpoint_fire(square_room_polygon, ceiling_height=3.0, wall_index=0)
+        sc = ScenarioLibrary.wall_midpoint_fire(
+            square_room_polygon, ceiling_height=3.0, wall_index=0
+        )
         # Wall 0: (0,0)→(10,0). Midpoint = (5, 0). Pushed 0.5m inside (toward y=5).
         assert sc.ignition_point[1] > 0.0  # Must be inside (y > 0)
 
     def test_all_scenarios_deduplicates_by_ignition_point(self, square_room_polygon):
         """all_scenarios must deduplicate scenarios with identical ignition points."""
-        scenarios = ScenarioLibrary.all_scenarios(square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0)
+        scenarios = ScenarioLibrary.all_scenarios(
+            square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0
+        )
         # For a square room: worst_case + most_probable + 4 corners = 6 raw
         # But centroid and corners are different points → all 6 should survive
-        ignition_points = {(round(s.ignition_point[0], 3), round(s.ignition_point[1], 3)) for s in scenarios}
+        ignition_points = {
+            (round(s.ignition_point[0], 3), round(s.ignition_point[1], 3)) for s in scenarios
+        }
         assert len(ignition_points) == len(scenarios), "Duplicate ignition points not deduplicated"
 
     def test_blind_spot_scan_returns_grid_points(self, square_room_polygon):
@@ -607,7 +613,9 @@ class TestScenarioRunner:
 
     @pytest.fixture
     def simple_scenario(self, square_room_polygon):
-        return ScenarioLibrary.worst_case(square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0)
+        return ScenarioLibrary.worst_case(
+            square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0
+        )
 
     def test_run_returns_scenario_result(self, runner, simple_scenario, square_room_polygon):
         """run() must return a ScenarioResult instance."""
@@ -631,7 +639,9 @@ class TestScenarioRunner:
         assert result.verdict == ScenarioVerdict.SKIPPED
         assert not result.compliant
 
-    def test_run_detector_at_ignition_detects_fast(self, runner, simple_scenario, square_room_polygon):
+    def test_run_detector_at_ignition_detects_fast(
+        self, runner, simple_scenario, square_room_polygon
+    ):
         """Detector at ignition point must detect very quickly (< 10 s)."""
         detectors = [simple_scenario.ignition_point]
         result = runner.run(simple_scenario, detectors, square_room_polygon)
@@ -731,23 +741,33 @@ class TestScenarioBatteryResult:
         )
 
     def test_all_pass_true_when_all_pass(self, passing_result):
-        battery = ScenarioBatteryResult(results=[passing_result, passing_result], det_type="PHOTO", det_count=4)
+        battery = ScenarioBatteryResult(
+            results=[passing_result, passing_result], det_type="PHOTO", det_count=4
+        )
         assert battery.all_pass is True
 
     def test_all_pass_false_when_any_fails(self, passing_result, failing_result):
-        battery = ScenarioBatteryResult(results=[passing_result, failing_result], det_type="PHOTO", det_count=4)
+        battery = ScenarioBatteryResult(
+            results=[passing_result, failing_result], det_type="PHOTO", det_count=4
+        )
         assert battery.all_pass is False
 
     def test_pass_count(self, passing_result, failing_result):
-        battery = ScenarioBatteryResult(results=[passing_result, failing_result, passing_result], det_type="PHOTO", det_count=4)
+        battery = ScenarioBatteryResult(
+            results=[passing_result, failing_result, passing_result], det_type="PHOTO", det_count=4
+        )
         assert battery.pass_count == 2
 
     def test_fail_count(self, passing_result, failing_result):
-        battery = ScenarioBatteryResult(results=[passing_result, failing_result, passing_result], det_type="PHOTO", det_count=4)
+        battery = ScenarioBatteryResult(
+            results=[passing_result, failing_result, passing_result], det_type="PHOTO", det_count=4
+        )
         assert battery.fail_count == 1
 
     def test_worst_detection_time_picks_max(self, passing_result, failing_result):
-        battery = ScenarioBatteryResult(results=[passing_result, failing_result], det_type="PHOTO", det_count=4)
+        battery = ScenarioBatteryResult(
+            results=[passing_result, failing_result], det_type="PHOTO", det_count=4
+        )
         assert battery.worst_detection_time_s == 90.0  # NOSONAR
 
     def test_worst_detection_time_none_when_no_detections(self):
@@ -801,7 +821,9 @@ class TestScenarioReporter:
     @pytest.fixture
     def battery(self, square_room_polygon):
         runner = ScenarioRunner(time_step_s=1.0)
-        scenarios = ScenarioLibrary.all_scenarios(square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0)
+        scenarios = ScenarioLibrary.all_scenarios(
+            square_room_polygon, ceiling_height=3.0, fire_load_mj_m2=400.0
+        )
         detectors = [(5.0, 5.0), (2.5, 2.5), (7.5, 7.5), (2.5, 7.5), (7.5, 2.5)]
         return runner.run_battery(detectors, square_room_polygon, scenarios)
 

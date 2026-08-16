@@ -24,6 +24,7 @@ from fireai.mining.core.ventilation_calculator import VentilationCalculator
 @dataclass
 class ComplianceCheck:
     """A single compliance check result."""
+
     rule_id: str
     standard: str  # "MSHA 30 CFR §75.xxx" or "NFPA 120 §x.x"
     description: str
@@ -35,6 +36,7 @@ class ComplianceCheck:
 @dataclass
 class MSHAComplianceReport:
     """Full MSHA compliance report for a mine section."""
+
     mine_name: str
     section_name: str
     checks: list[ComplianceCheck] = field(default_factory=list)
@@ -149,7 +151,9 @@ class MSHAComplianceChecker:
             remediation = "Evacuate personnel from belt entry immediately."
         elif hazard == "withdraw":
             status = "FAIL"
-            details = f"CO = {co_concentration_ppm} ppm — withdraw all personnel, activate suppression"
+            details = (
+                f"CO = {co_concentration_ppm} ppm — withdraw all personnel, activate suppression"
+            )
             remediation = "Withdraw all personnel. Activate fire suppression system."
         else:  # imminent
             status = "FAIL"
@@ -175,6 +179,7 @@ class MSHAComplianceChecker:
         Check conveyor belt fire suppression per NFPA 120 §8.4 + MSHA §75.1108.
         """
         from fireai.mining.core.conveyor_fire import ConveyorSpec
+
         spec = ConveyorSpec(
             belt_length_m=belt_length_m,
             belt_width_m=belt_width_m,
@@ -226,23 +231,23 @@ class MSHAComplianceChecker:
         )
 
         # Methane check
-        report.add_check(MSHAComplianceChecker.check_methane_monitoring(
-            methane_pct, section_name
-        ))
+        report.add_check(MSHAComplianceChecker.check_methane_monitoring(methane_pct, section_name))
 
         # CO check
         report.add_check(MSHAComplianceChecker.check_co_monitoring(co_ppm))
 
         # Ventilation check
         if airflow_m3_s > 0:
-            report.add_check(MSHAComplianceChecker.check_ventilation(
-                airflow_m3_s, ventilation_location
-            ))
+            report.add_check(
+                MSHAComplianceChecker.check_ventilation(airflow_m3_s, ventilation_location)
+            )
 
         # Conveyor suppression check
         if conveyor_length_m > 0:
-            report.add_check(MSHAComplianceChecker.check_conveyor_suppression(
-                conveyor_length_m, conveyor_width_m, has_fire_resistant_belt
-            ))
+            report.add_check(
+                MSHAComplianceChecker.check_conveyor_suppression(
+                    conveyor_length_m, conveyor_width_m, has_fire_resistant_belt
+                )
+            )
 
         return report

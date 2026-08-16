@@ -46,7 +46,8 @@ from marine.core.types import (
 
 
 def select_system_for_zone(
-    zone: MarineZone, ship: ShipProject,
+    zone: MarineZone,
+    ship: ShipProject,
 ) -> ComplianceResult:
     """
     Select the optimal extinguishing system for a marine zone.
@@ -127,7 +128,8 @@ def size_water_mist(zone: MarineZone) -> ExtinguishingDesign:
 
 
 def size_co2_total_flooding(
-    zone: MarineZone, hazard_key: str = "engine_room",
+    zone: MarineZone,
+    hazard_key: str = "engine_room",
 ) -> ExtinguishingDesign:
     """
     Size a CO2 total-flooding system per IMO MSC.1/Circ.1316.
@@ -199,8 +201,7 @@ def size_foam_low_expansion(zone: MarineZone) -> ExtinguishingDesign:
     """Size low-expansion foam for cargo tank deck per SOLAS II-2/10.8."""
     if zone.area_m2 <= 0:
         raise ExtinguishingDesignError(
-            f"Cannot size foam system for zone {zone.zone_id}: "
-            f"area_m2={zone.area_m2} must be >0."
+            f"Cannot size foam system for zone {zone.zone_id}: area_m2={zone.area_m2} must be >0."
         )
     flow_lpm = zone.area_m2 * FOAM_LOW_APPLICATION_RATE_LPM_PER_M2
     agent_litres = flow_lpm * FOAM_LOW_MIN_DISCHARGE_TIME_MIN
@@ -218,7 +219,7 @@ def size_foam_low_expansion(zone: MarineZone) -> ExtinguishingDesign:
         discharge_time_s=FOAM_LOW_MIN_DISCHARGE_TIME_MIN * 60,
         hold_time_min=FOAM_LOW_MIN_DISCHARGE_TIME_MIN,
         nozzles=max(2, math.ceil(zone.area_m2 / 50.0)),
-        pipe_length_m=round(zone.area_m2 ** 0.5 * 4, 1),
+        pipe_length_m=round(zone.area_m2**0.5 * 4, 1),
         standard_reference="SOLAS II-2/10.8 + FSS Ch. 13",
     )
 
@@ -245,9 +246,12 @@ def size_foam_high_expansion(zone: MarineZone) -> ExtinguishingDesign:
     # Generator capacity: must fill the volume within FOAM_HIGH_MIN_FILL_TIME_MIN.
     generator_capacity_m3_per_min = protected_volume_m3 / FOAM_HIGH_MIN_FILL_TIME_MIN
     # Foam solution needed = generator capacity ÷ expansion ratio × fill time.
-    foam_solution_litres = (generator_capacity_m3_per_min * 1000.0
-                            / FOAM_HIGH_EXPANSION_RATIO
-                            * FOAM_HIGH_MIN_FILL_TIME_MIN)
+    foam_solution_litres = (
+        generator_capacity_m3_per_min
+        * 1000.0
+        / FOAM_HIGH_EXPANSION_RATIO
+        * FOAM_HIGH_MIN_FILL_TIME_MIN
+    )
     # Concentrate = 3% of foam solution, density ~1.05 kg/L.
     FOAM_CONCENTRATE_DENSITY_KG_PER_L = 1.05
     concentrate_kg = foam_solution_litres * 0.03 * FOAM_CONCENTRATE_DENSITY_KG_PER_L
@@ -263,7 +267,7 @@ def size_foam_high_expansion(zone: MarineZone) -> ExtinguishingDesign:
         discharge_time_s=int(FOAM_HIGH_MIN_FILL_TIME_MIN * 60),
         hold_time_min=FOAM_HIGH_MIN_FILL_TIME_MIN,
         nozzles=nozzles,
-        pipe_length_m=round(zone.area_m2 ** 0.5 * 4, 1),
+        pipe_length_m=round(zone.area_m2**0.5 * 4, 1),
         standard_reference="SOLAS II-2/10.7 + FSS Ch. 13 §2.4",
     )
 
@@ -281,8 +285,7 @@ def size_afff(zone: MarineZone) -> ExtinguishingDesign:
     """
     if zone.area_m2 <= 0:
         raise ExtinguishingDesignError(
-            f"Cannot size AFFF system for zone {zone.zone_id}: "
-            f"area_m2={zone.area_m2} must be >0."
+            f"Cannot size AFFF system for zone {zone.zone_id}: area_m2={zone.area_m2} must be >0."
         )
     flow_lpm = zone.area_m2 * AFFF_APPLICATION_RATE_LPM_PER_M2
     foam_solution_litres = flow_lpm * AFFF_DISCHARGE_TIME_MIN
@@ -299,7 +302,7 @@ def size_afff(zone: MarineZone) -> ExtinguishingDesign:
         discharge_time_s=int(AFFF_DISCHARGE_TIME_MIN * 60),
         hold_time_min=AFFF_DISCHARGE_TIME_MIN,
         nozzles=nozzles,
-        pipe_length_m=round(zone.area_m2 ** 0.5 * 3, 1),
+        pipe_length_m=round(zone.area_m2**0.5 * 3, 1),
         standard_reference="CAP 437 §6.3 + ICAO Annex 14",
     )
 
@@ -370,13 +373,11 @@ def size_inert_gas(
         )
     if cargo_discharge_rate_m3_per_hr <= 0:
         raise ExtinguishingDesignError(
-            f"cargo_discharge_rate_m3_per_hr must be > 0 (got "
-            f"{cargo_discharge_rate_m3_per_hr})."
+            f"cargo_discharge_rate_m3_per_hr must be > 0 (got {cargo_discharge_rate_m3_per_hr})."
         )
     if not 0.0 <= inert_gas_o2_pct < INERT_GAS_MAX_O2_PCT:
         raise ExtinguishingDesignError(
-            f"inert_gas_o2_pct must be in [0, {INERT_GAS_MAX_O2_PCT}) "
-            f"(got {inert_gas_o2_pct})."
+            f"inert_gas_o2_pct must be in [0, {INERT_GAS_MAX_O2_PCT}) (got {inert_gas_o2_pct})."
         )
 
     volume_m3 = zone.area_m2 * zone.height_m
@@ -386,8 +387,11 @@ def size_inert_gas(
 
     # Purge volume needed to displace tank atmosphere from 21% → ≤8% O₂.
     # ln(21/8) = 0.965; (1 - O₂_ig/8) approaches 1.0 for low-O₂ IG.
-    purge_volume_m3 = volume_m3 * math.log(21.0 / INERT_GAS_MAX_O2_PCT) \
+    purge_volume_m3 = (
+        volume_m3
+        * math.log(21.0 / INERT_GAS_MAX_O2_PCT)
         / (1.0 - inert_gas_o2_pct / INERT_GAS_MAX_O2_PCT)
+    )
 
     # Discharge time to deliver the purge volume at generator capacity.
     discharge_time_s = round(purge_volume_m3 / capacity_m3_per_hr * 3600.0, 0)
@@ -401,7 +405,7 @@ def size_inert_gas(
         discharge_time_s=discharge_time_s,
         hold_time_min=0.0,
         nozzles=max(1, math.ceil(zone.area_m2 / 100.0)),
-        pipe_length_m=round(zone.area_m2 ** 0.5 * 3, 1),
+        pipe_length_m=round(zone.area_m2**0.5 * 3, 1),
         standard_reference=(
             f"SOLAS II-2/4.5.5 + FSS Ch. 15 "
             f"(capacity={capacity_m3_per_hr:.0f} m³/hr, purge={purge_volume_m3:.0f} m³)"
@@ -410,7 +414,8 @@ def size_inert_gas(
 
 
 def size_system(
-    zone: MarineZone, ship: ShipProject,
+    zone: MarineZone,
+    ship: ShipProject,
 ) -> ExtinguishingDesign:
     """
     Top-level: select + size the appropriate extinguishing system.
@@ -428,7 +433,11 @@ def size_system(
     if system == ExtinguishingSystem.WATER_MIST:
         return size_water_mist(zone)
     if system == ExtinguishingSystem.CO2_TOTAL:
-        hazard = "engine_room" if zone.space_category == SpaceCategory.MACHINERY_SPACE_A else "cargo_hold_general"
+        hazard = (
+            "engine_room"
+            if zone.space_category == SpaceCategory.MACHINERY_SPACE_A
+            else "cargo_hold_general"
+        )
         return size_co2_total_flooding(zone, hazard)
     if system == ExtinguishingSystem.FOAM_LOW:
         return size_foam_low_expansion(zone)

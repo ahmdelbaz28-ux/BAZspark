@@ -41,10 +41,14 @@ class TestFormatDetector(unittest.TestCase):
 
         ifc_path = os.path.join(self.tmpdir, "test.ifc")
         with open(ifc_path, "w", encoding="utf-8") as f:
-            f.write("ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n")
+            f.write(
+                "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n"
+            )
 
         res = FormatDetector.detect_format_and_version(ifc_path)
-        self.assertTrue(res.is_success, f"IFC detection failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"IFC detection failed: {res.error() if res.is_failure else ''}"
+        )
         fmt, ver = res.unwrap()
         self.assertEqual(fmt, "IFC")
         self.assertEqual(ver, "IFC2X3")
@@ -55,7 +59,9 @@ class TestFormatDetector(unittest.TestCase):
 
         ifc_path = os.path.join(self.tmpdir, "test_ifc4.ifc")
         with open(ifc_path, "w", encoding="utf-8") as f:
-            f.write("ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n")
+            f.write(
+                "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n"
+            )
 
         res = FormatDetector.detect_format_and_version(ifc_path)
         self.assertTrue(res.is_success)
@@ -75,7 +81,9 @@ class TestFormatDetector(unittest.TestCase):
             f.write(b"AC1015_MOCK_DWG_DATA")
 
         res = FormatDetector.detect_format_and_version(dwg_path)
-        self.assertTrue(res.is_success, f"DWG detection failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"DWG detection failed: {res.error() if res.is_failure else ''}"
+        )
         fmt, ver = res.unwrap()
         self.assertEqual(fmt, "DWG")
         self.assertIn("AC1015", ver)
@@ -108,7 +116,9 @@ class TestFormatDetector(unittest.TestCase):
             f.write(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 100)
 
         res = FormatDetector.detect_format_and_version(rvt_path)
-        self.assertTrue(res.is_success, f"RVT detection failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"RVT detection failed: {res.error() if res.is_failure else ''}"
+        )
         fmt, _ver = res.unwrap()
         self.assertEqual(fmt, "RVT")
 
@@ -124,7 +134,9 @@ class TestFormatDetector(unittest.TestCase):
             f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
 
         res = FormatDetector.detect_format_and_version(dxf_path)
-        self.assertTrue(res.is_success, f"DXF detection failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"DXF detection failed: {res.error() if res.is_failure else ''}"
+        )
         fmt, _ver = res.unwrap()
         self.assertEqual(fmt, "DXF")
 
@@ -162,12 +174,18 @@ class TestFileValidator(unittest.TestCase):
 
         ifc_path = os.path.join(self.tmpdir, "valid.ifc")
         with open(ifc_path, "w", encoding="utf-8") as f:
-            f.write("ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n")
+            f.write(
+                "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n"
+            )
 
         res = FileValidator.validate_file(ifc_path)
-        self.assertTrue(res.is_success, f"Valid IFC failed validation: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"Valid IFC failed validation: {res.error() if res.is_failure else ''}"
+        )
         hash_val = res.unwrap()
-        self.assertTrue(len(hash_val) == 64, f"SHA-256 hash should be 64 chars, got {len(hash_val)}")  # NOSONAR - python:S5906
+        self.assertTrue(
+            len(hash_val) == 64, f"SHA-256 hash should be 64 chars, got {len(hash_val)}"
+        )  # NOSONAR - python:S5906
 
     def test_valid_dxf_file_validation(self):
         """Valid DXF file must pass validation and produce SHA-256 hash."""
@@ -178,7 +196,9 @@ class TestFileValidator(unittest.TestCase):
             f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
 
         res = FileValidator.validate_file(dxf_path)
-        self.assertTrue(res.is_success, f"Valid DXF failed validation: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"Valid DXF failed validation: {res.error() if res.is_failure else ''}"
+        )
 
     def test_corrupted_ifc_detected(self):
         """
@@ -260,7 +280,9 @@ class TestIfcParser(unittest.TestCase):
             f.write("END-ISO-10303-21;\n")
 
         res = IfcParser.parse_ifc(ifc_path, "test_hash_123")
-        self.assertTrue(res.is_success, f"IFC parsing failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"IFC parsing failed: {res.error() if res.is_failure else ''}"
+        )
         building = res.unwrap()
         self.assertGreater(len(building.rooms), 0, "Must extract at least one room")
         self.assertGreater(len(building.walls), 0, "Must extract at least one wall")
@@ -310,7 +332,7 @@ class TestGeometryValidator(unittest.TestCase):
             name="Office",
             boundary=(Point3D(0, 0), Point3D(5, 0), Point3D(5, 5), Point3D(0, 5)),
             area_m2=25.0,
-            height_m=3.0
+            height_m=3.0,
         )
         building = Building(
             file_hash="test_hash",
@@ -319,11 +341,13 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(room,),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
-        self.assertTrue(res.is_success, f"Valid building failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"Valid building failed: {res.error() if res.is_failure else ''}"
+        )
 
     def test_duplicate_rooms_detected(self):
         """
@@ -339,14 +363,14 @@ class TestGeometryValidator(unittest.TestCase):
             name="Lab",
             boundary=(Point3D(0, 0), Point3D(5, 0), Point3D(5, 5), Point3D(0, 5)),
             area_m2=25.0,
-            height_m=3.0
+            height_m=3.0,
         )
         r2 = Room(
             id="ROOM_B",
             name="Duplicate Lab",
             boundary=(Point3D(0, 0), Point3D(5, 0), Point3D(5, 5), Point3D(0, 5)),
             area_m2=25.0,
-            height_m=3.0
+            height_m=3.0,
         )
 
         building = Building(
@@ -356,7 +380,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(r1, r2),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
@@ -376,7 +400,7 @@ class TestGeometryValidator(unittest.TestCase):
             name="Large Room",
             boundary=(Point3D(0, 0), Point3D(10, 0), Point3D(10, 10), Point3D(0, 10)),
             area_m2=100.0,
-            height_m=3.0
+            height_m=3.0,
         )
         # r2 overlaps r1 by > 50% (shared area = 9*9 = 81 out of 9*9 = 81)
         r2 = Room(
@@ -384,7 +408,7 @@ class TestGeometryValidator(unittest.TestCase):
             name="Overlapping Room",
             boundary=(Point3D(1, 1), Point3D(10, 1), Point3D(10, 10), Point3D(1, 10)),
             area_m2=81.0,
-            height_m=3.0
+            height_m=3.0,
         )
 
         building = Building(
@@ -394,7 +418,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(r1, r2),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
@@ -412,7 +436,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
@@ -428,7 +452,7 @@ class TestGeometryValidator(unittest.TestCase):
             name="Invalid",
             boundary=(Point3D(0, 0), Point3D(5, 0)),  # Only 2 points — not a polygon
             area_m2=0.0,
-            height_m=3.0
+            height_m=3.0,
         )
         building = Building(
             file_hash="test_hash",
@@ -437,7 +461,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(room,),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
@@ -456,7 +480,7 @@ class TestGeometryValidator(unittest.TestCase):
             name="Room in Millimeters",
             boundary=(Point3D(0, 0), Point3D(50000, 0), Point3D(50000, 30000), Point3D(0, 30000)),
             area_m2=1500000.0,  # 50000*30000 mm2 — clearly millimeters, not meters!
-            height_m=3.0
+            height_m=3.0,
         )
         building = Building(
             file_hash="test_hash",
@@ -465,7 +489,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS",
             walls=(),
             rooms=(room,),
-            openings=()
+            openings=(),
         )
 
         res = GeometryValidator.validate_building(building)
@@ -506,14 +530,18 @@ class TestDwgConverter(unittest.TestCase):
             f.write(b"AC1015_FAKE")
 
         res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
-        self.assertTrue(res.is_success, f"DWG conversion failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"DWG conversion failed: {res.error() if res.is_failure else ''}"
+        )
         self.assertTrue(os.path.exists(dxf_path))
 
     def test_missing_source_file(self):
         """Missing source DWG must be rejected."""
         from qomn_fire.parsers.dwg_converter import DwgConverter
 
-        res = DwgConverter.convert_dwg_to_dxf("/nonexistent/file.dwg", "/tmp/out.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        res = DwgConverter.convert_dwg_to_dxf(
+            "/nonexistent/file.dwg", "/tmp/out.dxf"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
 
     # ── V213: Multiple converter binary support ──────────────────────────
@@ -559,11 +587,18 @@ class TestDwgConverter(unittest.TestCase):
                     f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
             return MagicMock(returncode=0, stdout=b"", stderr=b"")
 
-        with patch("qomn_fire.parsers.dwg_converter.shutil.which", side_effect=lambda x: "/usr/bin/" + x if x == "dwg2dxf" else None), \
-             patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run):
+        with (
+            patch(
+                "qomn_fire.parsers.dwg_converter.shutil.which",
+                side_effect=lambda x: "/usr/bin/" + x if x == "dwg2dxf" else None,
+            ),
+            patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run),
+        ):
             res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
 
-        self.assertTrue(res.is_success, f"Real dwg2dxf path failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"Real dwg2dxf path failed: {res.error() if res.is_failure else ''}"
+        )
         self.assertTrue(os.path.exists(dxf_path))
         # The output must NOT contain the mock warning
         with open(dxf_path, encoding="utf-8") as f:
@@ -601,8 +636,10 @@ class TestDwgConverter(unittest.TestCase):
                     f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1024\n0\nENDSEC\n0\nEOF\n")
             return MagicMock(returncode=0, stdout=b"", stderr=b"")
 
-        with patch("qomn_fire.parsers.dwg_converter.shutil.which", side_effect=fake_which), \
-             patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run):
+        with (
+            patch("qomn_fire.parsers.dwg_converter.shutil.which", side_effect=fake_which),
+            patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run),
+        ):
             res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
 
         self.assertTrue(res.is_success, f"ODA path failed: {res.error() if res.is_failure else ''}")
@@ -617,6 +654,7 @@ class TestDwgConverter(unittest.TestCase):
         (LibreDWG) and ODAFileConverter (ODA SDK) as candidates.
         """
         from qomn_fire.parsers.dwg_converter import DwgConverter
+
         self.assertIn("dwg2dxf", DwgConverter._CONVERTER_BINARIES)
         self.assertIn("ODAFileConverter", DwgConverter._CONVERTER_BINARIES)
 
@@ -642,7 +680,9 @@ class TestRvtConverter(unittest.TestCase):
             f.write(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 50)
 
         res = RvtConverter.convert_rvt_to_ifc(rvt_path, ifc_path)
-        self.assertTrue(res.is_success, f"RVT conversion failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"RVT conversion failed: {res.error() if res.is_failure else ''}"
+        )
         self.assertTrue(os.path.exists(ifc_path))
 
 
@@ -671,8 +711,7 @@ class TestDxfParser(unittest.TestCase):
         res = DxfParser.parse_dxf(dxf_path, "test_hash")
         # BUG-DP2 FIX: Without height info, parser must return error (safety-critical)
         self.assertTrue(res.is_failure, "Expected failure for DXF without height information")
-        self.assertIn("height", str(res.error).lower(),
-                       f"Error should mention height: {res.error}")
+        self.assertIn("height", str(res.error).lower(), f"Error should mention height: {res.error}")
 
     def test_dxf_fallback_room_with_height(self):
         """
@@ -694,7 +733,9 @@ class TestDxfParser(unittest.TestCase):
             )
 
         res = DxfParser.parse_dxf(dxf_path, "test_hash_with_height")
-        self.assertTrue(res.is_success, f"DXF parsing failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(
+            res.is_success, f"DXF parsing failed: {res.error() if res.is_failure else ''}"
+        )
         building = res.unwrap()
         self.assertGreater(len(building.rooms), 0)
         # Fallback room is 10x10 = 100 m2 (calculated by Shoelace from boundary)
@@ -715,12 +756,26 @@ class TestBuildingHash(unittest.TestCase):
             name="Test",
             boundary=(Point3D(0, 0), Point3D(10, 0), Point3D(10, 10), Point3D(0, 10)),
             area_m2=100.0,
-            height_m=3.0
+            height_m=3.0,
         )
-        b1 = Building(file_hash="h1", format_detected="IFC", version_detected="IFC2X3",
-                       units="METERS", walls=(), rooms=(room,), openings=())
-        b2 = Building(file_hash="h1", format_detected="IFC", version_detected="IFC2X3",
-                       units="METERS", walls=(), rooms=(room,), openings=())
+        b1 = Building(
+            file_hash="h1",
+            format_detected="IFC",
+            version_detected="IFC2X3",
+            units="METERS",
+            walls=(),
+            rooms=(room,),
+            openings=(),
+        )
+        b2 = Building(
+            file_hash="h1",
+            format_detected="IFC",
+            version_detected="IFC2X3",
+            units="METERS",
+            walls=(),
+            rooms=(room,),
+            openings=(),
+        )
 
         self.assertEqual(b1.compute_hash(), b2.compute_hash())
 
@@ -728,11 +783,39 @@ class TestBuildingHash(unittest.TestCase):
         """Different buildings must produce different hashes."""
         from qomn_fire.core.types import Building, Point3D, Room
 
-        r1 = Room(id="R1", name="A", boundary=(Point3D(0,0), Point3D(5,0), Point3D(5,5), Point3D(0,5)), area_m2=25.0, height_m=3.0)
-        r2 = Room(id="R2", name="B", boundary=(Point3D(0,0), Point3D(10,0), Point3D(10,10), Point3D(0,10)), area_m2=100.0, height_m=3.0)
+        r1 = Room(
+            id="R1",
+            name="A",
+            boundary=(Point3D(0, 0), Point3D(5, 0), Point3D(5, 5), Point3D(0, 5)),
+            area_m2=25.0,
+            height_m=3.0,
+        )
+        r2 = Room(
+            id="R2",
+            name="B",
+            boundary=(Point3D(0, 0), Point3D(10, 0), Point3D(10, 10), Point3D(0, 10)),
+            area_m2=100.0,
+            height_m=3.0,
+        )
 
-        b1 = Building(file_hash="h1", format_detected="IFC", version_detected="IFC2X3", units="METERS", walls=(), rooms=(r1,), openings=())
-        b2 = Building(file_hash="h1", format_detected="IFC", version_detected="IFC2X3", units="METERS", walls=(), rooms=(r2,), openings=())
+        b1 = Building(
+            file_hash="h1",
+            format_detected="IFC",
+            version_detected="IFC2X3",
+            units="METERS",
+            walls=(),
+            rooms=(r1,),
+            openings=(),
+        )
+        b2 = Building(
+            file_hash="h1",
+            format_detected="IFC",
+            version_detected="IFC2X3",
+            units="METERS",
+            walls=(),
+            rooms=(r2,),
+            openings=(),
+        )
 
         self.assertNotEqual(b1.compute_hash(), b2.compute_hash())
 

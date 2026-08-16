@@ -47,43 +47,50 @@ logger = logging.getLogger(__name__)
 # DATA MODELS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class ConversionConfig:
     """Configuration for AutoCAD ↔ Revit conversion."""
 
     # AutoCAD → Revit mapping rules
-    layer_to_category: dict[str, str] = field(default_factory=lambda: {
-        "Walls": "Walls",
-        "A-WALL": "Walls",
-        "Doors": "Doors",
-        "A-DOOR": "Doors",
-        "Windows": "Windows",
-        "A-GLAZ": "Windows",
-        "Floors": "Floors",
-        "A-FLOR": "Floors",
-        "Roofs": "Roofs",
-        "A-ROOF": "Roofs",
-        "Dimensions": "Dimensions",
-        "Text": "Text Notes",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-        "Furniture": "Furniture",
-        "Equipment": "Specialty Equipment",
-    })
+    layer_to_category: dict[str, str] = field(
+        default_factory=lambda: {
+            "Walls": "Walls",
+            "A-WALL": "Walls",
+            "Doors": "Doors",
+            "A-DOOR": "Doors",
+            "Windows": "Windows",
+            "A-GLAZ": "Windows",
+            "Floors": "Floors",
+            "A-FLOR": "Floors",
+            "Roofs": "Roofs",
+            "A-ROOF": "Roofs",
+            "Dimensions": "Dimensions",
+            "Text": "Text Notes",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            "Furniture": "Furniture",
+            "Equipment": "Specialty Equipment",
+        }
+    )
 
     # Line type to element mapping
-    linetype_to_element: dict[str, str] = field(default_factory=lambda: {
-        "Continuous": "Wall",
-        "Hidden": "Wall",
-        "Center": "Grid",
-        "Dashdot": "Reference Plane",
-    })
+    linetype_to_element: dict[str, str] = field(
+        default_factory=lambda: {
+            "Continuous": "Wall",
+            "Hidden": "Wall",
+            "Center": "Grid",
+            "Dashdot": "Reference Plane",
+        }
+    )
 
     # Block to family mapping
-    block_to_family: dict[str, str] = field(default_factory=lambda: {
-        "Door": "Single-Flush",
-        "Window": "Fixed",
-        "Furniture": "Desk",
-        "Equipment": "Generic Models",
-    })
+    block_to_family: dict[str, str] = field(
+        default_factory=lambda: {
+            "Door": "Single-Flush",
+            "Window": "Fixed",
+            "Furniture": "Desk",
+            "Equipment": "Generic Models",
+        }
+    )
 
     # Scale and units
     source_units: str = "Millimeters"
@@ -95,16 +102,18 @@ class ConversionConfig:
     level_height: float = 3000.0  # mm
 
     # Revit → AutoCAD mapping
-    category_to_layer: dict[str, str] = field(default_factory=lambda: {
-        "Walls": "A-WALL",
-        "Doors": "A-DOOR",
-        "Windows": "A-GLAZ",
-        "Floors": "A-FLOR",
-        "Roofs": "A-ROOF",
-        "Furniture": "A-FURN",
-        "Dimensions": "A-ANNO-DIMS",
-        "Text Notes": "A-ANNO-TEXT",
-    })
+    category_to_layer: dict[str, str] = field(
+        default_factory=lambda: {
+            "Walls": "A-WALL",
+            "Doors": "A-DOOR",
+            "Windows": "A-GLAZ",
+            "Floors": "A-FLOR",
+            "Roofs": "A-ROOF",
+            "Furniture": "A-FURN",
+            "Dimensions": "A-ANNO-DIMS",
+            "Text Notes": "A-ANNO-TEXT",
+        }
+    )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -181,6 +190,7 @@ class VersionInfo:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SEMANTIC MAPPER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class SemanticMapper:
     """
@@ -271,7 +281,7 @@ class SemanticMapper:
         vertices = []
         for i in range(0, len(coords), 2):  # Process pairs of X,Y coordinates
             if i + 1 < len(coords):
-                vertices.append([coords[i], coords[i+1], 0])  # Add Z=0
+                vertices.append([coords[i], coords[i + 1], 0])  # Add Z=0
 
         _closed = entity.get("closed", False)
 
@@ -295,7 +305,9 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_circle_to_revit(self, entity: dict[str, Any], _category: str) -> dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
+    def _map_circle_to_revit(
+        self, entity: dict[str, Any], _category: str
+    ) -> dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
         """Map AutoCAD circle to Revit element."""
         center = entity.get("center", [0, 0, 0])
         radius = entity.get("radius", 1000.0)
@@ -459,7 +471,9 @@ class SemanticMapper:
         return {
             "entity_type": "LWPOLYLINE",
             "layer": layer,
-            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
+            "coordinates": [
+                coord for point in boundary for coord in point[:2]
+            ],  # Flatten to X,Y pairs
             "closed": True,
         }
 
@@ -492,7 +506,9 @@ class SemanticMapper:
         return {
             "entity_type": "LWPOLYLINE",
             "layer": layer,
-            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
+            "coordinates": [
+                coord for point in boundary for coord in point[:2]
+            ],  # Flatten to X,Y pairs
             "closed": True,
         }
 
@@ -548,6 +564,7 @@ class SemanticMapper:
 # CONVERSION ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class DigitalTwinEngine:
     """
     Core conversion engine for AutoCAD ↔ Revit.
@@ -566,8 +583,9 @@ class DigitalTwinEngine:
         self.mapper = SemanticMapper(self.config)
         self.version_manager = VersionManager()
 
-    def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
-                                  _template_path: str | None = None) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
+    def convert_autocad_to_revit(
+        self, dwg_filepath: str, rvt_filepath: str, _template_path: str | None = None
+    ) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
         """
         Convert AutoCAD DWG to Revit RVT.
 
@@ -617,9 +635,7 @@ class DigitalTwinEngine:
 
                 dwg_result = acad_service.read_dwg(dwg_filepath)
                 if not dwg_result.get("success", False):
-                    raise RuntimeError(
-                        f"COM read_dwg failed: {dwg_result.get('error', 'Unknown')}"
-                    )
+                    raise RuntimeError(f"COM read_dwg failed: {dwg_result.get('error', 'Unknown')}")
 
                 revit_service = RevitService()
                 revit_service.initialize()
@@ -640,7 +656,8 @@ class DigitalTwinEngine:
                     errors.append("Failed to save Revit file via COM")
 
                 self.version_manager.record_version(
-                    source_file=dwg_filepath, target_file=rvt_filepath,
+                    source_file=dwg_filepath,
+                    target_file=rvt_filepath,
                     conversion_type="autocad_to_revit",
                     elements_count=elements_converted,
                     status="success" if not errors else "partial",
@@ -648,9 +665,11 @@ class DigitalTwinEngine:
                 duration = (datetime.now() - start_time).total_seconds()
                 return ConversionResult(
                     success=len(errors) == 0,
-                    source_file=dwg_filepath, target_file=rvt_filepath,
+                    source_file=dwg_filepath,
+                    target_file=rvt_filepath,
                     elements_converted=elements_converted,
-                    errors=errors, warnings=warnings,
+                    errors=errors,
+                    warnings=warnings,
                     duration_seconds=duration,
                 )
 
@@ -673,7 +692,8 @@ class DigitalTwinEngine:
         except ImportError as e:
             return ConversionResult(
                 success=False,
-                source_file=dwg_filepath, target_file=rvt_filepath,
+                source_file=dwg_filepath,
+                target_file=rvt_filepath,
                 elements_converted=0,
                 errors=[f"IFC fallback requires ezdxf + ifcopenshell: {e}"],
                 duration_seconds=(datetime.now() - start_time).total_seconds(),
@@ -685,33 +705,43 @@ class DigitalTwinEngine:
             # Try LibreDWG (dwg2dxf)
             import shutil
             from pathlib import Path
+
             converter_bin = shutil.which("dwg2dxf")
             if converter_bin:
                 dxf_path = str(Path(dwg_filepath).with_suffix(".dxf"))
                 try:
                     import subprocess
+
                     subprocess.run(  # NOSONAR: S6350 — input validated at router source
                         [converter_bin, "-o", dxf_path, dwg_filepath],
-                        check=True, capture_output=True, timeout=30,
+                        check=True,
+                        capture_output=True,
+                        timeout=30,
                     )
                     logger.info("DWG→DXF conversion via LibreDWG: %s", dxf_path)
                 except Exception as dwg_err:
                     return ConversionResult(
                         success=False,
-                        source_file=dwg_filepath, target_file=rvt_filepath,
+                        source_file=dwg_filepath,
+                        target_file=rvt_filepath,
                         elements_converted=0,
-                        errors=[f"DWG→DXF conversion failed: {dwg_err}. "
-                                f"Upload a .dxf file instead, or install LibreDWG."],
+                        errors=[
+                            f"DWG→DXF conversion failed: {dwg_err}. "
+                            f"Upload a .dxf file instead, or install LibreDWG."
+                        ],
                         warnings=warnings,
                         duration_seconds=(datetime.now() - start_time).total_seconds(),
                     )
             else:
                 return ConversionResult(
                     success=False,
-                    source_file=dwg_filepath, target_file=rvt_filepath,
+                    source_file=dwg_filepath,
+                    target_file=rvt_filepath,
                     elements_converted=0,
-                    errors=["DWG files require LibreDWG (dwg2dxf) for conversion. "
-                            "Upload a .dxf file instead, or install libredwg-tools."],
+                    errors=[
+                        "DWG files require LibreDWG (dwg2dxf) for conversion. "
+                        "Upload a .dxf file instead, or install libredwg-tools."
+                    ],
                     warnings=warnings,
                     duration_seconds=(datetime.now() - start_time).total_seconds(),
                 )
@@ -723,7 +753,8 @@ class DigitalTwinEngine:
         except Exception as dxf_err:
             return ConversionResult(
                 success=False,
-                source_file=dwg_filepath, target_file=rvt_filepath,
+                source_file=dwg_filepath,
+                target_file=rvt_filepath,
                 elements_converted=0,
                 errors=[f"Failed to read DXF: {dxf_err}"],
                 warnings=warnings,
@@ -738,38 +769,46 @@ class DigitalTwinEngine:
                 if etype == "LINE":
                     sp = entity.dxf.start
                     ep = entity.dxf.end
-                    entities.append({
-                        "entity_type": "LINE",
-                        "start_point": [sp.x, sp.y, sp.z],
-                        "end_point": [ep.x, ep.y, ep.z],
-                        "layer": entity.dxf.layer,
-                    })
+                    entities.append(
+                        {
+                            "entity_type": "LINE",
+                            "start_point": [sp.x, sp.y, sp.z],
+                            "end_point": [ep.x, ep.y, ep.z],
+                            "layer": entity.dxf.layer,
+                        }
+                    )
                     elements_converted += 1
                 elif etype == "CIRCLE":
                     c = entity.dxf.center
-                    entities.append({
-                        "entity_type": "CIRCLE",
-                        "center": [c.x, c.y, c.z],
-                        "radius": entity.dxf.radius,
-                        "layer": entity.dxf.layer,
-                    })
+                    entities.append(
+                        {
+                            "entity_type": "CIRCLE",
+                            "center": [c.x, c.y, c.z],
+                            "radius": entity.dxf.radius,
+                            "layer": entity.dxf.layer,
+                        }
+                    )
                     elements_converted += 1
                 elif etype == "TEXT":
                     ip = entity.dxf.insert
-                    entities.append({
-                        "entity_type": "TEXT",
-                        "text": entity.dxf.text,
-                        "insertion_point": [ip.x, ip.y, ip.z],
-                        "layer": entity.dxf.layer,
-                    })
+                    entities.append(
+                        {
+                            "entity_type": "TEXT",
+                            "text": entity.dxf.text,
+                            "insertion_point": [ip.x, ip.y, ip.z],
+                            "layer": entity.dxf.layer,
+                        }
+                    )
                     elements_converted += 1
                 elif etype == "LWPOLYLINE":
                     points = [(p[0], p[1]) for p in entity.get_points()]
-                    entities.append({
-                        "entity_type": "LWPOLYLINE",
-                        "points": points,
-                        "layer": entity.dxf.layer,
-                    })
+                    entities.append(
+                        {
+                            "entity_type": "LWPOLYLINE",
+                            "points": points,
+                            "layer": entity.dxf.layer,
+                        }
+                    )
                     elements_converted += 1
             except Exception:
                 continue
@@ -782,27 +821,52 @@ class DigitalTwinEngine:
 
         try:
             model = ifcopenshell.file(schema="IFC4")
-            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="FireAI DWG→IFC Conversion")
-            site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", name="Site")
-            building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building")
-            storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
-            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
-            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
-            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
+            project = ifcopenshell.api.run(
+                "root.create_entity",
+                model,
+                ifc_class="IfcProject",
+                name="FireAI DWG→IFC Conversion",
+            )
+            site = ifcopenshell.api.run(
+                "root.create_entity", model, ifc_class="IfcSite", name="Site"
+            )
+            building = ifcopenshell.api.run(
+                "root.create_entity", model, ifc_class="IfcBuilding", name="Building"
+            )
+            storey = ifcopenshell.api.run(
+                "root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor"
+            )
+            ifcopenshell.api.run(
+                "aggregate.assign_object", model, products=[site], relating_object=project
+            )
+            ifcopenshell.api.run(
+                "aggregate.assign_object", model, products=[building], relating_object=site
+            )
+            ifcopenshell.api.run(
+                "aggregate.assign_object", model, products=[storey], relating_object=building
+            )
 
             for ent in entities:
                 try:
                     proxy = ifcopenshell.api.run(
-                        "root.create_entity", model,
+                        "root.create_entity",
+                        model,
                         ifc_class="IfcBuildingElementProxy",
                         name=f"{ent.get('entity_type', 'Entity')}_{ent.get('layer', '0')}",
                     )
                     ifcopenshell.api.run(
-                        "spatial.assign_container", model,
-                        products=[proxy], relating_structure=storey,
+                        "spatial.assign_container",
+                        model,
+                        products=[proxy],
+                        relating_structure=storey,
                     )
-                    pset = ifcopenshell.api.run("pset.add_pset", model, product=proxy, name="Pset_FireAI_Source")
-                    props = {"EntityType": ent.get("entity_type", ""), "Layer": ent.get("layer", "")}
+                    pset = ifcopenshell.api.run(
+                        "pset.add_pset", model, product=proxy, name="Pset_FireAI_Source"
+                    )
+                    props = {
+                        "EntityType": ent.get("entity_type", ""),
+                        "Layer": ent.get("layer", ""),
+                    }
                     if "start_point" in ent:
                         props["StartPoint"] = str(ent["start_point"])
                     if "end_point" in ent:
@@ -818,11 +882,14 @@ class DigitalTwinEngine:
                     continue
 
             model.write(ifc_path)
-            logger.info("DWG→IFC conversion complete: %s (%d entities)", ifc_path, elements_converted)
+            logger.info(
+                "DWG→IFC conversion complete: %s (%d entities)", ifc_path, elements_converted
+            )
         except Exception as ifc_err:
             return ConversionResult(
                 success=False,
-                source_file=dwg_filepath, target_file=rvt_filepath,
+                source_file=dwg_filepath,
+                target_file=rvt_filepath,
                 elements_converted=0,
                 errors=[f"IFC write failed: {ifc_err}"],
                 warnings=warnings,
@@ -830,7 +897,8 @@ class DigitalTwinEngine:
             )
 
         self.version_manager.record_version(
-            source_file=dwg_filepath, target_file=ifc_path,
+            source_file=dwg_filepath,
+            target_file=ifc_path,
             conversion_type="autocad_to_revit_ifc_fallback",
             elements_count=elements_converted,
             status="success",
@@ -839,9 +907,11 @@ class DigitalTwinEngine:
         duration = (datetime.now() - start_time).total_seconds()
         return ConversionResult(
             success=True,
-            source_file=dwg_filepath, target_file=ifc_path,
+            source_file=dwg_filepath,
+            target_file=ifc_path,
             elements_converted=elements_converted,
-            errors=[], warnings=warnings,
+            errors=[],
+            warnings=warnings,
             duration_seconds=duration,
         )
 
@@ -906,7 +976,8 @@ class DigitalTwinEngine:
                     errors.append("Failed to save DWG file via COM")
 
                 self.version_manager.record_version(
-                    source_file=rvt_filepath, target_file=dwg_filepath,
+                    source_file=rvt_filepath,
+                    target_file=dwg_filepath,
                     conversion_type="revit_to_autocad",
                     elements_count=elements_converted,
                     status="success" if not errors else "partial",
@@ -914,9 +985,11 @@ class DigitalTwinEngine:
                 duration = (datetime.now() - start_time).total_seconds()
                 return ConversionResult(
                     success=len(errors) == 0,
-                    source_file=rvt_filepath, target_file=dwg_filepath,
+                    source_file=rvt_filepath,
+                    target_file=dwg_filepath,
                     elements_converted=elements_converted,
-                    errors=errors, warnings=warnings,
+                    errors=errors,
+                    warnings=warnings,
                     duration_seconds=duration,
                 )
 
@@ -932,7 +1005,8 @@ class DigitalTwinEngine:
         if rvt_filepath.lower().endswith(".rvt"):
             return ConversionResult(
                 success=False,
-                source_file=rvt_filepath, target_file=dwg_filepath,
+                source_file=rvt_filepath,
+                target_file=dwg_filepath,
                 elements_converted=0,
                 errors=[
                     "RVT is a closed proprietary format that cannot be read "
@@ -947,7 +1021,8 @@ class DigitalTwinEngine:
         if not rvt_filepath.lower().endswith(".ifc"):
             return ConversionResult(
                 success=False,
-                source_file=rvt_filepath, target_file=dwg_filepath,
+                source_file=rvt_filepath,
+                target_file=dwg_filepath,
                 elements_converted=0,
                 errors=[
                     f"Input file must be .ifc (got: {rvt_filepath}). "
@@ -957,8 +1032,7 @@ class DigitalTwinEngine:
             )
 
         warnings.append(
-            "Using IFC→DXF fallback. Output is DXF (not DWG). "
-            "AutoCAD can open DXF natively."
+            "Using IFC→DXF fallback. Output is DXF (not DWG). AutoCAD can open DXF natively."
         )
 
         try:
@@ -967,7 +1041,8 @@ class DigitalTwinEngine:
         except ImportError as e:
             return ConversionResult(
                 success=False,
-                source_file=rvt_filepath, target_file=dwg_filepath,
+                source_file=rvt_filepath,
+                target_file=dwg_filepath,
                 elements_converted=0,
                 errors=[f"IFC fallback requires ifcopenshell + ezdxf: {e}"],
                 warnings=warnings,
@@ -980,7 +1055,8 @@ class DigitalTwinEngine:
         except Exception as ifc_err:
             return ConversionResult(
                 success=False,
-                source_file=rvt_filepath, target_file=dwg_filepath,
+                source_file=rvt_filepath,
+                target_file=dwg_filepath,
                 elements_converted=0,
                 errors=[f"Failed to read IFC: {ifc_err}"],
                 warnings=warnings,
@@ -999,9 +1075,16 @@ class DigitalTwinEngine:
             msp = doc.modelspace()
 
             # Extract walls, slabs, columns, beams as lines
-            for ifc_class in ["IfcWall", "IfcWallStandardCase", "IfcSlab",
-                              "IfcColumn", "IfcBeam", "IfcDoor", "IfcWindow",
-                              "IfcBuildingElementProxy"]:
+            for ifc_class in [
+                "IfcWall",
+                "IfcWallStandardCase",
+                "IfcSlab",
+                "IfcColumn",
+                "IfcBeam",
+                "IfcDoor",
+                "IfcWindow",
+                "IfcBuildingElementProxy",
+            ]:
                 try:
                     elements = ifc_model.by_type(ifc_class)
                     for elem in elements:
@@ -1035,13 +1118,16 @@ class DigitalTwinEngine:
                     except Exception:
                         continue
             except Exception:
-                                logger.debug("Suppressed Exception in digital_twin_service.py", exc_info=True)
+                logger.debug("Suppressed Exception in digital_twin_service.py", exc_info=True)
             doc.saveas(dxf_path)
-            logger.info("IFC→DXF conversion complete: %s (%d elements)", dxf_path, elements_converted)
+            logger.info(
+                "IFC→DXF conversion complete: %s (%d elements)", dxf_path, elements_converted
+            )
         except Exception as dxf_err:
             return ConversionResult(
                 success=False,
-                source_file=rvt_filepath, target_file=dwg_filepath,
+                source_file=rvt_filepath,
+                target_file=dwg_filepath,
                 elements_converted=0,
                 errors=[f"DXF write failed: {dxf_err}"],
                 warnings=warnings,
@@ -1049,7 +1135,8 @@ class DigitalTwinEngine:
             )
 
         self.version_manager.record_version(
-            source_file=rvt_filepath, target_file=dxf_path,
+            source_file=rvt_filepath,
+            target_file=dxf_path,
             conversion_type="revit_to_autocad_ifc_fallback",
             elements_count=elements_converted,
             status="success",
@@ -1058,9 +1145,11 @@ class DigitalTwinEngine:
         duration = (datetime.now() - start_time).total_seconds()
         return ConversionResult(
             success=True,
-            source_file=rvt_filepath, target_file=dxf_path,
+            source_file=rvt_filepath,
+            target_file=dxf_path,
             elements_converted=elements_converted,
-            errors=[], warnings=warnings,
+            errors=[],
+            warnings=warnings,
             duration_seconds=duration,
         )
 
@@ -1068,6 +1157,7 @@ class DigitalTwinEngine:
 # ═══════════════════════════════════════════════════════════════════════════════
 # VERSION MANAGER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class VersionManager:
     """Manages version history and rollback."""
@@ -1078,12 +1168,18 @@ class VersionManager:
         self.history_dir = Path(history_dir or os.getenv("CONVERSION_HISTORY_DIR", "."))
         self.history_file = self.history_dir / self.VERSION_FILE
 
-    def record_version(self, source_file: str, target_file: str,
-                        conversion_type: str, elements_count: int,
-                        status: str) -> str:
+    def record_version(
+        self,
+        source_file: str,
+        target_file: str,
+        conversion_type: str,
+        elements_count: int,
+        status: str,
+    ) -> str:
         # Path validation to prevent path traversal (pythonsecurity:S6549)
         import tempfile
         from pathlib import Path
+
         cwd = Path.cwd().resolve()
         allowed_roots = [
             cwd,
@@ -1108,7 +1204,11 @@ class VersionManager:
                 return False
 
         if not _is_safe(source_file) or not _is_safe(target_file):
-            logger.error("Path traversal / invalid path in record_version: source=%s, target=%s", source_file, target_file)  # NOSONAR
+            logger.error(
+                "Path traversal / invalid path in record_version: source=%s, target=%s",
+                source_file,
+                target_file,
+            )  # NOSONAR
             raise ValueError("Invalid target/source file path")
 
         version_id = str(uuid.uuid4())
@@ -1201,6 +1301,7 @@ class VersionManager:
 # MAIN SERVICE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class DigitalTwinService:
     """
     Main Digital Twin service — orchestrates bidirectional conversion.
@@ -1222,8 +1323,9 @@ class DigitalTwinService:
         self.config = config or ConversionConfig()
         self.engine = DigitalTwinEngine(self.config)
 
-    def convert_autocad_to_revit(self, dwg_path: str, rvt_path: str,
-                                  template: str | None = None) -> ConversionResult:
+    def convert_autocad_to_revit(
+        self, dwg_path: str, rvt_path: str, template: str | None = None
+    ) -> ConversionResult:
         """Convert AutoCAD to Revit."""
         return self.engine.convert_autocad_to_revit(dwg_path, rvt_path, template)
 
@@ -1231,8 +1333,13 @@ class DigitalTwinService:
         """Convert Revit to AutoCAD."""
         return self.engine.convert_revit_to_autocad(rvt_path, dwg_path)
 
-    def convert_cad_to_simready(self, source_asset: str, profile: str = "Prop-Robotics-Neutral",
-                                property_assignment: str = "run", output_root: str | None = None) -> dict[str, Any]:
+    def convert_cad_to_simready(
+        self,
+        source_asset: str,
+        profile: str = "Prop-Robotics-Neutral",
+        property_assignment: str = "run",
+        output_root: str | None = None,
+    ) -> dict[str, Any]:
         """Convert CAD/BIM source asset to NVIDIA SimReady OpenUSD package."""
         from backend.services.simready_adapter import SimReadyAdapter, SimReadyPipelineConfig
 
@@ -1271,6 +1378,7 @@ class DigitalTwinService:
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION MANAGER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ConversionConfigManager:
     """Manages conversion configuration persistence."""
@@ -1311,7 +1419,9 @@ class ConversionConfigManager:
             logger.exception("Failed to load configuration: %s", e)
             return ConversionConfig()
 
-    def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
+    def update_mapping(
+        self, layer: str, category: str, direction: str = "autocad_to_revit"
+    ) -> bool:
         """
         Update a single mapping rule.
 
@@ -1347,10 +1457,7 @@ class ConversionConfigManager:
             "units": {
                 "source": config.source_units,
                 "target": config.target_units,
-                "scale_factor": config.scale_factor
+                "scale_factor": config.scale_factor,
             },
-            "levels": {
-                "default": config.default_level,
-                "height": config.level_height
-            }
+            "levels": {"default": config.default_level, "height": config.level_height},
         }

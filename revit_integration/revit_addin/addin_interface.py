@@ -6,6 +6,7 @@ Interface definitions for Revit Add-in components.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import logging
 from abc import ABC, abstractmethod
 from datetime import UTC
@@ -102,6 +103,7 @@ class RevitAddinManager:
 
             # Simulate sync process
             import random
+
             await asyncio.sleep(0.5)  # Simulate processing time
 
             sync_result = {
@@ -111,10 +113,12 @@ class RevitAddinManager:
                 "elements_successful": random.randint(45, 195),  # NOSONAR
                 "elements_failed": random.randint(0, 5),  # NOSONAR
                 "duration_seconds": round(random.uniform(1.0, 5.0), 2),  # NOSONAR
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
-            self.logger.info(f"Sync completed: {sync_result['elements_successful']} successful, {sync_result['elements_failed']} failed")
+            self.logger.info(
+                f"Sync completed: {sync_result['elements_successful']} successful, {sync_result['elements_failed']} failed"
+            )
             return sync_result
 
         except Exception as e:
@@ -140,7 +144,7 @@ class RevitAddinManager:
                 "sync_status": "up_to_date",
                 "element_count": random.randint(100, 1000),
                 "pending_changes": random.randint(0, 10),
-                "connection_status": "connected"
+                "connection_status": "connected",
             }
 
             return status
@@ -171,7 +175,7 @@ class RevitAddinManager:
                 "success": True,
                 "elements_pushed": len(elements),
                 "elements_successful": len(elements),  # Assume all succeed in simulation
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
             return result
@@ -202,8 +206,8 @@ class RevitAddinManager:
                 "summary": {
                     "total_elements_analyzed": random.randint(50, 150),
                     "elements_with_issues": random.randint(0, 5),
-                    "overall_compliance": "pass"
-                }
+                    "overall_compliance": "pass",
+                },
             }
 
             return results

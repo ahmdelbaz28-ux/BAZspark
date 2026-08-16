@@ -74,14 +74,14 @@ DIAMETER_EXPONENT = 4.87
 
 # Valid C-factor ranges by pipe material (NFPA 13 Table)
 C_FACTOR_RANGES: dict[str, tuple[float, float]] = {
-    "wet_steel":          (100.0, 140.0),   # Typical: 120
-    "dry_steel":          (80.0,  120.0),   # Typical: 100
-    "wet_copper":         (130.0, 150.0),   # Typical: 140
-    "cpvc":               (140.0, 160.0),   # Typical: 150
-    "concrete":           (80.0,  120.0),   # Typical: 100
-    "cast_iron":          (80.0,  130.0),   # Typical: 100
-    "ductile_iron":       (100.0, 140.0),   # Typical: 120
-    "plastic_pvc":        (140.0, 160.0),   # Typical: 150
+    "wet_steel": (100.0, 140.0),  # Typical: 120
+    "dry_steel": (80.0, 120.0),  # Typical: 100
+    "wet_copper": (130.0, 150.0),  # Typical: 140
+    "cpvc": (140.0, 160.0),  # Typical: 150
+    "concrete": (80.0, 120.0),  # Typical: 100
+    "cast_iron": (80.0, 130.0),  # Typical: 100
+    "ductile_iron": (100.0, 140.0),  # Typical: 120
+    "plastic_pvc": (140.0, 160.0),  # Typical: 150
 }
 
 # Minimum internal pipe diameter (inches) — pipes below this are invalid
@@ -95,29 +95,29 @@ MIN_C_FACTOR = 1.0
 
 # Standard sprinkler K-factors (NFPA 13)
 STANDARD_K_FACTORS: dict[str, float] = {
-    "standard_spray":     5.6,
-    "residential":        4.2,
-    "early_suppression":  14.0,
-    "extended_coverage":  11.2,
-    "cmsa":               8.0,
-    "large_drop":         11.2,
+    "standard_spray": 5.6,
+    "residential": 4.2,
+    "early_suppression": 14.0,
+    "extended_coverage": 11.2,
+    "cmsa": 8.0,
+    "large_drop": 11.2,
 }
 
 # Schedule 40 internal diameters (inches) — most commonly used in fire protection
 SCHEDULE_40_INTERNAL_DIAMETERS: dict[str, float] = {
-    "1/2":   0.622,
-    "3/4":   0.824,
-    "1":     1.049,
+    "1/2": 0.622,
+    "3/4": 0.824,
+    "1": 1.049,
     "1-1/4": 1.380,
     "1-1/2": 1.610,
-    "2":     2.067,
+    "2": 2.067,
     "2-1/2": 2.469,
-    "3":     3.068,
-    "4":     4.026,
-    "6":     6.065,
-    "8":     7.981,
-    "10":    10.020,
-    "12":    11.938,
+    "3": 3.068,
+    "4": 4.026,
+    "6": 6.065,
+    "8": 7.981,
+    "10": 10.020,
+    "12": 11.938,
 }
 
 
@@ -156,7 +156,9 @@ def calculate_friction_loss(
     # same key and the second call returned the cached first result — making
     # precision differences undetectable (and silently wrong for near-equal
     # inputs). Use repr() so the key is lossless.
-    cache_key = f"{flow_rate_gpm!r}:{friction_factor_c!r}:{internal_diameter_inches!r}:{pipe_length_feet!r}"
+    cache_key = (
+        f"{flow_rate_gpm!r}:{friction_factor_c!r}:{internal_diameter_inches!r}:{pipe_length_feet!r}"
+    )
     cached_val = _get_cached_hw(cache_key)
     if cached_val is not None:
         return cached_val
@@ -237,17 +239,16 @@ def calculate_friction_loss(
     if internal_diameter_inches < MIN_PIPE_DIAMETER_INCHES:
         raise ValueError(
             f"internal_diameter_inches={internal_diameter_inches} is below minimum "
-            f"{MIN_PIPE_DIAMETER_INCHES}\". Pipe diameter must be positive. "
+            f'{MIN_PIPE_DIAMETER_INCHES}". Pipe diameter must be positive. '
             "Check that you are using ACTUAL INTERNAL diameter, not nominal. "
-            "e.g., 2\" Schedule 40 pipe has 2.067\" actual internal diameter. "
+            'e.g., 2" Schedule 40 pipe has 2.067" actual internal diameter. '
             "[NFPA 13-2022 Chapter 23]"
         )
 
     # Pipe length: cannot be negative
     if pipe_length_feet < 0:
         raise ValueError(
-            f"pipe_length_feet={pipe_length_feet} must be >= 0. "
-            "Pipe length cannot be negative."
+            f"pipe_length_feet={pipe_length_feet} must be >= 0. Pipe length cannot be negative."
         )
 
     # Zero flow = zero friction loss
@@ -256,9 +257,8 @@ def calculate_friction_loss(
 
     # Hazen-Williams calculation using double precision
     numerator = HW_COEFFICIENT * math.pow(flow_rate_gpm, HW_EXPONENT)
-    denominator = (
-        math.pow(friction_factor_c, HW_EXPONENT)
-        * math.pow(internal_diameter_inches, DIAMETER_EXPONENT)
+    denominator = math.pow(friction_factor_c, HW_EXPONENT) * math.pow(
+        internal_diameter_inches, DIAMETER_EXPONENT
     )
 
     # Safety: check for computational overflow/underflow
@@ -280,7 +280,7 @@ def calculate_friction_loss(
     # Log calculation for audit trail
     logger.debug(
         f"Hazen-Williams: Q={flow_rate_gpm} gpm, C={friction_factor_c}, "
-        f"d={internal_diameter_inches}\", L={pipe_length_feet} ft → "
+        f'd={internal_diameter_inches}", L={pipe_length_feet} ft → '
         f"p={friction_loss_per_foot:.6f} psi/ft, total={total_loss:.4f} psi"
     )
 
@@ -291,6 +291,7 @@ def calculate_friction_loss(
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPRINKLER DISCHARGE CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def calculate_sprinkler_discharge(
     k_factor: float,
@@ -335,8 +336,7 @@ def calculate_sprinkler_discharge(
 
     if pressure_psi < 0:
         raise ValueError(
-            f"pressure_psi={pressure_psi} must be >= 0. "
-            "Negative pressure is physically impossible."
+            f"pressure_psi={pressure_psi} must be >= 0. Negative pressure is physically impossible."
         )
 
     # NFPA 13-2022 §23.4.4: Minimum 7.0 psi operating pressure
@@ -505,6 +505,7 @@ def validate_sprinkler_compliance(
 # C-FACTOR VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def validate_roughness_factor(
     material: str,
     c_factor: float,
@@ -586,7 +587,7 @@ def extract_pipes_from_revit_elements(elements: list[dict[str, Any]]) -> list[di
 
         params = elem.get("parameters", {})
         length_ft = float(params.get("length_ft", elem.get("length_ft", 10.0)))
-        has_ft = ("length_ft" in params or "length_ft" in elem)
+        has_ft = "length_ft" in params or "length_ft" in elem
         length_m = length_ft * 0.3048 if has_ft else float(params.get("length_m", 3.0))
 
         # Size / diameter parsing (inches)
@@ -595,16 +596,18 @@ def extract_pipes_from_revit_elements(elements: list[dict[str, Any]]) -> list[di
         flow_gpm = float(params.get("flow_gpm", 100.0))
         material = str(params.get("material", "wet_steel"))
 
-        extracted_pipes.append({
-            "element_id": str(elem.get("element_id", elem.get("id", "PIPE-001"))),
-            "name": str(elem.get("name", "Revit Pipe")),
-            "length_ft": round(length_m / 0.3048, 2),
-            "length_m": round(length_m, 2),
-            "internal_diameter_in": size_in,
-            "c_factor": c_factor,
-            "flow_gpm": flow_gpm,
-            "material": material,
-        })
+        extracted_pipes.append(
+            {
+                "element_id": str(elem.get("element_id", elem.get("id", "PIPE-001"))),
+                "name": str(elem.get("name", "Revit Pipe")),
+                "length_ft": round(length_m / 0.3048, 2),
+                "length_m": round(length_m, 2),
+                "internal_diameter_in": size_in,
+                "c_factor": c_factor,
+                "flow_gpm": flow_gpm,
+                "material": material,
+            }
+        )
 
     return extracted_pipes
 
@@ -620,16 +623,18 @@ def solve_hydraulics_from_revit(
     pipes = extract_pipes_from_revit_elements(elements)
     if not pipes:
         # Default single branch fallback for empty extraction
-        pipes = [{
-            "element_id": "PIPE-REVIT-01",
-            "name": "Default 2-inch Main",
-            "length_ft": 100.0,
-            "length_m": 30.48,
-            "internal_diameter_in": 2.067,
-            "c_factor": 120.0,
-            "flow_gpm": 100.0,
-            "material": "wet_steel",
-        }]
+        pipes = [
+            {
+                "element_id": "PIPE-REVIT-01",
+                "name": "Default 2-inch Main",
+                "length_ft": 100.0,
+                "length_m": 30.48,
+                "internal_diameter_in": 2.067,
+                "c_factor": 120.0,
+                "flow_gpm": 100.0,
+                "material": "wet_steel",
+            }
+        ]
 
     total_friction_loss_psi = 0.0
     pipe_results = []
@@ -644,13 +649,15 @@ def solve_hydraulics_from_revit(
         loss_psi_per_ft = pipe_loss / max(0.1, pipe["length_ft"])
         total_friction_loss_psi += pipe_loss
 
-        pipe_results.append({
-            "element_id": pipe["element_id"],
-            "friction_loss_psi_per_ft": round(loss_psi_per_ft, 4),
-            "segment_loss_psi": round(pipe_loss, 2),
-            "length_ft": pipe["length_ft"],
-            "flow_gpm": pipe["flow_gpm"],
-        })
+        pipe_results.append(
+            {
+                "element_id": pipe["element_id"],
+                "friction_loss_psi_per_ft": round(loss_psi_per_ft, 4),
+                "segment_loss_psi": round(pipe_loss, 2),
+                "length_ft": pipe["length_ft"],
+                "flow_gpm": pipe["flow_gpm"],
+            }
+        )
     residual_pressure_psi = max(0.0, source_pressure_psi - total_friction_loss_psi)
     is_compliant = residual_pressure_psi >= MIN_SPRINKLER_PRESSURE_PSI
 

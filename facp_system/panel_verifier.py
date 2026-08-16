@@ -18,7 +18,9 @@ class ComplianceVerifier:
 
         # 1. UL Listing validation
         if "UL" not in rec.listings:
-            violations.append("Violation: Panel does not carry mandatory UL 864 compliance listing.")
+            violations.append(
+                "Violation: Panel does not carry mandatory UL 864 compliance listing."
+            )
 
         # 2. Battery safety margin validation (NFPA 72 SS10.6.7)
         if rec.battery_size_ah <= 0.0:
@@ -27,7 +29,10 @@ class ComplianceVerifier:
         # 3. Voice evacuation validation — general check against database
         if req.requires_voice:
             from facp_system.panel_database import MASTER_PANEL_DATABASE
-            panel = next((p for p in MASTER_PANEL_DATABASE if p.model == rec.recommended_model), None)
+
+            panel = next(
+                (p for p in MASTER_PANEL_DATABASE if p.model == rec.recommended_model), None
+            )
             if panel and not panel.supports_voice:
                 violations.append(
                     "Violation: Project requires voice evacuation but selected panel "
@@ -44,7 +49,10 @@ class ComplianceVerifier:
         if req.requires_releasing:
             # Check if the recommended panel is in the database and supports releasing
             from facp_system.panel_database import MASTER_PANEL_DATABASE
-            panel = next((p for p in MASTER_PANEL_DATABASE if p.model == rec.recommended_model), None)
+
+            panel = next(
+                (p for p in MASTER_PANEL_DATABASE if p.model == rec.recommended_model), None
+            )
             if panel and not panel.supports_releasing:
                 violations.append(
                     "Violation: Project requires releasing service (suppression control) "

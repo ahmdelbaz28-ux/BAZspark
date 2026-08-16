@@ -30,7 +30,7 @@ class TestRevitServiceInitialization:
         assert service._revit_doc is None
         assert service.connected is False
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    @patch("backend.services.revit_service.HAS_REVIT_API", True)
     def test_connect_with_api_available(self):
         """Test connecting when Revit API is available."""
         service = RevitService()
@@ -41,7 +41,7 @@ class TestRevitServiceInitialization:
         assert result is True
         assert service.connected is True
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    @patch("backend.services.revit_service.HAS_REVIT_API", False)
     def test_connect_without_api(self):
         """Test connecting when Revit API is not available."""
         service = RevitService()
@@ -77,7 +77,7 @@ class TestRevitElementOperations:
             Category=mock_category,
             Level=mock_level,
             WorksetId=Mock(),
-            GetType=lambda: "Wall"
+            GetType=lambda: "Wall",
         )
         mock_wall.WorksetId.ToString.return_value = "default"
 
@@ -110,7 +110,7 @@ class TestRevitElementOperations:
             Category=mock_category,
             Level=mock_level,
             WorksetId=Mock(),
-            GetType=lambda: "Floor"
+            GetType=lambda: "Floor",
         )
         mock_floor.WorksetId.ToString.return_value = "default"
 
@@ -142,7 +142,7 @@ class TestRevitElementOperations:
             Category=mock_category,
             Level=mock_level,
             WorksetId=Mock(),
-            GetType=lambda: "Door"
+            GetType=lambda: "Door",
         )
         mock_door.WorksetId.ToString.return_value = "default"
 
@@ -166,6 +166,7 @@ class TestRevitFileOperations:
         verifies the FileNotFoundError path, not the security rejection.
         """
         import tempfile
+
         service = RevitService()
 
         # Use a path inside /tmp (allowed base) that doesn't exist
@@ -193,6 +194,7 @@ class TestRevitFileOperations:
           - Log clearly states the output is IFC format
         """
         import sys
+
         # Dynamically mock ifcopenshell if it is not installed
         mocked_ifcopenshell = False
         if "ifcopenshell" not in sys.modules:
@@ -201,6 +203,7 @@ class TestRevitFileOperations:
             class MockModel:
                 def __init__(self, schema):
                     self.schema = schema
+
                 def write(self, path):
                     # Write mock IFC content to satisfy the test assertions
                     with open(path, "w", encoding="utf-8") as f:
@@ -228,18 +231,18 @@ class TestRevitFileOperations:
                 "name": "Exterior Wall",
                 "category": "Walls",
                 "level": "Level 1",
-                "length": 5000.0
+                "length": 5000.0,
             },
             {
                 "id": "2001",
                 "name": "Foundation Slab",
                 "category": "Floors",
                 "level": "Level 1",
-                "area": 25.0
-            }
+                "area": 25.0,
+            },
         ]
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as temp_file:
             temp_path = temp_file.name
         # Remove the empty file so we can verify it's NOT created by write_rvt
         if os.path.exists(temp_path):
@@ -255,9 +258,7 @@ class TestRevitFileOperations:
             )
 
             ifc_path = temp_path[:-4] + ".ifc"
-            assert os.path.exists(ifc_path), (
-                f"write_rvt must create a real IFC file at {ifc_path}"
-            )
+            assert os.path.exists(ifc_path), f"write_rvt must create a real IFC file at {ifc_path}"
 
             # Verify the IFC file is a real IFC4 file (starts with ISO-10303-21 header)
             with open(ifc_path, "rb") as f:
@@ -271,9 +272,10 @@ class TestRevitFileOperations:
                 ifc_content = f.read()
             assert "Exterior Wall" in ifc_content, "IFC file must contain 'Exterior Wall'"
             assert "Foundation Slab" in ifc_content, "IFC file must contain 'Foundation Slab'"
-            assert "IFCBUILDINGELEMENTPROXY" in ifc_content.upper() or "IfcBuildingElementProxy" in ifc_content, (
-                "IFC file must contain IfcBuildingElementProxy entities"
-            )
+            assert (
+                "IFCBUILDINGELEMENTPROXY" in ifc_content.upper()
+                or "IfcBuildingElementProxy" in ifc_content
+            ), "IFC file must contain IfcBuildingElementProxy entities"
 
             # Clean up the .ifc file
             if os.path.exists(ifc_path):
@@ -377,7 +379,7 @@ class TestRevitDocumentOperations:
         """Test saving a document."""
         service = RevitService()
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as temp_file:
             temp_path = temp_file.name
 
         try:
@@ -443,10 +445,9 @@ class TestRevitErrorHandling:
 
         # Create a mock element that raises an exception on Id access
         mock_element = Mock()
-        mock_element.configure_mock(**{
-            'Id': Mock(side_effect=Exception("Access denied")),
-            'Name': 'Problematic Element'
-        })
+        mock_element.configure_mock(
+            **{"Id": Mock(side_effect=Exception("Access denied")), "Name": "Problematic Element"}
+        )
 
         # Should not crash — should return error info or partial data
         element_data = service._extract_element_data(mock_element)
@@ -472,26 +473,26 @@ class TestV213SimulationModeFlag:
         assert service.simulation_mode is False
         assert service.connected is False
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    @patch("backend.services.revit_service.HAS_REVIT_API", False)
     def test_simulation_mode_true_when_no_revit_api(self):
         """When HAS_REVIT_API is False (non-Windows / no pythonnet),
         connect(method='api') must fall back to simulation and set the
         simulation_mode flag honestly.
         """
         service = RevitService()
-        result = service.connect(method='api')
+        result = service.connect(method="api")
         assert result is True
         assert service.connected is True
         assert service.simulation_mode is True  # V213: honest
-        assert service.connection_method == 'simulation'  # fell back
+        assert service.connection_method == "simulation"  # fell back
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    @patch("backend.services.revit_service.HAS_REVIT_API", False)
     def test_simulation_mode_true_on_auto_connect_without_api(self):
         """connect(method='auto') without HAS_REVIT_API must set
         simulation_mode=True.
         """
         service = RevitService()
-        result = service.connect(method='auto')
+        result = service.connect(method="auto")
         assert result is True
         assert service.simulation_mode is True
 
@@ -500,43 +501,43 @@ class TestV213SimulationModeFlag:
         simulation_mode=True honestly.
         """
         service = RevitService()
-        result = service.connect(method='macro')
+        result = service.connect(method="macro")
         assert result is True
         assert service.simulation_mode is True  # V213: honest
-        assert service.connection_method == 'macro'
+        assert service.connection_method == "macro"
 
     def test_simulation_mode_sets_flag(self):
         """connect(method='simulation') must set simulation_mode=True."""
         service = RevitService()
-        result = service.connect(method='simulation')
+        result = service.connect(method="simulation")
         assert result is True
         assert service.simulation_mode is True
-        assert service.connection_method == 'simulation'
+        assert service.connection_method == "simulation"
 
     def test_disconnect_resets_simulation_mode(self):
         """disconnect() must clear simulation_mode back to False."""
         service = RevitService()
-        service.connect(method='simulation')
+        service.connect(method="simulation")
         assert service.simulation_mode is True
 
         service.disconnect()
         assert service.simulation_mode is False
         assert service.connected is False
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    @patch("backend.services.revit_service.HAS_REVIT_API", True)
     def test_api_mode_falls_back_to_sim_when_marshal_unavailable(self):
         """When HAS_REVIT_API is True but Marshal cannot be imported
         (e.g. pythonnet installed but RevitAPIUI assembly missing),
         connect(method='api') must fall back to simulation HONESTLY.
         """
         service = RevitService()
-        result = service.connect(method='api')
+        result = service.connect(method="api")
         # On Linux, the `from System.Runtime.InteropServices import Marshal`
         # will raise ImportError → fallback to simulation
         assert result is True
         assert service.simulation_mode is True
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    @patch("backend.services.revit_service.HAS_REVIT_API", True)
     def test_api_mode_binds_real_revit_when_marshal_succeeds(self):
         """When Marshal.GetActiveObject succeeds and UIApplication wraps the
         COM handle, _revit_doc must be bound to the real Document object
@@ -560,31 +561,31 @@ class TestV213SimulationModeFlag:
         fake_uiapp_cls.return_value = fake_uiapp_instance
 
         # Inject fake modules (clr is imported first in _connect_via_api)
-        sys.modules['clr'] = MagicMock()
-        sys.modules['System.Runtime.InteropServices'] = MagicMock(Marshal=fake_marshal)
+        sys.modules["clr"] = MagicMock()
+        sys.modules["System.Runtime.InteropServices"] = MagicMock(Marshal=fake_marshal)
         fake_autodesk_ui = MagicMock(UIApplication=fake_uiapp_cls)
-        sys.modules['Autodesk'] = MagicMock()
-        sys.modules['Autodesk.Revit'] = MagicMock()
-        sys.modules['Autodesk.Revit.UI'] = fake_autodesk_ui
+        sys.modules["Autodesk"] = MagicMock()
+        sys.modules["Autodesk.Revit"] = MagicMock()
+        sys.modules["Autodesk.Revit.UI"] = fake_autodesk_ui
 
         try:
             service = RevitService()
-            result = service.connect(method='api')
+            result = service.connect(method="api")
             assert result is True
             assert service.connected is True
             assert service.simulation_mode is False  # V213: REAL connection
             assert service._revit_doc is fake_doc  # bound to real document
-            assert service.connection_method == 'api'
+            assert service.connection_method == "api"
             # Marshal.GetActiveObject was called at least once
             assert fake_marshal.GetActiveObject.called
         finally:
             # Clean up sys.modules to avoid polluting other tests
             for mod_name in [
-                'clr',
-                'System.Runtime.InteropServices',
-                'Autodesk',
-                'Autodesk.Revit',
-                'Autodesk.Revit.UI',
+                "clr",
+                "System.Runtime.InteropServices",
+                "Autodesk",
+                "Autodesk.Revit",
+                "Autodesk.Revit.UI",
             ]:
                 if mod_name in sys.modules:
                     del sys.modules[mod_name]
@@ -613,12 +614,13 @@ class TestV214ReadRvtNoHardcodedElements:
         """read_rvt in simulation mode must return success=False (not True
         with fake elements)."""
         import tempfile
+
         service = RevitService()
-        service.connect(method='simulation')
+        service.connect(method="simulation")
         assert service.simulation_mode is True
 
         # Create a fake .rvt file
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as f:
             f.write(b"FAKE_RVT_CONTENT")
             rvt_path = f.name
 
@@ -640,10 +642,11 @@ class TestV214ReadRvtNoHardcodedElements:
         (the old hardcoded fake values).
         """
         import tempfile
-        service = RevitService()
-        service.connect(method='simulation')
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+        service = RevitService()
+        service.connect(method="simulation")
+
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as f:
             f.write(b"FAKE_RVT_CONTENT")
             rvt_path = f.name
 
@@ -660,10 +663,11 @@ class TestV214ReadRvtNoHardcodedElements:
     def test_read_rvt_does_not_fabricate_basic_wall_generic_floor_interior_door(self):
         """read_rvt must NEVER return the old fake element names."""
         import tempfile
-        service = RevitService()
-        service.connect(method='simulation')
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+        service = RevitService()
+        service.connect(method="simulation")
+
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as f:
             f.write(b"FAKE_RVT_CONTENT")
             rvt_path = f.name
 
@@ -682,10 +686,11 @@ class TestV214ReadRvtNoHardcodedElements:
         Revit data cross-platform.
         """
         import tempfile
-        service = RevitService()
-        service.connect(method='simulation')
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+        service = RevitService()
+        service.connect(method="simulation")
+
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as f:
             f.write(b"FAKE_RVT_CONTENT")
             rvt_path = f.name
 
@@ -704,6 +709,7 @@ class TestV214ReadRvtNoHardcodedElements:
         and not return fake elements).
         """
         import tempfile
+
         service = RevitService()
         nonexistent = os.path.join(tempfile.gettempdir(), "nonexistent_v214_test.rvt")
         if os.path.exists(nonexistent):
@@ -720,6 +726,7 @@ class TestV214ReadRvtNoHardcodedElements:
         with ids 12345/12346/12347 as actual return values.
         """
         import re
+
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "revit_service.py")
         src_path = os.path.normpath(src_path)
@@ -730,9 +737,13 @@ class TestV214ReadRvtNoHardcodedElements:
         # (not in docstrings)
         hardcoded_pattern = re.compile(r'"id":\s*"1234[567]"')
         lines_with_matches = []
-        for i, line in enumerate(content.split('\n'), 1):
+        for i, line in enumerate(content.split("\n"), 1):
             stripped = line.strip()
-            if hardcoded_pattern.search(line) and not stripped.startswith('#') and not stripped.startswith('"'):
+            if (
+                hardcoded_pattern.search(line)
+                and not stripped.startswith("#")
+                and not stripped.startswith('"')
+            ):
                 lines_with_matches.append((i, stripped))
 
         assert lines_with_matches == [], (
@@ -757,26 +768,26 @@ class TestV213SimulationModeFlag:
         assert service.simulation_mode is False
         assert service.connected is False
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    @patch("backend.services.revit_service.HAS_REVIT_API", False)
     def test_simulation_mode_true_when_no_revit_api(self):
         """When HAS_REVIT_API is False (non-Windows / no pythonnet),
         connect(method='api') must fall back to simulation and set the
         simulation_mode flag honestly.
         """
         service = RevitService()
-        result = service.connect(method='api')
+        result = service.connect(method="api")
         assert result is True
         assert service.connected is True
         assert service.simulation_mode is True  # V213: honest
-        assert service.connection_method == 'simulation'  # fell back
+        assert service.connection_method == "simulation"  # fell back
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    @patch("backend.services.revit_service.HAS_REVIT_API", False)
     def test_simulation_mode_true_on_auto_connect_without_api(self):
         """connect(method='auto') without HAS_REVIT_API must set
         simulation_mode=True.
         """
         service = RevitService()
-        result = service.connect(method='auto')
+        result = service.connect(method="auto")
         assert result is True
         assert service.simulation_mode is True
 
@@ -785,43 +796,43 @@ class TestV213SimulationModeFlag:
         simulation_mode=True honestly.
         """
         service = RevitService()
-        result = service.connect(method='macro')
+        result = service.connect(method="macro")
         assert result is True
         assert service.simulation_mode is True  # V213: honest
-        assert service.connection_method == 'macro'
+        assert service.connection_method == "macro"
 
     def test_simulation_mode_sets_flag(self):
         """connect(method='simulation') must set simulation_mode=True."""
         service = RevitService()
-        result = service.connect(method='simulation')
+        result = service.connect(method="simulation")
         assert result is True
         assert service.simulation_mode is True
-        assert service.connection_method == 'simulation'
+        assert service.connection_method == "simulation"
 
     def test_disconnect_resets_simulation_mode(self):
         """disconnect() must clear simulation_mode back to False."""
         service = RevitService()
-        service.connect(method='simulation')
+        service.connect(method="simulation")
         assert service.simulation_mode is True
 
         service.disconnect()
         assert service.simulation_mode is False
         assert service.connected is False
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    @patch("backend.services.revit_service.HAS_REVIT_API", True)
     def test_api_mode_falls_back_to_sim_when_marshal_unavailable(self):
         """When HAS_REVIT_API is True but Marshal cannot be imported
         (e.g. pythonnet installed but RevitAPIUI assembly missing),
         connect(method='api') must fall back to simulation HONESTLY.
         """
         service = RevitService()
-        result = service.connect(method='api')
+        result = service.connect(method="api")
         # On Linux, the `from System.Runtime.InteropServices import Marshal`
         # will raise ImportError → fallback to simulation
         assert result is True
         assert service.simulation_mode is True
 
-    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    @patch("backend.services.revit_service.HAS_REVIT_API", True)
     def test_api_mode_binds_real_revit_when_marshal_succeeds(self):
         """When Marshal.GetActiveObject succeeds and UIApplication wraps the
         COM handle, _revit_doc must be bound to the real Document object
@@ -845,31 +856,31 @@ class TestV213SimulationModeFlag:
         fake_uiapp_cls.return_value = fake_uiapp_instance
 
         # Inject fake modules (clr is imported first in _connect_via_api)
-        sys.modules['clr'] = MagicMock()
-        sys.modules['System.Runtime.InteropServices'] = MagicMock(Marshal=fake_marshal)
+        sys.modules["clr"] = MagicMock()
+        sys.modules["System.Runtime.InteropServices"] = MagicMock(Marshal=fake_marshal)
         fake_autodesk_ui = MagicMock(UIApplication=fake_uiapp_cls)
-        sys.modules['Autodesk'] = MagicMock()
-        sys.modules['Autodesk.Revit'] = MagicMock()
-        sys.modules['Autodesk.Revit.UI'] = fake_autodesk_ui
+        sys.modules["Autodesk"] = MagicMock()
+        sys.modules["Autodesk.Revit"] = MagicMock()
+        sys.modules["Autodesk.Revit.UI"] = fake_autodesk_ui
 
         try:
             service = RevitService()
-            result = service.connect(method='api')
+            result = service.connect(method="api")
             assert result is True
             assert service.connected is True
             assert service.simulation_mode is False  # V213: REAL connection
             assert service._revit_doc is fake_doc  # bound to real document
-            assert service.connection_method == 'api'
+            assert service.connection_method == "api"
             # Marshal.GetActiveObject was called at least once
             assert fake_marshal.GetActiveObject.called
         finally:
             # Clean up sys.modules to avoid polluting other tests
             for mod_name in [
-                'clr',
-                'System.Runtime.InteropServices',
-                'Autodesk',
-                'Autodesk.Revit',
-                'Autodesk.Revit.UI',
+                "clr",
+                "System.Runtime.InteropServices",
+                "Autodesk",
+                "Autodesk.Revit",
+                "Autodesk.Revit.UI",
             ]:
                 if mod_name in sys.modules:
                     del sys.modules[mod_name]

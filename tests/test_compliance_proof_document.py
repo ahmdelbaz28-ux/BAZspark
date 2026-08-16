@@ -222,10 +222,18 @@ class TestAddRoomResult:
 
 
 class TestGenerate:
-    def _make_doc_with_room(self, room_name="Office-101", width=10.0, length=10.0,
-                            ceiling_height=3.0, coverage_pct=99.9,
-                            proof_valid=True, nfpa_valid=True,
-                            detector_positions=None, consensus=None):
+    def _make_doc_with_room(
+        self,
+        room_name="Office-101",
+        width=10.0,
+        length=10.0,
+        ceiling_height=3.0,
+        coverage_pct=99.9,
+        proof_valid=True,
+        nfpa_valid=True,
+        detector_positions=None,
+        consensus=None,
+    ):
         doc = ComplianceProofDocument(
             project_name="Test Building",
             designer="Test Engineer, PE",
@@ -364,9 +372,7 @@ class TestGenerate:
         assert "Room-2" in md
 
     def test_generate_detector_positions_table(self):
-        doc = self._make_doc_with_room(
-            detector_positions=[(3.0, 3.0), (7.0, 7.0)]
-        )
+        doc = self._make_doc_with_room(detector_positions=[(3.0, 3.0), (7.0, 7.0)])
         md = doc.generate()
         assert "Detector Positions" in md
         assert "3.000" in md
@@ -515,7 +521,10 @@ class TestConsensusSummaryEdgeCases:
         room1 = Room("Good-Room", 10.0, 10.0, 3.0)
         layout1 = DetectorLayout(room=room1, detectors=[(5.0, 5.0)])
         consensus1 = ConsensusResult(
-            confidence=ConfidenceLevel.VERIFIED, is_safe=True, n_pass=3, n_total=3,
+            confidence=ConfidenceLevel.VERIFIED,
+            is_safe=True,
+            n_pass=3,
+            n_total=3,
             recommendation="OK",
         )
         doc.add_room_result(room1, layout1, consensus1)
@@ -524,7 +533,10 @@ class TestConsensusSummaryEdgeCases:
         room2 = Room("Bad-Room", 30.0, 30.0, 3.0)
         layout2 = DetectorLayout(room=room2, detectors=[(5.0, 5.0)])
         consensus2 = ConsensusResult(
-            confidence=ConfidenceLevel.FAIL, is_safe=False, n_pass=0, n_total=3,
+            confidence=ConfidenceLevel.FAIL,
+            is_safe=False,
+            n_pass=0,
+            n_total=3,
             recommendation="Add more detectors",
         )
         doc.add_room_result(room2, layout2, consensus2)
@@ -607,7 +619,9 @@ class TestIntegrationFullDocument:
             confidence=ConfidenceLevel.VERIFIED,
             is_safe=True,
             engines=[
-                EngineVerdict(engine=EngineName.ANALYTICAL, passed=True, details="All corners covered"),
+                EngineVerdict(
+                    engine=EngineName.ANALYTICAL, passed=True, details="All corners covered"
+                ),
                 EngineVerdict(engine=EngineName.VORONOI, passed=True, details="Max gap 4.2m < R"),
                 EngineVerdict(engine=EngineName.GRID, passed=True, details="All cells covered"),
             ],

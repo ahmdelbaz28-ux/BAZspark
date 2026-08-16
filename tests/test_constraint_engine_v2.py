@@ -71,12 +71,22 @@ class TestConstraintSource:
 
     def test_all_sources_present(self):
         expected = {
-            "NEC_760_24", "NEC_760_24_A", "NEC_760_154", "NEC_310_16",
-            "NEC_310_15_B2A", "NEC_310_15_B3A", "NEC_CH9_TEMP",
-            "NFPA_72_23_6_2", "NFPA_72_10_6_4", "NFPA_72_12_2_2",
-            "NEC_CH9_TABLE4", "NEC_CH9_TABLE8",
-            "PROJECT_SPEC_CONDUIT", "PROJECT_SPEC_BEND",
-            "PROJECT_SPEC_SEPARATION", "PROJECT_SPEC_FASTENING",
+            "NEC_760_24",
+            "NEC_760_24_A",
+            "NEC_760_154",
+            "NEC_310_16",
+            "NEC_310_15_B2A",
+            "NEC_310_15_B3A",
+            "NEC_CH9_TEMP",
+            "NFPA_72_23_6_2",
+            "NFPA_72_10_6_4",
+            "NFPA_72_12_2_2",
+            "NEC_CH9_TABLE4",
+            "NEC_CH9_TABLE8",
+            "PROJECT_SPEC_CONDUIT",
+            "PROJECT_SPEC_BEND",
+            "PROJECT_SPEC_SEPARATION",
+            "PROJECT_SPEC_FASTENING",
             "PHYSICS",
         }
         actual = {e.name for e in ConstraintSource}
@@ -100,13 +110,17 @@ class TestConstants:
     """Project specification constants — must match published standards."""
 
     def test_min_conduit_inches(self):
-        assert MIN_CONDUIT_INCHES == 0.75  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MIN_CONDUIT_INCHES == 0.75
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_min_conduit_mm(self):
         assert MIN_CONDUIT_MM == pytest.approx(19.05)
 
     def test_emt_inner_diameter(self):
-        assert EMT_3_4_INNER_DIAMETER_MM == 15.8  # NEC Ch.9 Table 4  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            EMT_3_4_INNER_DIAMETER_MM == 15.8
+        )  # NEC Ch.9 Table 4  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_emt_outer_diameter(self):
         assert EMT_3_4_OUTER_DIAMETER_MM == pytest.approx(19.05)
@@ -118,23 +132,33 @@ class TestConstants:
         assert MAX_BEND_RADIUS_MM == pytest.approx(6 * 19.05)
 
     def test_min_electrical_separation(self):
-        assert MIN_ELECTRICAL_SEPARATION_MM == 300.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MIN_ELECTRICAL_SEPARATION_MM == 300.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_fastening_interval(self):
-        assert MAX_CABLE_FASTENING_INTERVAL_MM == 457.0  # 18" = 457mm  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_CABLE_FASTENING_INTERVAL_MM == 457.0
+        )  # 18" = 457mm  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_conduit_fill_pct(self):
-        assert MAX_CONDUIT_FILL_PCT == 0.40  # NEC 760.154  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_CONDUIT_FILL_PCT == 0.40
+        )  # NEC 760.154  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nac_max_lengths_keys(self):
         """V108 FIX: WireGauge uses string keys."""
         assert set(_NAC_MAX_LENGTHS_M.keys()) == {"12", "14", "16", "18"}
 
     def test_nac_max_length_awg12(self):
-        assert _NAC_MAX_LENGTHS_M["12"] == 914.0  # 3000 ft  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _NAC_MAX_LENGTHS_M["12"] == 914.0
+        )  # 3000 ft  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nac_max_length_awg18(self):
-        assert _NAC_MAX_LENGTHS_M["18"] == 229.0  # 750 ft  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _NAC_MAX_LENGTHS_M["18"] == 229.0
+        )  # 750 ft  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nac_max_lengths_decrease_with_gauge(self):
         """Higher AWG = thinner wire = shorter max length."""
@@ -149,10 +173,14 @@ class TestConstants:
         assert BEND_PENALTY_M == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_elevation_penalty(self):
-        assert ELEVATION_PENALTY_M == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ELEVATION_PENALTY_M == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_electrical_proximity_penalty(self):
-        assert ELECTRICAL_PROXIMITY_PENALTY_M == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ELECTRICAL_PROXIMITY_PENALTY_M == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -234,7 +262,6 @@ class TestRoutingConstraintSet:
 
 
 class TestConstraintEngineInit:
-
     def test_default_init(self, engine):
         assert engine._min_conduit_inches == MIN_CONDUIT_INCHES
         assert engine._bend_radius_factor == BEND_RADIUS_FACTOR
@@ -243,7 +270,9 @@ class TestConstraintEngineInit:
 
     def test_custom_conduit_size(self):
         e = ConstraintEngine(min_conduit_inches=1.0)
-        assert e._min_conduit_inches == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            e._min_conduit_inches == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_bend_factor(self):
         e = ConstraintEngine(bend_radius_factor=8)
@@ -251,7 +280,9 @@ class TestConstraintEngineInit:
 
     def test_custom_separation(self):
         e = ConstraintEngine(min_electrical_separation_mm=500.0)
-        assert e._min_electrical_separation_mm == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            e._min_electrical_separation_mm == 500.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -260,16 +291,19 @@ class TestConstraintEngineInit:
 
 
 class TestNACMaxLength:
-
     def test_compliant_awg14(self, engine):
         result = engine.check_nac_max_length(400.0, WireGauge.AWG_14)
         assert result.is_satisfied is True
-        assert result.limit_value == 610.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.limit_value == 610.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_violation_awg18(self, engine):
         result = engine.check_nac_max_length(300.0, WireGauge.AWG_18)
         assert result.is_satisfied is False
-        assert result.limit_value == 229.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.limit_value == 229.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exact_boundary_compliant(self, engine):
         """Exactly at the limit is still compliant (≤)."""
@@ -312,7 +346,6 @@ class TestNACMaxLength:
 
 
 class TestVoltageDrop:
-
     def test_compliant_short_circuit(self, engine):
         result = engine.check_voltage_drop(0.5, 50.0, WireGauge.AWG_14)
         assert result.is_satisfied is True
@@ -327,6 +360,7 @@ class TestVoltageDrop:
         # AWG14 at 20C: 10.07 ohm/km
         # V_drop = 1.0 × 2 × 10.07 × 0.1 = 2.014V
         from fireai.core.nfpa72_engine import temperature_corrected_resistance
+
         r = temperature_corrected_resistance(10.07, 20.0)
         expected = 1.0 * 2.0 * r * 0.1
         assert result.actual_value == pytest.approx(expected, rel=1e-3)
@@ -350,8 +384,12 @@ class TestVoltageDrop:
 
     def test_temperature_correction_v60(self, engine):
         """V60 FIX: Temperature-corrected resistance increases voltage drop at 75C."""
-        result_20c = engine.check_voltage_drop(1.0, 100.0, WireGauge.AWG_14, conductor_operating_temp_c=20.0)
-        result_75c = engine.check_voltage_drop(1.0, 100.0, WireGauge.AWG_14, conductor_operating_temp_c=75.0)
+        result_20c = engine.check_voltage_drop(
+            1.0, 100.0, WireGauge.AWG_14, conductor_operating_temp_c=20.0
+        )
+        result_75c = engine.check_voltage_drop(
+            1.0, 100.0, WireGauge.AWG_14, conductor_operating_temp_c=75.0
+        )
         assert result_75c.actual_value > result_20c.actual_value
 
     def test_zero_ps_voltage_no_division_by_zero(self, engine):
@@ -371,7 +409,6 @@ class TestVoltageDrop:
 
 
 class TestElectricalSeparation:
-
     def test_compliant(self, engine):
         result = engine.check_electrical_separation(350.0)
         assert result.is_satisfied is True
@@ -412,7 +449,6 @@ class TestElectricalSeparation:
 
 
 class TestBendRadius:
-
     def test_no_bends_satisfied(self, engine):
         result = engine.check_bend_radius(num_bends=0)
         assert result.is_satisfied is True
@@ -455,7 +491,6 @@ class TestBendRadius:
 
 
 class TestConduitSize:
-
     def test_compliant_default(self, engine):
         result = engine.check_conduit_size()
         assert result.is_satisfied is True
@@ -487,7 +522,6 @@ class TestConduitSize:
 
 
 class TestCableFastening:
-
     def test_compliant_with_enough_fasteners(self, engine):
         # 10m / (22+1) = 434mm ≤ 457mm
         result = engine.check_cable_fastening(10.0, 22)
@@ -529,7 +563,6 @@ class TestCableFastening:
 
 
 class TestClassASeparation:
-
     def test_well_separated_compliant(self, engine):
         outgoing = [(0, 0, 0), (10, 0, 0)]
         return_path = [(0, 5, 0), (10, 5, 0)]
@@ -581,7 +614,6 @@ class TestClassASeparation:
 
 
 class TestAmpacityCompliance:
-
     def test_low_current_compliant(self, engine):
         result = engine.check_ampacity_compliance(0.5, WireGauge.AWG_14)
         assert result.is_satisfied is True
@@ -605,7 +637,6 @@ class TestAmpacityCompliance:
 
 
 class TestAmbientDerating:
-
     def test_30c_satisfied(self, engine):
         result = engine.check_ambient_derating(30.0)
         assert result.is_satisfied is True
@@ -616,7 +647,9 @@ class TestAmbientDerating:
         # Factor at 50°C for 90°C rating is 0.82, which is >= 0.80
         # so is_satisfied = True (not severe enough to fail)
         # But severity is HIGH because factor < 0.85 triggers remediation
-        assert result.actual_value == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.actual_value == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_source_nec_310_15_b2a(self, engine):
         result = engine.check_ambient_derating(30.0)
@@ -635,7 +668,9 @@ class TestAmbientDerating:
     def test_45c_derating_less_than_1(self, engine):
         result = engine.check_ambient_derating(45.0)
         # Factor should be < 1.0
-        assert result.actual_value == 45.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.actual_value == 45.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -644,7 +679,6 @@ class TestAmbientDerating:
 
 
 class TestConductorCountDerating:
-
     def test_2_conductors_satisfied(self, engine):
         result = engine.check_conductor_count_derating(2)
         assert result.is_satisfied is True
@@ -674,7 +708,6 @@ class TestConductorCountDerating:
 
 
 class TestConduitFill:
-
     def test_single_cable_compliant(self, engine):
         result = engine.check_conduit_fill(5.0, 1)
         assert result.is_satisfied is True
@@ -721,7 +754,6 @@ class TestConduitFill:
 
 
 class TestCheckAll:
-
     def test_fully_compliant_scenario(self, engine):
         # Need enough fasteners: 100m / (n+1) <= 457mm => n >= 218
         result = engine.check_all(
@@ -840,7 +872,6 @@ class TestCheckAll:
 
 
 class TestMoveCost:
-
     def test_straight_horizontal(self, engine):
         cost = engine.compute_move_cost((0, 0, 0), (1, 0, 0))
         assert cost == pytest.approx(0.1)  # grid_resolution
@@ -851,20 +882,21 @@ class TestMoveCost:
 
     def test_electrical_proximity_adds_penalty(self, engine):
         cost_normal = engine.compute_move_cost((0, 0, 0), (1, 0, 0))
-        cost_electrical = engine.compute_move_cost(
-            (0, 0, 0), (1, 0, 0), is_near_electrical=True
-        )
+        cost_electrical = engine.compute_move_cost((0, 0, 0), (1, 0, 0), is_near_electrical=True)
         assert cost_electrical > cost_normal
         assert cost_electrical - cost_normal == pytest.approx(ELECTRICAL_PROXIMITY_PENALTY_M)
 
 
 class TestBendCost:
-
     def test_no_bend_on_first_move(self):
-        assert ConstraintEngine.compute_bend_cost(None, (1, 0, 0)) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConstraintEngine.compute_bend_cost(None, (1, 0, 0)) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_straight_no_bend(self):
-        assert ConstraintEngine.compute_bend_cost((1, 0, 0), (1, 0, 0)) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConstraintEngine.compute_bend_cost((1, 0, 0), (1, 0, 0)) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_direction_change_is_bend(self):
         assert ConstraintEngine.compute_bend_cost((1, 0, 0), (0, 1, 0)) == BEND_PENALTY_M
@@ -874,9 +906,10 @@ class TestBendCost:
 
 
 class TestManhattanHeuristic:
-
     def test_same_cell(self):
-        assert ConstraintEngine.manhattan_heuristic((5, 5, 5), (5, 5, 5)) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConstraintEngine.manhattan_heuristic((5, 5, 5), (5, 5, 5)) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_horizontal_distance(self):
         h = ConstraintEngine.manhattan_heuristic((0, 0, 0), (10, 0, 0))

@@ -22,6 +22,7 @@ _JSON_EXT = ".json"
 try:
     import ifcopenshell
     import ifcopenshell.geom
+
     IFC_AVAILABLE = True
 except ImportError:
     IFC_AVAILABLE = False
@@ -42,7 +43,7 @@ class IFCAnalysis:
 class IFCParser(ParserBase):
     """Parse IFC format files."""
 
-    allowed_extensions = {'.ifc', _JSON_EXT}
+    allowed_extensions = {".ifc", _JSON_EXT}
     max_file_size_bytes = int(os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", 500 * 1024 * 1024))
 
     def __init__(self, ifc_path: str):
@@ -66,20 +67,20 @@ class IFCParser(ParserBase):
             return json.load(f)
 
     def _parse_instances(self, data: dict) -> list[dict]:
-        return data.get('instances', [])
+        return data.get("instances", [])
 
     def _extract_spaces(self, instances: list[dict]) -> list[dict]:
         spaces = []
         for inst in instances:
-            if inst.get('type') == 'IfcSpace':
-                attrs = inst.get('attributes', {})
-                geom = inst.get('geometry', {})
+            if inst.get("type") == "IfcSpace":
+                attrs = inst.get("attributes", {})
+                geom = inst.get("geometry", {})
 
-                bounds = geom.get('bounds', {})
-                origin = bounds.get('origin', {})
-                dims = bounds.get('dimensions', {})
+                bounds = geom.get("bounds", {})
+                origin = bounds.get("origin", {})
+                dims = bounds.get("dimensions", {})
 
-                raw_area = attrs.get('Area', 0)
+                raw_area = attrs.get("Area", 0)
                 if raw_area < 0:
                     logging.getLogger(__name__).warning(
                         "Negative area detected for space. Space REJECTED — "
@@ -88,19 +89,19 @@ class IFCParser(ParserBase):
                     continue
 
                 space = {
-                    'id': inst.get('id'),
-                    'name': attrs.get('Name'),
-                    'long_name': attrs.get('LongName'),
-                    'area': raw_area,
-                    'elevation': attrs.get('Elevation', 0),
-                    'bounds': {
-                        'x': origin.get('x', 0),
-                        'y': origin.get('y', 0),
-                        'z': origin.get('z', 0),
-                        'width': dims.get('width', 0),
-                        'length': dims.get('length', 0),
-                        'height': dims.get('height', 0),
-                    }
+                    "id": inst.get("id"),
+                    "name": attrs.get("Name"),
+                    "long_name": attrs.get("LongName"),
+                    "area": raw_area,
+                    "elevation": attrs.get("Elevation", 0),
+                    "bounds": {
+                        "x": origin.get("x", 0),
+                        "y": origin.get("y", 0),
+                        "z": origin.get("z", 0),
+                        "width": dims.get("width", 0),
+                        "length": dims.get("length", 0),
+                        "height": dims.get("height", 0),
+                    },
                 }
                 spaces.append(space)
 
@@ -108,25 +109,25 @@ class IFCParser(ParserBase):
 
     def _extract_devices(self, instances: list[dict]) -> list[dict]:
         _FIRE_ENTITY_TYPES = {
-            'IfcFireSuppressionDevice_Type',
-            'IfcAlarm',
-            'IfcSensor',
-            'IfcProtectiveDevice',
+            "IfcFireSuppressionDevice_Type",
+            "IfcAlarm",
+            "IfcSensor",
+            "IfcProtectiveDevice",
         }
         devices = []
         for inst in instances:
-            if inst.get('type') in _FIRE_ENTITY_TYPES:
-                attrs = inst.get('attributes', {})
-                applicable = inst.get('applicable_to', [])
+            if inst.get("type") in _FIRE_ENTITY_TYPES:
+                attrs = inst.get("attributes", {})
+                applicable = inst.get("applicable_to", [])
 
                 device = {
-                    'id': inst.get('id'),
-                    'name': attrs.get('Name'),
-                    'detector_type': attrs.get('DetectorType'),
-                    'sensitivity': attrs.get('Sensitivity'),
-                    'coverage_radius': attrs.get('CoverageRadius', None),
-                    'mounting_height': attrs.get('MountingHeight', 0),
-                    'applicable_spaces': applicable,
+                    "id": inst.get("id"),
+                    "name": attrs.get("Name"),
+                    "detector_type": attrs.get("DetectorType"),
+                    "sensitivity": attrs.get("Sensitivity"),
+                    "coverage_radius": attrs.get("CoverageRadius", None),
+                    "mounting_height": attrs.get("MountingHeight", 0),
+                    "applicable_spaces": applicable,
                 }
                 devices.append(device)
 
@@ -134,19 +135,19 @@ class IFCParser(ParserBase):
 
     def _extract_building(self, instances: list[dict]) -> dict:
         for inst in instances:
-            if inst.get('type') == 'IfcBuilding':
-                attrs = inst.get('attributes', {})
+            if inst.get("type") == "IfcBuilding":
+                attrs = inst.get("attributes", {})
                 return {
-                    'name': attrs.get('Name'),
-                    'long_name': attrs.get('LongName'),
+                    "name": attrs.get("Name"),
+                    "long_name": attrs.get("LongName"),
                 }
-        return {'name': 'Unknown'}
+        return {"name": "Unknown"}
 
     def _count_floors(self, instances: list[dict]) -> int:
         floors = set()
         for inst in instances:
-            if inst.get('type') == 'IfcBuildingStorey':
-                floors.add(inst.get('id'))
+            if inst.get("type") == "IfcBuildingStorey":
+                floors.add(inst.get("id"))
         return len(floors)
 
     def parse(self) -> IFCAnalysis:

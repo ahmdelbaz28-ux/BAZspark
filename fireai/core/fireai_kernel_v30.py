@@ -215,7 +215,9 @@ class VectorEngine:
 
         if uncovered_fine:
             bad_pts = np.vstack(uncovered_fine)
-            frac = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
+            frac = (
+                covered / total if total else 0.0
+            )  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
             return CoverageResult(
                 coverage_fraction=max(0.0, frac - len(bad_pts) / max(fine_total, 1)),
                 covered_count=covered,
@@ -224,7 +226,9 @@ class VectorEngine:
                 uncovered_pts=[tuple(p) for p in bad_pts[:500]],
             )
 
-        frac = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
+        frac = (
+            covered / total if total else 0.0
+        )  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
         return CoverageResult(
             coverage_fraction=frac,
             covered_count=covered,
@@ -276,7 +280,9 @@ class VectorEngine:
             return out
 
         for start in range(0, G, self.CHUNK_SIZE):
-            chunk = grid_xy[start : start + self.CHUNK_SIZE]  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            chunk = grid_xy[
+                start : start + self.CHUNK_SIZE
+            ]  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             diff = chunk[:, None, :] - detectors_xy[None, :, :]
             dist2 = np.einsum("ijk,ijk->ij", diff, diff)  # NOSONAR - python:S1192
             out[start : start + self.CHUNK_SIZE] = dist2.min(axis=1) <= R2
@@ -485,7 +491,9 @@ class StreamingParser:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
         buffer: list[str] = []
         try:
-            with open(path, encoding="utf-8", errors="replace") as fh:  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+            with (
+                open(path, encoding="utf-8", errors="replace") as fh
+            ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:
@@ -494,13 +502,17 @@ class StreamingParser:
                         # and will be removed in Python 3.14. Since this is an
                         # async method, a running loop is guaranteed.
                         # Per agent.md Rule 17: Root cause is deprecated API.
-                        walls = await asyncio.get_running_loop().run_in_executor(None, self._parse_dxf_chunk, buffer)
+                        walls = await asyncio.get_running_loop().run_in_executor(
+                            None, self._parse_dxf_chunk, buffer
+                        )
                         if walls:
                             yield walls
                         buffer = []
                 if buffer:
                     # asyncio.get_event_loop() with asyncio.get_running_loop().
-                    walls = await asyncio.get_running_loop().run_in_executor(None, self._parse_dxf_chunk, buffer)
+                    walls = await asyncio.get_running_loop().run_in_executor(
+                        None, self._parse_dxf_chunk, buffer
+                    )
                     if walls:
                         yield walls
         except Exception as e:
@@ -521,7 +533,9 @@ class StreamingParser:
                 page = doc[page_num]
                 paths: list[NDArray] = []
                 for path_ in page.get_drawings():
-                    pts = [(item[1].x, item[1].y) for item in path_["items"] if item[0] in ("m", "l")]
+                    pts = [
+                        (item[1].x, item[1].y) for item in path_["items"] if item[0] in ("m", "l")
+                    ]
                     if len(pts) >= 2:
                         paths.append(np.array(pts, dtype=np.float64))
                 doc.close()
@@ -546,7 +560,8 @@ class StreamingParser:
         except Exception as e:
             self._errors.append(f"PDF stream error: {e}")
             logger.exception("PDF stream error: %s", e)
-  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+    # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     @staticmethod
     def _parse_dxf_chunk(lines: list[str]) -> list[NDArray[np.float64]]:  # NOSONAR - python:S3776
         """Parse a DXF chunk into wall geometry arrays."""
@@ -675,7 +690,9 @@ class AdaptivePipeline:
             elif fill_ratio >= self.BACKPRESSURE_HIGH:
                 await asyncio.sleep(0.01)
             await queue.put(item)
-        await queue.put(_SENTINEL)  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        await queue.put(
+            _SENTINEL
+        )  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
     async def _stage_loop(  # NOSONAR - python:S3776
         self,
@@ -798,7 +815,9 @@ class SafetyLedger:
             content = entry.to_canonical_bytes()
             new_hash = hashlib.sha256(self._prev_hash + content).digest()
             sig = self._hmac.new(self._key, new_hash, hashlib.sha256).digest()
-            entry = LedgerEntry(**{**entry.__dict__, "entry_hash": new_hash.hex(), "signature": sig.hex()})
+            entry = LedgerEntry(
+                **{**entry.__dict__, "entry_hash": new_hash.hex(), "signature": sig.hex()}
+            )
 
             line = json.dumps(entry.to_dict()).encode() + b"\n"
             self._fh.write(line)
@@ -1061,13 +1080,17 @@ class WireRouterV2:
     def total_cable_length(self, path: list[tuple[float, float]]) -> float:
         if len(path) < 2:
             return 0.0
-        return sum(math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]) for i in range(len(path) - 1))  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        return sum(
+            math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1])
+            for i in range(len(path) - 1)
+        )  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
     def _astar(  # NOSONAR - python:S3776
         self,
         start: tuple[float, float],
         goal: tuple[float, float],
-        nodes: list[tuple[float, float]] | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        nodes: list[tuple[float, float]]
+        | None = None,  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[tuple[float, float]] | None:
         import heapq
 
@@ -1213,6 +1236,7 @@ class KernelCore:
         self._workers = n_workers or os.cpu_count() or 4
         self._pipeline_metrics: dict[str, Any] = {}
         from fireai.core.v131_kernel_extensions import V131KernelExtension
+
         self.v131_extensions = V131KernelExtension(self)
 
     @classmethod
@@ -1242,7 +1266,9 @@ class KernelCore:
 
         rooms = await self._extract_rooms(path, ext)
         if not rooms:
-            return BuildingResult([], [], [], t_start, time.perf_counter(), "No rooms extracted", False)
+            return BuildingResult(
+                [], [], [], t_start, time.perf_counter(), "No rooms extracted", False
+            )
 
         self._store.bulk_put(rooms)
 
@@ -1275,7 +1301,9 @@ class KernelCore:
             )
 
             if not result.is_compliant:
-                all_violations.append(f"Room {room.name}: coverage {result.coverage_pct:.1f}% < 100%")
+                all_violations.append(
+                    f"Room {room.name}: coverage {result.coverage_pct:.1f}% < 100%"
+                )
 
             for i, (x, y) in enumerate(sol.placements):
                 all_detectors.append(
@@ -1303,7 +1331,9 @@ class KernelCore:
             is_ok=len(all_violations) == 0,
         )  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
-    async def _extract_rooms(self, path: Path, ext: str) -> list[RoomRecord]:  # NOSONAR - python:S3776
+    async def _extract_rooms(
+        self, path: Path, ext: str
+    ) -> list[RoomRecord]:  # NOSONAR - python:S3776
         rooms: list[RoomRecord] = []
         if ext in (".dxf",):
             async for wall_batch in self._parser.parse_dxf_stream(path):
@@ -1320,7 +1350,13 @@ class KernelCore:
     @staticmethod
     def _wall_to_room(poly: NDArray[np.float64]) -> RoomRecord:
         area = (
-            abs(float(np.dot(poly[:, 0], np.roll(poly[:, 1], -1)) - np.dot(np.roll(poly[:, 0], -1), poly[:, 1]))) / 2.0
+            abs(
+                float(
+                    np.dot(poly[:, 0], np.roll(poly[:, 1], -1))
+                    - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])
+                )
+            )
+            / 2.0
         )
         return RoomRecord(
             room_id=str(uuid.uuid4()),
@@ -1460,13 +1496,20 @@ class AdapterBridge:
                 continue
             poly = np.array(
                 [
-                    (p[0], p[1]) if isinstance(p, list | tuple) else (getattr(p, "x", 0), getattr(p, "y", 0))
+                    (p[0], p[1])
+                    if isinstance(p, list | tuple)
+                    else (getattr(p, "x", 0), getattr(p, "y", 0))
                     for p in geom
                 ],
                 dtype=np.float64,
             )
             area = (
-                abs(float(np.dot(poly[:, 0], np.roll(poly[:, 1], -1)) - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])))
+                abs(
+                    float(
+                        np.dot(poly[:, 0], np.roll(poly[:, 1], -1))
+                        - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])
+                    )
+                )
                 / 2.0
             )
             records.append(

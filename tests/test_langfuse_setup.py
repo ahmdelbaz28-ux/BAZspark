@@ -58,9 +58,7 @@ class TestModuleExists:
             "flush_langfuse",
             "langfuse_health_check",
         ]:
-            assert hasattr(langfuse_setup, func_name), (
-                f"Missing public function: {func_name}"
-            )
+            assert hasattr(langfuse_setup, func_name), f"Missing public function: {func_name}"
 
 
 # ===========================================================================
@@ -128,9 +126,15 @@ class TestFailSafeContract:
         monkeypatch.delenv("LANGFUSE_HOST", raising=False)
         langfuse_setup._langfuse_available = None
         # Try with None handler, bad score name, weird value
-        langfuse_setup.log_verification_score(None, "test_score", 1.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
-        langfuse_setup.log_verification_score(None, "", None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
-        langfuse_setup.log_verification_score(None, None, None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        langfuse_setup.log_verification_score(
+            None, "test_score", 1.0
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        langfuse_setup.log_verification_score(
+            None, "", None
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        langfuse_setup.log_verification_score(
+            None, None, None
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_log_workflow_scores_never_raises(self, monkeypatch):
         """log_workflow_scores() must NEVER raise, even with bad input."""
@@ -167,6 +171,7 @@ class TestAvailabilityDetection:
         monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
         # Force ImportError by patching the import
         import builtins
+
         original_import = builtins.__import__
 
         def fake_import(name, *args, **kwargs):
@@ -248,6 +253,7 @@ class TestWorkflowServiceIntegration:
             langfuse_health_check,
             log_workflow_scores,
         )
+
         # All four must be callable
         assert callable(flush_langfuse)
         assert callable(get_langfuse_callback_handler)
@@ -263,6 +269,7 @@ class TestWorkflowServiceIntegration:
                 langfuse_health_check,
                 log_workflow_scores,
             )
+
             langfuse_available = True
         except ImportError:
             langfuse_available = False

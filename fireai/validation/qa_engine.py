@@ -252,9 +252,7 @@ class QAEngine:
         )
 
         self._event_bus.publish(
-            Events.COVERAGE_VERIFIED
-            if report.is_passing
-            else Events.COVERAGE_FAILED,
+            Events.COVERAGE_VERIFIED if report.is_passing else Events.COVERAGE_FAILED,
             data={
                 "design_id": design.design_id,
                 "total": report.total_checks,
@@ -289,12 +287,8 @@ class QAEngine:
         baseline_report = self.validate_design(baseline)
         proposed_report = self.validate_design(proposed)
 
-        baseline_checks = {
-            c.check_id: c for c in baseline_report.checks
-        }
-        proposed_checks = {
-            c.check_id: c for c in proposed_report.checks
-        }
+        baseline_checks = {c.check_id: c for c in baseline_report.checks}
+        proposed_checks = {c.check_id: c for c in proposed_report.checks}
 
         breaking_changes: list[str] = []
         new_issues: list[str] = []
@@ -309,9 +303,7 @@ class QAEngine:
 
             if base_check is None and prop_check is not None:
                 if prop_check.status == CheckStatus.FAILED:
-                    new_issues.append(
-                        f"{prop_check.name}: {prop_check.description}"
-                    )
+                    new_issues.append(f"{prop_check.name}: {prop_check.description}")
             elif prop_check is None and base_check is not None:
                 pass  # removed check
             elif base_check and prop_check:
@@ -326,8 +318,7 @@ class QAEngine:
                     )
                 elif not base_passed and prop_passed:
                     resolved_issues.append(
-                        f"{prop_check.name}: "
-                        f"{base_check.status.value} -> {prop_check.status.value}"
+                        f"{prop_check.name}: {base_check.status.value} -> {prop_check.status.value}"
                     )
                 else:
                     unchanged += 1
@@ -358,9 +349,7 @@ class QAEngine:
 
     # ── Architecture Conformance ───────────────────────────────────────
 
-    def check_architecture_conformance(
-        self, design: DesignData
-    ) -> ConformanceReport:
+    def check_architecture_conformance(self, design: DesignData) -> ConformanceReport:
         """
         Check design conforms to expected architectural patterns.
 
@@ -429,9 +418,7 @@ class QAEngine:
 
     # ── Check Implementations ──────────────────────────────────────────
 
-    def _check_detector_count_reasonableness(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_detector_count_reasonableness(self, design: DesignData) -> QACheck:
         detectors = design.detectors
         rooms = design.rooms
 
@@ -444,9 +431,7 @@ class QAEngine:
                 description="No rooms defined — cannot assess detector count",
             )
 
-        total_room_area = sum(
-            r.get("area_sqm", 0) for r in rooms
-        )
+        total_room_area = sum(r.get("area_sqm", 0) for r in rooms)
         max_detectors = len(detectors)
 
         if total_room_area > 0:
@@ -484,12 +469,8 @@ class QAEngine:
             description=f"{max_detectors} detectors across {len(rooms)} rooms",
         )
 
-    def _check_coverage_threshold(
-        self, design: DesignData
-    ) -> QACheck:
-        coverages = [
-            d.get("coverage_pct", 100.0) for d in design.detectors
-        ]
+    def _check_coverage_threshold(self, design: DesignData) -> QACheck:
+        coverages = [d.get("coverage_pct", 100.0) for d in design.detectors]
         if not coverages:
             return QACheck(
                 check_id="QA-002",
@@ -499,11 +480,7 @@ class QAEngine:
                 description="No detector coverage data available",
             )
 
-        below_threshold = [
-            i
-            for i, c in enumerate(coverages)
-            if c < self.NFPA_MIN_COVERAGE_PCT
-        ]
+        below_threshold = [i for i, c in enumerate(coverages) if c < self.NFPA_MIN_COVERAGE_PCT]
         if below_threshold:
             return QACheck(
                 check_id="QA-002",
@@ -526,9 +503,7 @@ class QAEngine:
             description=f"All {len(coverages)} detectors meet coverage threshold",
         )
 
-    def _check_wall_distance_compliance(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_wall_distance_compliance(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             dist = det.get("wall_distance_m", 999)
@@ -544,9 +519,7 @@ class QAEngine:
                 name="Wall distance compliance",
                 status=CheckStatus.FAILED,
                 severity=CheckSeverity.HIGH,
-                description=(
-                    f"{len(violations)} detector(s) too close to wall"
-                ),
+                description=(f"{len(violations)} detector(s) too close to wall"),
                 detail="; ".join(violations[:5]),
                 reference="NFPA 72 §17.6.3.1.1",
             )
@@ -559,9 +532,7 @@ class QAEngine:
             description="All detectors meet wall distance requirements",
         )
 
-    def _check_hvac_clearance(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_hvac_clearance(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             hvac_dist = det.get("hvac_distance_m", 999)
@@ -578,9 +549,7 @@ class QAEngine:
                 name="HVAC clearance",
                 status=CheckStatus.WARNING,
                 severity=CheckSeverity.MEDIUM,
-                description=(
-                    f"{len(violations)} detector(s) too close to HVAC"
-                ),
+                description=(f"{len(violations)} detector(s) too close to HVAC"),
                 detail="; ".join(violations[:5]),
                 reference="NFPA 72 §17.7.3.2.4.1",
             )
@@ -593,9 +562,7 @@ class QAEngine:
             description="All detectors clear of HVAC diffusers",
         )
 
-    def _check_beam_compensation(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_beam_compensation(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             beam_depth = det.get("beam_depth_m", 0)
@@ -606,9 +573,7 @@ class QAEngine:
                 ratio = beam_depth / ceiling_height
                 if ratio > 0.1:
                     expected_reduction = spacing * ratio
-                    actual_spacing = det.get(
-                        "adjusted_spacing_m", spacing
-                    )
+                    actual_spacing = det.get("adjusted_spacing_m", spacing)
                     if actual_spacing > spacing - expected_reduction * 0.5:
                         violations.append(
                             f"Detector {det.get('detector_id', '?')}: "
@@ -624,10 +589,7 @@ class QAEngine:
                 name="Beam compensation",
                 status=CheckStatus.WARNING,
                 severity=CheckSeverity.MEDIUM,
-                description=(
-                    f"{len(violations)} detector(s) may need "
-                    f"beam compensation"
-                ),
+                description=(f"{len(violations)} detector(s) may need beam compensation"),
                 detail="; ".join(violations[:3]),
                 reference="NFPA 72 §17.7.3.2.4.2",
             )
@@ -640,9 +602,7 @@ class QAEngine:
             description="Beam compensation verified",
         )
 
-    def _check_spacing_consistency(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_spacing_consistency(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             listed = det.get("listed_spacing_m")
@@ -660,10 +620,7 @@ class QAEngine:
                 name="Spacing consistency",
                 status=CheckStatus.FAILED,
                 severity=CheckSeverity.CRITICAL,
-                description=(
-                    f"{len(violations)} detector(s) exceed "
-                    f"listed spacing"
-                ),
+                description=(f"{len(violations)} detector(s) exceed listed spacing"),
                 detail="; ".join(violations[:5]),
                 reference="NFPA 72 §17.6.3.1.2",
             )
@@ -676,9 +633,7 @@ class QAEngine:
             description="All detectors within listed spacing",
         )
 
-    def _check_smoke_spacing(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_smoke_spacing(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             if det.get("detector_type", "").startswith("SMOKE"):
@@ -697,8 +652,7 @@ class QAEngine:
                 status=CheckStatus.FAILED,
                 severity=CheckSeverity.CRITICAL,
                 description=(
-                    f"{len(violations)} smoke detector(s) exceed "
-                    f"{self.NFPA_SMOKE_MAX_SPACING_M}m"
+                    f"{len(violations)} smoke detector(s) exceed {self.NFPA_SMOKE_MAX_SPACING_M}m"
                 ),
                 detail="; ".join(violations[:5]),
                 reference="NFPA 72 §17.6.3.1.2 Table 17.6.3.1.2",
@@ -711,9 +665,7 @@ class QAEngine:
             description="All smoke detectors within spacing limits",
         )
 
-    def _check_heat_spacing(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_heat_spacing(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             if det.get("detector_type", "").startswith("HEAT"):
@@ -732,8 +684,7 @@ class QAEngine:
                 status=CheckStatus.FAILED,
                 severity=CheckSeverity.CRITICAL,
                 description=(
-                    f"{len(violations)} heat detector(s) exceed "
-                    f"{self.NFPA_HEAT_MAX_SPACING_M}m"
+                    f"{len(violations)} heat detector(s) exceed {self.NFPA_HEAT_MAX_SPACING_M}m"
                 ),
                 detail="; ".join(violations[:5]),
                 reference="NFPA 72 §17.7.4.2.3.1",
@@ -746,9 +697,7 @@ class QAEngine:
             description="All heat detectors within spacing limits",
         )
 
-    def _check_nac_coverage(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_nac_coverage(self, design: DesignData) -> QACheck:
         nacs = design.notification_appliances
         if not nacs:
             return QACheck(
@@ -763,10 +712,7 @@ class QAEngine:
         for nac in nacs:
             spl = nac.get("spl_dba", 0)
             if spl < 75:
-                violations.append(
-                    f"NAC {nac.get('nac_id', '?')}: "
-                    f"SPL {spl}dBA < 75dBA minimum"
-                )
+                violations.append(f"NAC {nac.get('nac_id', '?')}: SPL {spl}dBA < 75dBA minimum")
         if violations:
             return QACheck(
                 check_id="QA-009",
@@ -785,9 +731,7 @@ class QAEngine:
             description=f"{len(nacs)} NACs with adequate SPL",
         )
 
-    def _check_panel_capacity(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_panel_capacity(self, design: DesignData) -> QACheck:
         violations = []
         for panel in design.panels:
             used = panel.get("used_capacity", 0)
@@ -815,9 +759,7 @@ class QAEngine:
             description="All panels within capacity limits",
         )
 
-    def _check_loop_device_limit(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_loop_device_limit(self, design: DesignData) -> QACheck:
         violations = []
         for panel in design.panels:
             for loop in panel.get("loops", []):
@@ -846,17 +788,14 @@ class QAEngine:
             description="All loops within device limits",
         )
 
-    def _check_cable_type_compliance(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_cable_type_compliance(self, design: DesignData) -> QACheck:
         violations = []
         for cable in design.cables:
             cable_type = cable.get("cable_type", "")
             pathway = cable.get("pathway_type", "")
             if pathway == "PLENUM" and cable_type not in ("FPLP", "CI"):
                 violations.append(
-                    f"Cable {cable.get('cable_id', '?')}: "
-                    f"plenum requires FPLP, got {cable_type}"
+                    f"Cable {cable.get('cable_id', '?')}: plenum requires FPLP, got {cable_type}"
                 )
         if violations:
             return QACheck(
@@ -876,16 +815,13 @@ class QAEngine:
             description="All cables correctly specified",
         )
 
-    def _check_voltage_drop(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_voltage_drop(self, design: DesignData) -> QACheck:
         violations = []
         for cable in design.cables:
             vd = cable.get("voltage_drop_pct", 0)
             if vd > 10:
                 violations.append(
-                    f"Cable {cable.get('cable_id', '?')}: "
-                    f"voltage drop {vd:.1f}% > 10%"
+                    f"Cable {cable.get('cable_id', '?')}: voltage drop {vd:.1f}% > 10%"
                 )
         if violations:
             return QACheck(
@@ -905,13 +841,14 @@ class QAEngine:
             description="All cables within voltage drop limits",
         )
 
-    def _check_required_fields(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_required_fields(self, design: DesignData) -> QACheck:
         required_fields = {
             "detectors": [
-                "detector_id", "detector_type", "spacing_m",
-                "ceiling_height_m", "coverage_pct",
+                "detector_id",
+                "detector_type",
+                "spacing_m",
+                "ceiling_height_m",
+                "coverage_pct",
             ],
             "rooms": ["room_id", "name", "area_sqm"],
             "panels": ["panel_id", "total_capacity"],
@@ -924,9 +861,7 @@ class QAEngine:
             for i, item in enumerate(items):
                 for field_name in fields:
                     if field_name not in item:
-                        missing.append(
-                            f"{category}[{i}]: missing '{field_name}'"
-                        )
+                        missing.append(f"{category}[{i}]: missing '{field_name}'")
 
         if missing:
             return QACheck(
@@ -945,9 +880,7 @@ class QAEngine:
             description="All required fields present",
         )
 
-    def _check_naming_conventions_check(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_naming_conventions_check(self, design: DesignData) -> QACheck:
         violations = []
         valid_id_pattern = re.compile(r"^[A-Z0-9_-]+$", re.IGNORECASE)
 
@@ -955,16 +888,14 @@ class QAEngine:
             did = det.get("detector_id", "")
             if did and not valid_id_pattern.match(did):
                 violations.append(
-                    f"Detector ID '{did}' does not follow "
-                    f"alphanumeric-underscore convention"
+                    f"Detector ID '{did}' does not follow alphanumeric-underscore convention"
                 )
 
         for panel in design.panels:
             pid = panel.get("panel_id", "")
             if pid and not valid_id_pattern.match(pid):
                 violations.append(
-                    f"Panel ID '{pid}' does not follow "
-                    f"alphanumeric-underscore convention"
+                    f"Panel ID '{pid}' does not follow alphanumeric-underscore convention"
                 )
 
         if violations:
@@ -984,9 +915,7 @@ class QAEngine:
             description="All IDs follow naming conventions",
         )
 
-    def _check_cross_reference_integrity(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_cross_reference_integrity(self, design: DesignData) -> QACheck:
         panel_ids = {p.get("panel_id") for p in design.panels}
         orphan_detectors = 0
         orphan_nacs = 0
@@ -1022,9 +951,7 @@ class QAEngine:
             description="All cross-references are valid",
         )
 
-    def _check_duplicate_detectors(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_duplicate_detectors(self, design: DesignData) -> QACheck:
         ids = [d.get("detector_id") for d in design.detectors if d.get("detector_id")]
         duplicates = set()
         seen = set()
@@ -1050,21 +977,17 @@ class QAEngine:
             description="No duplicate detector IDs",
         )
 
-    def _check_ceiling_height_reasonable(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_ceiling_height_reasonable(self, design: DesignData) -> QACheck:
         violations = []
         for room in design.rooms:
             h = room.get("ceiling_height_m", 0)
             if h <= 0:
                 violations.append(
-                    f"Room {room.get('room_id', '?')}: "
-                    f"ceiling height {h}m must be positive"
+                    f"Room {room.get('room_id', '?')}: ceiling height {h}m must be positive"
                 )
             elif h > 30:
                 violations.append(
-                    f"Room {room.get('room_id', '?')}: "
-                    f"ceiling height {h}m > 30m limit"
+                    f"Room {room.get('room_id', '?')}: ceiling height {h}m > 30m limit"
                 )
         if violations:
             return QACheck(
@@ -1083,21 +1006,17 @@ class QAEngine:
             description="All ceiling heights valid",
         )
 
-    def _check_room_dimensions_reasonable(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_room_dimensions_reasonable(self, design: DesignData) -> QACheck:
         violations = []
         for room in design.rooms:
             area = room.get("area_sqm", 0)
             if area <= 0:
                 violations.append(
-                    f"Room {room.get('room_id', '?')}: "
-                    f"area {area}sqm must be positive"
+                    f"Room {room.get('room_id', '?')}: area {area}sqm must be positive"
                 )
             elif area > 100000:
                 violations.append(
-                    f"Room {room.get('room_id', '?')}: "
-                    f"area {area:.0f}sqm seems excessive"
+                    f"Room {room.get('room_id', '?')}: area {area:.0f}sqm seems excessive"
                 )
         if violations:
             return QACheck(
@@ -1116,23 +1035,23 @@ class QAEngine:
             description="All room dimensions reasonable",
         )
 
-    def _check_detector_type_valid(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_detector_type_valid(self, design: DesignData) -> QACheck:
         valid_types = {
-            "SMOKE_PHOTOELECTRIC", "SMOKE_IONIZATION",
-            "SMOKE_MULTI_CRITERIA", "HEAT_FIXED",
-            "HEAT_RATE_OF_RISE", "HEAT_COMBINATION",
-            "FLAME", "GAS", "COMBINATION",
+            "SMOKE_PHOTOELECTRIC",
+            "SMOKE_IONIZATION",
+            "SMOKE_MULTI_CRITERIA",
+            "HEAT_FIXED",
+            "HEAT_RATE_OF_RISE",
+            "HEAT_COMBINATION",
+            "FLAME",
+            "GAS",
+            "COMBINATION",
         }
         violations = []
         for det in design.detectors:
             dt = det.get("detector_type", "")
             if dt and dt not in valid_types:
-                violations.append(
-                    f"Detector {det.get('detector_id', '?')}: "
-                    f"unknown type '{dt}'"
-                )
+                violations.append(f"Detector {det.get('detector_id', '?')}: unknown type '{dt}'")
         if violations:
             return QACheck(
                 check_id="QA-020",
@@ -1150,20 +1069,20 @@ class QAEngine:
             description="All detector types valid",
         )
 
-    def _check_environment_rating(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_environment_rating(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             env = det.get("environment_rating", "")
             if env and env not in (
-                "indoor", "outdoor", "hazardous",
-                "cleanroom", "corrosive", "coastal", "desert",
+                "indoor",
+                "outdoor",
+                "hazardous",
+                "cleanroom",
+                "corrosive",
+                "coastal",
+                "desert",
             ):
-                violations.append(
-                    f"Detector {det.get('detector_id', '?')}: "
-                    f"invalid env '{env}'"
-                )
+                violations.append(f"Detector {det.get('detector_id', '?')}: invalid env '{env}'")
         if violations:
             return QACheck(
                 check_id="QA-021",
@@ -1181,9 +1100,7 @@ class QAEngine:
             description="All environment ratings valid",
         )
 
-    def _check_installation_date(
-        self, design: DesignData
-    ) -> QACheck:
+    def _check_installation_date(self, design: DesignData) -> QACheck:
         violations = []
         for det in design.detectors:
             install = det.get("installation_date", "")
@@ -1192,8 +1109,7 @@ class QAEngine:
                     datetime.fromisoformat(install)
                 except (ValueError, TypeError):
                     violations.append(
-                        f"Detector {det.get('detector_id', '?')}: "
-                        f"invalid date '{install}'"
+                        f"Detector {det.get('detector_id', '?')}: invalid date '{install}'"
                     )
         if violations:
             return QACheck(
@@ -1212,14 +1128,8 @@ class QAEngine:
             description="All installation dates valid",
         )
 
-    def _check_manufacturer_specified(
-        self, design: DesignData
-    ) -> QACheck:
-        missing = [
-            d.get("detector_id", "?")
-            for d in design.detectors
-            if not d.get("manufacturer")
-        ]
+    def _check_manufacturer_specified(self, design: DesignData) -> QACheck:
+        missing = [d.get("detector_id", "?") for d in design.detectors if not d.get("manufacturer")]
         if missing:
             return QACheck(
                 check_id="QA-023",
@@ -1237,14 +1147,8 @@ class QAEngine:
             description="All detectors have manufacturer",
         )
 
-    def _check_model_number_specified(
-        self, design: DesignData
-    ) -> QACheck:
-        missing = [
-            d.get("detector_id", "?")
-            for d in design.detectors
-            if not d.get("model")
-        ]
+    def _check_model_number_specified(self, design: DesignData) -> QACheck:
+        missing = [d.get("detector_id", "?") for d in design.detectors if not d.get("model")]
         if missing:
             return QACheck(
                 check_id="QA-024",
@@ -1262,14 +1166,8 @@ class QAEngine:
             description="All detectors have model numbers",
         )
 
-    def _check_location_specified(
-        self, design: DesignData
-    ) -> QACheck:
-        missing = [
-            d.get("detector_id", "?")
-            for d in design.detectors
-            if not d.get("location")
-        ]
+    def _check_location_specified(self, design: DesignData) -> QACheck:
+        missing = [d.get("detector_id", "?") for d in design.detectors if not d.get("location")]
         if missing:
             return QACheck(
                 check_id="QA-025",
@@ -1290,7 +1188,8 @@ class QAEngine:
     # ── Internal: Architecture Conformance Checks ──────────────────────
 
     def _check_design_patterns(
-        self, _design: DesignData  # NOSONAR — S1172: parameter retained for API stability
+        self,
+        _design: DesignData,  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[PatternCheck]:
         return [
             PatternCheck(
@@ -1316,16 +1215,12 @@ class QAEngine:
             ),
         ]
 
-    def _check_naming_conventions(
-        self, design: DesignData
-    ) -> list[NamingCheck]:
+    def _check_naming_conventions(self, design: DesignData) -> list[NamingCheck]:
         violations: list[str] = []
         for det in design.detectors:
             for key in det:
                 if key.startswith("_"):
-                    violations.append(
-                        f"Private key '{key}' in detector data"
-                    )
+                    violations.append(f"Private key '{key}' in detector data")
 
         return [
             NamingCheck(
@@ -1350,7 +1245,8 @@ class QAEngine:
         ]
 
     def _check_architectural_rules(
-        self, _design: DesignData  # NOSONAR — S1172: parameter retained for API stability
+        self,
+        _design: DesignData,  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[RuleCheck]:
         return [
             RuleCheck(
@@ -1471,6 +1367,8 @@ if __name__ == "__main__":
 
     report2 = engine.validate_design(design)
     regression = engine.regression_test(design, design)
-    print(f"\nRegression: {len(regression.breaking_changes)} breaking, "
-          f"{len(regression.new_issues)} new, "
-          f"{len(regression.resolved_issues)} resolved")
+    print(
+        f"\nRegression: {len(regression.breaking_changes)} breaking, "
+        f"{len(regression.new_issues)} new, "
+        f"{len(regression.resolved_issues)} resolved"
+    )

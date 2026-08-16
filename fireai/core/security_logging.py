@@ -86,7 +86,9 @@ _SENSITIVE_PATTERNS = [
         re.IGNORECASE,
     ),
     # Bearer tokens in Authorization headers
-    re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE),  # NOSONAR — S5869: f-string without placeholders kept for future expansion
+    re.compile(
+        r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE
+    ),  # NOSONAR — S5869: f-string without placeholders kept for future expansion
 ]
 
 # corrupting hash values in log output. The previous pattern:
@@ -196,7 +198,9 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     # Apply regex patterns
     for pattern in _SENSITIVE_PATTERNS:
         result = pattern.sub(
-            lambda m: m.group(0).replace(m.group(m.lastindex or 0), mask) if m.lastindex else m.group(0),
+            lambda m: m.group(0).replace(m.group(m.lastindex or 0), mask)
+            if m.lastindex
+            else m.group(0),
             result,
         )
 
@@ -218,9 +222,14 @@ class SensitiveDataFilter(logging.Filter):
         if isinstance(record.msg, str):
             record.msg = mask_sensitive(record.msg)
         if record.args and isinstance(record.args, dict):
-            record.args = {k: mask_sensitive(str(v)) if isinstance(v, str) else v for k, v in record.args.items()}
+            record.args = {
+                k: mask_sensitive(str(v)) if isinstance(v, str) else v
+                for k, v in record.args.items()
+            }
         elif record.args and isinstance(record.args, tuple):
-            record.args = tuple(mask_sensitive(str(a)) if isinstance(a, str) else a for a in record.args)
+            record.args = tuple(
+                mask_sensitive(str(a)) if isinstance(a, str) else a for a in record.args
+            )
         return True
 
 
@@ -272,7 +281,9 @@ def configure_log_rotation(
     # SecurityAuditLogger already manages its own loguru sink with proper
     # filtering (audit_channel="security"). Adding another sink via this
     # function creates triple entries and corrupts the chain.
-    if log_file == "security_audit.log":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    if (
+        log_file == "security_audit.log"
+    ):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         return  # SecurityAuditLogger manages its own rotation
 
     _LOG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -303,10 +314,14 @@ def configure_log_rotation(
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
                 except Exception as exc:
-                    logger.exception("LoguruBridge.emit failed — security log message dropped: %s", exc)
+                    logger.exception(
+                        "LoguruBridge.emit failed — security log message dropped: %s", exc
+                    )
 
         bridge = _LoguruBridge()
-        bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        bridge.setFormatter(
+            logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         logger_instance.addHandler(bridge)
     else:
         # Fallback: standard RotatingFileHandler without compression
@@ -371,7 +386,9 @@ def configure_timed_rotation(
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
                 except Exception as exc:
-                    logger.exception("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
+                    logger.exception(
+                        "LoguruBridgeTimed.emit failed — security log message dropped: %s", exc
+                    )
 
         bridge = _LoguruBridgeTimed()
         bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
@@ -438,7 +455,7 @@ def _compute_chain_hash(event_json: str) -> str:
         return _hmac_module.new(
             _hmac_key.encode("utf-8"),
             event_json.encode("utf-8"),
-            hashlib.sha256  # lgtm[py/weak-sensitive-data-hashing] — audit hash, not password,
+            hashlib.sha256,  # lgtm[py/weak-sensitive-data-hashing] — audit hash, not password,
         ).hexdigest()[:32]
     return hashlib.sha256(event_json.encode("utf-8")).hexdigest()[:32]
 
@@ -590,7 +607,9 @@ class SecurityAuditLogger:
             timestamp = datetime.now(UTC).isoformat()
 
             # Generate event ID
-            event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode()).hexdigest()[:16]
+            event_id = hashlib.sha256(
+                f"{timestamp}:{event_type}:{self._chain_hash}".encode()
+            ).hexdigest()[:16]
 
             # Build the event record — mask sensitive details BEFORE computing
             # the chain hash, so that the hash covers the actual stored value.

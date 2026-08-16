@@ -33,6 +33,7 @@ NON-VACUOUSNESS:
   Each test below is proven to fail when its assertion is violated.
   Verified by /home/z/my-project/scripts/verify_l1_l2_l3_post_fix_nonvacuous.py.
 """
+
 from __future__ import annotations
 
 import re
@@ -71,10 +72,10 @@ def _get_c01_comment_block(source: str) -> str:
     Returns the block text (from start delimiter to end delimiter,
     inclusive) or empty string if not found.
     """
-    lines = source.split('\n')
+    lines = source.split("\n")
     header_idx = None
     for i, line in enumerate(lines):
-        if re.search(r'C-01\s+FIX.*QOMNCalculationError', line):
+        if re.search(r"C-01\s+FIX.*QOMNCalculationError", line):
             header_idx = i
             break
     if header_idx is None:
@@ -83,7 +84,7 @@ def _get_c01_comment_block(source: str) -> str:
     # Walk backward to find the start delimiter (the `# ═══...` line
     # directly above the header).
     start_idx = header_idx
-    while start_idx > 0 and re.match(r'^#\s*═{5,}', lines[start_idx - 1]):
+    while start_idx > 0 and re.match(r"^#\s*═{5,}", lines[start_idx - 1]):
         # Found the start delimiter
         start_idx -= 1
         break  # only walk one line back to the delimiter
@@ -99,16 +100,16 @@ def _get_c01_comment_block(source: str) -> str:
     # before a non-comment line.
     end_idx = header_idx
     for i in range(header_idx + 1, len(lines)):
-        if re.match(r'^#\s*═{5,}', lines[i]):
+        if re.match(r"^#\s*═{5,}", lines[i]):
             end_idx = i  # tentative end — keep going in case there are more
-        elif lines[i].lstrip().startswith('#'):
+        elif lines[i].lstrip().startswith("#"):
             # Comment line (but not a delimiter) — body continues
             continue
         else:
             # Non-comment line — block has ended
             break
 
-    return '\n'.join(lines[start_idx:end_idx + 1])
+    return "\n".join(lines[start_idx : end_idx + 1])
 
 
 # ─── L-2 part (b): the comment NOW says "72 Ah" (post-fix) ──────────────────
@@ -134,7 +135,7 @@ def test_l2_comment_now_says_72_ah():
     )
 
     # The comment must mention 72 Ah (the actual code value).
-    has_72_ah = bool(re.search(r'72\s*Ah', comment_block))
+    has_72_ah = bool(re.search(r"72\s*Ah", comment_block))
     assert has_72_ah, (
         "The C-01 FIX comment block does not mention '72 Ah'. The L-2 "
         "fix requires the comment to match the actual code (which uses "
@@ -167,8 +168,7 @@ def test_l2_comment_still_defends_conservative_fallback():
         r"force\s+manual\s+intervention",
         r"legitimate\s+design\s+choice",
     ]
-    matched = [p for p in defensive_patterns
-               if re.search(p, comment_block, re.IGNORECASE)]
+    matched = [p for p in defensive_patterns if re.search(p, comment_block, re.IGNORECASE)]
     assert matched, (
         "The defensive language has been REMOVED from the C-01 FIX "
         "comment block. The L-2 fix preserved the rationale — only "
@@ -229,7 +229,7 @@ def test_l2_comment_and_code_in_same_file():
         pytest.skip("qomn_kernel.py not found")
     source = QOMN_KERNEL_PY.read_text(encoding="utf-8")
 
-    has_72_ah_comment = bool(re.search(r'72\s*Ah', source))
+    has_72_ah_comment = bool(re.search(r"72\s*Ah", source))
     has_72_ah_code = bool(re.search(r'"required_ah"\s*:\s*72', source))
 
     assert has_72_ah_comment, (
@@ -259,7 +259,7 @@ def test_l2_comment_block_is_substantial():
     comment_block = _get_c01_comment_block(source)
     assert comment_block, "C-01 FIX comment block not found"
 
-    block_lines = [l for l in comment_block.split('\n') if l.strip()]
+    block_lines = [l for l in comment_block.split("\n") if l.strip()]
     assert len(block_lines) >= 5, (
         f"The C-01 FIX comment block is only {len(block_lines)} lines long. "
         "The L-2 audit found a substantial 20-line comment block defending "
@@ -297,8 +297,8 @@ def test_l2_old_zero_ah_wording_is_REMOVED_from_active_comment():
     # The pattern looks for "battery=0 Ah" or "battery=0.0 Ah" (the
     # ORIGINAL stale wording).
     forbidden_patterns = [
-        r'battery\s*=\s*0(\.0)?\s*Ah',
-        r'fallbacks?\s*\(\s*battery\s*=\s*0(\.0)?\s*Ah',
+        r"battery\s*=\s*0(\.0)?\s*Ah",
+        r"fallbacks?\s*\(\s*battery\s*=\s*0(\.0)?\s*Ah",
     ]
     for p in forbidden_patterns:
         m = re.search(p, comment_block, re.IGNORECASE)
@@ -336,11 +336,15 @@ def test_l2_comment_explains_historical_change():
     #   - "raised from" + "0" + "72"
     #   - "0 Ah" + "72 Ah" in close proximity (the NOTE explains the change)
     has_explanation = (
-        bool(re.search(r'historical', comment_block, re.IGNORECASE))
-        or bool(re.search(r'raised\s+from\s+.*0\s*Ah.*72\s*Ah', comment_block,
-                          re.IGNORECASE | re.DOTALL))
-        or bool(re.search(r'0\s*Ah.*72\s*Ah|72\s*Ah.*0\s*Ah', comment_block,
-                          re.IGNORECASE | re.DOTALL))
+        bool(re.search(r"historical", comment_block, re.IGNORECASE))
+        or bool(
+            re.search(
+                r"raised\s+from\s+.*0\s*Ah.*72\s*Ah", comment_block, re.IGNORECASE | re.DOTALL
+            )
+        )
+        or bool(
+            re.search(r"0\s*Ah.*72\s*Ah|72\s*Ah.*0\s*Ah", comment_block, re.IGNORECASE | re.DOTALL)
+        )
     )
     assert has_explanation, (
         "The C-01 FIX comment block does NOT include a NOTE explaining "
@@ -375,8 +379,12 @@ def test_l2_claim_text_reflects_resolved_state():
     if low_section_start == -1:
         pytest.skip("LOW ISSUES section not found in worklog")
     after_low = worklog_text[low_section_start:]
-    end_markers = ["RETRACTED FALSE CLAIMS", "NUMERICAL ERRORS",
-                   "FALSE ACCUSATION PATTERNS", "POSITIVES VERIFIED"]
+    end_markers = [
+        "RETRACTED FALSE CLAIMS",
+        "NUMERICAL ERRORS",
+        "FALSE ACCUSATION PATTERNS",
+        "POSITIVES VERIFIED",
+    ]
     end_idx = len(after_low)
     for marker in end_markers:
         idx = after_low.find(marker)
@@ -386,14 +394,14 @@ def test_l2_claim_text_reflects_resolved_state():
     low_normalized = re.sub(r"\s+", " ", low_section)
 
     # Extract the L-2 entry specifically (from "L-2:" up to "L-3:" or end).
-    l2_match = re.search(r'L-2:.*?(?=\s*L-3:|$)', low_normalized, re.DOTALL)
+    l2_match = re.search(r"L-2:.*?(?=\s*L-3:|$)", low_normalized, re.DOTALL)
     assert l2_match, (
         "L-2 entry missing from LOW ISSUES section. The LOW ISSUES "
         "section should contain entries L-1, L-2, L-3."
     )
     l2_entry = l2_match.group(0)
 
-    assert ("RESOLVED" in l2_entry or "FIXED" in l2_entry), (
+    assert "RESOLVED" in l2_entry or "FIXED" in l2_entry, (
         "L-2 entry in LOW ISSUES does not mention RESOLVED or FIXED. "
         "The L-2 fix has been applied — update the worklog to reflect "
         "the RESOLVED state."

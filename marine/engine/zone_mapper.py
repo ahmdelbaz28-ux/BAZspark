@@ -60,28 +60,30 @@ def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity 
     """
     if ship.is_small_craft:
         # NFPA 302 craft: single zone, no MVZ division.
-        return [MarineZone(
-            zone_id="MVZ-01",
-            name="Single craft zone (NFPA 302)",
-            space_category=SpaceCategory.ACCOMMODATION,
-            deck="main",
-            frame_start=0, frame_end=int(ship_length_m / 0.6),
-            area_m2=ship_length_m * 4.0,  # assume 4m beam
-            height_m=2.2,
-        )]
+        return [
+            MarineZone(
+                zone_id="MVZ-01",
+                name="Single craft zone (NFPA 302)",
+                space_category=SpaceCategory.ACCOMMODATION,
+                deck="main",
+                frame_start=0,
+                frame_end=int(ship_length_m / 0.6),
+                area_m2=ship_length_m * 4.0,  # assume 4m beam
+                height_m=2.2,
+            )
+        ]
 
     # SOLAS II-2/2.2.1.1: passenger ships carrying >36 passengers have a
     # STRICTER MVZ length limit (24 m vs 40 m for cargo ships).
     is_large_passenger = (
-        ship.is_passenger_ship
-        and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
+        ship.is_passenger_ship and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
     )
     mvz_max_m = (
-        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger
-        else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
+        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
     )
 
     n_zones = max(1, math.ceil(ship_length_m / mvz_max_m))
+
     # Each zone gets an equal share of the ship's length, guaranteed non-
     # overlapping and tile to exactly ship_length_m. The previous code mixed
     # two formulas for start/end frame and produced overlapping zones.
@@ -103,8 +105,7 @@ def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity 
     # This typically converges in 0-1 iterations.
     while True:
         zone_length_m = ship_length_m / n_zones
-        boundary_frames = [_m_to_frames(i * zone_length_m)
-                           for i in range(n_zones + 1)]
+        boundary_frames = [_m_to_frames(i * zone_length_m) for i in range(n_zones + 1)]
         # Ensure strict monotonic increase.
         for i in range(1, len(boundary_frames)):
             if boundary_frames[i] <= boundary_frames[i - 1]:
@@ -136,8 +137,11 @@ def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity 
             elif pos < 0.66:
                 cat = SpaceCategory.MACHINERY_SPACE_A
             else:
-                cat = SpaceCategory.CARGO_SPACE if not ship.is_passenger_ship \
+                cat = (
+                    SpaceCategory.CARGO_SPACE
+                    if not ship.is_passenger_ship
                     else SpaceCategory.ACCOMMODATION
+                )
 
             # Beam ~ 0.15 * length as typical merchant vessel.
             beam_m = max(4.0, ship_length_m * 0.15)
@@ -146,21 +150,23 @@ def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity 
             end_frame = boundary_frames[mvz_idx + 1]
             actual_length_m = (end_frame - start_frame) * _FRAMES_PER_METER
 
-            zones.append(MarineZone(
-                zone_id=zone_id,
-                name=f"Main Vertical Zone {mvz_idx + 1} ({deck_name})",
-                space_category=cat,
-                deck=deck_name,
-                frame_start=start_frame,
-                frame_end=end_frame,
-                area_m2=round(actual_length_m * beam_m, 1),
-                height_m=2.5,
-                adjacent_zones=tuple(
-                    f"MVZ-{n + 1:02d}-{deck_name}"
-                    for n in (mvz_idx - 1, mvz_idx + 1)
-                    if 0 <= n < n_zones
-                ),
-            ))
+            zones.append(
+                MarineZone(
+                    zone_id=zone_id,
+                    name=f"Main Vertical Zone {mvz_idx + 1} ({deck_name})",
+                    space_category=cat,
+                    deck=deck_name,
+                    frame_start=start_frame,
+                    frame_end=end_frame,
+                    area_m2=round(actual_length_m * beam_m, 1),
+                    height_m=2.5,
+                    adjacent_zones=tuple(
+                        f"MVZ-{n + 1:02d}-{deck_name}"
+                        for n in (mvz_idx - 1, mvz_idx + 1)
+                        if 0 <= n < n_zones
+                    ),
+                )
+            )
 
     return zones
 

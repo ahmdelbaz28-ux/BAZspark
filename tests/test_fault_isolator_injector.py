@@ -302,7 +302,11 @@ class TestSecureLoopStructure:
         devices = [{"device_idx": f"D{i}"} for i in range(5)]
         result = inject_fault_isolators(loop_devices=devices)
         original_ids = {d["device_idx"] for d in devices}
-        loop_ids = {d.get("device_idx") for d in result.secure_loop if d.get("device_type") != ISOLATOR_DEVICE_TYPE}
+        loop_ids = {
+            d.get("device_idx")
+            for d in result.secure_loop
+            if d.get("device_type") != ISOLATOR_DEVICE_TYPE
+        }
         assert original_ids.issubset(loop_ids)
 
     def test_secure_loop_contains_isolators(self):
@@ -316,7 +320,9 @@ class TestSecureLoopStructure:
         """Each injected isolator should have required keys."""
         devices = [{"device_idx": "D1"}]
         result = inject_fault_isolators(loop_devices=devices)
-        isolator = next(d for d in result.secure_loop if d.get("device_type") == ISOLATOR_DEVICE_TYPE)
+        isolator = next(
+            d for d in result.secure_loop if d.get("device_type") == ISOLATOR_DEVICE_TYPE
+        )
         assert "device_type" in isolator
         assert "device_idx" in isolator
         assert "position" in isolator
@@ -328,7 +334,10 @@ class TestSecureLoopStructure:
         """total_device_count = original + injected."""
         devices = [{"device_idx": f"D{i}"} for i in range(10)]
         result = inject_fault_isolators(loop_devices=devices)
-        assert result.total_device_count == result.original_device_count + result.injected_isolator_count
+        assert (
+            result.total_device_count
+            == result.original_device_count + result.injected_isolator_count
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -432,8 +441,12 @@ class TestVerifyIsolatorCompliance:
         loop = [{"device_type": "FAULT_ISOLATOR"}] + [
             {"device_type": "detector"} for _ in range(10)
         ]
-        result_strict = verify_isolator_compliance(loop_devices=loop, max_devices_between_isolators=5)
-        result_lenient = verify_isolator_compliance(loop_devices=loop, max_devices_between_isolators=15)
+        result_strict = verify_isolator_compliance(
+            loop_devices=loop, max_devices_between_isolators=5
+        )
+        result_lenient = verify_isolator_compliance(
+            loop_devices=loop, max_devices_between_isolators=15
+        )
         assert result_strict["compliant"] is False
         assert result_lenient["compliant"] is True
 
@@ -472,25 +485,31 @@ class TestIntegrationScenario:
         devices = []
         # Zone 1: 15 devices
         for i in range(15):
-            devices.append({
-                "device_idx": f"D{i:03d}",
-                "zone_id": "ZONE-1",
-                "position": (float(i * 3), 0.0),
-            })
+            devices.append(
+                {
+                    "device_idx": f"D{i:03d}",
+                    "zone_id": "ZONE-1",
+                    "position": (float(i * 3), 0.0),
+                }
+            )
         # Zone 2: 20 devices
         for i in range(20):
-            devices.append({
-                "device_idx": f"D{i + 15:03d}",
-                "zone_id": "ZONE-2",
-                "position": (float((i + 15) * 3), 0.0),
-            })
+            devices.append(
+                {
+                    "device_idx": f"D{i + 15:03d}",
+                    "zone_id": "ZONE-2",
+                    "position": (float((i + 15) * 3), 0.0),
+                }
+            )
         # Zone 3: 10 devices
         for i in range(10):
-            devices.append({
-                "device_idx": f"D{i + 35:03d}",
-                "zone_id": "ZONE-3",
-                "position": (float((i + 35) * 3), 0.0),
-            })
+            devices.append(
+                {
+                    "device_idx": f"D{i + 35:03d}",
+                    "zone_id": "ZONE-3",
+                    "position": (float((i + 35) * 3), 0.0),
+                }
+            )
 
         result = inject_fault_isolators(
             loop_devices=devices,

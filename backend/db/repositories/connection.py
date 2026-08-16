@@ -39,7 +39,9 @@ class ConnectionRepository(BaseRepository):
                 (to_id, project_id),
             )
             if not cur.fetchone():
-                raise ValueError(f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'")
+                raise ValueError(
+                    f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'"
+                )
 
             cur.execute(
                 f"""INSERT INTO connections

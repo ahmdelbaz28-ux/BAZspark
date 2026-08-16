@@ -37,32 +37,32 @@ class WordParser(ParserBase):
     Parses Word documents for project specifications.
     """
 
-    allowed_extensions = {'.docx'}
+    allowed_extensions = {".docx"}
     max_file_size_bytes = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))
 
     FLOOR_PATTERNS = [
-        r'floor\s*(\d+)',
-        r'level\s*(\d+)',
-        r'Floor\s*(\d+)',
-        r'Level\s*(\d+)',
-        r'(\d+)st\s*floor',
-        r'(\d+)nd\s*floor',
-        r'(\d+)rd\s*floor',
-        r'(\d+)th\s*floor',
+        r"floor\s*(\d+)",
+        r"level\s*(\d+)",
+        r"Floor\s*(\d+)",
+        r"Level\s*(\d+)",
+        r"(\d+)st\s*floor",
+        r"(\d+)nd\s*floor",
+        r"(\d+)rd\s*floor",
+        r"(\d+)th\s*floor",
     ]
 
     BUILDING_PATTERNS = [
-        r'building\s*([A-Z])',
-        r'tower\s*([A-Z])',
-        r'block\s*([A-Z])',
-        r'([A-Z])\s*building',
+        r"building\s*([A-Z])",
+        r"tower\s*([A-Z])",
+        r"block\s*([A-Z])",
+        r"([A-Z])\s*building",
     ]
 
     CEILING_PATTERNS = [
-        r'ceiling\s*height[:\s]*(\d+\.?\d*)\s*m',
-        r'height[:\s]*(\d+\.?\d*)\s*m',
-        r'flat\s*ceiling[:\s]*(\d+\.?\d*)',
-        r'suspended\s*ceiling[:\s]*(\d+\.?\d*)',
+        r"ceiling\s*height[:\s]*(\d+\.?\d*)\s*m",
+        r"height[:\s]*(\d+\.?\d*)\s*m",
+        r"flat\s*ceiling[:\s]*(\d+\.?\d*)",
+        r"suspended\s*ceiling[:\s]*(\d+\.?\d*)",
     ]
 
     def __init__(self):
@@ -84,7 +84,7 @@ class WordParser(ParserBase):
 
             doc = Document(str(safe_path))
 
-            all_text = '\n'.join(p.text for p in doc.paragraphs)
+            all_text = "\n".join(p.text for p in doc.paragraphs)
 
             result.title = self._extract_title(doc.paragraphs)
             result.project_name = self._extract_project_name(all_text)
@@ -105,15 +105,15 @@ class WordParser(ParserBase):
 
     def _extract_title(self, paragraphs) -> str:
         for para in paragraphs:
-            if para.style.name.startswith('Heading'):
+            if para.style.name.startswith("Heading"):
                 return para.text.strip()
         return ""
 
     def _extract_project_name(self, text: str) -> str:
         patterns = [
-            r'Project[:\s]*([^\n]+)',
-            r'Building[:\s]*([^\n]+)',
-            r'Tower\s*([A-Z])',
+            r"Project[:\s]*([^\n]+)",
+            r"Building[:\s]*([^\n]+)",
+            r"Tower\s*([A-Z])",
         ]
 
         for pattern in patterns:
@@ -145,10 +145,12 @@ class WordParser(ParserBase):
             for match in matches:
                 try:
                     height = float(match.group(1))
-                    specs.append({
-                        'type': 'flat',
-                        'height_m': height,
-                    })
+                    specs.append(
+                        {
+                            "type": "flat",
+                            "height_m": height,
+                        }
+                    )
                 except (ValueError, IndexError):
                     continue
 
@@ -160,13 +162,22 @@ class WordParser(ParserBase):
         for para in paragraphs:
             text = para.text.strip()
 
-            if text.startswith(('•', '- ', '* ')):
-                clean_text = text.lstrip('•-* ').strip()
+            if text.startswith(("•", "- ", "* ")):
+                clean_text = text.lstrip("•-* ").strip()
 
-                if any(kw in clean_text.lower() for kw in [
-                    'detector', 'alarm', 'fire', 'sprinkler',
-                    'system', 'zone', 'coverage', 'code'
-                ]):
+                if any(
+                    kw in clean_text.lower()
+                    for kw in [
+                        "detector",
+                        "alarm",
+                        "fire",
+                        "sprinkler",
+                        "system",
+                        "zone",
+                        "coverage",
+                        "code",
+                    ]
+                ):
                     requirements.append(clean_text)
 
         return requirements
@@ -178,7 +189,7 @@ class WordParser(ParserBase):
         for para in paragraphs:
             text = para.text.strip()
 
-            if 'note' in text.lower() and len(text) < 20:
+            if "note" in text.lower() and len(text) < 20:
                 in_notes = True
                 continue
 

@@ -24,16 +24,28 @@ class OutputGenerator:
             f"  BATTERY DERATING    : {rec.battery_derating_details.get('method', 'N/A')}",
             f"  REGULATORY LISTINGS : {', '.join(rec.listings)}",
             f"  SHA-256 SIGNATURE   : {rec.signature_hash}",
-            border
+            border,
         ]
         return "\n".join(schedule)
 
     @staticmethod
     def generate_csi_specification(req: ProjectRequirements, rec: PanelRecommendation) -> str:
         """Generates precise, ready-to-print submittal paragraphs for fire protection bids."""
-        voice_str = "with integrated, multichannel emergency voice evacuation communications," if req.requires_voice else "with standard tone/alarm notification capabilities,"
-        net_str = "network-enabled and capable of linking with peer transponders" if req.requires_network else "non-networked, standalone"
-        releasing_str = "The panel shall be rated for releasing service per UL 864 and NFPA 72 SS21.7, supporting cross-zone verification and abort capabilities." if req.requires_releasing else ""
+        voice_str = (
+            "with integrated, multichannel emergency voice evacuation communications,"
+            if req.requires_voice
+            else "with standard tone/alarm notification capabilities,"
+        )
+        net_str = (
+            "network-enabled and capable of linking with peer transponders"
+            if req.requires_network
+            else "non-networked, standalone"
+        )
+        releasing_str = (
+            "The panel shall be rated for releasing service per UL 864 and NFPA 72 SS21.7, supporting cross-zone verification and abort capabilities."
+            if req.requires_releasing
+            else ""
+        )
 
         battery_derating = rec.battery_derating_details.get("method", "NFPA 72 SS10.6.7")
 
@@ -65,18 +77,24 @@ class OutputGenerator:
             "                      ENGINEERING ALTERNATIVES EVALUATION                     ",
             "=" * 80,
             f"  CURRENT DESIGN SELECTION: {rec.recommended_model}",
-            "  COMPATIBLE UPGRADE OPTIONS:"
+            "  COMPATIBLE UPGRADE OPTIONS:",
         ]
 
         if rec.alternatives:
             for idx, alt in enumerate(rec.alternatives, 1):
                 if alt:
                     table.append(f"    Alternative {idx}: Model {alt}")
-                    table.append("      - Engineering Pro: Larger headroom margin to absorb expansion.")
+                    table.append(
+                        "      - Engineering Pro: Larger headroom margin to absorb expansion."
+                    )
                     table.append("      - Engineering Con: Higher initial capital expense.")
         else:
-            table.append("    No alternative panels available in the database that meet all requirements.")
-            table.append("    Consider specifying a different manufacturer or relaxing constraints.")
+            table.append(
+                "    No alternative panels available in the database that meet all requirements."
+            )
+            table.append(
+                "    Consider specifying a different manufacturer or relaxing constraints."
+            )
 
         table.append("=" * 80)
         return "\n".join(table)

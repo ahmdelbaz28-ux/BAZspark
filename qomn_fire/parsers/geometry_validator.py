@@ -51,7 +51,11 @@ class GeometryValidator:
         return abs(area) / 2.0
 
     @classmethod
-    def validate_building(cls, b: Building) -> Result[Building, GeometryError | UnitError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def validate_building(
+        cls, b: Building
+    ) -> Result[
+        Building, GeometryError | UnitError
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Enforces strict compliance rules against raw extracted spatial entities.
 
@@ -82,18 +86,20 @@ class GeometryValidator:
             logger.critical(
                 "SAFETY GATE: Building '%s' uses fallback/placeholder geometry. "
                 "Fire protection design on placeholder geometry is INVALID.",
-                b.file_hash[:16]
+                b.file_hash[:16],
             )
-            return Result(error=GeometryError(
-                message="Building model uses fallback/placeholder geometry — fire protection "
-                        "design based on placeholder data is INVALID and DANGEROUS. "
-                        "The source BIM file did not contain parseable room geometry. "
-                        "All downstream calculations would produce WRONG results.",
-                code_ref="QOMN Safety Gate — Fallback Geometry Rejection",
-                remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry. "
-                       "Ensure the file contains IFCSPACE or LWPOLYLINE entities. "
-                       "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry."
-            ))
+            return Result(
+                error=GeometryError(
+                    message="Building model uses fallback/placeholder geometry — fire protection "
+                    "design based on placeholder data is INVALID and DANGEROUS. "
+                    "The source BIM file did not contain parseable room geometry. "
+                    "All downstream calculations would produce WRONG results.",
+                    code_ref="QOMN Safety Gate — Fallback Geometry Rejection",
+                    remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry. "
+                    "Ensure the file contains IFCSPACE or LWPOLYLINE entities. "
+                    "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry.",
+                )
+            )
 
         # SAFETY FIX (V58): Check individual rooms for placeholder boundaries.
         # Even if has_fallback_geometry is False (rooms were found), rooms may
@@ -105,44 +111,52 @@ class GeometryValidator:
                 "SAFETY GATE: %d room(s) have placeholder boundary geometry. "
                 "Room IDs: %s. Fire protection design on placeholder boundaries is INVALID.",
                 len(placeholder_rooms),
-                ', '.join(r.id for r in placeholder_rooms[:5])
+                ", ".join(r.id for r in placeholder_rooms[:5]),
             )
-            return Result(error=GeometryError(
-                message=f"{len(placeholder_rooms)} room(s) have placeholder boundary geometry — "
-                        f"the room shapes are synthetic 10m x 10m boxes, NOT real building geometry. "
-                        f"Fire protection design on placeholder boundaries is INVALID. "
-                        f"Affected rooms: {', '.join(r.id for r in placeholder_rooms[:5])}",
-                code_ref="QOMN Safety Gate — Placeholder Boundary Rejection",
-                remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry, or "
-                       "install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"{len(placeholder_rooms)} room(s) have placeholder boundary geometry — "
+                    f"the room shapes are synthetic 10m x 10m boxes, NOT real building geometry. "
+                    f"Fire protection design on placeholder boundaries is INVALID. "
+                    f"Affected rooms: {', '.join(r.id for r in placeholder_rooms[:5])}",
+                    code_ref="QOMN Safety Gate — Placeholder Boundary Rejection",
+                    remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry, or "
+                    "install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction.",
+                )
+            )
 
         # ── Check 1: At least one room ──
         if not b.rooms:
-            return Result(error=GeometryError(
-                message="Building layout must contain at least one valid room to compute fire design coverage.",
-                code_ref="NFPA 72 §17",
-                remedy="Model room boundaries inside native CAD or Revit design platform."
-            ))
+            return Result(
+                error=GeometryError(
+                    message="Building layout must contain at least one valid room to compute fire design coverage.",
+                    code_ref="NFPA 72 §17",
+                    remedy="Model room boundaries inside native CAD or Revit design platform.",
+                )
+            )
 
         for room in b.rooms:
             # ── Check 2: Closed room (minimum 3 boundary points) ──
             if len(room.boundary) < 3:
-                return Result(error=GeometryError(
-                    message=f"Room '{room.id}' contains fewer than 3 boundary coordinates.",
-                    code_ref="Analytical Geometry",
-                    remedy="Validate and re-draw room boundaries as fully closed polylines."
-                ))
+                return Result(
+                    error=GeometryError(
+                        message=f"Room '{room.id}' contains fewer than 3 boundary coordinates.",
+                        code_ref="Analytical Geometry",
+                        remedy="Validate and re-draw room boundaries as fully closed polylines.",
+                    )
+                )
 
             # ── Check 3: Polygon area sanity check ──
             calc_area = cls.calculate_polygon_area_2d(room.boundary)
             if calc_area < cls.MIN_ROOM_AREA_M2:
-                return Result(error=GeometryError(
-                    message=f"Room '{room.id}' forms an invalid physical area ({calc_area:.4f} m2). "
-                            f"Minimum is {cls.MIN_ROOM_AREA_M2} m2 per NFPA 72 §17.",
-                    code_ref="NFPA 72 §17",
-                    remedy="Re-draw room coordinates to form positive enclosed volumes."
-                ))
+                return Result(
+                    error=GeometryError(
+                        message=f"Room '{room.id}' forms an invalid physical area ({calc_area:.4f} m2). "
+                        f"Minimum is {cls.MIN_ROOM_AREA_M2} m2 per NFPA 72 §17.",
+                        code_ref="NFPA 72 §17",
+                        remedy="Re-draw room coordinates to form positive enclosed volumes.",
+                    )
+                )
 
             # ── Check 3b: Room area_m2 consistency (BUG-12 FIX) ──
             # The stored area_m2 should match the calculated Shoelace area.
@@ -153,7 +167,10 @@ class GeometryValidator:
                 logger.warning(
                     "Room '%s' area_m2=%.4f differs from calculated=%.4f (delta=%.4f). "
                     "Using calculated area for validation.",
-                    room.id, room.area_m2, calc_area, abs(room.area_m2 - calc_area)
+                    room.id,
+                    room.area_m2,
+                    calc_area,
+                    abs(room.area_m2 - calc_area),
                 )
 
             # ── Check 4: Units validation (metric meters, not millimeters/feet) ──
@@ -161,24 +178,28 @@ class GeometryValidator:
             # Coordinates exceeding this strongly suggest the file uses mm or inches.
             for pt in room.boundary:
                 if abs(pt.x) > cls.MAX_COORD_M or abs(pt.y) > cls.MAX_COORD_M:
-                    return Result(error=UnitError(
-                        message=f"Coordinate system values exceed metric limits: {pt.to_tuple()}. "
-                                f"Max allowed: {cls.MAX_COORD_M}m. File likely uses mm or inches.",
-                        code_ref="Standard Units Verification",
-                        remedy="Verify file units and convert coordinates from millimeters or inches to meters."
-                    ))
+                    return Result(
+                        error=UnitError(
+                            message=f"Coordinate system values exceed metric limits: {pt.to_tuple()}. "
+                            f"Max allowed: {cls.MAX_COORD_M}m. File likely uses mm or inches.",
+                            code_ref="Standard Units Verification",
+                            remedy="Verify file units and convert coordinates from millimeters or inches to meters.",
+                        )
+                    )
 
         # ── Check 4b: Building units must be METERS (BUG-14 FIX) ──
         # QOMN-FIRE requires all coordinates in meters. If the building model
         # declares a different unit system, all NFPA calculations would be wrong.
         if b.units.upper() != "METERS":
-            return Result(error=UnitError(
-                message=f"Building model declares units as '{b.units}' — QOMN-FIRE requires METERS. "
-                        f"Non-meter units produce wrong NFPA spacing and coverage calculations.",
-                code_ref="QOMN Unit Standard",
-                remedy="Convert all coordinates to meters before parsing, or verify the source "
-                       "file's unit declaration matches its coordinate values."
-            ))
+            return Result(
+                error=UnitError(
+                    message=f"Building model declares units as '{b.units}' — QOMN-FIRE requires METERS. "
+                    f"Non-meter units produce wrong NFPA spacing and coverage calculations.",
+                    code_ref="QOMN Unit Standard",
+                    remedy="Convert all coordinates to meters before parsing, or verify the source "
+                    "file's unit declaration matches its coordinate values.",
+                )
+            )
 
         # ── Check 5: Overlapping rooms validation ──
         # BUG-5 FIX: The original code only detected rooms with IDENTICAL bounding boxes
@@ -216,14 +237,18 @@ class GeometryValidator:
 
                 # Determine Z range for each room
                 # If boundary points have explicit Z, use those; otherwise infer from height_m
-                if any(z != 0.0 for z in z_values_1):  # NOSONAR — S1244: import retained for re-export / API surface
+                if any(
+                    z != 0.0 for z in z_values_1
+                ):  # NOSONAR — S1244: import retained for re-export / API surface
                     min_z1 = min(z_values_1)
                     max_z1 = max(z_values_1) + r1.height_m
                 else:
                     min_z1 = 0.0
                     max_z1 = r1.height_m
 
-                if any(z != 0.0 for z in z_values_2):  # NOSONAR — S1244: import retained for re-export / API surface
+                if any(
+                    z != 0.0 for z in z_values_2
+                ):  # NOSONAR — S1244: import retained for re-export / API surface
                     min_z2 = min(z_values_2)
                     max_z2 = max(z_values_2) + r2.height_m
                 else:
@@ -250,29 +275,33 @@ class GeometryValidator:
 
                     # Check if this is a near-complete duplicate (dangerous)
                     is_duplicate = (
-                        abs(min_x1 - min_x2) < 1e-4 and
-                        abs(max_x1 - max_x2) < 1e-4 and
-                        abs(min_y1 - min_y2) < 1e-4 and
-                        abs(max_y1 - max_y2) < 1e-4 and
-                        abs(min_z1 - min_z2) < 1e-4
+                        abs(min_x1 - min_x2) < 1e-4
+                        and abs(max_x1 - max_x2) < 1e-4
+                        and abs(min_y1 - min_y2) < 1e-4
+                        and abs(max_y1 - max_y2) < 1e-4
+                        and abs(min_z1 - min_z2) < 1e-4
                     )
 
                     if is_duplicate:
-                        return Result(error=GeometryError(
-                            message=f"Duplicate overlapping rooms detected: '{r1.id}' and '{r2.id}'. "
-                                    f"Both rooms occupy identical 3D space — likely a CAD layer duplication error.",
-                            code_ref="BIM Quality Standard",
-                            remedy="Remove overlapping or duplicate layers in CAD before exporting."
-                        ))
+                        return Result(
+                            error=GeometryError(
+                                message=f"Duplicate overlapping rooms detected: '{r1.id}' and '{r2.id}'. "
+                                f"Both rooms occupy identical 3D space — likely a CAD layer duplication error.",
+                                code_ref="BIM Quality Standard",
+                                remedy="Remove overlapping or duplicate layers in CAD before exporting.",
+                            )
+                        )
                     # Partial overlap — still an error but with different message
                     overlap_pct = min(overlap_area / max(r1_area, r2_area, 0.001) * 100, 100.0)
                     if overlap_pct > 50.0:
-                        return Result(error=GeometryError(
-                            message=f"Significant room overlap detected: '{r1.id}' and '{r2.id}' "
-                                    f"share {overlap_pct:.1f}% of their area on the same floor. "
-                                    f"This causes double-counting in NFPA coverage calculations.",
-                            code_ref="BIM Quality Standard",
-                            remedy="Remove overlapping or duplicate layers in CAD before exporting."
-                        ))
+                        return Result(
+                            error=GeometryError(
+                                message=f"Significant room overlap detected: '{r1.id}' and '{r2.id}' "
+                                f"share {overlap_pct:.1f}% of their area on the same floor. "
+                                f"This causes double-counting in NFPA coverage calculations.",
+                                code_ref="BIM Quality Standard",
+                                remedy="Remove overlapping or duplicate layers in CAD before exporting.",
+                            )
+                        )
 
         return Result(value=b)

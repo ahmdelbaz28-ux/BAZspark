@@ -266,7 +266,15 @@ class TestValidateWallDistances:
         violations = validate_wall_distances(positions, simple_room)
         assert len(violations) >= 1
         v = violations[0]
-        for key in ("detector_index", "position", "wall", "distance_m", "required_m", "violation", "nfpa_reference"):
+        for key in (
+            "detector_index",
+            "position",
+            "wall",
+            "distance_m",
+            "required_m",
+            "violation",
+            "nfpa_reference",
+        ):
             assert key in v
 
     # --- Safety-critical edge cases ---
@@ -362,7 +370,16 @@ class TestValidateHVACExclusionZones:
         det = [(0.5, 0.0)]
         diff = [(0.0, 0.0)]
         v = validate_hvac_exclusion_zones(det, diff)[0]
-        for key in ("detector_index", "position", "diffuser_index", "diffuser_position", "distance_m", "required_m", "violation", "nfpa_reference"):
+        for key in (
+            "detector_index",
+            "position",
+            "diffuser_index",
+            "diffuser_position",
+            "distance_m",
+            "required_m",
+            "violation",
+            "nfpa_reference",
+        ):
             assert key in v
 
     # --- Safety-critical edge cases ---
@@ -376,7 +393,9 @@ class TestValidateHVACExclusionZones:
     def test_inf_diffuser_position(self):
         det = [(0.5, 0.0)]
         diff = [(float("inf"), 0.0)]
-        validate_hvac_exclusion_zones(det, diff)  # coverage validation (result intentionally unused)
+        validate_hvac_exclusion_zones(
+            det, diff
+        )  # coverage validation (result intentionally unused)
 
     def test_negative_positions(self):
         det = [(-0.5, 0.0)]
@@ -595,9 +614,10 @@ class TestRoomPolygon:
 
     def test_room_spec_without_explicit_polygon_creates_rect(self, simple_room):
         poly = create_room_polygon(simple_room)
-        assert poly.exterior.coords[:] == Polygon(
-            [(0, 0), (10, 0), (10, 10), (0, 10)]
-        ).exterior.coords[:]
+        assert (
+            poly.exterior.coords[:]
+            == Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]).exterior.coords[:]
+        )
 
     # --- Safety-critical edge cases ---
 
@@ -736,7 +756,9 @@ class TestCheckCoveragePolygon:
             depth_m=5.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
-        result = check_coverage_polygon([(float("nan"), 2.5)], room, ceiling_flat, DetectorType.SMOKE)
+        result = check_coverage_polygon(
+            [(float("nan"), 2.5)], room, ceiling_flat, DetectorType.SMOKE
+        )
         assert isinstance(result, CoverageResult)
         assert result.detectors_in_coverage == 1
 
@@ -748,7 +770,9 @@ class TestCheckCoveragePolygon:
             depth_m=5.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
-        result = check_coverage_polygon([(float("inf"), 2.5)], room, ceiling_flat, DetectorType.SMOKE)
+        result = check_coverage_polygon(
+            [(float("inf"), 2.5)], room, ceiling_flat, DetectorType.SMOKE
+        )
         assert isinstance(result, CoverageResult)
 
     def test_negative_position(self, ceiling_flat):
@@ -882,8 +906,12 @@ class TestCheckVoronoiCoverage:
         assert result.is_covered is False
 
     def test_heat_type_passed_through(self, simple_room, ceiling_flat):
-        result_smoke = check_voronoi_coverage([(5.0, 5.0)], simple_room, ceiling_flat, DetectorType.SMOKE)
-        result_heat = check_voronoi_coverage([(5.0, 5.0)], simple_room, ceiling_flat, DetectorType.HEAT)
+        result_smoke = check_voronoi_coverage(
+            [(5.0, 5.0)], simple_room, ceiling_flat, DetectorType.SMOKE
+        )
+        result_heat = check_voronoi_coverage(
+            [(5.0, 5.0)], simple_room, ceiling_flat, DetectorType.HEAT
+        )
         assert isinstance(result_smoke, CoverageResult)
         assert isinstance(result_heat, CoverageResult)
 
@@ -897,15 +925,11 @@ class TestRidgeZoneCompliance:
     """NFPA 72 §17.6.3.4: Sloped ceilings require ridge zone detectors."""
 
     def test_flat_ceiling_no_ridge_required(self, ceiling_flat):
-        result = check_ridge_zone_compliance(
-            [(5.0, 5.0)], ceiling_flat, (0, 5, 10, 5)
-        )
+        result = check_ridge_zone_compliance([(5.0, 5.0)], ceiling_flat, (0, 5, 10, 5))
         assert result.is_compliant is True
 
     def test_sloped_ceiling_with_detector_in_ridge(self, sloped_ceiling):
-        result = check_ridge_zone_compliance(
-            [(5.0, 10.0)], sloped_ceiling, (0, 10, 10, 10)
-        )
+        result = check_ridge_zone_compliance([(5.0, 10.0)], sloped_ceiling, (0, 10, 10, 10))
         assert isinstance(result, NFPAComplianceResult)
 
     def test_sloped_ceiling_no_detectors_in_ridge(self):
@@ -915,9 +939,7 @@ class TestRidgeZoneCompliance:
             ceiling_type=CeilingType.SLOPED,
             slope_run_m=3.0,
         )
-        result = check_ridge_zone_compliance(
-            [(5.0, 1.0)], sloped, (0, 10, 10, 10)
-        )
+        result = check_ridge_zone_compliance([(5.0, 1.0)], sloped, (0, 10, 10, 10))
         assert isinstance(result, NFPAComplianceResult)
 
     def test_ridge_length_affects_required_count(self):
@@ -964,16 +986,14 @@ class TestRidgeZoneCompliance:
             ceiling_type=CeilingType.SLOPED,
             slope_run_m=3.0,
         )
-        result = check_ridge_zone_compliance(
-            [(5.0, 1.0)], sloped, (0, 10, 10, 10)
-        )
+        result = check_ridge_zone_compliance([(5.0, 1.0)], sloped, (0, 10, 10, 10))
         if result.violations:
             assert any("17.6.3.4" in v for v in result.violations)  # NOSONAR - python:S1313
 
-    def test_result_has_detector_count(self, sloped_ceiling):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-        result = check_ridge_zone_compliance(
-            [(5.0, 10.0)], sloped_ceiling, (0, 10, 10, 10)
-        )
+    def test_result_has_detector_count(
+        self, sloped_ceiling
+    ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        result = check_ridge_zone_compliance([(5.0, 10.0)], sloped_ceiling, (0, 10, 10, 10))
         assert isinstance(result, NFPAComplianceResult)
 
     # --- Safety-critical edge cases ---
@@ -985,15 +1005,11 @@ class TestRidgeZoneCompliance:
         assert isinstance(result, NFPAComplianceResult)
 
     def test_degenerate_ridge_line(self, sloped_ceiling):
-        result = check_ridge_zone_compliance(
-            [(5.0, 10.0)], sloped_ceiling, (0, 0, 0, 0)
-        )
+        result = check_ridge_zone_compliance([(5.0, 10.0)], sloped_ceiling, (0, 0, 0, 0))
         assert isinstance(result, NFPAComplianceResult)
 
     def test_negative_ridge_line(self, sloped_ceiling):
-        result = check_ridge_zone_compliance(
-            [(5.0, 10.0)], sloped_ceiling, (-10, -10, -5, -5)
-        )
+        result = check_ridge_zone_compliance([(5.0, 10.0)], sloped_ceiling, (-10, -10, -5, -5))
         assert isinstance(result, NFPAComplianceResult)
 
     def test_very_long_ridge_line(self, sloped_ceiling):
@@ -1051,21 +1067,15 @@ class TestCheckLShapedCoverage:
     """L-shaped room coverage — SMOKE circular, HEAT square."""
 
     def test_single_detector_covers_l_shape(self, l_shaped_polygon):
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE)
         assert isinstance(result, CoverageResult)
 
     def test_heat_detector_l_shape(self, l_shaped_polygon):
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.HEAT
-        )
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.HEAT)
         assert isinstance(result, CoverageResult)
 
     def test_no_detectors_l_shape(self, l_shaped_polygon):
-        result = check_l_shaped_coverage(
-            [], l_shaped_polygon, 3.0, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([], l_shaped_polygon, 3.0, DetectorType.SMOKE)
         assert result.is_covered is False
         assert result.coverage_percentage == pytest.approx(0.0, abs=0.1)
 
@@ -1077,23 +1087,19 @@ class TestCheckLShapedCoverage:
 
     def test_coverage_not_100_percent_for_few_detectors_large_l(self):
         big_l = Polygon([(0, 0), (20, 0), (20, 5), (10, 5), (10, 20), (0, 20)])
-        result = check_l_shaped_coverage(
-            [(5.0, 5.0)], big_l, 3.0, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([(5.0, 5.0)], big_l, 3.0, DetectorType.SMOKE)
         assert result.is_covered is False
 
     def test_heat_detector_square_geometry_in_l_shape(self):
         """Heat detector uses Chebyshev in L-shape — covers a square area."""
         small_l = Polygon([(0, 0), (6, 0), (6, 3), (3, 3), (3, 6), (0, 6)])
-        result = check_l_shaped_coverage(
-            [(2.5, 2.5)], small_l, 3.0, DetectorType.HEAT
-        )
+        result = check_l_shaped_coverage([(2.5, 2.5)], small_l, 3.0, DetectorType.HEAT)
         assert isinstance(result, CoverageResult)
 
-    def test_result_type(self, l_shaped_polygon):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE
-        )
+    def test_result_type(
+        self, l_shaped_polygon
+    ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 3.0, DetectorType.SMOKE)
         assert isinstance(result, CoverageResult)
 
     # --- Safety-critical edge cases ---
@@ -1111,9 +1117,7 @@ class TestCheckLShapedCoverage:
         assert isinstance(result, CoverageResult)
 
     def test_negative_height_below_min(self, l_shaped_polygon):
-        result = check_l_shaped_coverage(
-            [(3.5, 3.5)], l_shaped_polygon, 0.1, DetectorType.SMOKE
-        )
+        result = check_l_shaped_coverage([(3.5, 3.5)], l_shaped_polygon, 0.1, DetectorType.SMOKE)
         assert isinstance(result, CoverageResult)
 
     def test_unique_listed_spacing(self, l_shaped_polygon):
@@ -1163,9 +1167,7 @@ class TestCheckNFPA72Compliance:
             depth_m=8.0,
             ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
         )
-        result = check_nfpa72_compliance(
-            room, ceiling_flat, [(4.0, 4.0)], ridge_line=(0, 4, 8, 4)
-        )
+        result = check_nfpa72_compliance(room, ceiling_flat, [(4.0, 4.0)], ridge_line=(0, 4, 8, 4))
         assert isinstance(result, NFPAComplianceResult)
 
     def test_heat_detector_type(self, ceiling_flat):
@@ -1184,9 +1186,7 @@ class TestCheckNFPA72Compliance:
     # --- Safety-critical edge cases ---
 
     def test_nan_position(self, simple_room, ceiling_flat):
-        result = check_nfpa72_compliance(
-            simple_room, ceiling_flat, [(float("nan"), 5.0)]
-        )
+        result = check_nfpa72_compliance(simple_room, ceiling_flat, [(float("nan"), 5.0)])
         assert isinstance(result, NFPAComplianceResult)
 
 
@@ -1199,7 +1199,10 @@ class TestVerifyFullCoverage:
     def test_full_coverage_smoke(self):
         room = box(0, 0, 8, 8)
         result = verify_full_coverage(
-            room, [(4.0, 4.0)], "circular", 6.37,
+            room,
+            [(4.0, 4.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["compliance_status"] == "PASS"
@@ -1208,7 +1211,10 @@ class TestVerifyFullCoverage:
     def test_no_detectors_fails(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [], "circular", 6.37,
+            room,
+            [],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["coverage_percentage"] == pytest.approx(0.0, abs=0.1)
@@ -1216,7 +1222,10 @@ class TestVerifyFullCoverage:
     def test_heat_detector_square_geometry(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "square_grid", 3.05,
+            room,
+            [(5.0, 5.0)],
+            "square_grid",
+            3.05,
             detector_type=DetectorType.HEAT,
         )
         assert "coverage_percentage" in result
@@ -1225,12 +1234,17 @@ class TestVerifyFullCoverage:
     def test_result_keys(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "circular", 6.37,
+            room,
+            [(5.0, 5.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         expected_keys = [
-            "coverage_percentage", "worst_case_distance_m",
-            "compliance_status", "coverage_geometry",
+            "coverage_percentage",
+            "worst_case_distance_m",
+            "compliance_status",
+            "coverage_geometry",
         ]
         for key in expected_keys:
             assert key in result, f"Missing key: {key}"
@@ -1238,7 +1252,10 @@ class TestVerifyFullCoverage:
     def test_coverage_geometry_in_result(self):
         room = box(0, 0, 8, 8)
         result = verify_full_coverage(
-            room, [(4.0, 4.0)], "circular", 6.37,
+            room,
+            [(4.0, 4.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["coverage_geometry"] == "circular"
@@ -1246,7 +1263,10 @@ class TestVerifyFullCoverage:
     def test_heat_returns_square_geometry(self):
         room = box(0, 0, 8, 8)
         result = verify_full_coverage(
-            room, [(4.0, 4.0)], "square_grid", 3.05,
+            room,
+            [(4.0, 4.0)],
+            "square_grid",
+            3.05,
             detector_type=DetectorType.HEAT,
         )
         assert result["coverage_geometry"] == "square"
@@ -1254,7 +1274,10 @@ class TestVerifyFullCoverage:
     def test_worst_case_distance_present(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "circular", 6.37,
+            room,
+            [(5.0, 5.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["worst_case_distance_m"] >= 0.0
@@ -1262,7 +1285,10 @@ class TestVerifyFullCoverage:
     def test_custom_listed_spacing(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "square_grid", 3.05,
+            room,
+            [(5.0, 5.0)],
+            "square_grid",
+            3.05,
             listed_spacing_m=6.1,
             detector_type=DetectorType.HEAT,
         )
@@ -1273,7 +1299,10 @@ class TestVerifyFullCoverage:
     def test_nan_position(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(float("nan"), 5.0)], "circular", 6.37,
+            room,
+            [(float("nan"), 5.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert isinstance(result, dict)
@@ -1281,7 +1310,10 @@ class TestVerifyFullCoverage:
     def test_inf_position(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(float("inf"), 5.0)], "circular", 6.37,
+            room,
+            [(float("inf"), 5.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert isinstance(result, dict)
@@ -1289,7 +1321,10 @@ class TestVerifyFullCoverage:
     def test_negative_radius(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "circular", -1.0,
+            room,
+            [(5.0, 5.0)],
+            "circular",
+            -1.0,
             detector_type=DetectorType.SMOKE,
         )
         assert isinstance(result, dict)
@@ -1297,7 +1332,10 @@ class TestVerifyFullCoverage:
     def test_zero_radius(self):
         room = box(0, 0, 10, 10)
         result = verify_full_coverage(
-            room, [(5.0, 5.0)], "circular", 0.0,
+            room,
+            [(5.0, 5.0)],
+            "circular",
+            0.0,
             detector_type=DetectorType.SMOKE,
         )
         assert isinstance(result, dict)
@@ -1305,7 +1343,10 @@ class TestVerifyFullCoverage:
     def test_circular_geometry_smoke_passes(self):
         room = box(0, 0, 8, 8)
         result = verify_full_coverage(
-            room, [(4.0, 4.0)], "circular", 6.37,
+            room,
+            [(4.0, 4.0)],
+            "circular",
+            6.37,
             detector_type=DetectorType.SMOKE,
         )
         assert result["compliance_status"] == "PASS"
@@ -1313,7 +1354,10 @@ class TestVerifyFullCoverage:
     def test_circular_geometry_heat_with_radius(self):
         room = box(0, 0, 5, 5)
         result = verify_full_coverage(
-            room, [(2.5, 2.5)], "circular", 6.37,
+            room,
+            [(2.5, 2.5)],
+            "circular",
+            6.37,
             detector_type=DetectorType.HEAT,
         )
         assert isinstance(result["compliance_status"], str)
@@ -1396,7 +1440,9 @@ class TestGetSlopedCeilingConstraints:
         try:
             poly = Polygon([(0, 0), (float("nan"), 0), (10, 10), (0, 10)])
             result = get_sloped_ceiling_constraints(poly, sloped, DetectorType.SMOKE)
-            assert isinstance(result, dict)  # NOSONAR — S5779: pickle used intentionally for ML model serialization
+            assert isinstance(
+                result, dict
+            )  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         except Exception:
             pass
 
@@ -1467,15 +1513,21 @@ class TestAdjustCoverageForBeams:
     # --- Safety-critical edge cases ---
 
     def test_nan_nominal_radius(self):
-        with pytest.raises((ValueError, OverflowError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            (ValueError, OverflowError)
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             adjust_coverage_for_beams(float("nan"), 0.1, 3.0)
 
     def test_nan_beam_depth(self):
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             adjust_coverage_for_beams(6.37, float("nan"), 3.0)
 
     def test_inf_beam_depth(self):
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             adjust_coverage_for_beams(6.37, float("inf"), 3.0)
 
     def test_inf_nominal_radius(self):

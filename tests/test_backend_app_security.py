@@ -52,6 +52,7 @@ def _reload_backend_app(env_overrides: dict) -> Any:
             os.environ[k] = v
     try:
         import backend_app  # type: ignore[import-untyped]
+
         return backend_app
     finally:
         for k, v in saved.items():
@@ -66,11 +67,13 @@ class TestV127CorsHardening:
 
     def test_production_accepts_explicit_origins(self):
         """Production + explicit origins → CORS configured correctly."""
-        backend_app = _reload_backend_app({
-            "FIREAI_ENV": "production",
-            "CORS_ORIGINS": "https://app.example.com,https://admin.example.com",
-            "FIREAI_API_KEY": "",
-        })
+        backend_app = _reload_backend_app(
+            {
+                "FIREAI_ENV": "production",
+                "CORS_ORIGINS": "https://app.example.com,https://admin.example.com",
+                "FIREAI_API_KEY": "",
+            }
+        )
         kwargs = _get_cors_middleware_kwargs(backend_app.app)
         assert kwargs is not None
         assert "https://app.example.com" in kwargs["allow_origins"]
@@ -79,10 +82,12 @@ class TestV127CorsHardening:
 
     def test_development_defaults_to_localhost_only(self):
         """Development without CORS_ORIGINS → localhost-only origins."""
-        backend_app = _reload_backend_app({
-            "FIREAI_ENV": "development",
-            "FIREAI_API_KEY": "",
-        })
+        backend_app = _reload_backend_app(
+            {
+                "FIREAI_ENV": "development",
+                "FIREAI_API_KEY": "",
+            }
+        )
         kwargs = _get_cors_middleware_kwargs(backend_app.app)
         assert kwargs is not None
         origins = kwargs["allow_origins"]
@@ -91,11 +96,13 @@ class TestV127CorsHardening:
 
     def test_allow_credentials_always_false(self):
         """CORS allow_credentials must always be False (header auth, not cookies)."""
-        backend_app = _reload_backend_app({
-            "FIREAI_ENV": "production",
-            "CORS_ORIGINS": "https://app.example.com",
-            "FIREAI_API_KEY": "",
-        })
+        backend_app = _reload_backend_app(
+            {
+                "FIREAI_ENV": "production",
+                "CORS_ORIGINS": "https://app.example.com",
+                "FIREAI_API_KEY": "",
+            }
+        )
         kwargs = _get_cors_middleware_kwargs(backend_app.app)
         assert kwargs is not None
         assert kwargs.get("allow_credentials") is False

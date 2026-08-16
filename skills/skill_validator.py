@@ -74,13 +74,12 @@ class SkillMetadata(BaseModel):
     def validate_name_chars(cls, v: str) -> str:
         """Ensure name contains only allowed characters (Unicode letters, marks, numbers, hyphens, underscores)."""
         import unicodedata
+
         for c in v:
             cat = unicodedata.category(c)
-            if cat.startswith('L') or cat.startswith('M') or c.isdigit() or c in '-_':
+            if cat.startswith("L") or cat.startswith("M") or c.isdigit() or c in "-_":
                 continue
-            raise ValueError(
-                "Name must contain only letters, numbers, hyphens, underscores"
-            )
+            raise ValueError("Name must contain only letters, numbers, hyphens, underscores")
         return v
 
 
@@ -282,6 +281,7 @@ class SkillManifest(BaseModel):
     def get_trigger_pattern(self) -> str:
         """Generate regex pattern from trigger words."""
         import re
+
         escaped = [re.escape(t) for t in self.description.trigger_words]
         return "|".join(escaped)
 

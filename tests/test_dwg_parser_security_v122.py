@@ -67,14 +67,18 @@ class TestValidateInputPath:
     def test_missing_file_raises_FileNotFoundError(self):  # NOSONAR - python:S100
         """Missing file → FileNotFoundError (benign, distinct from unsafe)."""
         with pytest.raises(FileNotFoundError):
-            validate_input_path("/tmp/this_does_not_exist_v122.dwg",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
-                                parser_name="test")
+            validate_input_path(
+                "/tmp/this_does_not_exist_v122.dwg",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+                parser_name="test",
+            )
 
     def test_null_byte_rejected(self):
         """Null byte in path → UnsafePathError, even before file checks."""
         with pytest.raises(UnsafePathError, match="null byte"):
-            validate_input_path("/tmp/legit\x00/../../../etc/passwd",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
-                                parser_name="test")
+            validate_input_path(
+                "/tmp/legit\x00/../../../etc/passwd",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+                parser_name="test",
+            )
 
     def test_leading_dash_rejected(self):
         """Path starting with '-' → UnsafePathError (argument injection)."""
@@ -97,7 +101,9 @@ class TestValidateInputPath:
         """Disallowed extension → UnsafePathError."""
         p = self._make_temp(suffix=".txt")
         try:
-            with pytest.raises(UnsafePathError, match="extension"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            with pytest.raises(
+                UnsafePathError, match="extension"
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 validate_input_path(
                     p,
                     allowed_extensions=frozenset({".dwg", ".dxf"}),
@@ -121,9 +127,13 @@ class TestValidateInputPath:
 
     def test_non_string_input_rejected(self):
         with pytest.raises(UnsafePathError, match="non-empty string"):
-            validate_input_path(None, parser_name="test")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_input_path(
+                None, parser_name="test"
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         with pytest.raises(UnsafePathError, match="non-empty string"):
-            validate_input_path(12345, parser_name="test")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_input_path(
+                12345, parser_name="test"
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
 
 class TestValidateFileSize:
@@ -132,8 +142,7 @@ class TestValidateFileSize:
         try:
             os.write(fd, b"hello world")
             os.close(fd)
-            sz = validate_file_size(Path(path), max_size_bytes=1024,
-                                    parser_name="test")
+            sz = validate_file_size(Path(path), max_size_bytes=1024, parser_name="test")
             assert sz == 11
         finally:
             os.unlink(path)
@@ -143,9 +152,10 @@ class TestValidateFileSize:
         try:
             os.write(fd, b"X" * 2048)
             os.close(fd)
-            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-                validate_file_size(Path(path), max_size_bytes=1024,
-                                   parser_name="test")
+            with pytest.raises(
+                UnsafePathError, match="exceeds limit"
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+                validate_file_size(Path(path), max_size_bytes=1024, parser_name="test")
         finally:
             os.unlink(path)
 
@@ -167,13 +177,17 @@ class TestDWGParserSecurity:
 
     def test_parse_rejects_null_byte(self):
         parser = DWGParser()
-        result = parser.parse("/tmp/foo\x00.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = parser.parse(
+            "/tmp/foo\x00.dwg"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("SECURITY" in e for e in result.errors)
 
     def test_parse_rejects_missing_file(self):
         parser = DWGParser()
-        result = parser.parse("/tmp/does_not_exist_v122_xyzzy.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = parser.parse(
+            "/tmp/does_not_exist_v122_xyzzy.dwg"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("not found" in e for e in result.errors)
 
@@ -235,7 +249,9 @@ class TestDWGParserSecurity:
             os.close(fd)
             # Direct call with a tiny cap (the parser does the same call,
             # just with the env-configured cap value).
-            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            with pytest.raises(
+                UnsafePathError, match="exceeds limit"
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 validate_file_size(
                     Path(path),
                     max_size_bytes=100,
@@ -264,12 +280,16 @@ class TestParseDwgAliasSecurity:
     def test_parse_dwg_rejects_null_byte(self):
         parser = DWGParser()
         with pytest.raises(UnsafePathError, match="null byte"):
-            parser.parse_dwg("/tmp/x\x00.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parser.parse_dwg(
+                "/tmp/x\x00.dxf"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_parse_dwg_rejects_missing_file(self):
         parser = DWGParser()
         with pytest.raises(FileNotFoundError):
-            parser.parse_dwg("/tmp/v122_does_not_exist.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parser.parse_dwg(
+                "/tmp/v122_does_not_exist.dxf"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_parse_dwg_rejects_wrong_extension(self):
         fd, path = tempfile.mkstemp(suffix=".py", prefix="v122_py_")
@@ -303,4 +323,6 @@ class TestConvertToDxfBeltAndBraces:
     def test_convert_refuses_null_byte(self):
         parser = DWGParser()
         with pytest.raises(DWGConversionError, match="SECURITY"):
-            parser._convert_to_dxf("/tmp/x\x00")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            parser._convert_to_dxf(
+                "/tmp/x\x00"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)

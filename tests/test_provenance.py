@@ -248,7 +248,9 @@ class TestDecisionProvenance:
             decision_type="PLACEMENT",
             evidence={"area_m2": 100.0, "detector_count": 4},
         )
-        assert dp.evidence["area_m2"] == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            dp.evidence["area_m2"] == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert dp.evidence["detector_count"] == 4
 
     def test_with_confidence(self):
@@ -259,7 +261,9 @@ class TestDecisionProvenance:
             confidence=cs,
         )
         assert dp.confidence.level == ConfidenceLevel.HIGH
-        assert dp.confidence.value == 0.9  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            dp.confidence.value == 0.9
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_with_parent(self):
         dp = DecisionProvenance(
@@ -344,8 +348,12 @@ class TestProvenanceStore:
 
     def test_get_children(self, store):
         parent = DecisionProvenance(decision_id="PARENT", decision_type="BUILDING")
-        child1 = DecisionProvenance(decision_id="CHILD-1", decision_type="FLOOR", parent_id="PARENT")
-        child2 = DecisionProvenance(decision_id="CHILD-2", decision_type="FLOOR", parent_id="PARENT")
+        child1 = DecisionProvenance(
+            decision_id="CHILD-1", decision_type="FLOOR", parent_id="PARENT"
+        )
+        child2 = DecisionProvenance(
+            decision_id="CHILD-2", decision_type="FLOOR", parent_id="PARENT"
+        )
         store.add(parent)
         store.add(child1)
         store.add(child2)
@@ -483,9 +491,7 @@ class TestEdgeCases:
         assert len(dp.evidence) == 100
 
     def test_many_rules_applied(self):
-        rules = tuple(
-            RuleApplied(rule_id=f"R{i}", result="PASS") for i in range(20)
-        )
+        rules = tuple(RuleApplied(rule_id=f"R{i}", result="PASS") for i in range(20))
         dp = DecisionProvenance(
             decision_id="DEC-001",
             rules_applied=rules,

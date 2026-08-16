@@ -67,12 +67,26 @@ def arbiter():
 class TestEquipmentProtectionLevel:
     def test_gas_epls(self):
         expected = {"Ga", "Gb", "Gc"}
-        actual = {e.value for e in [EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Gb, EquipmentProtectionLevel.Gc]}
+        actual = {
+            e.value
+            for e in [
+                EquipmentProtectionLevel.Ga,
+                EquipmentProtectionLevel.Gb,
+                EquipmentProtectionLevel.Gc,
+            ]
+        }
         assert actual == expected
 
     def test_dust_epls(self):
         expected = {"Da", "Db", "Dc"}
-        actual = {e.value for e in [EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Db, EquipmentProtectionLevel.Dc]}
+        actual = {
+            e.value
+            for e in [
+                EquipmentProtectionLevel.Da,
+                EquipmentProtectionLevel.Db,
+                EquipmentProtectionLevel.Dc,
+            ]
+        }
         assert actual == expected
 
     def test_mining_epls(self):
@@ -152,15 +166,30 @@ class TestEPLHierarchy:
     """Fix #14: Higher EPL value = more protection."""
 
     def test_gas_hierarchy_ga_highest(self):
-        assert _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Ga] > _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gb]
-        assert _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gb] > _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gc]
+        assert (
+            _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Ga]
+            > _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gb]
+        )
+        assert (
+            _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gb]
+            > _EPL_GAS_HIERARCHY[EquipmentProtectionLevel.Gc]
+        )
 
     def test_dust_hierarchy_da_highest(self):
-        assert _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Da] > _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Db]
-        assert _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Db] > _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Dc]
+        assert (
+            _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Da]
+            > _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Db]
+        )
+        assert (
+            _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Db]
+            > _EPL_DUST_HIERARCHY[EquipmentProtectionLevel.Dc]
+        )
 
     def test_mining_hierarchy_ma_highest(self):
-        assert _EPL_HIERARCHY[EquipmentProtectionLevel.Ma] > _EPL_HIERARCHY[EquipmentProtectionLevel.Mb]
+        assert (
+            _EPL_HIERARCHY[EquipmentProtectionLevel.Ma]
+            > _EPL_HIERARCHY[EquipmentProtectionLevel.Mb]
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -536,23 +565,41 @@ class TestValidateEquipment:
 
 class TestEPLSufficient:
     def test_ga_satisfies_gb(self, arbiter):
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Gb) is True
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Gb)
+            is True
+        )
 
     def test_ga_satisfies_gc(self, arbiter):
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Gc) is True
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Gc)
+            is True
+        )
 
     def test_gc_insufficient_for_gb(self, arbiter):
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Gc, EquipmentProtectionLevel.Gb) is False
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Gc, EquipmentProtectionLevel.Gb)
+            is False
+        )
 
     def test_gas_not_sufficient_for_dust(self, arbiter):
         """Gas EPL cannot satisfy dust EPL requirement."""
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Da) is False
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Ga, EquipmentProtectionLevel.Da)
+            is False
+        )
 
     def test_dust_not_sufficient_for_gas(self, arbiter):
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Ga) is False
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Ga)
+            is False
+        )
 
     def test_da_satisfies_db(self, arbiter):
-        assert arbiter._epl_sufficient(EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Db) is True
+        assert (
+            arbiter._epl_sufficient(EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Db)
+            is True
+        )
 
 
 # _recommend_protection

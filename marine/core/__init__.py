@@ -1,4 +1,5 @@
 """marine/core — Domain types, constants, and errors."""
+
 from marine.core.types import (
     AlarmLevel,
     AlarmLogicNode,

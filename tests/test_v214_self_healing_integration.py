@@ -44,6 +44,7 @@ def _reset_healing_state():
             global_audit_logger,
             global_circuit_breaker,
         )
+
         global_circuit_breaker.reset()
         # Truncate the audit log file to prevent chain verification failures
         # in other test files that expect a fresh log.
@@ -61,6 +62,7 @@ def _reset_healing_state():
     yield
     try:
         from fireai.core.qomn_self_healing_engine import global_circuit_breaker
+
         global_circuit_breaker.reset()
         # Truncate again after test
         audit_path = os.environ.get("QOMN_AUDIT_LOG_PATH", "qomn_fire_healing_audit.jsonl")
@@ -95,7 +97,9 @@ class TestV214SelfHealingNormalOperation:
         """Normal smoke detector spacing should work without healing."""
         kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(3.0)
-        assert result.listed_spacing_m == 9.1  # NFPA 72 flat spacing  # NOSONAR: S1244 — float comparison in test
+        assert (
+            result.listed_spacing_m == 9.1
+        )  # NFPA 72 flat spacing  # NOSONAR: S1244 — float comparison in test
 
 
 class TestV214SelfHealingErrorRecovery:
@@ -108,7 +112,9 @@ class TestV214SelfHealingErrorRecovery:
         assert result.is_healed is True
         assert result.healing_error is not None
         assert result.healing_tier == 1
-        assert result.voltage_drop_v == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
+        assert (
+            result.voltage_drop_v == 0.0
+        )  # safe fallback  # NOSONAR: S1244 — float comparison in test
 
     def test_voltage_drop_zero_length_heals(self):
         """Zero length should trigger healing, not crash."""
@@ -136,7 +142,9 @@ class TestV214SelfHealingErrorRecovery:
         kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
         assert result.is_healed is True
-        assert result.listed_spacing_m == 9.1  # safe fallback (NFPA 72 flat)  # NOSONAR: S1244 — float comparison in test
+        assert (
+            result.listed_spacing_m == 9.1
+        )  # safe fallback (NFPA 72 flat)  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_negative_height_heals(self):
         """Negative ceiling height should trigger healing, not crash."""
@@ -256,7 +264,9 @@ class TestV214SelfHealingFallbackQuality:
         kernel = QOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
         assert result.listed_spacing_m == 9.1  # NOSONAR: S1244 — float comparison in test
-        assert result.coverage_radius_m == 6.37  # 0.7 × 9.1  # NOSONAR: S1244 — float comparison in test
+        assert (
+            result.coverage_radius_m == 6.37
+        )  # 0.7 × 9.1  # NOSONAR: S1244 — float comparison in test
 
     def test_heat_spacing_fallback_is_6_1m(self):
         """Heat detector spacing fallback should be 6.1m (NFPA 72 standard).
@@ -264,5 +274,6 @@ class TestV214SelfHealingFallbackQuality:
         kernel = QOMNKernel()
         result = kernel.heat_detector_spacing(0.0, 25.0)
         assert result.spacing_m == 6.1  # NOSONAR: S1244 — float comparison in test
-        assert result.coverage_radius_m == 4.27  # 0.7 × 6.1  # NOSONAR: S1244 — float comparison in test
-
+        assert (
+            result.coverage_radius_m == 4.27
+        )  # 0.7 × 6.1  # NOSONAR: S1244 — float comparison in test

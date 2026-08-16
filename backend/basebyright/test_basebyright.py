@@ -327,7 +327,9 @@ class TestGoldenTestRunner:
             "created_at": "2026-07-04T13:00:00",
         }
 
-        assert runner._shallow_compare(expected, actual), "Non-deterministic fields should be ignored"
+        assert runner._shallow_compare(expected, actual), (
+            "Non-deterministic fields should be ignored"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -353,7 +355,9 @@ class TestIdempotencyChecker:
     def test_check_put_idempotent_same_status(self, auth_client) -> None:
         """PUT to same resource twice must return same status."""
         create_resp = self._create_v1_project(auth_client)
-        assert create_resp.status_code == 201, f"Create failed: {create_resp.status_code} {create_resp.text}"
+        assert create_resp.status_code == 201, (
+            f"Create failed: {create_resp.status_code} {create_resp.text}"
+        )
         project = create_resp.json().get("data", create_resp.json())
         pid = project.get("id") or project.get("project_id")
         assert pid is not None, f"No project ID in response: {project}"
@@ -399,6 +403,7 @@ class TestBaseByRightAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -461,6 +466,7 @@ class TestBaseByRightAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -502,6 +508,7 @@ class TestBaseByRightSecurityAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -521,6 +528,7 @@ class TestBaseByRightSecurityAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -542,6 +550,7 @@ class TestBaseByRightSecurityAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -565,6 +574,7 @@ class TestBaseByRightJsonAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 
@@ -583,6 +593,7 @@ class TestBaseByRightJsonAssertions:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
 

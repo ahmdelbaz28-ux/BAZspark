@@ -3,6 +3,7 @@ tests/test_uptime_service.py
 ============================
 Tests for the UptimeRobot keep-awake heartbeat loop and monitor query endpoints.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -15,6 +16,7 @@ from fastapi.testclient import TestClient
 def app():
     """Import and return the FastAPI app."""
     from backend.app import app as _app
+
     return _app
 
 
@@ -70,12 +72,12 @@ class TestUptimeService:
 
         mock_res = MagicMock()
         mock_res.status_code = 200
-        mock_res.json = MagicMock(return_value={
-            "stat": "ok",
-            "monitors": [
-                {"id": 802977288, "name": "BAZspark Server", "status": 2}
-            ]
-        })
+        mock_res.json = MagicMock(
+            return_value={
+                "stat": "ok",
+                "monitors": [{"id": 802977288, "name": "BAZspark Server", "status": 2}],
+            }
+        )
 
         # We patch the httpx.AsyncClient.post directly inside the fetch_monitor_status function
         with patch("httpx.AsyncClient.post", return_value=mock_res) as mock_post:
@@ -91,11 +93,10 @@ class TestUptimeService:
         """Test GET /api/v1/monitor/uptime endpoint with patched services."""
         from backend.services.uptime_service import UptimeService
 
-        async def mock_fetch_monitor_status(self):  # NOSONAR — S7503 mock must be async to replace async method
-            return {
-                "success": True,
-                "monitors": [{"id": 12345, "name": "Test Monitor"}]
-            }
+        async def mock_fetch_monitor_status(
+            self,
+        ):  # NOSONAR — S7503 mock must be async to replace async method
+            return {"success": True, "monitors": [{"id": 12345, "name": "Test Monitor"}]}
 
         async def mock_call(self, scope, receive, send):
             await self.app(scope, receive, send)
@@ -108,4 +109,3 @@ class TestUptimeService:
                 )
 
         assert response.status_code in (200, 401, 422)
-

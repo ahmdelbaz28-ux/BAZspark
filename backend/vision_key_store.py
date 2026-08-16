@@ -110,7 +110,9 @@ def _normalize_master_key(raw: bytes | str) -> bytes:
     raise TypeError(f"Unsupported master key type: {type(raw)!r}")
 
 
-def _load_master_key() -> bytes:  # NOSONAR — S3776: key loading must try multiple sources in priority order
+def _load_master_key() -> (
+    bytes
+):  # NOSONAR — S3776: key loading must try multiple sources in priority order
     """
     Load (or generate) the AES-256 master key used for Vision API key encryption.
 
@@ -149,7 +151,9 @@ def _load_master_key() -> bytes:  # NOSONAR — S3776: key loading must try mult
                     return _MASTER_KEY
 
         # 3. Default file (auto-generate if missing)
-        default_path = Path(os.environ.get("FIREAI_VISION_KEY_FILE", _MASTER_KEY_FILE_DEFAULT)).resolve()
+        default_path = Path(
+            os.environ.get("FIREAI_VISION_KEY_FILE", _MASTER_KEY_FILE_DEFAULT)
+        ).resolve()
         try:
             if default_path.exists():
                 # NOTE: don't strip() — the auto-generated key is raw binary

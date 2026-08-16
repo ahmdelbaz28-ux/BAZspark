@@ -36,6 +36,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 try:
     from backend.db_models import Base  # noqa: F401
+
     target_metadata = Base.metadata
 except ImportError:
     # Fallback if db_models not available (e.g., during initial setup)

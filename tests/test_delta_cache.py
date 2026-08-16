@@ -98,7 +98,9 @@ class TestCacheEntry:
         assert entry.key == "room-A:abc123"
         assert entry.result == {"detector_count": 5}
         assert entry.hit_count == 0
-        assert entry.compute_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            entry.compute_time_s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_hit_count(self):
         entry = CacheEntry("k", "v", "h", 1.0, hit_count=10)
@@ -497,7 +499,9 @@ class TestDeltaCacheLegacyAPI:
         cache.process_incremental([room_dict], analyze)
         # Force re-analysis of room
         _results, _stats = cache.process_incremental(
-            [room_dict], analyze, changed_room_ids=["R-101"],
+            [room_dict],
+            analyze,
+            changed_room_ids=["R-101"],
         )
         assert analyze_count[0] == 2  # Re-ran due to change hint
 

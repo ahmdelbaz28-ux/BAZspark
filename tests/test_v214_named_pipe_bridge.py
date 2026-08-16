@@ -103,6 +103,7 @@ class TestV214PythonNamedPipeClient:
     def test_client_class_exists(self):
         """RevitNamedPipeClient class must exist."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
         # import is always True (identity check tautology). Verify the symbol
         # is actually a class with the expected interface instead.
         assert isinstance(RevitNamedPipeClient, type)
@@ -112,25 +113,35 @@ class TestV214PythonNamedPipeClient:
     def test_client_is_available_returns_false_on_non_windows(self):
         """On non-Windows, is_available() must return False (not crash)."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
         client = RevitNamedPipeClient()
         # On Linux CI, this must return False
         import platform
+
         if platform.system() != "Windows":
             assert client.is_available() is False
 
     def test_client_send_command_returns_error_on_non_windows(self):
         """On non-Windows, send_command must return status=error (not crash)."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
         client = RevitNamedPipeClient()
         import platform
+
         if platform.system() != "Windows":
-            result = client.send_command({"action": "set_parameter", "element_id": "1", "parameter_name": "X", "value": 1.0})
+            result = client.send_command(
+                {"action": "set_parameter", "element_id": "1", "parameter_name": "X", "value": 1.0}
+            )
             assert result["status"] == "error"
-            assert "not available" in result["message"].lower() or "named pipes" in result["message"].lower()
+            assert (
+                "not available" in result["message"].lower()
+                or "named pipes" in result["message"].lower()
+            )
 
     def test_convenience_methods_exist(self):
         """The client must have convenience methods for common actions."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
         client = RevitNamedPipeClient()
         assert hasattr(client, "send_set_parameter")
         assert hasattr(client, "send_set_string_parameter")
@@ -140,6 +151,7 @@ class TestV214PythonNamedPipeClient:
     def test_get_stats_returns_pipe_info(self):
         """get_stats() must return pipe_name + platform info."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
         client = RevitNamedPipeClient()
         stats = client.get_stats()
         assert "pipe_name" in stats

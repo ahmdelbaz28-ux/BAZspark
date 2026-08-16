@@ -91,10 +91,19 @@ class DeviceRepository(BaseRepository):
         order: str = "desc",
     ) -> dict:
         """List devices in a project with pagination."""
-        _ALLOWED_DEVICE_SORTS = frozenset({
-            "id", "created_at", "updated_at", "name", "type",
-            "category", "voltage", "current", "load",
-        })
+        _ALLOWED_DEVICE_SORTS = frozenset(
+            {
+                "id",
+                "created_at",
+                "updated_at",
+                "name",
+                "type",
+                "category",
+                "voltage",
+                "current",
+                "load",
+            }
+        )
         if sort not in _ALLOWED_DEVICE_SORTS:
             sort = "created_at"
         order = "ASC" if order.upper() == "ASC" else "DESC"
@@ -182,7 +191,8 @@ class DeviceRepository(BaseRepository):
             if deleted_conns > 0:
                 logger.info(
                     "Deleted %s orphaned connection(s) for device %s",
-                    deleted_conns, log_device_id,
+                    deleted_conns,
+                    log_device_id,
                 )
             cur.execute(
                 f"DELETE FROM devices WHERE id = {self.db._ph()} AND project_id = {self.db._ph()}",

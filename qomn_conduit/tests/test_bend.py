@@ -28,6 +28,7 @@ from qomn_conduit.errors import CodeViolationError, PhysicsError
 # Test 1: Compliant bend radii
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestBendCompliance:
     """Bends at or above NEC minimum must be compliant."""
 
@@ -62,6 +63,7 @@ class TestBendCompliance:
 # Test 2: Non-compliant bend radii
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestBendViolation:
     """Bends below NEC minimum must be non-compliant (CodeViolationError)."""
 
@@ -82,32 +84,36 @@ class TestBendViolation:
 # Test 3: Developed length calculation
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestDevelopedLength:
     """Arc length = π × R × angle / 180."""
 
     def test_90_degree_bend_r4_5(self):
-        r"""R=4.5\", angle=90° → developed = π × 4.5 × 90/180 = π × 4.5 / 2 = 7.0686...\""""
+        r"""R=4.5 in, angle=90° → developed = π × 4.5 × 90/180 = π × 4.5 / 2 = 7.0686 in."""
         result = calculate_developed_length(4.5, 90.0)
         assert result.is_ok()
         assert result.value == pytest.approx(math.pi * 4.5 / 2, abs=0.001)
 
     def test_45_degree_bend_r4_5(self):
-        r"""R=4.5\", angle=45° → developed = π × 4.5 × 45/180 = 3.534...\""""
+        r"""R=4.5 in, angle=45° → developed = π × 4.5 × 45/180 = 3.534 in."""
         result = calculate_developed_length(4.5, 45.0)
         assert result.is_ok()
         assert result.value == pytest.approx(math.pi * 4.5 * 45.0 / 180.0, abs=0.001)
 
     def test_emt_half_inch_90_bend_developed_length(self):
-        r"""½\" EMT R=4.0\", 90° → developed = π × 4.0 / 2 = 6.283...\""""
+        r"""½-in EMT R=4.0 in, 90° → developed = π × 4.0 / 2 = 6.283 in."""
         result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 4.0)
         assert result.is_ok()
         assert result.value.developed_length_in == pytest.approx(math.pi * 4.0 / 2, abs=0.001)
-        assert result.value.developed_length_m == pytest.approx(math.pi * 4.0 / 2 * 0.0254, abs=0.001)
+        assert result.value.developed_length_m == pytest.approx(
+            math.pi * 4.0 / 2 * 0.0254, abs=0.001
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 4: Physics errors for invalid inputs
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestBendPhysicsErrors:
     """Invalid inputs must return PhysicsError."""
@@ -138,7 +144,7 @@ class TestBendPhysicsErrors:
 
     def test_nan_radius(self):
         """NaN radius → PhysicsError."""
-        result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, float('nan'))
+        result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, float("nan"))
         assert result.is_err()
         assert isinstance(result.error, PhysicsError)
 
@@ -152,6 +158,7 @@ class TestBendPhysicsErrors:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 5: Cumulative bend limit (360°)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestCumulativeBends:
     """Total bend degrees between pull points must not exceed 360°."""
@@ -176,4 +183,6 @@ class TestCumulativeBends:
 
     def test_max_cumulative_bend_deg_constant(self):
         """MAX_CUMULATIVE_BEND_DEG must equal 360.0."""
-        assert MAX_CUMULATIVE_BEND_DEG == 360.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_CUMULATIVE_BEND_DEG == 360.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface

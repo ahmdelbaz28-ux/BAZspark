@@ -118,13 +118,15 @@ class GraphRAGEngine:
         self._embedding_model = embedding_model
         self._embedding_dimensions = embedding_dimensions
 
-        self._graph = None        # Neo4jGraph connection
+        self._graph = None  # Neo4jGraph connection
         self._vector_store = None  # Neo4jVector store
-        self._transformer = None   # LLMGraphTransformer
-        self._qa_chain = None      # GraphCypherQAChain
+        self._transformer = None  # LLMGraphTransformer
+        self._qa_chain = None  # GraphCypherQAChain
         self._initialized = False
 
-    def _initialize(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _initialize(
+        self,
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Initialize all 3 layers (lazy, with graceful fallback)."""
         if self._initialized:
             return
@@ -174,7 +176,8 @@ class GraphRAGEngine:
                 logger.warning(
                     "GraphRAG: Embeddings via %s failed (%s). "
                     "Vector store disabled — graph + QA still work.",
-                    self._openai_base_url or "OpenAI", emb_err,
+                    self._openai_base_url or "OpenAI",
+                    emb_err,
                 )
                 embeddings = None
 
@@ -324,7 +327,8 @@ class GraphRAGEngine:
             n_rels = sum(len(gd.relationships) for gd in graph_documents) if graph_documents else 0
             logger.info(
                 "GraphRAG: Added knowledge (%d entities, %d relationships)",
-                n_nodes, n_rels,
+                n_nodes,
+                n_rels,
             )
             return True
 
@@ -386,15 +390,14 @@ class GraphRAGEngine:
 
         try:
             docs = self._vector_store.similarity_search_with_score(query, k=limit)
-            return [
-                {"text": doc.page_content, "score": round(score, 4)}
-                for doc, score in docs
-            ]
+            return [{"text": doc.page_content, "score": round(score, 4)} for doc, score in docs]
         except Exception as exc:
             logger.exception("GraphRAG: Search failed: %s", exc)
             return []
 
-    def rerank_results(self, query: str, results: list[dict[str, Any]], top_k: int = 3) -> list[dict[str, Any]]:
+    def rerank_results(
+        self, query: str, results: list[dict[str, Any]], top_k: int = 3
+    ) -> list[dict[str, Any]]:
         """
         Re-rank retrieved context candidates using Nemotron-style cross-encoder scoring.
 

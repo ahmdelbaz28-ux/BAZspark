@@ -16,6 +16,7 @@ Tests cover:
   - Consensus verification (on/off)
   - Digital twin sync stage
 """
+
 import json
 from typing import NoReturn
 from unittest.mock import MagicMock, patch
@@ -280,7 +281,9 @@ class TestPipelineResult:
         assert "layout" in d
         # count is a @property not a dataclass field, so check detectors length
         assert len(d["layout"]["detectors"]) == 1
-        assert d["layout"]["coverage_pct"] == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            d["layout"]["coverage_pct"] == 95.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert d["layout"]["nfpa_valid"] is True
         assert d["layout"]["method"] == "hexG_x"
 
@@ -411,7 +414,9 @@ class TestAnalysisPipelineInit:
             generate_certificate=False,
             require_consensus=False,
         )
-        assert p.coverage_radius == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            p.coverage_radius == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert p.max_spacing == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert p.wall_min == 0.15  # NOSONAR — S1244: import retained for re-export / API surface
         assert p.grid_step == 0.10  # NOSONAR — S1244: import retained for re-export / API surface
@@ -435,6 +440,7 @@ class TestAnalysisPipelineInit:
         """The twin property returns a DigitalTwin instance."""
         p = AnalysisPipeline()
         from fireai.core.digital_twin import DigitalTwin
+
         assert isinstance(p.twin, DigitalTwin)
 
     def test_audit_store_flag(self) -> None:
@@ -480,7 +486,9 @@ class TestAnalyzeRoomHappyPath:
         assert result.metadata["room_name"] == simple_room.name
         assert result.metadata["room_width"] == simple_room.width
         assert result.metadata["room_length"] == simple_room.length
-        assert result.metadata["ceiling_height"] == 3.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.metadata["ceiling_height"] == 3.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.metadata["pipeline_version"] == "1.0.0"
 
     def test_result_timing_populated(self, pipeline, simple_room) -> None:
@@ -532,7 +540,9 @@ class TestAnalyzeRoomHappyPath:
     def test_custom_ceiling_height(self, pipeline, simple_room) -> None:
         """Custom ceiling_height overrides room default."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=6.0)
-        assert result.metadata["ceiling_height"] == 6.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.metadata["ceiling_height"] == 6.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -577,7 +587,9 @@ class TestAnalyzeRoomStages:
         """If optimization fails, pipeline stops at OPTIMIZATION stage."""
         # Create a room that will cause the optimizer to fail by mocking it
         room = Room(name="bad-room", width=10.0, length=10.0)
-        with patch.object(pipeline._optimizer, "optimize", side_effect=RuntimeError("optimization crash")):
+        with patch.object(
+            pipeline._optimizer, "optimize", side_effect=RuntimeError("optimization crash")
+        ):
             result = pipeline.analyze_room(room=room, room_id="bad", ceiling_height=3.0)
         assert result.stage_reached == PipelineStage.OPTIMIZATION
         assert result.success is False
@@ -604,6 +616,7 @@ class TestAnalyzeRoomStages:
 
     def test_signing_failure_continues_pipeline(self, pipeline, simple_room) -> None:
         """Signing failure is not fatal — pipeline continues."""
+
         # We'll mock certificate.seal to fail, but we need to capture the cert first
         class FailSeal:  # NOSONAR — S5603: f-string kept for readability
             def seal(self) -> NoReturn:
@@ -632,13 +645,19 @@ class TestAnalyzeRoomStages:
 
     def test_skipped_consensus_sets_timing_zero(self, pipeline_no_consensus, simple_room) -> None:
         """When consensus is skipped, verification timing is 0."""
-        result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
-        assert result.timing["verification"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        result = pipeline_no_consensus.analyze_room(
+            room=simple_room, room_id="R1", ceiling_height=3.0
+        )
+        assert (
+            result.timing["verification"] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_skipped_certificate_sets_timing_zero(self, pipeline_no_cert, simple_room) -> None:
         """When certificate is skipped, certification timing is 0."""
         result = pipeline_no_cert.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
-        assert result.timing["certification"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.timing["certification"] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -750,7 +769,9 @@ class TestAnalyzeRoomFlags:
 
     def test_no_consensus_has_no_consensus_result(self, pipeline_no_consensus, simple_room) -> None:
         """require_consensus=False means no ConsensusResult."""
-        result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
+        result = pipeline_no_consensus.analyze_room(
+            room=simple_room, room_id="R1", ceiling_height=3.0
+        )
         assert result.consensus is None
         assert any("VERIFICATION SKIPPED" in w for w in result.warnings)
 
@@ -780,9 +801,13 @@ class TestAnalyzeRoomFlags:
 
     def test_custom_radius_pipeline(self, pipeline_custom_radius, simple_room) -> None:
         """Pipeline with custom coverage radius works correctly."""
-        result = pipeline_custom_radius.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
+        result = pipeline_custom_radius.analyze_room(
+            room=simple_room, room_id="R1", ceiling_height=3.0
+        )
         assert result.layout is not None
-        assert result.metadata["coverage_radius"] == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.metadata["coverage_radius"] == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_success_requires_no_errors(self, pipeline, simple_room) -> None:
         """Success is False when errors are present."""
@@ -913,7 +938,9 @@ class TestAnalyzeRoomWarnings:
 
     def test_consensus_skipped_warning(self, pipeline_no_consensus, simple_room) -> None:
         """Skipping consensus adds a specific warning."""
-        result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
+        result = pipeline_no_consensus.analyze_room(
+            room=simple_room, room_id="R1", ceiling_height=3.0
+        )
         assert any("VERIFICATION SKIPPED" in w for w in result.warnings)
 
 
@@ -954,7 +981,9 @@ class TestAnalyzeBuilding:
         # Make the second room fail via mock
         with patch.object(pipeline, "analyze_room") as mock_ar:
             mock_ar.side_effect = [
-                PipelineResult(room_id="good-room", stage_reached=PipelineStage.COMPLETE, success=True),
+                PipelineResult(
+                    room_id="good-room", stage_reached=PipelineStage.COMPLETE, success=True
+                ),
                 RuntimeError("unexpected crash"),
             ]
             # We need to call analyze_building directly with actual rooms
@@ -1024,7 +1053,9 @@ class TestAnalyzeBuilding:
             call_count += 1
             if call_count == 1:
                 raise RuntimeError("random error")
-            return PipelineResult(room_id=room_id, stage_reached=PipelineStage.COMPLETE, success=True)
+            return PipelineResult(
+                room_id=room_id, stage_reached=PipelineStage.COMPLETE, success=True
+            )
 
         with patch.object(pipeline, "analyze_room", side_effect=side_effect):
             rooms = [
@@ -1132,14 +1163,18 @@ class TestEventPublishing:
         pipeline.analyze_building(rooms=rooms)
         assert len(events) == 1
 
-    def test_no_consensus_skips_consensus_event(self, pipeline_no_consensus, simple_room, fresh_bus) -> None:
+    def test_no_consensus_skips_consensus_event(
+        self, pipeline_no_consensus, simple_room, fresh_bus
+    ) -> None:
         """When consensus is skipped, no consensus.result event is published."""
         events = []
         fresh_bus.subscribe(Events.CONSENSUS_RESULT, events.append)
         pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 0
 
-    def test_no_cert_skips_certificate_event(self, pipeline_no_cert, simple_room, fresh_bus) -> None:
+    def test_no_cert_skips_certificate_event(
+        self, pipeline_no_cert, simple_room, fresh_bus
+    ) -> None:
         """When certificate is skipped, no proof.certificate.generated event."""
         events = []
         fresh_bus.subscribe(Events.PROOF_CERTIFICATE_GENERATED, events.append)
@@ -1216,7 +1251,9 @@ class TestDigitalTwinIntegration:
 
     def test_twin_sync_failure_not_fatal(self, pipeline, simple_room) -> None:
         """TWIN_SYNC failure does not cause pipeline failure."""
-        with patch.object(pipeline._twin, "from_building_report", side_effect=RuntimeError("twin error")):
+        with patch.object(
+            pipeline._twin, "from_building_report", side_effect=RuntimeError("twin error")
+        ):
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         # Pipeline should still complete
         assert result.stage_reached == PipelineStage.COMPLETE
@@ -1227,7 +1264,9 @@ class TestDigitalTwinIntegration:
         """When twin sync is disabled, it's skipped gracefully."""
         pipeline._enable_twin_sync = False
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
-        assert result.timing["twin_sync"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.timing["twin_sync"] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1262,7 +1301,9 @@ class TestEdgeCases:
         """Room with very high ceiling."""
         room = Room(name="Atrium", width=15.0, length=15.0)
         result = pipeline.analyze_room(room=room, room_id="atrium", ceiling_height=12.0)
-        assert result.metadata["ceiling_height"] == 12.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.metadata["ceiling_height"] == 12.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_multiple_analyses_same_pipeline(self, pipeline) -> None:
         """Same pipeline can analyze multiple rooms sequentially."""
@@ -1298,6 +1339,7 @@ class TestEdgeCases:
         cid = result.metadata["correlation_id"]
         # UUID4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
         import uuid
+
         parsed = uuid.UUID(cid)
         assert parsed.version == 4
 

@@ -44,7 +44,9 @@ class TestOfficeTemplate:
         assert room.depth_m == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.occupancy_type == "office"
         assert room.ceiling_spec is not None
-        assert room.ceiling_spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_dimensions(self):
         room = office(width=15, depth=12)
@@ -53,7 +55,9 @@ class TestOfficeTemplate:
 
     def test_custom_height(self):
         room = office(height=4.0)
-        assert room.ceiling_spec.height_m == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 4.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_room_id_format(self):
         room = office(width=10, depth=10)
@@ -92,20 +96,26 @@ class TestWarehouseTemplate:
     def test_warehouse_occupancy_type_is_storage(self):
         """To create a valid warehouse room, use occupancy_type='storage'."""
         from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec
+
         room = NfpaRoomSpec(
             room_id="warehouse_20x30",
-            width_m=20, depth_m=30,
+            width_m=20,
+            depth_m=30,
             occupancy_type="storage",
             ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=6.0),
         )
         assert room.occupancy_type == "storage"
-        assert room.ceiling_spec.height_m == 6.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 6.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_warehouse_area(self):
         from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec
+
         room = NfpaRoomSpec(
             room_id="warehouse_20x30",
-            width_m=20, depth_m=30,
+            width_m=20,
+            depth_m=30,
             occupancy_type="storage",
             ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=6.0),
         )
@@ -127,12 +137,16 @@ class TestCorridorTemplate:
     def test_low_ceiling_clamped(self):
         """Corridor default 2.4m is below NFPA min 3.0m → clamped by create_safe."""
         room = corridor()
-        assert room.ceiling_spec.height_m == 3.0  # Clamped by create_safe  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # Clamped by create_safe  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.ceiling_spec.was_clamped is True
 
     def test_custom_height(self):
         room = corridor(height=3.0)
-        assert room.ceiling_spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_room_id_format(self):
         room = corridor()
@@ -155,7 +169,9 @@ class TestKitchenTemplate:
     def test_low_ceiling_clamped(self):
         """Kitchen default 2.7m is below NFPA min → clamped."""
         room = kitchen()
-        assert room.ceiling_spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.ceiling_spec.was_clamped is True
 
     def test_room_id_format(self):
@@ -199,7 +215,9 @@ class TestBathroomTemplate:
     def test_low_ceiling_clamped(self):
         """Bathroom default 2.4m is below NFPA min → clamped."""
         room = bathroom()
-        assert room.ceiling_spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.ceiling_spec.was_clamped is True
 
     def test_room_id_format(self):
@@ -238,7 +256,9 @@ class TestHighCeilingOfficeTemplate:
         room = high_ceiling_office()
         assert room.width_m == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.depth_m == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert room.ceiling_spec.height_m == 4.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 4.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_not_clamped(self):
         """4.5m is within NFPA range → not clamped."""
@@ -310,7 +330,9 @@ class TestGetTemplate:
 
     def test_high_ceiling_template(self):
         room = get_template("high_ceiling")
-        assert room.ceiling_spec.height_m == 4.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 4.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_warehouse_template_is_broken(self):
         """Warehouse template uses invalid occupancy_type='warehouse'."""

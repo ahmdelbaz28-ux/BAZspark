@@ -18,6 +18,7 @@ To update the baseline after fixing a batch of type errors:
   2. Note the error count in the output
   3. Update --baseline in ci.yml to the new count
 """
+
 from __future__ import annotations
 
 import os
@@ -40,7 +41,7 @@ def _validate_target(raw: str) -> None:
         print(f"ERROR: --target path must be relative (got: {raw})", file=sys.stderr)
         sys.exit(2)
     # Reject shell metacharacters
-    if re.search(r'[;&|`$(){}!]', raw):
+    if re.search(r"[;&|`$(){}!]", raw):
         print(f"ERROR: --target path contains shell metacharacters (got: {raw})", file=sys.stderr)
         sys.exit(2)
 
@@ -48,16 +49,18 @@ def _validate_target(raw: str) -> None:
 # Allowlist of repository directories that may be passed to mypy via --target.
 # S8705 fix: untrusted CLI arguments must be validated before being passed to
 # OS commands, so we reject anything outside the known source directories.
-_ALLOWED_TARGETS = frozenset({
-    "backend/",
-    "fireai/",
-    "core/",
-    "parsers/",
-    "adapters/",
-    "integration/",
-    "qomn_conduit/",
-    "qomn_fire/",
-})
+_ALLOWED_TARGETS = frozenset(
+    {
+        "backend/",
+        "fireai/",
+        "core/",
+        "parsers/",
+        "adapters/",
+        "integration/",
+        "qomn_conduit/",
+        "qomn_fire/",
+    }
+)
 
 
 def _validate_targets(raw_targets: list[str]) -> list[str]:
@@ -67,8 +70,7 @@ def _validate_targets(raw_targets: list[str]) -> list[str]:
         norm = target.replace("\\", "/").rstrip("/") + "/"
         if norm not in _ALLOWED_TARGETS:
             print(
-                f"ERROR: target '{target}' is not in the allowlist "
-                f"{sorted(_ALLOWED_TARGETS)}",
+                f"ERROR: target '{target}' is not in the allowlist {sorted(_ALLOWED_TARGETS)}",
                 file=sys.stderr,
             )
             raise SystemExit(2)
@@ -86,8 +88,10 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
     mypy_args = [
         "--ignore-missing-imports",
         "--no-strict-optional",
-        "--exclude", r".*test.*",
-        "--python-version", "3.12",
+        "--exclude",
+        r".*test.*",
+        "--python-version",
+        "3.12",
     ]
 
     i = 1
@@ -128,9 +132,7 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
     # Count errors from mypy output
     # mypy outputs lines like "file.py:42: error: message [error-code]"
     error_pattern = re.compile(r":\d+: error:")
-    error_count = sum(
-        1 for line in result.stdout.splitlines() if error_pattern.search(line)
-    )
+    error_count = sum(1 for line in result.stdout.splitlines() if error_pattern.search(line))
 
     # Also check the summary line mypy prints
     summary_pattern = re.compile(r"Found (\d+) error")
@@ -150,9 +152,7 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
         print(f"  New errors introduced: {error_count - baseline}")
         print("  Fix the new errors or update the baseline in ci.yml")
         # Print the last 20 errors for visibility
-        error_lines = [
-            line for line in result.stdout.splitlines() if error_pattern.search(line)
-        ]
+        error_lines = [line for line in result.stdout.splitlines() if error_pattern.search(line)]
         if error_lines:
             print(f"\nLast {min(20, len(error_lines))} errors:")
             for line in error_lines[-20:]:

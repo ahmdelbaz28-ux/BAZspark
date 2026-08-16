@@ -110,15 +110,23 @@ class TestDXFParserInit:
 
     def test_default_min_area(self, parser):
         assert parser.min_area == DXFParser.MIN_ROOM_AREA_M2
-        assert parser.min_area == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.min_area == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_max_area(self, parser):
         assert parser.max_area == DXFParser.MAX_ROOM_AREA_M2
-        assert parser.max_area == 50000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.max_area == 50000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_thresholds(self, custom_parser):
-        assert custom_parser.min_area == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert custom_parser.max_area == 10000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            custom_parser.min_area == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            custom_parser.max_area == 10000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -131,42 +139,57 @@ class TestDXFParseResult:
 
     def test_room_count_property(self):
         from shapely.geometry import Polygon
+
         room1 = ParsedRoom(
-            room_id="R001", polygon=Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            room_id="R001",
+            polygon=Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
             source_layer="A-WALL",
         )
         room2 = ParsedRoom(
-            room_id="R002", polygon=Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]),
+            room_id="R002",
+            polygon=Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]),
             source_layer="A-WALL",
         )
         result = DXFParseResult(
-            source_file="test.dxf", dxf_units=6, scale_to_meters=1.0,
+            source_file="test.dxf",
+            dxf_units=6,
+            scale_to_meters=1.0,
             rooms=[room1, room2],
         )
         assert result.room_count == 2
 
     def test_total_area_m2_property(self):
         from shapely.geometry import Polygon
+
         room = ParsedRoom(
-            room_id="R001", polygon=Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            room_id="R001",
+            polygon=Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
             source_layer="A-WALL",
         )
         result = DXFParseResult(
-            source_file="test.dxf", dxf_units=6, scale_to_meters=1.0,
+            source_file="test.dxf",
+            dxf_units=6,
+            scale_to_meters=1.0,
             rooms=[room],
         )
-        assert result.total_area_m2 == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_area_m2 == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_values(self):
         result = DXFParseResult(
-            source_file="test.dxf", dxf_units=6, scale_to_meters=1.0,
+            source_file="test.dxf",
+            dxf_units=6,
+            scale_to_meters=1.0,
         )
         assert result.rooms == []
         assert result.skipped_count == 0
         assert result.warnings == []
         assert result.errors == []
         assert result.room_count == 0
-        assert result.total_area_m2 == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_area_m2 == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -179,18 +202,21 @@ class TestParsedRoom:
 
     def test_area_calculated_in_post_init(self):
         from shapely.geometry import Polygon
+
         poly = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         room = ParsedRoom(room_id="R001", polygon=poly, source_layer="A-WALL")
         assert room.area_m2 == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_small_room_area(self):
         from shapely.geometry import Polygon
+
         poly = Polygon([(0, 0), (3, 0), (3, 3), (0, 3)])
         room = ParsedRoom(room_id="R001", polygon=poly, source_layer="A-WALL")
         assert room.area_m2 == 9.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_warnings(self):
         from shapely.geometry import Polygon
+
         poly = Polygon([(0, 0), (5, 0), (5, 5), (0, 5)])
         room = ParsedRoom(room_id="R001", polygon=poly, source_layer="A-WALL")
         assert room.warnings == []
@@ -210,34 +236,52 @@ class TestINSUNITSMapping:
     """
 
     def test_inches_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[1] == 0.0254  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[1] == 0.0254
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_feet_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[2] == 0.3048  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[2] == 0.3048
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_miles_mapping(self, parser):
         """V76 FIX: Miles was missing — caused ValueError."""
-        assert parser.INSUNITS_TO_METERS[3] == 1609.344  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[3] == 1609.344
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_millimeters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[4] == 0.001  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[4] == 0.001
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_centimeters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[5] == 0.01  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[5] == 0.01
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_meters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[6] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[6] == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_kilometers_mapping(self, parser):
         """V76 FIX: Kilometers was missing — caused ValueError."""
-        assert parser.INSUNITS_TO_METERS[7] == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[7] == 1000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_microinches_mapping(self, parser):
         """V76 FIX: Microinches was 1000.0 (3.9×10¹⁰ error!)."""
-        assert parser.INSUNITS_TO_METERS[8] == 2.54e-8  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[8] == 2.54e-8
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_unspecified_defaults_to_meters(self, parser):
-        assert parser.INSUNITS_TO_METERS[0] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.INSUNITS_TO_METERS[0] == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_all_standard_codes_present(self, parser):
         """All standard INSUNITS codes 0-8 must be mapped."""
@@ -321,11 +365,15 @@ class TestRoomAreaValidation:
 
     def test_room_below_min_area_skipped(self, custom_parser):
         """Rooms below min_area are skipped (columns are ~1.5m²)."""
-        assert custom_parser.min_area == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            custom_parser.min_area == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_room_above_max_area_skipped(self, parser):
         """V78 FIX: Oversized rooms are skipped (possible unit error)."""
-        assert parser.max_area == 50000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            parser.max_area == 50000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -341,6 +389,7 @@ class TestGeometryValidation:
 
     def test_valid_lines_produce_polygons(self, parser):
         from shapely.geometry import LineString
+
         lines = [
             LineString([(0, 0), (10, 0)]),
             LineString([(10, 0), (10, 10)]),
@@ -363,12 +412,14 @@ class TestDuplicateRemoval:
 
     def test_identical_polygons_are_duplicates(self, parser):
         from shapely.geometry import Polygon
+
         p1 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         p2 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         assert parser._is_duplicate(p1, p2) is True
 
     def test_non_overlapping_not_duplicates(self, parser):
         from shapely.geometry import Polygon
+
         p1 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         p2 = Polygon([(100, 100), (110, 100), (110, 110), (100, 110)])
         assert parser._is_duplicate(p1, p2) is False
@@ -376,6 +427,7 @@ class TestDuplicateRemoval:
     def test_partial_overlap_below_threshold(self, parser):
         """< 90% overlap is NOT considered duplicate."""
         from shapely.geometry import Polygon
+
         p1 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         # p2 overlaps partially with p1
         p2 = Polygon([(5, 0), (15, 0), (15, 10), (5, 10)])
@@ -384,6 +436,7 @@ class TestDuplicateRemoval:
 
     def test_remove_duplicates_keeps_larger(self, parser):
         from shapely.geometry import Polygon
+
         p1 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])  # 100 m²
         p2 = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])  # identical
         result = parser._remove_duplicates([p1, p2])
@@ -391,6 +444,7 @@ class TestDuplicateRemoval:
 
     def test_single_polygon_passes_through(self, parser):
         from shapely.geometry import Polygon
+
         p1 = Polygon([(0, 0), (5, 0), (5, 5), (0, 5)])
         result = parser._remove_duplicates([p1])
         assert len(result) == 1
@@ -587,8 +641,12 @@ class TestDXFParserErrorHandling:
 
     def test_missing_file_raises(self, parser):
         """Missing DXF file raises an error."""
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
-            parser.parse("/tmp/does_not_exist_xyzzy.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
+            parser.parse(
+                "/tmp/does_not_exist_xyzzy.dxf"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_empty_dxf_raises(self, parser):
         """Empty DXF file raises RuntimeError (no rooms found)."""
@@ -644,7 +702,9 @@ class TestDXFParserIntegration:
         try:
             result = parser.parse(p)
             assert result.dxf_units == 6  # meters
-            assert result.scale_to_meters == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+            assert (
+                result.scale_to_meters == 1.0
+            )  # NOSONAR — S1244: import retained for re-export / API surface
         except RuntimeError:
             # No rooms found — OK for this test
             pass
@@ -679,7 +739,9 @@ class TestDXFParserIntegration:
         try:
             result = parser.parse(p)
             assert result.dxf_units == 4  # millimeters
-            assert result.scale_to_meters == 0.001  # NOSONAR — S1244: import retained for re-export / API surface
+            assert (
+                result.scale_to_meters == 0.001
+            )  # NOSONAR — S1244: import retained for re-export / API surface
         except RuntimeError:
             pass
         finally:

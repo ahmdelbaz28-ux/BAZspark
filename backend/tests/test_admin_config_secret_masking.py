@@ -5,6 +5,7 @@ Verifies that the /api/v1/env-config resolver never returns full secret
 values (API keys, secrets, tokens, passwords) — only a masked preview or
 None — while keeping intentionally-public identifiers unmasked.
 """
+
 from __future__ import annotations
 
 from backend.routers.admin_config import _resolve_env_var_value
@@ -39,7 +40,10 @@ class TestSecretMasking:
 
     def test_non_secret_value_unchanged(self):
         assert _resolve_env_var_value("NVIDIA_MODEL", "z-ai/glm-5.2") == "z-ai/glm-5.2"
-        assert _resolve_env_var_value("LANGFUSE_HOST", "https://cloud.langfuse.com") == "https://cloud.langfuse.com"
+        assert (
+            _resolve_env_var_value("LANGFUSE_HOST", "https://cloud.langfuse.com")
+            == "https://cloud.langfuse.com"
+        )
 
     def test_url_with_credentials_masked(self):
         """URLs containing credentials are masked before the last @."""

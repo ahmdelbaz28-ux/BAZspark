@@ -86,7 +86,9 @@ class Database:
         # so that environment variables injected after module load (e.g. HF Secrets)
         # are correctly picked up when the singleton is first created.
         database_url = config.DATABASE_URL
-        self._is_postgres = database_url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))
+        self._is_postgres = database_url.startswith(
+            ("postgres://", "postgresql://", "postgresql+asyncpg://")
+        )
         if self._is_postgres:
             # Store the actual URL on the instance for _init_postgres to use
             self._database_url = database_url
@@ -111,9 +113,7 @@ class Database:
         # would trigger an unnecessary makedirs on the project root. Skip
         # directory creation entirely for in-memory databases.
         _db_dir = (
-            os.path.dirname(os.path.abspath(db_path))
-            if db_path not in (":memory:", "")
-            else None
+            os.path.dirname(os.path.abspath(db_path)) if db_path not in (":memory:", "") else None
         )
         if _db_dir:
             os.makedirs(_db_dir, exist_ok=True, mode=0o700)
@@ -184,7 +184,7 @@ class Database:
             self._degrade_to_sqlite("psycopg2 not installed")
             return
 
-        db_url = getattr(self, '_database_url', _DATABASE_URL)
+        db_url = getattr(self, "_database_url", _DATABASE_URL)
         neon_url = os.environ.get("NEON_DATABASE_URL", "")
 
         # Try the primary DATABASE_URL first
@@ -214,8 +214,7 @@ class Database:
                 # No fallback available - degrade to local SQLite so the
                 # app still starts and /health reports ok.
                 self._degrade_to_sqlite(
-                    f"PostgreSQL unreachable ({type(primary_exc).__name__}): "
-                    f"{primary_exc}"
+                    f"PostgreSQL unreachable ({type(primary_exc).__name__}): {primary_exc}"
                 )
                 return
             logger.warning(
@@ -227,7 +226,7 @@ class Database:
             try:
                 self._pg_pool.closeall()
             except Exception:
-                                logger.debug("Suppressed Exception in database.py", exc_info=True)
+                logger.debug("Suppressed Exception in database.py", exc_info=True)
             try:
                 self._database_url = neon_url
                 self._pg_pool = pg_pool.ThreadedConnectionPool(
@@ -295,7 +294,9 @@ class Database:
                 conn.commit()
             except (psycopg2.OperationalError, psycopg2.InterfaceError) as conn_err:
                 conn.rollback()
-                logger.warning("PostgreSQL/PgBouncer connection error (attempting auto-retry): %s", conn_err)
+                logger.warning(
+                    "PostgreSQL/PgBouncer connection error (attempting auto-retry): %s", conn_err
+                )
                 raise
             except Exception:
                 conn.rollback()
@@ -304,7 +305,6 @@ class Database:
                 cur.close()
         finally:
             self._pg_pool.putconn(conn)
-
 
     def _scalar(self, cur, key: str = "count"):
         """Read a scalar value from a cursor â€” works for BOTH SQLite tuples
@@ -451,21 +451,43 @@ class Database:
             """)
 
             # â”€â”€ Indexes (MUST match SQLite indexes exactly) â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_element_projects_project ON element_projects(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_element_projects_element ON element_projects(element_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships(from_element_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships(to_element_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_status_active ON projects(status) WHERE status = 'active'")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")  # NOSONAR S1192: DDL index name is intentionally explicit
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")  # NOSONAR S1192: DDL index name is intentionally explicit
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_completed ON etap_sync_logs(project_id) WHERE error_message IS NULL")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_element_projects_project ON element_projects(project_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_element_projects_element ON element_projects(element_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships(from_element_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships(to_element_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_projects_status_active ON projects(status) WHERE status = 'active'"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)"
+            )  # NOSONAR S1192: DDL index name is intentionally explicit
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)"
+            )  # NOSONAR S1192: DDL index name is intentionally explicit
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_completed ON etap_sync_logs(project_id) WHERE error_message IS NULL"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
@@ -487,9 +509,13 @@ class Database:
             """)
 
             # â”€â”€ Additional indexes for audit log performance â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
 
             # H-05: updated_at auto-trigger (Postgres)
@@ -544,7 +570,9 @@ class Database:
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)"
+            )
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS etap_sync_logs (
@@ -558,8 +586,12 @@ class Database:
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)"
+            )
 
         logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
@@ -662,7 +694,9 @@ class Database:
 
             # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
             # SAFETY FIX: Missing indexes on connections.from_id and connections.to_id
             # Every device deletion triggers DELETE FROM connections WHERE from_id=? OR to_id=?
@@ -671,7 +705,9 @@ class Database:
             # Slow operations could cause timeouts that appear as failures in a safety system.
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
@@ -693,9 +729,13 @@ class Database:
             """)
 
             # â”€â”€ Additional indexes for audit log performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
 
             # H-05: updated_at auto-trigger (SQLite)
@@ -733,7 +773,9 @@ class Database:
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)"
+            )
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS etap_sync_logs (
@@ -747,8 +789,12 @@ class Database:
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)"
+            )
 
             # V151: Vision API Keys — AES-256-GCM encrypted storage for
             # customer-supplied OpenAI/Anthropic/Gemini keys. Used by the
@@ -769,8 +815,12 @@ class Database:
                     expires_at TEXT
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_vision_keys_provider ON vision_api_keys(provider)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_vision_keys_active ON vision_api_keys(is_active)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_provider ON vision_api_keys(provider)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_active ON vision_api_keys(is_active)"
+            )
 
     # ========================================================================
     # Projects CRUD
@@ -787,7 +837,9 @@ class Database:
     def get_project(self, project_id: str) -> dict | None:
         return self.projects.get_project(project_id)
 
-    def list_projects(self, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc") -> dict:
+    def list_projects(
+        self, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc"
+    ) -> dict:
         return self.projects.list_projects(page, limit, sort, order)
 
     def update_project(self, project_id: str, updates: dict) -> dict | None:
@@ -806,7 +858,14 @@ class Database:
     def get_device(self, project_id: str, device_id: str) -> dict | None:
         return self.devices.get_device(project_id, device_id)
 
-    def list_devices(self, project_id: str, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc") -> dict:
+    def list_devices(
+        self,
+        project_id: str,
+        page: int = 1,
+        limit: int = 20,
+        sort: str = "created_at",
+        order: str = "desc",
+    ) -> dict:
         return self.devices.list_devices(project_id, page, limit, sort, order)
 
     def update_device(self, project_id: str, device_id: str, updates: dict) -> dict | None:
@@ -825,7 +884,14 @@ class Database:
     def get_connection(self, project_id: str, connection_id: str) -> dict | None:
         return self.connections.get_connection(project_id, connection_id)
 
-    def list_connections(self, project_id: str, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc") -> dict:
+    def list_connections(
+        self,
+        project_id: str,
+        page: int = 1,
+        limit: int = 20,
+        sort: str = "created_at",
+        order: str = "desc",
+    ) -> dict:
         return self.connections.list_connections(project_id, page, limit, sort, order)
 
     def delete_connection(self, project_id: str, connection_id: str) -> bool:
@@ -844,7 +910,14 @@ class Database:
     def get_report(self, project_id: str, report_id: str) -> dict | None:
         return self.reports.get_report(project_id, report_id)
 
-    def list_reports(self, project_id: str, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc") -> dict:
+    def list_reports(
+        self,
+        project_id: str,
+        page: int = 1,
+        limit: int = 20,
+        sort: str = "created_at",
+        order: str = "desc",
+    ) -> dict:
         return self.reports.list_reports(project_id, page, limit, sort, order)
 
     def update_report(self, project_id: str, report_id: str, updates: dict) -> dict | None:
@@ -857,12 +930,18 @@ class Database:
     def set_sync_status(self, project_id: str, status: dict) -> dict:
         return self.sync.set_sync_status(project_id, status)
 
-    def record_sync(self, entity_type: str, entity_id: str, target_db: str, status: str, error: str | None = None) -> int:
+    def record_sync(
+        self,
+        entity_type: str,
+        entity_id: str,
+        target_db: str,
+        status: str,
+        error: str | None = None,
+    ) -> int:
         return self.sync.record_sync(entity_type, entity_id, target_db, status, error)
 
     def get_pending_syncs(self, max_retries: int = 3) -> list:
         return self.sync.get_pending_syncs(max_retries)
-
 
     # ========================================================================
     # Row converters (DB row -> API dict)
@@ -961,7 +1040,7 @@ class Database:
     def close(self) -> None:
         """Close the database connection or pool."""
         if self._is_postgres:
-            if hasattr(self, '_pg_pool') and self._pg_pool:
+            if hasattr(self, "_pg_pool") and self._pg_pool:
                 self._pg_pool.closeall()
                 logger.info("PostgreSQL connection pool closed")
         else:
@@ -998,6 +1077,7 @@ def get_db() -> Database:
 
 # Global database instance for the application
 _db_instance = None
+
 
 def get_database() -> Database:
     """Get the global database instance."""

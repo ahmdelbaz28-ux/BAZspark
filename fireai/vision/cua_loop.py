@@ -291,9 +291,7 @@ def _opencv_analyze(image_bytes: bytes) -> VisionAnalysisResult:
             x, y, cw, ch = cv2.boundingRect(c)
             # Filter out tiny noise — only keep rectangles >= 16x16 px
             if cw >= 16 and ch >= 16:
-                rectangles.append(
-                    {"x": int(x), "y": int(y), "w": int(cw), "h": int(ch)}
-                )
+                rectangles.append({"x": int(x), "y": int(y), "w": int(cw), "h": int(ch)})
         # Dominant colors (k-means with k=3, simplified to mean BGR)
         mean_bgr = img.reshape(-1, 3).mean(axis=0).astype(int).tolist()
 

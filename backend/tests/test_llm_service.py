@@ -7,6 +7,7 @@ calls. They use monkeypatching to mock the OpenAI client.
 Run:
     pytest backend/tests/test_llm_service.py -v
 """
+
 from __future__ import annotations
 
 import os
@@ -34,6 +35,7 @@ def clean_env(monkeypatch):
             monkeypatch.delenv(key, raising=False)
     # Also reset the singleton
     import backend.services.llm_service as mod
+
     mod._llm_service = None
     yield
     mod._llm_service = None
@@ -134,11 +136,13 @@ class TestLLMServiceChat:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
+
         # there is no running loop. Use asyncio.run() which creates + closes
         # a new event loop automatically.
         async def _raise():
             with pytest.raises(RuntimeError, match="ZENMUX_API_KEY"):
                 await svc.chat("hello")
+
         asyncio.run(_raise())
 
     def test_chat_raises_on_empty_prompt(self, configured_env):

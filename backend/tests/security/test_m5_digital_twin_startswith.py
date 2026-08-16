@@ -31,6 +31,7 @@ FIXES APPLIED (in PHASE5-PRODUCTION-CODE-FIXES round):
 These tests verify the FIX is in place. They serve as regression
 guards: if someone reverts to startswith, the tests will FAIL.
 """
+
 from __future__ import annotations
 
 import ast
@@ -140,9 +141,8 @@ def test_path_traversal_with_dotdot_is_blocked(monkeypatch):
 
     monkeypatch.syspath_prepend(str(REPO_ROOT))
     import importlib
-    spec = importlib.util.spec_from_file_location(
-        "digital_twin_router", DT_ROUTER_PY
-    )
+
+    spec = importlib.util.spec_from_file_location("digital_twin_router", DT_ROUTER_PY)
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
@@ -156,6 +156,7 @@ def test_path_traversal_with_dotdot_is_blocked(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:
         with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc_info:
                 func("../../../etc/passwd")
             assert exc_info.value.status_code == 400, (
@@ -181,9 +182,8 @@ def test_legitimate_filename_is_accepted(monkeypatch):
 
     monkeypatch.syspath_prepend(str(REPO_ROOT))
     import importlib
-    spec = importlib.util.spec_from_file_location(
-        "digital_twin_router", DT_ROUTER_PY
-    )
+
+    spec = importlib.util.spec_from_file_location("digital_twin_router", DT_ROUTER_PY)
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
@@ -197,9 +197,7 @@ def test_legitimate_filename_is_accepted(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:
         with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
             result = func("legitimate_file.dwg")
-            assert tmpdir in result, (
-                f"Legitimate file not accepted: {result}"
-            )
+            assert tmpdir in result, f"Legitimate file not accepted: {result}"
 
 
 # ─── Claim text regression guard ─────────────────────────────────────────────
@@ -233,8 +231,7 @@ def test_m5_claim_text_REWORDED_in_worklog():
 
     # The original (misleading) wording — must NOT be in the active verdict
     misleading_wording = (
-        "M-5: digital_twin.py:91 str.startswith (still uses startswith "
-        "despite V214 comment)"
+        "M-5: digital_twin.py:91 str.startswith (still uses startswith despite V214 comment)"
     )
 
     # The reworded (accurate) wording — MUST be in the active verdict
@@ -263,6 +260,7 @@ def test_m5_claim_text_REWORDED_in_worklog():
     # split across physical lines. Collapse all runs of whitespace to a
     # single space before substring matching.
     import re as _re
+
     medium_section_normalized = _re.sub(r"\s+", " ", medium_section)
 
     # (a) The misleading wording must NOT be present in the active verdict
@@ -276,8 +274,7 @@ def test_m5_claim_text_REWORDED_in_worklog():
 
     # (b) The reworded wording MUST be present in the active verdict
     missing_markers = [
-        m for m in reworded_markers
-        if _re.sub(r"\s+", " ", m) not in medium_section_normalized
+        m for m in reworded_markers if _re.sub(r"\s+", " ", m) not in medium_section_normalized
     ]
     assert not missing_markers, (
         "M-5 reworded wording is incomplete in the active MEDIUM ISSUES "

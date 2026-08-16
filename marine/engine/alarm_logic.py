@@ -143,7 +143,12 @@ def generate_logic_tree(  # NOSONAR — S3776: cognitive complexity is inherent 
                 # an accidental CO2 release in occupied machinery space
                 # would asphyxiate crew within seconds.
                 if release_output:
-                    outputs = (release_output, "manual_abort_button", "hvac_shutdown", "fuel_pump_off")
+                    outputs = (
+                        release_output,
+                        "manual_abort_button",
+                        "hvac_shutdown",
+                        "fuel_pump_off",
+                    )
                 else:
                     outputs = ("hvac_shutdown", "fuel_pump_off")
                 delay = 0.0
@@ -182,25 +187,29 @@ def generate_logic_tree(  # NOSONAR — S3776: cognitive complexity is inherent 
             outputs = ("horn_zone",)
             delay = 0.0
 
-        nodes.append(AlarmLogicNode(
-            node_id=node_id,
-            trigger_detector=dp.detector_id,
-            zone_id=zone.zone_id,
-            alarm_level=level,
-            action_outputs=outputs,
-            delay_s=delay,
-            interlocks=("verify_two_detectors",) if level == AlarmLevel.ACTION else (),
-            standard_reference=(
-                "SOLAS II-2/5.6 + IEC 60092-502 §4.5 + FSS Code Ch.2 §2.1.2.3"
-                if level == AlarmLevel.ACTION
-                else "SOLAS II-2/5.6 + IEC 60092-502"
-            ),
-        ))
+        nodes.append(
+            AlarmLogicNode(
+                node_id=node_id,
+                trigger_detector=dp.detector_id,
+                zone_id=zone.zone_id,
+                alarm_level=level,
+                action_outputs=outputs,
+                delay_s=delay,
+                interlocks=("verify_two_detectors",) if level == AlarmLevel.ACTION else (),
+                standard_reference=(
+                    "SOLAS II-2/5.6 + IEC 60092-502 §4.5 + FSS Code Ch.2 §2.1.2.3"
+                    if level == AlarmLevel.ACTION
+                    else "SOLAS II-2/5.6 + IEC 60092-502"
+                ),
+            )
+        )
 
     return nodes
 
 
-def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def export_to_plc_script(
+    nodes: list[AlarmLogicNode],
+) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Export logic tree as a Structured Text (ST) PLC script (IEC 61131-3).
 
@@ -221,14 +230,14 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
          latch forever when the detector clears.
     """
     # ── Collect unique I/O tags across all nodes ───────────────────────────
-    declared_inputs: list[str] = []   # detector inputs
+    declared_inputs: list[str] = []  # detector inputs
     declared_outputs: list[str] = []  # action outputs
     declared_interlocks: list[str] = []
     seen_inputs: set[str] = set()
     seen_outputs: set[str] = set()
 
     delayed_outputs: list[tuple] = []  # (node_id, output_name, delay_s)
-    needs_interlock: list[str] = []   # node_ids with interlocks
+    needs_interlock: list[str] = []  # node_ids with interlocks
 
     # the fire control station), NOT an output. It must be declared as VAR_INPUT
     # and AND-complemented in the release condition: a release output is only
@@ -277,7 +286,9 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
     for i, in_name in enumerate(declared_inputs):
         byte, bit = divmod(i, 8)
         lines.append(f"    {in_name} AT %IX{byte}.{bit} : BOOL;  // Detector input")
-    lines.append("  END_VAR")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    lines.append(
+        "  END_VAR"
+    )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     lines.append("")
     lines.append("  VAR_OUTPUT")
     # Action outputs at %QX0.0, %QX0.1, ... (one bit each).
@@ -309,7 +320,9 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
         # stop required by SOLAS II-2/10.4.1.1.3 + FSS Code Ch.2 §2.1.2.3.
         has_abort = ABORT_INPUT_NAME in n.action_outputs
         if n.interlocks and has_abort:
-            cond = f"{in_ident} AND {_to_ident(f'interlock_{n.node_id}')} AND NOT {ABORT_INPUT_NAME}"
+            cond = (
+                f"{in_ident} AND {_to_ident(f'interlock_{n.node_id}')} AND NOT {ABORT_INPUT_NAME}"
+            )
         elif n.interlocks:
             cond = f"{in_ident} AND {_to_ident(f'interlock_{n.node_id}')}"
         elif has_abort:
@@ -325,9 +338,7 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
             if n.delay_s > 0:
                 ton_inst = _to_ident(f"TON_{n.node_id}_{out_ident}")
                 # Instantiate the TON properly: assign IN/PT, then read .Q
-                lines.append(
-                    f"    {ton_inst}(IN := TRUE, PT := T#{int(n.delay_s)}s);"
-                )
+                lines.append(f"    {ton_inst}(IN := TRUE, PT := T#{int(n.delay_s)}s);")
                 lines.append(f"    {out_ident} := {ton_inst}.Q;")
             else:
                 lines.append(f"    {out_ident} := TRUE;")

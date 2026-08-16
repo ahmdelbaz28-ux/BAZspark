@@ -27,7 +27,7 @@ class TestV131Integration:
         kernel = KernelCore.create(ledger_path=Path("test.ledger"))
 
         # Verify that the kernel has the V131 extensions
-        assert hasattr(kernel, 'v131_extensions')
+        assert hasattr(kernel, "v131_extensions")
         assert isinstance(kernel.v131_extensions, V131KernelExtension)
 
         # Verify that the extensions have access to the kernel
@@ -38,24 +38,24 @@ class TestV131Integration:
         kernel = KernelCore.create(ledger_path=Path("test.ledger"))
 
         # Check that the generative design functionality is available
-        assert hasattr(kernel.v131_extensions, 'generative_engine')
-        assert hasattr(kernel.v131_extensions, 'generate_design_variants')
+        assert hasattr(kernel.v131_extensions, "generative_engine")
+        assert hasattr(kernel.v131_extensions, "generate_design_variants")
 
     def test_webhook_publisher_available_through_kernel(self):
         """Test that webhook publisher is available through the kernel."""
         kernel = KernelCore.create(ledger_path=Path("test.ledger"))
 
         # Check that the webhook functionality is available
-        assert hasattr(kernel.v131_extensions, 'webhook_publisher')
-        assert hasattr(kernel.v131_extensions, 'publish_webhook_event')
+        assert hasattr(kernel.v131_extensions, "webhook_publisher")
+        assert hasattr(kernel.v131_extensions, "publish_webhook_event")
 
     def test_ar_hook_manager_available_through_kernel(self):
         """Test that AR hook manager is available through the kernel."""
         kernel = KernelCore.create(ledger_path=Path("test.ledger"))
 
         # Check that the AR functionality is available
-        assert hasattr(kernel.v131_extensions, 'ar_hook_manager')
-        assert hasattr(kernel.v131_extensions, 'create_ar_session')
+        assert hasattr(kernel.v131_extensions, "ar_hook_manager")
+        assert hasattr(kernel.v131_extensions, "create_ar_session")
 
     @pytest.mark.asyncio
     async def test_async_initialization_of_extensions(self):
@@ -79,7 +79,7 @@ class TestV131Integration:
             room_length=15.0,
             ceiling_height=3.0,
             occupancy_type="office",
-            detector_type="smoke"
+            detector_type="smoke",
         )
 
         # Should return a list of variants
@@ -98,7 +98,7 @@ class TestV131Integration:
                 url="http://invalid-url-for-test.com/webhook",  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
                 event_type="test_event",
                 data={"test": "data"},
-                secret="test_secret"
+                secret="test_secret",
             )
             # The result might be False due to invalid URL, which is expected
         except Exception:
@@ -115,8 +115,7 @@ class TestV131Integration:
 
         # Create an AR session
         session_id = await kernel.v131_extensions.create_ar_session(
-            building_id="test_building_123",
-            session_config={"theme": "dark", "units": "metric"}
+            building_id="test_building_123", session_config={"theme": "dark", "units": "metric"}
         )
 
         # Should return a valid session ID
@@ -128,12 +127,12 @@ class TestV131Integration:
         kernel = KernelCore.create(ledger_path=Path("test.ledger"))
 
         # Verify that existing properties are still available
-        assert hasattr(kernel, '_store')
-        assert hasattr(kernel, '_engine')
-        assert hasattr(kernel, '_ledger')
-        assert hasattr(kernel, '_solver')
-        assert hasattr(kernel, '_parser')
-        assert hasattr(kernel, '_workers')
+        assert hasattr(kernel, "_store")
+        assert hasattr(kernel, "_engine")
+        assert hasattr(kernel, "_ledger")
+        assert hasattr(kernel, "_solver")
+        assert hasattr(kernel, "_parser")
+        assert hasattr(kernel, "_workers")
 
     def test_extension_features_integrated_correctly(self):
         """Test that all V131 features are properly integrated."""
@@ -146,10 +145,10 @@ class TestV131Integration:
         assert ext.ar_hook_manager is not None
 
         # Check all expected methods exist
-        assert hasattr(ext, 'generate_design_variants')
-        assert hasattr(ext, 'publish_webhook_event')
-        assert hasattr(ext, 'create_ar_session')
-        assert hasattr(ext, 'update_ar_visualization')
+        assert hasattr(ext, "generate_design_variants")
+        assert hasattr(ext, "publish_webhook_event")
+        assert hasattr(ext, "create_ar_session")
+        assert hasattr(ext, "update_ar_visualization")
 
 
 def test_v131_integration_suite():

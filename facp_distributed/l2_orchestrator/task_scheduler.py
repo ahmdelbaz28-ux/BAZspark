@@ -1,5 +1,6 @@
 # NOSONAR
 """Task Scheduler for L2 Orchestrator in Distributed FACP System"""
+
 import logging
 import threading
 import time
@@ -45,8 +46,13 @@ class TaskScheduler:
         self.last_cleanup = time.time()
         self.cleanup_interval = 60  # seconds
 
-    def schedule_task(self, method: str, request_data: dict[str, Any],
-                     target_worker: str, source_node: str | None = None) -> dict[str, Any]:
+    def schedule_task(
+        self,
+        method: str,
+        request_data: dict[str, Any],
+        target_worker: str,
+        source_node: str | None = None,
+    ) -> dict[str, Any]:
         """Schedule a task to be executed on a specific worker"""
         task_id = str(uuid.uuid4())
 
@@ -66,7 +72,7 @@ class TaskScheduler:
             "status": TaskStatus.SCHEDULED.value,
             "attempts": 0,
             "max_retries": 1,  # As specified in requirements
-            "timeout": constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds
+            "timeout": constraints.get("timeout_ms", 8000) / 1000.0,  # Convert to seconds
         }
 
         with self.lock:
@@ -122,7 +128,7 @@ class TaskScheduler:
                 # Add to completed history (with size limit)
                 self.completed_tasks.append(task_info)
                 if len(self.completed_tasks) > self.max_history_size:
-                    self.completed_tasks = self.completed_tasks[-self.max_history_size:]
+                    self.completed_tasks = self.completed_tasks[-self.max_history_size :]
 
                 # Update the main tasks dict
                 self.tasks[task_id] = task_info
@@ -159,7 +165,7 @@ class TaskScheduler:
                     # Add to failed history (with size limit)
                     self.failed_tasks.append(task_info)
                     if len(self.failed_tasks) > self.max_history_size:
-                        self.failed_tasks = self.failed_tasks[-self.max_history_size:]
+                        self.failed_tasks = self.failed_tasks[-self.max_history_size :]
 
                 # Update the main tasks dict
                 self.tasks[task_id] = task_info
@@ -171,7 +177,10 @@ class TaskScheduler:
         """Cancel a pending or scheduled task"""
         with self.lock:
             # Check in pending tasks
-            if task_id in self.tasks and self.tasks[task_id]["status"] in [TaskStatus.PENDING.value, TaskStatus.SCHEDULED.value]:
+            if task_id in self.tasks and self.tasks[task_id]["status"] in [
+                TaskStatus.PENDING.value,
+                TaskStatus.SCHEDULED.value,
+            ]:
                 task_info = self.tasks[task_id]
                 task_info["status"] = TaskStatus.CANCELLED.value
                 task_info["cancelled_at"] = time.time()
@@ -207,22 +216,22 @@ class TaskScheduler:
         with self.lock:
             task_ids = self.worker_task_queues.get(worker_id, [])
 
-            queue_info = {
-                "worker_id": worker_id,
-                "queue_size": len(task_ids),
-                "tasks": []
-            }
+            queue_info = {"worker_id": worker_id, "queue_size": len(task_ids), "tasks": []}
 
             for task_id in task_ids:
                 task_info = self.tasks.get(task_id)
                 if task_info:
-                    queue_info["tasks"].append({
-                        "task_id": task_id,
-                        "method": task_info.get("method"),
-                        "priority": task_info.get("priority").value if isinstance(task_info.get("priority"), TaskPriority) else task_info.get("priority"),
-                        "created_at": task_info.get("created_at"),
-                        "status": task_info.get("status")
-                    })
+                    queue_info["tasks"].append(
+                        {
+                            "task_id": task_id,
+                            "method": task_info.get("method"),
+                            "priority": task_info.get("priority").value
+                            if isinstance(task_info.get("priority"), TaskPriority)
+                            else task_info.get("priority"),
+                            "created_at": task_info.get("created_at"),
+                            "status": task_info.get("status"),
+                        }
+                    )
 
             return queue_info
 
@@ -237,8 +246,12 @@ class TaskScheduler:
                 "running_tasks": len(self.running_tasks),
                 "completed_tasks_history": len(self.completed_tasks),
                 "failed_tasks_history": len(self.failed_tasks),
-                "worker_queues": {wid: len(tasks) for wid, tasks in self.worker_task_queues.items()},
-                "active_workers": len([wid for wid, tasks in self.worker_task_queues.items() if len(tasks) > 0])
+                "worker_queues": {
+                    wid: len(tasks) for wid, tasks in self.worker_task_queues.items()
+                },
+                "active_workers": len(
+                    [wid for wid, tasks in self.worker_task_queues.items() if len(tasks) > 0]
+                ),
             }
 
     def register_task_dependency(self, task_id: str, dependency_task_ids: list[str]):
@@ -278,10 +291,10 @@ class TaskScheduler:
 
             # Trim histories if needed
             if len(self.completed_tasks) > self.max_history_size:
-                self.completed_tasks = self.completed_tasks[-self.max_history_size:]
+                self.completed_tasks = self.completed_tasks[-self.max_history_size :]
 
             if len(self.failed_tasks) > self.max_history_size:
-                self.failed_tasks = self.failed_tasks[-self.max_history_size:]
+                self.failed_tasks = self.failed_tasks[-self.max_history_size :]
 
     def get_statistics(self) -> dict[str, Any]:
         """Get scheduler statistics"""
@@ -309,7 +322,7 @@ class TaskScheduler:
                 "completion_rate": completed_count / total_processed if total_processed > 0 else 0,
                 "failure_rate": failed_count / total_processed if total_processed > 0 else 0,
                 "average_completion_time": avg_completion_time,
-                "tasks_per_minute": self._calculate_throughput()
+                "tasks_per_minute": self._calculate_throughput(),
             }
 
     def _calculate_throughput(self) -> float:
@@ -321,7 +334,9 @@ class TaskScheduler:
         if not recent_completed:
             return 0.0
 
-        time_span_minutes = (time.time() - min(t.get("completed_at", time.time()) for t in recent_completed)) / 60
+        time_span_minutes = (
+            time.time() - min(t.get("completed_at", time.time()) for t in recent_completed)
+        ) / 60
         return len(recent_completed) / max(time_span_minutes, 1)  # Avoid division by zero
 
     def check_task_timeout(self, task_id: str) -> bool:
@@ -329,14 +344,18 @@ class TaskScheduler:
         with self.lock:
             if task_id in self.running_tasks:
                 task_info = self.running_tasks[task_id]
-                elapsed_time = time.time() - task_info.get("started_at", task_info.get("scheduled_at", time.time()))
+                elapsed_time = time.time() - task_info.get(
+                    "started_at", task_info.get("scheduled_at", time.time())
+                )
 
                 if elapsed_time > task_info["timeout"]:
                     return True
 
         return False
 
-    def handle_worker_failure(self, worker_id: str):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def handle_worker_failure(
+        self, worker_id: str
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Handle the failure of a worker by rescheduling its tasks"""
         with self.lock:
             if worker_id in self.worker_task_queues:
@@ -365,12 +384,14 @@ class TaskScheduler:
                             # Add to failed history
                             self.failed_tasks.append(task_info)
                             if len(self.failed_tasks) > self.max_history_size:
-                                self.failed_tasks = self.failed_tasks[-self.max_history_size:]
+                                self.failed_tasks = self.failed_tasks[-self.max_history_size :]
 
                 # Clear the worker's queue
                 self.worker_task_queues[worker_id] = []
 
-    def get_ready_tasks_for_worker(self, worker_id: str, max_tasks: int = 1) -> list[dict[str, Any]]:
+    def get_ready_tasks_for_worker(
+        self, worker_id: str, max_tasks: int = 1
+    ) -> list[dict[str, Any]]:
         """Get tasks ready for a specific worker"""
         with self.lock:
             if worker_id not in self.worker_task_queues:
@@ -416,8 +437,13 @@ class DistributedTaskScheduler(TaskScheduler):
         """set callback for syncing task state with cluster"""
         self.cluster_sync_callback = callback
 
-    def schedule_task(self, method: str, request_data: dict[str, Any],
-                     target_worker: str, source_node: str | None = None) -> dict[str, Any]:
+    def schedule_task(
+        self,
+        method: str,
+        request_data: dict[str, Any],
+        target_worker: str,
+        source_node: str | None = None,
+    ) -> dict[str, Any]:
         """Override to support cluster-wide task scheduling"""
         task_info = super().schedule_task(method, request_data, target_worker, source_node)
 
@@ -426,12 +452,14 @@ class DistributedTaskScheduler(TaskScheduler):
 
         # Notify cluster if callback is available
         if self.cluster_sync_callback:
-            self.cluster_sync_callback({
-                "action": "task_scheduled",
-                "task_info": task_info,
-                "node_id": source_node or "unknown",
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "task_scheduled",
+                    "task_info": task_info,
+                    "node_id": source_node or "unknown",
+                    "timestamp": time.time(),
+                }
+            )
 
         return task_info
 
@@ -440,12 +468,14 @@ class DistributedTaskScheduler(TaskScheduler):
         success = super().complete_task(task_id, result)
 
         if success and self.cluster_sync_callback:
-            self.cluster_sync_callback({
-                "action": "task_completed",
-                "task_id": task_id,
-                "result": result,
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "task_completed",
+                    "task_id": task_id,
+                    "result": result,
+                    "timestamp": time.time(),
+                }
+            )
 
         return success
 
@@ -454,16 +484,20 @@ class DistributedTaskScheduler(TaskScheduler):
         success = super().fail_task(task_id, error)
 
         if success and self.cluster_sync_callback:
-            self.cluster_sync_callback({
-                "action": "task_failed",
-                "task_id": task_id,
-                "error": error,
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "task_failed",
+                    "task_id": task_id,
+                    "error": error,
+                    "timestamp": time.time(),
+                }
+            )
 
         return success
 
     def sync_with_cluster(self, cluster_task_state: dict[str, Any]):
         """Sync task scheduler with cluster state"""
         # Implementation would update scheduler with cluster-wide task information
-        logger.debug("sync_with_cluster called with %d entries; not yet implemented", len(cluster_task_state))
+        logger.debug(
+            "sync_with_cluster called with %d entries; not yet implemented", len(cluster_task_state)
+        )

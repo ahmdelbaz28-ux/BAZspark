@@ -29,9 +29,9 @@ class TestAutoCADServiceInitialization:
         assert service.connected is False
         assert service.active_entities == {}
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_connect_with_api_available(self, mock_pythoncom, mock_win32com):
         """Test connecting when AutoCAD API is available."""
         service = AutoCADService()
@@ -62,7 +62,7 @@ class TestAutoCADServiceInitialization:
         assert service.acad_doc is not None
         assert service.acad_util is not None
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', False)
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", False)
     def test_connect_without_api(self):
         """Test connecting when AutoCAD API is not available."""
         # SIMULATION mode when HAS_AUTOCAD_API is False AND FIREAI_ENV is
@@ -170,6 +170,7 @@ class TestAutoCADFileOperations:
         security validator doesn't reject it as path traversal.
         """
         import tempfile
+
         service = AutoCADService()
 
         # Use a path inside /tmp (allowed base) that doesn't exist
@@ -184,9 +185,9 @@ class TestAutoCADFileOperations:
         assert result["entities"] == []
         assert result["count"] == 0
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_write_dwg_with_entities(self, mock_pythoncom, mock_win32com):
         """Test writing entities to a DWG file."""
         service = AutoCADService()
@@ -216,15 +217,15 @@ class TestAutoCADFileOperations:
                 "start_point": [0, 0, 0],
                 "end_point": [1000, 0, 0],
                 "layer": "Walls",
-                "color": 1
+                "color": 1,
             },
             {
                 "entity_type": "CIRCLE",
                 "center": [500, 500, 0],
                 "radius": 250.0,
                 "layer": "Furniture",
-                "color": 2
-            }
+                "color": 2,
+            },
         ]
 
         # Mock the AddLine and AddCircle methods
@@ -233,7 +234,7 @@ class TestAutoCADFileOperations:
         mock_space.AddLine.return_value = mock_line
         mock_space.AddCircle.return_value = mock_circle
 
-        with tempfile.NamedTemporaryFile(suffix='.dwg', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".dwg", delete=False) as temp_file:
             temp_path = temp_file.name
 
         try:
@@ -248,9 +249,9 @@ class TestAutoCADFileOperations:
 class TestAutoCADDrawingOperations:
     """Test AutoCAD drawing operations."""
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_draw_line(self, mock_pythoncom, mock_win32com):
         """Test drawing a line in AutoCAD."""
         service = AutoCADService()
@@ -283,9 +284,9 @@ class TestAutoCADDrawingOperations:
         assert mock_line.Color == 1
         assert result is mock_line
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_draw_circle(self, mock_pythoncom, mock_win32com):
         """Test drawing a circle in AutoCAD."""
         service = AutoCADService()
@@ -318,9 +319,9 @@ class TestAutoCADDrawingOperations:
         assert mock_circle.Color == 2
         assert result is mock_circle
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_draw_text(self, mock_pythoncom, mock_win32com):
         """Test drawing text in AutoCAD."""
         service = AutoCADService()
@@ -345,7 +346,9 @@ class TestAutoCADDrawingOperations:
         service.connected = True
 
         # Test drawing text
-        result = service.draw_text("Hello World", [100, 100, 0], height=2.5, layer="TestLayer", color=3)
+        result = service.draw_text(
+            "Hello World", [100, 100, 0], height=2.5, layer="TestLayer", color=3
+        )
 
         # Verify the text was added
         mock_space.AddText.assert_called_once_with("Hello World", [100, 100, 0], 2.5)
@@ -357,9 +360,9 @@ class TestAutoCADDrawingOperations:
 class TestAutoCADConnectionManagement:
     """Test AutoCAD connection management."""
 
-    @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
-    @patch('backend.services.autocad_service.win32com.client')
-    @patch('backend.services.autocad_service.pythoncom')
+    @patch("backend.services.autocad_service.HAS_AUTOCAD_API", True)
+    @patch("backend.services.autocad_service.win32com.client")
+    @patch("backend.services.autocad_service.pythoncom")
     def test_disconnect(self, mock_pythoncom, mock_win32com):
         """Test disconnecting from AutoCAD."""
         service = AutoCADService()
@@ -433,6 +436,7 @@ class TestV213DeleteModifyEntity:
 
     def test_modify_with_empty_properties_returns_false(self):
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         service.acad_doc = MagicMock()
@@ -444,6 +448,7 @@ class TestV213DeleteModifyEntity:
         returned entity.
         """
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_entity = MagicMock()
@@ -459,6 +464,7 @@ class TestV213DeleteModifyEntity:
 
     def test_delete_when_handle_not_found_returns_false(self):
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_doc = MagicMock()
@@ -469,6 +475,7 @@ class TestV213DeleteModifyEntity:
 
     def test_delete_swallows_com_exception_and_returns_false(self):
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_doc = MagicMock()
@@ -483,6 +490,7 @@ class TestV213DeleteModifyEntity:
         least one attribute was applied.
         """
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_entity = MagicMock()
@@ -492,11 +500,14 @@ class TestV213DeleteModifyEntity:
         mock_doc.HandleToObject.return_value = mock_entity
         service.acad_doc = mock_doc
 
-        result = service.modify_entity("1A2F", {
-            "Layer": "WALLS",
-            "Color": 1,
-            "NonExistent": "should be skipped",
-        })
+        result = service.modify_entity(
+            "1A2F",
+            {
+                "Layer": "WALLS",
+                "Color": 1,
+                "NonExistent": "should be skipped",
+            },
+        )
 
         assert result is True
         assert mock_entity.Layer == "WALLS"
@@ -504,6 +515,7 @@ class TestV213DeleteModifyEntity:
 
     def test_modify_returns_false_when_no_attribute_applied(self):
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_entity = MagicMock()
@@ -513,10 +525,13 @@ class TestV213DeleteModifyEntity:
         mock_doc.HandleToObject.return_value = mock_entity
         service.acad_doc = mock_doc
 
-        result = service.modify_entity("1A2F", {
-            "NonExistent1": "x",
-            "NonExistent2": "y",
-        })
+        result = service.modify_entity(
+            "1A2F",
+            {
+                "NonExistent1": "x",
+                "NonExistent2": "y",
+            },
+        )
         assert result is False
 
     def test_modify_skips_internal_metadata_keys(self):
@@ -524,6 +539,7 @@ class TestV213DeleteModifyEntity:
         metadata, not real AutoCAD attributes — they must be silently skipped.
         """
         from unittest.mock import MagicMock
+
         service = AutoCADService()
         service.connected = True
         mock_entity = MagicMock()
@@ -532,10 +548,13 @@ class TestV213DeleteModifyEntity:
         service.acad_doc = mock_doc
 
         # Only metadata keys → nothing applied → return False
-        result = service.modify_entity("1A2F", {
-            "entity_type": "LINE",
-            "source_entity_handle": "1A2F",
-        })
+        result = service.modify_entity(
+            "1A2F",
+            {
+                "entity_type": "LINE",
+                "source_entity_handle": "1A2F",
+            },
+        )
         assert result is False
 
 
@@ -559,6 +578,7 @@ class TestV213SimulationModeFlag:
         monkeypatch.setenv("FIREAI_ENV", "development")
         # Force HAS_AUTOCAD_API = False to simulate non-Windows
         import backend.services.autocad_service as mod
+
         monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
 
         service = AutoCADService()
@@ -573,17 +593,23 @@ class TestV213SimulationModeFlag:
         """
         monkeypatch.setenv("FIREAI_ENV", "development")
         import backend.services.autocad_service as mod
+
         # Force HAS_AUTOCAD_API = True to take the real COM path
         monkeypatch.setattr(mod, "HAS_AUTOCAD_API", True)
 
         from unittest.mock import MagicMock, patch
+
         mock_app = MagicMock()
         mock_doc = MagicMock()
         mock_app.ActiveDocument = mock_doc
         mock_app.Documents.Add.return_value = mock_doc
 
-        with patch.object(mod, "pythoncom", create=True), \
-             patch.object(mod.win32com.client, "GetActiveObject", return_value=mock_app, create=True):
+        with (
+            patch.object(mod, "pythoncom", create=True),
+            patch.object(
+                mod.win32com.client, "GetActiveObject", return_value=mock_app, create=True
+            ),
+        ):
             service = AutoCADService()
             result = service.connect()
 
@@ -595,6 +621,7 @@ class TestV213SimulationModeFlag:
         """disconnect() must clear simulation_mode back to False."""
         monkeypatch.setenv("FIREAI_ENV", "development")
         import backend.services.autocad_service as mod
+
         monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
 
         service = AutoCADService()
@@ -612,6 +639,7 @@ class TestV213SimulationModeFlag:
         """
         monkeypatch.setenv("FIREAI_ENV", "production")
         import backend.services.autocad_service as mod
+
         monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
 
         service = AutoCADService()
@@ -642,11 +670,14 @@ class TestV214NoMockDwgData:
         service.simulation_mode = True
 
         out_path = str(tmp_path / "fake.dwg")
-        result = service.write_dwg(out_path, [{"entity_type": "LINE", "start_point": [0, 0, 0], "end_point": [1, 0, 0]}])
+        result = service.write_dwg(
+            out_path, [{"entity_type": "LINE", "start_point": [0, 0, 0], "end_point": [1, 0, 0]}]
+        )
 
         assert result is False, "write_dwg must return False in simulation mode"
         # The fake file must NOT have been created
         import os
+
         assert not os.path.exists(out_path), (
             "write_dwg must NOT create a file in simulation mode — found: " + out_path
         )
@@ -663,6 +694,7 @@ class TestV214NoMockDwgData:
 
         assert result is False, "save must return False in simulation mode"
         import os
+
         assert not os.path.exists(out_path), (
             "save must NOT create a file in simulation mode — found: " + out_path
         )
@@ -687,6 +719,7 @@ class TestV214NoMockDwgData:
         docstrings (as historical notes) but never as actual writes.
         """
         import re
+
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
         src_path = os.path.normpath(src_path)
@@ -836,6 +869,7 @@ class TestV214NoHardcodedReadDwgEntities:
         as historical notes).
         """
         import re
+
         tests_dir = os.path.dirname(__file__)
         src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
         src_path = os.path.normpath(src_path)
@@ -850,8 +884,12 @@ class TestV214NoHardcodedReadDwgEntities:
         # Filter out matches that are inside docstrings (lines starting with # or """)
         # by checking if the line is a comment or docstring
         lines_with_matches = []
-        for i, line in enumerate(content.split('\n'), 1):
-            if hardcoded_pattern.search(line) and not line.strip().startswith('#') and not line.strip().startswith('"'):
+        for i, line in enumerate(content.split("\n"), 1):
+            if (
+                hardcoded_pattern.search(line)
+                and not line.strip().startswith("#")
+                and not line.strip().startswith('"')
+            ):
                 lines_with_matches.append((i, line.strip()))
 
         assert lines_with_matches == [], (

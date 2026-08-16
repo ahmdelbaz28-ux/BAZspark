@@ -233,13 +233,15 @@ class TestSecretRotation:
         mgr2.load()
 
         # Old signature should still verify (against previous secret)
-        assert mgr2.verify_signature(data, old_signature), \
+        assert mgr2.verify_signature(data, old_signature), (
             "Old sessions should still work during rotation"
+        )
 
         # New signature should also verify (against primary secret)
         new_signature = mgr2.sign(data)
-        assert mgr2.verify_signature(data, new_signature), \
+        assert mgr2.verify_signature(data, new_signature), (
             "New sessions should work with new secret"
+        )
 
     def test_no_rotation_when_new_not_set(self) -> None:
         """Without FIREAI_SESSION_SECRET_NEW, no rotation should occur."""

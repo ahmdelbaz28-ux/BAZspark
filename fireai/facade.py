@@ -46,13 +46,16 @@ class Engine:
 
     def __init__(self) -> None:
         from fireai.core.qomn_kernel import QOMNKernel
+
         self._kernel = QOMNKernel()
 
     def smoke_spacing(self, ceiling_height_m: float) -> SmokeSpacingResult:
         """Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3."""
         return self._kernel.smoke_detector_spacing(ceiling_height_m)
 
-    def heat_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> HeatSpacingResult:
+    def heat_spacing(
+        self, ceiling_height_m: float, area_per_detector_m2: float
+    ) -> HeatSpacingResult:
         """Compute heat detector spacing per NFPA 72-2022 §17.6.3.1."""
         return self._kernel.heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
 
@@ -74,7 +77,9 @@ class Engine:
         max_drop_pct: float = 10.0,
     ) -> VoltageDropResult:
         """Compute voltage drop per NEC Chapter 9 Table 8."""
-        return self._kernel.voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
+        return self._kernel.voltage_drop(
+            current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct
+        )
 
     @property
     def audit_log(self) -> dict[str, Any]:
@@ -106,12 +111,14 @@ class Placement:
     def _lazy_floor_analyser(self) -> Any:
         if self._floor_analyser is None:
             from fireai.core.floor_analyser import FloorAnalyser
+
             self._floor_analyser = FloorAnalyser
         return self._floor_analyser
 
     def _lazy_building_engine(self) -> Any:
         if self._building_engine is None:
             from fireai.core.building_engine import BuildingEngine
+
             self._building_engine = BuildingEngine
         return self._building_engine
 
@@ -154,18 +161,21 @@ class Safety:
     ) -> SafetyTier:
         """Classify design safety tier per engineering policy."""
         from fireai.core.safety_assurance import classify_safety_tier as _classify
+
         return _classify(coverage_pct, proof_valid, fallback_used)
 
     @staticmethod
     def requires_fpe_review(tier: SafetyTier) -> bool:
         """Check if a safety tier requires FPE review."""
         from fireai.core.safety_assurance import tier_requires_fpe_review
+
         return tier_requires_fpe_review(tier)
 
     @staticmethod
     def can_submit(tier: SafetyTier) -> bool:
         """Check if a safety tier can be submitted to AHJ."""
         from fireai.core.safety_assurance import tier_can_submit
+
         return tier_can_submit(tier)
 
     @staticmethod
@@ -175,5 +185,6 @@ class Safety:
     ) -> AuditResult:
         """Run full safety audit on a design."""
         from fireai.core.safety_audit_engine import SafetyAuditEngine
+
         engine = SafetyAuditEngine()
         return engine.run_audit(audit_input=design, **kwargs)

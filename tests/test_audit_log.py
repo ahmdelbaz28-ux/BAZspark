@@ -374,7 +374,8 @@ class TestAuditLogAppend:
             entry = create_audit_entry(
                 analysis_id="analysis-1",
                 layer=1,
-                input_hash=f"input_{i}".encode().hex() + "0" * (64 - len(f"input_{i}".encode().hex())),
+                input_hash=f"input_{i}".encode().hex()
+                + "0" * (64 - len(f"input_{i}".encode().hex())),
                 formula_reference="NFPA 72 §17.6.3.1",
                 computation_description=f"Computation {i}",
                 output_value=f"result_{i}",
@@ -493,7 +494,10 @@ class TestAuditLogVerifyChain:
         log.append(entry2)
 
         # Tamper with prev_entry_hash directly in the database
-        log._conn.execute("UPDATE audit_entries SET prev_entry_hash = ? WHERE rowid = 2", ("tampered_hash" + "0" * 48,))
+        log._conn.execute(
+            "UPDATE audit_entries SET prev_entry_hash = ? WHERE rowid = 2",
+            ("tampered_hash" + "0" * 48,),
+        )
         log._conn.commit()
 
         is_valid, errors = log.verify_chain()

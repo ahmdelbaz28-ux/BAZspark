@@ -291,7 +291,9 @@ class SubmittalIntegrityGate:
                 violations=violations_list,
             )
 
-            if DecisionProvenance is not None and ConfidenceScore is not None:  # NOSONAR — pythonbugs:S2589: condition intentional  # NOSONAR — acceptable in this context
+            if (
+                DecisionProvenance is not None and ConfidenceScore is not None
+            ):  # NOSONAR — pythonbugs:S2589: condition intentional  # NOSONAR — acceptable in this context
                 confidence = ConfidenceScore(
                     input_quality_score=1.0,
                     rule_coverage=1.0,
@@ -355,7 +357,9 @@ class SubmittalIntegrityGate:
             violations=violations,
         )
 
-        if DecisionProvenance is not None and ConfidenceScore is not None:  # NOSONAR — acceptable in this context  # NOSONAR — pythonbugs:S2589: condition intentional
+        if (
+            DecisionProvenance is not None and ConfidenceScore is not None
+        ):  # NOSONAR — acceptable in this context  # NOSONAR — pythonbugs:S2589: condition intentional
             confidence = ConfidenceScore(
                 input_quality_score=0.0,
                 rule_coverage=0.0,

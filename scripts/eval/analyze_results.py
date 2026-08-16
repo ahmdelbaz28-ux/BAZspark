@@ -35,6 +35,7 @@ from pathlib import Path
 # Loader
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def load_results(results_dir: Path, label: str) -> tuple[list, dict, dict]:
     """Load evaluation_data, evaluation_results, evaluation_summary for a dataset."""
     base = results_dir / label
@@ -66,6 +67,7 @@ def load_results(results_dir: Path, label: str) -> tuple[list, dict, dict]:
 # Table Printers
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def print_worst_queries(data: list, scores: dict, top_n: int = 10) -> list[dict]:
     """Print per-query table sorted by accuracy (worst first)."""
     acc_list = scores.get("nv_accuracy", [])
@@ -75,29 +77,39 @@ def print_worst_queries(data: list, scores: dict, top_n: int = 10) -> list[dict]
     rows = []
     for i, d in enumerate(data):
         acc = acc_list[i] if i < len(acc_list) else None
-        rows.append({
-            "i": i,
-            "id": d.get("id", i),
-            "question": d["question"][:80],
-            "nv_accuracy": acc,
-            "nv_context_relevance": ctx_list[i] if i < len(ctx_list) else None,
-            "nv_response_groundedness": grd_list[i] if i < len(grd_list) else None,
-            "has_context": bool(d.get("generated_contexts")),
-            "answer_len": len(d.get("generated_answer", "")),
-        })
+        rows.append(
+            {
+                "i": i,
+                "id": d.get("id", i),
+                "question": d["question"][:80],
+                "nv_accuracy": acc,
+                "nv_context_relevance": ctx_list[i] if i < len(ctx_list) else None,
+                "nv_response_groundedness": grd_list[i] if i < len(grd_list) else None,
+                "has_context": bool(d.get("generated_contexts")),
+                "answer_len": len(d.get("generated_answer", "")),
+            }
+        )
 
     rows.sort(key=lambda r: (r["nv_accuracy"] is None, r["nv_accuracy"] or 0.0))
 
-    print(f"\n{'─'*90}")
+    print(f"\n{'─' * 90}")
     print(f"{'i':>4}  {'id':>5}  {'acc':>5}  {'ctx_rel':>7}  {'grnd':>5}  {'ctx?':>4}  question")
-    print(f"{'─'*90}")
+    print(f"{'─' * 90}")
     for r in rows[:top_n]:
         acc_s = f"{r['nv_accuracy']:.3f}" if r["nv_accuracy"] is not None else "  —  "
-        ctx_s = f"{r['nv_context_relevance']:.3f}" if r["nv_context_relevance"] is not None else "  —  "
-        grd_s = f"{r['nv_response_groundedness']:.3f}" if r["nv_response_groundedness"] is not None else "  —  "
+        ctx_s = (
+            f"{r['nv_context_relevance']:.3f}" if r["nv_context_relevance"] is not None else "  —  "
+        )
+        grd_s = (
+            f"{r['nv_response_groundedness']:.3f}"
+            if r["nv_response_groundedness"] is not None
+            else "  —  "
+        )
         ctx_flag = "Y" if r["has_context"] else "N"
-        print(f"{r['i']:>4}  {str(r['id']):>5}  {acc_s:>5}  {ctx_s:>7}  {grd_s:>5}  {ctx_flag:>4}  {r['question']}")
-    print(f"{'─'*90}")
+        print(
+            f"{r['i']:>4}  {str(r['id']):>5}  {acc_s:>5}  {ctx_s:>7}  {grd_s:>5}  {ctx_flag:>4}  {r['question']}"
+        )
+    print(f"{'─' * 90}")
     print("(has_context=N with low accuracy → retrieval gap, not generation problem)")
     return rows
 
@@ -105,6 +117,7 @@ def print_worst_queries(data: list, scores: dict, top_n: int = 10) -> list[dict]
 # ──────────────────────────────────────────────────────────────────────────────
 # CSV Export
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def export_csv(data: list, scores: dict, out_path: Path) -> None:
     """Export full results to CSV."""
@@ -116,24 +129,32 @@ def export_csv(data: list, scores: dict, out_path: Path) -> None:
         w = csv.DictWriter(
             f,
             fieldnames=[
-                "id", "question", "answer", "generated_answer",
-                "nv_accuracy", "nv_context_relevance", "nv_response_groundedness",
-                "has_context", "answer_length",
+                "id",
+                "question",
+                "answer",
+                "generated_answer",
+                "nv_accuracy",
+                "nv_context_relevance",
+                "nv_response_groundedness",
+                "has_context",
+                "answer_length",
             ],
         )
         w.writeheader()
         for i, d in enumerate(data):
-            w.writerow({
-                "id": d.get("id", i),
-                "question": d["question"],
-                "answer": d["answer"],
-                "generated_answer": d.get("generated_answer", ""),
-                "nv_accuracy": acc[i] if i < len(acc) else None,
-                "nv_context_relevance": ctxr[i] if i < len(ctxr) else None,
-                "nv_response_groundedness": grd[i] if i < len(grd) else None,
-                "has_context": bool(d.get("generated_contexts")),
-                "answer_length": len(d.get("generated_answer", "")),
-            })
+            w.writerow(
+                {
+                    "id": d.get("id", i),
+                    "question": d["question"],
+                    "answer": d["answer"],
+                    "generated_answer": d.get("generated_answer", ""),
+                    "nv_accuracy": acc[i] if i < len(acc) else None,
+                    "nv_context_relevance": ctxr[i] if i < len(ctxr) else None,
+                    "nv_response_groundedness": grd[i] if i < len(grd) else None,
+                    "has_context": bool(d.get("generated_contexts")),
+                    "answer_length": len(d.get("generated_answer", "")),
+                }
+            )
     print(f"[OK] CSV exported: {out_path}")
 
 
@@ -141,15 +162,11 @@ def export_csv(data: list, scores: dict, out_path: Path) -> None:
 # Markdown Report
 # ──────────────────────────────────────────────────────────────────────────────
 
-def generate_markdown(
-    data: list, scores: dict, summary: dict, label: str, top_n: int = 5
-) -> str:
+
+def generate_markdown(data: list, scores: dict, summary: dict, label: str, top_n: int = 5) -> str:
     """Generate Markdown table of worst queries for PR descriptions."""
     acc_list = scores.get("nv_accuracy", [])
-    pairs = sorted(
-        zip(acc_list, data, strict=False),
-        key=lambda x: (x[0] is None, x[0] or 0.0)
-    )
+    pairs = sorted(zip(acc_list, data, strict=False), key=lambda x: (x[0] is None, x[0] or 0.0))
 
     n_queries = summary.get("n_queries", len(data))
     n_errors = summary.get("n_errors", 0)
@@ -200,6 +217,7 @@ def generate_markdown(
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="BAZspark RAG Result Analyzer")
     p.add_argument("--dataset", required=True, help="Dataset label (folder name under results/)")
@@ -226,9 +244,9 @@ def main() -> None:
     print(f"[INFO] {len(data)} rows loaded.")
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Summary — {label}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for k, v in summary.items():
         print(f"  {k}: {v}")
 

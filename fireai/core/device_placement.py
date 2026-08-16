@@ -235,11 +235,14 @@ class RoomSpec:
                 "room_dimensions",
                 f"{self.width_m!r}×{self.length_m!r}",
                 "room dimensions must be finite numbers (NaN/Inf rejected)",
-                "Physics"
+                "Physics",
             )
         if self.width_m <= 0 or self.length_m <= 0:
             raise PhysicsGuardError(
-                "room_dimensions", f"{self.width_m}×{self.length_m}", "room dimensions must be > 0", "Physics"
+                "room_dimensions",
+                f"{self.width_m}×{self.length_m}",
+                "room dimensions must be > 0",
+                "Physics",
             )
         if self.slope_degrees < 0 or self.slope_degrees > 45:
             raise PhysicsGuardError(
@@ -410,15 +413,17 @@ class DetectorPlacementEngine:
         # S=None causes TypeError. Both are catastrophic in a safety-critical system.
         if S is None or not math.isfinite(S) or S <= 0:
             raise PhysicsGuardError(
-                "spacing_m", S,
+                "spacing_m",
+                S,
                 "detector spacing must be a positive finite number — cannot place detectors without valid spacing",
-                "NFPA 72"
+                "NFPA 72",
             )
         if R is None or not math.isfinite(R) or R <= 0:
             raise PhysicsGuardError(
-                "coverage_radius_m", R,
+                "coverage_radius_m",
+                R,
                 "coverage radius must be a positive finite number — cannot verify coverage without valid radius",
-                "NFPA 72 §17.7"
+                "NFPA 72 §17.7",
             )
         # wall_offset already selected per detector branch above.
 
@@ -554,7 +559,9 @@ class DetectorPlacementEngine:
         """Check if point is within room bounds."""
         return 0 <= x <= room.width_m and 0 <= y <= room.length_m
 
-    def _check_beam_obstructions(self, room: RoomSpec, _spacing_m: float) -> int:  # NOSONAR — S1172: parameter retained for API stability
+    def _check_beam_obstructions(
+        self, room: RoomSpec, _spacing_m: float
+    ) -> int:  # NOSONAR — S1172: parameter retained for API stability
         """
         Check for beam obstructions that divide detector zones.
 
@@ -646,8 +653,8 @@ class DetectorPlacementEngine:
             else:
                 # Unknown swing — fall back to right-side placement and flag
                 x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
-            # placement note: RIGHT-SIDE FALLBACK — door_swing unknown
-            # verify latch-side placement per ADA/IBC §404.2.7
+                # placement note: RIGHT-SIDE FALLBACK — door_swing unknown
+                # verify latch-side placement per ADA/IBC §404.2.7
                 unverifiable_count += 1
             stations.append(
                 PlacedPullStation(
@@ -663,6 +670,7 @@ class DetectorPlacementEngine:
         # Doors with known swing do not need the warning — placement is correct.
         if unverifiable_count > 0:
             import logging
+
             _pull_logger = logging.getLogger(__name__)
             _pull_logger.warning(
                 f"Room {room.room_id}: {unverifiable_count} of {len(stations)} pull "
@@ -673,7 +681,11 @@ class DetectorPlacementEngine:
             )
         return stations
 
-    def _place_notification_appliances(self, room: RoomSpec) -> list[PlacedNotificationAppliance]:  # NOSONAR — S3776: NFPA 72 compliance placement must handle many device types
+    def _place_notification_appliances(
+        self, room: RoomSpec
+    ) -> list[
+        PlacedNotificationAppliance
+    ]:  # NOSONAR — S3776: NFPA 72 compliance placement must handle many device types
         """
         Place strobes/horns per NFPA 72 Chapter 18.
 
@@ -786,10 +798,7 @@ class DetectorPlacementEngine:
         # may coincide with a wall point). Tolerance 0.01 m.
         deduped: list[tuple[float, float]] = []
         for x, y in positions:
-            is_dup = any(
-                abs(x - dx) < 0.01 and abs(y - dy) < 0.01
-                for dx, dy in deduped
-            )
+            is_dup = any(abs(x - dx) < 0.01 and abs(y - dy) < 0.01 for dx, dy in deduped)
             if not is_dup:
                 deduped.append((x, y))
 
@@ -843,7 +852,9 @@ def place_duct_detector(spec: DuctDetectorSpec) -> dict[str, Any]:
     """
     v = spec.velocity_m_s
     if not math.isfinite(v) or v <= 0:
-        raise PhysicsGuardError("velocity_m_s", v, "air velocity must be > 0", "NFPA 72-2022 §17.7.4.2.2")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        raise PhysicsGuardError(
+            "velocity_m_s", v, "air velocity must be > 0", "NFPA 72-2022 §17.7.4.2.2"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
     MIN_VEL = 0.305  # 60 fpm
     MAX_VEL = 15.24  # 3000 fpm

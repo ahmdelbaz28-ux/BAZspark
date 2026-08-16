@@ -1,5 +1,6 @@
 # NOSONAR
 """Comprehensive Tests for Distributed FACP System"""
+
 import time
 import unittest
 import uuid
@@ -39,6 +40,7 @@ class TestDistributedFACP(unittest.TestCase):
         # Create security components
         # The old "test_secret" was only 11 chars — would fail validation.
         import secrets as _secrets
+
         self.auth_provider = AuthProvider(secret_key=_secrets.token_urlsafe(48))
         self.rbac_engine = RBACEngine()
         self.permission_checker = PermissionChecker(self.rbac_engine)
@@ -59,21 +61,23 @@ class TestDistributedFACP(unittest.TestCase):
             task_scheduler=self.task_scheduler,
             load_balancer=self.load_balancer,
             permission_checker=self.permission_checker,
-            agent_registry=self.agent_registry
+            agent_registry=self.agent_registry,
         )
 
         # Create L3 engine controller
         self.engine_controller = EngineController(pool_size=2, max_pool_size=5)
 
         # Create L1 gateway
-        self.l1_gateway = L1Gateway(self.validation_firewall, Mock())  # Using Mock for transport temporarily
+        self.l1_gateway = L1Gateway(
+            self.validation_firewall, Mock()
+        )  # Using Mock for transport temporarily
 
         # Create test user
         self.test_user_id = "test_user_123"
         self.auth_provider.register_user(
             user_id=self.test_user_id,
             roles=["operator"],
-            permissions=["engine_access", "execute", "read", "write"]
+            permissions=["engine_access", "execute", "read", "write"],
         )
 
         # Create a test token
@@ -97,21 +101,14 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "RECEIVED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_task",
-                "payload": {"value": 42}
-            },
+            "params": {"task": "test_task", "payload": {"value": 42}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
                 "risk_level": "low",
-                "idempotency_key": "test_key_123"
+                "idempotency_key": "test_key_123",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         request = FACPRequest.from_dict(request_data)
@@ -132,25 +129,20 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "RECEIVED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_task",
-                "payload": {"value": 42}
-            },
+            "params": {"task": "test_task", "payload": {"value": 42}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
                 "risk_level": "low",
-                "idempotency_key": "test_key_123"
+                "idempotency_key": "test_key_123",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Process through validation firewall
-        should_forward, processed_data, errors = self.validation_firewall.process_request(request_data)
+        should_forward, processed_data, errors = self.validation_firewall.process_request(
+            request_data
+        )
 
         self.assertTrue(should_forward, f"Request should be forwarded but had errors: {errors}")
         self.assertEqual(len(errors), 0)
@@ -162,7 +154,7 @@ class TestDistributedFACP(unittest.TestCase):
         security_block = {
             "auth_token": self.test_token,
             "permissions": ["engine_access", "execute"],
-            "risk_level": "low"
+            "risk_level": "low",
         }
 
         is_auth, auth_context = self.auth_provider.authenticate_request(security_block)
@@ -184,6 +176,7 @@ class TestDistributedFACP(unittest.TestCase):
 
         # Register a test agent (using a mock for simplicity)
         from ..l2_orchestrator.agent_manager import BaseAgent
+
         class TestAgent(BaseAgent):
             def __init__(self):
                 super().__init__("test_agent", "Test Agent")
@@ -204,15 +197,11 @@ class TestDistributedFACP(unittest.TestCase):
         """Test load balancer functionality"""
         # Register test workers
         self.load_balancer.register_engine_worker(
-            "worker_1",
-            ["engine.calculate", "engine.validate"],
-            max_concurrent_tasks=5
+            "worker_1", ["engine.calculate", "engine.validate"], max_concurrent_tasks=5
         )
 
         self.load_balancer.register_engine_worker(
-            "worker_2",
-            ["engine.transform", "engine.calculate"],
-            max_concurrent_tasks=3
+            "worker_2", ["engine.transform", "engine.calculate"], max_concurrent_tasks=3
         )
 
         # Test worker selection
@@ -230,7 +219,7 @@ class TestDistributedFACP(unittest.TestCase):
         task_info = self.task_scheduler.schedule_task(
             "engine.calculate",
             {"method": "engine.calculate", "params": {"task": "test"}},
-            "worker_1"
+            "worker_1",
         )
 
         self.assertIsNotNone(task_info)
@@ -247,10 +236,9 @@ class TestDistributedFACP(unittest.TestCase):
 
         # Create a test message
         from ..event_bus.message_queue import Message, MessagePriority
+
         message = Message(
-            "test_topic",
-            {"data": "test_value", "timestamp": time.time()},
-            MessagePriority.NORMAL
+            "test_topic", {"data": "test_value", "timestamp": time.time()}, MessagePriority.NORMAL
         )
 
         # Enqueue the message
@@ -269,22 +257,17 @@ class TestDistributedFACP(unittest.TestCase):
 
         # Create a callback
         callback_called = {"value": False}
+
         def test_callback(event_data):
             callback_called["value"] = True
 
         # Register the listener
         listener_id = dispatcher.register_listener(
-            "test_listener",
-            test_callback,
-            event_types=["test_event"]
+            "test_listener", test_callback, event_types=["test_event"]
         )
 
         # Dispatch an event
-        event_data = {
-            "event_type": "test_event",
-            "data": "test_data",
-            "source_node": "test_node"
-        }
+        event_data = {"event_type": "test_event", "data": "test_data", "source_node": "test_node"}
 
         dispatched_listeners = dispatcher.dispatch_event(event_data)
         self.assertIn(listener_id, dispatched_listeners)
@@ -302,20 +285,13 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "RECEIVED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_calculation",
-                "payload": {"value": 100}
-            },
+            "params": {"task": "test_calculation", "payload": {"value": 100}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
-                "risk_level": "low"
+                "risk_level": "low",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Since we're using a Mock transport, we expect the call to fail at transport level
@@ -338,20 +314,13 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "ROUTED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_calculation",
-                "payload": {"value": 50}
-            },
+            "params": {"task": "test_calculation", "payload": {"value": 50}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
-                "risk_level": "low"
+                "risk_level": "low",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Process through orchestrator
@@ -374,20 +343,13 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "RECEIVED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_calculation",
-                "payload": {"value": 25}
-            },
+            "params": {"task": "test_calculation", "payload": {"value": 25}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
-                "risk_level": "low"
+                "risk_level": "low",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Process the request
@@ -407,7 +369,7 @@ class TestDistributedFACP(unittest.TestCase):
             user_id=self.test_user_id,
             success=True,
             source_node="test_node",
-            target_node="auth_service"
+            target_node="auth_service",
         )
 
         # Log an authorization event
@@ -417,7 +379,7 @@ class TestDistributedFACP(unittest.TestCase):
             allowed=True,
             permissions=["engine_access"],
             source_node="test_node",
-            target_node="engine"
+            target_node="engine",
         )
 
         # Get audit summary
@@ -433,11 +395,7 @@ class TestDistributedFACP(unittest.TestCase):
 
         # Test constraint enforcement
         request_data = {
-            "constraints": {
-                "timeout_ms": 5000,
-                "max_memory_mb": 256,
-                "max_recursion_depth": 3
-            }
+            "constraints": {"timeout_ms": 5000, "max_memory_mb": 256, "max_recursion_depth": 3}
         }
 
         is_valid, error = sandbox_controller.enforce_execution_constraints(request_data)
@@ -452,10 +410,7 @@ class TestDistributedFACP(unittest.TestCase):
     def test_cluster_communicator(self):
         """Test cluster communicator (creation only, not full functionality)"""
         communicator = ClusterCommunicator(
-            node_id="test_node_1",
-            host="127.0.0.1",
-            port=9001,
-            node_type="test_node"
+            node_id="test_node_1", host="127.0.0.1", port=9001, node_type="test_node"
         )
 
         # Just test creation and basic properties
@@ -472,11 +427,9 @@ class TestDistributedFACP(unittest.TestCase):
         processor.start()
 
         # Submit a test event
-        processor.submit_event({
-            "event_type": "test_event",
-            "data": "test_data",
-            "timestamp": time.time()
-        })
+        processor.submit_event(
+            {"event_type": "test_event", "data": "test_data", "timestamp": time.time()}
+        )
 
         # Get processor status
         status = processor.get_processor_status()
@@ -493,6 +446,7 @@ class TestDistributedFACP(unittest.TestCase):
 
         # Register a test handler
         handler_called = {"value": False}
+
         def test_handler(facp_request):
             handler_called["value"] = True
             return {"status": "success", "result": "handled"}
@@ -509,20 +463,13 @@ class TestDistributedFACP(unittest.TestCase):
             "target": "engine",
             "execution_state": "RECEIVED",
             "method": "engine.calculate",
-            "params": {
-                "task": "test_calculation",
-                "payload": {"value": 10}
-            },
+            "params": {"task": "test_calculation", "payload": {"value": 10}},
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access"],
-                "risk_level": "low"
+                "risk_level": "low",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Submit the FACP request
@@ -559,22 +506,15 @@ class TestDistributedFACP(unittest.TestCase):
             "method": "engine.calculate",
             "params": {
                 "task": "simple_calculation",
-                "payload": {
-                    "operation": "add",
-                    "operands": [10, 20, 30]
-                }
+                "payload": {"operation": "add", "operands": [10, 20, 30]},
             },
             "security": {
                 "auth_token": self.test_token,
                 "permissions": ["engine_access", "execute"],
                 "risk_level": "low",
-                "idempotency_key": f"test_idempotency_{int(time.time())}"
+                "idempotency_key": f"test_idempotency_{int(time.time())}",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Test validation
@@ -607,6 +547,7 @@ class TestDistributedSecurity(unittest.TestCase):
     def setUp(self):
         """set up security test fixtures"""
         import secrets as _secrets2
+
         self.auth_provider = AuthProvider(secret_key=_secrets2.token_urlsafe(48))
         self.rbac_engine = RBACEngine()
         self.validation_firewall = ValidationFirewall(self.auth_provider)
@@ -615,19 +556,17 @@ class TestDistributedSecurity(unittest.TestCase):
         self.auth_provider.register_user(
             user_id="admin_user",
             roles=["admin"],
-            permissions=["admin", "engine_access", "client_access", "orchestrator_access"]
+            permissions=["admin", "engine_access", "client_access", "orchestrator_access"],
         )
 
         self.auth_provider.register_user(
             user_id="operator_user",
             roles=["operator"],
-            permissions=["engine_access", "execute", "read", "write"]
+            permissions=["engine_access", "execute", "read", "write"],
         )
 
         self.auth_provider.register_user(
-            user_id="viewer_user",
-            roles=["viewer"],
-            permissions=["read"]
+            user_id="viewer_user", roles=["viewer"], permissions=["read"]
         )
 
         # Create tokens for each user
@@ -646,11 +585,15 @@ class TestDistributedSecurity(unittest.TestCase):
         permission_checker = PermissionChecker(self.rbac_engine)
 
         # Admin should have access to everything
-        allowed, _reason = permission_checker.check_method_access("admin_user", "admin.configure")  # NOSONAR - python:S1481
+        allowed, _reason = permission_checker.check_method_access(
+            "admin_user", "admin.configure"
+        )  # NOSONAR - python:S1481
         self.assertTrue(allowed)
 
         # Operator should have execution access
-        allowed, _reason = permission_checker.check_method_access("operator_user", "engine.calculate")
+        allowed, _reason = permission_checker.check_method_access(
+            "operator_user", "engine.calculate"
+        )
         self.assertTrue(allowed)
 
         # Viewer should not have execution access
@@ -688,13 +631,9 @@ class TestDistributedSecurity(unittest.TestCase):
             "security": {
                 "auth_token": self.viewer_token,
                 "permissions": ["read"],  # Viewer only has read permission
-                "risk_level": "low"
+                "risk_level": "low",
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # This should be blocked by the validation firewall
@@ -721,13 +660,9 @@ class TestDistributedSecurity(unittest.TestCase):
                 "auth_token": self.operator_token,
                 "permissions": ["engine_access"],
                 "risk_level": "low",
-                "idempotency_key": idempotency_key
+                "idempotency_key": idempotency_key,
             },
-            "constraints": {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
         # Process the request through validation firewall
@@ -755,6 +690,6 @@ def run_tests():
     return result.wasSuccessful()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = run_tests()
     exit(0 if success else 1)

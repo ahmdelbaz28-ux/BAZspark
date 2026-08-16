@@ -58,29 +58,43 @@ class TestConstants:
 
     def test_public_mode_15db(self):
         """NFPA 72 §18.4.3: public mode = 15 dB above ambient."""
-        assert NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_private_mode_10db(self):
         """NFPA 72 §18.4.4: private mode = 10 dB above ambient."""
-        assert NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB == 10.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_sleeping_75dba(self):
         """NFPA 72 §18.4.2: sleeping areas = 75 dBA at pillow."""
-        assert NFPA72_SLEEPING_ABSOLUTE_MIN_DBA == 75.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            NFPA72_SLEEPING_ABSOLUTE_MIN_DBA == 75.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_110dba(self):
         """NFPA 72 §18.4.1.2: maximum 110 dBA."""
-        assert NFPA72_MAX_DBA == 110.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            NFPA72_MAX_DBA == 110.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ugld_center_freq_40khz(self):
-        assert UGLD_CENTER_FREQUENCY_HZ == 40_000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            UGLD_CENTER_FREQUENCY_HZ == 40_000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ugld_min_snr_6db(self):
-        assert UGLD_MIN_SNR_DB == 6.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            UGLD_MIN_SNR_DB == 6.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_conservative_absorption(self):
         """Conservative 1.5 dB/m at 40 kHz for industrial conditions."""
-        assert UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M == 1.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M == 1.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_ceiling_absorption(self):
         """Concrete/steel deck absorption ≈ 0.04 at ultrasonic freq."""
@@ -106,11 +120,14 @@ class TestCombineSPL:
         assert 89.9 < result < 90.1, f"Expected ~90 dB, got {result}"
 
     def test_both_zero_returns_zero(self):
-        assert _combine_spl_db(0.0, 0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _combine_spl_db(0.0, 0.0) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_both_negative_returns_zero(self):
-        assert _combine_spl_db(-10.0, -5.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-
+        assert (
+            _combine_spl_db(-10.0, -5.0) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nan_a_returns_b(self):
         """NaN input should fall back to the other value."""
@@ -195,7 +212,6 @@ class TestImageSourceReflection:
         )
         assert reflected == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
-
     def test_negative_absorption_raises(self):
         """Negative absorption is physically impossible — adds energy."""
         with pytest.raises(ValueError, match="must be >= 0"):
@@ -246,7 +262,9 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_speakers_raises(self, engine):
         """No speakers → cannot compute SPL → ValueError."""
-        with pytest.raises(ValueError, match="at least one Speaker"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="at least one Speaker"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-103",
                 occ_type="business",
@@ -257,7 +275,9 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_checkpoints_raises(self, engine):
         """No check points → cannot verify coverage → ValueError."""
-        with pytest.raises(ValueError, match="at least one CheckPoint"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="at least one CheckPoint"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-104",
                 occ_type="business",
@@ -267,7 +287,9 @@ class TestAcousticsEngineAudibleCoverage:
             )
 
     def test_invalid_mode_raises(self, engine):
-        with pytest.raises(ValueError, match="Invalid mode"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="Invalid mode"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-105",
                 occ_type="business",
@@ -370,7 +392,10 @@ class TestAcousticsEngineUGLDRaytrace:
             use_conservative_absorption=True,
         )
         # Conservative absorption should give equal or lower SPL
-        assert result_conservative.detection_zones[0].final_spl_db <= result_normal.detection_zones[0].final_spl_db + 0.1
+        assert (
+            result_conservative.detection_zones[0].final_spl_db
+            <= result_normal.detection_zones[0].final_spl_db + 0.1
+        )
 
 
 # ============================================================================
@@ -387,8 +412,12 @@ class TestAcousticsEngineMultiSensor:
 
     def test_basic_multi_sensor(self, engine):
         sensors = [
-            UltrasonicSensor(sensor_id="UGLD-A", trigger_threshold_db=74.0, background_noise_db=60.0),
-            UltrasonicSensor(sensor_id="UGLD-B", trigger_threshold_db=74.0, background_noise_db=60.0),
+            UltrasonicSensor(
+                sensor_id="UGLD-A", trigger_threshold_db=74.0, background_noise_db=60.0
+            ),
+            UltrasonicSensor(
+                sensor_id="UGLD-B", trigger_threshold_db=74.0, background_noise_db=60.0
+            ),
         ]
         result = engine.ugld_multi_sensor_coverage(
             leak_points=[(5.0, 5.0, 2.0), (25.0, 25.0, 2.0)],

@@ -275,7 +275,9 @@ class ComplianceProofDocument:
         total_detectors = sum(r.layout.count for r in self.records)
         all_proof = all(r.layout.proof_valid for r in self.records)
         all_nfpa = all(r.layout.nfpa_valid for r in self.records)
-        all_verified = all(r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED for r in self.records)
+        all_verified = all(
+            r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED for r in self.records
+        )
 
         lines.extend(
             [
@@ -288,7 +290,9 @@ class ComplianceProofDocument:
         )
         return "\n".join(lines)
 
-    def _detailed_room_results(self) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _detailed_room_results(
+        self,
+    ) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Detailed results for each room."""
         lines = ["## 3. Detailed Room Results", ""]
 
@@ -352,7 +356,9 @@ class ComplianceProofDocument:
                     ]
                 )
                 for v in rec.consensus.engines:
-                    lines.append(f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}")
+                    lines.append(
+                        f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}"
+                    )
                 lines.append("")
 
             # Notes
@@ -364,14 +370,28 @@ class ComplianceProofDocument:
 
         return "\n".join(lines)
 
-    def _consensus_summary(self) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _consensus_summary(
+        self,
+    ) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Summary of consensus verification results."""
         if not self.records:
             return "## 4. Consensus Summary\n\nNo rooms verified."
 
-        verified = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED)
-        warning = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING)
-        fail = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL)
+        verified = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED
+        )
+        warning = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING
+        )
+        fail = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL
+        )
         no_consensus = sum(1 for r in self.records if not r.consensus)
         total = len(self.records)
 
@@ -550,7 +570,9 @@ def _cli_main() -> None:
     if args.output == "-":
         print(markdown)
     else:
-        with open(args.output, "w", encoding="utf-8") as f:  # NOSONAR — S8707: assertion acceptable in test
+        with open(
+            args.output, "w", encoding="utf-8"
+        ) as f:  # NOSONAR — S8707: assertion acceptable in test
             f.write(markdown)
         print(f"Compliance document written to {args.output}", file=sys.stderr)
 

@@ -38,6 +38,7 @@ from typing import Any
 # Validation
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def validate_dataset(dataset_path: Path) -> bool:
     """
     Validate corpus/ + train.json layout per rag-eval dataset-and-conversion.md spec.
@@ -90,12 +91,11 @@ def validate_dataset(dataset_path: Path) -> bool:
             ok = False
 
         # Check id type (must be integer or absent)
-        bad_ids = [
-            i for i, r in enumerate(data)
-            if "id" in r and not isinstance(r["id"], int)
-        ]
+        bad_ids = [i for i, r in enumerate(data) if "id" in r and not isinstance(r["id"], int)]
         if bad_ids:
-            print(f"[WARN]  Rows with non-integer 'id': {bad_ids[:10]} (use integer from row index)")
+            print(
+                f"[WARN]  Rows with non-integer 'id': {bad_ids[:10]} (use integer from row index)"
+            )
 
         # Check contexts filenames exist in corpus
         if corpus_dir.exists():
@@ -117,6 +117,7 @@ def validate_dataset(dataset_path: Path) -> bool:
 # ──────────────────────────────────────────────────────────────────────────────
 # Conversion: JSONL → train.json
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def convert_jsonl(
     source: Path,
@@ -154,6 +155,7 @@ def convert_jsonl(
 # Conversion: CSV → train.json
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def convert_csv(
     source: Path,
     output_dir: Path,
@@ -189,13 +191,16 @@ def convert_csv(
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="BAZspark RAG Eval Dataset Preparer & Validator")
     sub = p.add_subparsers(dest="command")
 
     # validate command
     val = sub.add_parser("validate", help="Validate an existing dataset directory")
-    val.add_argument("dataset_path", type=Path, help="Path to dataset root (contains corpus/ and train.json)")
+    val.add_argument(
+        "dataset_path", type=Path, help="Path to dataset root (contains corpus/ and train.json)"
+    )
 
     # from-jsonl command
     jl = sub.add_parser("from-jsonl", help="Convert JSONL source to train.json")
@@ -212,8 +217,12 @@ def parse_args() -> argparse.Namespace:
     cv.add_argument("--answer-col", default="answer")
 
     # Legacy: --validate flag for backwards compat
-    p.add_argument("--validate", type=Path, metavar="DATASET_PATH",
-                   help="(Legacy) Validate dataset at given path")
+    p.add_argument(
+        "--validate",
+        type=Path,
+        metavar="DATASET_PATH",
+        help="(Legacy) Validate dataset at given path",
+    )
 
     return p.parse_args()
 

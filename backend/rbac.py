@@ -78,8 +78,8 @@ class Permission(StrEnum):
     INTEGRATION_READ = "integration:read"
     INTEGRATION_MANAGE = "integration:manage"
     # Billing & Meeza payment permissions
-    BILLING_READ   = "billing:read"     # view own orders/transactions
-    BILLING_MANAGE = "billing:manage"   # view all transactions, audit events, sandbox simulate
+    BILLING_READ = "billing:read"  # view own orders/transactions
+    BILLING_MANAGE = "billing:manage"  # view all transactions, audit events, sandbox simulate
 
 
 # Role-permission mapping
@@ -124,7 +124,7 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
         Permission.MONITOR_READ,
         Permission.INTEGRATION_READ,
         Permission.INTEGRATION_MANAGE,
-        Permission.BILLING_READ,   # engineers can create/view their own orders
+        Permission.BILLING_READ,  # engineers can create/view their own orders
     },
     Role.VIEWER: {
         Permission.PROJECT_READ,

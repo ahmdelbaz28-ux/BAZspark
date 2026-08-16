@@ -103,9 +103,7 @@ class ElevationAdapter(ExternalApiAdapter):
             cooldown_seconds=cooldown_seconds,
             timeout_seconds=timeout_seconds,
         )
-        self._base_url = base_url or os.environ.get(
-            "OPEN_TOPO_DATA_URL", DEFAULT_BASE_URL
-        )
+        self._base_url = base_url or os.environ.get("OPEN_TOPO_DATA_URL", DEFAULT_BASE_URL)
 
     async def _fetch(self, lat: float, lon: float) -> ElevationReading:
         if not (-90.0 <= lat <= 90.0):
@@ -117,9 +115,7 @@ class ElevationAdapter(ExternalApiAdapter):
         # the API returns "null" results; we treat that as a parse
         # error so the caller falls back gracefully.
         if not (-56.0 <= lat <= 60.0):
-            raise ValueError(
-                f"latitude {lat} outside SRTM coverage (-56° to +60°)"
-            )
+            raise ValueError(f"latitude {lat} outside SRTM coverage (-56° to +60°)")
 
         params = {"locations": f"{lat},{lon}"}
         client = await self._get_client()
@@ -127,6 +123,7 @@ class ElevationAdapter(ExternalApiAdapter):
         from urllib.parse import urlencode
 
         from backend.integrations._ssrf_guard import validate_url
+
         _request_url = f"{self._base_url}?{urlencode(params)}"
         validate_url(_request_url)
 

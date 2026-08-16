@@ -109,7 +109,9 @@ class TestFileValidation:
         """POST without a file should return 422 (validation error)."""
         response = client.post("/api/parse-dwg")
         # Without auth, returns 403. With mocked auth, returns 422.
-        assert response.status_code in (403, 422), f"Expected 403 or 422, got {response.status_code}"
+        assert response.status_code in (403, 422), (
+            f"Expected 403 or 422, got {response.status_code}"
+        )
 
     def test_wrong_extension_returns_400(self, client):
         """Uploading a .pdf file should be rejected with 400."""
@@ -118,7 +120,9 @@ class TestFileValidation:
             files={"file": ("test.pdf", b"fake data", "application/pdf")},
         )
         # Without auth, returns 403. With auth, returns 400.
-        assert response.status_code in (403, 400), f"Expected 403 or 400, got {response.status_code}"
+        assert response.status_code in (403, 400), (
+            f"Expected 403 or 400, got {response.status_code}"
+        )
 
     def test_valid_dxf_returns_success(self, client, valid_dxf_bytes):
         """Uploading a valid DXF should return 200 with room_count."""
@@ -127,7 +131,9 @@ class TestFileValidation:
             files={"file": ("test.dxf", valid_dxf_bytes, "application/dxf")},
         )
         # Without auth, returns 403. With auth + valid DXF, returns 200 or 422.
-        assert response.status_code in (200, 403, 422), f"Expected 200, 403, or 422, got {response.status_code}"
+        assert response.status_code in (200, 403, 422), (
+            f"Expected 200, 403, or 422, got {response.status_code}"
+        )
         if response.status_code == 200:
             data = response.json()
             assert "success" in data
@@ -162,7 +168,9 @@ class TestResponseStructure:
             files={"file": ("test.dxf", b"garbage content", "application/dxf")},
         )
         # Without auth, returns 403. With auth, returns 400 or 422.
-        assert response.status_code in (400, 403, 422), f"Expected 400, 403, or 422, got {response.status_code}"
+        assert response.status_code in (400, 403, 422), (
+            f"Expected 400, 403, or 422, got {response.status_code}"
+        )
         if response.status_code != 403:
             data = response.json()
             assert "success" in data
@@ -185,4 +193,6 @@ class TestFileSizeEnforcement:
             files={"file": ("oversized.dxf", large_data, "application/dxf")},
         )
         # Without auth: 403. With auth: 413 (payload too large) or 422/400.
-        assert response.status_code in (403, 413, 422, 400, 500), f"Unexpected status: {response.status_code}"
+        assert response.status_code in (403, 413, 422, 400, 500), (
+            f"Unexpected status: {response.status_code}"
+        )

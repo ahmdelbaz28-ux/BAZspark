@@ -57,13 +57,104 @@ class PanelRecommendation:
 
 
 MASTER_PANEL_DATABASE: list[FireAlarmPanel] = [
-    FireAlarmPanel(model="NFS-320", manufacturer="NOTIFIER", points_capacity=250, nac_capacity=2, supports_networking=False, supports_voice=False, supports_releasing=False, max_slc_loops=1, listings=["UL", "ULC"], standby_current_amps=0.200, alarm_current_amps=0.350, power_supply_watts=144),
-    FireAlarmPanel(model="NFS-640", manufacturer="NOTIFIER", points_capacity=640, nac_capacity=4, supports_networking=True, supports_voice=True, supports_releasing=False, max_slc_loops=4, listings=["UL", "ULC"], standby_current_amps=0.250, alarm_current_amps=0.450, power_supply_watts=144),
-    FireAlarmPanel(model="NFS2-3030", manufacturer="NOTIFIER", points_capacity=3180, nac_capacity=10, supports_networking=True, supports_voice=True, supports_releasing=True, max_slc_loops=10, listings=["UL", "ULC", "FM"], standby_current_amps=0.350, alarm_current_amps=0.650, power_supply_watts=288),
-    FireAlarmPanel(model="FC901", manufacturer="SIEMENS", points_capacity=50, nac_capacity=2, supports_networking=False, supports_voice=False, supports_releasing=False, max_slc_loops=1, listings=["UL", "FM", "FDNY"], standby_current_amps=0.120, alarm_current_amps=0.250, power_supply_watts=170),
-    FireAlarmPanel(model="FC922", manufacturer="SIEMENS", points_capacity=252, nac_capacity=4, supports_networking=True, supports_voice=True, supports_releasing=False, max_slc_loops=2, listings=["UL", "FM", "FDNY"], standby_current_amps=0.180, alarm_current_amps=0.350, power_supply_watts=170),
-    FireAlarmPanel(model="FC924", manufacturer="SIEMENS", points_capacity=504, nac_capacity=6, supports_networking=True, supports_voice=True, supports_releasing=True, max_slc_loops=4, listings=["UL", "FM", "FDNY"], standby_current_amps=0.220, alarm_current_amps=0.450, power_supply_watts=300),
-    FireAlarmPanel(model="4100ES", manufacturer="SIMPLEX", points_capacity=3000, nac_capacity=10, supports_networking=True, supports_voice=True, supports_releasing=True, max_slc_loops=10, listings=["UL", "FM", "FDNY"], standby_current_amps=0.450, alarm_current_amps=0.850, power_supply_watts=360),
+    FireAlarmPanel(
+        model="NFS-320",
+        manufacturer="NOTIFIER",
+        points_capacity=250,
+        nac_capacity=2,
+        supports_networking=False,
+        supports_voice=False,
+        supports_releasing=False,
+        max_slc_loops=1,
+        listings=["UL", "ULC"],
+        standby_current_amps=0.200,
+        alarm_current_amps=0.350,
+        power_supply_watts=144,
+    ),
+    FireAlarmPanel(
+        model="NFS-640",
+        manufacturer="NOTIFIER",
+        points_capacity=640,
+        nac_capacity=4,
+        supports_networking=True,
+        supports_voice=True,
+        supports_releasing=False,
+        max_slc_loops=4,
+        listings=["UL", "ULC"],
+        standby_current_amps=0.250,
+        alarm_current_amps=0.450,
+        power_supply_watts=144,
+    ),
+    FireAlarmPanel(
+        model="NFS2-3030",
+        manufacturer="NOTIFIER",
+        points_capacity=3180,
+        nac_capacity=10,
+        supports_networking=True,
+        supports_voice=True,
+        supports_releasing=True,
+        max_slc_loops=10,
+        listings=["UL", "ULC", "FM"],
+        standby_current_amps=0.350,
+        alarm_current_amps=0.650,
+        power_supply_watts=288,
+    ),
+    FireAlarmPanel(
+        model="FC901",
+        manufacturer="SIEMENS",
+        points_capacity=50,
+        nac_capacity=2,
+        supports_networking=False,
+        supports_voice=False,
+        supports_releasing=False,
+        max_slc_loops=1,
+        listings=["UL", "FM", "FDNY"],
+        standby_current_amps=0.120,
+        alarm_current_amps=0.250,
+        power_supply_watts=170,
+    ),
+    FireAlarmPanel(
+        model="FC922",
+        manufacturer="SIEMENS",
+        points_capacity=252,
+        nac_capacity=4,
+        supports_networking=True,
+        supports_voice=True,
+        supports_releasing=False,
+        max_slc_loops=2,
+        listings=["UL", "FM", "FDNY"],
+        standby_current_amps=0.180,
+        alarm_current_amps=0.350,
+        power_supply_watts=170,
+    ),
+    FireAlarmPanel(
+        model="FC924",
+        manufacturer="SIEMENS",
+        points_capacity=504,
+        nac_capacity=6,
+        supports_networking=True,
+        supports_voice=True,
+        supports_releasing=True,
+        max_slc_loops=4,
+        listings=["UL", "FM", "FDNY"],
+        standby_current_amps=0.220,
+        alarm_current_amps=0.450,
+        power_supply_watts=300,
+    ),
+    FireAlarmPanel(
+        model="4100ES",
+        manufacturer="SIMPLEX",
+        points_capacity=3000,
+        nac_capacity=10,
+        supports_networking=True,
+        supports_voice=True,
+        supports_releasing=True,
+        max_slc_loops=10,
+        listings=["UL", "FM", "FDNY"],
+        standby_current_amps=0.450,
+        alarm_current_amps=0.850,
+        power_supply_watts=360,
+    ),
 ]
 
 
@@ -74,10 +165,14 @@ class SelectionEngine:
         nac_circuit_count: int,
         panel: FireAlarmPanel,
         requires_voice: bool,
-        min_temperature_c: float = 20.0
+        min_temperature_c: float = 20.0,
     ) -> tuple[float, dict]:
         standby_load = (device_count * STANDBY_MA_PER_DEVICE / 1000.0) + panel.standby_current_amps
-        alarm_load = (nac_circuit_count * 2.0) + (device_count * ALARM_MA_PER_DEVICE / 1000.0) + panel.alarm_current_amps
+        alarm_load = (
+            (nac_circuit_count * 2.0)
+            + (device_count * ALARM_MA_PER_DEVICE / 1000.0)
+            + panel.alarm_current_amps
+        )
         alarm_duration_h = 0.25 if requires_voice else (5.0 / 60.0)
 
         try:
@@ -99,8 +194,14 @@ class SelectionEngine:
                 "aging_derating": result.aging_derating,
                 "discharge_rate_correction": result.discharge_rate_correction,
                 "combined_safety_factor": round(
-                    1.0 / max(result.temperature_derating * result.aging_derating * result.discharge_rate_correction, 0.01),
-                    2
+                    1.0
+                    / max(
+                        result.temperature_derating
+                        * result.aging_derating
+                        * result.discharge_rate_correction,
+                        0.01,
+                    ),
+                    2,
                 ),
                 "standby_ah": result.standby_ah,
                 "alarm_ah": result.alarm_ah,
@@ -122,7 +223,9 @@ class SelectionEngine:
             ) from exc
 
     @classmethod
-    def select_panel(cls, req: ProjectRequirements) -> PanelRecommendation:  # NOSONAR — S3776: panel selection logic must evaluate many criteria
+    def select_panel(
+        cls, req: ProjectRequirements
+    ) -> PanelRecommendation:  # NOSONAR — S3776: panel selection logic must evaluate many criteria
         required_points = req.device_count * 1.2
         required_nacs = req.nac_circuit_count
 
@@ -156,21 +259,21 @@ class SelectionEngine:
             else:
                 score += 5.0
 
-            if req.preferred_manufacturer and req.preferred_manufacturer.upper() == p.manufacturer.upper():
+            if (
+                req.preferred_manufacturer
+                and req.preferred_manufacturer.upper() == p.manufacturer.upper()
+            ):
                 score += 100.0
 
             eligible_panels.append((p, score))
 
         if not eligible_panels:
-            raise ValueError("No compliant panels found in database for the given design requirements.")
+            raise ValueError(
+                "No compliant panels found in database for the given design requirements."
+            )
 
         eligible_panels.sort(
-            key=lambda x: (
-                -x[1],
-                x[0].points_capacity,
-                x[0].standby_current_amps,
-                x[0].model
-            )
+            key=lambda x: (-x[1], x[0].points_capacity, x[0].standby_current_amps, x[0].model)
         )
 
         selected_panel, _ = eligible_panels[0]
@@ -193,7 +296,9 @@ class SelectionEngine:
             )
 
         if req.requires_releasing:
-            releasing_alternatives = [p[0].model for p in eligible_panels[1:] if p[0].supports_releasing]
+            releasing_alternatives = [
+                p[0].model for p in eligible_panels[1:] if p[0].supports_releasing
+            ]
             if not releasing_alternatives:
                 warnings.append(
                     "No alternative releasing-capable panels available. "
@@ -205,7 +310,7 @@ class SelectionEngine:
             req.nac_circuit_count,
             selected_panel,
             req.requires_voice,
-            req.min_temperature_c
+            req.min_temperature_c,
         )
 
         serialized_payload = (
@@ -231,7 +336,7 @@ class SelectionEngine:
             ],
             warnings=warnings,
             alternatives=alternatives,
-            signature_hash=signature
+            signature_hash=signature,
         )
 
 

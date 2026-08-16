@@ -99,6 +99,7 @@ class TestApsRouterEndpoints:
         # against a stale/empty env var.
         monkeypatch.setenv("FIREAI_API_KEY", self._ROOT_KEY)
         from backend.app import app
+
         with TestClient(app, headers={"X-API-Key": self._ROOT_KEY}) as c:
             yield c
 
@@ -119,7 +120,7 @@ class TestApsRouterEndpoints:
             "bucket_key": "bazspark_test_bucket",
             "object_key": "drawing.dwg",
             "activity_id": "BazSparkAutoCADBridge.DrawLayout",
-            "params": {"NFPA72": "true", "detector_density": 0.8}
+            "params": {"NFPA72": "true", "detector_density": 0.8},
         }
 
         res = client.post("/api/v2/aps/process", json=payload, headers=auth_headers)

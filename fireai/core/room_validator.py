@@ -38,7 +38,9 @@ VALID_OCCUPANCY_TYPES: set[str] = {
 }
 
 
-def validate_room_spec(room_spec: RoomSpec) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def validate_room_spec(
+    room_spec: RoomSpec,
+) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate RoomSpec before analysis.
 

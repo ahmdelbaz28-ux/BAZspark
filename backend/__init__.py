@@ -5,11 +5,17 @@
 # This patch removes the unsupported kwarg to prevent TypeError during PDF generation.
 import hashlib
 
-_original_md5 = hashlib.md5  # NOSONAR — python:S4790: compatibility patch for ReportLab, NOT used for security
+_original_md5 = (
+    hashlib.md5
+)  # NOSONAR — python:S4790: compatibility patch for ReportLab, NOT used for security
+
 
 def _patched_md5(*args, **kwargs):  # type: ignore[no-untyped-def]
     kwargs.pop("usedforsecurity", None)
-    return _original_md5(*args, **kwargs)  # NOSONAR — python:S4790: ReportLab compat, no security context
+    return _original_md5(
+        *args, **kwargs
+    )  # NOSONAR — python:S4790: ReportLab compat, no security context
+
 
 hashlib.md5 = _patched_md5  # NOSONAR — python:S4790: ReportLab backward compat patch
 

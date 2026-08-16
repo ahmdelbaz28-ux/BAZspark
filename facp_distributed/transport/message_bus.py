@@ -1,5 +1,6 @@
 # NOSONAR
 """Message Bus Transport for Distributed FACP System"""
+
 import asyncio
 import json
 import logging
@@ -45,7 +46,9 @@ class MessageBusTransport(TransportLayer):
         """Subscribe to a topic with a handler"""
         raise NotImplementedError("Subclasses must implement subscribe()")
 
-    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
+    def send_request(
+        self, request_data: dict[str, Any], target_node: str | None = None
+    ) -> dict[str, Any]:
         """
         Send request via message bus
         target_node can specify routing information
@@ -60,7 +63,7 @@ class MessageBusTransport(TransportLayer):
             "source_node": self.node_id,
             "source_type": self.node_type,
             "target_node": target_node,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         try:
@@ -77,31 +80,30 @@ class MessageBusTransport(TransportLayer):
                     "node_id": self.node_id,
                     "node_type": self.node_type,
                     "execution_path": [self.node_type],
-                    "latency_ms": 0
-                }
+                    "latency_ms": 0,
+                },
             }
         except Exception as e:
             return {
                 "protocol": "FACP/1.1",
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
-                "error": {
-                    "code": "MESSAGE_BUS_ERROR",
-                    "message": str(e)
-                },
+                "error": {"code": "MESSAGE_BUS_ERROR", "message": str(e)},
                 "trace": {
                     "node_id": self.node_id,
                     "node_type": self.node_type,
                     "execution_path": [self.node_type],
-                    "latency_ms": 0
-                }
+                    "latency_ms": 0,
+                },
             }
 
 
 class RedisMessageBus(MessageBusTransport):
     """Redis-based message bus implementation"""
 
-    def __init__(self, host: str = "localhost", port: int = 6379, node_type: str = "l2_orchestrator"):
+    def __init__(
+        self, host: str = "localhost", port: int = 6379, node_type: str = "l2_orchestrator"
+    ):
         super().__init__(node_type)
         self.host = host
         self.port = port
@@ -113,6 +115,7 @@ class RedisMessageBus(MessageBusTransport):
         """Connect to Redis"""
         try:
             import redis
+
             self.redis_client = redis.Redis(host=self.host, port=self.port, decode_responses=True)
 
             # Test connection
@@ -142,7 +145,9 @@ class RedisMessageBus(MessageBusTransport):
         message_str = json.dumps(message)
         self.redis_client.publish(topic, message_str)
 
-    def subscribe(self, topic: str, handler: Callable):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def subscribe(
+        self, topic: str, handler: Callable
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Subscribe to a Redis channel"""
         if not self.pubsub:
             raise RuntimeError("Not connected to Redis")
@@ -151,11 +156,13 @@ class RedisMessageBus(MessageBusTransport):
 
         def message_handler():
             for message in self.pubsub.listen():
-                if message['type'] == 'message':
+                if message["type"] == "message":
                     try:
-                        data = json.loads(message['data'])
+                        data = json.loads(message["data"])
                         # Call the handler with the message data
-                        if asyncio.iscoroutinefunction(handler):  # NOSONAR — S3923: branches intentionally differ in side-effect only
+                        if asyncio.iscoroutinefunction(
+                            handler
+                        ):  # NOSONAR — S3923: branches intentionally differ in side-effect only
                             # For async handlers, we'd need to run in an event loop
                             # This is simplified for now
                             handler(data)
@@ -324,7 +331,9 @@ class InMemoryMessageBus(MessageBusTransport):
         if topic in self.channel_handlers:
             for handler in self.channel_handlers[topic]:
                 try:
-                    if asyncio.iscoroutinefunction(handler):  # NOSONAR — S3923: branches intentionally differ in side-effect only
+                    if asyncio.iscoroutinefunction(
+                        handler
+                    ):  # NOSONAR — S3923: branches intentionally differ in side-effect only
                         # For async handlers, we'd need an event loop
                         # This is simplified for now
                         handler(message)

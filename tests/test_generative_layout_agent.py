@@ -171,9 +171,7 @@ class TestDeterminism:
 class TestRecommendation:
     def test_standard_occupancy_recommends_standard(self, sequential_agent, small_office):
         """V135 F-9: Office is now low-hazard → COST_MINIMIZED allowed if competitive."""
-        result = sequential_agent.generate_variants(
-            small_office, occupancy_type="office"
-        )
+        result = sequential_agent.generate_variants(small_office, occupancy_type="office")
         # recommendation if its score is ≥ 90% of STANDARD_COMPLIANT.
         # Both variants are acceptable; the test should accept either.
         assert result.recommended_variant in (
@@ -183,9 +181,7 @@ class TestRecommendation:
 
     def test_high_hazard_occupancy_prefers_safety(self, sequential_agent, small_office):
         """High-hazard occupancy should prefer SAFETY_MAXIMIZED."""
-        result = sequential_agent.generate_variants(
-            small_office, occupancy_type="healthcare"
-        )
+        result = sequential_agent.generate_variants(small_office, occupancy_type="healthcare")
         # Healthcare is high-hazard → SAFETY_MAXIMIZED if compliant, else STANDARD
         recommended = result.recommended_variant
         assert recommended in (LayoutVariant.SAFETY_MAXIMIZED, LayoutVariant.STANDARD_COMPLIANT)
@@ -233,7 +229,9 @@ class TestScoring:
         for vr in result.variants.values():
             assert math.isfinite(vr.score)
 
-    def test_compliant_variant_scores_higher_than_non_compliant(self, sequential_agent, small_office):
+    def test_compliant_variant_scores_higher_than_non_compliant(
+        self, sequential_agent, small_office
+    ):
         """Compliant variant should generally score higher (compliance weight)."""
         result = sequential_agent.generate_variants(small_office)
         compliant_scores = [vr.score for vr in result.variants.values() if vr.is_compliant]
@@ -285,7 +283,9 @@ class TestAuditTrail:
         # Should have at least 3 events (one per variant)
         # May be None if AuditStore init failed (graceful degradation)
         valid_events = [e for e in result.audit_events if e is not None]
-        assert len(valid_events) > 0  # S3981: length is always >= 0, use > 0 for meaningful check  # At minimum, no crash
+        assert (
+            len(valid_events) > 0
+        )  # S3981: length is always >= 0, use > 0 for meaningful check  # At minimum, no crash
 
     def test_audit_does_not_block_generation(self, sequential_agent, small_office):
         """Even if audit fails, generation must complete."""
@@ -381,14 +381,10 @@ class TestEdgeCases:
 
     def test_heat_detector_type_supported(self, sequential_agent, small_office):
         """Heat detector type must be supported."""
-        result = sequential_agent.generate_variants(
-            small_office, detector_type="heat"
-        )
+        result = sequential_agent.generate_variants(small_office, detector_type="heat")
         assert len(result.variants) == 3
 
     def test_invalid_detector_type_falls_back(self, sequential_agent, small_office):
         """Invalid detector type should not crash (falls back to smoke)."""
-        result = sequential_agent.generate_variants(
-            small_office, detector_type="unknown_type"
-        )
+        result = sequential_agent.generate_variants(small_office, detector_type="unknown_type")
         assert len(result.variants) == 3

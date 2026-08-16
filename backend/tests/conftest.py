@@ -95,6 +95,7 @@ os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
 # safe to commit (it's a test-only secret with no production access).
 if not os.environ.get("FIREAI_SESSION_SECRET"):
     import secrets as _secrets
+
     os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
 
 # CORS_ALLOWED_ORIGINS to start. Set safe test defaults if not already set.
@@ -151,6 +152,7 @@ for _tmp_db in [
 # header), preserving their ability to test unauthenticated requests.
 try:
     import warnings
+
     warnings.filterwarnings(
         "ignore",
         "Please use `import python_multipart` instead.",
@@ -192,8 +194,7 @@ try:
         while frame is not None:
             f_filename = frame.f_code.co_filename
             if f_filename and (
-                "test_" in _os.path.basename(f_filename)
-                or "conftest" in f_filename
+                "test_" in _os.path.basename(f_filename) or "conftest" in f_filename
             ):
                 # V270 FIX: Skip frames from THIS conftest module.
                 # The double-patching (FastAPITestClient IS StarletteTestClient)
@@ -211,9 +212,8 @@ try:
         # On Windows, os.path.normcase converts / to \, so the old check
         # "backend/tests" in normcase(caller_file) always returned False.
         is_backend_test = bool(
-            caller_file and _os.path.normcase(
-                _os.path.abspath(caller_file)
-            ).startswith(_BACKEND_TESTS_DIR_NORM)
+            caller_file
+            and _os.path.normcase(_os.path.abspath(caller_file)).startswith(_BACKEND_TESTS_DIR_NORM)
         )
         if is_backend_test:
             caller_headers = kwargs.pop("headers", None) or {}
@@ -255,8 +255,7 @@ try:
             while frame is not None:
                 f_filename = frame.f_code.co_filename
                 if f_filename and (
-                    "test_" in _os.path.basename(f_filename)
-                    or "conftest" in f_filename
+                    "test_" in _os.path.basename(f_filename) or "conftest" in f_filename
                 ):
                     # V270 FIX: Skip frames from THIS conftest module.
                     if _os.path.normcase(_os.path.abspath(f_filename)) == _THIS_CONFTEST_FILE:
@@ -266,9 +265,10 @@ try:
                     break
                 frame = frame.f_back
             is_backend_test = bool(
-                caller_file and _os.path.normcase(
-                    _os.path.abspath(caller_file)
-                ).startswith(_BACKEND_TESTS_DIR_NORM)
+                caller_file
+                and _os.path.normcase(_os.path.abspath(caller_file)).startswith(
+                    _BACKEND_TESTS_DIR_NORM
+                )
             )
             _fastapi_original_init(self, *args, **kwargs)
             if is_backend_test:
@@ -323,6 +323,7 @@ try:
     _NON_VERSIONED_API_PATHS: set = set()
     try:
         import warnings as _warn2
+
         _warn2.filterwarnings(
             "ignore",
             "Please use `import python_multipart` instead.",
@@ -330,8 +331,10 @@ try:
         )
         _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
         import logging as _logging
+
         _logging.disable(_logging.CRITICAL)
         from backend.app import app as _app
+
         _schema = _app.openapi()
         for _path in _schema.get("paths", {}):
             # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
@@ -373,9 +376,7 @@ try:
 
         def _patched_request(self, method, url, *args, **kwargs):
             if getattr(self, "_fireai_backend_test", False):
-                return _original_request(
-                    self, method, _rewrite_legacy_url(url), *args, **kwargs
-                )
+                return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
             return _original_request(self, method, url, *args, **kwargs)
 
         _StarletteTestClient.request = _patched_request
@@ -450,6 +451,7 @@ def _reset_rate_limiter_storage():
     """
     try:
         from backend.limiter import limiter as _limiter
+
         if _limiter is not None and hasattr(_limiter, "_storage"):
             _storage = _limiter._storage
             for _attr in ("storage", "events", "expirations", "locks"):

@@ -52,10 +52,10 @@ logger = logging.getLogger(__name__)
 # A value is considered "still a placeholder" if any of these match.
 _PLACEHOLDER_PATTERNS = (
     re.compile(r"^\s*$"),
-    re.compile(r"^<[^>]+>\s*$"),                 # <PLACEHOLDER>
-    re.compile(r"YOUR_[A-Z_]+"),                  # YOUR_FIREAI_API_KEY
+    re.compile(r"^<[^>]+>\s*$"),  # <PLACEHOLDER>
+    re.compile(r"YOUR_[A-Z_]+"),  # YOUR_FIREAI_API_KEY
     re.compile(r"\bPLACEHOLDER\b", re.IGNORECASE),
-    re.compile(r"^\.\.\.+$"),                     # ".........."
+    re.compile(r"^\.\.\.+$"),  # ".........."
 )
 
 # Known real-but-placeholder-looking prefixes inside the template that should
@@ -112,15 +112,15 @@ def _mask(value: str | None) -> str:
 
 
 class Severity(StrEnum):
-    HARD = "HARD"   # launch blocker in production
-    SOFT = "SOFT"   # warning only (degraded mode acceptable in dev)
+    HARD = "HARD"  # launch blocker in production
+    SOFT = "SOFT"  # warning only (degraded mode acceptable in dev)
 
 
 @dataclass(frozen=True)
 class ValidationIssue:
-    name: str           # env var name
+    name: str  # env var name
     severity: Severity
-    message: str        # human readable diagnostic
+    message: str  # human readable diagnostic
     value_preview: str  # masked preview
 
     @property
@@ -144,6 +144,7 @@ def _present(value: str | None) -> tuple[bool, str]:
         return False, "missing or still a placeholder in .env.production"
     return True, "present"
 
+
 def _cors_origins_present(value: str | None) -> tuple[bool, str]:
     """Presence validator for CORS_ORIGINS that also accepts the legacy
     CORS_ALLOWED_ORIGINS alias — mirrors backend/app.py backward-compat.
@@ -161,6 +162,7 @@ def _min_len(n: int) -> _EnvValidator:
         if len(v) < n:
             return False, f"too short (min {n} chars, got {len(v)})"
         return True, f"present, length={len(v)}"
+
     return _v
 
 
@@ -186,13 +188,11 @@ def _bool_like(value: str | None) -> tuple[bool, str]:
 # Registry — single source of truth. Mirrors .env.production.example sections.
 _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     # ── 0. Runtime ──
-    ("FIREAI_ENV",            Severity.SOFT, _present),
-    ("FIREAI_API_KEY",        Severity.HARD, _present),
+    ("FIREAI_ENV", Severity.SOFT, _present),
+    ("FIREAI_API_KEY", Severity.HARD, _present),
     ("FIREAI_SESSION_SECRET", Severity.HARD, _min_len(43)),
-
     # ── 1. Database ──
-    ("DATABASE_URL",          Severity.HARD, _present),
-
+    ("DATABASE_URL", Severity.HARD, _present),
     # ── 2. Supabase Auth + REST ──
     # NOTE (audit P0-2 fix + self-critique M2): The backend currently uses
     # Supabase ONLY as a PostgreSQL connection pooler via DATABASE_URL (section 1).
@@ -201,19 +201,16 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     # at runtime. All three downgraded from HARD to SOFT to prevent unnecessary
     # launch blockers. When Supabase Auth/REST SDK is implemented, upgrade all
     # back to HARD.
-    ("SUPABASE_URL",              Severity.SOFT, _is_https),
-    ("SUPABASE_ANON_KEY",         Severity.SOFT, _present),
+    ("SUPABASE_URL", Severity.SOFT, _is_https),
+    ("SUPABASE_ANON_KEY", Severity.SOFT, _present),
     ("SUPABASE_SERVICE_ROLE_KEY", Severity.SOFT, _present),
-
     # ── 3. Langfuse ──
     ("LANGFUSE_PUBLIC_KEY", Severity.HARD, _present),
     ("LANGFUSE_SECRET_KEY", Severity.HARD, _present),
-    ("LANGFUSE_HOST",       Severity.HARD, _is_https),
-
+    ("LANGFUSE_HOST", Severity.HARD, _is_https),
     # ── 4. NVIDIA LLM ──
-    ("NVIDIA_API_KEY",  Severity.SOFT, _present),
+    ("NVIDIA_API_KEY", Severity.SOFT, _present),
     ("NVIDIA_BASE_URL", Severity.SOFT, _is_https),
-
     # ── 5. Resend ──
     # SOFT: email is a feature — the API serves fine without it.
     # NOTE (audit P1-1): Resend Python SDK is not yet imported in backend.
@@ -221,76 +218,64 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     # When email sending is implemented, add "from resend import Resend" and
     # document the integration in ARCHITECTURE.md.
     ("RESEND_API_KEY", Severity.SOFT, _present),
-
     # ── 7. Autodesk APS ──
-    ("APS_CLIENT_ID",     Severity.SOFT, _present),
+    ("APS_CLIENT_ID", Severity.SOFT, _present),
     ("APS_CLIENT_SECRET", Severity.SOFT, _present),
-
     # ── 8. Vercel ──
     ("VERCEL_DEPLOY_TOKEN", Severity.SOFT, _present),
-    ("VERCEL_PROJECT_ID",   Severity.SOFT, _present),
-
+    ("VERCEL_PROJECT_ID", Severity.SOFT, _present),
     # ── 9. Hugging Face ──
     # SOFT: only needed for HF sync from CI, not for the API runtime.
     ("HF_TOKEN", Severity.SOFT, _present),
-
     # ── 10. GitHub ──
     # SOFT: only needed for CI/deploy automation, not for the API runtime.
-    ("GH_PAT",        Severity.SOFT, _present),
-    ("GH_REPO",       Severity.SOFT, _present),
-    ("SONAR_TOKEN",   Severity.SOFT, _present),
-
+    ("GH_PAT", Severity.SOFT, _present),
+    ("GH_REPO", Severity.SOFT, _present),
+    ("SONAR_TOKEN", Severity.SOFT, _present),
     # ── 11. SonarCloud ──
-    ("SONAR_HOST_URL",    Severity.SOFT, _is_https),
+    ("SONAR_HOST_URL", Severity.SOFT, _is_https),
     ("SONAR_PROJECT_KEY", Severity.SOFT, _present),
-
     # ── 12. Cloudflare ──
     ("CLOUDFLARE_API_TOKEN", Severity.SOFT, _present),
-
     # ── 13. Daytona ──
     ("DAYTONA_API_TOKEN", Severity.SOFT, _present),
-
     # ── 14. CodeSandbox ──
     ("CODESANDBOX_TOKEN", Severity.SOFT, _present),
-
     # ── 16. CORS / Security ──
     ("CORS_ORIGINS", Severity.HARD, _cors_origins_present),
-
     # ── 17. HMAC / Webhook / Admin secrets (P0-4 launch blockers) ──
     # All HARD: a missing value means silent security downgrade (see
     # fireai/core/qomn_kernel.py P0-1) or an unauthenticated webhook/
     # admin path. Mirrors .env.production.example section 17/20.
-    ("AUDIT_HMAC_KEY",                    Severity.HARD, _min_len(32)),
-    ("FIREAI_QOMN_HMAC_KEY",              Severity.HARD, _min_len(32)),
-    ("QOMN_AUDIT_SECRET_KEY",             Severity.HARD, _min_len(32)),
-    ("FDS_WEBHOOK_SECRET",                Severity.HARD, _present),
-    ("BAZSPARK_MASTER_ADMIN_TOKEN",       Severity.HARD, _present),
-    ("FIREAI_VISION_KEY_ENCRYPTION_KEY",  Severity.HARD, _min_len(32)),
-    ("MEEZA_WEBHOOK_HMAC_SECRET",         Severity.HARD, _present),
-    ("TRUSTED_PROXIES",                   Severity.HARD, _present),
-
+    ("AUDIT_HMAC_KEY", Severity.HARD, _min_len(32)),
+    ("FIREAI_QOMN_HMAC_KEY", Severity.HARD, _min_len(32)),
+    ("QOMN_AUDIT_SECRET_KEY", Severity.HARD, _min_len(32)),
+    ("FDS_WEBHOOK_SECRET", Severity.HARD, _present),
+    ("BAZSPARK_MASTER_ADMIN_TOKEN", Severity.HARD, _present),
+    ("FIREAI_VISION_KEY_ENCRYPTION_KEY", Severity.HARD, _min_len(32)),
+    ("MEEZA_WEBHOOK_HMAC_SECRET", Severity.HARD, _present),
+    ("TRUSTED_PROXIES", Severity.HARD, _present),
     # ── Additional SOFT checks (audit P1-7 fix) ──
     # These variables from .env.production.example were not previously validated.
     # Added as SOFT so operators get startup warnings without blocking launch.
-    ("NEON_DATABASE_URL",         Severity.SOFT, _present),       # fallback DB
-    ("GEMINI_API_KEY",            Severity.SOFT, _present),       # LLM fallback embeddings
-    ("OPENAI_API_KEY",            Severity.SOFT, _present),       # Mem0 embeddings
-    ("ZENMUX_API_KEY",            Severity.SOFT, _present),       # primary LLM provider
-    ("RESEND_FROM_EMAIL",         Severity.SOFT, _present),       # email from address
-    ("QOMN_AUDIT_LOG_PATH",       Severity.SOFT, _present),       # audit log file path
-    ("APS_WEBHOOK_URL",           Severity.SOFT, _is_https),      # APS webhook callback
-    ("VERCEL_DEPLOY_HOOK_URL",    Severity.SOFT, _is_https),      # Vercel auto-deploy
-    ("UPTIMEROBOT_USER_KEY",      Severity.SOFT, _present),       # keep-awake heartbeat
-    ("UPTIMEROBOT_MONITOR_KEY",   Severity.SOFT, _present),       # keep-awake monitor
-
+    ("NEON_DATABASE_URL", Severity.SOFT, _present),  # fallback DB
+    ("GEMINI_API_KEY", Severity.SOFT, _present),  # LLM fallback embeddings
+    ("OPENAI_API_KEY", Severity.SOFT, _present),  # Mem0 embeddings
+    ("ZENMUX_API_KEY", Severity.SOFT, _present),  # primary LLM provider
+    ("RESEND_FROM_EMAIL", Severity.SOFT, _present),  # email from address
+    ("QOMN_AUDIT_LOG_PATH", Severity.SOFT, _present),  # audit log file path
+    ("APS_WEBHOOK_URL", Severity.SOFT, _is_https),  # APS webhook callback
+    ("VERCEL_DEPLOY_HOOK_URL", Severity.SOFT, _is_https),  # Vercel auto-deploy
+    ("UPTIMEROBOT_USER_KEY", Severity.SOFT, _present),  # keep-awake heartbeat
+    ("UPTIMEROBOT_MONITOR_KEY", Severity.SOFT, _present),  # keep-awake monitor
     # ── Security / Feature Flags (self-critique M1) ──
     # These flags affect security posture. SOFT validation warns operators if
     # they are misconfigured (e.g. CSRF disabled in prod) without blocking launch.
-    ("FIREAI_ENV_VALIDATION",  Severity.SOFT, _present),       # strict/warn escape hatch
-    ("FIREAI_CSRF_DISABLED",   Severity.SOFT, _bool_like),     # CSRF double-submit toggle
-    ("AKAMAI_ENABLED",         Severity.SOFT, _bool_like),     # Akamai edge middleware
-    ("CF_ENABLED",             Severity.SOFT, _bool_like),     # Cloudflare middleware
-    ("LANGFUSE_ENABLED",       Severity.SOFT, _bool_like),     # LLM observability toggle
+    ("FIREAI_ENV_VALIDATION", Severity.SOFT, _present),  # strict/warn escape hatch
+    ("FIREAI_CSRF_DISABLED", Severity.SOFT, _bool_like),  # CSRF double-submit toggle
+    ("AKAMAI_ENABLED", Severity.SOFT, _bool_like),  # Akamai edge middleware
+    ("CF_ENABLED", Severity.SOFT, _bool_like),  # Cloudflare middleware
+    ("LANGFUSE_ENABLED", Severity.SOFT, _bool_like),  # LLM observability toggle
 ]
 
 
@@ -374,12 +359,16 @@ def _detect_production_indicators() -> list[str]:
     # Production database indicators
     prod_db_markers = ("supabase.com", "neon.tech", "aws-0", "pooler.")
     if any(m in db_url for m in prod_db_markers):
-        indicators.append(f"DATABASE_URL contains production host ({next(m for m in prod_db_markers if m in db_url)})")
+        indicators.append(
+            f"DATABASE_URL contains production host ({next(m for m in prod_db_markers if m in db_url)})"
+        )
 
     # Production CORS indicators
     prod_cors_markers = ("vercel.app", "hf.space", "huggingface.co")
     if any(m in cors for m in prod_cors_markers):
-        indicators.append(f"CORS_ORIGINS contains production origin ({next(m for m in prod_cors_markers if m in cors)})")
+        indicators.append(
+            f"CORS_ORIGINS contains production origin ({next(m for m in prod_cors_markers if m in cors)})"
+        )
 
     return indicators
 
@@ -441,8 +430,7 @@ def assert_environment(prod_mode: bool | None = None) -> None:
 
     issues = validate_environment()
     if not issues:
-        logger.info("env_validator: all %d required variables present ✓",
-                    len(_REQUIRED_VARS))
+        logger.info("env_validator: all %d required variables present ✓", len(_REQUIRED_VARS))
         return
 
     hard = [i for i in issues if i.severity is Severity.HARD]
@@ -471,5 +459,7 @@ def assert_environment(prod_mode: bool | None = None) -> None:
         logger.warning(
             "env_validator: FIREAI_ENV_VALIDATION=%s — starting in DEGRADED "
             "mode with %d HARD issue(s); integrations affected will not work "
-            "until the missing variables are provided.", validation_mode, len(hard)
+            "until the missing variables are provided.",
+            validation_mode,
+            len(hard),
         )

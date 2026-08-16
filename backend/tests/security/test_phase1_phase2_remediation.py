@@ -6,6 +6,7 @@
 - B-001: Speckle server_url SSRF validation
 - P-001: Meeza payment webhook amount verification
 """
+
 import sqlite3
 
 import pytest
@@ -50,6 +51,7 @@ def test_d001_cluster_communicator_hmac_verification(monkeypatch):
     comm.running = True
 
     received_msgs = []
+
     def sample_handler(msg, sender, addr):
         received_msgs.append(msg)
 
@@ -68,6 +70,7 @@ def test_d001_cluster_communicator_hmac_verification(monkeypatch):
 
 def test_d002_sandbox_isolation_restricts_builtins():
     """D-002: Sandboxed function execution context prevents access to dangerous builtins."""
+
     def sample_calc():
         return 42
 
@@ -87,11 +90,17 @@ def test_d003_http_transport_node_secret(monkeypatch):
     assert res.status_code == 401
 
     # Invalid secret header -> 401
-    res = client.post("/facp/request", json={"id": "123"}, headers={"X-FACP-Node-Secret": "invalid"})
+    res = client.post(
+        "/facp/request", json={"id": "123"}, headers={"X-FACP-Node-Secret": "invalid"}
+    )
     assert res.status_code == 401
 
     # Valid secret header -> proceeds past auth check
-    res = client.post("/facp/request", json={"id": "123", "protocol": "facp/1.0"}, headers={"X-FACP-Node-Secret": "node-secret-abc"})
+    res = client.post(
+        "/facp/request",
+        json={"id": "123", "protocol": "facp/1.0"},
+        headers={"X-FACP-Node-Secret": "node-secret-abc"},
+    )
     assert res.status_code in (200, 400)  # 400 if body validation fails, but auth passed
 
 
@@ -103,14 +112,18 @@ def test_b001_speckle_server_url_ssrf_protection():
 
     # AWS metadata IP rejected
     with pytest.raises(ValueError, match="SSRF validation failed"):
-        SpeckleOperationRequest(stream_id="test", server_url="https://169.254.169.254", token="token123")
+        SpeckleOperationRequest(
+            stream_id="test", server_url="https://169.254.169.254", token="token123"
+        )
 
     # Non-https scheme rejected
     with pytest.raises(ValueError, match="must use https scheme"):
         SpeckleOperationRequest(stream_id="test", server_url="http://speckle.xyz", token="token123")
 
     # Valid public host accepted
-    req = SpeckleOperationRequest(stream_id="test", server_url="https://speckle.xyz", token="token123")
+    req = SpeckleOperationRequest(
+        stream_id="test", server_url="https://speckle.xyz", token="token123"
+    )
     assert req.server_url == "https://speckle.xyz"
 
 
@@ -120,8 +133,12 @@ def test_p001_meeza_webhook_amount_mismatch_rejected(monkeypatch, tmp_path):
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     conn.execute("CREATE TABLE orders (id TEXT PRIMARY KEY, amount_cents INTEGER, status TEXT)")
-    conn.execute("CREATE TABLE payment_events (id TEXT PRIMARY KEY, transaction_id TEXT, order_id TEXT, event_type TEXT, psp_name TEXT, idempotency_key TEXT, raw_payload TEXT, hmac_signature TEXT, processed_at TEXT, response_code INTEGER)")
-    conn.execute("INSERT INTO orders (id, amount_cents, status) VALUES ('order-123', 50000, 'pending')")
+    conn.execute(
+        "CREATE TABLE payment_events (id TEXT PRIMARY KEY, transaction_id TEXT, order_id TEXT, event_type TEXT, psp_name TEXT, idempotency_key TEXT, raw_payload TEXT, hmac_signature TEXT, processed_at TEXT, response_code INTEGER)"
+    )
+    conn.execute(
+        "INSERT INTO orders (id, amount_cents, status) VALUES ('order-123', 50000, 'pending')"
+    )
     conn.commit()
 
     monkeypatch.setattr("backend.services.meeza_payment_service._get_conn", lambda: conn)

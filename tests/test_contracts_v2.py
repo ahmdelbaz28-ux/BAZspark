@@ -56,9 +56,22 @@ from fireai.core.contracts import (
 
 class TestCeilingType:
     def test_all_values(self):
-        expected = {"FLAT", "SLOPED", "BEAMED", "COFFERED", "DOMED", "SMOOTH",
-                    "GABLE", "SHED", "CORRIDOR", "TRUSS", "COMBUSTIBLE",
-                    "PEAKED", "BEAM", "OPEN_JOIST"}
+        expected = {
+            "FLAT",
+            "SLOPED",
+            "BEAMED",
+            "COFFERED",
+            "DOMED",
+            "SMOOTH",
+            "GABLE",
+            "SHED",
+            "CORRIDOR",
+            "TRUSS",
+            "COMBUSTIBLE",
+            "PEAKED",
+            "BEAM",
+            "OPEN_JOIST",
+        }
         assert {ct.value for ct in CeilingType} == expected
 
     def test_string_enum(self):
@@ -147,7 +160,9 @@ class TestCeilingSpecContract:
             ceiling_type=CeilingType.SLOPED,
         )
         assert c.ceiling_type == CeilingType.SLOPED
-        assert c.height_at_low_point_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            c.height_at_low_point_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_type_is_flat(self):
         c = CeilingSpecContract(3.0, 3.0)
@@ -294,7 +309,9 @@ class TestValidateRoomInput:
 
     def test_non_dict_raises(self):
         with pytest.raises(ContractViolation, match="dictionary"):
-            validate_room_input("not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_room_input(
+                "not a dict"
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_forbidden_derived_field_area(self):
         """area_m2 must NOT be accepted — it must be computed internally."""
@@ -445,14 +462,18 @@ class TestValidateRoomInput:
         payload = self._valid_payload()
         payload["ceiling_height_m"] = 30.0
         result = validate_room_input(payload)
-        assert result["ceiling_height_m"] == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["ceiling_height_m"] == 30.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ceiling_height_0_1m_boundary(self):
         """Very small positive height should be accepted."""
         payload = self._valid_payload()
         payload["ceiling_height_m"] = 0.1
         result = validate_room_input(payload)
-        assert result["ceiling_height_m"] == 0.1  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["ceiling_height_m"] == 0.1
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -476,7 +497,9 @@ class TestValidateLoopInput:
 
     def test_non_dict_raises(self):
         with pytest.raises(ContractViolation, match="dictionary"):
-            validate_loop_input([])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_loop_input(
+                []
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_forbidden_derived_field_voltage_drop(self):
         """voltage_drop_v must NOT be accepted — computed internally."""
@@ -536,7 +559,9 @@ class TestValidateLoopInput:
         payload = self._valid_payload()
         payload["total_length_m"] = 0.0
         result = validate_loop_input(payload)
-        assert result["total_length_m"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["total_length_m"] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_total_length_non_numeric(self):
         payload = self._valid_payload()
@@ -586,7 +611,9 @@ class TestValidateLoopInput:
         payload = self._valid_payload()
         payload["panel_voltage_v"] = 48.0
         result = validate_loop_input(payload)
-        assert result["panel_voltage_v"] == 48.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["panel_voltage_v"] == 48.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 if __name__ == "__main__":

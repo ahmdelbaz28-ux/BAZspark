@@ -15,7 +15,9 @@ class RVTParser:
     def __init__(self):
         logger.info("RVT Parser initialized")
 
-    def parse_rvt(self, _rvt_path: str) -> list[UniversalElement]:  # NOSONAR — S1172: parameter retained for API stability
+    def parse_rvt(
+        self, _rvt_path: str
+    ) -> list[UniversalElement]:  # NOSONAR — S1172: parameter retained for API stability
         """
         تحليل ملف Revit واستخراج العناصر
 
@@ -25,22 +27,30 @@ class RVTParser:
         logger.warning("RVT parsing: placeholder only. Real implementation requires Revit API")
         return []
 
-    def _convert_revit_element(self, _rvt_path: str) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
+    def _convert_revit_element(
+        self, _rvt_path: str
+    ) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
         """تحويل عنصر Revit إلى Universal Element"""
         # Placeholder
         return None
 
-    def _convert_revit_wall(self, _rvt_path: str) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
+    def _convert_revit_wall(
+        self, _rvt_path: str
+    ) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
         """تحويل جدار Revit"""
         # Placeholder: requires Revit API
         return None
 
-    def _convert_revit_door(self, _rvt_path: str) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
+    def _convert_revit_door(
+        self, _rvt_path: str
+    ) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
         """تحويل باب Revit"""
         # Placeholder: requires Revit API
         return None
 
-    def _convert_revit_room(self, _rvt_path: str) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
+    def _convert_revit_room(
+        self, _rvt_path: str
+    ) -> UniversalElement | None:  # NOSONAR — S1172: parameter retained for API stability
         """تحويل غرفة Revit"""
         # Placeholder: requires Revit API
         return None

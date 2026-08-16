@@ -22,6 +22,7 @@ def client():
     os.environ.setdefault("FIREAI_API_KEY", "")
 
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -81,8 +82,9 @@ class TestDWGParseEndpoint:
                 files={"file": ("test.dxf", f, "application/dxf")},
             )
         # The endpoint may return 200, 201, or 422 depending on validation
-        assert response.status_code in (200, 201, 422, 503), \
+        assert response.status_code in (200, 201, 422, 503), (
             f"Unexpected status: {response.status_code}: {response.text[:500]}"
+        )
 
     def test_parse_empty_file_rejected(self, client) -> None:
         """Uploading an empty file must be rejected."""
@@ -91,8 +93,9 @@ class TestDWGParseEndpoint:
             files={"file": ("empty.dxf", b"", "application/dxf")},
         )
         # Empty file should be rejected (422 or 400)
-        assert response.status_code in (400, 422), \
+        assert response.status_code in (400, 422), (
             f"Empty file should be rejected: {response.status_code}"
+        )
 
 
 class TestDWGPathSecurity:
@@ -128,9 +131,11 @@ class TestDWGPathSecurity:
             result = validate_input_path(filepath, allowed_extensions=frozenset({".dxf"}))
             # validate_input_path returns a resolved Path object
             from pathlib import Path
+
             assert isinstance(result, Path)
         finally:
             import os
+
             os.unlink(filepath)
 
 
@@ -140,6 +145,7 @@ class TestDXFParser:
     def test_dxf_parser_import(self) -> None:
         """DXF parser module must be importable."""
         from parsers.dxf_parser import DXFParser
+
         # S5727 fix: assert on the type rather than the tautological
         # `is not None` (always True after a successful import).
         assert isinstance(DXFParser, type)
@@ -147,6 +153,7 @@ class TestDXFParser:
     def test_dwg_parser_import(self) -> None:
         """DWG parser module must be importable."""
         from parsers.dwg_parser import DWGParser
+
         # S5727 fix: assert on the type rather than the tautological
         # `is not None` (always True after a successful import).
         assert isinstance(DWGParser, type)
@@ -154,6 +161,7 @@ class TestDXFParser:
     def test_path_security_import(self) -> None:
         """Path security module must be importable."""
         from parsers._path_security import validate_input_path
+
         assert validate_input_path is not None
 
 
@@ -166,9 +174,7 @@ class TestDWGEndpointSecurity:
         # The rate limit for /api/parse-dwg is 5/min
         responses = []
         for _ in range(3):
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".dxf", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".dxf", delete=False) as f:
                 f.write("0\nSECTION\n0\nENDSEC\n0\nEOF\n")
                 filepath = f.name
 

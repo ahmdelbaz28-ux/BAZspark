@@ -111,7 +111,9 @@ class TestGetWireResistance:
         Passing integer 14 works because get_wire_resistance_ohm_per_m
         does str(awg).strip() internally — so 14 → "14" is valid.
         """
-        r = get_wire_resistance_ohm_per_m(14)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        r = get_wire_resistance_ohm_per_m(
+            14
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         # C-03 FIX: 10.30 = STRANDED AWG 14 @ 75°C (was 10.07 = solid @ 75°C)
         assert r == pytest.approx(10.30 / 1000.0, rel=1e-4)
 
@@ -193,12 +195,16 @@ class TestCalculateVoltageDrop:
 
     def test_nan_current_rejected(self):
         """NaN current must be rejected per safety-critical requirements."""
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("nan"), 100.0, "14", 24.0)
 
     def test_nan_length_rejected(self):
         """NaN length must be rejected per safety-critical requirements."""
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("nan"), "14", 24.0)
 
     def test_inf_nominal_voltage_not_checked(self):
@@ -247,9 +253,17 @@ class TestCalculateVoltageDrop:
     def test_result_dict_keys(self):
         result = calculate_voltage_drop(1.0, 100.0, "14", 24.0)
         expected_keys = {
-            "voltage_drop_v", "voltage_drop_pct", "terminal_voltage_v",
-            "resistance_total_ohm", "resistance_per_m_ohm", "is_compliant",
-            "awg", "length_m", "current_a", "nfpa_max_drop_pct", "nfpa_reference",
+            "voltage_drop_v",
+            "voltage_drop_pct",
+            "terminal_voltage_v",
+            "resistance_total_ohm",
+            "resistance_per_m_ohm",
+            "is_compliant",
+            "awg",
+            "length_m",
+            "current_a",
+            "nfpa_max_drop_pct",
+            "nfpa_reference",
         }
         assert set(result.keys()) == expected_keys
 
@@ -449,8 +463,12 @@ class TestCalculateBatteryBackup:
         """At 25°C and above, no temperature derating."""
         result_25 = calculate_battery_backup(0.5, 1.5, temperature_c=25.0)
         result_40 = calculate_battery_backup(0.5, 1.5, temperature_c=40.0)
-        assert result_25["temp_derating"] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert result_40["temp_derating"] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result_25["temp_derating"] == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result_40["temp_derating"] == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_temperature_derating_floored_at_70pct(self):
         """Temperature derating should not go below 70%."""
@@ -460,11 +478,21 @@ class TestCalculateBatteryBackup:
 
 class TestNextStandardAh:
     def test_rounds_up_to_standard(self):
-        assert _next_standard_ah(1.0) == 1.2  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _next_standard_ah(1.2) == 1.2  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _next_standard_ah(1.3) == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _next_standard_ah(5.0) == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _next_standard_ah(5.1) == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(1.0) == 1.2
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(1.2) == 1.2
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(1.3) == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(5.0) == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(5.1) == 7.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_large_value_extrapolates(self):
         """Values beyond the standard table extrapolate by 50 Ah increments."""
@@ -474,7 +502,9 @@ class TestNextStandardAh:
         assert result % 50.0 == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exact_standard_value(self):
-        assert _next_standard_ah(100.0) == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _next_standard_ah(100.0) == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -508,7 +538,9 @@ class TestVoltageDropEdgeCases:
         # Same drop V, but higher percentage
         result_24v = calculate_voltage_drop(1.0, 50.0, "14", 24.0)
         assert result["voltage_drop_v"] == pytest.approx(result_24v["voltage_drop_v"], rel=1e-6)
-        assert result["voltage_drop_pct"] == pytest.approx(result_24v["voltage_drop_pct"] * 2, rel=1e-3)
+        assert result["voltage_drop_pct"] == pytest.approx(
+            result_24v["voltage_drop_pct"] * 2, rel=1e-3
+        )
 
     def test_boundary_just_under_10pct(self):
         """Just under 10% drop — should be compliant (≤)."""

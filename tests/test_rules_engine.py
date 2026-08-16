@@ -54,7 +54,9 @@ class TestFactBasics:
             properties={"room_id": "R1", "ceiling_height_m": 3.0},
         )
         assert fact.fact_type == "room"
-        assert fact.properties["ceiling_height_m"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            fact.properties["ceiling_height_m"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert fact.fact_id  # Auto-generated
         assert fact.source == "user_input"
 
@@ -82,7 +84,9 @@ class TestFactBasics:
 
     def test_fact_immutability(self):
         fact = Fact(fact_type="room", properties={"h": 3.0})
-        assert fact.properties["h"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            fact.properties["h"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         # Fact is frozen dataclass — cannot mutate directly
         with pytest.raises(AttributeError):
             fact.fact_type = "detector"
@@ -323,7 +327,9 @@ class TestNFPA72Rules:
         spacing_facts = engine.get_facts("spacing")
         assert len(spacing_facts) >= 1
         s = spacing_facts[0]
-        assert s.properties["listed_spacing_m"] == 9.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            s.properties["listed_spacing_m"] == 9.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert s.properties["coverage_radius_m"] == pytest.approx(6.37, abs=0.01)
 
     def test_ceiling_height_spacing_heat(self):
@@ -343,7 +349,9 @@ class TestNFPA72Rules:
         spacing_facts = engine.get_facts("spacing")
         assert len(spacing_facts) >= 1
         s = spacing_facts[0]
-        assert s.properties["listed_spacing_m"] == 6.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            s.properties["listed_spacing_m"] == 6.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert s.properties["coverage_radius_m"] == pytest.approx(4.27, abs=0.01)
 
     def test_ceiling_height_exceeds_table(self):

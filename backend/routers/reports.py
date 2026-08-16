@@ -17,8 +17,6 @@ LIFE-SAFETY NOTE: Report results are used for regulatory compliance.
 All calculations must be traceable and verifiable.
 """
 
-
-
 import io
 import json
 import logging
@@ -806,7 +804,9 @@ async def list_reports(
     "", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
 )
 @limiter.limit("30/minute")
-async def generate_report(request: Request, project_id: str, input_data: GenerateReportInput = Body(..., embed=False)):
+async def generate_report(
+    request: Request, project_id: str, input_data: GenerateReportInput = Body(..., embed=False)
+):
     """Generate a new engineering report."""
     _verify_project(project_id)
     db = get_db()
@@ -877,7 +877,9 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
     dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))],
 )
 @limiter.limit("30/minute")
-async def generate_global_report(request: Request, input_data: GenerateReportInput = Body(..., embed=False)):
+async def generate_global_report(
+    request: Request, input_data: GenerateReportInput = Body(..., embed=False)
+):
     """Generate a report globally using the first available project for compatibility."""
     db = get_db()
     projects = db.list_projects(page=1, limit=1)

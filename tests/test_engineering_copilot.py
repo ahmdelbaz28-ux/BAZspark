@@ -97,15 +97,25 @@ async def test_translation_engine_etap_to_unified(translation_engine):
     """Test ETAP to Unified Model translation."""
     # Create mock ETAP data
     etap_data = {
-        "buses": [
-            {"id": "bus_1", "name": "Main Bus", "voltage": 13800.0, "rated_current": 2000.0}
-        ],
+        "buses": [{"id": "bus_1", "name": "Main Bus", "voltage": 13800.0, "rated_current": 2000.0}],
         "transformers": [
-            {"id": "xfmer_1", "name": "Main Transformer", "primary_voltage": 13800.0, "secondary_voltage": 480.0, "power_rating": 1000.0}
+            {
+                "id": "xfmer_1",
+                "name": "Main Transformer",
+                "primary_voltage": 13800.0,
+                "secondary_voltage": 480.0,
+                "power_rating": 1000.0,
+            }
         ],
         "panels": [
-            {"id": "panel_1", "name": "MDB", "voltage_rating": 480.0, "current_rating": 400.0, "feeder_count": 5}
-        ]
+            {
+                "id": "panel_1",
+                "name": "MDB",
+                "voltage_rating": 480.0,
+                "current_rating": 400.0,
+                "feeder_count": 5,
+            }
+        ],
     }
 
     unified_model = translation_engine.etap_to_unified(etap_data)
@@ -137,7 +147,7 @@ async def test_translation_engine_unified_to_autocad(translation_engine):
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=5,
-        coordinates=Coordinates(10.0, 10.0)
+        coordinates=Coordinates(10.0, 10.0),
     )
 
     transformer = Transformer(
@@ -147,7 +157,7 @@ async def test_translation_engine_unified_to_autocad(translation_engine):
         primary_voltage=13800.0,
         secondary_voltage=480.0,
         power_rating=1000.0,
-        coordinates=Coordinates(15.0, 15.0)
+        coordinates=Coordinates(15.0, 15.0),
     )
 
     model.add_entity(panel)
@@ -174,7 +184,7 @@ async def test_unified_model_creation():
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=3,
-        coordinates=Coordinates(0.0, 0.0)
+        coordinates=Coordinates(0.0, 0.0),
     )
     model.add_entity(panel)
 
@@ -186,7 +196,7 @@ async def test_unified_model_creation():
         primary_voltage=13800.0,
         secondary_voltage=480.0,
         power_rating=500.0,
-        coordinates=Coordinates(5.0, 5.0)
+        coordinates=Coordinates(5.0, 5.0),
     )
     model.add_entity(transformer)
 
@@ -220,7 +230,7 @@ async def test_engineering_validation(ai_copilot):
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=5,
-        coordinates=Coordinates(0.0, 0.0)
+        coordinates=Coordinates(0.0, 0.0),
     )
     model.add_entity(panel)
 
@@ -231,7 +241,7 @@ async def test_engineering_validation(ai_copilot):
         primary_voltage=13800.0,
         secondary_voltage=480.0,
         power_rating=1000.0,
-        coordinates=Coordinates(5.0, 5.0)
+        coordinates=Coordinates(5.0, 5.0),
     )
     model.add_entity(transformer)
 
@@ -260,7 +270,7 @@ async def test_report_generation(ai_copilot):
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=5,
-        coordinates=Coordinates(0.0, 0.0)
+        coordinates=Coordinates(0.0, 0.0),
     )
     model.add_entity(panel)
 
@@ -270,7 +280,7 @@ async def test_report_generation(ai_copilot):
         primary_voltage=13800.0,
         secondary_voltage=480.0,
         power_rating=1000.0,
-        coordinates=Coordinates(5.0, 5.0)
+        coordinates=Coordinates(5.0, 5.0),
     )
     model.add_entity(transformer)
 
@@ -288,7 +298,9 @@ async def test_report_generation(ai_copilot):
     # Check panel schedule
     assert len(reports["panel_schedule"]) >= 1
 
-    print(f"Generated reports: BOM with {len(reports['bom'])} items, {len(reports['panel_schedule'])} panels")
+    print(
+        f"Generated reports: BOM with {len(reports['bom'])} items, {len(reports['panel_schedule'])} panels"
+    )
 
 
 @pytest.mark.asyncio
@@ -334,7 +346,7 @@ async def test_conflict_detection(ai_copilot):
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=50,  # Too many feeders for typical panel
-        coordinates=Coordinates(0.0, 0.0)
+        coordinates=Coordinates(0.0, 0.0),
     )
     model.add_entity(panel1)
 
@@ -345,7 +357,7 @@ async def test_conflict_detection(ai_copilot):
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=3,
-        coordinates=Coordinates(0.0, 0.0)  # Same as panel1
+        coordinates=Coordinates(0.0, 0.0),  # Same as panel1
     )
     model.add_entity(panel2)
 
@@ -370,7 +382,7 @@ async def test_entity_relationships():
         primary_voltage=13800.0,
         secondary_voltage=480.0,
         power_rating=1000.0,
-        coordinates=Coordinates(0.0, 0.0)
+        coordinates=Coordinates(0.0, 0.0),
     )
 
     panel = Panel(
@@ -379,16 +391,15 @@ async def test_entity_relationships():
         voltage_rating=480.0,
         current_rating=400.0,
         feeder_count=5,
-        coordinates=Coordinates(5.0, 5.0)
+        coordinates=Coordinates(5.0, 5.0),
     )
 
     # Add relationships
     from engineering_copilot.models.unified_model import Relationship
-    panel.relationships.append(Relationship(
-        type="feeds",
-        entity_id="transformer_1",
-        relationship="fed_by"
-    ))
+
+    panel.relationships.append(
+        Relationship(type="feeds", entity_id="transformer_1", relationship="fed_by")
+    )
 
     model.add_entity(transformer)
     model.add_entity(panel)

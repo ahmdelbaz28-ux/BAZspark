@@ -22,6 +22,7 @@ Exercises:
  14. /api/v1/projects CRUD with auth
  15. Cache eviction under sustained load
 """
+
 from __future__ import annotations
 
 import json
@@ -59,6 +60,7 @@ def _setup_keys():
     """Set up admin, engineer, viewer keys for RBAC testing."""
     from backend.api_keys import add_api_key
     from backend.rbac import Role
+
     add_api_key("admin_key_http_test", Role.ADMIN, "http test admin")
     add_api_key("engineer_key_http_test", Role.ENGINEER, "http test engineer")
     add_api_key("viewer_key_http_test", Role.VIEWER, "http test viewer")
@@ -69,6 +71,7 @@ def _get_client():
     from fastapi.testclient import TestClient
 
     from backend.app import app
+
     return TestClient(app)
 
 
@@ -79,14 +82,16 @@ def test_health_no_auth() -> None:
     print("\n[HTTP TEST 1] Health Endpoints Reachable Without Auth")
     try:
         client = _get_client()
-        for path in ["/health", "/api/v1/health", "/api/v2/health"]:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        for path in [
+            "/health",
+            "/api/v1/health",
+            "/api/v2/health",
+        ]:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             r = client.get(path)
             if r.status_code == 200:
-                record(f"health_{path}", "PASS",
-                       f"GET {path} → 200 (reachable by probes)")
+                record(f"health_{path}", "PASS", f"GET {path} → 200 (reachable by probes)")
             else:
-                record(f"health_{path}", "FAIL",
-                       f"GET {path} → {r.status_code} (expected 200)")
+                record(f"health_{path}", "FAIL", f"GET {path} → {r.status_code} (expected 200)")
     except Exception as e:
         record("health_no_auth", "FAIL", f"Exception: {e}")
 
@@ -100,60 +105,60 @@ def test_cache_mgmt_requires_admin() -> None:
         client = _get_client()
 
         # No auth → 401 (must authenticate — stricter than old 403 default-VIEWER)
-        r = client.get("/api/v1/cache/stats")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        r = client.get(
+            "/api/v1/cache/stats"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         if r.status_code == 401:
-            record("cache_stats_no_auth", "PASS",
-                   "No-auth → 401 (must authenticate — stricter than old 403)")
+            record(
+                "cache_stats_no_auth",
+                "PASS",
+                "No-auth → 401 (must authenticate — stricter than old 403)",
+            )
         elif r.status_code == 403:
-            record("cache_stats_no_auth", "PASS",
-                   "No-auth → 403 (denied — acceptable)")
+            record("cache_stats_no_auth", "PASS", "No-auth → 403 (denied — acceptable)")
         else:
-            record("cache_stats_no_auth", "FAIL",
-                   f"No-auth → {r.status_code} (expected 401/403)")
+            record("cache_stats_no_auth", "FAIL", f"No-auth → {r.status_code} (expected 401/403)")
 
         # Viewer auth → 403
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "viewer_key_http_test"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "viewer_key_http_test"})
         if r.status_code == 403:
-            record("cache_stats_viewer", "PASS",
-                   "Viewer → 403 (viewer cannot read cache stats)")
+            record("cache_stats_viewer", "PASS", "Viewer → 403 (viewer cannot read cache stats)")
         else:
-            record("cache_stats_viewer", "FAIL",
-                   f"Viewer → {r.status_code} (expected 403)")
+            record("cache_stats_viewer", "FAIL", f"Viewer → {r.status_code} (expected 403)")
 
         # Engineer auth → 403
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "engineer_key_http_test"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "engineer_key_http_test"})
         if r.status_code == 403:
-            record("cache_stats_engineer", "PASS",
-                   "Engineer → 403 (engineer cannot read cache stats)")
+            record(
+                "cache_stats_engineer", "PASS", "Engineer → 403 (engineer cannot read cache stats)"
+            )
         else:
-            record("cache_stats_engineer", "FAIL",
-                   f"Engineer → {r.status_code} (expected 403)")
+            record("cache_stats_engineer", "FAIL", f"Engineer → {r.status_code} (expected 403)")
 
         # Admin auth → 200
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "admin_key_http_test"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "admin_key_http_test"})
         if r.status_code == 200:
             data = r.json()
-            record("cache_stats_admin", "PASS",
-                   f"Admin → 200 (cache stats: {data.get('total_keys', 0)} keys)")
+            record(
+                "cache_stats_admin",
+                "PASS",
+                f"Admin → 200 (cache stats: {data.get('total_keys', 0)} keys)",
+            )
         else:
-            record("cache_stats_admin", "FAIL",
-                   f"Admin → {r.status_code} (expected 200)")
+            record("cache_stats_admin", "FAIL", f"Admin → {r.status_code} (expected 200)")
 
         # Invalid key → 401 (must authenticate — doesn't reveal key existence)
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "invalid_key_xyz"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "invalid_key_xyz"})
         if r.status_code == 401:
-            record("cache_stats_invalid", "PASS",
-                   "Invalid key → 401 (doesn't reveal key existence)")
+            record(
+                "cache_stats_invalid", "PASS", "Invalid key → 401 (doesn't reveal key existence)"
+            )
         elif r.status_code == 403:
-            record("cache_stats_invalid", "PASS",
-                   "Invalid key → 403 (acceptable)")
+            record("cache_stats_invalid", "PASS", "Invalid key → 403 (acceptable)")
         else:
-            record("cache_stats_invalid", "FAIL",
-                   f"Invalid key → {r.status_code} (expected 401/403)")
+            record(
+                "cache_stats_invalid", "FAIL", f"Invalid key → {r.status_code} (expected 401/403)"
+            )
     except Exception as e:
         record("cache_mgmt_test", "FAIL", f"Exception: {e}")
 
@@ -179,21 +184,21 @@ def test_security_headers() -> None:
         for h, expected in required.items():
             if h in headers:
                 if expected is None or expected in headers[h]:
-                    record(f"header_{h}", "PASS",
-                           f"{h}: {headers[h][:60]}")
+                    record(f"header_{h}", "PASS", f"{h}: {headers[h][:60]}")
                 else:
-                    record(f"header_{h}", "FAIL",
-                           f"{h}: expected '{expected}', got '{headers[h]}'")
+                    record(f"header_{h}", "FAIL", f"{h}: expected '{expected}', got '{headers[h]}'")
             else:
                 record(f"header_{h}", "FAIL", f"{h} header missing")
 
         # HSTS — always emitted per project safety policy
         if "strict-transport-security" in headers:
-            record("hsts_always_emitted", "PASS",
-                   f"HSTS emitted: {headers['strict-transport-security']}")
+            record(
+                "hsts_always_emitted",
+                "PASS",
+                f"HSTS emitted: {headers['strict-transport-security']}",
+            )
         else:
-            record("hsts_always_emitted", "FAIL",
-                   "HSTS header missing — should always be emitted")
+            record("hsts_always_emitted", "FAIL", "HSTS header missing — should always be emitted")
     except Exception as e:
         record("security_headers_test", "FAIL", f"Exception: {e}")
 
@@ -210,32 +215,30 @@ def test_correlation_id() -> None:
         r = client.get("/health")
         if "x-correlation-id" in {k.lower() for k in r.headers}:
             cid = r.headers.get("x-correlation-id")
-            record("cid_auto_generated", "PASS",
-                   f"Auto-generated CID: {cid[:16]}...")
+            record("cid_auto_generated", "PASS", f"Auto-generated CID: {cid[:16]}...")
         else:
-            record("cid_auto_generated", "FAIL",
-                   "No X-Correlation-ID in response")
+            record("cid_auto_generated", "FAIL", "No X-Correlation-ID in response")
 
         # With client-provided correlation ID
         client_cid = "550e8400-e29b-41d4-a716-446655440000"
         r = client.get("/health", headers={"X-Correlation-ID": client_cid})
         resp_cid = r.headers.get("x-correlation-id")
         if resp_cid == client_cid:
-            record("cid_client_provided", "PASS",
-                   "Client-provided CID echoed back")
+            record("cid_client_provided", "PASS", "Client-provided CID echoed back")
         else:
-            record("cid_client_provided", "FAIL",
-                   f"Expected {client_cid}, got {resp_cid}")
+            record("cid_client_provided", "FAIL", f"Expected {client_cid}, got {resp_cid}")
 
         # With malformed correlation ID (should be rejected/replaced)
         r = client.get("/health", headers={"X-Correlation-ID": "evil\r\nX-Injected: yes"})
         resp_cid = r.headers.get("x-correlation-id", "")
         if "\r" not in resp_cid and "\n" not in resp_cid:
-            record("cid_log_injection_blocked", "PASS",
-                   "Malformed CID (with CRLF) was rejected/replaced")
+            record(
+                "cid_log_injection_blocked",
+                "PASS",
+                "Malformed CID (with CRLF) was rejected/replaced",
+            )
         else:
-            record("cid_log_injection_blocked", "FAIL",
-                   f"CRLF survived in CID: {resp_cid!r}")
+            record("cid_log_injection_blocked", "FAIL", f"CRLF survived in CID: {resp_cid!r}")
     except Exception as e:
         record("cid_test", "FAIL", f"Exception: {e}")
 
@@ -257,20 +260,18 @@ def test_cors_preflight() -> None:
             },
         )
         if r.status_code in (200, 204):
-            record("cors_preflight_ok", "PASS",
-                   f"OPTIONS → {r.status_code} (CORS preflight allowed)")
+            record(
+                "cors_preflight_ok", "PASS", f"OPTIONS → {r.status_code} (CORS preflight allowed)"
+            )
         else:
-            record("cors_preflight_ok", "FAIL",
-                   f"OPTIONS → {r.status_code} (expected 200/204)")
+            record("cors_preflight_ok", "FAIL", f"OPTIONS → {r.status_code} (expected 200/204)")
 
         # Verify Access-Control-Allow-Origin header
         aco = r.headers.get("access-control-allow-origin")
         if aco:
-            record("cors_aco_header", "PASS",
-                   f"Access-Control-Allow-Origin: {aco}")
+            record("cors_aco_header", "PASS", f"Access-Control-Allow-Origin: {aco}")
         else:
-            record("cors_aco_header", "WARN",
-                   "No Access-Control-Allow-Origin in response")
+            record("cors_aco_header", "WARN", "No Access-Control-Allow-Origin in response")
     except Exception as e:
         record("cors_test", "FAIL", f"Exception: {e}")
 
@@ -284,47 +285,46 @@ def test_projects_rbac() -> None:
         client = _get_client()
 
         # GET /projects — viewer can read
-        r = client.get("/api/v1/projects",
-                       headers={"X-API-Key": "viewer_key_http_test"})
+        r = client.get("/api/v1/projects", headers={"X-API-Key": "viewer_key_http_test"})
         if r.status_code == 200:
-            record("projects_list_viewer", "PASS",
-                   "Viewer can list projects")
+            record("projects_list_viewer", "PASS", "Viewer can list projects")
         else:
-            record("projects_list_viewer", "FAIL",
-                   f"Viewer → {r.status_code} (expected 200)")
+            record("projects_list_viewer", "FAIL", f"Viewer → {r.status_code} (expected 200)")
 
         # POST /projects — viewer cannot create
-        r = client.post("/api/v1/projects",
-                        headers={"X-API-Key": "viewer_key_http_test"},
-                        json={"name": "test_project"})
+        r = client.post(
+            "/api/v1/projects",
+            headers={"X-API-Key": "viewer_key_http_test"},
+            json={"name": "test_project"},
+        )
         if r.status_code == 403:
-            record("projects_create_viewer", "PASS",
-                   "Viewer cannot create projects (403)")
+            record("projects_create_viewer", "PASS", "Viewer cannot create projects (403)")
         else:
-            record("projects_create_viewer", "FAIL",
-                   f"Viewer → {r.status_code} (expected 403)")
+            record("projects_create_viewer", "FAIL", f"Viewer → {r.status_code} (expected 403)")
 
         # POST /projects — engineer can create
-        r = client.post("/api/v1/projects",
-                        headers={"X-API-Key": "engineer_key_http_test"},
-                        json={"name": "test_project_eng"})
+        r = client.post(
+            "/api/v1/projects",
+            headers={"X-API-Key": "engineer_key_http_test"},
+            json={"name": "test_project_eng"},
+        )
         if r.status_code in (200, 201):
-            record("projects_create_engineer", "PASS",
-                   "Engineer can create projects")
+            record("projects_create_engineer", "PASS", "Engineer can create projects")
         else:
-            record("projects_create_engineer", "FAIL",
-                   f"Engineer → {r.status_code} (expected 200/201)")
+            record(
+                "projects_create_engineer", "FAIL", f"Engineer → {r.status_code} (expected 200/201)"
+            )
 
         # POST /projects — admin can create
-        r = client.post("/api/v1/projects",
-                        headers={"X-API-Key": "admin_key_http_test"},
-                        json={"name": "test_project_admin"})
+        r = client.post(
+            "/api/v1/projects",
+            headers={"X-API-Key": "admin_key_http_test"},
+            json={"name": "test_project_admin"},
+        )
         if r.status_code in (200, 201):
-            record("projects_create_admin", "PASS",
-                   "Admin can create projects")
+            record("projects_create_admin", "PASS", "Admin can create projects")
         else:
-            record("projects_create_admin", "FAIL",
-                   f"Admin → {r.status_code} (expected 200/201)")
+            record("projects_create_admin", "FAIL", f"Admin → {r.status_code} (expected 200/201)")
     except Exception as e:
         record("projects_rbac_test", "FAIL", f"Exception: {e}")
 
@@ -344,19 +344,22 @@ def test_rate_limiter() -> None:
         # applies at the SlowAPI layer BEFORE auth runs).
         statuses = []
         for _i in range(15):
-            r = client.post("/api/v1/parse-dwg",
-                            headers={"X-API-Key": "viewer_key_http_test"})
+            r = client.post("/api/v1/parse-dwg", headers={"X-API-Key": "viewer_key_http_test"})
             statuses.append(r.status_code)
 
         # We expect at least some 429 (rate limit) responses after 10 requests
         rate_limited = statuses.count(429)
         if rate_limited > 0:
-            record("rate_limit_enforced", "PASS",
-                   f"{rate_limited}/15 requests were rate-limited (429)")
+            record(
+                "rate_limit_enforced", "PASS", f"{rate_limited}/15 requests were rate-limited (429)"
+            )
         else:
-            record("rate_limit_enforced", "WARN",
-                   f"No 429s in 15 requests — status codes: {statuses[:5]}... "
-                   f"(rate limit may apply to authenticated requests only)")
+            record(
+                "rate_limit_enforced",
+                "WARN",
+                f"No 429s in 15 requests — status codes: {statuses[:5]}... "
+                f"(rate limit may apply to authenticated requests only)",
+            )
     except Exception as e:
         record("rate_limit_test", "FAIL", f"Exception: {e}")
 
@@ -389,11 +392,9 @@ def test_health_no_path_disclosure() -> None:
                 leaked.append(pat)
 
         if not leaked:
-            record("health_no_leak", "PASS",
-                   "No internal paths/secrets in health response")
+            record("health_no_leak", "PASS", "No internal paths/secrets in health response")
         else:
-            record("health_no_leak", "FAIL",
-                   f"Sensitive patterns found: {leaked}")
+            record("health_no_leak", "FAIL", f"Sensitive patterns found: {leaked}")
     except Exception as e:
         record("health_disclosure_test", "FAIL", f"Exception: {e}")
 
@@ -406,17 +407,18 @@ def test_cache_eviction_http() -> None:
     try:
         client = _get_client()
         # Get initial cache stats
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "admin_key_http_test"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "admin_key_http_test"})
         if r.status_code != 200:
-            record("cache_initial_stats", "FAIL",
-                   f"Could not get cache stats: {r.status_code}")
+            record("cache_initial_stats", "FAIL", f"Could not get cache stats: {r.status_code}")
             return
 
         initial = r.json()
-        record("cache_initial_stats", "INFO",
-               f"Initial cache: {initial.get('total_keys', 0)} keys "
-               f"(cap {initial.get('max_entries', '?')})")
+        record(
+            "cache_initial_stats",
+            "INFO",
+            f"Initial cache: {initial.get('total_keys', 0)} keys "
+            f"(cap {initial.get('max_entries', '?')})",
+        )
 
         # Make many requests to populate cache (health endpoint may cache)
         # Since we don't have a caching endpoint directly, we'll just verify
@@ -424,23 +426,22 @@ def test_cache_eviction_http() -> None:
         for _ in range(50):
             client.get("/health")
 
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "admin_key_http_test"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "admin_key_http_test"})
         final = r.json()
-        record("cache_after_load", "PASS",
-               f"After 50 health requests: {final.get('total_keys', 0)} keys "
-               f"(cap {final.get('max_entries', '?')})")
+        record(
+            "cache_after_load",
+            "PASS",
+            f"After 50 health requests: {final.get('total_keys', 0)} keys "
+            f"(cap {final.get('max_entries', '?')})",
+        )
 
         # Clear cache
-        r = client.post("/api/v1/cache/clear",
-                        headers={"X-API-Key": "admin_key_http_test"})
+        r = client.post("/api/v1/cache/clear", headers={"X-API-Key": "admin_key_http_test"})
         if r.status_code == 200:
             cleared = r.json().get("items_cleared", 0)
-            record("cache_clear_admin", "PASS",
-                   f"Admin cleared {cleared} keys")
+            record("cache_clear_admin", "PASS", f"Admin cleared {cleared} keys")
         else:
-            record("cache_clear_admin", "FAIL",
-                   f"Admin cache clear → {r.status_code}")
+            record("cache_clear_admin", "FAIL", f"Admin cache clear → {r.status_code}")
     except Exception as e:
         record("cache_eviction_http_test", "FAIL", f"Exception: {e}")
 
@@ -457,20 +458,18 @@ def test_exception_handler_safe() -> None:
         # We can't easily trigger a 500 in a test, but we can verify the
         # pattern by inspecting app.py source (already done in unit test).
         # Instead, hit /api/v1/projects/{nonexistent} and verify response shape.
-        r = client.get("/api/v1/projects/nonexistent-id",
-                       headers={"X-API-Key": "viewer_key_http_test"})
+        r = client.get(
+            "/api/v1/projects/nonexistent-id", headers={"X-API-Key": "viewer_key_http_test"}
+        )
         if r.status_code == 404:
             body = r.json()
             detail = str(body.get("detail", ""))
             if "/home/" not in detail and ".py:" not in detail:
-                record("error_404_safe", "PASS",
-                       f"404 response is safe: {detail[:60]}")
+                record("error_404_safe", "PASS", f"404 response is safe: {detail[:60]}")
             else:
-                record("error_404_safe", "FAIL",
-                       f"404 leaked internal info: {detail}")
+                record("error_404_safe", "FAIL", f"404 leaked internal info: {detail}")
         else:
-            record("error_404_safe", "WARN",
-                   f"Got {r.status_code} (expected 404)")
+            record("error_404_safe", "WARN", f"Got {r.status_code} (expected 404)")
     except Exception as e:
         record("exc_handler_test", "FAIL", f"Exception: {e}")
 
@@ -485,11 +484,11 @@ def test_concurrent_requests() -> None:
         import threading
 
         errors = []
+
         def _worker(worker_id: int):
             try:
                 for i in range(20):
-                    r = client.get("/health",
-                                   headers={"X-Correlation-ID": f"w{worker_id}-r{i}"})
+                    r = client.get("/health", headers={"X-Correlation-ID": f"w{worker_id}-r{i}"})
                     if r.status_code != 200:
                         errors.append(f"w{worker_id}-r{i}: {r.status_code}")
             except Exception as e:
@@ -502,11 +501,9 @@ def test_concurrent_requests() -> None:
             t.join()
 
         if not errors:
-            record("concurrent_health", "PASS",
-                   "10 workers × 20 requests = 200 requests, 0 errors")
+            record("concurrent_health", "PASS", "10 workers × 20 requests = 200 requests, 0 errors")
         else:
-            record("concurrent_health", "FAIL",
-                   f"{len(errors)} errors: {errors[:3]}")
+            record("concurrent_health", "FAIL", f"{len(errors)} errors: {errors[:3]}")
     except Exception as e:
         record("concurrent_test", "FAIL", f"Exception: {e}")
 
@@ -521,35 +518,43 @@ def test_api_key_perf_http() -> None:
         # Time 20 consecutive authenticated requests
         t0 = time.time()
         for _ in range(20):
-            client.get("/api/v1/projects",
-                           headers={"X-API-Key": "admin_key_http_test"})
+            client.get("/api/v1/projects", headers={"X-API-Key": "admin_key_http_test"})
         elapsed = time.time() - t0
 
         avg_ms = (elapsed / 20) * 1000
         # Each request should validate the API key — bcrypt checkpw ~250ms
         # So 20 requests should take ~5 seconds.
         if avg_ms < 1000:  # <1s per request
-            record("api_key_perf", "PASS",
-                   f"20 requests in {elapsed:.2f}s (avg {avg_ms:.0f}ms/req)")
+            record(
+                "api_key_perf", "PASS", f"20 requests in {elapsed:.2f}s (avg {avg_ms:.0f}ms/req)"
+            )
         else:
-            record("api_key_perf", "WARN",
-                   f"20 requests in {elapsed:.2f}s (avg {avg_ms:.0f}ms/req) — "
-                   f"bcrypt check is ~250ms; consider adding in-memory cache "
-                   f"for repeated key validation")
+            record(
+                "api_key_perf",
+                "WARN",
+                f"20 requests in {elapsed:.2f}s (avg {avg_ms:.0f}ms/req) — "
+                f"bcrypt check is ~250ms; consider adding in-memory cache "
+                f"for repeated key validation",
+            )
 
         # Invalid key should be FAST (O(1) HMAC lookup, no bcrypt)
         t0 = time.time()
         for _ in range(20):
-            client.get("/api/v1/projects",
-                           headers={"X-API-Key": "invalid_key_perf_test"})
+            client.get("/api/v1/projects", headers={"X-API-Key": "invalid_key_perf_test"})
         elapsed_invalid = time.time() - t0
         avg_invalid_ms = (elapsed_invalid / 20) * 1000
         if avg_invalid_ms < 50:
-            record("invalid_key_perf", "PASS",
-                   f"Invalid key: {avg_invalid_ms:.1f}ms/req (O(1) lookup, no bcrypt)")
+            record(
+                "invalid_key_perf",
+                "PASS",
+                f"Invalid key: {avg_invalid_ms:.1f}ms/req (O(1) lookup, no bcrypt)",
+            )
         else:
-            record("invalid_key_perf", "FAIL",
-                   f"Invalid key: {avg_invalid_ms:.1f}ms/req (should be <50ms)")
+            record(
+                "invalid_key_perf",
+                "FAIL",
+                f"Invalid key: {avg_invalid_ms:.1f}ms/req (should be <50ms)",
+            )
     except Exception as e:
         record("api_key_perf_test", "FAIL", f"Exception: {e}")
 
@@ -592,6 +597,7 @@ def main() -> int:
         except Exception as e:
             record(t.__name__, "FAIL", f"Test crashed: {e}")
             import traceback
+
             traceback.print_exc()
 
     # Summary
@@ -611,7 +617,9 @@ def main() -> int:
     with open(out_path, "w") as f:
         json.dump(
             [{"test": n, "status": s, "details": d} for n, s, d in RESULTS],
-            f, indent=2, ensure_ascii=False,
+            f,
+            indent=2,
+            ensure_ascii=False,
         )
     print(f"\n  Detailed results saved to: {out_path}")
 

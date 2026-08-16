@@ -1,5 +1,6 @@
 # NOSONAR
 """Engine Controller for L3 in Distributed FACP System"""
+
 import logging
 import threading
 import time
@@ -30,14 +31,10 @@ class EngineController:
         self.isolation_manager = ExecutionIsolationManager()
         self.resource_limits = {
             "cpu_percent": 80.0,  # Maximum CPU usage percent
-            "memory_mb": 4096,    # Maximum memory usage in MB
-            "disk_gb": 100        # Maximum disk usage in GB
+            "memory_mb": 4096,  # Maximum memory usage in MB
+            "disk_gb": 100,  # Maximum disk usage in GB
         }
-        self.current_resource_usage = {
-            "cpu_percent": 0.0,
-            "memory_mb": 0.0,
-            "disk_gb": 0.0
-        }
+        self.current_resource_usage = {"cpu_percent": 0.0, "memory_mb": 0.0, "disk_gb": 0.0}
         self.heartbeat_interval = 30  # seconds
         self.last_heartbeat = time.time()
         self.health_check_interval = 10  # seconds
@@ -72,7 +69,9 @@ class EngineController:
 
             self.logger.info("Engine Controller %s stopped", self.controller_id)
 
-    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
+    def process_request(
+        self, request_data: dict[str, Any], source_node: str | None = None
+    ) -> dict[str, Any]:
         """Process an incoming request through the engine pool"""
         request_id = request_data.get("id", str(uuid.uuid4()))
 
@@ -85,14 +84,14 @@ class EngineController:
                 status="error",
                 error={
                     "code": "INVALID_REQUEST_FORMAT",
-                    "message": f"Invalid request format: {e!s}"
+                    "message": f"Invalid request format: {e!s}",
                 },
                 trace={
                     "execution_path": ["L3_EngineController"],
                     "latency_ms": 0,
                     "node_id": self.controller_id,
-                    "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                }
+                    "engine_version": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                },
             ).to_dict()
 
         # Enforce resource limits
@@ -102,14 +101,14 @@ class EngineController:
                 status="error",
                 error={
                     "code": "RESOURCE_EXHAUSTED",
-                    "message": "Insufficient resources to process request"
+                    "message": "Insufficient resources to process request",
                 },
                 trace={
                     "execution_path": ["L3_EngineController"],
                     "latency_ms": 0,
                     "node_id": self.controller_id,
-                    "engine_version": "FACP/1.1"
-                }
+                    "engine_version": "FACP/1.1",
+                },
             ).to_dict()
 
         # Track the task
@@ -136,7 +135,7 @@ class EngineController:
                 "execution_path": ["L3_EngineController"],
                 "controller_processing_time_ms": execution_time,
                 "controller_id": self.controller_id,
-                "engine_version": "FACP/1.1"
+                "engine_version": "FACP/1.1",
             }
 
         # Track task completion
@@ -193,11 +192,13 @@ class EngineController:
         if self.cluster_sync_callback is not None:
             try:
                 # Attempt to send a minimal heartbeat to verify connectivity
-                self.cluster_sync_callback({
-                    "action": "health_probe",
-                    "node_id": self.controller_id,
-                    "timestamp": time.time(),
-                })
+                self.cluster_sync_callback(
+                    {
+                        "action": "health_probe",
+                        "node_id": self.controller_id,
+                        "timestamp": time.time(),
+                    }
+                )
             except Exception as e:
                 self.logger.warning("Health check failed: Event bus connection error: %s", e)
                 return False
@@ -205,6 +206,7 @@ class EngineController:
         # Check 3: Actual system memory via psutil
         try:
             import psutil
+
             mem = psutil.virtual_memory()
             if mem.percent > 95:
                 self.logger.warning(
@@ -219,7 +221,9 @@ class EngineController:
 
         return True
 
-    def _track_task_start(self, task_id: str, request_data: dict[str, Any], source_node: str | None = None):
+    def _track_task_start(
+        self, task_id: str, request_data: dict[str, Any], source_node: str | None = None
+    ):
         """Track the start of a task"""
         with self.lock:
             self.active_tasks[task_id] = {
@@ -227,7 +231,7 @@ class EngineController:
                 "request_data": request_data,
                 "source_node": source_node,
                 "start_time": time.time(),
-                "status": "running"
+                "status": "running",
             }
 
     def _track_task_completion(self, task_id: str, result: dict[str, Any]):
@@ -235,12 +239,14 @@ class EngineController:
         with self.lock:
             if task_id in self.active_tasks:
                 task_info = self.active_tasks[task_id]
-                task_info.update({
-                    "end_time": time.time(),
-                    "duration_ms": (time.time() - task_info["start_time"]) * 1000,
-                    "result_status": result.get("status"),
-                    "completed": True
-                })
+                task_info.update(
+                    {
+                        "end_time": time.time(),
+                        "duration_ms": (time.time() - task_info["start_time"]) * 1000,
+                        "result_status": result.get("status"),
+                        "completed": True,
+                    }
+                )
 
                 # Move from active to history
                 del self.active_tasks[task_id]
@@ -248,7 +254,7 @@ class EngineController:
 
                 # Maintain history size
                 if len(self.task_history) > self.max_task_history:
-                    self.task_history = self.task_history[-self.max_task_history:]
+                    self.task_history = self.task_history[-self.max_task_history :]
 
     def get_controller_status(self) -> dict[str, Any]:
         """Get the status of the engine controller"""
@@ -264,9 +270,9 @@ class EngineController:
                 "max_task_history": self.max_task_history,
                 "resource_limits": self.resource_limits,
                 "current_resource_usage": self.current_resource_usage,
-                "uptime_seconds": time.time() - getattr(self, 'start_time', time.time()),
+                "uptime_seconds": time.time() - getattr(self, "start_time", time.time()),
                 "last_heartbeat": self.last_heartbeat,
-                "last_health_check": self.last_health_check
+                "last_health_check": self.last_health_check,
             }
 
     def get_task_status(self, task_id: str) -> dict[str, Any] | None:
@@ -291,7 +297,9 @@ class EngineController:
             failed_tasks = [t for t in completed_tasks if t.get("result_status") == "error"]
 
             if completed_tasks:
-                avg_duration = sum(t.get("duration_ms", 0) for t in completed_tasks) / len(completed_tasks)
+                avg_duration = sum(t.get("duration_ms", 0) for t in completed_tasks) / len(
+                    completed_tasks
+                )
             else:
                 avg_duration = 0
 
@@ -301,11 +309,13 @@ class EngineController:
                 "successful_tasks": len(successful_tasks),
                 "failed_tasks": len(failed_tasks),
                 "active_tasks": len(self.active_tasks),
-                "success_rate": len(successful_tasks) / len(completed_tasks) if completed_tasks else 0,
+                "success_rate": len(successful_tasks) / len(completed_tasks)
+                if completed_tasks
+                else 0,
                 "average_task_duration_ms": avg_duration,
                 "tasks_per_minute": self._calculate_throughput(),
                 "pool_statistics": self.engine_pool.get_worker_statistics(),
-                "pool_load_distribution": self.engine_pool.get_load_distribution()
+                "pool_load_distribution": self.engine_pool.get_load_distribution(),
             }
 
     def _calculate_throughput(self) -> float:
@@ -317,7 +327,9 @@ class EngineController:
         if not recent_completed:
             return 0.0
 
-        time_span_minutes = (time.time() - min(t.get("end_time", time.time()) for t in recent_completed)) / 60
+        time_span_minutes = (
+            time.time() - min(t.get("end_time", time.time()) for t in recent_completed)
+        ) / 60
         return len(recent_completed) / max(time_span_minutes, 1)  # Avoid division by zero
 
     def _heartbeat_loop(self):
@@ -349,13 +361,15 @@ class EngineController:
         # Notify cluster if callback is set
         if self.cluster_sync_callback:
             try:
-                self.cluster_sync_callback({
-                    "action": "heartbeat",
-                    "node_id": self.controller_id,
-                    "node_type": "l3_engine_controller",
-                    "status": status,
-                    "timestamp": time.time()
-                })
+                self.cluster_sync_callback(
+                    {
+                        "action": "heartbeat",
+                        "node_id": self.controller_id,
+                        "node_type": "l3_engine_controller",
+                        "status": status,
+                        "timestamp": time.time(),
+                    }
+                )
             except Exception as e:
                 self.logger.error("Failed to send heartbeat to cluster: %s", e)
 
@@ -387,8 +401,12 @@ class EngineController:
         # For now, we'll simulate resource usage based on active tasks
         with self.lock:
             active_task_count = len(self.active_tasks)
-            self.current_resource_usage["cpu_percent"] = min(90.0, active_task_count * 10.0)  # Simulate CPU usage
-            self.current_resource_usage["memory_mb"] = min(4096.0, active_task_count * 50.0)  # Simulate memory usage
+            self.current_resource_usage["cpu_percent"] = min(
+                90.0, active_task_count * 10.0
+            )  # Simulate CPU usage
+            self.current_resource_usage["memory_mb"] = min(
+                4096.0, active_task_count * 50.0
+            )  # Simulate memory usage
             # Disk usage would be updated based on actual file operations
 
     def set_cluster_sync_callback(self, callback):
@@ -407,7 +425,9 @@ class EngineController:
             raise ValueError("Pool size must be at least 1")
 
         if new_size > self.max_pool_size:
-            self.logger.warning("Requested size %s exceeds max size %s", new_size, self.max_pool_size)
+            self.logger.warning(
+                "Requested size %s exceeds max size %s", new_size, self.max_pool_size
+            )
             new_size = self.max_pool_size
 
         # In a real implementation, this would resize the pool
@@ -442,9 +462,20 @@ class EngineController:
                 "resource_limits": self.resource_limits,
                 "current_usage": self.current_resource_usage,
                 "usage_percentages": {
-                    "cpu": (self.current_resource_usage["cpu_percent"] / self.resource_limits["cpu_percent"]) * 100 if self.resource_limits["cpu_percent"] > 0 else 0,
-                    "memory": (self.current_resource_usage["memory_mb"] / self.resource_limits["memory_mb"]) * 100 if self.resource_limits["memory_mb"] > 0 else 0
-                }
+                    "cpu": (
+                        self.current_resource_usage["cpu_percent"]
+                        / self.resource_limits["cpu_percent"]
+                    )
+                    * 100
+                    if self.resource_limits["cpu_percent"] > 0
+                    else 0,
+                    "memory": (
+                        self.current_resource_usage["memory_mb"] / self.resource_limits["memory_mb"]
+                    )
+                    * 100
+                    if self.resource_limits["memory_mb"] > 0
+                    else 0,
+                },
             }
 
     def update_resource_limits(self, new_limits: dict[str, float]):
@@ -495,7 +526,9 @@ class DistributedEngineController(EngineController):
         """set the communicator for cross-node communication"""
         self.cross_node_communicator = communicator
 
-    def process_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
+    def process_request(
+        self, request_data: dict[str, Any], source_node: str | None = None
+    ) -> dict[str, Any]:
         """Override to support distributed task processing"""
         # Check if this should be processed locally or forwarded to another node
         if self._should_process_locally(request_data):
@@ -503,13 +536,17 @@ class DistributedEngineController(EngineController):
         # Forward to another node
         return self._forward_request(request_data, source_node)
 
-    def _should_process_locally(self, _request_data: dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(
+        self, _request_data: dict[str, Any]
+    ) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if request should be processed locally"""
         if self.task_distribution_policy == "local_first":
             return True  # Always prefer local processing
         if self.task_distribution_policy == "balanced":
             # Check if local pool is overloaded compared to cluster
-            local_load = len(self.active_tasks) / (self.pool_size * 5)  # Assuming 5 max concurrent per worker
+            local_load = len(self.active_tasks) / (
+                self.pool_size * 5
+            )  # Assuming 5 max concurrent per worker
             cluster_avg_load = self._get_cluster_average_load()
             return local_load <= cluster_avg_load
         if self.task_distribution_policy == "remote_only":
@@ -531,7 +568,9 @@ class DistributedEngineController(EngineController):
 
         return total_load / count if count > 0 else 0.0
 
-    def _forward_request(self, request_data: dict[str, Any], source_node: str | None = None) -> dict[str, Any]:
+    def _forward_request(
+        self, request_data: dict[str, Any], source_node: str | None = None
+    ) -> dict[str, Any]:
         """Forward request to another node in the cluster"""
         if not self.cross_node_communicator:
             # If no cross-node communication available, process locally
@@ -558,7 +597,7 @@ class DistributedEngineController(EngineController):
                 result["trace"] = {
                     "forwarded_from": self.controller_id,
                     "forwarded_to": target_node,
-                    "execution_path": ["L3_EngineController", f"forwarded_to_{target_node}"]
+                    "execution_path": ["L3_EngineController", f"forwarded_to_{target_node}"],
                 }
 
             return result
@@ -571,11 +610,11 @@ class DistributedEngineController(EngineController):
         """Select a target node for request forwarding"""
         # Find the node with the lowest load
         best_node = None
-        lowest_load = float('inf')
+        lowest_load = float("inf")
 
         for node_id, status in self.cluster_members.items():
             if status.get("is_running", False):
-                load = status.get("pool_status", {}).get("average_load", float('inf'))
+                load = status.get("pool_status", {}).get("average_load", float("inf"))
                 if load < lowest_load:
                     lowest_load = load
                     best_node = node_id
@@ -591,4 +630,6 @@ class DistributedEngineController(EngineController):
         if policy in ["local_first", "balanced", "remote_only"]:
             self.task_distribution_policy = policy
         else:
-            raise ValueError(f"Invalid policy: {policy}. Valid options: local_first, balanced, remote_only")
+            raise ValueError(
+                f"Invalid policy: {policy}. Valid options: local_first, balanced, remote_only"
+            )

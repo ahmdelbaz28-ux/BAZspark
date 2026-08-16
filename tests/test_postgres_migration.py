@@ -53,11 +53,27 @@ def test_migrate_logic():
     # Insert a test project and device
     cur.execute(
         "INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?)",
-        ("proj-1", "Test Project", "Desc", "Author", "2026-07-15", "2026-07-15", "draft")
+        ("proj-1", "Test Project", "Desc", "Author", "2026-07-15", "2026-07-15", "draft"),
     )
     cur.execute(
         "INSERT INTO devices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        ("dev-1", "proj-1", "smoke", "Smoke Detector", "detector", 10.0, 20.0, 3.0, 0.0, 24.0, 0.1, 2.4, "{}", "2026-07-15", "2026-07-15")
+        (
+            "dev-1",
+            "proj-1",
+            "smoke",
+            "Smoke Detector",
+            "detector",
+            10.0,
+            20.0,
+            3.0,
+            0.0,
+            24.0,
+            0.1,
+            2.4,
+            "{}",
+            "2026-07-15",
+            "2026-07-15",
+        ),
     )
     conn.commit()
     conn.close()
@@ -67,9 +83,10 @@ def test_migrate_logic():
     mock_cur_pg = MagicMock()
     mock_db._pg_cursor.return_value.__enter__.return_value = mock_cur_pg
 
-    with patch("scripts.migrate_sqlite_to_postgres.config") as mock_config, \
-         patch("scripts.migrate_sqlite_to_postgres.Database", return_value=mock_db):
-
+    with (
+        patch("scripts.migrate_sqlite_to_postgres.config") as mock_config,
+        patch("scripts.migrate_sqlite_to_postgres.Database", return_value=mock_db),
+    ):
         mock_config.DIGITAL_TWIN_DB_PATH = temp_db_path
         mock_config.DATABASE_URL = "postgresql://user:pass@localhost:5432/dbname"
 

@@ -10,6 +10,7 @@ Mobile Offshore Drilling Units (MODU) per the MODU Code (1989/2009 amendments):
 
 This module is the offshore counterpart to marine/solas/chapter_ii_2.py.
 """
+
 from __future__ import annotations
 
 import math
@@ -60,9 +61,7 @@ def divide_modu_into_main_vertical_zones(  # NOSONAR — S3776: cognitive comple
 
     """
     if ship.ship_type != ShipType.OFFSHORE:
-        raise _MODUError(
-            f"MODU division only applies to ShipType.OFFSHORE, got {ship.ship_type}"
-        )
+        raise _MODUError(f"MODU division only applies to ShipType.OFFSHORE, got {ship.ship_type}")
     if platform_length_m <= 0:
         raise _MODUError("platform_length_m must be positive")
 
@@ -73,8 +72,7 @@ def divide_modu_into_main_vertical_zones(  # NOSONAR — S3776: cognitive comple
     # Iteratively bump n_zones until every rounded zone length ≤ 40 m.
     while True:
         zone_length_m = platform_length_m / n_zones
-        boundary_frames = [_m_to_frames(i * zone_length_m)
-                           for i in range(n_zones + 1)]
+        boundary_frames = [_m_to_frames(i * zone_length_m) for i in range(n_zones + 1)]
         for i in range(1, len(boundary_frames)):
             if boundary_frames[i] <= boundary_frames[i - 1]:
                 boundary_frames[i] = boundary_frames[i - 1] + 1
@@ -97,30 +95,29 @@ def divide_modu_into_main_vertical_zones(  # NOSONAR — S3776: cognitive comple
             zone_id = f"MODU-{mvz_idx + 1:02d}-{deck_name}"
             # Forward third: accommodation/control; remainder: machinery/cargo.
             pos = mvz_idx / max(1, n_zones - 1)
-            cat = (
-                SpaceCategory.ACCOMMODATION if pos < 0.33
-                else SpaceCategory.MACHINERY_SPACE_A
-            )
+            cat = SpaceCategory.ACCOMMODATION if pos < 0.33 else SpaceCategory.MACHINERY_SPACE_A
 
             start_frame = boundary_frames[mvz_idx]
             end_frame = boundary_frames[mvz_idx + 1]
             actual_length_m = (end_frame - start_frame) * _MODU_FRAME_SPACING_M
 
-            zones.append(MarineZone(
-                zone_id=zone_id,
-                name=f"MODU Main Vertical Zone {mvz_idx + 1} ({deck_name})",
-                space_category=cat,
-                deck=deck_name,
-                frame_start=start_frame,
-                frame_end=end_frame,
-                area_m2=round(actual_length_m * beam_m, 1),
-                height_m=6.0,
-                adjacent_zones=tuple(
-                    f"MODU-{n + 1:02d}-{deck_name}"
-                    for n in (mvz_idx - 1, mvz_idx + 1)
-                    if 0 <= n < n_zones
-                ),
-            ))
+            zones.append(
+                MarineZone(
+                    zone_id=zone_id,
+                    name=f"MODU Main Vertical Zone {mvz_idx + 1} ({deck_name})",
+                    space_category=cat,
+                    deck=deck_name,
+                    frame_start=start_frame,
+                    frame_end=end_frame,
+                    area_m2=round(actual_length_m * beam_m, 1),
+                    height_m=6.0,
+                    adjacent_zones=tuple(
+                        f"MODU-{n + 1:02d}-{deck_name}"
+                        for n in (mvz_idx - 1, mvz_idx + 1)
+                        if 0 <= n < n_zones
+                    ),
+                )
+            )
 
     return zones
 
@@ -144,13 +141,9 @@ def required_helideck_afff(
         ComplianceResult with design details and any findings.
 
     """
-    result = ComplianceResult(
-        compliant=True, standard_reference="MODU Code §10.3 + CAP 437 §6.3"
-    )
+    result = ComplianceResult(compliant=True, standard_reference="MODU Code §10.3 + CAP 437 §6.3")
     if ship is not None and ship.ship_type != ShipType.OFFSHORE:
-        result.add_warning(
-            f"Helideck AFFF rules for offshore units; ship type is {ship.ship_type}"
-        )
+        result.add_warning(f"Helideck AFFF rules for offshore units; ship type is {ship.ship_type}")
     if helideck_area_m2 <= 0:
         result.add_finding("Helideck area must be positive to size AFFF system.")
         return result
@@ -188,13 +181,9 @@ def validate_gas_detection_requirement(
         ComplianceResult listing any zones that lack required gas detection.
 
     """
-    result = ComplianceResult(
-        compliant=True, standard_reference="MODU Code §9.8"
-    )
+    result = ComplianceResult(compliant=True, standard_reference="MODU Code §9.8")
     if ship is not None and ship.ship_type != ShipType.OFFSHORE:
-        result.add_warning(
-            f"Gas-detection rules for offshore units; ship type is {ship.ship_type}"
-        )
+        result.add_warning(f"Gas-detection rules for offshore units; ship type is {ship.ship_type}")
 
     if not zones:
         result.add_finding("No zones provided — cannot validate gas detection.")

@@ -34,6 +34,7 @@ try:
     import sys as _sys
 
     import pymupdf as _pymupdf  # NOSONAR — S2208: intentional module alias (not wildcard); used as `_pymupdf.Document` etc.  # type: ignore[import-untyped]
+
     # Re-export all symbols from pymupdf for backward compatibility
     Document = _pymupdf.Document
     open = _pymupdf.open
@@ -47,6 +48,7 @@ try:
 
 except ImportError:
     import warnings
+
     warnings.warn(
         "PyMuPDF (pymupdf) is not installed. PDF parsing features will be "
         "unavailable. DXF parsing still works. Install with: pip install pymupdf",
@@ -62,6 +64,7 @@ except ImportError:
                 f"pymupdf is not installed. Cannot access fitz.{name}. "
                 "Install with: pip install pymupdf"
             )
+
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             raise ImportError(
                 "pymupdf is not installed. PDF operations are unavailable. "

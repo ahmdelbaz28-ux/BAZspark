@@ -5,6 +5,7 @@ test_thread_safe_queue.py — Tests for fireai/mcp_server/thread_safe_queue.py.
 
 Verifies thread-safety, enqueue/dequeue, result reporting, stats, and cleanup.
 """
+
 from __future__ import annotations
 
 import time
@@ -238,5 +239,7 @@ class TestThreadSafeModelUpdateQueue:
             parameter_name="Pressure",
             parameter_value=50.0,
         )
-        with pytest.raises(Exception):  # queue.Full or RuntimeError depending on queue impl  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # queue.Full or RuntimeError depending on queue impl  # NOSONAR — S5958: parameter name documents intent at call site
             q.enqueue(action2)

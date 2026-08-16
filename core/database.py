@@ -117,14 +117,10 @@ class _ClosedConnectionGuard:
     """
 
     def __getattr__(self, name: str) -> Any:
-        raise RuntimeError(
-            "Cannot operate on a closed UniversalDataModel connection."
-        )
+        raise RuntimeError("Cannot operate on a closed UniversalDataModel connection.")
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError(
-            "Cannot operate on a closed UniversalDataModel connection."
-        )
+        raise RuntimeError("Cannot operate on a closed UniversalDataModel connection.")
 
 
 # V214 MERGE FIX: Module-level NamedTuples for get_statistics().
@@ -178,7 +174,9 @@ class UniversalDataModel:
             retrieved = udm.get_element("abc")
     """
 
-    def __init__(self, db_path: str = ":memory:") -> None:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    def __init__(
+        self, db_path: str = ":memory:"
+    ) -> None:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         self._db_path = db_path
 
         # Ensure directory exists for file-based databases
@@ -203,7 +201,10 @@ class UniversalDataModel:
         self._closed = False
 
         self._init_tables()
-        logger.info("UniversalDataModel initialized (db_path=%s)", "memory" if db_path == ":memory:" else "file")
+        logger.info(
+            "UniversalDataModel initialized (db_path=%s)",
+            "memory" if db_path == ":memory:" else "file",
+        )
 
     def __enter__(self) -> UniversalDataModel:
         return self
@@ -271,7 +272,7 @@ class UniversalDataModel:
         """
         with self._lock:
             cursor = self._conn.cursor()
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS elements (
                     element_id TEXT PRIMARY KEY,
                     data JSON NOT NULL DEFAULT '{}',
@@ -282,10 +283,12 @@ class UniversalDataModel:
                     is_deleted INTEGER DEFAULT 0,
                     version INTEGER DEFAULT 0
                 )
-            ''')
+            """)
             # don't exist (existing databases created before V129 won't have them).
             try:
-                cursor.execute("ALTER TABLE elements ADD COLUMN element_type TEXT DEFAULT 'unknown'")
+                cursor.execute(
+                    "ALTER TABLE elements ADD COLUMN element_type TEXT DEFAULT 'unknown'"
+                )
             except Exception:
                 pass  # Column already exists
             try:
@@ -300,7 +303,7 @@ class UniversalDataModel:
                 cursor.execute("ALTER TABLE elements ADD COLUMN data JSON NOT NULL DEFAULT '{}'")
             except Exception:
                 pass  # Column already exists
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS relationships (
                     relationship_id TEXT PRIMARY KEY,
                     from_element_id TEXT NOT NULL,
@@ -311,8 +314,8 @@ class UniversalDataModel:
                     FOREIGN KEY (from_element_id) REFERENCES elements(element_id),
                     FOREIGN KEY (to_element_id) REFERENCES elements(element_id)
                 )
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS conflicts (
                     conflict_id TEXT PRIMARY KEY,
                     element_id TEXT NOT NULL,
@@ -326,27 +329,27 @@ class UniversalDataModel:
                     timestamp TEXT,
                     FOREIGN KEY (element_id) REFERENCES elements(element_id)
                 )
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_rel_from
                 ON relationships(from_element_id)
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_rel_to
                 ON relationships(to_element_id)
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_conflict_element
                 ON conflicts(element_id)
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_element_type
                 ON elements(element_type)
-            ''')
-            cursor.execute('''
+            """)
+            cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_element_project
                 ON elements(project_id)
-            ''')
+            """)
             self._conn.commit()
 
     # ── Element CRUD ──────────────────────────────────────────────────────
@@ -373,10 +376,14 @@ class UniversalDataModel:
 
                 cursor = self._conn.cursor()
                 # indexed column access (avoids full JSON scan on every query).
-                et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
-                if hasattr(et, 'value'):
+                et = (
+                    data.get("properties", {}).get("element_type", "unknown")
+                    if isinstance(data, dict)
+                    else "unknown"
+                )
+                if hasattr(et, "value"):
                     et = et.value
-                pid = data.get('project_id') if isinstance(data, dict) else None
+                pid = data.get("project_id") if isinstance(data, dict) else None
 
                 cursor.execute(
                     "INSERT OR IGNORE INTO elements (element_id, data, element_type, project_id, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
@@ -388,7 +395,11 @@ class UniversalDataModel:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
                 # MEDIUM — database/serialization error, not data corruption.
-                logger.exception("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
+                logger.exception(
+                    "MEDIUM: Error adding element %s: %s",
+                    element_id if "element_id" in dir() else "?",
+                    e,
+                )
                 return False
 
     def add_elements_batch(self, elements: list[_ElementLike]) -> int:
@@ -413,10 +424,14 @@ class UniversalDataModel:
                 for element in elements:
                     element_id = element.element_id
                     data = element.to_dict()
-                    et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
-                    if hasattr(et, 'value'):
+                    et = (
+                        data.get("properties", {}).get("element_type", "unknown")
+                        if isinstance(data, dict)
+                        else "unknown"
+                    )
+                    if hasattr(et, "value"):
                         et = et.value
-                    pid = data.get('project_id') if isinstance(data, dict) else None
+                    pid = data.get("project_id") if isinstance(data, dict) else None
                     cursor.execute(
                         "INSERT OR IGNORE INTO elements (element_id, data, element_type, project_id, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
                         (element_id, json.dumps(data), et, pid, now, now),
@@ -450,7 +465,9 @@ class UniversalDataModel:
                     return None
 
                 data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
-                return self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                return self._dict_to_element(
+                    data, is_deleted=bool(row["is_deleted"]), version=row["version"]
+                )
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
@@ -478,12 +495,16 @@ class UniversalDataModel:
                 if include_deleted:
                     cursor.execute("SELECT data, is_deleted, version FROM elements")
                 else:
-                    cursor.execute("SELECT data, is_deleted, version FROM elements WHERE is_deleted = 0")
+                    cursor.execute(
+                        "SELECT data, is_deleted, version FROM elements WHERE is_deleted = 0"
+                    )
                 rows = cursor.fetchall()
                 result = []
                 for row in rows:
                     data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
-                    elem = self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                    elem = self._dict_to_element(
+                        data, is_deleted=bool(row["is_deleted"]), version=row["version"]
+                    )
                     if elem is not None:
                         result.append(elem)
                 return result
@@ -493,7 +514,9 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error getting elements: %s", e)
                 return []
 
-    def update_element(self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: accepted for API stability; ChangeSource enum flows here from db_service for audit trail
+    def update_element(
+        self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None
+    ) -> bool:  # NOSONAR — S1172: accepted for API stability; ChangeSource enum flows here from db_service for audit trail
         """
         Update an element with the given field values.
 
@@ -541,10 +564,14 @@ class UniversalDataModel:
                 new_version = current_version + 1
                 now = datetime.now(UTC).isoformat()
 
-                et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
-                if hasattr(et, 'value'):
+                et = (
+                    data.get("properties", {}).get("element_type", "unknown")
+                    if isinstance(data, dict)
+                    else "unknown"
+                )
+                if hasattr(et, "value"):
                     et = et.value
-                pid = data.get('project_id') if isinstance(data, dict) else None
+                pid = data.get("project_id") if isinstance(data, dict) else None
 
                 cursor.execute(
                     "UPDATE elements SET data = ?, element_type = ?, project_id = ?, version = ?, last_modified_timestamp = ? WHERE element_id = ?",
@@ -558,7 +585,9 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error updating element %s: %s", element_id, e)
                 return False
 
-    def delete_element(self, element_id: str, source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: accepted for API stability; ChangeSource enum flows here from db_service for audit trail
+    def delete_element(
+        self, element_id: str, source: ChangeSource | None = None
+    ) -> bool:  # NOSONAR — S1172: accepted for API stability; ChangeSource enum flows here from db_service for audit trail
         """
         Soft-delete an element.
 
@@ -590,7 +619,9 @@ class UniversalDataModel:
 
     # ── Efficient indexed queries (V129 FIX) ─────────────────────────────
 
-    def get_elements_by_type(self, element_type: str, include_deleted: bool = False) -> list[UniversalElement]:
+    def get_elements_by_type(
+        self, element_type: str, include_deleted: bool = False
+    ) -> list[UniversalElement]:
         """
         Retrieve elements by element_type using the indexed column.
 
@@ -622,7 +653,9 @@ class UniversalDataModel:
                 result = []
                 for row in rows:
                     data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
-                    elem = self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                    elem = self._dict_to_element(
+                        data, is_deleted=bool(row["is_deleted"]), version=row["version"]
+                    )
                     if elem is not None:
                         result.append(elem)
                 return result
@@ -632,7 +665,9 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error getting elements by type: %s", e)
                 return []
 
-    def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> list[UniversalElement]:
+    def get_elements_by_project(
+        self, project_id: str, include_deleted: bool = False
+    ) -> list[UniversalElement]:
         """
         Retrieve elements by project_id using the indexed column.
 
@@ -664,7 +699,9 @@ class UniversalDataModel:
                 result = []
                 for row in rows:
                     data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
-                    elem = self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                    elem = self._dict_to_element(
+                        data, is_deleted=bool(row["is_deleted"]), version=row["version"]
+                    )
                     if elem is not None:
                         result.append(elem)
                 return result
@@ -674,7 +711,11 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error getting elements by project: %s", e)
                 return []
 
-    def detect_conflicts(self) -> list[Conflict]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def detect_conflicts(
+        self,
+    ) -> list[
+        Conflict
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Detect conflicts between elements from different sources.
 
@@ -699,37 +740,44 @@ class UniversalDataModel:
                             conflict_id = f"conflict_{handle}_{i}"  # V131 FIX: Removed ambiguous uuid reference
                             try:
                                 import uuid as _uuid
+
                                 conflict_id = str(_uuid.uuid4())
                             except ImportError:
                                 pass
-                            conflicts.append(Conflict(
-                                conflict_id=conflict_id,
-                                element_id=elems[i].element_id,
-                                conflict_type=ConflictType.PROPERTY_CONFLICT,
-                                source_a="autocad",
-                                source_b="revit",
-                                change_a={"element_id": elems[i].element_id},
-                                change_b={"element_id": elems[i + 1].element_id},
-                                resolved=False,
-                                timestamp=datetime.now(UTC),
-                            ))
+                            conflicts.append(
+                                Conflict(
+                                    conflict_id=conflict_id,
+                                    element_id=elems[i].element_id,
+                                    conflict_type=ConflictType.PROPERTY_CONFLICT,
+                                    source_a="autocad",
+                                    source_b="revit",
+                                    change_a={"element_id": elems[i].element_id},
+                                    change_b={"element_id": elems[i + 1].element_id},
+                                    resolved=False,
+                                    timestamp=datetime.now(UTC),
+                                )
+                            )
 
                 # Also check conflicts table for persisted conflicts
                 cursor = self._conn.cursor()
                 cursor.execute("SELECT * FROM conflicts WHERE resolved = 0")
                 rows = cursor.fetchall()
                 for row in rows:
-                    conflicts.append(Conflict(
-                        conflict_id=row["conflict_id"],
-                        element_id=row["element_id"],
-                        conflict_type=ConflictType(row["conflict_type"]) if row["conflict_type"] else ConflictType.GEOMETRY_MISMATCH,
-                        source_a=row["source_a"],
-                        source_b=row["source_b"],
-                        change_a=json.loads(row["change_a"]) if row["change_a"] else None,
-                        change_b=json.loads(row["change_b"]) if row["change_b"] else None,
-                        resolved=bool(row["resolved"]),
-                        timestamp=row["timestamp"],
-                    ))
+                    conflicts.append(
+                        Conflict(
+                            conflict_id=row["conflict_id"],
+                            element_id=row["element_id"],
+                            conflict_type=ConflictType(row["conflict_type"])
+                            if row["conflict_type"]
+                            else ConflictType.GEOMETRY_MISMATCH,
+                            source_a=row["source_a"],
+                            source_b=row["source_b"],
+                            change_a=json.loads(row["change_a"]) if row["change_a"] else None,
+                            change_b=json.loads(row["change_b"]) if row["change_b"] else None,
+                            resolved=bool(row["resolved"]),
+                            timestamp=row["timestamp"],
+                        )
+                    )
             except MemoryError:
                 raise
             except Exception as e:
@@ -768,7 +816,9 @@ class UniversalDataModel:
                 return Conflict(
                     conflict_id=row["conflict_id"],
                     element_id=row["element_id"],
-                    conflict_type=ConflictType(row["conflict_type"]) if row["conflict_type"] else ConflictType.GEOMETRY_MISMATCH,
+                    conflict_type=ConflictType(row["conflict_type"])
+                    if row["conflict_type"]
+                    else ConflictType.GEOMETRY_MISMATCH,
                     source_a=row["source_a"],
                     source_b=row["source_b"],
                     change_a=json.loads(row["change_a"]) if row["change_a"] else None,
@@ -822,7 +872,11 @@ class UniversalDataModel:
     # ── Deserialization ───────────────────────────────────────────────────
 
     @staticmethod
-    def _dict_to_element(data: dict[str, Any], is_deleted: bool = False, version: int = 0) -> UniversalElement | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _dict_to_element(
+        data: dict[str, Any], is_deleted: bool = False, version: int = 0
+    ) -> (
+        UniversalElement | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Reconstruct a UniversalElement from its JSON dictionary.
 
@@ -845,7 +899,10 @@ class UniversalDataModel:
                 try:
                     et = ElementType(et)
                 except (ValueError, KeyError):
-                    logger.warning("Cannot resolve element_type '%s' to ElementType enum — keeping as string", et)
+                    logger.warning(
+                        "Cannot resolve element_type '%s' to ElementType enum — keeping as string",
+                        et,
+                    )
                 properties = SemanticProperties(
                     element_type=et,
                     name=props_data.get("name", ""),
@@ -877,14 +934,16 @@ class UniversalDataModel:
             relationships = []
             for r in rels_data:
                 if isinstance(r, dict):
-                    relationships.append(Relationship(
-                        from_element_id=r.get("from_element_id", ""),
-                        to_element_id=r.get("to_element_id", ""),
-                        relationship_type=r.get("relationship_type", ""),
-                        is_parametric=r.get("is_parametric", False),
-                        metadata=r.get("metadata"),
-                        connection_id=r.get("connection_id"),
-                    ))
+                    relationships.append(
+                        Relationship(
+                            from_element_id=r.get("from_element_id", ""),
+                            to_element_id=r.get("to_element_id", ""),
+                            relationship_type=r.get("relationship_type", ""),
+                            is_parametric=r.get("is_parametric", False),
+                            metadata=r.get("metadata"),
+                            connection_id=r.get("connection_id"),
+                        )
+                    )
 
             # Timestamps — V83 FIX (M-4): Log malformed timestamps instead of silently degrading
             created_ts = None
@@ -892,14 +951,20 @@ class UniversalDataModel:
                 try:
                     created_ts = datetime.fromisoformat(data["created_timestamp"])
                 except (ValueError, TypeError):
-                    logger.warning("Malformed created_timestamp: %s — defaulting to None", data["created_timestamp"])
+                    logger.warning(
+                        "Malformed created_timestamp: %s — defaulting to None",
+                        data["created_timestamp"],
+                    )
 
             modified_ts = None
             if data.get("last_modified_timestamp"):
                 try:
                     modified_ts = datetime.fromisoformat(data["last_modified_timestamp"])
                 except (ValueError, TypeError):
-                    logger.warning("Malformed last_modified_timestamp: %s — defaulting to None", data["last_modified_timestamp"])
+                    logger.warning(
+                        "Malformed last_modified_timestamp: %s — defaulting to None",
+                        data["last_modified_timestamp"],
+                    )
 
             return UniversalElement(
                 element_id=data.get("element_id", ""),

@@ -277,31 +277,27 @@ class ExternalApiAdapter:
         except httpx.TimeoutException as e:
             latency_ms = (time.monotonic() - t0) * 1000.0
             self._circuit.record_failure()
-            logger.warning("[%s] timeout after %.0fms: %s",
-                           self.source_name, latency_ms, e)
+            logger.warning("[%s] timeout after %.0fms: %s", self.source_name, latency_ms, e)
             return self._fail("timeout", args, kwargs)
         except httpx.HTTPStatusError as e:
             latency_ms = (time.monotonic() - t0) * 1000.0
             self._circuit.record_failure()
             code = e.response.status_code
             klass = "http_4xx" if 400 <= code < 500 else "http_5xx"
-            logger.warning("[%s] HTTP %d after %.0fms: %s",
-                           self.source_name, code, latency_ms, e)
+            logger.warning("[%s] HTTP %d after %.0fms: %s", self.source_name, code, latency_ms, e)
             return self._fail(klass, args, kwargs)
         except httpx.HTTPError as e:
             # Network errors, DNS, connection refused, etc.
             latency_ms = (time.monotonic() - t0) * 1000.0
             self._circuit.record_failure()
-            logger.warning("[%s] network error after %.0fms: %s",
-                           self.source_name, latency_ms, e)
+            logger.warning("[%s] network error after %.0fms: %s", self.source_name, latency_ms, e)
             return self._fail("network", args, kwargs)
         except (KeyError, ValueError, TypeError) as e:
             # Parse errors — response was received but malformed
             latency_ms = (time.monotonic() - t0) * 1000.0
             # Don't trip the breaker on parse errors — could be a single
             # bad payload, not a service outage
-            logger.warning("[%s] parse error after %.0fms: %s",
-                           self.source_name, latency_ms, e)
+            logger.warning("[%s] parse error after %.0fms: %s", self.source_name, latency_ms, e)
             return self._fail("parse_error", args, kwargs)
 
     def _fail(self, error: str, args: tuple, kwargs: dict) -> ApiResult[Any]:

@@ -7,6 +7,7 @@ Defines standardized contracts between Revit and ETAP systems.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from .revit_dto import (
     ElectricalAssetDTO,
     ModelMetadataDTO,
@@ -17,10 +18,10 @@ from .revit_dto import (
 )
 
 __all__ = [
-    'ElectricalAssetDTO',
-    'ModelMetadataDTO',
-    'RevitElementDTO',
-    'RevitProjectDTO',
-    'RevitSyncLogDTO',
-    'SyncStatusDTO'
+    "ElectricalAssetDTO",
+    "ModelMetadataDTO",
+    "RevitElementDTO",
+    "RevitProjectDTO",
+    "RevitSyncLogDTO",
+    "SyncStatusDTO",
 ]

@@ -36,13 +36,19 @@ import fireai.core.conduit_fill_analyzer as _cfa_mod
 def _disable_provenance():
     """Force the fallback dict path by setting provenance objects to None."""
     originals = {}
-    for attr in ("DecisionProvenance", "RuleApplied", "Violation",
-                "ConfidenceScore", "ConfidenceLevel"):
+    for attr in (
+        "DecisionProvenance",
+        "RuleApplied",
+        "Violation",
+        "ConfidenceScore",
+        "ConfidenceLevel",
+    ):
         originals[attr] = getattr(_cfa_mod, attr, None)
         setattr(_cfa_mod, attr, None)
     yield
     for attr, val in originals.items():
         setattr(_cfa_mod, attr, val)
+
 
 from fireai.core.conduit_fill_analyzer import (
     CONDUCTOR_DERATING,
@@ -219,9 +225,15 @@ class TestConductorDerating:
     """NEC 310.15(B)(3)(a) ampacity derating for >3 current-carrying conductors."""
 
     def test_3_or_fewer_no_derating(self):
-        assert get_derating_factor(1) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert get_derating_factor(2) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert get_derating_factor(3) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            get_derating_factor(1) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            get_derating_factor(2) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            get_derating_factor(3) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_4_to_6_conductors_80_pct(self):
         assert get_derating_factor(4) == pytest.approx(0.80)
@@ -249,11 +261,15 @@ class TestConductorDerating:
 
     def test_zero_conductors_no_derating(self):
         """Zero conductors — no derating needed."""
-        assert get_derating_factor(0) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            get_derating_factor(0) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_conductors_no_derating(self):
         """Negative conductor count is unusual but should not crash."""
-        assert get_derating_factor(-1) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            get_derating_factor(-1) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_derating_decreases_with_more_conductors(self):
         """More conductors = more derating (lower factor)."""
@@ -637,8 +653,14 @@ class TestAnalyzeWithWireOverrides:
             wire_inventory=[{"awg": 14, "count": 20, "insulation": "FPLP"}],
             wire_size_overrides={14: 10},
         )
-        val_no = result_no_override.value if hasattr(result_no_override, "value") else result_no_override
-        val_yes = result_with_override.value if hasattr(result_with_override, "value") else result_with_override
+        val_no = (
+            result_no_override.value if hasattr(result_no_override, "value") else result_no_override
+        )
+        val_yes = (
+            result_with_override.value
+            if hasattr(result_with_override, "value")
+            else result_with_override
+        )
         # Upsized wires have larger total area
         assert val_yes["total_cable_area_mm2"] > val_no["total_cable_area_mm2"]
 

@@ -23,7 +23,7 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/brainstorming/SKILL.md",
-      "computedHash": "79fec75eb8cb46ec4d5e119a08d5366dfe2f1b56d876b2ea5633fa80f8aa1f7c"
+      "computedHash": "0eb8e9ba100985eb4da20c46807268cafd72ec1c4ea58132edf9be6c469867fe"
     },
     "ci-cd-and-automation": {
       "source": "addyosmani/agent-skills",
@@ -35,7 +35,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/code-review/SKILL.md",
-      "computedHash": "591a274f7be02c24da6628b464b66be44c351adfccd7e8c12f550715c695e3fe"
+      "computedHash": "ed37e8274799af5bd0642d1cf02046aef8ed74ffe457cdd4e3859d4061a90f34"
     },
     "code-review-and-quality": {
       "source": "addyosmani/agent-skills",
@@ -59,7 +59,13 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
-      "computedHash": "b747e8b4dcd0f367ef940c290b14f858bf9576ad9961fd6684bacff5688f4a2b"
+      "computedHash": "f54e391ce6cc28052af46840e3ef8519fd5e746331255510574f0270153186db"
+    },
+    "e2e-testing": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/e2e-testing/SKILL.md",
+      "computedHash": "ae1a9cb885532edccb80682df28f269ada8bda86deedd00b282a82b03e011b2e"
     },
     "finding-duplicate-functions": {
       "source": "obra/superpowers-lab",
@@ -77,13 +83,13 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "computedHash": "4eb5bf61b1e602f9cedbd3a5e4469dfba1db0247d5d40956d03299c455b91197"
+      "computedHash": "89c8165a058f123865181a09bd13fe6a0429e47e02a699ceccc1f80308e44a1a"
     },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "computedHash": "3929c6892605b67b60503ced451876e9b313d1a909ab7066fbcd9967c56ed226"
+      "computedHash": "f7fd27287067900e816b87a8917347424ad6780435ce4157d69ba8c5e8e13fba"
     },
     "lint": {
       "source": "helderberto/agent-skills",
@@ -91,11 +97,23 @@
       "skillPath": "skills/lint/SKILL.md",
       "computedHash": "402fbf53ae527a7173bb9fb126e3567ced5f66cd3758f46eb2c11832fb3d84c1"
     },
+    "lint-all": {
+      "source": "denoland/deno",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/lint-all/SKILL.md",
+      "computedHash": "626bae6c185e24e6eb297fabd568e5206535c50797244f7ce624cbe1751d2722"
+    },
     "omniverse-cad-to-simready": {
       "source": "NVIDIA/skills",
       "sourceType": "github",
       "skillPath": "skills/omniverse-cad-to-simready/SKILL.md",
-      "computedHash": "421e19c91dbcf9027a2fdaf5a44d89619180fa129c57b8c9c17d0e9f683ccf2e"
+      "computedHash": "1e21ae621dfebf39b9bceb1b431e868eb2bcbe0f355ca92db2b0e97e0dfee30e"
+    },
+    "production-audit": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/production-audit/SKILL.md",
+      "computedHash": "3c38cf12fdb504f6ce53fa9d33f4f0fff1aee3df8e96fbb4fdb76831b5fd51ce"
     },
     "rag-blueprint": {
       "source": "NVIDIA/skills",
@@ -149,7 +167,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/in-progress/setup-ts-deep-modules/SKILL.md",
-      "computedHash": "6dbd0830059a887ca6206dfa8c24baf7e28be7321471d2b899887fff9b77e34f"
+      "computedHash": "8cf498b8f881f4a79873e49a881b5a4dedd1379e246498e28f5e38fae99727e1"
     },
     "shipping-and-launch": {
       "source": "addyosmani/agent-skills",
@@ -173,7 +191,7 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/using-superpowers/SKILL.md",
-      "computedHash": "a77a803b7fc1a19c87605cf7a5ef318c5adc233de10b9ebeecb2ee2609f5454e"
+      "computedHash": "c7abe8bdc2099bbe4f245454d32c7563ccd2bb41dcc218b02b461c2acc3c6ae6"
     },
     "verification-loop": {
       "source": "affaan-m/ECC",

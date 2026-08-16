@@ -48,6 +48,7 @@ def _setup_env_module() -> None:
 def client() -> Generator[TestClient, None, None]:
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -59,7 +60,9 @@ class TestLogin:
         """Valid API key should return 200 and set an HttpOnly cookie."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            json={
+                "api_key": "test_key_for_auth_123"
+            },  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         assert resp.status_code == 200, resp.text
         data = resp.json()
@@ -77,7 +80,9 @@ class TestLogin:
         """Wrong API key should return 401."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "wrong_key"},  # NOSONAR: python:S6418 — test fixture, not a real secret
+            json={
+                "api_key": "wrong_key"
+            },  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 401, resp.text
         assert "Invalid" in resp.json()["detail"]
@@ -111,7 +116,9 @@ class TestAuthMe:
         # Login first to get the cookie
         login_resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            json={
+                "api_key": "test_key_for_auth_123"
+            },  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         # Manually inject the __Host- session cookie (httpx rejects __Host- over HTTP)
         set_cookie = login_resp.headers.get("set-cookie", "")
@@ -134,11 +141,14 @@ class TestCookieAuth:
         # With scope="module", cookies from previous tests (including logout)
         # may interfere with this test's session state.
         from backend.app import app as _app
+
         fresh_client = TestClient(_app)
         # Login to get session cookie
         login_resp = fresh_client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: python:S6418 — test fixture, not a real secret
+            json={
+                "api_key": "test_key_for_auth_123"
+            },  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         # Manually inject the __Host- session cookie (httpx rejects __Host- over HTTP)
         set_cookie = login_resp.headers.get("set-cookie", "")
@@ -172,7 +182,9 @@ class TestLogout:
         # Login
         client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            json={
+                "api_key": "test_key_for_auth_123"
+            },  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         # Logout
         resp = client.post("/api/v1/auth/logout")

@@ -36,9 +36,7 @@ class TestRBACModels:
 
         admin_perms = ROLE_PERMISSIONS[Role.ADMIN]
         all_perms = set(Permission.__members__.values())
-        assert admin_perms == all_perms, (
-            f"Admin is missing permissions: {all_perms - admin_perms}"
-        )
+        assert admin_perms == all_perms, f"Admin is missing permissions: {all_perms - admin_perms}"
 
     def test_engineer_cannot_manage_users_or_system(self):
         """Engineer should NOT have USER_MANAGE or SYSTEM_CONFIG permissions."""
@@ -156,6 +154,7 @@ class TestAPIKeyManagement:
         """Clean up the temporary keys file."""
         self._patcher.stop()
         import shutil
+
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_add_and_validate_key(self):
@@ -351,6 +350,7 @@ class TestAuthDependency:
         """Admin should be able to access all endpoints."""
         from backend.auth import require_permission
         from backend.rbac import Permission, Role
+
         app = self._create_test_app()
         client = TestClient(app)  # NOSONAR — S1854: assignment kept for debug / future use
 
@@ -367,15 +367,21 @@ class TestAuthDependency:
         app_with_middleware = FastAPI()
         app_with_middleware.add_middleware(SetRoleMiddleware)
 
-        @app_with_middleware.get("/read", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
+        @app_with_middleware.get(
+            "/read", dependencies=[Depends(require_permission(Permission.PROJECT_READ))]
+        )
         async def read_ep():
             return {"ok": True}
 
-        @app_with_middleware.post("/write", dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
+        @app_with_middleware.post(
+            "/write", dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))]
+        )
         async def write_ep():
             return {"ok": True}
 
-        @app_with_middleware.get("/admin", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
+        @app_with_middleware.get(
+            "/admin", dependencies=[Depends(require_permission(Permission.USER_MANAGE))]
+        )
         async def admin_ep():
             return {"ok": True}
 
@@ -417,6 +423,7 @@ class TestBackendImports:
     def test_import_rbac(self):
         """backend.rbac should be importable."""
         import backend.rbac
+
         assert hasattr(backend.rbac, "Role")
         assert hasattr(backend.rbac, "Permission")
         assert hasattr(backend.rbac, "has_permission")
@@ -424,6 +431,7 @@ class TestBackendImports:
     def test_import_api_keys(self):
         """backend.api_keys should be importable."""
         import backend.api_keys
+
         assert hasattr(backend.api_keys, "validate_api_key")
         assert hasattr(backend.api_keys, "generate_api_key")
         assert hasattr(backend.api_keys, "list_api_keys")
@@ -431,5 +439,6 @@ class TestBackendImports:
     def test_import_auth(self):
         """backend.auth should be importable."""
         import backend.auth
+
         assert hasattr(backend.auth, "get_current_role")
         assert hasattr(backend.auth, "require_permission")

@@ -27,13 +27,14 @@ router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connectio
 def _verify_project(project_id: str) -> None:
     """Ensure the project exists before operating on its connections."""
     if not ConnectionService.verify_project_exists(project_id):
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
 def _normalize_sort(sort: str) -> str:
     """Convert camelCase sort fields to snake_case for database."""
     return ConnectionService.normalize_sort_field(sort)
-
 
 
 @router.get("", dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
@@ -49,12 +50,16 @@ async def list_connections(
     """List all connections in a project with pagination."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_connections(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_connections(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     validate_paginated(result, item_validator=validate_connection)
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))]
+)
 @limiter.limit("30/minute")
 async def create_connection(request: Request, project_id: str, input_data: CreateConnectionInput):
     """Create a new connection in a project."""
@@ -88,20 +93,24 @@ async def create_connection(request: Request, project_id: str, input_data: Creat
 
     # Sync connection to UDM for conflict detection
     from backend.project_bridge import sync_connection_to_udm
+
     sync_connection_to_udm(project_id, conn_data)
 
     return success(connection)
 
 
-@router.put("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+@router.put(
+    "/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))]
+)
 @limiter.limit("30/minute")
 async def update_connection(
     request: Request,
     project_id: str,
     connection_id: str,
-    cableSize: str | None =  None,  # NOSONAR - python:S117
-    length: float | None =  None,
-    connection_type: str | None =  None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
+    cableSize: str | None = None,  # NOSONAR - python:S117
+    length: float | None = None,
+    connection_type: str
+    | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """
     Update an existing connection in a project.
@@ -115,7 +124,9 @@ async def update_connection(
     # Check connection exists via indexed lookup
     connection = db.get_connection(project_id, connection_id)
     if not connection:
-        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Connection not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
     # Build updates dict with only provided fields
     updates = {}
@@ -127,7 +138,9 @@ async def update_connection(
         updates["type"] = connection_type
 
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail="No fields to update"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # Apply updates via database method
     updated = db.update_connection(project_id, connection_id, updates)
@@ -137,7 +150,9 @@ async def update_connection(
     return success(updated)
 
 
-@router.delete("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
+@router.delete(
+    "/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))]
+)
 @limiter.limit("30/minute")
 async def delete_connection(request: Request, project_id: str, connection_id: str):
     """Delete a connection from a project."""
@@ -145,10 +160,13 @@ async def delete_connection(request: Request, project_id: str, connection_id: st
     db = get_db()
     deleted = db.delete_connection(project_id, connection_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Connection not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
     # Sync connection deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_connection_delete_to_udm
+
     sync_connection_delete_to_udm(project_id, connection_id)
 
     return success(None, "Connection deleted")

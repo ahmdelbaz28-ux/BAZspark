@@ -504,7 +504,9 @@ class NFPA72ComplianceChecker:
             is_compliant=is_compliant,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info("Voltage drop result added: drop=%s%, compliant=%s", voltage_drop_pct, is_compliant)  # NOSONAR — acceptable in this context
+        logger.info(
+            "Voltage drop result added: drop=%s%, compliant=%s", voltage_drop_pct, is_compliant
+        )  # NOSONAR — acceptable in this context
         return fid
 
     def add_fault_isolation_result(
@@ -730,9 +732,10 @@ def dual_compliance_check(
         # Log at CRITICAL level — divergence is a safety concern
         for detail in divergence_details:
             logger.critical(
-                "COMPLIANCE ENGINE DIVERGENCE DETECTED: %s "
-                "Session: %s, Context: %s",
-                detail, session_id, context,
+                "COMPLIANCE ENGINE DIVERGENCE DETECTED: %s Session: %s, Context: %s",
+                detail,
+                session_id,
+                context,
             )
 
     # ── Combine violations ────────────────────────────────────────────────
@@ -762,7 +765,11 @@ def dual_compliance_check(
     logger.info(
         "Dual compliance check complete: safe=%s, clause_safe=%s, "
         "rules_safe=%s, agree=%s, violations=%d",
-        result.is_safe, clause_safe, rules_safe, engines_agree, len(combined),
+        result.is_safe,
+        clause_safe,
+        rules_safe,
+        engines_agree,
+        len(combined),
     )
 
     return result

@@ -14,6 +14,7 @@ SECURITY NOTE (M-2 fix):
     explicitly opts out via FACP_ALLOW_UNAUTHENTICATED=1 (trusted
     dev/test networks only).
 """
+
 import asyncio
 import hmac
 import json
@@ -35,9 +36,15 @@ _FACP_PROTOCOL_VERSION = "FACP/1.1"
 class WebSocketTransport(TransportLayer):
     """WebSocket transport implementation for distributed FACP"""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator",
-                 auth_token: str | None = None, allowed_methods: set[str] | None = None,
-                 allow_insecure_ws: bool = False):
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = 8002,
+        node_type: str = "l2_orchestrator",
+        auth_token: str | None = None,
+        allowed_methods: set[str] | None = None,
+        allow_insecure_ws: bool = False,
+    ):
         # L-3 FIX: secure-by-default. The default outbound URL is now wss://.
         # Use allow_insecure_ws=True to opt in to ws:// for trusted internal
         # dev/test networks. Any caller that passes a ws:// target_node without
@@ -52,15 +59,19 @@ class WebSocketTransport(TransportLayer):
         if auth_token is None:
             _logger.warning(
                 "WebSocketTransport started with auth_token=None — "
- "authentication is DISABLED. This is only safe on "
- "trusted internal networks. set auth_token for any "
- "deployment where port %s is reachable from untrusted "
- "networks.",
+                "authentication is DISABLED. This is only safe on "
+                "trusted internal networks. set auth_token for any "
+                "deployment where port %s is reachable from untrusted "
+                "networks.",
                 port,
             )
         self.allowed_methods = allowed_methods or {
-            "get_status", "get_health", "route_announcement",
-            "process_alert", "query_sensor", "acknowledge_alarm",
+            "get_status",
+            "get_health",
+            "route_announcement",
+            "process_alert",
+            "query_sensor",
+            "acknowledge_alarm",
         }
         self.clients: set[websockets.WebSocketServerProtocol] = set()
         self._authenticated: set[websockets.WebSocketServerProtocol] = set()
@@ -70,18 +81,26 @@ class WebSocketTransport(TransportLayer):
         self.running = False
         self.loop = None
 
-    async def _register_client(self, websocket: websockets.WebSocketServerProtocol):  # NOSONAR - python:S7503
+    async def _register_client(
+        self, websocket: websockets.WebSocketServerProtocol
+    ):  # NOSONAR - python:S7503
         """Register a new client connection"""
         self.clients.add(websocket)
         print(f"Client connected: {websocket.remote_address}, Total clients: {len(self.clients)}")
 
-    async def _unregister_client(self, websocket: websockets.WebSocketServerProtocol):  # NOSONAR - python:S7503
+    async def _unregister_client(
+        self, websocket: websockets.WebSocketServerProtocol
+    ):  # NOSONAR - python:S7503
         """Unregister a client connection"""
         self._authenticated.discard(websocket)
         self.clients.remove(websocket)
-        print(f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}")
+        print(
+            f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}"
+        )
 
-    async def _handle_client_message(self, websocket: websockets.WebSocketServerProtocol, path: str):  # NOSONAR — S3776: WebSocket message handling must dispatch many protocol types
+    async def _handle_client_message(
+        self, websocket: websockets.WebSocketServerProtocol, path: str
+    ):  # NOSONAR — S3776: WebSocket message handling must dispatch many protocol types
         """Handle incoming messages from a client"""
         await self._register_client(websocket)
         try:
@@ -104,20 +123,31 @@ class WebSocketTransport(TransportLayer):
                             )
                         )
                         if request_data.get("method") != "auth" or not token_matches:
-                            await websocket.send(json.dumps({
-                                "protocol": _FACP_PROTOCOL_VERSION,
-                                "id": request_data.get("id", "unknown"),
-                                "status": "error",
-                                "error": {"code": "UNAUTHORIZED", "message": "Authentication required. Send {\"method\":\"auth\",\"token\":\"<token>\"} as first message."},
-                            }))
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "protocol": _FACP_PROTOCOL_VERSION,
+                                        "id": request_data.get("id", "unknown"),
+                                        "status": "error",
+                                        "error": {
+                                            "code": "UNAUTHORIZED",
+                                            "message": 'Authentication required. Send {"method":"auth","token":"<token>"} as first message.',
+                                        },
+                                    }
+                                )
+                            )
                             continue
                         self._authenticated.add(websocket)
-                        await websocket.send(json.dumps({
-                            "protocol": _FACP_PROTOCOL_VERSION,
-                            "id": request_data.get("id", "unknown"),
-                            "status": "ok",
-                            "result": {"authenticated": True},
-                        }))
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "protocol": _FACP_PROTOCOL_VERSION,
+                                    "id": request_data.get("id", "unknown"),
+                                    "status": "ok",
+                                    "result": {"authenticated": True},
+                                }
+                            )
+                        )
                         continue
 
                     method = request_data.get("method", "")
@@ -126,7 +156,10 @@ class WebSocketTransport(TransportLayer):
                             "protocol": _FACP_PROTOCOL_VERSION,
                             "id": request_data.get("id", "unknown"),
                             "status": "error",
-                            "error": {"code": "METHOD_NOT_ALLOWED", "message": f"Method '{method}' is not in the allowed methods list"},
+                            "error": {
+                                "code": "METHOD_NOT_ALLOWED",
+                                "message": f"Method '{method}' is not in the allowed methods list",
+                            },
                         }
                         await websocket.send(json.dumps(error_response))
                         continue
@@ -140,7 +173,11 @@ class WebSocketTransport(TransportLayer):
                     # Route to appropriate handler
                     if method in self.handlers:
                         handler = self.handlers[method]
-                        response = await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
+                        response = (
+                            await handler(request_data)
+                            if asyncio.iscoroutinefunction(handler)
+                            else handler(request_data)
+                        )
 
                         # Send response back to client
                         await websocket.send(json.dumps(response))
@@ -151,14 +188,14 @@ class WebSocketTransport(TransportLayer):
                             "status": "error",
                             "error": {
                                 "code": "METHOD_NOT_FOUND",
-                                "message": f"Method {method} not found"
+                                "message": f"Method {method} not found",
                             },
                             "trace": {
                                 "node_id": self.node_id,
                                 "node_type": self.node_type,
                                 "execution_path": [self.node_type],
-                                "latency_ms": 0
-                            }
+                                "latency_ms": 0,
+                            },
                         }
                         await websocket.send(json.dumps(error_response))
 
@@ -167,33 +204,29 @@ class WebSocketTransport(TransportLayer):
                         "protocol": _FACP_PROTOCOL_VERSION,
                         "id": "unknown",
                         "status": "error",
-                        "error": {
-                            "code": "INVALID_JSON",
-                            "message": "Invalid JSON in request"
-                        },
+                        "error": {"code": "INVALID_JSON", "message": "Invalid JSON in request"},
                         "trace": {
                             "node_id": self.node_id,
                             "node_type": self.node_type,
                             "execution_path": [self.node_type],
-                            "latency_ms": 0
-                        }
+                            "latency_ms": 0,
+                        },
                     }
                     await websocket.send(json.dumps(error_response))
                 except Exception as e:
                     error_response = {
                         "protocol": _FACP_PROTOCOL_VERSION,
-                        "id": request_data.get("id", "unknown") if 'request_data' in locals() else "unknown",
+                        "id": request_data.get("id", "unknown")
+                        if "request_data" in locals()
+                        else "unknown",
                         "status": "error",
-                        "error": {
-                            "code": "WEBSOCKET_ERROR",
-                            "message": str(e)
-                        },
+                        "error": {"code": "WEBSOCKET_ERROR", "message": str(e)},
                         "trace": {
                             "node_id": self.node_id,
                             "node_type": self.node_type,
                             "execution_path": [self.node_type],
-                            "latency_ms": 0
-                        }
+                            "latency_ms": 0,
+                        },
                     }
                     await websocket.send(json.dumps(error_response))
         except websockets.exceptions.ConnectionClosed:
@@ -223,14 +256,12 @@ class WebSocketTransport(TransportLayer):
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
-            start_server = websockets.serve(
-                self._handle_client_message,
-                self.host,
-                self.port
-            )
+            start_server = websockets.serve(self._handle_client_message, self.host, self.port)
 
             self.websocket_server = self.loop.run_until_complete(start_server)
-            print(f"WebSocket Transport listening on {self.host}:{self.port} (Node: {self.node_id})")
+            print(
+                f"WebSocket Transport listening on {self.host}:{self.port} (Node: {self.node_id})"
+            )
 
             self.running = True
             self.loop.run_forever()
@@ -251,7 +282,9 @@ class WebSocketTransport(TransportLayer):
         if websocket in self.clients:
             await websocket.send(message)
 
-    def send_request(self, request_data: dict[str, Any], target_node: str | None = None) -> dict[str, Any]:
+    def send_request(
+        self, request_data: dict[str, Any], target_node: str | None = None
+    ) -> dict[str, Any]:
         """
         Send request to target WebSocket endpoint
         target_node format: "ws://host:port" (e.g., "ws://localhost:8002")
@@ -294,16 +327,13 @@ class WebSocketTransport(TransportLayer):
                     "protocol": _FACP_PROTOCOL_VERSION,
                     "id": request_data.get("id", "unknown"),
                     "status": "error",
-                    "error": {
-                        "code": "WEBSOCKET_CONNECTION_ERROR",
-                        "message": str(e)
-                    },
+                    "error": {"code": "WEBSOCKET_CONNECTION_ERROR", "message": str(e)},
                     "trace": {
                         "node_id": self.node_id,
                         "node_type": self.node_type,
                         "execution_path": [self.node_type],
-                        "latency_ms": 0
-                    }
+                        "latency_ms": 0,
+                    },
                 }
 
         try:
@@ -317,22 +347,18 @@ class WebSocketTransport(TransportLayer):
                 "protocol": _FACP_PROTOCOL_VERSION,
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
-                "error": {
-                    "code": "ASYNC_ERROR",
-                    "message": str(e)
-                },
+                "error": {"code": "ASYNC_ERROR", "message": str(e)},
                 "trace": {
                     "node_id": self.node_id,
                     "node_type": self.node_type,
                     "execution_path": [self.node_type],
-                    "latency_ms": 0
-                }
+                    "latency_ms": 0,
+                },
             }
 
     async def broadcast_message(self, message: str):
         """Broadcast a message to all connected clients"""
         if self.clients:
             await asyncio.gather(
-                *[client.send(message) for client in self.clients],
-                return_exceptions=True
+                *[client.send(message) for client in self.clients], return_exceptions=True
             )

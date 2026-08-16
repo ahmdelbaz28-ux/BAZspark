@@ -87,6 +87,7 @@ EVALUATION:
                      and patch the hole, or rewrite the worklog
                      claim to match reality.
 """
+
 from __future__ import annotations
 
 import ast
@@ -141,8 +142,7 @@ def _imports_any(ast_root: ast.AST, *targets: str) -> bool:
     for node in ast.walk(ast_root):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if any(alias.name == t or alias.name.startswith(t + ".")
-                       for t in targets):
+                if any(alias.name == t or alias.name.startswith(t + ".") for t in targets):
                     return True
         elif isinstance(node, ast.ImportFrom):
             # node.module is None for relative imports like `from . import x`
@@ -204,8 +204,9 @@ def _find_dynamic_dispatch(ast_root: ast.AST, *targets: str) -> list[str]:
     return findings
 
 
-def _get_transitive_top_level_imports(pkg_name: str, repo_root: Path,
-                                       _seen: set | None = None) -> set[str]:
+def _get_transitive_top_level_imports(
+    pkg_name: str, repo_root: Path, _seen: set | None = None
+) -> set[str]:
     """Return the set of top-level packages transitively imported by pkg_name.
 
     Walks the package's __init__.py and all submodules (non-test) to build
@@ -307,8 +308,7 @@ def test_backend_never_imports_isolation_or_marshal():
     assert not offenders, (
         "M-1 CLAIM IS FALSE: backend/ contains non-test files that import "
         "facp_distributed or marshal — these are HTTP-reachable import "
-        "paths to the marshal.loads code in isolation.py. Offenders:\n  "
-        + "\n  ".join(offenders)
+        "paths to the marshal.loads code in isolation.py. Offenders:\n  " + "\n  ".join(offenders)
     )
 
 
@@ -364,8 +364,7 @@ def test_no_transitive_path_from_backend_to_facp_distributed():
 
     # Filter to packages that exist as directories in the repo
     transitively_reachable = {
-        pkg for pkg in backend_imports
-        if (REPO_ROOT / pkg).is_dir() and pkg != "backend"
+        pkg for pkg in backend_imports if (REPO_ROOT / pkg).is_dir() and pkg != "backend"
     }
 
     # Step 2: For each such package, walk its transitive closure
@@ -374,15 +373,13 @@ def test_no_transitive_path_from_backend_to_facp_distributed():
         closure = _get_transitive_top_level_imports(pkg, REPO_ROOT)
         if "facp_distributed" in closure:
             offenders.append(
-                f"{pkg} → transitively reaches facp_distributed "
-                f"(closure size: {len(closure)})"
+                f"{pkg} → transitively reaches facp_distributed (closure size: {len(closure)})"
             )
 
     assert not offenders, (
         "M-1 CLAIM IS FALSE: backend/ imports a package that transitively "
         "reaches facp_distributed — meaning HTTP-reachable code can reach "
-        "marshal.loads in isolation.py. Offenders:\n  "
-        + "\n  ".join(offenders)
+        "marshal.loads in isolation.py. Offenders:\n  " + "\n  ".join(offenders)
     )
 
 
@@ -433,8 +430,7 @@ def test_no_dynamic_dispatch_to_marshal_or_facp_distributed():
         "M-1 CLAIM EVASION DETECTED: non-test files use dynamic dispatch "
         "to import marshal or facp_distributed. This bypasses the static "
         "import-graph checks (Tests 1 and 1b). Either remove the dynamic "
-        "dispatch or escalate the severity. Offenders:\n  "
-        + "\n  ".join(offenders)
+        "dispatch or escalate the severity. Offenders:\n  " + "\n  ".join(offenders)
     )
 
 
@@ -488,17 +484,16 @@ def test_dangerous_methods_are_only_called_within_isolation_py():
         "M-1 CLAIM IS FALSE: non-test files invoke "
         "create_sandboxed_execution() or execute_in_sandbox() — these are "
         "the entry points to marshal.dumps/loads in isolation.py. The "
-        "dangerous path is reachable from production code. Offenders:\n  "
-        + "\n  ".join(offenders)
+        "dangerous path is reachable from production code. Offenders:\n  " + "\n  ".join(offenders)
     )
 
 
 # ─── Test 3: marshal.loads never fires during HTTP traffic ───────────────────
 
 
-def _make_sentinel(raw_log: list, filtered_log: list,
-                    test_file_prefixes: tuple[str, ...],
-                    func_name: str):
+def _make_sentinel(
+    raw_log: list, filtered_log: list, test_file_prefixes: tuple[str, ...], func_name: str
+):
     """Create a sentinel that records every call to a patched function.
 
     The sentinel walks the call stack past app/mock/unittest internals
@@ -532,8 +527,10 @@ def _make_sentinel(raw_log: list, filtered_log: list,
     WANT a loud failure via the assertion, not via an exception that
     some router might silently catch.
     """
+
     def _sentinel(*args, **kwargs):
         import inspect
+
         frame = inspect.currentframe().f_back
         skip_substrings = ("/marshal", "<frozen", "/mock", "/unittest")
         # True when the call chain passes through importlib's .pyc
@@ -544,9 +541,11 @@ def _make_sentinel(raw_log: list, filtered_log: list,
         while frame is not None:
             fn = frame.f_code.co_filename
             fn_posix = fn.replace(os.sep, "/")
-            if ("<frozen importlib" in fn_posix
-                    or "/importlib/_bootstrap" in fn_posix
-                    or fn_posix.endswith("/lib/importlib/_bootstrap.py")):
+            if (
+                "<frozen importlib" in fn_posix
+                or "/importlib/_bootstrap" in fn_posix
+                or fn_posix.endswith("/lib/importlib/_bootstrap.py")
+            ):
                 via_importlib_pyc = True
             if not any(s in fn_posix for s in skip_substrings):
                 break
@@ -559,22 +558,24 @@ def _make_sentinel(raw_log: list, filtered_log: list,
             entry = (fn, ln, func_name)
             raw_log.append(entry)
             fn_posix = fn.replace(os.sep, "/")
-            if (not fn_posix.startswith(tuple(p.replace(os.sep, "/")
-                                             for p in test_file_prefixes))
-                    and "/_pytest/" not in fn_posix
-                    and "/site-packages/pytest" not in fn_posix
-                    and "conftest" not in os.path.basename(fn)
-                    # V214 MERGE FIX: Exclude APM/tracing libraries (ddtrace, opentelemetry,
-                    # sentry) that legitimately use marshal internally for bytecode
-                    # instrumentation. These are NOT reachable from HTTP request
-                    # handlers — they wrap Python import machinery. Excluding them
-                    # avoids false positives in local dev environments where these
-                    # libraries are installed (CI does not install them).
-                    and "/ddtrace/" not in fn_posix
-                    and "/opentelemetry/" not in fn_posix
-                    and "/sentry_sdk/" not in fn_posix):
+            if (
+                not fn_posix.startswith(tuple(p.replace(os.sep, "/") for p in test_file_prefixes))
+                and "/_pytest/" not in fn_posix
+                and "/site-packages/pytest" not in fn_posix
+                and "conftest" not in os.path.basename(fn)
+                # V214 MERGE FIX: Exclude APM/tracing libraries (ddtrace, opentelemetry,
+                # sentry) that legitimately use marshal internally for bytecode
+                # instrumentation. These are NOT reachable from HTTP request
+                # handlers — they wrap Python import machinery. Excluding them
+                # avoids false positives in local dev environments where these
+                # libraries are installed (CI does not install them).
+                and "/ddtrace/" not in fn_posix
+                and "/opentelemetry/" not in fn_posix
+                and "/sentry_sdk/" not in fn_posix
+            ):
                 filtered_log.append(entry)
         return b""
+
     return _sentinel
 
 
@@ -609,6 +610,7 @@ def _sanitize_path(method: str, path: str) -> str:
     # {device_id} → "1"
     # etc.
     import re
+
     sanitized = re.sub(r"\{[^}]+\}", "1", path)
     return sanitized
 
@@ -621,6 +623,7 @@ def _http_probe_routes(client, routes, raw_log, filtered_log):
     handler-execution coverage).
     """
     from collections import Counter
+
     status_counter: Counter = Counter()
 
     for method, path in routes:
@@ -691,8 +694,8 @@ def test_marshal_never_invoked_during_http_traffic():
     raw_log: list[tuple[str, int, str]] = []
     filtered_log: list[tuple[str, int, str]] = []
     test_file_prefixes = (
-        str(Path(__file__).resolve()),                      # this test
-        str(BACKEND_DIR / "tests" / "conftest.py"),       # backend conftest
+        str(Path(__file__).resolve()),  # this test
+        str(BACKEND_DIR / "tests" / "conftest.py"),  # backend conftest
     )
 
     loads_sentinel = _make_sentinel(raw_log, filtered_log, test_file_prefixes, "loads")
@@ -721,9 +724,10 @@ def test_marshal_never_invoked_during_http_traffic():
             pass  # some modules don't allow attribute mutation
 
     # Patch marshal.loads and marshal.dumps at the source
-    with patch.object(_marshal_mod, "loads", side_effect=loads_sentinel) as _pl, \
-         patch.object(_marshal_mod, "dumps", side_effect=dumps_sentinel) as _pd:
-
+    with (
+        patch.object(_marshal_mod, "loads", side_effect=loads_sentinel) as _pl,
+        patch.object(_marshal_mod, "dumps", side_effect=dumps_sentinel) as _pd,
+    ):
         # Walk sys.modules to catch `from marshal import loads` patterns.
         # Note: we compare against original_loads/original_dumps (captured
         # BEFORE patching) because that's what modules would have
@@ -828,10 +832,14 @@ def test_http_probe_actually_exercises_handlers():
     status_counter = _http_probe_routes(client, routes, [], [])
 
     total = sum(status_counter.values())
-    handler_ran = sum(c for k, c in status_counter.items()
-                      if isinstance(k, int) and (200 <= k < 300 or 500 <= k < 600))
-    handler_blocked = sum(c for k, c in status_counter.items()
-                          if isinstance(k, int) and (300 <= k < 500))
+    handler_ran = sum(
+        c
+        for k, c in status_counter.items()
+        if isinstance(k, int) and (200 <= k < 300 or 500 <= k < 600)
+    )
+    handler_blocked = sum(
+        c for k, c in status_counter.items() if isinstance(k, int) and (300 <= k < 500)
+    )
     exceptions = sum(c for k, c in status_counter.items() if isinstance(k, str))
 
     coverage_pct = (handler_ran / total * 100) if total else 0
@@ -952,8 +960,11 @@ def test_marshal_loads_actually_fires_when_sandbox_is_invoked():
             # The subprocess will start, run, and finish quickly.
             try:
                 manager.create_sandboxed_execution(
-                    trivial, args=(), kwargs=None,
-                    timeout=2000, max_memory_mb=64,
+                    trivial,
+                    args=(),
+                    kwargs=None,
+                    timeout=2000,
+                    max_memory_mb=64,
                 )
             except Exception:
                 # We don't care if the execution itself succeeds or
@@ -971,6 +982,7 @@ def test_marshal_loads_actually_fires_when_sandbox_is_invoked():
         # Best-effort cleanup of the sandbox temp dir
         try:
             import shutil
+
             shutil.rmtree(manager.sandbox_base_path, ignore_errors=True)
         except Exception:
             pass
@@ -1011,6 +1023,7 @@ def test_runtime_sentinel_actually_catches_violations():
     @violation_app.get("/__deliberate_violation__")
     def deliberately_call_marshal_loads():
         import marshal
+
         # Marshal bytes for the integer 42
         marshal.loads(b"\xe9\x2a\x00\x00\x00")  # noqa: S301 — intentional for test
         return {"ok": True}
@@ -1052,10 +1065,10 @@ def test_runtime_sentinel_actually_catches_violations():
     # the violating route handler is defined). This proves the sentinel
     # correctly walks up the stack to find the application caller.
     recorded_filenames = [fn for fn, _ln, _name in raw_log]
-    assert any("test_marshal_loads_not_http_reachable" in fn
-               or "<string>" in fn
-               or "<module>" in fn
-               for fn in recorded_filenames), (
+    assert any(
+        "test_marshal_loads_not_http_reachable" in fn or "<string>" in fn or "<module>" in fn
+        for fn in recorded_filenames
+    ), (
         f"META-TEST FAILURE: sentinel fired but recorded wrong call site. "
         f"Expected the deliberately-violating route (defined in this test) "
         f"to be recorded. Got: {raw_log}"
@@ -1148,8 +1161,11 @@ def test_runtime_sentinel_catches_transitive_violation_via_isolation():
 
         try:
             manager.create_sandboxed_execution(
-                trivial, args=(), kwargs=None,
-                timeout=2000, max_memory_mb=64,
+                trivial,
+                args=(),
+                kwargs=None,
+                timeout=2000,
+                max_memory_mb=64,
             )
         except Exception:
             pass  # we don't care if the sandbox runs successfully
@@ -1157,6 +1173,7 @@ def test_runtime_sentinel_catches_transitive_violation_via_isolation():
         # Best-effort cleanup
         try:
             import shutil
+
             shutil.rmtree(manager.sandbox_base_path, ignore_errors=True)
         except Exception:
             pass
@@ -1200,8 +1217,7 @@ def test_runtime_sentinel_catches_transitive_violation_via_isolation():
     # records the APPLICATION caller (which in this case is isolation.py
     # — a non-test file).
     recorded_filenames = [fn for fn, _ln, _name in raw_log]
-    assert any("isolation" in fn or "facp_distributed" in fn
-               for fn in recorded_filenames), (
+    assert any("isolation" in fn or "facp_distributed" in fn for fn in recorded_filenames), (
         f"META-TEST 2 FAILURE: sentinel fired but did NOT record the "
         f"call as coming from isolation.py / facp_distributed. This "
         f"means the sentinel is mis-attributing transitive calls. "

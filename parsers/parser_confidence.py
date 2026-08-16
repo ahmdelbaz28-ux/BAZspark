@@ -56,8 +56,7 @@ class ParserConfidence:
     def __init__(self, pdf_path: str):
         if fitz is None:
             raise ImportError(
-                "PyMuPDF (pymupdf) is required for PDF parsing. "
-                "Install with: pip install pymupdf"
+                "PyMuPDF (pymupdf) is required for PDF parsing. Install with: pip install pymupdf"
             )
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"Drawing not found: {pdf_path}")
@@ -120,9 +119,24 @@ class ParserConfidence:
         details = {}
 
         # Scale annotation
-        scale_keywords = ['scale', 'scale 1:', '1:', '1/8', '1/4', 'meter', 'ft', 'mètre',
-                    'مقياس', 'drawing scale', '1:100', '1:50', '1:200']
-        details["scale_found"] = any(kw in self._text.lower() for kw in [k.lower() for k in scale_keywords])
+        scale_keywords = [
+            "scale",
+            "scale 1:",
+            "1:",
+            "1/8",
+            "1/4",
+            "meter",
+            "ft",
+            "mètre",
+            "مقياس",
+            "drawing scale",
+            "1:100",
+            "1:50",
+            "1:200",
+        ]
+        details["scale_found"] = any(
+            kw in self._text.lower() for kw in [k.lower() for k in scale_keywords]
+        )
         if details["scale_found"]:
             score += 0.3
 
@@ -133,16 +147,39 @@ class ParserConfidence:
             score += 0.1
 
         # Legend - expanded keywords for better detection
-        legend_keywords = ['legend', 'symbol legend', 'abbreviations', 'notes and symbols',
-                        'مفتاح الرموز', 'key', 'drawing list', 'device schedule']
+        legend_keywords = [
+            "legend",
+            "symbol legend",
+            "abbreviations",
+            "notes and symbols",
+            "مفتاح الرموز",
+            "key",
+            "drawing list",
+            "device schedule",
+        ]
         details["legend_found"] = any(kw.lower() in self._text.lower() for kw in legend_keywords)
 
         if details["legend_found"]:
             score += 0.1
             # Expand NFPA symbol keywords
-            nfpa_symbols = ['smoke', 'detector', 'sprinkler', 'heat', 'horn', 'strobe',
-                          'pull', 'nac', 'notification', 'speaker', 'pull station', 'heat detector',
-                          'smoke detector', 'manual pull', 'bell', 'indicator']
+            nfpa_symbols = [
+                "smoke",
+                "detector",
+                "sprinkler",
+                "heat",
+                "horn",
+                "strobe",
+                "pull",
+                "nac",
+                "notification",
+                "speaker",
+                "pull station",
+                "heat detector",
+                "smoke detector",
+                "manual pull",
+                "bell",
+                "indicator",
+            ]
             details["nfpa_symbols_mentioned"] = [s for s in nfpa_symbols if s in self._text.lower()]
             # More symbols = higher score
             if len(details["nfpa_symbols_mentioned"]) >= 3:
@@ -155,7 +192,11 @@ class ParserConfidence:
     # ──────────────────────────────────────────────
     # 3. الحكم النهائي
     # ──────────────────────────────────────────────
-    def evaluate(self) -> ConfidenceResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def evaluate(
+        self,
+    ) -> (
+        ConfidenceResult
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         file_score, file_details = self._score_file_quality()
         comp_score, comp_details = self._score_completeness()
 
@@ -165,9 +206,9 @@ class ParserConfidence:
         if final < 0.7:
             # Special handling for Raster PDFs with decent completeness
             # Only allow if: has scale bar OR has explicit dimensions
-            is_raster = file_details.get('type') in ['raster', 'mixed']
-            has_completeness = comp_details.get('scale_found') or comp_details.get('legend_found')
-            has_scale = comp_details.get('scale_found') is True  # Text mentions scale
+            is_raster = file_details.get("type") in ["raster", "mixed"]
+            has_completeness = comp_details.get("scale_found") or comp_details.get("legend_found")
+            has_scale = comp_details.get("scale_found") is True  # Text mentions scale
 
             if is_raster and has_completeness and has_scale and final >= 0.5:
                 # First try standard text extraction
@@ -182,6 +223,7 @@ class ParserConfidence:
                     from .pdf_input_layer import (
                         extract_scale_from_pdf as _extract_scale,
                     )
+
                     actual_scale = _extract_scale(self.pdf_path)
                     scale_confidence = 0.95 if actual_scale else 0.0
                 except (ImportError, Exception):  # NOSONAR - python:S5713
@@ -191,10 +233,11 @@ class ParserConfidence:
                 if not actual_scale:
                     try:
                         from .pdf_parser import PDFParser
+
                         # not pdf_path. The path is passed to .parse().
                         _parser = PDFParser()
                         _result = _parser.parse(self.pdf_path)
-                        if hasattr(_result, 'scale') and _result.scale:
+                        if hasattr(_result, "scale") and _result.scale:
                             actual_scale = _result.scale
                             scale_confidence = 0.8
                             has_scale = True
@@ -250,8 +293,7 @@ class ParserConfidence:
         else:
             gate = GateDecision.HIGH_CONFIDENCE
             message = (
-                f"HIGH CONFIDENCE: Drawing score {final:.2f}. "
-                f"Suitable for automated processing."
+                f"HIGH CONFIDENCE: Drawing score {final:.2f}. Suitable for automated processing."
             )
 
         self.doc.close()
@@ -263,7 +305,7 @@ class ParserConfidence:
                 "file_quality": file_details,
                 "completeness": comp_details,
                 "raw_score": round(raw, 3),
-            }
+            },
         )
 
 

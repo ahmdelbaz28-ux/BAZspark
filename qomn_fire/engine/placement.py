@@ -17,12 +17,9 @@ from qomn_fire.core.types import Device, DeviceType, Point3D
 
 logger = logging.getLogger("qomn_fire.placement")
 
+
 def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    room_min: Point3D,
-    room_max: Point3D,
-    height_ft: float,
-    circuit_prefix: str,
-    zone: str
+    room_min: Point3D, room_max: Point3D, height_ft: float, circuit_prefix: str, zone: str
 ) -> Result[list[Device], PhysicalConstraintError]:
     # SAFETY FIX (V58): Validate inputs for NaN/Inf per IEEE 754 bypass risk.
     # NaN comparisons always return False — NaN room dimensions would silently
@@ -30,19 +27,23 @@ def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is in
     for label, pt in [("room_min", room_min), ("room_max", room_max)]:
         for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
             if not math.isfinite(val):
-                return Result(error=PhysicalConstraintError(
-                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
-                            f"Detector placement requires finite room coordinates.",
-                    code_ref="NFPA 72 §17.7.3",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                    remedy="Validate room geometry before calling placement. Check for NaN in IFC parsing."
-                ))
+                return Result(
+                    error=PhysicalConstraintError(
+                        message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                        f"Detector placement requires finite room coordinates.",
+                        code_ref="NFPA 72 §17.7.3",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                        remedy="Validate room geometry before calling placement. Check for NaN in IFC parsing.",
+                    )
+                )
     if not math.isfinite(height_ft):
-        return Result(error=PhysicalConstraintError(
-            message=f"height_ft={height_ft} is not finite (NaN or Inf). "
-                    f"Detector elevation must be a finite value.",
-            code_ref="NFPA 72 §17.7.3",
-            remedy="Provide a valid room ceiling height."
-        ))
+        return Result(
+            error=PhysicalConstraintError(
+                message=f"height_ft={height_ft} is not finite (NaN or Inf). "
+                f"Detector elevation must be a finite value.",
+                code_ref="NFPA 72 §17.7.3",
+                remedy="Provide a valid room ceiling height.",
+            )
+        )
 
     # BUG-P1 FIX: Validate that height_ft is in a physically reasonable range for feet.
     # NFPA 72 §17.7.3.1.4: Smoke detectors are mounted on ceilings. Typical building
@@ -58,25 +59,29 @@ def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is in
             "height_ft = height_m * 3.28084. Typical IFC room heights are 2.4-9.1 m "
             "(8-30 ft). A value of %.2f ft suggests this might be %.2f meters "
             "mistakenly passed as feet.",
-            height_ft, height_ft, height_ft
+            height_ft,
+            height_ft,
+            height_ft,
         )
     if height_ft > 100.0:
         logger.warning(
             "POTENTIAL UNIT ERROR: height_ft=%.2f exceeds 100 ft (30.5 m). "
             "This parameter expects FEET. If you have millimeters, divide by 304.8. "
             "No typical building ceiling exceeds 100 ft.",
-            height_ft
+            height_ft,
         )
 
     dx = room_max.x - room_min.x
     dy = room_max.y - room_min.y
 
     if dx <= 0.0 or dy <= 0.0:
-        return Result(error=PhysicalConstraintError(
-            message="Room dimensions must form positive volumes.",
-            code_ref="NFPA 72 §17.7.3",
-            remedy="Re-evaluate coordinate boundary bounding box input parameters."
-        ))
+        return Result(
+            error=PhysicalConstraintError(
+                message="Room dimensions must form positive volumes.",
+                code_ref="NFPA 72 §17.7.3",
+                remedy="Re-evaluate coordinate boundary bounding box input parameters.",
+            )
+        )
 
     devices = []
     s = NFPA_SMOKE_DETECTOR_SPACING_M
@@ -131,7 +136,7 @@ def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is in
                 location=p,
                 elevation_ft=height_ft,
                 circuit=f"{circuit_prefix}-{dev_counter}",
-                zone=zone
+                zone=zone,
             )
             devices.append(d)
             dev_counter += 1

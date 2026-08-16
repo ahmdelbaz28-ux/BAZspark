@@ -41,18 +41,24 @@ def sample_snapshot():
         building_id="B-001",
         nodes=[
             ARSceneNode(
-                id="SM-01", name="Smoke Detector 01", node_type="detector",
+                id="SM-01",
+                name="Smoke Detector 01",
+                node_type="detector",
                 position=(5.0, 3.0, 2.8),
                 is_behind_wall=False,
                 inspection_critical=True,
             ),
             ARSceneNode(
-                id="SM-02", name="Smoke Detector 02", node_type="detector",
+                id="SM-02",
+                name="Smoke Detector 02",
+                node_type="detector",
                 position=(8.0, 3.0, 2.8),
                 is_behind_wall=True,
             ),
             ARSceneNode(
-                id="WALL-01", name="Wall 01", node_type="wall",
+                id="WALL-01",
+                name="Wall 01",
+                node_type="wall",
                 position=(5.0, 5.0, 1.5),
             ),
         ],
@@ -71,18 +77,24 @@ class TestARSceneNode:
         assert node.x_ray_enabled is False
 
     def test_node_nan_position_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            ARSceneNode(id="test", name="test", node_type="detector",
-                        position=(float("nan"), 0, 0))
+        with pytest.raises(
+            ValueError, match="not finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            ARSceneNode(id="test", name="test", node_type="detector", position=(float("nan"), 0, 0))
 
     def test_node_nan_rotation_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            ARSceneNode(id="test", name="test", node_type="detector",
-                        rotation=(float("nan"), 0, 0, 1))
+        with pytest.raises(
+            ValueError, match="not finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            ARSceneNode(
+                id="test", name="test", node_type="detector", rotation=(float("nan"), 0, 0, 1)
+            )
 
     def test_to_gltf_dict_includes_extras(self):
         node = ARSceneNode(
-            id="test", name="Test", node_type="detector",
+            id="test",
+            name="Test",
+            node_type="detector",
             is_behind_wall=True,
             inspection_critical=True,
         )
@@ -95,7 +107,9 @@ class TestARSceneNode:
 
     def test_to_gltf_dict_includes_translation(self):
         node = ARSceneNode(
-            id="test", name="Test", node_type="detector",
+            id="test",
+            name="Test",
+            node_type="detector",
             position=(1.0, 2.0, 3.0),
         )
         d = node.to_gltf_dict()
@@ -159,8 +173,10 @@ class TestGLBExport:
         json_length = struct.unpack("<I", glb[12:16])[0]
         # Bin chunk starts after header (12) + json chunk header (8) + json data
         bin_offset = 12 + 8 + json_length
-        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
-        bin_type = struct.unpack("<I", glb[bin_offset+4:bin_offset+8])[0]
+        struct.unpack("<I", glb[bin_offset : bin_offset + 4])[
+            0
+        ]  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
+        bin_type = struct.unpack("<I", glb[bin_offset + 4 : bin_offset + 8])[0]
         assert bin_type == GLB_CHUNK_BIN
 
     def test_glb_is_valid_bytes(self, exporter, sample_snapshot):
@@ -274,6 +290,7 @@ class TestSafetyR3:
 
     def test_exporter_warns_when_x_ray_enabled(self, caplog):
         import logging
+
         with caplog.at_level(logging.WARNING):
             ARMetadataExporter(default_x_ray=True)
         assert any("SAFETY-R3" in r.message for r in caplog.records)
@@ -293,6 +310,7 @@ class TestSafetyR3:
 class TestDigitalTwinAdapter:
     def test_from_digital_twin_with_empty_twin(self, exporter):
         """Empty DigitalTwin should produce empty snapshot."""
+
         class FakeTwin:
             building_id = "B-TEST"
             _detectors = {}

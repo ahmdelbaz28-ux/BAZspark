@@ -43,12 +43,12 @@ class TradeSize(enum.Enum):
                of Conduit and Tubing.
     """
 
-    HALF_INCH       = "1/2"
-    THREE_QUARTER   = "3/4"
-    ONE_INCH        = "1"
-    ONE_QUARTER     = "1-1/4"
-    ONE_HALF        = "1-1/2"
-    TWO_INCH        = "2"
+    HALF_INCH = "1/2"
+    THREE_QUARTER = "3/4"
+    ONE_INCH = "1"
+    ONE_QUARTER = "1-1/4"
+    ONE_HALF = "1-1/2"
+    TWO_INCH = "2"
 
     def __repr__(self) -> str:
         return f"TradeSize.{self.name}({self.value!r})"
@@ -76,19 +76,18 @@ class PlacedFitting:
 
     """
 
-    fitting_type:           FittingType
-    conduit_type:           ConduitType
-    trade_size:             TradeSize
-    position:               Point3D
-    catalog_number:         str
-    angle_deg:              float = 0.0
-    developed_length_m:     float = 0.0
-    weight_kg:              float = 0.0
+    fitting_type: FittingType
+    conduit_type: ConduitType
+    trade_size: TradeSize
+    position: Point3D
+    catalog_number: str
+    angle_deg: float = 0.0
+    developed_length_m: float = 0.0
+    weight_kg: float = 0.0
 
     def __repr__(self) -> str:
         return (
-            f"PlacedFitting({self.catalog_number!r} "
-            f"{self.fitting_type.name} @ {self.position!r})"
+            f"PlacedFitting({self.catalog_number!r} {self.fitting_type.name} @ {self.position!r})"
         )
 
 
@@ -111,10 +110,10 @@ class ConduitSegment:
 
     """
 
-    start:        Point3D
-    end:          Point3D
+    start: Point3D
+    end: Point3D
     conduit_type: ConduitType
-    trade_size:   TradeSize
+    trade_size: TradeSize
 
     @property
     def length_m(self) -> float:
@@ -123,9 +122,7 @@ class ConduitSegment:
 
     def __repr__(self) -> str:
         return (
-            f"ConduitSegment({self.conduit_type.name} "
-            f"{self.trade_size.value} "
-            f"{self.length_m:.3f}m)"
+            f"ConduitSegment({self.conduit_type.name} {self.trade_size.value} {self.length_m:.3f}m)"
         )
 
 
@@ -156,12 +153,12 @@ class ConduitRun:
 
     """
 
-    run_id:         str
-    conduit_type:   ConduitType
-    trade_size:     TradeSize
-    segments:       list[ConduitSegment] = field(default_factory=list)
-    fittings:       list[PlacedFitting]  = field(default_factory=list)
-    violations:     list[str]            = field(default_factory=list)
+    run_id: str
+    conduit_type: ConduitType
+    trade_size: TradeSize
+    segments: list[ConduitSegment] = field(default_factory=list)
+    fittings: list[PlacedFitting] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
 
     @property
     def total_length_m(self) -> float:
@@ -172,7 +169,8 @@ class ConduitRun:
     def total_bend_deg(self) -> float:
         """Cumulative bend degrees across all fittings in this run."""
         return sum(
-            f.angle_deg for f in self.fittings
+            f.angle_deg
+            for f in self.fittings
             if f.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45)
         )
 
@@ -216,17 +214,17 @@ class FillResult:
 
     """
 
-    conduit_type:              ConduitType
-    trade_size:                TradeSize
-    conductor_count:           int
-    total_conductor_area_in2:  float
+    conduit_type: ConduitType
+    trade_size: TradeSize
+    conductor_count: int
+    total_conductor_area_in2: float
     conduit_internal_area_in2: float
-    fill_percentage:           float
-    max_allowed_pct:           float
-    is_compliant:              bool
-    status:                    str
-    recommended_size:          TradeSize | None
-    nec_reference:             str
+    fill_percentage: float
+    max_allowed_pct: float
+    is_compliant: bool
+    status: str
+    recommended_size: TradeSize | None
+    nec_reference: str
 
     def __repr__(self) -> str:
         return (
@@ -258,15 +256,15 @@ class BendResult:
 
     """
 
-    conduit_type:        ConduitType
-    trade_size:          TradeSize
-    actual_radius_in:    float
-    min_required_in:     float
-    angle_deg:           float
+    conduit_type: ConduitType
+    trade_size: TradeSize
+    actual_radius_in: float
+    min_required_in: float
+    angle_deg: float
     developed_length_in: float
-    developed_length_m:  float
-    is_compliant:        bool
-    nec_reference:       str
+    developed_length_m: float
+    is_compliant: bool
+    nec_reference: str
 
     def __repr__(self) -> str:
         status = "COMPLIANT" if self.is_compliant else "VIOLATION"
@@ -295,9 +293,9 @@ class RoutePath:
 
     """
 
-    waypoints:          tuple[Point3D, ...]
-    total_length_m:     float
-    bend_count:         int
+    waypoints: tuple[Point3D, ...]
+    total_length_m: float
+    bend_count: int
     elevation_change_m: float
 
     def __repr__(self) -> str:

@@ -19,6 +19,7 @@ This regression test pins the contract:
     test_auth_router's "test_key_for_auth_123"), it preserves it
     (test_autouse_logic_preserves_custom_keys).
 """
+
 from __future__ import annotations
 
 import os
@@ -43,16 +44,13 @@ def test_disjoint_keys():
     whether the conftest isolation logic still applies.
     """
     assert ROOT_EXPECTED_KEY != BACKEND_TEST_KEY, (
-        "Root and backend test keys must differ — otherwise the isolation "
-        "test is meaningless."
+        "Root and backend test keys must differ — otherwise the isolation test is meaningless."
     )
     assert ROOT_EXPECTED_KEY != CUSTOM_TEST_KEY, (
         "Root and custom test keys must differ — otherwise the autouse "
         "fixture's preserve-vs-overwrite logic is meaningless."
     )
-    assert BACKEND_TEST_KEY != CUSTOM_TEST_KEY, (
-        "Backend and custom test keys must differ."
-    )
+    assert BACKEND_TEST_KEY != CUSTOM_TEST_KEY, "Backend and custom test keys must differ."
 
 
 def test_autouse_logic_overwrites_leaked_value(monkeypatch):
@@ -176,7 +174,8 @@ def test_backend_conftest_uses_setdefault_not_direct_assignment():
     # We check only top-level lines (no leading whitespace) to distinguish
     # import-time assignments from the function-gated one on line ~203.
     top_level_lines = [
-        (i + 1, ln) for i, ln in enumerate(lines)
+        (i + 1, ln)
+        for i, ln in enumerate(lines)
         if ln and not ln[0].isspace() and not ln.startswith("#")
     ]
 
@@ -185,8 +184,7 @@ def test_backend_conftest_uses_setdefault_not_direct_assignment():
     buggy_top_level = [
         (ln_no, ln)
         for ln_no, ln in top_level_lines
-        if 'os.environ["FIREAI_API_KEY"]' in ln and "TEST_API_KEY" in ln
-        and "setdefault" not in ln
+        if 'os.environ["FIREAI_API_KEY"]' in ln and "TEST_API_KEY" in ln and "setdefault" not in ln
     ]
     assert not buggy_top_level, (
         f"backend/tests/conftest.py has a top-level (import-time) direct "
@@ -197,8 +195,7 @@ def test_backend_conftest_uses_setdefault_not_direct_assignment():
 
     # Verify the fix is in place at top level.
     fix_present = any(
-        'os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)' in ln
-        for _, ln in top_level_lines
+        'os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)' in ln for _, ln in top_level_lines
     )
     assert fix_present, (
         "backend/tests/conftest.py is missing the V216 fix: top-level "

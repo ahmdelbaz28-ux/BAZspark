@@ -79,7 +79,19 @@ class TestValidOccupancyTypes:
     """V20.2 FIX: Verify occupancy type set correctness."""
 
     def test_common_types_present(self):
-        expected = {"business", "educational", "factory", "hazardous", "institutional", "mercantile", "residential", "storage", "utility", "office", "corridor"}
+        expected = {
+            "business",
+            "educational",
+            "factory",
+            "hazardous",
+            "institutional",
+            "mercantile",
+            "residential",
+            "storage",
+            "utility",
+            "office",
+            "corridor",
+        }
         assert expected.issubset(VALID_OCCUPANCY_TYPES)
 
     def test_kitchen_not_in_valid_types(self):

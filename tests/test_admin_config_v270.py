@@ -43,6 +43,7 @@ def _setup_env_module() -> None:
 def client() -> Generator[TestClient, None, None]:
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -93,11 +94,19 @@ class TestFeatureFlags:
         flags = body["data"]["flags"]
         # Must include all 9 default feature flags
         expected = {
-            "SMOKE_SIMULATION", "DIGITAL_TWIN_SYNC", "SELF_LEARNING",
-            "RESILIENCE_CHECK", "PROOF_CERTIFICATE", "VORONOI_VERIFICATION",
-            "AUTOCAD_BRIDGE", "REVIT_BRIDGE", "DIALUX_BRIDGE",
+            "SMOKE_SIMULATION",
+            "DIGITAL_TWIN_SYNC",
+            "SELF_LEARNING",
+            "RESILIENCE_CHECK",
+            "PROOF_CERTIFICATE",
+            "VORONOI_VERIFICATION",
+            "AUTOCAD_BRIDGE",
+            "REVIT_BRIDGE",
+            "DIALUX_BRIDGE",
         }
-        assert expected.issubset(set(flags.keys())), f"Missing flags: {expected - set(flags.keys())}"
+        assert expected.issubset(set(flags.keys())), (
+            f"Missing flags: {expected - set(flags.keys())}"
+        )
 
     def test_get_feature_flags_requires_auth(self, client: TestClient) -> None:
         """Without auth, the endpoint should deny access (401/403, not 404)."""
@@ -125,7 +134,9 @@ class TestFeatureFlags:
         get_body = get_resp.json()
         assert get_body["data"]["flags"]["SMOKE_SIMULATION"] is True
 
-    def test_post_feature_flag_rejects_unknown_flag(self, client: TestClient, admin_cookie: str) -> None:
+    def test_post_feature_flag_rejects_unknown_flag(
+        self, client: TestClient, admin_cookie: str
+    ) -> None:
         """POST /feature-flags with unknown flag name should return 400."""
         resp = client.post(
             "/api/v1/feature-flags",
@@ -178,7 +189,9 @@ class TestEnvConfig:
         assert get_body["data"]["config"]["api"]["API_TIMEOUT"] == 60
         assert get_body["data"]["config"]["api"]["RETRY_ATTEMPTS"] == 5
 
-    def test_put_env_config_rejects_invalid_category(self, client: TestClient, admin_cookie: str) -> None:
+    def test_put_env_config_rejects_invalid_category(
+        self, client: TestClient, admin_cookie: str
+    ) -> None:
         """PUT /env-config with invalid category name should return 400."""
         resp = client.put(
             "/api/v1/env-config",
@@ -195,7 +208,9 @@ class TestEnvConfig:
 class TestSecretRotation:
     """POST /api/v1/settings/secret-rotation/rotate — closes SettingsPage.tsx L650 broken call."""
 
-    def test_rotate_secret_with_generated_value(self, client: TestClient, admin_cookie: str) -> None:
+    def test_rotate_secret_with_generated_value(
+        self, client: TestClient, admin_cookie: str
+    ) -> None:
         """POST /settings/secret-rotation/rotate with no new_secret should generate one."""
         resp = client.post(
             "/api/v1/settings/secret-rotation/rotate",
@@ -238,7 +253,9 @@ class TestSecretRotation:
 class TestAdminTokenRotation:
     """POST /api/v1/settings/admin-token/rotate — closes SettingsPage.tsx L700 broken call."""
 
-    def test_rotate_admin_token_returns_new_token(self, client: TestClient, admin_cookie: str) -> None:
+    def test_rotate_admin_token_returns_new_token(
+        self, client: TestClient, admin_cookie: str
+    ) -> None:
         """POST /settings/admin-token/rotate should return a new token."""
         resp = client.post("/api/v1/settings/admin-token/rotate")
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -326,7 +343,9 @@ class TestAuthVerify:
         assert body["success"] is True
         assert body["data"]["valid"] is False
 
-    def test_verify_with_empty_token_rejected_by_pydantic(self, client: TestClient, admin_cookie: str) -> None:
+    def test_verify_with_empty_token_rejected_by_pydantic(
+        self, client: TestClient, admin_cookie: str
+    ) -> None:
         """POST /auth/verify with empty token should fail Pydantic validation (422)."""
         resp = client.post("/api/v1/auth/verify", json={"token": ""})
         assert resp.status_code == 422  # Pydantic rejects min_length=1
@@ -350,14 +369,26 @@ class TestEndpointExistence:
         """All 7 previously-404 endpoints must now return non-404."""
         # Each tuple: (method, path, json_body_or_None, expected_min_status, expected_max_status)
         cases = [
-            ("GET",  "/api/v1/feature-flags",                          None,    200, 200),
-            ("POST", "/api/v1/feature-flags",                          {"flag": "SMOKE_SIMULATION", "enabled": False}, 200, 200),
-            ("GET",  "/api/v1/env-config",                             None,    200, 200),
-            ("PUT",  "/api/v1/env-config",                             {"overrides": {}}, 200, 200),
-            ("POST", "/api/v1/settings/secret-rotation/rotate",        {"key_name": "FIREAI_API_KEY"}, 200, 200),
-            ("POST", "/api/v1/settings/admin-token/rotate",            None,    200, 200),
-            ("GET",  "/api/v1/admin/rbac/permissions",                 None,    200, 200),
-            ("POST", "/api/v1/auth/verify",                            {"token": "any"}, 200, 200),
+            ("GET", "/api/v1/feature-flags", None, 200, 200),
+            (
+                "POST",
+                "/api/v1/feature-flags",
+                {"flag": "SMOKE_SIMULATION", "enabled": False},
+                200,
+                200,
+            ),
+            ("GET", "/api/v1/env-config", None, 200, 200),
+            ("PUT", "/api/v1/env-config", {"overrides": {}}, 200, 200),
+            (
+                "POST",
+                "/api/v1/settings/secret-rotation/rotate",
+                {"key_name": "FIREAI_API_KEY"},
+                200,
+                200,
+            ),
+            ("POST", "/api/v1/settings/admin-token/rotate", None, 200, 200),
+            ("GET", "/api/v1/admin/rbac/permissions", None, 200, 200),
+            ("POST", "/api/v1/auth/verify", {"token": "any"}, 200, 200),
         ]
         for method, path, body, min_status, max_status in cases:
             resp = client.request(method, path, json=body)

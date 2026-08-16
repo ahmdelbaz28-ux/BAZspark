@@ -81,18 +81,18 @@ def env_cleanup():
 
 # Per-path rate limit configuration (mirrors backend_app._PER_PATH_LIMITS)
 _PER_PATH_LIMITS = [
-    ("/api/environment/weather",     10, 60),
-    ("/api/environment/geocoding",    1,  1),
-    ("/api/environment/elevation",   10, 60),
+    ("/api/environment/weather", 10, 60),
+    ("/api/environment/geocoding", 1, 1),
+    ("/api/environment/elevation", 10, 60),
     ("/api/environment/air-quality", 10, 60),
-    ("/api/environment/severe",      10, 60),
-    ("/api/environment/hazmat",      30, 60),
-    ("/api/environment/region",      10, 60),
-    ("/api/workflow",                10, 60),
-    ("/api/memory",                  60, 60),   # Memory/Gemini: 60/min
-    ("/api/projects",               30, 60),
-    ("/api/analyze",                 10, 60),
-    ("/api/qomn",                    10, 60),
+    ("/api/environment/severe", 10, 60),
+    ("/api/environment/hazmat", 30, 60),
+    ("/api/environment/region", 10, 60),
+    ("/api/workflow", 10, 60),
+    ("/api/memory", 60, 60),  # Memory/Gemini: 60/min
+    ("/api/projects", 30, 60),
+    ("/api/analyze", 10, 60),
+    ("/api/qomn", 10, 60),
 ]
 
 _DEFAULT_RATE_LIMIT = (120, 60)
@@ -176,7 +176,9 @@ class TestKeyRotatorTimingAttackResistance:
             "comparison. Found source that does not contain hmac.compare_digest."
         )
 
-    def test_validate_source_does_not_use_plain_equality(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def test_validate_source_does_not_use_plain_equality(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """KeyRotator.validate must not use == or != for secret comparison."""
         source = inspect.getsource(KeyRotator.validate)
         lines = source.split("\n")
@@ -458,6 +460,7 @@ class TestPlaceholderKeyDetection:
         0-9 and a-f, which cannot contain English words.
         """
         import secrets as _secrets
+
         strong_key = _secrets.token_hex(32)
         is_valid, issues = KeyRotator.validate_key_strength(strong_key)
         assert is_valid is True, f"Generated key should be strong, but got issues: {issues}"
@@ -480,6 +483,7 @@ class TestHmacUnification:
     def test_safety_assurance_imports_audit_hmac(self):
         """safety_assurance should import compute_hmac from audit_log."""
         from fireai.core import safety_assurance
+
         assert hasattr(safety_assurance, "_audit_compute_hmac"), (
             "safety_assurance must import compute_hmac from audit_log for HMAC unification"
         )
@@ -487,6 +491,7 @@ class TestHmacUnification:
     def test_audit_compute_hmac_is_not_none(self):
         """The imported compute_hmac should be available (not None)."""
         from fireai.core.safety_assurance import _audit_compute_hmac
+
         assert _audit_compute_hmac is not None, (
             "safety_assurance._audit_compute_hmac is None — audit_log import failed. "
             "HMAC unification requires this import to succeed."
@@ -495,13 +500,12 @@ class TestHmacUnification:
     def test_both_functions_produce_same_result(self):
         """compute_hmac from audit_log and inline HMAC must produce identical output."""
         from fireai.core.safety_assurance import _audit_compute_hmac
+
         test_key = b"test_hmac_key_for_unification_check"
         test_data = "some_hash_value_to_sign"
 
         result_audit = _audit_compute_hmac(test_data, test_key)
-        result_inline = hmac.new(
-            test_key, test_data.encode("utf-8"), hashlib.sha256
-        ).hexdigest()
+        result_inline = hmac.new(test_key, test_data.encode("utf-8"), hashlib.sha256).hexdigest()
 
         assert result_audit == result_inline, (
             f"HMAC results differ! audit_log: {result_audit}, inline: {result_inline}. "
@@ -595,10 +599,7 @@ class TestSecurityAuditLoggerThreadSafety:
             except Exception as e:
                 errors.append(e)
 
-        threads = [
-            threading.Thread(target=log_many, args=(tid,))
-            for tid in range(num_threads)
-        ]
+        threads = [threading.Thread(target=log_many, args=(tid,)) for tid in range(num_threads)]
         for t in threads:
             t.start()
         for t in threads:
@@ -622,10 +623,7 @@ class TestSecurityAuditLoggerThreadSafety:
             for _i in range(events_per_thread):
                 logger.log_event(SecurityEventType.AUTH_SUCCESS)
 
-        threads = [
-            threading.Thread(target=log_many, args=(tid,))
-            for tid in range(num_threads)
-        ]
+        threads = [threading.Thread(target=log_many, args=(tid,)) for tid in range(num_threads)]
         for t in threads:
             t.start()
         for t in threads:
@@ -667,16 +665,13 @@ class TestSecurityAuditLoggerChainIntegrity:
         audit_logger.log_event(SecurityEventType.AUTH_FAILURE, user="test_user_2")
         chain_after_2 = audit_logger._chain_hash
 
-        assert chain_before != chain_after_1, (
-            "Chain hash did not change after first event"
-        )
-        assert chain_after_1 != chain_after_2, (
-            "Chain hash did not change after second event"
-        )
+        assert chain_before != chain_after_1, "Chain hash did not change after first event"
+        assert chain_after_1 != chain_after_2, "Chain hash did not change after second event"
 
     def test_initial_chain_hash_is_genesis(self, audit_logger):
         """The initial chain hash should be the security genesis sentinel."""
         from fireai.core.security_logging import _SECURITY_GENESIS
+
         assert audit_logger._chain_hash == _SECURITY_GENESIS, (
             f"Initial chain hash should be _SECURITY_GENESIS, got '{audit_logger._chain_hash}'"
         )
@@ -685,9 +680,7 @@ class TestSecurityAuditLoggerChainIntegrity:
         """After logging, the chain hash should be 32 hex characters (128 bits)."""
         audit_logger.log_event(SecurityEventType.AUTH_SUCCESS)
         chain_hash = audit_logger._chain_hash
-        assert len(chain_hash) == 32, (
-            f"Chain hash should be 32 chars, got {len(chain_hash)}"
-        )
+        assert len(chain_hash) == 32, f"Chain hash should be 32 chars, got {len(chain_hash)}"
         assert all(c in "0123456789abcdef" for c in chain_hash), (
             f"Chain hash should be hex, got '{chain_hash}'"
         )
@@ -704,9 +697,7 @@ class TestSecurityAuditLoggerChainIntegrity:
             assert current_hash not in chain_hashes, (
                 f"Chain hash repeated at iteration {i}: {current_hash}"
             )
-            assert current_hash != prev_hash, (
-                f"Chain hash did not change at iteration {i}"
-            )
+            assert current_hash != prev_hash, f"Chain hash did not change at iteration {i}"
             chain_hashes.add(current_hash)
             prev_hash = current_hash
 
@@ -747,12 +738,11 @@ class TestSecurityAuditLoggerChainIntegrity:
         changed, the chain hash recomputed from the original JSON won't match.
         """
         from fireai.core.security_logging import _SECURITY_GENESIS
+
         logger = SecurityAuditLogger(log_dir=temp_log_dir)
 
         # Log an event and capture the chain hash
-        logger.log_event(
-            SecurityEventType.AUTH_SUCCESS, user="original_user"
-        )
+        logger.log_event(SecurityEventType.AUTH_SUCCESS, user="original_user")
         chain_after = logger._chain_hash
 
         # The chain hash should be deterministic: if we recompute it from
@@ -761,9 +751,7 @@ class TestSecurityAuditLoggerChainIntegrity:
         assert chain_after != _SECURITY_GENESIS
 
         # Log another event — chain should advance again
-        logger.log_event(
-            SecurityEventType.AUTH_FAILURE, user="another_user"
-        )
+        logger.log_event(SecurityEventType.AUTH_FAILURE, user="another_user")
         chain_after_2 = logger._chain_hash
         assert chain_after_2 != chain_after
 
@@ -910,13 +898,16 @@ class TestPerPathRateLimitPathMatching:
 
         combined = source + source_v2
 
-        assert any(pattern in combined for pattern in [
-            "PerPathRateLimitMiddleware",
-            "InMemoryRateLimitMiddleware",
-            "DashboardRateLimiter",
-            "rate_limit",
-            "RateLimit",
-        ]), "Rate limiting middleware must exist in backend"
+        assert any(
+            pattern in combined
+            for pattern in [
+                "PerPathRateLimitMiddleware",
+                "InMemoryRateLimitMiddleware",
+                "DashboardRateLimiter",
+                "rate_limit",
+                "RateLimit",
+            ]
+        ), "Rate limiting middleware must exist in backend"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -954,9 +945,7 @@ class TestCorsWildcardRejection:
 
         origins = _get_cors_origins()
 
-        assert "*" not in origins, (
-            "Wildcard should be filtered out even in development mode"
-        )
+        assert "*" not in origins, "Wildcard should be filtered out even in development mode"
         assert "http://localhost:9999" in origins
 
     def test_production_empty_cors_origins_fails_closed(self, env_cleanup):
@@ -990,7 +979,7 @@ class TestCorsWildcardRejection:
             "_get_cors_origins must contain wildcard ('*') rejection logic"
         )
         # Must filter out wildcards from the origins list
-        assert 'origins' in source and '"*"' in source, (
+        assert "origins" in source and '"*"' in source, (
             "Source must reference both 'origins' and wildcard for filtering"
         )
 
@@ -1088,6 +1077,7 @@ class TestSensitiveDataMasking:
         os.environ["FIREAI_API_KEY"] = test_value
         # Force refresh cache since env vars changed at runtime
         from fireai.core.security_logging import _force_refresh_env_cache
+
         _force_refresh_env_cache()
 
         text = f"Using API key: {test_value}"
@@ -1100,6 +1090,7 @@ class TestSensitiveDataMasking:
         test_value = "hmac-secret-key-abcdef1234567890"
         os.environ["FIREAI_EVIDENCE_HMAC_KEY"] = test_value
         from fireai.core.security_logging import _force_refresh_env_cache
+
         _force_refresh_env_cache()
 
         text = f"HMAC key is {test_value}"
@@ -1118,7 +1109,9 @@ class TestSensitiveDataMasking:
 
     def test_none_input(self):
         """None input should return empty string."""
-        assert mask_sensitive(None) == ""  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        assert (
+            mask_sensitive(None) == ""
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_mask_auth_key_pattern(self):
         """auth_key values should be masked."""
@@ -1151,16 +1144,22 @@ class TestSensitiveDataMasking:
     def test_mask_sensitive_filter_class_exists(self):
         """Verify SensitiveDataFilter class exists and is a logging Filter."""
         from fireai.core.security_logging import SensitiveDataFilter
+
         assert issubclass(SensitiveDataFilter, logging.Filter)
 
     def test_mask_sensitive_filter_masks_record(self):
         """SensitiveDataFilter should mask sensitive data in log records."""
         from fireai.core.security_logging import SensitiveDataFilter
+
         filt = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
             msg='api_key="sk-1234567890abcdef1234567890abcdef"',
-            args=None, exc_info=None,
+            args=None,
+            exc_info=None,
         )
         result = filt.filter(record)
         assert result is True  # Filter always returns True (doesn't block)

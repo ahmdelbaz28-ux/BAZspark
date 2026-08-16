@@ -22,6 +22,7 @@ class TestCacheKeyUnhashable:
     def test_get_provider_with_list_kwargs_does_not_crash(self):
         """Passing levels=["L1","L2"] should not raise TypeError."""
         from fireai.bridges.bim_provider import BIMProviderRegistry
+
         # This should return None (ifc_file may not be available) but NOT raise
         result = BIMProviderRegistry.get("ifc_file", levels=["L1", "L2"])
         # Result is None or an IfcFileProvider — either is fine, no crash
@@ -30,6 +31,7 @@ class TestCacheKeyUnhashable:
     def test_get_provider_with_dict_kwargs_does_not_crash(self):
         """Passing options={"key":"val"} should not raise TypeError."""
         from fireai.bridges.bim_provider import BIMProviderRegistry
+
         result = BIMProviderRegistry.get("ifc_file", options={"key": "val"})
         assert result is None or hasattr(result, "provider_name")
 
@@ -48,6 +50,7 @@ class TestForgeHealthCheck:
         monkeypatch.setenv("APS_CLIENT_ID", "test_client")
         monkeypatch.setenv("APS_CLIENT_SECRET", "test_secret")
         from fireai.bridges.bim_provider import AutodeskForgeProvider
+
         p = AutodeskForgeProvider()
         result = p.health_check()
         assert result["healthy"] is False
@@ -68,6 +71,7 @@ class TestCSRFWebSocket:
     def test_csrf_middleware_imports_cleanly(self):
         """CSRF middleware should import without errors."""
         from backend.security_csrf import CSRFMiddleware
+
         # S5727 fix: assert on the type rather than the tautological
         # `is not None` (always True after a successful import).
         assert isinstance(CSRFMiddleware, type)
@@ -84,6 +88,7 @@ class TestCSRFTrailingSlash:
     def test_exempt_paths_include_health(self):
         """Health endpoint should be in exempt paths."""
         from backend.security_csrf import CSRF_EXEMPT_PATHS
+
         assert "/api/v2/health" in CSRF_EXEMPT_PATHS
 
 
@@ -98,6 +103,7 @@ class TestVerifyClassExact:
     def test_verify_wall_does_not_match_wall_type(self):
         """verify_class_exists('Wall') should NOT match 'WallType'."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         # "Wall" should match the actual Wall class, not WallType/WallFoundation
         # We can't verify exact docs content, but we verify the method doesn't
@@ -120,6 +126,7 @@ class TestNegativePressureLoss:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         # Normal call should work
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -144,6 +151,7 @@ class TestConvergedField:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,
@@ -159,6 +167,7 @@ class TestConvergedField:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,
@@ -180,6 +189,7 @@ class TestCompareValidation:
     def test_negative_pipe_length_rejected(self):
         """Negative pipe length should raise ValueError."""
         from fireai.core.darcy_weisbach_solver import compare_with_hazen_williams
+
         with pytest.raises(ValueError, match="pipe_length_m"):
             compare_with_hazen_williams(
                 pipe_length_m=-100.0,
@@ -190,7 +200,10 @@ class TestCompareValidation:
     def test_nan_pipe_length_rejected(self):
         """NaN pipe length should raise ValueError."""
         from fireai.core.darcy_weisbach_solver import compare_with_hazen_williams
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compare_with_hazen_williams(
                 pipe_length_m=float("nan"),
                 pipe_diameter_m=0.05,
@@ -212,6 +225,7 @@ class TestFlowVelocityBound:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         # Extreme flow rate → very high velocity
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,
@@ -239,6 +253,7 @@ class TestBeamBoundaryInclusive:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         # Beam at y=8 (exactly at wall)
         beam = Beam(id="B1", start=(0, 8), end=(10, 8), depth_m=0.5)
@@ -266,6 +281,7 @@ class TestWeightTolerance:
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
         )
+
         # 0.4 + 0.3 + 0.2 + 0.099 = 0.999 — should be rejected now
         with pytest.raises(ValueError, match="must sum to 1.0"):
             GenerativeLayoutAgent(
@@ -286,6 +302,7 @@ class TestClearForTesting:
     def test_clear_for_testing_exists(self):
         """_clear_for_testing should be a method on BIMProviderRegistry."""
         from fireai.bridges.bim_provider import BIMProviderRegistry
+
         assert hasattr(BIMProviderRegistry, "_clear_for_testing")
         assert callable(BIMProviderRegistry._clear_for_testing)
 
@@ -304,13 +321,18 @@ class TestHMACSecretLength:
             WebhookDeliveryService,
             WebhookSubscription,
         )
+
         service = WebhookDeliveryService(allow_http=True)
-        with pytest.raises(ValueError, match="at least 32"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="sub-1",
-                url="https://example.com/hook",
-                secret="a" * 31,  # 31 chars < 32
-            ))
+        with pytest.raises(
+            ValueError, match="at least 32"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="sub-1",
+                    url="https://example.com/hook",
+                    secret="a" * 31,  # 31 chars < 32
+                )
+            )
 
     def test_32_char_secret_accepted(self):
         """32-char secret should be accepted."""
@@ -318,13 +340,16 @@ class TestHMACSecretLength:
             WebhookDeliveryService,
             WebhookSubscription,
         )
+
         service = WebhookDeliveryService(allow_http=True)
         # Should not raise
-        service.subscribe(WebhookSubscription(
-            id="sub-32",
-            url="https://example.com/hook",
-            secret="a" * 32,  # 32 chars = NIST minimum
-        ))
+        service.subscribe(
+            WebhookSubscription(
+                id="sub-32",
+                url="https://example.com/hook",
+                secret="a" * 32,  # 32 chars = NIST minimum
+            )
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -338,6 +363,7 @@ class TestWarningsDefaultFactory:
     def test_warnings_defaults_to_empty_list(self):
         """Warnings should default to empty list, not None."""
         from fireai.core.darcy_weisbach_solver import DarcyWeisbachResult
+
         result = DarcyWeisbachResult(
             head_loss_m=1.0,
             pressure_loss_pa=1000.0,
@@ -363,11 +389,13 @@ class TestBeamHorizontalTolerance:
     def test_exactly_horizontal_beam_is_horizontal(self):
         """Beam with identical Y coords should be horizontal."""
         from fireai.core.spatial_engine.beam_obstruction import Beam
+
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=0.5)
         assert beam.is_horizontal is True
 
     def test_slightly_diagonal_beam_not_horizontal(self):
         """Beam with 0.001 Y difference should NOT be horizontal."""
         from fireai.core.spatial_engine.beam_obstruction import Beam
+
         beam = Beam(id="B1", start=(0, 4), end=(10, 4.0005), depth_m=0.5)
         assert beam.is_horizontal is False

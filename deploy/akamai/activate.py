@@ -26,6 +26,7 @@ USAGE:
 NOTE: This script does NOT modify DNS. After activation, you must point
       api.bazspark.com CNAME → {edge_hostname}.edgeservices.net at your DNS provider.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,9 +78,7 @@ def _edge_hostname() -> str:
 
 def _origin_hostname() -> str:
     """Resolve the origin hostname from env, defaulting to the HF Space."""
-    return os.getenv(
-        "AKAMAI_ORIGIN_HOSTNAME", "ahmdelbaz28-bazspark.hf.space"
-    )
+    return os.getenv("AKAMAI_ORIGIN_HOSTNAME", "ahmdelbaz28-bazspark.hf.space")
 
 
 def _origin_token() -> str:
@@ -323,11 +322,21 @@ def main() -> None:
     parser.add_argument("--contract-id", required=True, help="Akamai contract ID (ctr_X-...)")
     parser.add_argument("--group-id", required=True, help="Akamai group ID (grp_...)")
     parser.add_argument("--property-id", help="Existing property ID (skip creation)")
-    parser.add_argument("--property-name", default="BAZSPARK", help="Property name (default: BAZSPARK)")
-    parser.add_argument("--activate-staging", action="store_true", help="Activate on STAGING network")
-    parser.add_argument("--activate-production", action="store_true", help="Activate on PRODUCTION network")
-    parser.add_argument("--notify-email", action="append", default=[], help="Email for activation notifications")
-    parser.add_argument("--update-only", action="store_true", help="Only update rules, don't create new version")
+    parser.add_argument(
+        "--property-name", default="BAZSPARK", help="Property name (default: BAZSPARK)"
+    )
+    parser.add_argument(
+        "--activate-staging", action="store_true", help="Activate on STAGING network"
+    )
+    parser.add_argument(
+        "--activate-production", action="store_true", help="Activate on PRODUCTION network"
+    )
+    parser.add_argument(
+        "--notify-email", action="append", default=[], help="Email for activation notifications"
+    )
+    parser.add_argument(
+        "--update-only", action="store_true", help="Only update rules, don't create new version"
+    )
     args = parser.parse_args()
 
     if not args.notify_email:
@@ -358,7 +367,12 @@ def main() -> None:
         new_version = latest_version
     else:
         new_version = import_rules(
-            session, args.contract_id, args.group_id, property_id, latest_version, PROPERTY_MAIN_JSON
+            session,
+            args.contract_id,
+            args.group_id,
+            property_id,
+            latest_version,
+            PROPERTY_MAIN_JSON,
         )
 
     # Step 3: Add hostnames
@@ -366,11 +380,29 @@ def main() -> None:
 
     # Step 4: Activate
     if args.activate_staging:
-        activate(session, args.contract_id, args.group_id, property_id, new_version, "STAGING", args.notify_email)
+        activate(
+            session,
+            args.contract_id,
+            args.group_id,
+            property_id,
+            new_version,
+            "STAGING",
+            args.notify_email,
+        )
     if args.activate_production:
         if not args.activate_staging:
-            log.warning("Activating production without staging — recommended to test on staging first")
-        activate(session, args.contract_id, args.group_id, property_id, new_version, "PRODUCTION", args.notify_email)
+            log.warning(
+                "Activating production without staging — recommended to test on staging first"
+            )
+        activate(
+            session,
+            args.contract_id,
+            args.group_id,
+            property_id,
+            new_version,
+            "PRODUCTION",
+            args.notify_email,
+        )
 
     # Step 5: Output DNS instructions
     edge_hostname = os.getenv("AKAMAI_EDGE_HOSTNAME", "bazspark") + ".edgeservices.net"

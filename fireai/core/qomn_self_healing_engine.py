@@ -232,6 +232,7 @@ class LLMUnavailableError(Exception):
 # SECTION 2: CONFIGURATION
 # =====================================================================
 
+
 class Config:
     """
     Environment-variable-backed configuration for the self-healing engine.
@@ -287,8 +288,7 @@ class Config:
             return val
         except (ValueError, TypeError):
             logging.warning(
-                f"[CONFIG] {env_var}='{raw}' is not a valid number. "
-                f"Using default: {default}."
+                f"[CONFIG] {env_var}='{raw}' is not a valid number. Using default: {default}."
             )
             return default
 
@@ -309,8 +309,7 @@ class Config:
             return val
         except (ValueError, TypeError):
             logging.warning(
-                f"[CONFIG] {env_var}='{raw}' is not a valid integer. "
-                f"Using default: {default}."
+                f"[CONFIG] {env_var}='{raw}' is not a valid integer. Using default: {default}."
             )
             return default
 
@@ -330,14 +329,20 @@ class Config:
         # When disabled, Tier 2 falls through to re-raise the original error.
         # This prevents non-deterministic AI-generated values from being
         # returned as official engineering results.
-        self.ENABLE_LLM_HEALING: bool = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in ("1", "true", "yes")
+        self.ENABLE_LLM_HEALING: bool = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
 
         # Audit Logger Configuration
         self.AUDIT_MAX_BYTES: int = self._safe_int(
             "QOMN_AUDIT_MAX_BYTES", 10 * 1024 * 1024, min_val=1024
         )  # 10MB default
         self.AUDIT_BACKUP_COUNT: int = self._safe_int("QOMN_AUDIT_BACKUP_COUNT", 5, min_val=1)
-        self.AUDIT_FLUSH_INTERVAL: float = self._safe_float("QOMN_AUDIT_FLUSH_INTERVAL", 1.0, min_val=0.1)
+        self.AUDIT_FLUSH_INTERVAL: float = self._safe_float(
+            "QOMN_AUDIT_FLUSH_INTERVAL", 1.0, min_val=0.1
+        )
 
         # HMAC Secret Key
         self.SECRET_KEY: bytes | None = None
@@ -370,6 +375,7 @@ ERROR_WEIGHTS: dict[str, ErrorSeverity] = {
 # =====================================================================
 # SECTION 3: CRYPTOGRAPHICALLY-SIGNED AUDIT LOGGER (WITH ROTATION)
 # =====================================================================
+
 
 class AsyncAuditLogger:
     """
@@ -443,6 +449,7 @@ class AsyncAuditLogger:
             #     Tests that need a deterministic key must pass secret_key=...
             #     explicitly via the constructor.
             import secrets as _secrets
+
             env = os.environ.get("FIREAI_ENV", "production").lower()
             is_production = env in ("production", "prod")
             if is_production:
@@ -541,15 +548,10 @@ class AsyncAuditLogger:
 
                 # Generate cryptographic HMAC-SHA256 signature
                 signature = hmac.new(
-                    self.secret_key,
-                    serialized_payload.encode("utf-8"),
-                    hashlib.sha256
+                    self.secret_key, serialized_payload.encode("utf-8"), hashlib.sha256
                 ).hexdigest()
 
-                entry = {
-                    "payload": event_data,
-                    "signature": signature
-                }
+                entry = {"payload": event_data, "signature": signature}
 
                 # Append to ledger
                 entry_str = json.dumps(entry) + "\n"
@@ -642,9 +644,7 @@ class AsyncAuditLogger:
                             break_points.append(line_num)
 
                         # Compute hash of this entry for next comparison
-                        expected_hash = hashlib.sha256(
-                            line.encode("utf-8")
-                        ).hexdigest()
+                        expected_hash = hashlib.sha256(line.encode("utf-8")).hexdigest()
                         total_entries += 1
                     except json.JSONDecodeError:
                         break_points.append(line_num)
@@ -687,6 +687,7 @@ AuditLogger = AsyncAuditLogger
 # =====================================================================
 # SECTION 4: SYSTEM MEMORY CACHE (TRUE LRU CONFORMANCE)
 # =====================================================================
+
 
 class LruCache:
     """
@@ -748,13 +749,16 @@ class LruCache:
                 "hits": self._hits,
                 "misses": self._misses,
                 "evictions": self._evictions,
-                "hit_ratio": self._hits / (self._hits + self._misses) if (self._hits + self._misses) > 0 else 0.0  # type: ignore[dict-item]
+                "hit_ratio": self._hits / (self._hits + self._misses)
+                if (self._hits + self._misses) > 0
+                else 0.0,  # type: ignore[dict-item]
             }
 
 
 # =====================================================================
 # SECTION 5: WEIGHTED CIRCUIT BREAKER WITH HALF-OPEN RECOVERY
 # =====================================================================
+
 
 class WeightedCircuitBreaker:
     """
@@ -944,9 +948,7 @@ class WeightedCircuitBreaker:
                 if time.time() - self.open_time > self.cooldown_seconds:
                     self.state = self.HALF_OPEN
                     self.half_open_count = 0
-                    logging.info(
-                        "[CIRCUIT BREAKER] Cooldown complete. Transitioning to HALF_OPEN."
-                    )
+                    logging.info("[CIRCUIT BREAKER] Cooldown complete. Transitioning to HALF_OPEN.")
                     return (False, self.HALF_OPEN)  # just cooled down to HALF_OPEN
                 return (True, self.OPEN)  # still OPEN
             if self.state == self.HALF_OPEN:
@@ -959,10 +961,7 @@ class WeightedCircuitBreaker:
         Returns True if a probe request can be allowed through.
         """
         with self.lock:
-            return (
-                self.state == self.HALF_OPEN
-                and self.half_open_count < self.half_open_max
-            )
+            return self.state == self.HALF_OPEN and self.half_open_count < self.half_open_max
 
     def health(self) -> dict[str, Any]:
         """
@@ -980,15 +979,14 @@ class WeightedCircuitBreaker:
                 "event_count": event_count,
                 "threshold": self.threshold,
                 "window_seconds": self.window_seconds,
-                "utilization_pct": round(
-                    (current_weight / self.threshold) * 100, 1
-                ) if self.threshold > 0 else 0.0,
+                "utilization_pct": round((current_weight / self.threshold) * 100, 1)
+                if self.threshold > 0
+                else 0.0,
                 "cooldown_seconds": self.cooldown_seconds,
                 "half_open_max": self.half_open_max,
                 "half_open_count": self.half_open_count,
                 "seconds_since_open": (
-                    (now - self.open_time)
-                    if self.state in (self.OPEN, self.HALF_OPEN) else None
+                    (now - self.open_time) if self.state in (self.OPEN, self.HALF_OPEN) else None
                 ),
             }
 
@@ -1007,6 +1005,7 @@ CircuitBreaker = WeightedCircuitBreaker
 # =====================================================================
 # SECTION 6: LLM RATE LIMITER
 # =====================================================================
+
 
 class LLMCircuitBreaker:
     """
@@ -1119,6 +1118,7 @@ def compute_hash(data: Any) -> str:
     Now, function objects and other non-serializable types are replaced
     with their qualified name or type name, which is deterministic.
     """
+
     def _make_serializable(obj: Any) -> Any:
         """Recursively replace non-serializable objects with deterministic strings."""
         if isinstance(obj, str | int | float | bool | type(None)):
@@ -1130,7 +1130,7 @@ def compute_hash(data: Any) -> str:
         if isinstance(obj, set):
             return sorted([_make_serializable(item) for item in obj])
         # For functions, use __qualname__ (deterministic across runs)
-        if hasattr(obj, '__qualname__'):
+        if hasattr(obj, "__qualname__"):
             return f"<function:{obj.__qualname__}>"
         # For other objects, use type name (deterministic)
         return f"<{type(obj).__name__}>"
@@ -1149,7 +1149,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
     conservative_estimate: Any = 1.0,
     partial_result: Any = None,
     physics_validator: Callable[[Any], bool] | None = None,
-    force_mock_ollama: bool = False
+    force_mock_ollama: bool = False,
 ):
     """
     Self-healing decorator enforcing three tiers of system healing.
@@ -1163,6 +1163,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
 
     ALL V53 + V58 BUG FIXES PRESERVED.
     """
+
     def decorator(func: Callable[..., Any]) -> Callable[..., SafetyResult]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> SafetyResult:
@@ -1223,7 +1224,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                     "verification_result": "PASSED_FALLBACK",
                     "before_hash": before_hash,
                     "after_hash": after_hash,
-                    "user_notification_status": "ALERTED"
+                    "user_notification_status": "ALERTED",
                 }
                 global_audit_logger.log_event(event_data)
 
@@ -1279,25 +1280,24 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
 
                             # Register with circuit breaker so repeated
                             # physics violations accumulate toward threshold
-                            cb.register_healing_event(
-                                error_type="NominalPhysicsViolation"
-                            )
+                            cb.register_healing_event(error_type="NominalPhysicsViolation")
 
                             after_hash = compute_hash(replacement)
-                            global_audit_logger.log_event({
-                                "function_name": func_name,
-                                "error_type": "NominalPhysicsViolation",
-                                "error_message": (
-                                    f"Nominal value {nominal_value} failed "
-                                    f"physics validation"
-                                ),
-                                "tier_used": 1,
-                                "fix_applied": replacement,
-                                "verification_result": "PASSED_PHYSICS_GUARD",
-                                "before_hash": before_hash,
-                                "after_hash": after_hash,
-                                "user_notification_status": "ALERTED"
-                            })
+                            global_audit_logger.log_event(
+                                {
+                                    "function_name": func_name,
+                                    "error_type": "NominalPhysicsViolation",
+                                    "error_message": (
+                                        f"Nominal value {nominal_value} failed physics validation"
+                                    ),
+                                    "tier_used": 1,
+                                    "fix_applied": replacement,
+                                    "verification_result": "PASSED_PHYSICS_GUARD",
+                                    "before_hash": before_hash,
+                                    "after_hash": after_hash,
+                                    "user_notification_status": "ALERTED",
+                                }
+                            )
 
                             return SafetyResult(
                                 value=replacement,
@@ -1313,22 +1313,22 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                         # The validator ITSELF crashed — treat as DEGRADED
                         # with safe_minimum, because we cannot trust any
                         # value that a crashing validator might have passed.
-                        cb.register_healing_event(
-                            error_type="PhysicsValidatorCrash"
-                        )
+                        cb.register_healing_event(error_type="PhysicsValidatorCrash")
 
                         after_hash = compute_hash(safe_minimum)
-                        global_audit_logger.log_event({
-                            "function_name": func_name,
-                            "error_type": "PhysicsValidatorCrash",
-                            "error_message": str(validator_err),
-                            "tier_used": 1,
-                            "fix_applied": safe_minimum,
-                            "verification_result": "VALIDATOR_CRASH_FALLBACK",
-                            "before_hash": before_hash,
-                            "after_hash": after_hash,
-                            "user_notification_status": "ALERTED"
-                        })
+                        global_audit_logger.log_event(
+                            {
+                                "function_name": func_name,
+                                "error_type": "PhysicsValidatorCrash",
+                                "error_message": str(validator_err),
+                                "tier_used": 1,
+                                "fix_applied": safe_minimum,
+                                "verification_result": "VALIDATOR_CRASH_FALLBACK",
+                                "before_hash": before_hash,
+                                "after_hash": after_hash,
+                                "user_notification_status": "ALERTED",
+                            }
+                        )
 
                         return SafetyResult(
                             value=safe_minimum,
@@ -1344,9 +1344,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                 if isinstance(nominal_value, float) and (
                     math.isnan(nominal_value) or math.isinf(nominal_value)
                 ):
-                    cb.register_healing_event(
-                        error_type="NominalNaNInf"
-                    )
+                    cb.register_healing_event(error_type="NominalNaNInf")
                     replacement = default_value if default_value is not None else safe_minimum
                     if isinstance(replacement, float) and (
                         math.isnan(replacement) or math.isinf(replacement)
@@ -1354,20 +1352,22 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                         replacement = safe_minimum
 
                     after_hash = compute_hash(replacement)
-                    global_audit_logger.log_event({
-                        "function_name": func_name,
-                        "error_type": "NominalNaNInf",
-                        "error_message": (
-                            f"Nominal value is {nominal_value} — "
-                            f"NaN/Inf never propagate (QOMN kernel principle)"
-                        ),
-                        "tier_used": 1,
-                        "fix_applied": replacement,
-                        "verification_result": "PASSED_NAN_INF_GUARD",
-                        "before_hash": before_hash,
-                        "after_hash": after_hash,
-                        "user_notification_status": "ALERTED"
-                    })
+                    global_audit_logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": "NominalNaNInf",
+                            "error_message": (
+                                f"Nominal value is {nominal_value} — "
+                                f"NaN/Inf never propagate (QOMN kernel principle)"
+                            ),
+                            "tier_used": 1,
+                            "fix_applied": replacement,
+                            "verification_result": "PASSED_NAN_INF_GUARD",
+                            "before_hash": before_hash,
+                            "after_hash": after_hash,
+                            "user_notification_status": "ALERTED",
+                        }
+                    )
 
                     return SafetyResult(
                         value=replacement,
@@ -1407,17 +1407,19 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                     # Still register with circuit breaker for monitoring
                     cb.register_healing_event(error_type="SafetyCriticalFailure")
                     # Still log the event for audit trail
-                    global_audit_logger.log_event({
-                        "function_name": func_name,
-                        "error_type": "SafetyCriticalFailure",
-                        "error_message": str(e),
-                        "tier_used": 0,  # No tier applied -- non-healable
-                        "fix_applied": None,
-                        "verification_result": "NON_HEALABLE",
-                        "before_hash": before_hash,
-                        "after_hash": "NONE",
-                        "user_notification_status": "CRITICAL_ALERT"
-                    })
+                    global_audit_logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": "SafetyCriticalFailure",
+                            "error_message": str(e),
+                            "tier_used": 0,  # No tier applied -- non-healable
+                            "fix_applied": None,
+                            "verification_result": "NON_HEALABLE",
+                            "before_hash": before_hash,
+                            "after_hash": "NONE",
+                            "user_notification_status": "CRITICAL_ALERT",
+                        }
+                    )
                     raise
 
                 # Execution failed: capture original stack context
@@ -1451,7 +1453,9 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                         try:
                             # V FIX: NaN/Inf guard -- reject infinite defaults even
                             # if a permissive validator would accept them.
-                            if isinstance(default_value, float) and (math.isnan(default_value) or math.isinf(default_value)):
+                            if isinstance(default_value, float) and (
+                                math.isnan(default_value) or math.isinf(default_value)
+                            ):
                                 healed_val = safe_minimum
                             elif physics_validator(default_value):
                                 healed_val = default_value
@@ -1461,7 +1465,9 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                             healed_val = safe_minimum
                     elif default_value is not None:
                         # V FIX: Same NaN/Inf guard for paths without validator
-                        if isinstance(default_value, float) and (math.isnan(default_value) or math.isinf(default_value)):
+                        if isinstance(default_value, float) and (
+                            math.isnan(default_value) or math.isinf(default_value)
+                        ):
                             healed_val = safe_minimum
                         else:
                             healed_val = default_value
@@ -1558,7 +1564,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                             "verification_result": "PASSED_PHYSICS_GUARD",
                             "before_hash": before_hash,
                             "after_hash": after_hash,
-                            "user_notification_status": "SILENT" if circuit_closed else "ALERTED"
+                            "user_notification_status": "SILENT" if circuit_closed else "ALERTED",
                         }
                         global_audit_logger.log_event(event_data)
 
@@ -1582,7 +1588,11 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                 # When disabled, Tier 2 falls through to re-raise the original error.
                 # Read from environment directly (not cached config) so tests can
                 # set the env var at runtime without re-importing the module.
-                _llm_healing_enabled = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in ("1", "true", "yes")
+                _llm_healing_enabled = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in (
+                    "1",
+                    "true",
+                    "yes",
+                )
                 if not _llm_healing_enabled:
                     logging.warning(
                         f"[TIER 2 SAFETY GATE] LLM healing is disabled (QOMN_ENABLE_LLM_HEALING not set). "
@@ -1647,7 +1657,9 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                         err_msg=err_msg,
                         inputs=_sanitize_inputs(input_args_dict),
                         function_signature=func_signature,
-                        default_fallback=default_value if default_value is not None else safe_minimum,
+                        default_fallback=default_value
+                        if default_value is not None
+                        else safe_minimum,
                         timeout=global_llm_breaker.timeout,
                     )
 
@@ -1680,7 +1692,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                         "verification_result": "PASSED_GOLDEN_TESTS",
                         "before_hash": before_hash,
                         "after_hash": after_hash,
-                        "user_notification_status": "ALERTED"
+                        "user_notification_status": "ALERTED",
                     }
                     global_audit_logger.log_event(event_data)
                     # F7: runtime notification — operators subscribed to the
@@ -1709,6 +1721,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
                 raise e
 
         return wrapper
+
     return decorator
 
 
@@ -1722,7 +1735,15 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
 # only the function signature, with inputs sanitized, and every Tier-2
 # decision is published on the EventBus + audit ledger.)
 
-_SECRET_KEY_HINTS = ("token", "secret", "password", "api_key", "apikey", "authorization", "credential")
+_SECRET_KEY_HINTS = (
+    "token",
+    "secret",
+    "password",
+    "api_key",
+    "apikey",
+    "authorization",
+    "credential",
+)
 
 
 def _sanitize_string_value(value: str) -> str:
@@ -1744,9 +1765,7 @@ def _sanitize_value(key: Any, value: Any) -> Any:
     if isinstance(value, dict):
         return _sanitize_inputs(value)
     if isinstance(value, list | tuple):
-        return [
-            _sanitize_inputs(v) if isinstance(v, dict) else v for v in value
-        ]
+        return [_sanitize_inputs(v) if isinstance(v, dict) else v for v in value]
     return value
 
 
@@ -1847,19 +1866,11 @@ def query_local_ollama_engine(
         f"Do not include code blocks, explanations, markdown or extra characters."
     )
 
-    payload = {
-        "model": "llama3",
-        "prompt": prompt,
-        "stream": False,
-        "format": "json"
-    }
+    payload = {"model": "llama3", "prompt": prompt, "stream": False, "format": "json"}
 
     req_body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        url,
-        data=req_body,
-        headers={"Content-Type": "application/json"},
-        method="POST"
+        url, data=req_body, headers={"Content-Type": "application/json"}, method="POST"
     )
 
     try:
@@ -1874,7 +1885,9 @@ def query_local_ollama_engine(
             suggested_val = parsed_text.get("suggested_return_value")
 
             # instead of fragile string comparison. Also catches float('inf').
-            if isinstance(suggested_val, float) and (math.isnan(suggested_val) or math.isinf(suggested_val)):
+            if isinstance(suggested_val, float) and (
+                math.isnan(suggested_val) or math.isinf(suggested_val)
+            ):
                 return default_fallback
 
             # String representation fallback for edge cases
@@ -1895,6 +1908,7 @@ def query_local_ollama_engine(
 # =====================================================================
 # SECTION 9: SYSTEM INTEGRATION & USAGE EXAMPLES
 # =====================================================================
+
 
 def validate_sprinkler_pressure(val: Any) -> bool:
     """
@@ -1941,7 +1955,7 @@ def validate_sequence_block(val: Any) -> bool:
     safe_minimum=0.0,
     default_value="DEFAULT_EVAC_TONE",
     physics_validator=validate_sequence_block,
-    force_mock_ollama=True  # Demonstrates Tier 2 fallback processing
+    force_mock_ollama=True,  # Demonstrates Tier 2 fallback processing
 )
 def fetch_emergency_audio_sequence(sequence_list: list[str], index: int) -> str:
     """

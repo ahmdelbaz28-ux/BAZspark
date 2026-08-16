@@ -290,6 +290,7 @@ class TestSimulatorInit:
         """Simulator should have a threading lock attribute."""
         sim = DetectorReliabilitySimulator()
         import threading
+
         assert isinstance(sim._lock, type(threading.Lock()))
 
 
@@ -356,7 +357,9 @@ class TestSimulateRoomReliability:
     def test_empty_detectors_returns_empty_result(self, simulator_fast) -> None:
         """No detectors should return _empty_result()."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=[], room_width=10.0, room_length=8.0,
+            detectors=[],
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["n_trials"] == 0
         assert result["mean_coverage_pct"] == pytest.approx(0.0)
@@ -367,40 +370,58 @@ class TestSimulateRoomReliability:
     def test_result_has_all_keys(self, simulator_fast, single_detector) -> None:
         """Result dict should contain all expected keys."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         expected_keys = {
-            "n_trials", "mean_coverage_pct", "p_full_coverage", "cvar_5pct",
-            "worst_coverage_pct", "best_coverage_pct", "std_dev_pct",
-            "is_reliable", "nfpa_reference", "time_horizon_yr", "detector_count",
+            "n_trials",
+            "mean_coverage_pct",
+            "p_full_coverage",
+            "cvar_5pct",
+            "worst_coverage_pct",
+            "best_coverage_pct",
+            "std_dev_pct",
+            "is_reliable",
+            "nfpa_reference",
+            "time_horizon_yr",
+            "detector_count",
         }
         assert expected_keys.issubset(result.keys())
 
     def test_n_trials_matches_config(self, simulator_fast, single_detector) -> None:
         """Result n_trials should match the simulator's n_trials."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["n_trials"] == 200
 
     def test_detector_count_stored(self, simulator_fast, two_detectors) -> None:
         """Result detector_count should match input detector list length."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=two_detectors, room_width=10.0, room_length=8.0,
+            detectors=two_detectors,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["detector_count"] == 2
 
     def test_nfpa_reference_present(self, simulator_fast, single_detector) -> None:
         """Result should include NFPA reference string."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert "NFPA 72" in result["nfpa_reference"]
 
     def test_time_horizon_stored(self, simulator_fast, single_detector) -> None:
         """Result should record the time horizon used."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             time_horizon_yr=5.0,
         )
         assert result["time_horizon_yr"] == pytest.approx(5.0)
@@ -410,7 +431,9 @@ class TestSimulateRoomReliability:
     def test_coverage_between_zero_and_hundred(self, simulator_fast, two_detectors) -> None:
         """Mean and worst coverage should be in [0, 100]."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=two_detectors, room_width=10.0, room_length=8.0,
+            detectors=two_detectors,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert 0.0 <= result["mean_coverage_pct"] <= 100.0
         assert 0.0 <= result["worst_coverage_pct"] <= 100.0
@@ -419,7 +442,9 @@ class TestSimulateRoomReliability:
     def test_p_full_coverage_between_zero_and_one(self, simulator_fast, two_detectors) -> None:
         """P(full coverage) should be in [0, 1]."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=two_detectors, room_width=10.0, room_length=8.0,
+            detectors=two_detectors,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert 0.0 <= result["p_full_coverage"] <= 1.0
 
@@ -430,10 +455,14 @@ class TestSimulateRoomReliability:
         sim1 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         sim2 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         r1 = sim1.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         r2 = sim2.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert r1["mean_coverage_pct"] == r2["mean_coverage_pct"]
         assert r1["p_full_coverage"] == r2["p_full_coverage"]
@@ -443,10 +472,14 @@ class TestSimulateRoomReliability:
         sim1 = DetectorReliabilitySimulator(n_trials=500, seed=1)
         sim2 = DetectorReliabilitySimulator(n_trials=500, seed=999)
         r1 = sim1.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         r2 = sim2.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         # Not guaranteed, but extremely likely with different seeds
         # We just check they both return valid results
@@ -459,11 +492,15 @@ class TestSimulateRoomReliability:
         """With zero failure rate, detectors always survive => high coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         # With zero failures, all detectors survive every trial
@@ -475,11 +512,15 @@ class TestSimulateRoomReliability:
         """With many detectors and zero failures, should be reliable."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=many_detectors, room_width=12.0, room_length=10.0,
+            detectors=many_detectors,
+            room_width=12.0,
+            room_length=10.0,
             failure_model=fm,
         )
         assert result["is_reliable"] is True
@@ -490,11 +531,15 @@ class TestSimulateRoomReliability:
         """With very high failure rate, coverage should be very low."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
-            detector_id="high", annual_failure_rate=0.99,
-            common_cause_beta=0.0, p_blind=0.99,
+            detector_id="high",
+            annual_failure_rate=0.99,
+            common_cause_beta=0.0,
+            p_blind=0.99,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         # With 99% failure rate, most trials have no active detectors
@@ -504,22 +549,30 @@ class TestSimulateRoomReliability:
         """With high failure rate, should not be reliable."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
-            detector_id="high", annual_failure_rate=0.99,
-            common_cause_beta=0.0, p_blind=0.99,
+            detector_id="high",
+            annual_failure_rate=0.99,
+            common_cause_beta=0.0,
+            p_blind=0.99,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         assert result["is_reliable"] is False
 
     # --- Common-cause failure (beta=1.0 guarantees all fail) ---
 
-    def test_guaranteed_common_cause_zero_coverage(self, many_detectors, guaranteed_common_cause_model) -> None:
+    def test_guaranteed_common_cause_zero_coverage(
+        self, many_detectors, guaranteed_common_cause_model
+    ) -> None:
         """With beta=1.0, every trial has common-cause failure => 0% coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         result = sim.simulate_room_reliability(
-            detectors=many_detectors, room_width=12.0, room_length=10.0,
+            detectors=many_detectors,
+            room_width=12.0,
+            room_length=10.0,
             failure_model=guaranteed_common_cause_model,
         )
         assert result["mean_coverage_pct"] == pytest.approx(0.0)
@@ -534,14 +587,17 @@ class TestSimulateRoomReliability:
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         # Single detector
         r1 = sim.simulate_room_reliability(
-            detectors=[(5.0, 4.0)], room_width=10.0, room_length=8.0,
+            detectors=[(5.0, 4.0)],
+            room_width=10.0,
+            room_length=8.0,
         )
         # Need fresh sim to reset RNG state
         sim2 = DetectorReliabilitySimulator(n_trials=500, seed=42)
         # Multiple detectors
         r2 = sim2.simulate_room_reliability(
             detectors=[(2.5, 2.0), (7.5, 6.0), (5.0, 4.0)],
-            room_width=10.0, room_length=8.0,
+            room_width=10.0,
+            room_length=8.0,
         )
         # More detectors should have higher mean coverage
         assert r2["mean_coverage_pct"] >= r1["mean_coverage_pct"]
@@ -552,12 +608,16 @@ class TestSimulateRoomReliability:
         """Larger coverage radius should improve coverage."""
         sim1 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         r_small = sim1.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             coverage_radius=3.0,
         )
         sim2 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         r_large = sim2.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             coverage_radius=10.0,
         )
         assert r_large["mean_coverage_pct"] >= r_small["mean_coverage_pct"]
@@ -568,12 +628,16 @@ class TestSimulateRoomReliability:
         """Longer time horizon => higher effective failure probability => lower coverage."""
         sim1 = DetectorReliabilitySimulator(n_trials=500, seed=42)
         r_short = sim1.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             time_horizon_yr=0.01,
         )
         sim2 = DetectorReliabilitySimulator(n_trials=500, seed=42)
         r_long = sim2.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             time_horizon_yr=50.0,
         )
         # Short horizon has very low failure probability
@@ -583,7 +647,9 @@ class TestSimulateRoomReliability:
     def test_default_time_horizon_is_one_year(self, simulator_fast, single_detector) -> None:
         """Default time_horizon_yr should be 1.0."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["time_horizon_yr"] == pytest.approx(1.0)
 
@@ -593,11 +659,15 @@ class TestSimulateRoomReliability:
         """Passing a custom failure_model should use its rates."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
-            detector_id="custom", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="custom",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         # With zero failure, should have high coverage
@@ -606,7 +676,9 @@ class TestSimulateRoomReliability:
     def test_default_failure_model_when_none(self, simulator_fast, single_detector) -> None:
         """Passing failure_model=None should use default DetectorFailureModel."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=None,
         )
         # Should produce a valid result using defaults
@@ -619,7 +691,9 @@ class TestSimulateRoomReliability:
         """cvar_5pct should be less than or equal to best coverage."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         result = sim.simulate_room_reliability(
-            detectors=[(5.0, 4.0)], room_width=10.0, room_length=8.0,
+            detectors=[(5.0, 4.0)],
+            room_width=10.0,
+            room_length=8.0,
         )
         # cvar_5pct is the 5th-percentile value from sorted coverage results
         # It should be <= best_coverage_pct (not necessarily <= mean if
@@ -631,7 +705,9 @@ class TestSimulateRoomReliability:
         """worst_coverage_pct <= mean_coverage_pct <= best_coverage_pct."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         result = sim.simulate_room_reliability(
-            detectors=two_detectors, room_width=10.0, room_length=8.0,
+            detectors=two_detectors,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["worst_coverage_pct"] <= result["mean_coverage_pct"]
         assert result["mean_coverage_pct"] <= result["best_coverage_pct"]
@@ -639,7 +715,9 @@ class TestSimulateRoomReliability:
     def test_std_dev_non_negative(self, simulator_fast, two_detectors) -> None:
         """Standard deviation should be non-negative."""
         result = simulator_fast.simulate_room_reliability(
-            detectors=two_detectors, room_width=10.0, room_length=8.0,
+            detectors=two_detectors,
+            room_width=10.0,
+            room_length=8.0,
         )
         assert result["std_dev_pct"] >= 0.0
 
@@ -649,11 +727,15 @@ class TestSimulateRoomReliability:
         """is_reliable should be True when p_full_coverage >= 0.95."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=many_detectors, room_width=12.0, room_length=10.0,
+            detectors=many_detectors,
+            room_width=12.0,
+            room_length=10.0,
             failure_model=fm,
         )
         # With zero failure and many detectors, should be reliable
@@ -664,11 +746,15 @@ class TestSimulateRoomReliability:
         """is_reliable should be False when p_full_coverage < 0.95."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
-            detector_id="high", annual_failure_rate=0.5,
-            common_cause_beta=0.1, p_blind=0.5,
+            detector_id="high",
+            annual_failure_rate=0.5,
+            common_cause_beta=0.1,
+            p_blind=0.5,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=10.0, room_length=8.0,
+            detectors=single_detector,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         if result["p_full_coverage"] < 0.95:
@@ -680,11 +766,15 @@ class TestSimulateRoomReliability:
         """A small room should be well-covered by a single detector."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=5.0, room_length=4.0,
+            detectors=single_detector,
+            room_width=5.0,
+            room_length=4.0,
             failure_model=fm,
         )
         assert result["mean_coverage_pct"] > 90.0
@@ -693,11 +783,15 @@ class TestSimulateRoomReliability:
         """A very large room with one detector should have lower coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
-            detectors=single_detector, room_width=50.0, room_length=50.0,
+            detectors=single_detector,
+            room_width=50.0,
+            room_length=50.0,
             failure_model=fm,
         )
         # One detector can't cover a 50×50 room
@@ -721,7 +815,9 @@ class TestMCPipelineAdapterInit:
     def test_custom_init(self) -> None:
         """Custom parameters should be forwarded correctly."""
         adapter = MCPipelineAdapter(
-            n_trials=5000, reliability_threshold=0.99, seed=7,
+            n_trials=5000,
+            reliability_threshold=0.99,
+            seed=7,
         )
         assert adapter._sim.n_trials == 5_000
         assert adapter._threshold == pytest.approx(0.99)
@@ -784,13 +880,16 @@ class TestEnrichLayout:
 
         # Force unreliability by using high failure model
         DetectorFailureModel(
-            detector_id="high", annual_failure_rate=0.99,
-            common_cause_beta=0.5, p_blind=0.99,
+            detector_id="high",
+            annual_failure_rate=0.99,
+            common_cause_beta=0.5,
+            p_blind=0.99,
         )
         # Patch the simulator to use our high-failure model
         original_sim = adapter_fast._sim
         with patch.object(
-            original_sim, "simulate_room_reliability",
+            original_sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -822,7 +921,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -853,7 +953,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 95.0,
@@ -884,7 +985,8 @@ class TestEnrichLayout:
         type(layout).proof_valid = PropertyMock(side_effect=AttributeError("frozen"))
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -916,7 +1018,8 @@ class TestEnrichLayout:
         type(layout).warnings = PropertyMock(side_effect=AttributeError("frozen"))
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 95.0,
@@ -961,7 +1064,9 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability", return_value={
+            adapter_fast._sim,
+            "simulate_room_reliability",
+            return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 50.0,
                 "p_full_coverage": 0.30,
@@ -990,7 +1095,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -1021,7 +1127,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -1051,7 +1158,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 99.0,
@@ -1083,7 +1191,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 95.0,
@@ -1107,7 +1216,8 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 95.0,
@@ -1169,7 +1279,9 @@ class TestAnalyseFloor:
         assert result["n_rooms"] == 0
         assert result["n_reliable"] == 0
 
-    def test_rooms_without_detectors_skipped(self, adapter_fast, mock_floor_report_no_detectors) -> None:
+    def test_rooms_without_detectors_skipped(
+        self, adapter_fast, mock_floor_report_no_detectors
+    ) -> None:
         """Rooms with no detectors should be skipped."""
         result = adapter_fast.analyse_floor(mock_floor_report_no_detectors)
         assert result["n_rooms"] == 0
@@ -1187,8 +1299,10 @@ class TestAnalyseFloor:
         rs.coverage_radius = 6.37
 
         DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
         report.room_summaries = [rs]
 
@@ -1213,7 +1327,8 @@ class TestAnalyseFloor:
 
         # Patch to force unreliable result
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 5.0,
@@ -1255,28 +1370,40 @@ class TestAnalyseFloor:
         report.room_summaries = [rs1, rs2]
 
         call_count = [0]
+
         def side_effect(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
                 return {
-                    "n_trials": 200, "mean_coverage_pct": 99.0,
-                    "p_full_coverage": 0.97, "cvar_5pct": 90.0,
-                    "worst_coverage_pct": 80.0, "best_coverage_pct": 100.0,
-                    "std_dev_pct": 2.0, "is_reliable": True,
+                    "n_trials": 200,
+                    "mean_coverage_pct": 99.0,
+                    "p_full_coverage": 0.97,
+                    "cvar_5pct": 90.0,
+                    "worst_coverage_pct": 80.0,
+                    "best_coverage_pct": 100.0,
+                    "std_dev_pct": 2.0,
+                    "is_reliable": True,
                     "nfpa_reference": "NFPA 72-2022",
-                    "time_horizon_yr": 1.0, "detector_count": 1,
+                    "time_horizon_yr": 1.0,
+                    "detector_count": 1,
                 }
             return {
-                "n_trials": 200, "mean_coverage_pct": 5.0,
-                "p_full_coverage": 0.01, "cvar_5pct": 0.0,
-                "worst_coverage_pct": 0.0, "best_coverage_pct": 10.0,
-                "std_dev_pct": 3.0, "is_reliable": False,
+                "n_trials": 200,
+                "mean_coverage_pct": 5.0,
+                "p_full_coverage": 0.01,
+                "cvar_5pct": 0.0,
+                "worst_coverage_pct": 0.0,
+                "best_coverage_pct": 10.0,
+                "std_dev_pct": 3.0,
+                "is_reliable": False,
                 "nfpa_reference": "NFPA 72-2022",
-                "time_horizon_yr": 1.0, "detector_count": 1,
+                "time_horizon_yr": 1.0,
+                "detector_count": 1,
             }
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             side_effect=side_effect,
         ):
             result = adapter_fast.analyse_floor(report)
@@ -1321,7 +1448,8 @@ class TestAnalyseFloor:
         report.room_summaries = [rs]
 
         with patch.object(
-            adapter_fast._sim, "simulate_room_reliability",
+            adapter_fast._sim,
+            "simulate_room_reliability",
             return_value={
                 "n_trials": 200,
                 "mean_coverage_pct": 95.0,
@@ -1358,8 +1486,10 @@ class TestIntegration:
         room.length = 8.0
 
         fm = DetectorFailureModel(
-            detector_id="zero", annual_failure_rate=0.0,
-            common_cause_beta=0.0, p_blind=0.0,
+            detector_id="zero",
+            annual_failure_rate=0.0,
+            common_cause_beta=0.0,
+            p_blind=0.0,
         )
 
         # Manually run simulation with the zero-failure model
@@ -1391,8 +1521,10 @@ class TestIntegration:
         room.length = 8.0
 
         fm = DetectorFailureModel(
-            detector_id="high", annual_failure_rate=0.99,
-            common_cause_beta=0.5, p_blind=0.99,
+            detector_id="high",
+            annual_failure_rate=0.99,
+            common_cause_beta=0.5,
+            p_blind=0.99,
         )
 
         sim = DetectorReliabilitySimulator(n_trials=300, seed=42)
@@ -1458,12 +1590,13 @@ class TestIntegration:
         fm = DetectorFailureModel(
             detector_id="ccf_test",
             annual_failure_rate=0.0,  # No individual failures
-            common_cause_beta=1.0,   # 100% CCF
+            common_cause_beta=1.0,  # 100% CCF
             p_blind=0.0,
         )
         result = sim.simulate_room_reliability(
             detectors=[(5.0, 4.0), (2.0, 2.0)],
-            room_width=10.0, room_length=8.0,
+            room_width=10.0,
+            room_length=8.0,
             failure_model=fm,
         )
         # Every trial: active starts with all detectors, then CCF zeroes them

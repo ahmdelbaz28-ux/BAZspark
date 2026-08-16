@@ -45,6 +45,7 @@ References:
   - IFC 4.3 specification (buildingSMART)
   - pythonnet for Python ↔ .NET interop
 """
+
 from __future__ import annotations
 
 from marine.core.types import DetectorPlacement, FireResistanceSpec
@@ -64,7 +65,9 @@ def generate_revit_family(detector: DetectorPlacement) -> dict:
             {"name": "Standard", "type": "Text", "value": detector.standard_reference},
         ],
         "geometry": {
-            "type": "cylinder", "diameter_mm": 100, "height_mm": 50,
+            "type": "cylinder",
+            "diameter_mm": 100,
+            "height_mm": 50,
         },
         "lod": 300,
     }
@@ -84,8 +87,11 @@ def generate_revit_division(spec: FireResistanceSpec) -> dict:
     """Return a Revit wall/floor element for a fire division."""
     return {
         "element_id": spec.division_id,
-        "type": "Fire_Rated_Bulkhead" if spec.required_class.value.startswith("A-") else "Non_Combustible_Panel",
-        "from_zone": spec.from_zone, "to_zone": spec.to_zone,
+        "type": "Fire_Rated_Bulkhead"
+        if spec.required_class.value.startswith("A-")
+        else "Non_Combustible_Panel",
+        "from_zone": spec.from_zone,
+        "to_zone": spec.to_zone,
         "fire_class": spec.required_class.value,
         "material": spec.material,
         "insulation_material": spec.insulation_material or "none",

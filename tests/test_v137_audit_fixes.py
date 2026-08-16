@@ -21,6 +21,7 @@ class TestAuditChainThreadSafety:
         monkeypatch.setenv("AUDIT_HMAC_KEY", "test-hmac-key-for-concurrent-testing-32chars")
 
         from fireai.core import audit_store
+
         # Force re-initialization with the fixed key
         audit_store._DEV_HMAC_KEY = None
         audit_store._DEV_KEY_WARNED = False
@@ -67,6 +68,7 @@ class TestWebSocketOriginEnforcement:
         import inspect
 
         from backend.security_csrf import CSRFMiddleware
+
         source = inspect.getsource(CSRFMiddleware.__call__)
         assert "websocket.close" in source, (
             "WebSocket handling must include close/reject code (was NO-OP in V135)"
@@ -84,6 +86,7 @@ class TestWebhookAsyncTimeout:
         import inspect
 
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         source = inspect.getsource(WebhookDeliveryService.publish_event)
         assert "as_completed" in source, "Must use as_completed for timeout to work"
         assert "shutdown(wait=False)" in source, "Must not block on exit"
@@ -100,6 +103,7 @@ class TestFailedResultAudit:
         import inspect
 
         from fireai.core.pipeline import _failed_result
+
         source = inspect.getsource(_failed_result)
         assert "ROOM_ANALYSIS_FAILED" in source, (
             "_failed_result must record ROOM_ANALYSIS_FAILED audit event"
@@ -117,10 +121,13 @@ class TestBIMExtractRoomsSSRF:
         import inspect
 
         from backend.routers.v2 import extract_rooms
+
         source = inspect.getsource(extract_rooms)
-        assert "path traversal" in source.lower() or "allowed_directories" in source.lower() or "null byte" in source.lower(), (
-            "extract_rooms must validate source path (SSRF/path traversal prevention)"
-        )
+        assert (
+            "path traversal" in source.lower()
+            or "allowed_directories" in source.lower()
+            or "null byte" in source.lower()
+        ), "extract_rooms must validate source path (SSRF/path traversal prevention)"
 
 
 # F-7: IFC GlobalId alphabet
@@ -132,6 +139,7 @@ class TestIFCGlobalIdAlphabet:
     def test_global_id_no_plus_or_slash(self):
         """GlobalId should never contain + or / (invalid in IFC)."""
         from fireai.bridges.ifc43_mapper import IFC43Mapper
+
         mapper = IFC43Mapper()
         # Generate multiple GlobalIds and check none contain + or /
         for seed in ["test1", "test2", "SM-01:R-001", "HT-01:R-002", "device_123"]:
@@ -142,6 +150,7 @@ class TestIFCGlobalIdAlphabet:
     def test_global_id_is_22_chars(self):
         """GlobalId must be exactly 22 characters."""
         from fireai.bridges.ifc43_mapper import IFC43Mapper
+
         mapper = IFC43Mapper()
         gid = mapper._generate_global_id("test")
         assert len(gid) == 22
@@ -156,13 +165,18 @@ class TestUnknownDetectorType:
     def test_unknown_type_raises(self):
         """map_detector with unknown type should raise ValueError."""
         from fireai.bridges.ifc43_mapper import IFC43Mapper
+
         mapper = IFC43Mapper()
         with pytest.raises(ValueError, match="Unknown FireAI detector type"):
-            mapper.map_detector({
-                "device_id": "X-01",
-                "type": "completely_unknown_type",
-                "x": 0, "y": 0, "z": 0,
-            })
+            mapper.map_detector(
+                {
+                    "device_id": "X-01",
+                    "type": "completely_unknown_type",
+                    "x": 0,
+                    "y": 0,
+                    "z": 0,
+                }
+            )
 
 
 # F-9: __Host- cookie always has Secure
@@ -174,7 +188,6 @@ class TestHostCookieSecure:
     def test_cookie_always_has_secure(self):
         """build_csrf_cookie_header must always include Secure for __Host-."""
         from backend.security_csrf import build_csrf_cookie_header
+
         header = build_csrf_cookie_header("test_token", is_https=False)  # NOSONAR - python:S930
-        assert "Secure" in header, (
-            "__Host- cookie must always have Secure attribute (even in dev)"
-        )
+        assert "Secure" in header, "__Host- cookie must always have Secure attribute (even in dev)"

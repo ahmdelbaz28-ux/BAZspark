@@ -99,7 +99,9 @@ def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
     return cleaned[:max_len]
 
 
-def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict | None = None) -> None:
+def _audit_key_event(
+    event_type: str, key_id: str, masked_key: str, extra: dict | None = None
+) -> None:
     """
     Record a Vision API Keys event in the AuditStore for compliance traceability.
 
@@ -112,11 +114,16 @@ def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict 
         details.update(extra)
     try:
         from fireai.core.audit_store import AuditStore
+
         store = AuditStore()
-        store.add_event(event_type=f"vision_key.{event_type}", room_id="global", details_dict=details)
+        store.add_event(
+            event_type=f"vision_key.{event_type}", room_id="global", details_dict=details
+        )
     except Exception as e:
         # Fail-safe: log the event even if AuditStore is unavailable
-        logger.debug("AuditStore unavailable for vision key event (%s): %s", event_type, type(e).__name__)
+        logger.debug(
+            "AuditStore unavailable for vision key event (%s): %s", event_type, type(e).__name__
+        )
 
 
 # ── Pydantic schemas ─────────────────────────────────────────────────────────
@@ -307,7 +314,7 @@ class OpenAIKeyTestResponse(BaseModel):
 def _row_to_response(row) -> OpenAIKeyResponse:
     """Convert a DB row to a response object. NEVER decrypts."""
     # V152: safely read optional columns (expires_at may not exist on older DBs)
-    row_keys = row.keys() if hasattr(row, 'keys') else []
+    row_keys = row.keys() if hasattr(row, "keys") else []
     expires_at = row["expires_at"] if "expires_at" in row_keys else None
     description = row["description"] if "description" in row_keys else ""
     is_expired = _is_expired(expires_at)
@@ -333,6 +340,7 @@ def _is_expired(expires_at: str | None) -> bool:
         return False
     try:
         from datetime import datetime
+
         # Handle both with and without timezone
         dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
         if dt.tzinfo is None:
@@ -541,9 +549,17 @@ async def store_provider_key(
 
     logger.info(
         "Stored %s Vision key id=%s masked=%s model=%s",
-        _safe_log_fragment(provider), _safe_log_fragment(key_id), _safe_log_fragment(masked), _safe_log_fragment(model_name),
+        _safe_log_fragment(provider),
+        _safe_log_fragment(key_id),
+        _safe_log_fragment(masked),
+        _safe_log_fragment(model_name),
     )
-    _audit_key_event("added", key_id, masked, {"provider": provider, "model_name": model_name, "base_url": base_url})
+    _audit_key_event(
+        "added",
+        key_id,
+        masked,
+        {"provider": provider, "model_name": model_name, "base_url": base_url},
+    )
     return _row_to_response(row)
 
 
@@ -689,6 +705,7 @@ async def delete_provider_key(
 # V152: Bulk delete — delete all keys for a provider, or specific ids
 class BulkDeleteRequest(BaseModel):
     """Request body for bulk-delete endpoint."""
+
     ids: list[str] | None = Field(
         None,
         description="list of key IDs to delete. If omitted, deletes ALL keys for the provider.",
@@ -732,7 +749,7 @@ async def bulk_delete_provider_keys(
                     f"DELETE FROM vision_api_keys WHERE id IN ({placeholders}) AND provider = {_ph()}",
                     (*body.ids, provider),
                 )
-                deleted_count = cur.rowcount if hasattr(cur, 'rowcount') else len(deleted_masks)
+                deleted_count = cur.rowcount if hasattr(cur, "rowcount") else len(deleted_masks)
             else:
                 # Delete ALL keys for this provider
                 cur.execute(
@@ -826,7 +843,7 @@ async def test_provider_key(
     test_path = prov_config.get("test_path", _MODELS_PATH)
 
     # V152: skip test if key is expired
-    row_keys = row.keys() if hasattr(row, 'keys') else []
+    row_keys = row.keys() if hasattr(row, "keys") else []
     expires_at = row["expires_at"] if "expires_at" in row_keys else None
     if _is_expired(expires_at):
         return OpenAIKeyTestResponse(
@@ -839,7 +856,11 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+        logger.exception(
+            "Vision key test (decrypt) failed for id=%s: %s",
+            _safe_log_fragment(key_id),
+            type(e).__name__,
+        )
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -854,7 +875,11 @@ async def test_provider_key(
                 (utc_now_iso(), key_id),
             )
     except Exception as e:
-        logger.debug("Failed to update last_used_at for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+        logger.debug(
+            "Failed to update last_used_at for id=%s: %s",
+            _safe_log_fragment(key_id),
+            type(e).__name__,
+        )
 
     test_url = f"{base_url}{test_path}"
     try:
@@ -879,7 +904,11 @@ async def test_provider_key(
             masked_key=masked,
         )
     except httpx.HTTPError as e:
-        logger.debug("Vision key test (network) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+        logger.debug(
+            "Vision key test (network) failed for id=%s: %s",
+            _safe_log_fragment(key_id),
+            type(e).__name__,
+        )
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -887,7 +916,11 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
-        logger.exception("Vision key test (unknown) failed for id=%s: %s", _safe_log_fragment(key_id), type(e).__name__)
+        logger.exception(
+            "Vision key test (unknown) failed for id=%s: %s",
+            _safe_log_fragment(key_id),
+            type(e).__name__,
+        )
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,

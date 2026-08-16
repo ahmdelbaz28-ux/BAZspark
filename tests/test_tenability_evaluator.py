@@ -192,7 +192,9 @@ class TestInputValidation:
 
     def test_nan_temperature_rejected(self) -> None:
         """NaN temperature should raise ValueError."""
-        with pytest.raises(ValueError, match="temperature_c must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="temperature_c must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             evaluate_tenability(
                 temperature_c=float("nan"),
                 visibility_m=30.0,
@@ -200,7 +202,9 @@ class TestInputValidation:
 
     def test_inf_temperature_rejected(self) -> None:
         """Infinity temperature should raise ValueError."""
-        with pytest.raises(ValueError, match="temperature_c must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="temperature_c must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             evaluate_tenability(
                 temperature_c=float("inf"),
                 visibility_m=30.0,
@@ -243,7 +247,9 @@ class TestInputValidation:
 
     def test_nan_visibility_rejected(self) -> None:
         """NaN visibility should raise ValueError."""
-        with pytest.raises(ValueError, match="visibility_m must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="visibility_m must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             evaluate_tenability(
                 temperature_c=25.0,
                 visibility_m=float("nan"),

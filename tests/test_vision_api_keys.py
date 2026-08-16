@@ -71,9 +71,7 @@ def temp_db(monkeypatch, tmp_path):
     # Also override the env var so any code that reads it directly sees the temp path
     monkeypatch.setenv("DIGITAL_TWIN_DB_PATH", db_path)
     # Also reset vision_key_store master key file default
-    monkeypatch.setenv(
-        "FIREAI_VISION_KEY_FILE", str(tmp_path / "vision_master.key")
-    )
+    monkeypatch.setenv("FIREAI_VISION_KEY_FILE", str(tmp_path / "vision_master.key"))
     # Pre-warm the singleton with our temp path
     dbmod.Database(db_path)
     monkeypatch.setattr(dbmod, "_db", dbmod.Database(db_path))
@@ -266,8 +264,16 @@ class TestDBSchema:
             cur.execute("PRAGMA table_info(vision_api_keys)")
             cols = {r[1]: r for r in cur.fetchall()}
         expected = {
-            "id", "provider", "encrypted_key", "masked_key", "base_url",
-            "model_name", "is_active", "created_at", "updated_at", "last_used_at",
+            "id",
+            "provider",
+            "encrypted_key",
+            "masked_key",
+            "base_url",
+            "model_name",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "last_used_at",
         }
         assert expected.issubset(cols.keys()), f"Missing columns: {expected - set(cols.keys())}"
 
@@ -362,7 +368,16 @@ class TestCuaLoopFallback:
                    (id, provider, encrypted_key, masked_key, base_url, model_name,
                     is_active, created_at, updated_at, last_used_at, description)
                    VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, NULL, '')""",
-                (key_id, "openai", encrypted, masked, "https://api.openai.com/v1", "gpt-4o", now, now),
+                (
+                    key_id,
+                    "openai",
+                    encrypted,
+                    masked,
+                    "https://api.openai.com/v1",
+                    "gpt-4o",
+                    now,
+                    now,
+                ),
             )
 
         # Also set an env key (would be tried second if DB key fails)
@@ -543,13 +558,21 @@ class TestSettingsRouter:
         # Add first key
         r1 = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-proj-FIRST_KEY_1234567890ab", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-proj-FIRST_KEY_1234567890ab",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert r1.status_code == 201
         # Add second key
         r2 = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-proj-SECOND_KEY_1234567890cd", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-proj-SECOND_KEY_1234567890cd",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert r2.status_code == 201
         # GET active keys — should only return the second
@@ -566,7 +589,11 @@ class TestSettingsRouter:
         # Add
         r = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-proj-DELETE_ME_1234567890ef", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-proj-DELETE_ME_1234567890ef",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert r.status_code == 201
         key_id = r.json()["id"]
@@ -592,7 +619,11 @@ class TestSettingsRouter:
         """VIEWER role must NOT be able to POST (403)."""
         resp = viewer_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-proj-VIEWER_REJECT_1234567890", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-proj-VIEWER_REJECT_1234567890",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert resp.status_code == 403, f"VIEWER must be rejected, got {resp.status_code}"
 
@@ -600,7 +631,11 @@ class TestSettingsRouter:
         """API key shorter than 8 chars must be rejected by pydantic validation."""
         resp = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "short", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "short",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert resp.status_code == 422  # pydantic validation error
 
@@ -612,7 +647,11 @@ class TestSettingsRouter:
         plaintext = "sk-proj-LOG_LEAK_TEST_1234567890xyz"
         admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": plaintext, "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": plaintext,
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         # Verify plaintext is NOT in any log record
         for record in caplog.records:
@@ -626,7 +665,11 @@ class TestSettingsRouter:
         plaintext = "sk-proj-DB_PERSIST_TEST_1234567890gh"
         admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": plaintext, "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": plaintext,
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         # Read the DB directly
         from backend.database import get_db

@@ -138,7 +138,9 @@ class TestStackTraceExposureFix:
         from backend.routers.memory import _sanitize_error
 
         # Error with traceback
-        traceback_msg = "Traceback (most recent call last):\n  File \"test.py\", line 10\n    raise ValueError"
+        traceback_msg = (
+            'Traceback (most recent call last):\n  File "test.py", line 10\n    raise ValueError'
+        )
         result = _sanitize_error(traceback_msg)
         assert "Traceback" not in result
         assert "File" not in result

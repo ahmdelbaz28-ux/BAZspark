@@ -117,7 +117,9 @@ def example_health_check():
 
     for db_name, is_connected in health.items():
         status = "✓" if is_connected else "✗"
-        print(f"  {status} {db_name.capitalize()}: {'Connected' if is_connected else 'Not connected'}")
+        print(
+            f"  {status} {db_name.capitalize()}: {'Connected' if is_connected else 'Not connected'}"
+        )
 
 
 def main():

@@ -128,8 +128,17 @@ class TestCircuitDeviceEdgeCases:
 
     def test_various_device_types(self):
         """All expected device types should be representable."""
-        types = ["detector", "module", "isolator", "fault_isolator", "horn",
-                 "strobe", "horn_strobe", "pull_station", "damper_module"]
+        types = [
+            "detector",
+            "module",
+            "isolator",
+            "fault_isolator",
+            "horn",
+            "strobe",
+            "horn_strobe",
+            "pull_station",
+            "damper_module",
+        ]
         for dt in types:
             d = CircuitDevice(f"DEV-{dt}", dt)
             assert d.device_type == dt
@@ -169,17 +178,23 @@ class TestCircuitTopologyDeviceManagement:
 
     def test_add_device_nan_y(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", 0.0, float("nan"), 3.0))
 
     def test_add_device_nan_z(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", 0.0, 0.0, float("nan")))
 
     def test_add_device_negative_inf(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", float("-inf"), 0.0, 3.0))
 
 
@@ -283,25 +298,36 @@ class TestGetDeviceCountBetweenIsolators:
 class TestTotalCableLength:
     def test_class_b_zero_length(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=0.0)
-        assert c.total_cable_length_m() == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            c.total_cable_length_m() == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_a_zero_return(self):
         """Class A with zero return length — only outgoing counted."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=100.0, return_length_m=0.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=100.0, return_length_m=0.0
+        )
         # total_cable_length_m adds both paths regardless
-        assert c.total_cable_length_m() == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            c.total_cable_length_m() == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_a_equal_paths(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=100.0, return_length_m=100.0)
-        assert c.total_cable_length_m() == 200.0  # NOSONAR — S1244: import retained for re-export / API surface
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=100.0, return_length_m=100.0
+        )
+        assert (
+            c.total_cable_length_m() == 200.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_b_ignores_return(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          cable_length_m=100.0, return_length_m=50.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=100.0, return_length_m=50.0
+        )
         # Class B: only outgoing path counted
-        assert c.total_cable_length_m() == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            c.total_cable_length_m() == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -314,16 +340,16 @@ class TestValidateComprehensive:
 
     def test_valid_nac_circuit(self):
         """Valid NAC circuit must be compliant."""
-        c = CircuitTopology("NAC-1", CircuitClass.CLASS_B, CircuitType.NAC,
-                          cable_length_m=50.0)
+        c = CircuitTopology("NAC-1", CircuitClass.CLASS_B, CircuitType.NAC, cable_length_m=50.0)
         c.add_device(CircuitDevice("HS1", "horn_strobe", 25.0, 0.0, 3.0, current_a=0.150))
         result = c.validate()
         assert result["compliant"] is True
 
     def test_nan_cable_length_violation(self):
         """NaN cable_length_m → DATA_INTEGRITY violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          cable_length_m=float("nan"))
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=float("nan")
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert result["compliant"] is False
@@ -331,8 +357,7 @@ class TestValidateComprehensive:
 
     def test_negative_cable_length_violation(self):
         """Negative cable_length_m → DATA_INTEGRITY violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          cable_length_m=-10.0)
+        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=-10.0)
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert result["compliant"] is False
@@ -340,8 +365,9 @@ class TestValidateComprehensive:
 
     def test_inf_cable_length_violation(self):
         """Inf cable_length_m → DATA_INTEGRITY violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          cable_length_m=float("inf"))
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=float("inf")
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert result["compliant"] is False
@@ -349,8 +375,13 @@ class TestValidateComprehensive:
 
     def test_class_a_nan_return_length_violation(self):
         """Class A with NaN return_length → violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=50.0, return_length_m=float("nan"))
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_A,
+            CircuitType.SLC,
+            cable_length_m=50.0,
+            return_length_m=float("nan"),
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert result["compliant"] is False
@@ -358,8 +389,9 @@ class TestValidateComprehensive:
 
     def test_class_a_negative_return_length_violation(self):
         """Class A with negative return_length → violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=50.0, return_length_m=-10.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=-10.0
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert result["compliant"] is False
@@ -371,41 +403,58 @@ class TestValidateComprehensive:
         A panel at origin likely means position was never set, causing
         catastrophic voltage drop errors.
         """
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          panel_position=(0.0, 0.0, 0.0), cable_length_m=50.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0.0, 0.0, 0.0),
+            cable_length_m=50.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert any(w["type"] == "panel_at_origin" for w in result["warnings"])
 
     def test_panel_not_at_origin_no_warning(self):
         """Panel at non-origin position → no warning."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          panel_position=(5.0, 10.0, 1.0), cable_length_m=50.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(5.0, 10.0, 1.0),
+            cable_length_m=50.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert not any(w["type"] == "panel_at_origin" for w in result["warnings"])
 
     def test_panel_at_origin_no_devices_no_warning(self):
         """Panel at origin with NO devices → no warning (no calculation error)."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
-                          panel_position=(0.0, 0.0, 0.0), cable_length_m=50.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0.0, 0.0, 0.0),
+            cable_length_m=50.0,
+        )
         result = c.validate()
         assert not any(w["type"] == "panel_at_origin" for w in result["warnings"])
 
     def test_nac_nan_current_violation(self):
         """NAC device with NaN current → violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC,
-                          cable_length_m=50.0)
-        c.devices.append(CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=float("nan")))
+        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, cable_length_m=50.0)
+        c.devices.append(
+            CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=float("nan"))
+        )
         result = c.validate()
         assert result["compliant"] is False
         assert any(v["type"] == "invalid_device_current" for v in result["violations"])
 
     def test_nac_inf_current_violation(self):
         """NAC device with Inf current → violation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC,
-                          cable_length_m=50.0)
-        c.devices.append(CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=float("inf")))
+        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, cable_length_m=50.0)
+        c.devices.append(
+            CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=float("inf"))
+        )
         result = c.validate()
         assert result["compliant"] is False
 
@@ -419,19 +468,23 @@ class TestValidateComprehensive:
 
     def test_class_a_return_path_excessively_long_warning(self):
         """Return path >3× outgoing → warning to verify routing separation."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=50.0, return_length_m=200.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=200.0
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
         assert any(w["type"] == "class_a_return_path_excessively_long" for w in result["warnings"])
 
     def test_class_a_return_path_reasonable_no_warning(self):
         """Return path ≤3× outgoing → no excessive length warning."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
-                          cable_length_m=50.0, return_length_m=55.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=55.0
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0))
         result = c.validate()
-        assert not any(w["type"] == "class_a_return_path_excessively_long" for w in result["warnings"])
+        assert not any(
+            w["type"] == "class_a_return_path_excessively_long" for w in result["warnings"]
+        )
 
     def test_device_nan_coordinate_via_validate(self):
         """Device with NaN coordinate injected directly → validation catches it."""
@@ -477,8 +530,9 @@ class TestValidateComprehensive:
 
     def test_multiple_violations_simultaneously(self):
         """Multiple violations can exist at once."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.NAC,
-                          cable_length_m=-10.0, return_length_m=0.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.NAC, cable_length_m=-10.0, return_length_m=0.0
+        )
         c.devices.append(CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=-0.1))
         c.devices.append(CircuitDevice("HS2", "horn_strobe", float("nan"), 0.0, 3.0))
         result = c.validate()
@@ -494,8 +548,7 @@ class TestValidateComprehensive:
 
     def test_nac_with_slc_device_types(self):
         """NAC circuit with detector devices — not typical but should validate."""
-        c = CircuitTopology("NAC-1", CircuitClass.CLASS_B, CircuitType.NAC,
-                          cable_length_m=50.0)
+        c = CircuitTopology("NAC-1", CircuitClass.CLASS_B, CircuitType.NAC, cable_length_m=50.0)
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 3.0, current_a=0.015))
         result = c.validate()
         # Should not crash; detector with valid current on NAC

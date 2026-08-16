@@ -79,7 +79,9 @@ class TestConstants:
         assert MIN_WALL_DISTANCE_M == pytest.approx(0.10, abs=0.01)
 
     def test_max_dimension_m(self):
-        assert MAX_DIMENSION_M == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_DIMENSION_M == 1000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_polygon_vertices(self):
         assert MAX_POLYGON_VERTICES == 5000
@@ -107,7 +109,9 @@ class TestSanitizeString:
 
     def test_rejects_non_string(self):
         with pytest.raises(ValueError, match="must be a string"):
-            sanitize_string(123)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            sanitize_string(
+                123
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_rejects_long_string(self):
         with pytest.raises(ValueError, match="too long"):
@@ -273,11 +277,15 @@ class TestCeilingSpec:
             CeilingSpec(-1.0)
 
     def test_reject_nan_height(self):
-        with pytest.raises(CeilingHeightError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            CeilingHeightError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CeilingSpec(float("nan"))
 
     def test_reject_inf_height(self):
-        with pytest.raises(CeilingHeightError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            CeilingHeightError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CeilingSpec(float("inf"))
 
     def test_reject_non_numeric_height(self):
@@ -298,7 +306,9 @@ class TestCeilingSpec:
 
     def test_beam_depth_default_zero(self):
         spec = CeilingSpec(3.0, 3.0, CeilingType.FLAT, 0.0)
-        assert spec.beam_depth_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.beam_depth_m == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestCeilingSpecCreateSafe:
@@ -308,20 +318,28 @@ class TestCeilingSpecCreateSafe:
         spec = CeilingSpec.create_safe(3.5)
         assert spec.height_m == 3.5  # NOSONAR — S1244: import retained for re-export / API surface
         assert spec.was_clamped is False
-        assert spec.original_height_m == 3.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.original_height_m == 3.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_low_height_clamped_to_min(self):
         spec = CeilingSpec.create_safe(2.0)
         assert spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert spec.was_clamped is True
-        assert spec.original_height_m == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.original_height_m == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_high_height_clamped_to_max(self):
         spec = CeilingSpec.create_safe(20.0)
         # not 15.24m (50ft) which was the heat detector limit incorrectly applied to smoke.
-        assert spec.height_m == 18.288  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.height_m == 18.288
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert spec.was_clamped is True
-        assert spec.original_height_m == 20.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.original_height_m == 20.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_reject_zero_height(self):
         with pytest.raises(ValueError, match="must be positive"):
@@ -337,15 +355,21 @@ class TestCeilingSpecCreateSafe:
 
     def test_beam_depth_passed(self):
         spec = CeilingSpec.create_safe(3.0, beam_depth_m=0.5)
-        assert spec.beam_depth_m == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.beam_depth_m == 0.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_spacing_passed(self):
         spec = CeilingSpec.create_safe(3.0, beam_spacing_m=2.0)
-        assert spec.beam_spacing_m == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.beam_spacing_m == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_high_point_passed_through(self):
         spec = CeilingSpec.create_safe(3.0, height_at_high_point_m=4.0)
-        assert spec.height_at_high_point_m == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.height_at_high_point_m == 4.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exactly_3m_not_clamped(self):
         spec = CeilingSpec.create_safe(3.0)
@@ -367,7 +391,9 @@ class TestHVACDuct:
         assert duct.centerline == []
         assert duct.width_m == 0.3  # NOSONAR — S1244: import retained for re-export / API surface
         assert duct.height_m == 0.3  # NOSONAR — S1244: import retained for re-export / API surface
-        assert duct.airflow_m3s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            duct.airflow_m3s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_values(self):
         duct = HVACDuct(duct_id="D1", width_m=0.6, height_m=0.4, airflow_m3s=1.5)
@@ -393,7 +419,9 @@ class TestRoomSpec:
     def test_default_ceiling_spec_created(self):
         room = RoomSpec(room_id="R1", width_m=10, depth_m=10)
         assert room.ceiling_spec is not None
-        assert room.ceiling_spec.height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.ceiling_spec.height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_detector_type_smoke(self):
         room = RoomSpec(room_id="R1", width_m=10, depth_m=10)
@@ -433,11 +461,15 @@ class TestRoomSpec:
             RoomSpec(room_id="R1", width_m=10, depth_m=-5)
 
     def test_reject_nan_width(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             RoomSpec(room_id="R1", width_m=float("nan"), depth_m=10)
 
     def test_reject_inf_depth(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             RoomSpec(room_id="R1", width_m=10, depth_m=float("inf"))
 
     def test_reject_width_exceeds_max(self):
@@ -471,8 +503,17 @@ class TestRoomSpec:
 
     def test_valid_occupancy_types(self):
         """All valid types should work."""
-        for occ in ["office", "corridor", "storage", "bathroom", "meeting",
-                     "hazardous", "industrial", "laboratory", "data_center"]:
+        for occ in [
+            "office",
+            "corridor",
+            "storage",
+            "bathroom",
+            "meeting",
+            "hazardous",
+            "industrial",
+            "laboratory",
+            "data_center",
+        ]:
             room = RoomSpec(room_id="R1", width_m=10, depth_m=10, occupancy_type=occ)
             assert room.occupancy_type == occ
 
@@ -608,28 +649,40 @@ class TestDetectorPlacement:
     def test_heat_detector_default_radius(self):
         """V20.2 FIX: Heat detector uses 4.27m, NOT smoke radius."""
         dp = DetectorPlacement(x=5.0, y=5.0, z=3.0, detector_type=DetectorType.HEAT)
-        assert dp.coverage_radius_m == 4.27  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            dp.coverage_radius_m == 4.27
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_heat_fixed_detector_default_radius(self):
         dp = DetectorPlacement(x=5.0, y=5.0, z=3.0, detector_type=DetectorType.HEAT_FIXED)
-        assert dp.coverage_radius_m == 4.27  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            dp.coverage_radius_m == 4.27
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_explicit_radius_overrides_default(self):
-        dp = DetectorPlacement(x=5.0, y=5.0, z=3.0, detector_type=DetectorType.SMOKE, coverage_radius_m=5.0)
-        assert dp.coverage_radius_m == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        dp = DetectorPlacement(
+            x=5.0, y=5.0, z=3.0, detector_type=DetectorType.SMOKE, coverage_radius_m=5.0
+        )
+        assert (
+            dp.coverage_radius_m == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_position_3d(self):
         dp = DetectorPlacement(x=1.0, y=2.0, z=3.0, detector_type=DetectorType.SMOKE)
         assert dp.position_3d == (1.0, 2.0, 3.0)
 
     def test_effective_coverage_area(self):
-        dp = DetectorPlacement(x=5.0, y=5.0, z=3.0, detector_type=DetectorType.SMOKE, coverage_radius_m=6.37)
-        expected = math.pi * 6.37 ** 2
+        dp = DetectorPlacement(
+            x=5.0, y=5.0, z=3.0, detector_type=DetectorType.SMOKE, coverage_radius_m=6.37
+        )
+        expected = math.pi * 6.37**2
         assert dp.effective_coverage_area == pytest.approx(expected, rel=0.01)
 
     def test_ceiling_height_m_default(self):
         dp = DetectorPlacement(x=5.0, y=5.0, z=3.0, detector_type=DetectorType.SMOKE)
-        assert dp.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            dp.ceiling_height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # CoverageResult
@@ -653,7 +706,9 @@ class TestCoverageResult:
     def test_default_coverage_fraction_zero(self):
         """V112: FAIL-SAFE — no coverage until verified."""
         result = CoverageResult(is_covered=True)
-        assert result.coverage_fraction == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.coverage_fraction == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_uncovered_areas_default_empty(self):
         result = CoverageResult(is_covered=True)
@@ -707,7 +762,9 @@ class TestFireAlarmPanel:
         panel = FireAlarmPanel(panel_id="P1")
         assert panel.max_devices == 250
         assert panel.voltage == 24.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert panel.min_voltage == 16.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            panel.min_voltage == 16.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_add_device(self):
         panel = FireAlarmPanel(panel_id="P1")
@@ -919,22 +976,30 @@ class TestGetSmokeDetectorRadiusSafe:
         _r, details = get_smoke_detector_radius_safe(3.0, _return_details=True)
         assert details["flag"] is None
         assert details["conservative"] is False
-        assert details["input_height"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert details["effective_height"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            details["input_height"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            details["effective_height"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_return_details_low_ceiling(self):
         _r, details = get_smoke_detector_radius_safe(2.4, _return_details=True)
         assert details["flag"] is not None
         assert "LOW_CEILING" in details["flag"]
         assert details["conservative"] is True
-        assert details["effective_height"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            details["effective_height"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_return_details_high_ceiling(self):
         _r, details = get_smoke_detector_radius_safe(20.0, _return_details=True)
         assert details["flag"] is not None
         assert "HIGH_CEILING" in details["flag"]
         assert details["conservative"] is True
-        assert details["effective_height"] == 18.288  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            details["effective_height"] == 18.288
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_15_24m_standard(self):
         r = get_smoke_detector_radius_safe(15.24)

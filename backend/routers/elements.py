@@ -43,7 +43,11 @@ DbDep = Annotated[Any, Depends(get_db_service)]
 # ────────────────────────────────────────────────────────────────────────────
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.get(
+    "",
+    response_model=ApiResponse[PaginatedData[ElementResponse]],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
 async def list_elements(
     db: DbDep,
     element_type: str | None = Query(None, description="Filter by element type"),
@@ -81,10 +85,17 @@ async def list_elements(
         )
     except Exception as e:
         logger.exception("list_elements failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
 
-@router.post("", response_model=ApiResponse[ElementResponse], status_code=201, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post(
+    "",
+    response_model=ApiResponse[ElementResponse],
+    status_code=201,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)
 @limiter.limit("30/minute")
 async def create_element(
     request: Request,
@@ -99,15 +110,23 @@ async def create_element(
         # or class details. Sanitize before exposing to client.
         safe_msg = str(e)[:200]  # Truncate to prevent overflow
         # Remove common path patterns that leak server structure
-        safe_msg = re.sub(r'/[\w./-]+', '[PATH]', safe_msg)
-        safe_msg = re.sub(r'<class \w+>', '[CLASS]', safe_msg)
-        raise HTTPException(status_code=400, detail=safe_msg)  # NOSONAR — S8415: assignment kept for readability / debuggability
+        safe_msg = re.sub(r"/[\w./-]+", "[PATH]", safe_msg)
+        safe_msg = re.sub(r"<class \w+>", "[CLASS]", safe_msg)
+        raise HTTPException(
+            status_code=400, detail=safe_msg
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as e:
         logger.exception("create_element failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.get("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.get(
+    "/{element_id}",
+    response_model=ApiResponse[ElementResponse],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
 async def get_element(
     element_id: str,
     db: DbDep,
@@ -116,16 +135,24 @@ async def get_element(
     try:
         element = db.get_element(element_id)
         if element is None:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail=f"Element {element_id} not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, data=element)
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("get_element failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.put("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])
+@router.put(
+    "/{element_id}",
+    response_model=ApiResponse[ElementResponse],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))],
+)
 @limiter.limit("30/minute")
 async def update_element(
     request: Request,
@@ -137,16 +164,24 @@ async def update_element(
     try:
         element = db.update_element(element_id, element_data)
         if element is None:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail=f"Element {element_id} not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, data=element, message="Element updated successfully")
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("update_element failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.delete("/{element_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
+@router.delete(
+    "/{element_id}",
+    response_model=ApiResponse[None],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))],
+)
 @limiter.limit("30/minute")
 async def delete_element(
     request: Request,
@@ -157,10 +192,14 @@ async def delete_element(
     try:
         success = db.delete_element(element_id)
         if not success:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail=f"Element {element_id} not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, message="Element deleted successfully")
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("delete_element failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability

@@ -44,6 +44,7 @@ MIN_WATER_DURATION_MIN = 10.0  # 10 minutes minimum
 @dataclass
 class ConveyorSpec:
     """Conveyor belt specifications."""
+
     belt_length_m: float
     belt_width_m: float
     belt_speed_m_s: float
@@ -56,6 +57,7 @@ class ConveyorSpec:
 @dataclass
 class SuppressionSystemDesign:
     """Design for conveyor belt fire suppression system."""
+
     number_of_nozzle_groups: int
     water_flow_rate_lpm: float
     water_duration_min: float
@@ -120,10 +122,10 @@ class ConveyorFireAnalyzer:
 
         # Drive heads
         for i in range(spec.number_of_drives):
-            nozzle_locations.append(f"Drive {i+1}")
+            nozzle_locations.append(f"Drive {i + 1}")
         # Tail pieces
         for i in range(spec.number_of_tail_pieces):
-            nozzle_locations.append(f"Tail {i+1}")
+            nozzle_locations.append(f"Tail {i + 1}")
         # Take-up
         if spec.has_take_up:
             nozzle_locations.append("Take-up")
@@ -132,7 +134,7 @@ class ConveyorFireAnalyzer:
         if spec.belt_length_m > SUPPRESSION_MAX_SPACING_M:
             num_intermediate = int(spec.belt_length_m / SUPPRESSION_MAX_SPACING_M)
             for i in range(num_intermediate):
-                nozzle_locations.append(f"Intermediate {i+1} ({(i+1)*300}m)")
+                nozzle_locations.append(f"Intermediate {i + 1} ({(i + 1) * 300}m)")
 
         total_groups = len(nozzle_locations)
 

@@ -16,6 +16,7 @@ Attack vectors covered:
   9. DNS rebinding: hostname changes between validation and connection
   10. Service layer uses literal IP (not hostname) — verified via mock
 """
+
 import socket
 from unittest.mock import MagicMock, patch
 
@@ -32,24 +33,27 @@ from backend.integrations.etap_schemas import EtapConnectionSettings, EtapSettin
 # ─── 1. Literal private IPv4 addresses ─────────────────────────────────────
 
 
-@pytest.mark.parametrize("ip", [
-    "127.0.0.1",         # loopback
-    "127.255.255.255",   # loopback upper
-    "10.0.0.1",          # RFC1918
-    "10.255.255.255",    # RFC1918
-    "172.16.0.1",        # RFC1918
-    "172.31.255.255",    # RFC1918
-    "192.168.1.1",       # RFC1918
-    "192.168.0.0",       # RFC1918
-    "169.254.169.254",   # link-local / AWS metadata
-    "169.254.0.1",       # link-local
-    "0.0.0.0",           # "this host"
-    "0.0.0.1",           # "this host" network
-    "224.0.0.1",         # multicast
-    "239.255.255.255",   # multicast
-    "240.0.0.1",         # reserved
-    "255.255.255.255",   # broadcast (reserved)
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "127.0.0.1",  # loopback
+        "127.255.255.255",  # loopback upper
+        "10.0.0.1",  # RFC1918
+        "10.255.255.255",  # RFC1918
+        "172.16.0.1",  # RFC1918
+        "172.31.255.255",  # RFC1918
+        "192.168.1.1",  # RFC1918
+        "192.168.0.0",  # RFC1918
+        "169.254.169.254",  # link-local / AWS metadata
+        "169.254.0.1",  # link-local
+        "0.0.0.0",  # "this host"
+        "0.0.0.1",  # "this host" network
+        "224.0.0.1",  # multicast
+        "239.255.255.255",  # multicast
+        "240.0.0.1",  # reserved
+        "255.255.255.255",  # broadcast (reserved)
+    ],
+)
 def test_literal_unsafe_ipv4_is_rejected_by_validator(ip):
     with pytest.raises(SSRFError):
         validate_host_for_user_input(ip)
@@ -58,16 +62,19 @@ def test_literal_unsafe_ipv4_is_rejected_by_validator(ip):
 # ─── 2. Literal private IPv6 addresses ─────────────────────────────────────
 
 
-@pytest.mark.parametrize("ip", [
-    "::1",               # IPv6 loopback
-    "::",                # IPv6 unspecified
-    "fe80::1",           # IPv6 link-local
-    "fe80::",            # IPv6 link-local
-    "fc00::1",           # IPv6 ULA
-    "fd00::1",           # IPv6 ULA
-    "ff00::1",           # IPv6 multicast
-    "ff02::1",           # IPv6 multicast
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "::1",  # IPv6 loopback
+        "::",  # IPv6 unspecified
+        "fe80::1",  # IPv6 link-local
+        "fe80::",  # IPv6 link-local
+        "fc00::1",  # IPv6 ULA
+        "fd00::1",  # IPv6 ULA
+        "ff00::1",  # IPv6 multicast
+        "ff02::1",  # IPv6 multicast
+    ],
+)
 def test_literal_unsafe_ipv6_is_rejected_by_validator(ip):
     with pytest.raises(SSRFError):
         validate_host_for_user_input(ip)
@@ -76,14 +83,17 @@ def test_literal_unsafe_ipv6_is_rejected_by_validator(ip):
 # ─── 3. IPv4-mapped IPv6 bypass attempts ────────────────────────────────────
 
 
-@pytest.mark.parametrize("ip", [
-    "::ffff:127.0.0.1",          # IPv4-mapped loopback
-    "::ffff:169.254.169.254",    # IPv4-mapped AWS metadata
-    "::ffff:10.0.0.1",           # IPv4-mapped private
-    "::ffff:192.168.1.1",        # IPv4-mapped private
-    "::ffff:0.0.0.0",            # IPv4-mapped unspecified
-    "::ffff:255.255.255.255",    # IPv4-mapped broadcast
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "::ffff:127.0.0.1",  # IPv4-mapped loopback
+        "::ffff:169.254.169.254",  # IPv4-mapped AWS metadata
+        "::ffff:10.0.0.1",  # IPv4-mapped private
+        "::ffff:192.168.1.1",  # IPv4-mapped private
+        "::ffff:0.0.0.0",  # IPv4-mapped unspecified
+        "::ffff:255.255.255.255",  # IPv4-mapped broadcast
+    ],
+)
 def test_ipv4_mapped_ipv6_bypass_is_rejected(ip):
     """Critical: ::ffff:127.0.0.1 must be detected as 127.0.0.1 in disguise."""
     with pytest.raises(SSRFError):
@@ -93,11 +103,14 @@ def test_ipv4_mapped_ipv6_bypass_is_rejected(ip):
 # ─── 4. Cloud metadata IPs ─────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("ip", [
-    "169.254.169.254",   # AWS/GCP/Azure metadata
-    "169.254.169.253",   # GCP metadata (older)
-    "100.100.100.200",   # Alibaba Cloud metadata (CGNAT range, blocked by network list)
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "169.254.169.254",  # AWS/GCP/Azure metadata
+        "169.254.169.253",  # GCP metadata (older)
+        "100.100.100.200",  # Alibaba Cloud metadata (CGNAT range, blocked by network list)
+    ],
+)
 def test_cloud_metadata_ips_are_rejected(ip):
     with pytest.raises(SSRFError):
         validate_host_for_user_input(ip)
@@ -106,10 +119,13 @@ def test_cloud_metadata_ips_are_rejected(ip):
 # ─── 5. CGNAT (not flagged by Python's is_private) ────────────────────────
 
 
-@pytest.mark.parametrize("ip", [
-    "100.64.0.1",        # CGNAT start
-    "100.127.255.255",   # CGNAT end
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "100.64.0.1",  # CGNAT start
+        "100.127.255.255",  # CGNAT end
+    ],
+)
 def test_cgnat_range_is_rejected(ip):
     """Python's ipaddress.is_private does NOT flag CGNAT (100.64.0.0/10).
     Our explicit _BLOCKED_NETWORKS list must catch it."""
@@ -120,17 +136,20 @@ def test_cgnat_range_is_rejected(ip):
 # ─── 6. Localhost variants ────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("hostname", [
-    "localhost",
-    "localhost.localdomain",
-    "localhost4",
-    "localhost6",
-    "ip6-localhost",
-    "ip6-loopback",
-    "Localhost",         # case-insensitive
-    "LOCALHOST",         # case-insensitive
-    "localhost.",        # trailing dot
-])
+@pytest.mark.parametrize(
+    "hostname",
+    [
+        "localhost",
+        "localhost.localdomain",
+        "localhost4",
+        "localhost6",
+        "ip6-localhost",
+        "ip6-loopback",
+        "Localhost",  # case-insensitive
+        "LOCALHOST",  # case-insensitive
+        "localhost.",  # trailing dot
+    ],
+)
 def test_localhost_variants_are_rejected(hostname):
     with pytest.raises(SSRFError):
         validate_host_for_user_input(hostname)
@@ -139,12 +158,15 @@ def test_localhost_variants_are_rejected(hostname):
 # ─── 7. Cloud metadata hostnames ──────────────────────────────────────────
 
 
-@pytest.mark.parametrize("hostname", [
-    "metadata.google.internal",   # GCP
-    "metadata",                   # GCP alias
-    "metadata.azure.com",         # Azure
-    "Metadata.Google.Internal",   # case-insensitive
-])
+@pytest.mark.parametrize(
+    "hostname",
+    [
+        "metadata.google.internal",  # GCP
+        "metadata",  # GCP alias
+        "metadata.azure.com",  # Azure
+        "Metadata.Google.Internal",  # case-insensitive
+    ],
+)
 def test_cloud_metadata_hostnames_are_rejected(hostname):
     with pytest.raises(SSRFError):
         validate_host_for_user_input(hostname)
@@ -158,6 +180,7 @@ def test_hostname_resolving_to_loopback_is_rejected():
     The validator accepts it (pure check, no DNS), but the service-layer
     resolver must reject it."""
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     # Step 1: validator accepts (pure check — no DNS, no network I/O)
@@ -194,6 +217,7 @@ def test_dns_rebinding_attack_is_defeated():
     getaddrinfo is called by leftover threads.
     """
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     # Unique hostname — no other test uses this.
@@ -229,6 +253,7 @@ def test_dns_rebinding_attack_is_defeated():
         # to complete their caching logic (which is just a dict assignment).
         _reset_dns_state_for_testing()
         import time as _time
+
         _time.sleep(0.3)
         # Clear AGAIN after the wait, in case a daemon thread repopulated
         # the cache during the sleep.
@@ -246,6 +271,7 @@ def test_service_layer_pins_to_literal_ip_not_hostname():
     directly without further DNS lookup. This is the core DNS-rebinding
     defense."""
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo") as mock:
@@ -260,6 +286,7 @@ def test_resolver_skips_unsafe_ips_in_resolution_list():
     """If a hostname resolves to BOTH public and private IPs, the resolver
     must return the public IP (not fail)."""
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo") as mock:
@@ -273,6 +300,7 @@ def test_resolver_skips_unsafe_ips_in_resolution_list():
 
 def test_resolver_rejects_when_all_resolved_ips_are_unsafe():
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo") as mock:
         mock.return_value = [
@@ -286,19 +314,25 @@ def test_resolver_rejects_when_all_resolved_ips_are_unsafe():
 # ─── 10. Public IPs and hostnames still work (regression guards) ──────────
 
 
-@pytest.mark.parametrize("ip", [
-    "8.8.8.8",           # Google DNS
-    "1.1.1.1",           # Cloudflare DNS
-    "93.184.216.34",     # example.com
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "8.8.8.8",  # Google DNS
+        "1.1.1.1",  # Cloudflare DNS
+        "93.184.216.34",  # example.com
+    ],
+)
 def test_public_ipv4_addresses_are_allowed(ip):
     assert validate_host_for_user_input(ip) == ip
 
 
-@pytest.mark.parametrize("ip", [
-    "2606:4700:4700::1111",  # Cloudflare
-    "2001:4860:4860::8888",  # Google
-])
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "2606:4700:4700::1111",  # Cloudflare
+        "2001:4860:4860::8888",  # Google
+    ],
+)
 def test_public_ipv6_addresses_are_allowed(ip):
     assert validate_host_for_user_input(ip) == ip
 
@@ -310,35 +344,41 @@ def test_public_hostname_is_allowed():
 # ─── 11. Schema-level integration tests ───────────────────────────────────
 
 
-@pytest.mark.parametrize("bad_host", [
-    "127.0.0.1",
-    "169.254.169.254",
-    "localhost",
-    "metadata.google.internal",
-    "::1",
-    "::ffff:127.0.0.1",
-    "fe80::1",
-    "fc00::1",
-    "10.0.0.1",
-    "100.64.0.1",  # CGNAT
-])
+@pytest.mark.parametrize(
+    "bad_host",
+    [
+        "127.0.0.1",
+        "169.254.169.254",
+        "localhost",
+        "metadata.google.internal",
+        "::1",
+        "::ffff:127.0.0.1",
+        "fe80::1",
+        "fc00::1",
+        "10.0.0.1",
+        "100.64.0.1",  # CGNAT
+    ],
+)
 def test_etap_connection_settings_rejects_all_attack_vectors(bad_host):
     with pytest.raises(ValidationError):
         EtapConnectionSettings(host=bad_host, port=80, username="u", password="p")
 
 
-@pytest.mark.parametrize("bad_host", [
-    "127.0.0.1",
-    "169.254.169.254",
-    "localhost",
-    "metadata.google.internal",
-    "::1",
-    "::ffff:127.0.0.1",
-    "fe80::1",
-    "fc00::1",
-    "10.0.0.1",
-    "100.64.0.1",  # CGNAT
-])
+@pytest.mark.parametrize(
+    "bad_host",
+    [
+        "127.0.0.1",
+        "169.254.169.254",
+        "localhost",
+        "metadata.google.internal",
+        "::1",
+        "::ffff:127.0.0.1",
+        "fe80::1",
+        "fc00::1",
+        "10.0.0.1",
+        "100.64.0.1",  # CGNAT
+    ],
+)
 def test_etap_settings_update_rejects_all_attack_vectors(bad_host):
     with pytest.raises(ValidationError):
         EtapSettingsUpdate(host=bad_host, port=80, username="u", password="p")
@@ -367,6 +407,7 @@ def test_etap_service_test_connection_blocks_ssrf_via_dns_rebinding(monkeypatch)
     private IP at connection time (no prior cache), the service layer rejects.
     """
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     # Setup: getaddrinfo returns PRIVATE IP (simulating DNS rebinding BEFORE
@@ -376,37 +417,40 @@ def test_etap_service_test_connection_blocks_ssrf_via_dns_rebinding(monkeypatch)
 
     # Import here to ensure we patch the right module
     from backend.integrations import _ssrf_guard
+
     monkeypatch.setattr(_ssrf_guard.socket, "getaddrinfo", fake_getaddrinfo)
 
     # Step 1: validator passes (pure check — no DNS, no network I/O)
     settings = EtapConnectionSettings(
-        host="rebinding.attacker.com",
-        port=80, username="u", password="p"
+        host="rebinding.attacker.com", port=80, username="u", password="p"
     )
     assert settings.host == "rebinding.attacker.com"
 
     # Step 2: build a fake EtapService with the validated settings
     from backend.integrations.etap_service import EtapService
+
     fake_db = MagicMock()
     svc = EtapService(fake_db)
     # Monkey-patch get_settings to return our validated host
     monkeypatch.setattr(
-        svc, "get_settings",
+        svc,
+        "get_settings",
         lambda project_id: {
-            "id": "test", "project_id": project_id,
-            "host": settings.host, "port": settings.port,
+            "id": "test",
+            "project_id": project_id,
+            "host": settings.host,
+            "port": settings.port,
             "username": settings.username,
             "password": "encrypted_placeholder",  # bypass decrypt check
-            "enabled": True, "timeout_seconds": 5,
-            "last_sync": None, "created_at": "2026-01-01T00:00:00Z",
+            "enabled": True,
+            "timeout_seconds": 5,
+            "last_sync": None,
+            "created_at": "2026-01-01T00:00:00Z",
             "updated_at": "2026-01-01T00:00:00Z",
-        }
+        },
     )
     # Bypass decrypt_password — return truthy
-    monkeypatch.setattr(
-        "backend.integrations.etap_service.decrypt_password",
-        lambda x: "decrypted"
-    )
+    monkeypatch.setattr("backend.integrations.etap_service.decrypt_password", lambda x: "decrypted")
 
     # Step 3: service layer must reject the connection (DNS returns private IP)
     result = svc.test_connection("test_project")
@@ -419,12 +463,14 @@ def test_etap_service_test_connection_uses_literal_ip_not_hostname(monkeypatch):
     socket.create_connection, not a hostname. This is the core defense
     against DNS rebinding at the socket layer."""
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
 
     captured_args = []
 
     class FakeSocket:
-        def close(self): pass
+        def close(self):
+            pass
 
     def fake_create_connection(address, *args, **kwargs):
         captured_args.append(address)
@@ -432,36 +478,46 @@ def test_etap_service_test_connection_uses_literal_ip_not_hostname(monkeypatch):
 
     # Make getaddrinfo return a stable public IP (no rebinding)
     from backend.integrations import _ssrf_guard
+
     monkeypatch.setattr(
-        _ssrf_guard.socket, "getaddrinfo",
-        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+        _ssrf_guard.socket,
+        "getaddrinfo",
+        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
     )
     # etap_service.py does `import socket as _socket` INSIDE the function,
     # so patching the global socket module is the correct approach.
     monkeypatch.setattr("socket.create_connection", fake_create_connection)
 
     from backend.integrations.etap_service import EtapService
+
     fake_db = MagicMock()
     svc = EtapService(fake_db)
-    monkeypatch.setattr(svc, "get_settings", lambda project_id: {
-        "id": "test", "project_id": project_id,
-        "host": "example.com", "port": 80,
-        "username": "u",
-        "password": "encrypted",
-        "enabled": True, "timeout_seconds": 5,
-        "last_sync": None, "created_at": "2026-01-01T00:00:00Z",
-        "updated_at": "2026-01-01T00:00:00Z",
-    })
     monkeypatch.setattr(
-        "backend.integrations.etap_service.decrypt_password",
-        lambda x: "decrypted"
+        svc,
+        "get_settings",
+        lambda project_id: {
+            "id": "test",
+            "project_id": project_id,
+            "host": "example.com",
+            "port": 80,
+            "username": "u",
+            "password": "encrypted",
+            "enabled": True,
+            "timeout_seconds": 5,
+            "last_sync": None,
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+        },
     )
+    monkeypatch.setattr("backend.integrations.etap_service.decrypt_password", lambda x: "decrypted")
 
     result = svc.test_connection("test_project")
     assert result["success"] is True
     # The critical assertion: create_connection was called with a LITERAL IP
     # (93.184.216.34), NOT with the hostname "example.com".
-    assert len(captured_args) == 1, f"Expected 1 call to create_connection, got {len(captured_args)}"
+    assert len(captured_args) == 1, (
+        f"Expected 1 call to create_connection, got {len(captured_args)}"
+    )
     ip_passed, port_passed = captured_args[0]
     assert ip_passed == "93.184.216.34", (
         f"Expected literal IP '93.184.216.34' but got '{ip_passed}'. "
@@ -472,4 +528,5 @@ def test_etap_service_test_connection_uses_literal_ip_not_hostname(monkeypatch):
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

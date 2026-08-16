@@ -32,18 +32,10 @@ class GridMap3D:
         self.obstacles: set[tuple[int, int, int]] = set()
 
     def to_grid(self, p: Point3D) -> tuple[int, int, int]:
-        return (
-            round(p.x / self.step_m),
-            round(p.y / self.step_m),
-            round(p.z / self.step_m)
-        )
+        return (round(p.x / self.step_m), round(p.y / self.step_m), round(p.z / self.step_m))
 
     def to_physical(self, gp: tuple[int, int, int]) -> Point3D:
-        return Point3D(
-            gp[0] * self.step_m,
-            gp[1] * self.step_m,
-            gp[2] * self.step_m
-        )
+        return Point3D(gp[0] * self.step_m, gp[1] * self.step_m, gp[2] * self.step_m)
 
     def add_obstacle(self, p: Point3D):
         self.obstacles.add(self.to_grid(p))
@@ -87,7 +79,7 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
     conduit: ConduitType,
     conduit_id: str,
     trade_size: str = "",
-    turn_penalty: float = DEFAULT_TURN_PENALTY
+    turn_penalty: float = DEFAULT_TURN_PENALTY,
 ) -> Result[ConduitRun, NECViolationError]:
     g_start = grid_map.to_grid(start)
     g_end = grid_map.to_grid(end)
@@ -98,19 +90,23 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
     for label, pt in [("start", start), ("end", end)]:
         for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
             if not math.isfinite(val):
-                return Result(error=NECViolationError(
-                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
-                            f"Conduit routing requires finite coordinates.",
-                    code_ref="NEC Art 300.18",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                    remedy="Validate device positions before routing. Check for NaN in IFC parsing."
-                ))
+                return Result(
+                    error=NECViolationError(
+                        message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                        f"Conduit routing requires finite coordinates.",
+                        code_ref="NEC Art 300.18",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                        remedy="Validate device positions before routing. Check for NaN in IFC parsing.",
+                    )
+                )
 
     if g_start in grid_map.obstacles or g_end in grid_map.obstacles:
-        return Result(error=NECViolationError(
-            message="Conduit terminal endpoints are blocked.",
-            code_ref="NEC Art 300.18",
-            remedy="Clear coordinate clearances or relocate the terminal devices."
-        ))
+        return Result(
+            error=NECViolationError(
+                message="Conduit terminal endpoints are blocked.",
+                code_ref="NEC Art 300.18",
+                remedy="Clear coordinate clearances or relocate the terminal devices.",
+            )
+        )
 
     heap_counter = 0
     open_set = []
@@ -119,11 +115,7 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
     came_from: dict[tuple[int, int, int], tuple[int, int, int]] = {}
     g_score: dict[tuple[int, int, int], float] = {g_start: 0.0}
 
-    directions = [
-        (1, 0, 0), (-1, 0, 0),
-        (0, 1, 0), (0, -1, 0),
-        (0, 0, 1), (0, 0, -1)
-    ]
+    directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
 
     # Safety limit: prevent infinite loops on very large grids
     MAX_ITERATIONS = 500000
@@ -132,11 +124,13 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
     while open_set:
         iterations += 1
         if iterations > MAX_ITERATIONS:
-            return Result(error=NECViolationError(
-                message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations -- grid too large or path too complex.",
-                code_ref="NEC Art 300.18",
-                remedy="Reduce grid size or clear structural blockings from grid boundaries."
-            ))
+            return Result(
+                error=NECViolationError(
+                    message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations -- grid too large or path too complex.",
+                    code_ref="NEC Art 300.18",
+                    remedy="Reduce grid size or clear structural blockings from grid boundaries.",
+                )
+            )
         _, _, current = heapq.heappop(open_set)
 
         if current == g_end:
@@ -157,20 +151,20 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
             bend_degrees = 0
             fittings: list[Fitting] = []
             if len(pts) >= 3:
-                prev_dir = (
-                    pts[1].x - pts[0].x,
-                    pts[1].y - pts[0].y,
-                    pts[1].z - pts[0].z
-                )
+                prev_dir = (pts[1].x - pts[0].x, pts[1].y - pts[0].y, pts[1].z - pts[0].z)
                 for i in range(1, len(pts) - 1):
                     curr_dir = (
-                        pts[i+1].x - pts[i].x,
-                        pts[i+1].y - pts[i].y,
-                        pts[i+1].z - pts[i].z
+                        pts[i + 1].x - pts[i].x,
+                        pts[i + 1].y - pts[i].y,
+                        pts[i + 1].z - pts[i].z,
                     )
-                    dot = prev_dir[0]*curr_dir[0] + prev_dir[1]*curr_dir[1] + prev_dir[2]*curr_dir[2]
-                    mag_p = math.sqrt(prev_dir[0]**2 + prev_dir[1]**2 + prev_dir[2]**2)
-                    mag_c = math.sqrt(curr_dir[0]**2 + curr_dir[1]**2 + curr_dir[2]**2)
+                    dot = (
+                        prev_dir[0] * curr_dir[0]
+                        + prev_dir[1] * curr_dir[1]
+                        + prev_dir[2] * curr_dir[2]
+                    )
+                    mag_p = math.sqrt(prev_dir[0] ** 2 + prev_dir[1] ** 2 + prev_dir[2] ** 2)
+                    mag_c = math.sqrt(curr_dir[0] ** 2 + curr_dir[1] ** 2 + curr_dir[2] ** 2)
 
                     if mag_p > 0 and mag_c > 0:
                         cos_a = dot / (mag_p * mag_c)
@@ -191,16 +185,20 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
 
             # NEC Article 358.26: No more than 360 degrees of bends between pull points
             if bend_degrees > 360:
-                return Result(error=NECViolationError(
-                    message=f"Conduit run exceeds 360 degrees of bend limits "
-                            f"({bend_degrees} degrees from {bend_count} bends). "
-                            f"NEC Article 358.26 allows maximum 4 quarter bends.",
-                    code_ref="NEC Article 358.26",
-                    remedy="Install junction boxes to partition the conduit run segment."
-                ))
+                return Result(
+                    error=NECViolationError(
+                        message=f"Conduit run exceeds 360 degrees of bend limits "
+                        f"({bend_degrees} degrees from {bend_count} bends). "
+                        f"NEC Article 358.26 allows maximum 4 quarter bends.",
+                        code_ref="NEC Article 358.26",
+                        remedy="Install junction boxes to partition the conduit run segment.",
+                    )
+                )
 
             # BUG-27 FIX: Use conduit-type-appropriate trade size, not hardcoded "1/2"
-            selected_trade_size = trade_size if trade_size else _DEFAULT_TRADE_SIZE.get(conduit, "1/2")
+            selected_trade_size = (
+                trade_size if trade_size else _DEFAULT_TRADE_SIZE.get(conduit, "1/2")
+            )
 
             run = ConduitRun(
                 id=conduit_id,
@@ -210,7 +208,7 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
                 total_length_ft=tot_len_ft,
                 bend_count=bend_count,
                 bend_degrees=bend_degrees,
-                fittings=tuple(fittings)
+                fittings=tuple(fittings),
             )
             return Result(value=run)
 
@@ -231,16 +229,22 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
                 if prev_dir != curr_dir:
                     move_cost += turn_penalty
             tentative_g = g_score[current] + move_cost
-            if tentative_g < g_score.get(neighbor, float('inf')):
+            if tentative_g < g_score.get(neighbor, float("inf")):
                 came_from[neighbor] = current
                 g_score[neighbor] = tentative_g
-                h = abs(neighbor[0]-g_end[0]) + abs(neighbor[1]-g_end[1]) + abs(neighbor[2]-g_end[2])
+                h = (
+                    abs(neighbor[0] - g_end[0])
+                    + abs(neighbor[1] - g_end[1])
+                    + abs(neighbor[2] - g_end[2])
+                )
                 f = tentative_g + h
                 heap_counter += 1
                 heapq.heappush(open_set, (f, heap_counter, neighbor))
 
-    return Result(error=NECViolationError(
-        message="No compliant orthogonal paths could be routed to targets.",
-        code_ref="NEC Art 300.18",
-        remedy="Clear structural blockings from grid boundaries."
-    ))
+    return Result(
+        error=NECViolationError(
+            message="No compliant orthogonal paths could be routed to targets.",
+            code_ref="NEC Art 300.18",
+            remedy="Clear structural blockings from grid boundaries.",
+        )
+    )

@@ -9,7 +9,7 @@ from typing import Any, ClassVar, TypeVar
 
 from parsers._path_security import UnsafePathError, validate_file_size, validate_input_path
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
@@ -40,7 +40,9 @@ class ParserBase(ABC):
     def validate_input(self, filepath: str) -> str:
         filepath = validate_input_path(
             filepath,
-            allowed_extensions=frozenset(self.allowed_extensions) if self.allowed_extensions else None,
+            allowed_extensions=frozenset(self.allowed_extensions)
+            if self.allowed_extensions
+            else None,
             parser_name=type(self).__name__,
         )
         ext = os.path.splitext(filepath)[1].lower()
@@ -57,5 +59,4 @@ class ParserBase(ABC):
         return filepath
 
     @abstractmethod
-    def parse(self, filepath: str, **kwargs) -> ParseResult[Any]:
-        ...
+    def parse(self, filepath: str, **kwargs) -> ParseResult[Any]: ...

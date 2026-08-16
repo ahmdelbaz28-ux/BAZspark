@@ -262,9 +262,7 @@ class TestDXFEdgeCases:
         entity.dxftype.return_value = "LWPOLYLINE"
         entity.closed = True
         # get_points returns list of (x, y, ...) tuples
-        entity.get_points.return_value = [
-            (0, 0), (10, float("nan")), (10, 10), (0, 10)
-        ]
+        entity.get_points.return_value = [(0, 0), (10, float("nan")), (10, 10), (0, 10)]
         mock_msp.__iter__ = MagicMock(return_value=iter([entity]))
         lines = dxf_parser._extract_lines(mock_msp, scale=1.0)
         assert len(lines) == 0
@@ -388,6 +386,7 @@ class TestDXFEdgeCases:
     def test_lines_to_valid_polygons_invalid_geometry_fixed(self, dxf_parser):
         """Self-intersecting polygons are fixed via make_valid."""
         from shapely.geometry import LineString
+
         # Bowtie shape - self-intersecting
         lines = [
             LineString([(0, 0), (10, 10)]),
@@ -500,16 +499,35 @@ class TestIFCEdgeCases:
         """Multiple fire entity types are extracted."""
         data = {
             "instances": [
-                {"type": "IfcFireSuppressionDevice_Type", "id": "D1",
-                 "attributes": {"Name": "Sprinkler"}, "applicable_to": ["S1"]},
-                {"type": "IfcAlarm", "id": "D2",
-                 "attributes": {"Name": "Smoke Alarm"}, "applicable_to": ["S2"]},
-                {"type": "IfcSensor", "id": "D3",
-                 "attributes": {"Name": "Heat Sensor"}, "applicable_to": ["S3"]},
-                {"type": "IfcProtectiveDevice", "id": "D4",
-                 "attributes": {"Name": "Fire Damper"}, "applicable_to": ["S4"]},
-                {"type": "IfcSomeOtherType", "id": "D5",
-                 "attributes": {"Name": "Not a fire device"}},
+                {
+                    "type": "IfcFireSuppressionDevice_Type",
+                    "id": "D1",
+                    "attributes": {"Name": "Sprinkler"},
+                    "applicable_to": ["S1"],
+                },
+                {
+                    "type": "IfcAlarm",
+                    "id": "D2",
+                    "attributes": {"Name": "Smoke Alarm"},
+                    "applicable_to": ["S2"],
+                },
+                {
+                    "type": "IfcSensor",
+                    "id": "D3",
+                    "attributes": {"Name": "Heat Sensor"},
+                    "applicable_to": ["S3"],
+                },
+                {
+                    "type": "IfcProtectiveDevice",
+                    "id": "D4",
+                    "attributes": {"Name": "Fire Damper"},
+                    "applicable_to": ["S4"],
+                },
+                {
+                    "type": "IfcSomeOtherType",
+                    "id": "D5",
+                    "attributes": {"Name": "Not a fire device"},
+                },
             ]
         }
         fd, path = tempfile.mkstemp(suffix=".json", prefix="ifc_edge_")
@@ -579,8 +597,12 @@ class TestIFCEdgeCases:
         """V79 FIX: coverage_radius defaults to None (not 0)."""
         data = {
             "instances": [
-                {"type": "IfcSensor", "id": "D1",
-                 "attributes": {"Name": "Sensor"}, "applicable_to": []},
+                {
+                    "type": "IfcSensor",
+                    "id": "D1",
+                    "attributes": {"Name": "Sensor"},
+                    "applicable_to": [],
+                },
             ]
         }
         fd, path = tempfile.mkstemp(suffix=".json", prefix="ifc_edge_")
@@ -600,7 +622,8 @@ class TestIFCEdgeCases:
             "instances": [
                 {"type": "IfcBuilding", "id": "B1", "attributes": {"Name": "MyBuilding"}},
                 {
-                    "type": "IfcSpace", "id": "S1",
+                    "type": "IfcSpace",
+                    "id": "S1",
                     "attributes": {"Name": "Room1", "Area": 50},
                     "geometry": {
                         "bounds": {
@@ -654,7 +677,8 @@ class TestIFCEdgeCases:
         data = {
             "instances": [
                 {
-                    "type": "IfcSpace", "id": "S1",
+                    "type": "IfcSpace",
+                    "id": "S1",
                     "attributes": {"Name": "NoGeom", "Area": 25},
                 },
             ]
@@ -695,7 +719,8 @@ class TestIFCEdgeCases:
         data = {
             "instances": [
                 {
-                    "type": "IfcSpace", "id": "S1",
+                    "type": "IfcSpace",
+                    "id": "S1",
                     "attributes": {"Name": "ZeroRoom", "Area": 0},
                     "geometry": {
                         "bounds": {

@@ -25,9 +25,12 @@ try:
     import pandas as pd
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.metrics import mean_absolute_error
+
     ML_AVAILABLE = True
 except ImportError:
-    logger.warning("ML libraries (sklearn, numpy, pandas) not available - using basic statistical methods")
+    logger.warning(
+        "ML libraries (sklearn, numpy, pandas) not available - using basic statistical methods"
+    )
     ML_AVAILABLE = False
     np = None
     pd = None
@@ -204,7 +207,10 @@ def _moving_average_forecast(
         return {"forecast": [0.0] * horizon, "lower": [0.0] * horizon, "upper": [0.0] * horizon}
     w = min(window, n)
     ma = sum(series[-w:]) / w
-    residuals = [abs(series[i] - sum(series[max(0, i - w):i]) / max(len(series[max(0, i - w):i]), 1)) for i in range(n)]
+    residuals = [
+        abs(series[i] - sum(series[max(0, i - w) : i]) / max(len(series[max(0, i - w) : i]), 1))
+        for i in range(n)
+    ]
     std_err = max(_std_dev(residuals), 1e-9) if len(residuals) > 1 else 1.0
     forecast = [ma] * horizon
     lower = [ma - 1.96 * std_err] * horizon
@@ -235,8 +241,8 @@ def _std_dev(values: list[float]) -> float:
 def _trend_from_forecast(forecast: list[float]) -> str:
     if len(forecast) < 2:
         return "stable"
-    first = sum(forecast[:len(forecast) // 3]) / max(len(forecast[:len(forecast) // 3]), 1)
-    last = sum(forecast[-len(forecast) // 3:]) / max(len(forecast[-len(forecast) // 3:]), 1)
+    first = sum(forecast[: len(forecast) // 3]) / max(len(forecast[: len(forecast) // 3]), 1)
+    last = sum(forecast[-len(forecast) // 3 :]) / max(len(forecast[-len(forecast) // 3 :]), 1)
     diff = last - first
     if diff > 0.01 * abs(first):
         return "improving"
@@ -290,22 +296,35 @@ class PredictiveAnalyticsEngine:
 
             # Create sliding window features for ML training
             for i in range(len(events_sorted) - 1):
-                window_events = events_sorted[max(0, i - n_features + 1):i + 1]
+                window_events = events_sorted[max(0, i - n_features + 1) : i + 1]
 
                 # Feature engineering
-                avg_time_between_events = np.mean([
-                    (window_events[j+1].timestamp - window_events[j].timestamp).total_seconds() / 3600.0
-                    for j in range(len(window_events) - 1)
-                ]) if len(window_events) > 1 else 0
+                avg_time_between_events = (
+                    np.mean(
+                        [
+                            (
+                                window_events[j + 1].timestamp - window_events[j].timestamp
+                            ).total_seconds()
+                            / 3600.0
+                            for j in range(len(window_events) - 1)
+                        ]
+                    )
+                    if len(window_events) > 1
+                    else 0
+                )
 
                 failure_count = len([e for e in window_events if e.event_type == "failure"])
-                trouble_count = len([e for e in window_events if e.event_type in ("trouble", "maintenance")])
+                trouble_count = len(
+                    [e for e in window_events if e.event_type in ("trouble", "maintenance")]
+                )
 
                 features.append([avg_time_between_events, failure_count, trouble_count])
 
                 # Label: time to next failure (or current time if no failure)
                 next_event = events_sorted[i + 1]
-                time_to_next = (next_event.timestamp - window_events[-1].timestamp).total_seconds() / 3600.0
+                time_to_next = (
+                    next_event.timestamp - window_events[-1].timestamp
+                ).total_seconds() / 3600.0
                 labels.append(time_to_next)
 
             if len(features) < 2:
@@ -325,15 +344,28 @@ class PredictiveAnalyticsEngine:
 
             # Prepare features for prediction (current state)
             latest_events = events_sorted[-n_features:]
-            avg_time_between_latest = np.mean([
-                (latest_events[j+1].timestamp - latest_events[j].timestamp).total_seconds() / 3600.0
-                for j in range(len(latest_events) - 1)
-            ]) if len(latest_events) > 1 else 0
+            avg_time_between_latest = (
+                np.mean(
+                    [
+                        (
+                            latest_events[j + 1].timestamp - latest_events[j].timestamp
+                        ).total_seconds()
+                        / 3600.0
+                        for j in range(len(latest_events) - 1)
+                    ]
+                )
+                if len(latest_events) > 1
+                else 0
+            )
 
             latest_failure_count = len([e for e in latest_events if e.event_type == "failure"])
-            latest_trouble_count = len([e for e in latest_events if e.event_type in ("trouble", "maintenance")])
+            latest_trouble_count = len(
+                [e for e in latest_events if e.event_type in ("trouble", "maintenance")]
+            )
 
-            current_features = np.array([[avg_time_between_latest, latest_failure_count, latest_trouble_count]])
+            current_features = np.array(
+                [[avg_time_between_latest, latest_failure_count, latest_trouble_count]]
+            )
 
             predicted_ttf = max(model.predict(current_features)[0], 24.0)  # Minimum 24 hours
 
@@ -356,12 +388,16 @@ class PredictiveAnalyticsEngine:
                 predicted_ttf_hours=round(float(predicted_ttf), 2),
                 confidence_lower=round(float(confidence_lower), 2),
                 confidence_upper=round(float(confidence_upper), 2),
-                probability=min(max(latest_failure_count / max(len(events_sorted), 1), 0.001), 0.99),
+                probability=min(
+                    max(latest_failure_count / max(len(events_sorted), 1), 0.001), 0.99
+                ),
                 failure_mode=failure_mode,
                 features_used=["avg_time_between_events", "failure_count", "trouble_count"],
             )
         except Exception as e:
-            logger.warning(f"ML-based failure prediction failed: {e}, falling back to statistical method")
+            logger.warning(
+                f"ML-based failure prediction failed: {e}, falling back to statistical method"
+            )
             return None
 
     def predict_failure(self, device_history: list[DeviceEvent]) -> FailurePrediction:
@@ -408,8 +444,17 @@ class PredictiveAnalyticsEngine:
         failure_rate = len(failure_events) / max(len(age_hours), 1)
         trouble_rate = len(trouble_events) / max(len(age_hours), 1)
 
-        fc = _holt_winters_forecast(age_hours, horizon=30, alpha=self.alpha, beta=self.beta, gamma=self.gamma, season_period=self.season_period)
-        fc["forecast"][-1] if fc["forecast"] else age_hours[-1]  # NOSONAR — S905: statement kept for clarity
+        fc = _holt_winters_forecast(
+            age_hours,
+            horizon=30,
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+            season_period=self.season_period,
+        )
+        fc["forecast"][-1] if fc["forecast"] else age_hours[
+            -1
+        ]  # NOSONAR — S905: statement kept for clarity
 
         base_ttf = 87600.0
         if failure_rate > 0:
@@ -447,7 +492,14 @@ class PredictiveAnalyticsEngine:
         coverage_series = self._simulate_recent_coverage(room_id)
         horizon = n
 
-        fc = _holt_winters_forecast(coverage_series, horizon, alpha=self.alpha, beta=self.beta, gamma=self.gamma, season_period=min(self.season_period, max(len(coverage_series) // 2, 2)))
+        fc = _holt_winters_forecast(
+            coverage_series,
+            horizon,
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+            season_period=min(self.season_period, max(len(coverage_series) // 2, 2)),
+        )
 
         forecast_values = fc["forecast"]
         lower_values = fc["lower"]
@@ -455,7 +507,9 @@ class PredictiveAnalyticsEngine:
 
         trend = _trend_from_forecast(forecast_values)
         if coverage_series:
-            degradation = (coverage_series[-1] - forecast_values[-1]) / max(coverage_series[-1], 1e-9)
+            degradation = (coverage_series[-1] - forecast_values[-1]) / max(
+                coverage_series[-1], 1e-9
+            )
         else:
             degradation = 0.0
 
@@ -469,7 +523,9 @@ class PredictiveAnalyticsEngine:
             confidence_upper=[round(v, 4) for v in upper_values],
         )
 
-    def _simulate_recent_coverage(self, _room_id: str) -> list[float]:  # NOSONAR — S1172: parameter retained for API stability
+    def _simulate_recent_coverage(
+        self, _room_id: str
+    ) -> list[float]:  # NOSONAR — S1172: parameter retained for API stability
         return [0.95, 0.94, 0.93, 0.91, 0.90, 0.89, 0.88, 0.86, 0.85, 0.83]
 
     def predict_capacity(self, system_id: str, load_profile: LoadProfile) -> CapacityPrediction:
@@ -489,7 +545,14 @@ class PredictiveAnalyticsEngine:
         current_load = loads[-1]
         capacity = max(current_load * 1.5, 100.0)
 
-        fc = _holt_winters_forecast(loads, horizon=30, alpha=0.5, beta=0.05, gamma=0.0, season_period=min(7, max(len(loads) // 2, 2)))
+        fc = _holt_winters_forecast(
+            loads,
+            horizon=30,
+            alpha=0.5,
+            beta=0.05,
+            gamma=0.0,
+            season_period=min(7, max(len(loads) // 2, 2)),
+        )
         predicted_peak = max(fc["forecast"]) if fc["forecast"] else current_load
 
         headroom = max(0.0, (capacity - predicted_peak) / max(capacity, 1e-9) * 100.0)

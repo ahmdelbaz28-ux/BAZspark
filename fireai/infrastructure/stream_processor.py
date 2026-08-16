@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # Sliding Window
 # ════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class WindowSpec:
     """Specification for a sliding time window."""
@@ -87,9 +88,7 @@ class WindowedAggregation:
 
     def _prune(self, key: str) -> None:
         cutoff = datetime.now(UTC) - self._window_spec.duration
-        self._windows[key] = [
-            (ts, v) for ts, v in self._windows[key] if ts >= cutoff
-        ]
+        self._windows[key] = [(ts, v) for ts, v in self._windows[key] if ts >= cutoff]
 
     def count(self, key: str) -> int:
         with self._lock:
@@ -149,6 +148,7 @@ class WindowedAggregation:
 # Throttled Output
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class ThrottledOutput:
     """
     Ensures at most 1 event per window per key is emitted.
@@ -189,6 +189,7 @@ class ThrottledOutput:
 # Stream Processor
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class StreamProcessor:
     """
     Configurable stream processing pipeline.
@@ -217,9 +218,7 @@ class StreamProcessor:
 
     # ── Pipeline configuration ──────────────────────────────────────────────
 
-    def add_transform(
-        self, name: str, fn: Callable[[Event], Event | None]
-    ) -> StreamProcessor:
+    def add_transform(self, name: str, fn: Callable[[Event], Event | None]) -> StreamProcessor:
         """
         Add a transform function to the pipeline.
 
@@ -240,9 +239,7 @@ class StreamProcessor:
         logger.info("StreamProcessor '%s': added filter '%s'", self._name, name)
         return self
 
-    def add_sink(
-        self, name: str, fn: Callable[[Event], Awaitable[None]]
-    ) -> StreamProcessor:
+    def add_sink(self, name: str, fn: Callable[[Event], Awaitable[None]]) -> StreamProcessor:
         """
         Add an async sink function to the pipeline.
 
@@ -269,7 +266,9 @@ class StreamProcessor:
 
     # ── Event processing ────────────────────────────────────────────────────
 
-    async def process(self, event: Event) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    async def process(
+        self, event: Event
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Run the full pipeline for a single event.
 
@@ -366,8 +365,7 @@ class StreamProcessor:
             await sink_fn(event)
         except Exception as e:
             logger.exception(
-                f"StreamProcessor '{self._name}': sink '{name}' failed "
-                f"on event {event.id}: {e}"
+                f"StreamProcessor '{self._name}': sink '{name}' failed on event {event.id}: {e}"
             )
             with self._metrics_lock:
                 self._events_errored += 1
@@ -380,9 +378,20 @@ class StreamProcessor:
 
         Looks for common numeric fields in the event data.
         """
-        candidates = ["value", "duration_ms", "cpu_percent", "memory_mb",
-                       "count", "latency_ms", "size_bytes", "load", "voltage",
-                       "current", "temperature", "pressure"]
+        candidates = [
+            "value",
+            "duration_ms",
+            "cpu_percent",
+            "memory_mb",
+            "count",
+            "latency_ms",
+            "size_bytes",
+            "load",
+            "voltage",
+            "current",
+            "temperature",
+            "pressure",
+        ]
         for key in candidates:
             val = event.data.get(key)
             if isinstance(val, int | float):

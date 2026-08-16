@@ -105,6 +105,7 @@ class RevitMCPServer:
         # Now after enqueue, we forward the command to the C# add-in via named pipe.
         try:
             from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+
             self._pipe_client = RevitNamedPipeClient()
         except ImportError:
             self._pipe_client = None
@@ -230,8 +231,7 @@ class RevitMCPServer:
                     pipe_status = "pipe_error"
                     pipe_message = pipe_response.get("message", "Unknown pipe error")
                     logger.warning(
-                        "Named pipe forwarding failed: %s. "
-                        "Command remains in local queue.",
+                        "Named pipe forwarding failed: %s. Command remains in local queue.",
                         pipe_message,
                     )
             except Exception as pipe_err:
@@ -269,6 +269,7 @@ class RevitMCPServer:
         """Handle a hydraulic calculation query (read-only)."""
         try:
             from fireai.core.hydraulic_solver import calculate_friction_loss
+
             result = calculate_friction_loss(
                 flow_rate_gpm=params["flow_rate_gpm"],
                 friction_factor_c=params["friction_factor_c"],
@@ -298,6 +299,7 @@ class RevitMCPServer:
         """Handle a sprinkler compliance validation query (read-only)."""
         try:
             from fireai.core.hydraulic_solver import validate_sprinkler_compliance
+
             result = validate_sprinkler_compliance(
                 head_pressure_psi=params["head_pressure_psi"],
                 density_gpm_sqft=params["density_gpm_sqft"],
@@ -321,12 +323,11 @@ class RevitMCPServer:
                 sanitized_parameters=params,
             )
 
-    def _handle_battery_capacity(
-        self, request: MCPRequest, params: dict[str, Any]
-    ) -> MCPResponse:
+    def _handle_battery_capacity(self, request: MCPRequest, params: dict[str, Any]) -> MCPResponse:
         """Handle a battery capacity calculation query (read-only)."""
         try:
             from fireai.core.battery_aging_derating import size_battery
+
             standby_hours = params.get("standby_hours", 24.0)
             alarm_minutes = params.get("alarm_minutes", 5.0)
             result = size_battery(
@@ -363,10 +364,13 @@ class RevitMCPServer:
             )
 
     def _handle_hazard_class_query(
-        self, request: MCPRequest, _params: dict[str, Any]  # NOSONAR — S1172: parameter retained for API stability
+        self,
+        request: MCPRequest,
+        _params: dict[str, Any],  # NOSONAR — S1172: parameter retained for API stability
     ) -> MCPResponse:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES
+
         # Reuse the handler's existing verifier instance
         # Return the mandatory override table for reference
         return MCPResponse(
@@ -484,10 +488,12 @@ class RevitMCPServer:
         deployments (Claude Desktop) do not set this var.
         """
         import os
+
         if os.environ.get("FIREAI_MCP_NO_STDIN") == "1":
             # Test mode: don't read stdin (which may block in CI).
             # Just wait until stop() sets _running=False.
             import threading
+
             event = threading.Event()
             while self._running and not event.wait(0.05):
                 pass  # NOSONAR — S108: empty except kept for graceful degradation
@@ -662,10 +668,18 @@ class RevitMCPServer:
                         "properties": {
                             "room_length": {"type": "number", "description": "Room length (m)"},
                             "room_width": {"type": "number", "description": "Room width (m)"},
-                            "ceiling_height": {"type": "number", "description": "Ceiling height (m)"},
+                            "ceiling_height": {
+                                "type": "number",
+                                "description": "Ceiling height (m)",
+                            },
                             "detector_type": {"type": "string"},
                         },
-                        "required": ["room_length", "room_width", "ceiling_height", "detector_type"],
+                        "required": [
+                            "room_length",
+                            "room_width",
+                            "ceiling_height",
+                            "detector_type",
+                        ],
                     },
                 },
             ]
@@ -694,12 +708,14 @@ class RevitMCPServer:
             "content": [
                 {
                     "type": "text",
-                    "text": json.dumps({
-                        "success": response.success,
-                        "result": response.result,
-                        "error": response.error,
-                        "sanitized_parameters": response.sanitized_parameters,
-                    }),
+                    "text": json.dumps(
+                        {
+                            "success": response.success,
+                            "result": response.result,
+                            "error": response.error,
+                            "sanitized_parameters": response.sanitized_parameters,
+                        }
+                    ),
                 }
             ],
             "isError": not response.success,

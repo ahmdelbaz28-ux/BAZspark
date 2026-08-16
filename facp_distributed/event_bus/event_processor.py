@@ -1,5 +1,6 @@
 # NOSONAR
 """Event Processor for Event Bus in Distributed FACP System"""
+
 import threading
 import time
 import uuid
@@ -51,7 +52,7 @@ class EventProcessor:
             "failed": 0,
             "retried": 0,
             "dropped": 0,
-            "avg_processing_time": 0.0
+            "avg_processing_time": 0.0,
         }
         self.stage_processors = {}  # stage -> processor function
         self.filters = []  # list of filter functions
@@ -111,13 +112,15 @@ class EventProcessor:
         """Add a metrics collector function"""
         self.metrics_collectors.append(collector_func)
 
-    def submit_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
+    def submit_event(
+        self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL
+    ) -> str:
         """Submit an event for processing"""
         message = Message(
             topic="events",
             data=event_data,
             priority=priority,
-            headers={"processor": self.processor_id}
+            headers={"processor": self.processor_id},
         )
 
         success = self.input_queue.enqueue(message)
@@ -127,7 +130,7 @@ class EventProcessor:
                 topic="retry_events",
                 data=event_data,
                 priority=MessagePriority.HIGH,
-                headers={"processor": self.processor_id, "reason": "queue_full"}
+                headers={"processor": self.processor_id, "reason": "queue_full"},
             )
             self.retry_queue.enqueue(retry_msg)
             return "queue_full"
@@ -140,12 +143,14 @@ class EventProcessor:
             "event_type": "facp_request",
             "facp_request": facp_request,
             "processing_stage": ProcessingStage.RECEIVED.value,
-            "submitted_at": time.time()
+            "submitted_at": time.time(),
         }
 
         return self.submit_event(event_data, MessagePriority.HIGH)
 
-    def _processing_worker(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _processing_worker(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Internal worker thread for processing events"""
         while self.running:
             try:
@@ -236,12 +241,14 @@ class EventProcessor:
             # Collect metrics
             for collector in self.metrics_collectors:
                 try:
-                    collector({
-                        "event_id": event_id,
-                        "processing_time": processing_time,
-                        "stage": current_stage.value,
-                        "result": ProcessingResult.SUCCESS.value
-                    })
+                    collector(
+                        {
+                            "event_id": event_id,
+                            "processing_time": processing_time,
+                            "stage": current_stage.value,
+                            "result": ProcessingResult.SUCCESS.value,
+                        }
+                    )
                 except Exception as e:
                     print(f"Metrics collector error: {e}")
 
@@ -283,7 +290,8 @@ class EventProcessor:
 
         # Clean up old failure records
         self.failure_counts = {
-            ts: count for ts, count in self.failure_counts.items()
+            ts: count
+            for ts, count in self.failure_counts.items()
             if current_time - ts < self.failure_window
         }
 
@@ -326,15 +334,13 @@ class EventProcessor:
     def _add_to_history(self, event_data: dict[str, Any], result: ProcessingResult):
         """Add processed event to history"""
         with self.lock:
-            self.processed_events.append({
-                "event_data": event_data,
-                "result": result.value,
-                "processed_at": time.time()
-            })
+            self.processed_events.append(
+                {"event_data": event_data, "result": result.value, "processed_at": time.time()}
+            )
 
             # Maintain history size
             if len(self.processed_events) > self.max_event_history:
-                self.processed_events = self.processed_events[-self.max_event_history:]
+                self.processed_events = self.processed_events[-self.max_event_history :]
 
     def get_processor_status(self) -> dict[str, Any]:
         """Get status of the event processor"""
@@ -355,7 +361,7 @@ class EventProcessor:
                 "enricher_count": len(self.enrichers),
                 "metrics_collector_count": len(self.metrics_collectors),
                 "thread_count": len(self.processing_threads),
-                "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
+                "uptime_seconds": time.time() - getattr(self, "start_time", time.time()),
             }
 
     def get_statistics(self) -> dict[str, Any]:
@@ -367,23 +373,27 @@ class EventProcessor:
                 "total_failed": self.stats["failed"],
                 "total_retried": self.stats["retried"],
                 "total_dropped": self.stats["dropped"],
-                "success_rate": self.stats["processed"] / (self.stats["processed"] + self.stats["failed"])
-                               if (self.stats["processed"] + self.stats["failed"]) > 0 else 0,
+                "success_rate": self.stats["processed"]
+                / (self.stats["processed"] + self.stats["failed"])
+                if (self.stats["processed"] + self.stats["failed"]) > 0
+                else 0,
                 "average_processing_time": self.stats["avg_processing_time"],
-                "events_per_second": self.stats["processed"] / (time.time() - getattr(self, 'start_time', time.time()))
-                                   if time.time() - getattr(self, 'start_time', time.time()) > 0 else 0,
+                "events_per_second": self.stats["processed"]
+                / (time.time() - getattr(self, "start_time", time.time()))
+                if time.time() - getattr(self, "start_time", time.time()) > 0
+                else 0,
                 "queue_occupancy": {
                     "input_queue": self.input_queue.get_queue_size(),
                     "output_queue": self.output_queue.get_queue_size(),
                     "retry_queue": self.retry_queue.get_queue_size(),
-                    "dlq": self.dead_letter_queue.get_queue_size()
+                    "dlq": self.dead_letter_queue.get_queue_size(),
                 },
                 "circuit_breaker": {
                     "enabled": self.circuit_breaker_enabled,
                     "state": self.circuit_state,
                     "failure_count": sum(self.failure_counts.values()),
-                    "threshold": self.failure_threshold
-                }
+                    "threshold": self.failure_threshold,
+                },
             }
 
     def get_recent_events(self, count: int = 10) -> list[dict[str, Any]]:
@@ -449,16 +459,20 @@ class EventProcessor:
 
         with self.lock:
             self.processed_events = [
-                event for event in self.processed_events
-                if event["processed_at"] > cutoff_time
+                event for event in self.processed_events if event["processed_at"] > cutoff_time
             ]
 
 
 class DistributedEventProcessor(EventProcessor):
     """Distributed event processor with cluster awareness"""
 
-    def __init__(self, name: str = "distributed_processor", max_workers: int = 5,
-                 node_id: str | None = None, cluster_communicator: ClusterCommunicator = None):
+    def __init__(
+        self,
+        name: str = "distributed_processor",
+        max_workers: int = 5,
+        node_id: str | None = None,
+        cluster_communicator: ClusterCommunicator = None,
+    ):
         super().__init__(name, max_workers)
         self.node_id = node_id or f"node_{uuid.uuid4().hex[:8]}"
         self.cluster_communicator = cluster_communicator
@@ -474,9 +488,13 @@ class DistributedEventProcessor(EventProcessor):
 
         # Register with cluster communicator if available
         if self.cluster_communicator:
-            self.cluster_communicator.register_message_handler("event_forward", self._handle_cluster_event)
+            self.cluster_communicator.register_message_handler(
+                "event_forward", self._handle_cluster_event
+            )
 
-    def submit_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
+    def submit_event(
+        self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL
+    ) -> str:
         """Override to support distributed event submission"""
         # Determine if this should be processed locally or distributed
         if self._should_process_locally(event_data):
@@ -484,16 +502,23 @@ class DistributedEventProcessor(EventProcessor):
         # Forward to another node
         return self._forward_to_cluster_node(event_data, priority)
 
-    def _should_process_locally(self, _event_data: dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(
+        self, _event_data: dict[str, Any]
+    ) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if an event should be processed locally"""
         if not self.task_distribution_enabled:
             return True
 
         # Use a simple ratio-based decision
         import random
-        return random.random() < self.local_processing_ratio  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
 
-    def _forward_to_cluster_node(self, event_data: dict[str, Any], priority: MessagePriority) -> str:
+        return (
+            random.random() < self.local_processing_ratio
+        )  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
+
+    def _forward_to_cluster_node(
+        self, event_data: dict[str, Any], priority: MessagePriority
+    ) -> str:
         """Forward an event to another node in the cluster"""
         if not self.cluster_communicator:
             # No cluster available, process locally
@@ -509,7 +534,7 @@ class DistributedEventProcessor(EventProcessor):
                 "event_data": event_data,
                 "priority": priority.value,
                 "source_node": self.node_id,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             success = self.cluster_communicator.send_message(target_node, forward_msg)
@@ -517,7 +542,9 @@ class DistributedEventProcessor(EventProcessor):
         # No suitable node found, process locally
         return super().submit_event(event_data, priority)
 
-    def _select_target_node(self, _event_data: dict[str, Any]) -> str | None:  # NOSONAR — S1172: parameter retained for API stability
+    def _select_target_node(
+        self, _event_data: dict[str, Any]
+    ) -> str | None:  # NOSONAR — S1172: parameter retained for API stability
         """Select a target node for event processing"""
         if not self.cluster_communicator:
             return None
@@ -533,11 +560,11 @@ class DistributedEventProcessor(EventProcessor):
 
         # Select node with lowest load (simplified)
         best_node = None
-        lowest_load = float('inf')
+        lowest_load = float("inf")
 
         for node_id in other_nodes:
             node_status = self.cluster_communicator.get_node_status(node_id)
-            if node_status and node_status.get("load", float('inf')) < lowest_load:
+            if node_status and node_status.get("load", float("inf")) < lowest_load:
                 lowest_load = node_status["load"]
                 best_node = node_id
 
@@ -547,7 +574,11 @@ class DistributedEventProcessor(EventProcessor):
         """Handle an event forwarded from another cluster node"""
         event_data = message.get("event_data", {})
         priority_value = message.get("priority", MessagePriority.NORMAL.value)
-        priority = MessagePriority(priority_value) if isinstance(priority_value, int) else MessagePriority.NORMAL
+        priority = (
+            MessagePriority(priority_value)
+            if isinstance(priority_value, int)
+            else MessagePriority.NORMAL
+        )
 
         # Add cluster forwarding information
         event_data["forwarded_from_node"] = sender_node
@@ -608,7 +639,7 @@ class DistributedEventProcessor(EventProcessor):
                 "node_id": self.node_id,
                 "stats": self.get_statistics(),
                 "status": self.get_processor_status(),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             self.cluster_communicator.sync_cluster_state(processor_state)
@@ -626,7 +657,7 @@ class DistributedEventProcessor(EventProcessor):
                 "type": "processor_shutdown",
                 "processor_id": self.processor_id,
                 "node_id": self.node_id,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
             self.cluster_communicator.broadcast_message(shutdown_msg)
 
@@ -637,8 +668,13 @@ class DistributedEventProcessor(EventProcessor):
 class FACPEventProcessor(DistributedEventProcessor):
     """Specialized event processor for FACP messages in distributed system"""
 
-    def __init__(self, name: str = "facp_processor", max_workers: int = 5,
-                 node_id: str | None = None, cluster_communicator: ClusterCommunicator = None):
+    def __init__(
+        self,
+        name: str = "facp_processor",
+        max_workers: int = 5,
+        node_id: str | None = None,
+        cluster_communicator: ClusterCommunicator = None,
+    ):
         super().__init__(name, max_workers, node_id, cluster_communicator)
         self.facp_request_handlers = {}
         self.facp_response_handlers = {}
@@ -676,18 +712,19 @@ class FACPEventProcessor(DistributedEventProcessor):
             "facp_request": facp_request,
             "processing_stage": ProcessingStage.RECEIVED.value,
             "submitted_at": time.time(),
-            "node_id": self.node_id
+            "node_id": self.node_id,
         }
 
         # Register stage processors for FACP-specific processing
         self.register_stage_processor(ProcessingStage.VALIDATED, self._validate_facp_request)
-        self.register_stage_processor(ProcessingStage.AUTHENTICATED, self._authenticate_facp_request)
+        self.register_stage_processor(
+            ProcessingStage.AUTHENTICATED, self._authenticate_facp_request
+        )
         self.register_stage_processor(ProcessingStage.AUTHORIZED, self._authorize_facp_request)
         self.register_stage_processor(ProcessingStage.ROUTED, self._route_facp_request)
         self.register_stage_processor(ProcessingStage.PROCESSING, self._process_facp_request)
 
         return super().submit_event(event_data, MessagePriority.HIGH)
-
 
     def _validate_facp_request(self, event_data: dict[str, Any], stage: str) -> bool:
         """Validate FACP request"""
@@ -701,6 +738,7 @@ class FACPEventProcessor(DistributedEventProcessor):
             request_obj = FACPRequest.from_dict(facp_request)
             # Use the protocol's built-in validation
             from ..protocol.message_schema import FACPMessageValidator
+
             validator = FACPMessageValidator()
             is_valid, errors = validator.validate_request(request_obj)
 
@@ -811,12 +849,14 @@ class FACPEventProcessor(DistributedEventProcessor):
     def get_facp_processor_status(self) -> dict[str, Any]:
         """Get status specific to FACP processing"""
         base_status = self.get_distributed_status()
-        base_status.update({
-            "registered_methods": list(self.facp_request_handlers.keys()),
-            "idempotency_enabled": self.idempotency_enabled,
-            "idempotency_store_size": len(self.idempotency_store),
-            "validation_enabled": self.validation_enabled,
-            "authentication_enabled": self.authentication_enabled,
-            "authorization_enabled": self.authorization_enabled
-        })
+        base_status.update(
+            {
+                "registered_methods": list(self.facp_request_handlers.keys()),
+                "idempotency_enabled": self.idempotency_enabled,
+                "idempotency_store_size": len(self.idempotency_store),
+                "validation_enabled": self.validation_enabled,
+                "authentication_enabled": self.authentication_enabled,
+                "authorization_enabled": self.authorization_enabled,
+            }
+        )
         return base_status

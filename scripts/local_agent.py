@@ -42,7 +42,8 @@ logger = logging.getLogger("bazspark-agent")
 if sys.platform != "win32":
     logger.warning(
         "This agent is designed for Windows. COM/API bindings are not "
-        "available on %s — running in limited/test mode.", sys.platform
+        "available on %s — running in limited/test mode.",
+        sys.platform,
     )
 
 # ── Attempt to import websockets ──────────────────────────────────────────────
@@ -62,6 +63,7 @@ if _REPO_ROOT not in sys.path:
 
 try:
     from backend.services.autocad_service import AutoCADService
+
     _autocad_available = True
 except Exception as e:  # noqa: BLE001
     logger.warning("AutoCADService not importable: %s", e)
@@ -70,6 +72,7 @@ except Exception as e:  # noqa: BLE001
 
 try:
     from backend.services.revit_service import RevitService
+
     _revit_available = True
 except Exception as e:  # noqa: BLE001
     logger.warning("RevitService not importable: %s", e)
@@ -95,6 +98,7 @@ class RevitNamedPipeDispatcher:
         if sys.platform == "win32":
             try:
                 import pywintypes  # type: ignore  # noqa: F401
+
                 self._available = self._ping()
             except ImportError:
                 logger.debug("pywin32 not installed — Named Pipe dispatcher unavailable")
@@ -107,12 +111,15 @@ class RevitNamedPipeDispatcher:
         """Quick connectivity test — try to open the pipe."""
         try:
             import win32file  # type: ignore
+
             h = win32file.CreateFile(
                 self.PIPE_NAME,
                 win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0, None,
+                0,
+                None,
                 win32file.OPEN_EXISTING,
-                0, None,
+                0,
+                None,
             )
             win32file.CloseHandle(h)
             return True
@@ -125,18 +132,18 @@ class RevitNamedPipeDispatcher:
         import win32file  # type: ignore
         import win32pipe  # type: ignore
 
-        payload = json.dumps({"command_id": str(time.time()),
-                              "action": action, "params": params})
+        payload = json.dumps({"command_id": str(time.time()), "action": action, "params": params})
         try:
             h = win32file.CreateFile(
                 self.PIPE_NAME,
                 win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0, None,
+                0,
+                None,
                 win32file.OPEN_EXISTING,
-                0, None,
+                0,
+                None,
             )
-            win32pipe.SetNamedPipeHandleState(
-                h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+            win32pipe.SetNamedPipeHandleState(h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
             # Write request
             win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
             # Read response (up to 10 MB)
@@ -146,8 +153,10 @@ class RevitNamedPipeDispatcher:
         except pywintypes.error as e:
             if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
                 self._available = False
-                return {"success": False,
-                        "error": "BazSparkRevitBridge Add-in not running. Start Revit first."}
+                return {
+                    "success": False,
+                    "error": "BazSparkRevitBridge Add-in not running. Start Revit first.",
+                }
             raise
 
 
@@ -169,6 +178,7 @@ class AutoCADNamedPipeDispatcher:
         if sys.platform == "win32":
             try:
                 import pywintypes  # type: ignore  # noqa: F401
+
                 self._available = self._ping()
             except ImportError:
                 logger.debug("pywin32 not installed — Named Pipe dispatcher unavailable")
@@ -181,12 +191,15 @@ class AutoCADNamedPipeDispatcher:
         """Quick connectivity test — try to open the pipe."""
         try:
             import win32file  # type: ignore
+
             h = win32file.CreateFile(
                 self.PIPE_NAME,
                 win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0, None,
+                0,
+                None,
                 win32file.OPEN_EXISTING,
-                0, None,
+                0,
+                None,
             )
             win32file.CloseHandle(h)
             return True
@@ -227,18 +240,18 @@ class AutoCADNamedPipeDispatcher:
                 ),
             }
 
-        payload = json.dumps({"command_id": str(time.time()),
-                              "action": action, "params": params})
+        payload = json.dumps({"command_id": str(time.time()), "action": action, "params": params})
         try:
             h = win32file.CreateFile(
                 self.PIPE_NAME,
                 win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0, None,
+                0,
+                None,
                 win32file.OPEN_EXISTING,
-                0, None,
+                0,
+                None,
             )
-            win32pipe.SetNamedPipeHandleState(
-                h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+            win32pipe.SetNamedPipeHandleState(h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
             # Write request
             win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
             # Read response (up to 10 MB)
@@ -248,8 +261,10 @@ class AutoCADNamedPipeDispatcher:
         except pywintypes.error as e:
             if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
                 self._available = False
-                return {"success": False,
-                        "error": "BazSparkAutoCADBridge Add-in not running. Load the DLL in AutoCAD first."}
+                return {
+                    "success": False,
+                    "error": "BazSparkAutoCADBridge Add-in not running. Load the DLL in AutoCAD first.",
+                }
             raise
 
 
@@ -292,12 +307,16 @@ def _get_revit() -> Any:
 
 # ── Command handlers ───────────────────────────────────────────────────────────
 
-def _build_status_response(connected: bool, message: str, document_info: dict | None = None) -> dict:
+
+def _build_status_response(
+    connected: bool, message: str, document_info: dict | None = None
+) -> dict:
     return {
         "connected": connected,
         "message": message,
         "document_info": document_info if document_info else None,
     }
+
 
 def _handle_autocad_connect(svc, args):
     """Handle the 'connect' action for AutoCAD."""
@@ -309,6 +328,7 @@ def _handle_autocad_connect(svc, args):
         "simulation_mode": svc.simulation_mode,
     }
 
+
 def _handle_autocad_disconnect(svc, args):
     """Handle the 'disconnect' action for AutoCAD."""
     ok = svc.disconnect()
@@ -319,15 +339,20 @@ def _handle_autocad_disconnect(svc, args):
         "simulation_mode": getattr(svc, "simulation_mode", False),
     }
 
+
 def _handle_autocad_status(svc, args):
     """Handle the 'status' action for AutoCAD."""
     doc_info = svc.get_document_info() if svc.connected else {}
-    return _build_status_response(svc.connected, "AutoCAD service status", doc_info if doc_info else None)
+    return _build_status_response(
+        svc.connected, "AutoCAD service status", doc_info if doc_info else None
+    )
+
 
 def _handle_autocad_documents(svc, args):
     """Handle the 'documents' action for AutoCAD."""
     doc_info = svc.get_document_info()
     return {"success": True, "documents": [doc_info] if doc_info else []}
+
 
 def _handle_autocad_read_dwg(svc, args):
     """Handle the 'read_dwg' action for AutoCAD."""
@@ -343,12 +368,14 @@ def _handle_autocad_read_dwg(svc, args):
         "entity_count": len(result.get("entities", [])),
     }
 
+
 def _handle_autocad_write_dwg(svc, args):
     """Handle the 'write_dwg' action for AutoCAD."""
     ok = svc.write_dwg(args["filepath"], args.get("entities", []))
     if not ok:
         return {"error": "Failed to write DWG file"}
     return {"success": True, "message": "Successfully wrote DWG file"}
+
 
 def _handle_autocad_draw_line(svc, args):
     """Handle the 'draw_line' action for AutoCAD."""
@@ -362,6 +389,7 @@ def _handle_autocad_draw_line(svc, args):
         return {"error": "Failed to draw line"}
     return {"success": True, "message": "Line drawn successfully", "handle": handle}
 
+
 def _handle_autocad_draw_polyline(svc, args):
     """Handle the 'draw_polyline' action for AutoCAD."""
     handle = svc.draw_polyline(
@@ -374,6 +402,7 @@ def _handle_autocad_draw_polyline(svc, args):
         return {"error": "Failed to draw polyline"}
     return {"success": True, "message": "Polyline drawn successfully", "handle": handle}
 
+
 def _handle_autocad_draw_circle(svc, args):
     """Handle the 'draw_circle' action for AutoCAD."""
     handle = svc.draw_circle(
@@ -385,6 +414,7 @@ def _handle_autocad_draw_circle(svc, args):
     if not handle:
         return {"error": "Failed to draw circle"}
     return {"success": True, "message": "Circle drawn successfully", "handle": handle}
+
 
 def _handle_autocad_draw_text(svc, args):
     """Handle the 'draw_text' action for AutoCAD."""
@@ -399,12 +429,14 @@ def _handle_autocad_draw_text(svc, args):
         return {"error": "Failed to draw text"}
     return {"success": True, "message": "Text drawn successfully", "handle": handle}
 
+
 def _handle_autocad_save(svc, args):
     """Handle the 'save' action for AutoCAD."""
     ok = svc.save(args.get("filepath", ""))
     if not ok:
         return {"error": "Failed to save document"}
     return {"success": True, "message": "Document saved successfully"}
+
 
 def _handle_autocad_upload_dwg(svc, args):
     """Handle the 'upload_dwg' action for AutoCAD."""
@@ -433,12 +465,14 @@ def _handle_autocad_upload_dwg(svc, args):
         if os.path.exists(temp_dir):
             os.rmdir(temp_dir)
 
+
 def _handle_autocad_delete_entity(svc, args):
     """Handle the 'delete_entity' action for AutoCAD."""
     ok = svc.delete_entity(args["handle"])
     if not ok:
         return {"error": "Failed to delete entity"}
     return {"success": True, "message": "Entity deleted successfully"}
+
 
 def _handle_autocad_modify_entity(svc, args):
     """Handle the 'modify_entity' action for AutoCAD."""
@@ -447,7 +481,10 @@ def _handle_autocad_modify_entity(svc, args):
         return {"error": "Failed to modify entity"}
     return {"success": True, "message": "Entity modified successfully"}
 
-def _dispatch_autocad(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+def _dispatch_autocad(
+    action: str, args: dict[str, Any]
+) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch an AutoCAD action locally and return the result dict.
 
@@ -458,8 +495,15 @@ def _dispatch_autocad(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — 
        is not loaded.
     """
     _PIPE_ROUTED_ACTIONS = {
-        "get_info", "draw_line", "draw_polyline", "draw_circle",
-        "draw_text", "delete_entity", "modify_entity", "save", "speckle_push",
+        "get_info",
+        "draw_line",
+        "draw_polyline",
+        "draw_circle",
+        "draw_text",
+        "delete_entity",
+        "modify_entity",
+        "save",
+        "speckle_push",
     }
     if action in _PIPE_ROUTED_ACTIONS:
         pipe = _get_autocad_pipe()
@@ -469,7 +513,8 @@ def _dispatch_autocad(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — 
         else:
             logger.warning(
                 "[AutoCAD] Named Pipe unavailable for %s — "
-                "is BazSparkAutoCADBridge loaded in AutoCAD?", action
+                "is BazSparkAutoCADBridge loaded in AutoCAD?",
+                action,
             )
 
     svc = _get_autocad()
@@ -497,7 +542,10 @@ def _dispatch_autocad(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — 
     if action in action_handlers:
         return action_handlers[action](svc, args)
     elif action == "speckle_push":
-        return {"success": False, "error": "speckle_push is only supported when BazSparkAutoCADBridge C# add-in is loaded."}
+        return {
+            "success": False,
+            "error": "speckle_push is only supported when BazSparkAutoCADBridge C# add-in is loaded.",
+        }
     else:
         return {"error": f"Unknown AutoCAD action: {action}"}
 
@@ -513,6 +561,7 @@ def _handle_revit_connect(svc, args):
         "connection_method": getattr(svc, "connection_method", None),
     }
 
+
 def _handle_revit_disconnect(svc, args):
     """Handle the 'disconnect' action for Revit."""
     ok = svc.disconnect()
@@ -522,6 +571,7 @@ def _handle_revit_disconnect(svc, args):
         "connected": svc.connected,
         "simulation_mode": getattr(svc, "simulation_mode", False),
     }
+
 
 def _handle_revit_status(svc, args):
     """Handle the 'status' action for Revit."""
@@ -533,6 +583,7 @@ def _handle_revit_status(svc, args):
         "document_info": doc_info if doc_info else None,
     }
 
+
 def _handle_revit_get_elements(svc, args):
     """Handle the 'get_elements' action for Revit."""
     elements = svc.get_elements(
@@ -541,10 +592,12 @@ def _handle_revit_get_elements(svc, args):
     )
     return {"success": True, "elements": elements, "count": len(elements)}
 
+
 def _handle_revit_get_selected_elements(svc, args):
     """Handle the 'get_selected_elements' action for Revit."""
     elements = svc.get_selected_elements()
     return {"success": True, "elements": elements, "count": len(elements)}
+
 
 def _handle_revit_get_element(svc, args):
     """Handle the 'get_element' action for Revit."""
@@ -553,66 +606,118 @@ def _handle_revit_get_element(svc, args):
         return {"success": True, "element": element}
     return {"success": False, "error": "Element not found"}
 
+
 def _handle_revit_get_element_parameters(svc, args):
     """Handle the 'get_element_parameters' action for Revit."""
     params = svc.get_element_parameters(args["element_id"])
     return {"success": True, "parameters": params}
 
+
 def _handle_revit_create_wall(svc, args):
     """Handle the 'create_wall' action for Revit."""
     eid = svc.create_wall(
-        start_point=args["start_point"], end_point=args["end_point"],
-        height=args.get("height"), level=args.get("level"), wall_type=args.get("wall_type")
+        start_point=args["start_point"],
+        end_point=args["end_point"],
+        height=args.get("height"),
+        level=args.get("level"),
+        wall_type=args.get("wall_type"),
     )
-    return {"success": eid is not None, "message": f"Wall: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Wall: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_floor(svc, args):
     """Handle the 'create_floor' action for Revit."""
     eid = svc.create_floor(
-        boundary_points=args["boundary_points"], level=args.get("level"), floor_type=args.get("floor_type")
+        boundary_points=args["boundary_points"],
+        level=args.get("level"),
+        floor_type=args.get("floor_type"),
     )
-    return {"success": eid is not None, "message": f"Floor: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Floor: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_door(svc, args):
     """Handle the 'create_door' action for Revit."""
     eid = svc.create_door(
-        host_wall_id=args["host_wall_id"], location_point=args["location_point"],
-        family_type=args.get("family_type"), level=args.get("level")
+        host_wall_id=args["host_wall_id"],
+        location_point=args["location_point"],
+        family_type=args.get("family_type"),
+        level=args.get("level"),
     )
-    return {"success": eid is not None, "message": f"Door: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Door: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_window(svc, args):
     """Handle the 'create_window' action for Revit."""
     eid = svc.create_window(
-        host_wall_id=args["host_wall_id"], location_point=args["location_point"],
-        family_type=args.get("family_type"), level=args.get("level")
+        host_wall_id=args["host_wall_id"],
+        location_point=args["location_point"],
+        family_type=args.get("family_type"),
+        level=args.get("level"),
     )
-    return {"success": eid is not None, "message": f"Window: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Window: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_column(svc, args):
     """Handle the 'create_column' action for Revit."""
     eid = svc.create_column(
-        location_point=args["location_point"], height=args.get("height"),
-        level=args.get("level"), column_type=args.get("column_type")
+        location_point=args["location_point"],
+        height=args.get("height"),
+        level=args.get("level"),
+        column_type=args.get("column_type"),
     )
-    return {"success": eid is not None, "message": f"Column: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Column: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_beam(svc, args):
     """Handle the 'create_beam' action for Revit."""
     eid = svc.create_beam(
-        start_point=args["start_point"], end_point=args["end_point"],
-        level=args.get("level"), beam_type=args.get("beam_type")
+        start_point=args["start_point"],
+        end_point=args["end_point"],
+        level=args.get("level"),
+        beam_type=args.get("beam_type"),
     )
-    return {"success": eid is not None, "message": f"Beam: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Beam: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_create_family(svc, args):
     """Handle the 'create_family' action for Revit."""
     eid = svc.create_family_instance(
-        family_name=args["family_name"], category=args.get("category"),
-        location_point=args["location_point"], level=args.get("level"),
-        parameters=args.get("parameters", {})
+        family_name=args["family_name"],
+        category=args.get("category"),
+        location_point=args["location_point"],
+        level=args.get("level"),
+        parameters=args.get("parameters", {}),
     )
-    return {"success": eid is not None, "message": f"Family: {eid}" if eid else "Failed", "element_id": eid}
+    return {
+        "success": eid is not None,
+        "message": f"Family: {eid}" if eid else "Failed",
+        "element_id": eid,
+    }
+
 
 def _handle_revit_update_parameters(svc, args):
     """Handle the 'update_parameters' action for Revit."""
@@ -620,7 +725,11 @@ def _handle_revit_update_parameters(svc, args):
     for pname, val in args.get("parameters", {}).items():
         if not svc.set_element_parameter(args["element_id"], pname, val):
             success = False
-    return {"success": success, "message": "Parameters updated" if success else "Some parameters failed"}
+    return {
+        "success": success,
+        "message": "Parameters updated" if success else "Some parameters failed",
+    }
+
 
 def _handle_revit_delete_element(svc, args):
     """Handle the 'delete_element' action for Revit."""
@@ -629,6 +738,7 @@ def _handle_revit_delete_element(svc, args):
         return {"success": True, "message": f"Element {args['element_id']} deleted"}
     return {"error": "Failed to delete element"}
 
+
 def _handle_revit_get_special_actions(svc, args):  # NOSONAR - python:S1481
     """Handle special actions like get_views, get_levels, get_grids, get_worksets for Revit."""
     action = args.get("special_action", "")
@@ -636,11 +746,15 @@ def _handle_revit_get_special_actions(svc, args):  # NOSONAR - python:S1481
     items = method()
     return {"success": True, "elements": items, "count": len(items)}
 
+
 def _handle_revit_execute_ai_command(svc, args):
     """Handle the 'execute_ai_command' action for Revit."""
     return svc.execute_ai_command(args.get("command", ""), args.get("context", {}))
 
-def _dispatch_revit(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+def _dispatch_revit(
+    action: str, args: dict[str, Any]
+) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch a Revit action locally and return the result dict.
 
@@ -655,9 +769,17 @@ def _dispatch_revit(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3
     """
     # ── For structural actions, prefer the C# Add-in via Named Pipe ──────────
     _PIPE_ROUTED_ACTIONS = {
-        "get_info", "list_elements", "create_wall", "create_floor",
-        "place_family_instance", "delete_element", "get_parameter",
-        "set_parameter", "list_views", "save", "speckle_pull",
+        "get_info",
+        "list_elements",
+        "create_wall",
+        "create_floor",
+        "place_family_instance",
+        "delete_element",
+        "get_parameter",
+        "set_parameter",
+        "list_views",
+        "save",
+        "speckle_pull",
     }
     if action in _PIPE_ROUTED_ACTIONS:
         pipe = _get_revit_pipe()
@@ -667,7 +789,8 @@ def _dispatch_revit(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3
         else:
             logger.warning(
                 "[Revit] Named Pipe unavailable for %s — "
-                "is BazSparkRevitBridge Add-in loaded in Revit?", action
+                "is BazSparkRevitBridge Add-in loaded in Revit?",
+                action,
             )
             # Fall through to RevitService (pythonnet) below
 
@@ -701,7 +824,10 @@ def _dispatch_revit(action: str, args: dict[str, Any]) -> Any:  # NOSONAR — S3
     elif action in ("get_views", "get_levels", "get_grids", "get_worksets"):
         return _handle_revit_get_special_actions(svc, {"special_action": action})
     elif action == "speckle_pull":
-        return {"success": False, "error": "speckle_pull is only supported when BazSparkRevitBridge C# add-in is loaded."}
+        return {
+            "success": False,
+            "error": "speckle_pull is only supported when BazSparkRevitBridge C# add-in is loaded.",
+        }
     else:
         return {"error": f"Unknown Revit action: {action}"}
 
@@ -721,11 +847,14 @@ def _dispatch(action_full: str, args: dict[str, Any]) -> Any:
 
 # ── WebSocket agent loop ──────────────────────────────────────────────────────
 
+
 async def _agent_loop(uri: str, api_key: str = "") -> None:
     """Connect, listen for commands, execute them, and send back results."""
     logger.info("Connecting to %s …", uri)
     extra_headers = {"X-API-Key": api_key} if api_key else None
-    async with websockets.connect(uri, ping_interval=20, ping_timeout=30, extra_headers=extra_headers) as ws:
+    async with websockets.connect(
+        uri, ping_interval=20, ping_timeout=30, extra_headers=extra_headers
+    ) as ws:
         logger.info("✅ Connected to BAZspark server. Waiting for commands …")
         async for raw in ws:
             try:
@@ -774,7 +903,9 @@ async def run(server_url: str, api_key: str) -> None:
             if e.status_code == 4003:
                 logger.error("❌ Authentication failed: invalid API key. Exiting.")
                 return
-            logger.warning("Connection rejected (status %s). Retrying in %.0fs …", e.status_code, backoff)
+            logger.warning(
+                "Connection rejected (status %s). Retrying in %.0fs …", e.status_code, backoff
+            )
         except (OSError, websockets.exceptions.WebSocketException) as e:
             logger.warning("Connection error: %s. Retrying in %.0fs …", e, backoff)
         except Exception as e:  # noqa: BLE001
@@ -785,6 +916,7 @@ async def run(server_url: str, api_key: str) -> None:
 
 
 # ── CLI entry-point ───────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

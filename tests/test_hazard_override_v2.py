@@ -151,10 +151,7 @@ class TestMandatoryOverrides:
 
     def test_no_light_hazard_keywords(self):
         """There should be NO light_hazard overrides — too dangerous."""
-        light_entries = [
-            k for k, v in MANDATORY_HAZARD_OVERRIDES.items()
-            if v == "light_hazard"
-        ]
+        light_entries = [k for k, v in MANDATORY_HAZARD_OVERRIDES.items() if v == "light_hazard"]
         assert len(light_entries) == 0, (
             f"Light hazard overrides found: {light_entries}. "
             "Light hazard should never be forced by keyword — it's too lenient."
@@ -333,9 +330,7 @@ class TestCustomOverrides:
 
     def test_custom_overrides_supplement_built_in(self):
         """Custom overrides add to, not replace, built-in overrides."""
-        verifier = HazardOverrideVerifier(
-            custom_overrides={"battery room": "extra_hazard_1"}
-        )
+        verifier = HazardOverrideVerifier(custom_overrides={"battery room": "extra_hazard_1"})
         # Custom override works
         result = verifier.verify_and_override(
             room_name="Battery Room",

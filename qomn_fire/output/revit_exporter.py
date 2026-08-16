@@ -15,7 +15,9 @@ import json
 from qomn_fire.core.types import ConduitRun, Device, PanelRecommendation
 
 
-def export_to_revit_json(devices: list[Device], runs: list[ConduitRun], facp: PanelRecommendation) -> str:
+def export_to_revit_json(
+    devices: list[Device], runs: list[ConduitRun], facp: PanelRecommendation
+) -> str:
     schema = {
         "SchemaVersion": "1.0",
         "Project": "QOMN-FIRE INTEGRATED EXPORT ENGINE",
@@ -24,33 +26,37 @@ def export_to_revit_json(devices: list[Device], runs: list[ConduitRun], facp: Pa
             "Manufacturer": facp.manufacturer,
             "RequiredBatteryAh": facp.battery_size_ah,
             "PointsUtilization": facp.capacity_utilization,
-            "Signature": facp.signature_hash
+            "Signature": facp.signature_hash,
         },
         "Devices": [],
-        "ConduitRuns": []
+        "ConduitRuns": [],
     }
 
     for d in devices:
-        schema["Devices"].append({
-            "Id": d.id,
-            "type": d.device_type.value,
-            "Location": d.location.to_dict(),
-            "ElevationFt": d.elevation_ft,
-            "Circuit": d.circuit,
-            "Zone": d.zone,
-            "Hash": d.compute_hash()
-        })
+        schema["Devices"].append(
+            {
+                "Id": d.id,
+                "type": d.device_type.value,
+                "Location": d.location.to_dict(),
+                "ElevationFt": d.elevation_ft,
+                "Circuit": d.circuit,
+                "Zone": d.zone,
+                "Hash": d.compute_hash(),
+            }
+        )
 
     for r in runs:
-        schema["ConduitRuns"].append({
-            "Id": r.id,
-            "ConduitType": r.conduit_type.value,
-            "TradeSize": r.trade_size,
-            "TotalLengthFt": r.total_length_ft,
-            "BendCount": r.bend_count,
-            "BendDegrees": r.bend_degrees,
-            "Path": [p.to_dict() for p in r.points],
-            "Hash": r.compute_hash()
-        })
+        schema["ConduitRuns"].append(
+            {
+                "Id": r.id,
+                "ConduitType": r.conduit_type.value,
+                "TradeSize": r.trade_size,
+                "TotalLengthFt": r.total_length_ft,
+                "BendCount": r.bend_count,
+                "BendDegrees": r.bend_degrees,
+                "Path": [p.to_dict() for p in r.points],
+                "Hash": r.compute_hash(),
+            }
+        )
 
     return json.dumps(schema, indent=2, sort_keys=True)

@@ -58,6 +58,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_openaq_adapter_ssrf_rejection(self):
         from fireai.integration.openaq_adapter import OpenAQAdapter
+
         adapter = OpenAQAdapter(base_url="http://169.254.169.254/v3/locations")
         adapter._api_key = "test_key"
         with pytest.raises(SSRFError):
@@ -66,6 +67,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_wildfire_smoke_adapter_ssrf_rejection(self):
         from fireai.integration.wildfire_smoke_adapter import WildfireSmokeAdapter
+
         adapter = WildfireSmokeAdapter(base_url="http://10.0.0.1/v1/forecast")
         with pytest.raises(SSRFError):
             await adapter._fetch(lat=30.0, lon=31.0)
@@ -73,6 +75,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_earthquake_adapter_ssrf_rejection(self):
         from fireai.integration.earthquake_adapter import EarthquakeAdapter
+
         adapter = EarthquakeAdapter(base_url="http://127.0.0.1/fdsnws/event/1/query")
         with pytest.raises(SSRFError):
             await adapter._fetch(lat=30.0, lon=31.0)
@@ -80,6 +83,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_elevation_adapter_ssrf_rejection(self):
         from fireai.integration.elevation_adapter import ElevationAdapter
+
         adapter = ElevationAdapter(base_url="http://192.168.1.1/v1/srtm30m")
         with pytest.raises(SSRFError):
             await adapter._fetch(lat=30.0, lon=31.0)
@@ -87,6 +91,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_ais_vessel_adapter_ssrf_rejection(self):
         from fireai.integration.ais_vessel_adapter import AISVesselAdapter
+
         adapter = AISVesselAdapter(base_url="http://100.100.100.200/ais")
         adapter._api_key = "test_key"
         with pytest.raises(SSRFError):
@@ -95,6 +100,7 @@ class TestAdapterDynamicSSRF:
     @pytest.mark.asyncio
     async def test_geocoding_service_ssrf_rejection(self):
         from backend.services.geocoding_service import GeocodingService
+
         service = GeocodingService()
         service.NOMINATIM_URL = "http://127.0.0.1/search"
         with pytest.raises(SSRFError):
@@ -106,5 +112,6 @@ class TestAgentWebSocketHeartbeat:
 
     def test_ws_heartbeat_constants(self):
         from backend.routers.agent_ws import WS_HEARTBEAT_TIMEOUT_SECONDS, WS_PING_INTERVAL_SECONDS
+
         assert WS_HEARTBEAT_TIMEOUT_SECONDS == 30.0
         assert WS_PING_INTERVAL_SECONDS == 25.0

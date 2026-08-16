@@ -23,10 +23,7 @@ class TestSQLInjectionResilience:
         malicious_name = "Hack'; DROP TABLE projects; --"
 
         # This should succeed as a normal string, NOT execute the drop.
-        project = db.create_project({
-            "name": malicious_name,
-            "description": "SQL Injection Test"
-        })
+        project = db.create_project({"name": malicious_name, "description": "SQL Injection Test"})
 
         # Verify the project exists with the exact malicious string as its name
         fetched = db.get_project(project["id"])
@@ -61,7 +58,8 @@ class TestDatabaseConstraints:
             "type": "smoke_detector",
             "name": "Invalid Device",
             "category": "detection",
-            "x": 0.0, "y": 0.0
+            "x": 0.0,
+            "y": 0.0,
         }
 
         with pytest.raises((sqlite3.IntegrityError, Exception)) as exc_info:
@@ -74,10 +72,7 @@ class TestDatabaseConstraints:
     def test_foreign_key_violation_connection(self) -> None:
         """Verify that connections require an existing project."""
         db = get_db()
-        conn_data = {
-            "fromId": "dev1",
-            "toId": "dev2"
-        }
+        conn_data = {"fromId": "dev1", "toId": "dev2"}
 
         with pytest.raises((sqlite3.IntegrityError, Exception)):
             db.create_connection("invalid_project", conn_data)
@@ -98,20 +93,20 @@ class TestAtomicityAndRollback:
                 # 1. Insert a valid project manually
                 cur.execute(
                     f"INSERT INTO projects (id, name, created_at, updated_at) VALUES ({db._ph()}, {db._ph()}, {db._ph()}, {db._ph()})",
-                    ("atomic_proj_1", "Atomic", "now", "now")
+                    ("atomic_proj_1", "Atomic", "now", "now"),
                 )
 
                 # 2. Insert a valid device
                 cur.execute(
                     f"INSERT INTO devices (id, project_id, type, name, category, x, y, created_at, updated_at) VALUES ({db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, 0, 0, 'now', 'now')",
-                    ("atomic_dev_1", "atomic_proj_1", "type", "name", "cat")
+                    ("atomic_dev_1", "atomic_proj_1", "type", "name", "cat"),
                 )
 
                 # 3. Purposely trigger an error (e.g. division by zero or invalid SQL)
                 cur.execute("INVALID SQL SYNTAX")
 
         except Exception:
-            pass # Expected
+            pass  # Expected
 
         # The entire transaction should have rolled back.
         # Clean up since sqlite3 doesn't cleanly rollback in implicit mode
@@ -119,4 +114,3 @@ class TestAtomicityAndRollback:
 
         # And device count should remain exactly the same as before.
         assert db.get_global_counts()["total_devices"] == initial_devices
-

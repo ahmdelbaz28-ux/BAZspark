@@ -21,6 +21,7 @@ Each test corresponds to a specific bug from the v2 audit report:
   - validate_alarm_circuit_redundancy actual_circuits parameter
   - validate_insulation_monitoring ship parameter + UPS autonomy
 """
+
 from __future__ import annotations
 
 import functools
@@ -77,11 +78,14 @@ from marine.solas.chapter_ii_2 import (
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cargo_ship() -> ShipProject:
     return ShipProject(
-        project_id="R-001", ship_name="Regression Cargo",
-        ship_type=ShipType.CARGO, length_overall_m=120.0,
+        project_id="R-001",
+        ship_name="Regression Cargo",
+        ship_type=ShipType.CARGO,
+        length_overall_m=120.0,
         gross_tonnage=8000.0,
     )
 
@@ -90,17 +94,22 @@ def cargo_ship() -> ShipProject:
 def large_passenger_ship() -> ShipProject:
     """Passenger ship with >36 pax — triggers 24m MVZ limit per SOLAS."""
     return ShipProject(
-        project_id="R-002", ship_name="Big Ferry",
-        ship_type=ShipType.PASSENGER, length_overall_m=120.0,
-        passenger_capacity=500, gross_tonnage=12000.0,
+        project_id="R-002",
+        ship_name="Big Ferry",
+        ship_type=ShipType.PASSENGER,
+        length_overall_m=120.0,
+        passenger_capacity=500,
+        gross_tonnage=12000.0,
     )
 
 
 @pytest.fixture
 def tanker() -> ShipProject:
     return ShipProject(
-        project_id="R-003", ship_name="Regression Tanker",
-        ship_type=ShipType.TANKER, length_overall_m=180.0,
+        project_id="R-003",
+        ship_name="Regression Tanker",
+        ship_type=ShipType.TANKER,
+        length_overall_m=180.0,
         gross_tonnage=25000.0,
     )
 
@@ -108,24 +117,33 @@ def tanker() -> ShipProject:
 @pytest.fixture
 def engine_room_zone() -> MarineZone:
     return MarineZone(
-        zone_id="ER-01", name="Engine Room",
+        zone_id="ER-01",
+        name="Engine Room",
         space_category=SpaceCategory.MACHINERY_SPACE_A,
-        deck="engine_room", frame_start=50, frame_end=80,
-        area_m2=200.0, height_m=6.0,
+        deck="engine_room",
+        frame_start=50,
+        frame_end=80,
+        area_m2=200.0,
+        height_m=6.0,
     )
 
 
 @pytest.fixture
 def escape_route_zone() -> MarineZone:
     return MarineZone(
-        zone_id="ESC-01", name="Corridor A",
+        zone_id="ESC-01",
+        name="Corridor A",
         space_category=SpaceCategory.ESCAPE_ROUTE,
-        deck="A-deck", frame_start=10, frame_end=40,
-        area_m2=50.0, height_m=2.5,
+        deck="A-deck",
+        frame_start=10,
+        frame_end=40,
+        area_m2=50.0,
+        height_m=2.5,
     )
 
 
 # ─── Bug #1: Zone Overlap ────────────────────────────────────────────────────
+
 
 class TestZoneOverlapRegression:
     """
@@ -139,16 +157,14 @@ class TestZoneOverlapRegression:
         for i in range(len(zones) - 1):
             assert zones[i].frame_end == zones[i + 1].frame_start, (
                 f"Zone {zones[i].zone_id} ends at frame {zones[i].frame_end} "
-                f"but zone {zones[i+1].zone_id} starts at frame "
-                f"{zones[i+1].frame_start} — overlap or gap."
+                f"but zone {zones[i + 1].zone_id} starts at frame "
+                f"{zones[i + 1].frame_start} — overlap or gap."
             )
 
     def test_zones_tile_full_length(self, cargo_ship):
         ship_length_m = 199.0
         zones = divide_into_main_vertical_zones(ship_length_m, cargo_ship)
-        total_length = sum(
-            (z.frame_end - z.frame_start) * 0.6 for z in zones
-        )
+        total_length = sum((z.frame_end - z.frame_start) * 0.6 for z in zones)
         # Total should match ship length within rounding (≤ 1 frame = 0.6 m).
         assert abs(total_length - ship_length_m) < 0.7, (
             f"Zones tile {total_length:.2f} m, ship is {ship_length_m} m — "
@@ -158,8 +174,23 @@ class TestZoneOverlapRegression:
     def test_all_zones_under_40m(self, cargo_ship):
         """SOLAS II-2/2.2.1: every MVZ ≤ 40 m. No tolerance for rounding."""
         # Test many edge lengths to catch rounding overshoots.
-        for length in [39.0, 40.0, 41.0, 79.0, 80.0, 81.0, 119.0, 120.0,
-                       121.0, 159.0, 199.0, 200.0, 239.0, 240.0, 241.0]:
+        for length in [
+            39.0,
+            40.0,
+            41.0,
+            79.0,
+            80.0,
+            81.0,
+            119.0,
+            120.0,
+            121.0,
+            159.0,
+            199.0,
+            200.0,
+            239.0,
+            240.0,
+            241.0,
+        ]:
             zones = divide_into_main_vertical_zones(length, cargo_ship)
             for z in zones:
                 zlen = (z.frame_end - z.frame_start) * 0.6
@@ -170,6 +201,7 @@ class TestZoneOverlapRegression:
 
 
 # ─── Bug #12: assign_space_categories field-drop ─────────────────────────────
+
 
 class TestAssignSpaceCategoriesRegression:
     """
@@ -184,14 +216,13 @@ class TestAssignSpaceCategoriesRegression:
         zones = divide_into_main_vertical_zones(120.0, cargo_ship)
         # Force-override one zone to has_escape_route=False using dataclass replace.
         import dataclasses
+
         target = zones[0]
-        zones[0] = dataclasses.replace(target, has_escape_route=False,
-                                       ventilation_rate_ach=8.0,
-                                       hazard_class=None)  # type: ignore[arg-type]
+        zones[0] = dataclasses.replace(
+            target, has_escape_route=False, ventilation_rate_ach=8.0, hazard_class=None
+        )  # type: ignore[arg-type]
         # Now reassign category.
-        updated = assign_space_categories(
-            zones, {zones[0].zone_id: SpaceCategory.CONTROL_STATION}
-        )
+        updated = assign_space_categories(zones, {zones[0].zone_id: SpaceCategory.CONTROL_STATION})
         # The has_escape_route=False MUST be preserved.
         assert updated[0].has_escape_route is False, (
             "has_escape_route was flipped from False to True during "
@@ -204,6 +235,7 @@ class TestAssignSpaceCategoriesRegression:
 
 
 # ─── Bug #3: CO2 safety factor + alternative method ──────────────────────────
+
 
 class TestCO2SizingRegression:
     """
@@ -222,14 +254,21 @@ class TestCO2SizingRegression:
 
     def test_co2_zero_area_raises(self):
         bad_zone = MarineZone(
-            zone_id="Z", name="Empty", space_category=SpaceCategory.MACHINERY_SPACE_A,
-            deck="m", frame_start=0, frame_end=1, area_m2=0.0, height_m=3.0,
+            zone_id="Z",
+            name="Empty",
+            space_category=SpaceCategory.MACHINERY_SPACE_A,
+            deck="m",
+            frame_start=0,
+            frame_end=1,
+            area_m2=0.0,
+            height_m=3.0,
         )
         with pytest.raises(ExtinguishingDesignError):
             size_co2_total_flooding(bad_zone)
 
 
 # ─── Bug #2: Inert gas formula ───────────────────────────────────────────────
+
 
 class TestInertGasRegression:
     """
@@ -241,12 +280,24 @@ class TestInertGasRegression:
     def test_discharge_time_scales_with_volume(self, tanker):
         # Same ship, two different tank sizes → discharge times must differ.
         small = MarineZone(
-            zone_id="TS", name="Small Tank", space_category=SpaceCategory.TANK_SPACE,
-            deck="tanks", frame_start=0, frame_end=10, area_m2=100.0, height_m=10.0,
+            zone_id="TS",
+            name="Small Tank",
+            space_category=SpaceCategory.TANK_SPACE,
+            deck="tanks",
+            frame_start=0,
+            frame_end=10,
+            area_m2=100.0,
+            height_m=10.0,
         )
         large = MarineZone(
-            zone_id="TL", name="Large Tank", space_category=SpaceCategory.TANK_SPACE,
-            deck="tanks", frame_start=0, frame_end=10, area_m2=1000.0, height_m=10.0,
+            zone_id="TL",
+            name="Large Tank",
+            space_category=SpaceCategory.TANK_SPACE,
+            deck="tanks",
+            frame_start=0,
+            frame_end=10,
+            area_m2=1000.0,
+            height_m=10.0,
         )
         d_small = size_inert_gas(small, cargo_discharge_rate_m3_per_hr=250.0)
         d_large = size_inert_gas(large, cargo_discharge_rate_m3_per_hr=250.0)
@@ -258,9 +309,14 @@ class TestInertGasRegression:
     def test_purge_volume_matches_logarithmic_formula(self):
         """For O2 21%→8% with IG O2=4%, purge volume should be ~1.93× tank volume."""
         zone = MarineZone(
-            zone_id="Z", name="Tank", space_category=SpaceCategory.TANK_SPACE,
-            deck="tanks", frame_start=0, frame_end=10,
-            area_m2=100.0, height_m=10.0,  # V=1000 m³
+            zone_id="Z",
+            name="Tank",
+            space_category=SpaceCategory.TANK_SPACE,
+            deck="tanks",
+            frame_start=0,
+            frame_end=10,
+            area_m2=100.0,
+            height_m=10.0,  # V=1000 m³
         )
         # Use very low cargo rate to make discharge time observable; check
         # via the standard_reference string which embeds the purge volume.
@@ -273,9 +329,14 @@ class TestInertGasRegression:
 
     def test_rejects_bad_o2_pct(self, engine_room_zone):
         zone = MarineZone(
-            zone_id="Z", name="Tank", space_category=SpaceCategory.TANK_SPACE,
-            deck="tanks", frame_start=0, frame_end=10,
-            area_m2=100.0, height_m=10.0,
+            zone_id="Z",
+            name="Tank",
+            space_category=SpaceCategory.TANK_SPACE,
+            deck="tanks",
+            frame_start=0,
+            frame_end=10,
+            area_m2=100.0,
+            height_m=10.0,
         )
         # IG O2% must be in [0, 8) — 10% would never achieve ≤8% tank O2.
         with pytest.raises(ExtinguishingDesignError):
@@ -283,6 +344,7 @@ class TestInertGasRegression:
 
 
 # ─── Bug #4, #5: New size_foam_high_expansion and size_afff ──────────────────
+
 
 class TestNewExtinguishingSizers:
     """
@@ -293,10 +355,14 @@ class TestNewExtinguishingSizers:
 
     def test_foam_high_expansion_sizing(self):
         zone = MarineZone(
-            zone_id="ER", name="Engine Room",
+            zone_id="ER",
+            name="Engine Room",
             space_category=SpaceCategory.MACHINERY_SPACE_A,
-            deck="engine", frame_start=0, frame_end=10,
-            area_m2=200.0, height_m=6.0,  # V = 1200 m³
+            deck="engine",
+            frame_start=0,
+            frame_end=10,
+            area_m2=200.0,
+            height_m=6.0,  # V = 1200 m³
         )
         d = size_foam_high_expansion(zone)
         assert d.system_type == ExtinguishingSystem.FOAM_HIGH
@@ -307,10 +373,14 @@ class TestNewExtinguishingSizers:
 
     def test_afff_sizing(self):
         zone = MarineZone(
-            zone_id="HD", name="Helideck",
+            zone_id="HD",
+            name="Helideck",
             space_category=SpaceCategory.OPEN_DECK,
-            deck="heli", frame_start=0, frame_end=10,
-            area_m2=100.0, height_m=1.0,  # area matters for AFFF, not volume
+            deck="heli",
+            frame_start=0,
+            frame_end=10,
+            area_m2=100.0,
+            height_m=1.0,  # area matters for AFFF, not volume
         )
         d = size_afff(zone)
         assert d.system_type == ExtinguishingSystem.AFFF
@@ -322,6 +392,7 @@ class TestNewExtinguishingSizers:
 
 # ─── Bugs #6-#10: PLC script IEC 61131-3 compliance ─────────────────────────
 
+
 class TestPLCScriptRegression:
     """
     Bugs: PLC output used AT %I* (invalid), duplicate VAR declarations,
@@ -331,11 +402,13 @@ class TestPLCScriptRegression:
 
     def _build_nodes(self, engine_room_zone, cargo_ship):
         from marine.iec60092.part_502 import place_detectors_grid
+
         dps = place_detectors_grid(engine_room_zone, DetectorType.HEAT_FIXED)
         # Add a second detector type to force duplicate output declarations.
         dps += place_detectors_grid(engine_room_zone, DetectorType.SMOKE_PHOTOELECTRIC)
         return generate_logic_tree(
-            engine_room_zone, dps,
+            engine_room_zone,
+            dps,
             extinguishing_system=ExtinguishingSystem.WATER_MIST,
         )
 
@@ -355,14 +428,15 @@ class TestPLCScriptRegression:
         decls = []
         for line in script.split("\n"):
             line = line.strip()
-            if line.endswith(": BOOL;") or line.endswith(': TON;'):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+            if line.endswith(": BOOL;") or line.endswith(
+                ": TON;"
+            ):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 # Extract the identifier (first token before space).
                 ident = line.split()[0]
                 decls.append(ident)
         # All declarations must be unique.
         assert len(decls) == len(set(decls)), (
-            f"Duplicate VAR declarations: "
-            f"{[d for d in decls if decls.count(d) > 1]}"
+            f"Duplicate VAR declarations: {[d for d in decls if decls.count(d) > 1]}"
         )
 
     def test_interlock_vars_declared(self, engine_room_zone, cargo_ship):
@@ -370,11 +444,11 @@ class TestPLCScriptRegression:
         script = export_to_plc_script(nodes)
         # For every "AND interlock_X" reference, "interlock_X : BOOL" must be declared.
         import re
+
         and_refs = set(re.findall(r"AND (interlock_\S+)", script))
         for ref in and_refs:
             assert f"{ref} : BOOL" in script, (
-                f"Interlock variable {ref!r} referenced in logic but not "
-                f"declared in VAR section."
+                f"Interlock variable {ref!r} referenced in logic but not declared in VAR section."
             )
 
     def test_no_inline_ton_calls(self, engine_room_zone, cargo_ship):
@@ -394,17 +468,21 @@ class TestPLCScriptRegression:
         of the actually-selected extinguishing system.
         """
         from marine.iec60092.part_502 import place_detectors_grid
+
         dps = place_detectors_grid(engine_room_zone, DetectorType.FLAME_UV_IR)
         # Generate logic with CO2 selected (not water_mist).
         nodes = generate_logic_tree(
-            engine_room_zone, dps,
+            engine_room_zone,
+            dps,
             extinguishing_system=ExtinguishingSystem.CO2_TOTAL,
         )
         # Find the ACTION-level node (flame triggers ACTION).
         action_nodes = [n for n in nodes if n.alarm_level == AlarmLevel.ACTION]
         assert action_nodes, "No ACTION-level node generated for flame detector"
         # The release output must match the selected system (release_co2_total).
-        all_outputs = functools.reduce(operator.iadd, (list(n.action_outputs) for n in action_nodes), [])
+        all_outputs = functools.reduce(
+            operator.iadd, (list(n.action_outputs) for n in action_nodes), []
+        )
         assert "release_co2_total" in all_outputs, (
             f"Expected release_co2_total in outputs, got {all_outputs}"
         )
@@ -416,6 +494,7 @@ class TestPLCScriptRegression:
 
 # ─── Bug #18: Fire-resistance material consistency ───────────────────────────
 
+
 class TestFireResistanceMaterialConsistency:
     """
     Bug: generate_division_specs returned "intumescent_board" for B-15
@@ -426,17 +505,31 @@ class TestFireResistanceMaterialConsistency:
         direct = select_insulation_material(FireClass.B_15)
         # The generate_division_specs path picks via _pick_insulation_material.
         zones = [
-            MarineZone(zone_id="Z1", name="Acc", space_category=SpaceCategory.ACCOMMODATION,
-                       deck="m", frame_start=0, frame_end=10, area_m2=50, height_m=3,
-                       adjacent_zones=("Z2",)),
-            MarineZone(zone_id="Z2", name="Esc", space_category=SpaceCategory.ESCAPE_ROUTE,
-                       deck="m", frame_start=10, frame_end=20, area_m2=50, height_m=3,
-                       adjacent_zones=("Z1",)),
+            MarineZone(
+                zone_id="Z1",
+                name="Acc",
+                space_category=SpaceCategory.ACCOMMODATION,
+                deck="m",
+                frame_start=0,
+                frame_end=10,
+                area_m2=50,
+                height_m=3,
+                adjacent_zones=("Z2",),
+            ),
+            MarineZone(
+                zone_id="Z2",
+                name="Esc",
+                space_category=SpaceCategory.ESCAPE_ROUTE,
+                deck="m",
+                frame_start=10,
+                frame_end=20,
+                area_m2=50,
+                height_m=3,
+                adjacent_zones=("Z1",),
+            ),
         ]
         specs = generate_division_specs(zones)
-        b15_spec = next(
-            (s for s in specs if s.required_class == FireClass.B_15), None
-        )
+        b15_spec = next((s for s in specs if s.required_class == FireClass.B_15), None)
         assert b15_spec is not None, "No B-15 division generated"
         assert b15_spec.insulation_material == direct, (
             f"generate_division_specs returns {b15_spec.insulation_material!r} "
@@ -445,6 +538,7 @@ class TestFireResistanceMaterialConsistency:
 
 
 # ─── Bug #20, #21, #22: ISO 15370 thermal alarm count ────────────────────────
+
 
 class TestThermalAlarmRegression:
     """
@@ -455,14 +549,20 @@ class TestThermalAlarmRegression:
     def test_ceil_not_truncate(self):
         """Area=150 m², spacing=10 m → int(1.5)=1 (wrong), ceil(1.5)=2 (right)."""
         zone = MarineZone(
-            zone_id="ESC", name="Corridor",
+            zone_id="ESC",
+            name="Corridor",
             space_category=SpaceCategory.ESCAPE_ROUTE,
-            deck="A", frame_start=0, frame_end=10,
-            area_m2=150.0, height_m=2.5,
+            deck="A",
+            frame_start=0,
+            frame_end=10,
+            area_m2=150.0,
+            height_m=2.5,
         )
         ship = ShipProject(
-            project_id="T", ship_name="Ferry",
-            ship_type=ShipType.PASSENGER, length_overall_m=80.0,
+            project_id="T",
+            ship_name="Ferry",
+            ship_type=ShipType.PASSENGER,
+            length_overall_m=80.0,
             passenger_capacity=400,
         )
         result = calculate_thermal_alarm_count(zone, ship, route_length_m=15.0)
@@ -473,14 +573,20 @@ class TestThermalAlarmRegression:
 
     def test_route_length_overrides_area(self):
         zone = MarineZone(
-            zone_id="ESC", name="Long Corridor",
+            zone_id="ESC",
+            name="Long Corridor",
             space_category=SpaceCategory.ESCAPE_ROUTE,
-            deck="A", frame_start=0, frame_end=100,
-            area_m2=100.0, height_m=2.5,  # sqrt = 10 m (would give 1 alarm)
+            deck="A",
+            frame_start=0,
+            frame_end=100,
+            area_m2=100.0,
+            height_m=2.5,  # sqrt = 10 m (would give 1 alarm)
         )
         ship = ShipProject(
-            project_id="T", ship_name="Ferry",
-            ship_type=ShipType.PASSENGER, length_overall_m=80.0,
+            project_id="T",
+            ship_name="Ferry",
+            ship_type=ShipType.PASSENGER,
+            length_overall_m=80.0,
             passenger_capacity=400,
         )
         # 50 m corridor / 10 m spacing + 1 = 6 alarms.
@@ -498,16 +604,21 @@ class TestThermalAlarmRegression:
 
     def test_rejects_non_escape_route(self, large_passenger_ship):
         engine_zone = MarineZone(
-            zone_id="ER", name="Engine",
+            zone_id="ER",
+            name="Engine",
             space_category=SpaceCategory.MACHINERY_SPACE_A,
-            deck="m", frame_start=0, frame_end=10,
-            area_m2=200.0, height_m=6.0,
+            deck="m",
+            frame_start=0,
+            frame_end=10,
+            area_m2=200.0,
+            height_m=6.0,
         )
         result = calculate_thermal_alarm_count(engine_zone, large_passenger_ship)
         assert not result.compliant
 
 
 # ─── Bug #23: ETAP UPS units ─────────────────────────────────────────────────
+
 
 class TestETAPBridgeRegression:
     """
@@ -517,20 +628,23 @@ class TestETAPBridgeRegression:
 
     def test_ups_load_is_in_kw(self):
         from marine.core.types import ShipElectricalSpec
+
         spec = ShipElectricalSpec(ups_capacity_ah=100.0, ups_autonomy_min=30.0)
         ship = ShipProject(
-            project_id="T", ship_name="T", ship_type=ShipType.CARGO,
-            length_overall_m=120.0, gross_tonnage=8000.0,
+            project_id="T",
+            ship_name="T",
+            ship_type=ShipType.CARGO,
+            length_overall_m=120.0,
+            gross_tonnage=8000.0,
         )
         csv = export_etap_loads_csv(ship, spec, ups_power_kw=5.0)
         # The UPS row should report 5.00 kW (not 100*0.024=2.40).
         assert "5.00" in csv, "UPS load should be 5.00 kW (ups_power_kw param)"
-        assert "2.40" not in csv, (
-            "UPS load still computed from Ah × 0.024 — kWh labeled as kW."
-        )
+        assert "2.40" not in csv, "UPS load still computed from Ah × 0.024 — kWh labeled as kW."
 
 
 # ─── Bug #24: SCADA dashboard timestamp ──────────────────────────────────────
+
 
 class TestSCADATimestampRegression:
     """
@@ -540,7 +654,8 @@ class TestSCADATimestampRegression:
 
     def test_timestamp_can_be_overridden(self):
         payload = dashboard_payload(
-            "1234567", {"Z1": "normal"},
+            "1234567",
+            {"Z1": "normal"},
             timestamp="2026-12-31T23:59:59Z",
         )
         assert payload["timestamp"] == "2026-12-31T23:59:59Z"
@@ -556,27 +671,55 @@ class TestSCADATimestampRegression:
 
 # ─── Bug #25: Modbus register widths ─────────────────────────────────────────
 
+
 class TestModbusRegisterWidthRegression:
     """Bug: BOOL=1, everything else=2 (wrong for INT=1, STRING=16)."""
 
     def test_int_uses_one_register(self):
         from marine.integration.scada_bridge import SCADATag
-        tags = [SCADATag(tag_id="t", zone_id="z", tag_type="power",
-                         protocol="modbus", address="r", data_type="INT")]
+
+        tags = [
+            SCADATag(
+                tag_id="t",
+                zone_id="z",
+                tag_type="power",
+                protocol="modbus",
+                address="r",
+                data_type="INT",
+            )
+        ]
         regs = build_modbus_registers(tags)
         assert regs[0]["width"] == 1, f"INT should be 1 register, got {regs[0]['width']}"
 
     def test_real_uses_two_registers(self):
         from marine.integration.scada_bridge import SCADATag
-        tags = [SCADATag(tag_id="t", zone_id="z", tag_type="power",
-                         protocol="modbus", address="r", data_type="REAL")]
+
+        tags = [
+            SCADATag(
+                tag_id="t",
+                zone_id="z",
+                tag_type="power",
+                protocol="modbus",
+                address="r",
+                data_type="REAL",
+            )
+        ]
         regs = build_modbus_registers(tags)
         assert regs[0]["width"] == 2, f"REAL should be 2 registers, got {regs[0]['width']}"
 
     def test_string_uses_16_registers(self):
         from marine.integration.scada_bridge import SCADATag
-        tags = [SCADATag(tag_id="t", zone_id="z", tag_type="power",
-                         protocol="modbus", address="r", data_type="STRING")]
+
+        tags = [
+            SCADATag(
+                tag_id="t",
+                zone_id="z",
+                tag_type="power",
+                protocol="modbus",
+                address="r",
+                data_type="STRING",
+            )
+        ]
         regs = build_modbus_registers(tags)
         assert regs[0]["width"] == 16, (
             f"STRING should be 16 registers (32 chars), got {regs[0]['width']}"
@@ -584,6 +727,7 @@ class TestModbusRegisterWidthRegression:
 
 
 # ─── Bugs #26, #27: AutoCAD DXF wrappers + zone offsets ──────────────────────
+
 
 class TestDXFOutputRegression:
     """Bugs: output had no SECTION/EOF wrappers; all zones drawn at (0,0)."""
@@ -603,6 +747,7 @@ class TestDXFOutputRegression:
         # Look for the second zone's start (≥ 1m = 1000 mm forward).
         # Find all "10" X-coordinates in LWPOLYLINEs.
         import re
+
         x_coords = re.findall(r"^10\n(\S+)", dxf, re.MULTILINE)
         x_floats = [float(x) for x in x_coords]
         # At least 2 distinct non-zero coordinates (zones 2+ offset forward).
@@ -613,6 +758,7 @@ class TestDXFOutputRegression:
 
 
 # ─── Bug #17: Passenger-ship 24m MVZ limit ───────────────────────────────────
+
 
 class TestPassengerMVZLimitRegression:
     """
@@ -637,11 +783,16 @@ class TestPassengerMVZLimitRegression:
         # Build a synthetic 30m zone — should fail validation for passenger
         # ships (>24m) but pass for cargo ships (≤40m).
         from marine.core.types import MarineZone, SpaceCategory
+
         long_zone = MarineZone(
-            zone_id="X", name="Long",
+            zone_id="X",
+            name="Long",
             space_category=SpaceCategory.ACCOMMODATION,
-            deck="main", frame_start=0, frame_end=50,  # 50 × 0.6 = 30 m
-            area_m2=300.0, height_m=2.5,
+            deck="main",
+            frame_start=0,
+            frame_end=50,  # 50 × 0.6 = 30 m
+            area_m2=300.0,
+            height_m=2.5,
         )
         result = validate_main_vertical_zones([long_zone], large_passenger_ship)
         assert not result.compliant, (
@@ -654,6 +805,7 @@ class TestPassengerMVZLimitRegression:
 
 # ─── Bug #14: Passenger-ship cargo CO2 requirement ───────────────────────────
 
+
 class TestPassengerCargoCO2Regression:
     """
     Bug: SOLAS II-2/10.7.1.1 requires fixed extinguishing in cargo spaces
@@ -664,16 +816,14 @@ class TestPassengerCargoCO2Regression:
     def test_passenger_ship_cargo_requires_co2(self, large_passenger_ship):
         # Passenger ship with GT=0 (default if not set explicitly).
         # This is a degenerate case but SOLAS still applies.
-        result = required_extinguishing_for_space(
-            SpaceCategory.CARGO_SPACE, large_passenger_ship
-        )
+        result = required_extinguishing_for_space(SpaceCategory.CARGO_SPACE, large_passenger_ship)
         assert "co2_total" in result.details["required_systems"], (
-            "Passenger ship cargo space must require CO2 regardless of GT "
-            "(SOLAS II-2/10.7.1.1)."
+            "Passenger ship cargo space must require CO2 regardless of GT (SOLAS II-2/10.7.1.1)."
         )
 
 
 # ─── Bug #29: validate_alarm_circuit_redundancy ──────────────────────────────
+
 
 class TestAlarmCircuitRedundancyRegression:
     """
@@ -683,20 +833,23 @@ class TestAlarmCircuitRedundancyRegression:
 
     def test_finds_when_actual_below_required(self, engine_room_zone):
         result = validate_alarm_circuit_redundancy(
-            engine_room_zone, detector_count=10, actual_circuits=1,
+            engine_room_zone,
+            detector_count=10,
+            actual_circuits=1,
         )
-        assert not result.compliant, (
-            "1 circuit for 10 detectors should fail IEC 60092-502 §6.3.2."
-        )
+        assert not result.compliant, "1 circuit for 10 detectors should fail IEC 60092-502 §6.3.2."
 
     def test_passes_when_actual_meets_required(self, engine_room_zone):
         result = validate_alarm_circuit_redundancy(
-            engine_room_zone, detector_count=10, actual_circuits=2,
+            engine_room_zone,
+            detector_count=10,
+            actual_circuits=2,
         )
         assert result.compliant
 
 
 # ─── Bug #30: validate_insulation_monitoring ─────────────────────────────────
+
 
 class TestInsulationMonitoringRegression:
     """
@@ -706,9 +859,9 @@ class TestInsulationMonitoringRegression:
 
     def test_non_tanker_missing_imd_is_warning_not_finding(self, cargo_ship):
         from marine.core.types import ShipElectricalSpec
+
         # IMD disabled.
-        spec = ShipElectricalSpec(insulation_monitoring=False,
-                                  ups_autonomy_min=30.0)
+        spec = ShipElectricalSpec(insulation_monitoring=False, ups_autonomy_min=30.0)
         result = validate_insulation_monitoring(spec, cargo_ship)
         # For non-tankers, missing IMD should be WARNING, not FINDING.
         assert result.compliant, (
@@ -718,8 +871,8 @@ class TestInsulationMonitoringRegression:
 
     def test_tanker_missing_imd_is_finding(self, tanker):
         from marine.core.types import ShipElectricalSpec
-        spec = ShipElectricalSpec(insulation_monitoring=False,
-                                  ups_autonomy_min=30.0)
+
+        spec = ShipElectricalSpec(insulation_monitoring=False, ups_autonomy_min=30.0)
         result = validate_insulation_monitoring(spec, tanker)
         assert not result.compliant, (
             "Tanker with missing IMD must be non-compliant per IEC 60092-504 §5."
@@ -727,11 +880,9 @@ class TestInsulationMonitoringRegression:
 
     def test_low_ups_autonomy_is_finding(self, cargo_ship):
         from marine.core.types import ShipElectricalSpec
+
         # UPS autonomy 15 min < 30 min SOLAS minimum.
-        spec = ShipElectricalSpec(insulation_monitoring=True,
-                                  ups_autonomy_min=15.0)
+        spec = ShipElectricalSpec(insulation_monitoring=True, ups_autonomy_min=15.0)
         result = validate_insulation_monitoring(spec, cargo_ship)
-        assert not result.compliant, (
-            "UPS autonomy 15 min < SOLAS 30 min minimum must be a finding."
-        )
+        assert not result.compliant, "UPS autonomy 15 min < SOLAS 30 min minimum must be a finding."
         assert any("UPS autonomy" in f for f in result.findings)

@@ -1,5 +1,6 @@
 # NOSONAR
 """Engine Pool for L3 in Distributed FACP System"""
+
 import logging
 import threading
 import time
@@ -25,7 +26,7 @@ class EnginePool:
         self.last_scaling_decision = time.time()
         self.scaling_interval = 60  # seconds between scaling decisions
         self.load_threshold_high = 0.8  # Scale up when load exceeds this
-        self.load_threshold_low = 0.3   # Scale down when load falls below this
+        self.load_threshold_low = 0.3  # Scale down when load falls below this
         self.current_size = 0
 
     def initialize(self):
@@ -43,17 +44,24 @@ class EnginePool:
 
             self.current_size = self.initial_size
             self.is_initialized = True
-            self.logger.info("Engine Pool %s initialized with %s workers", self.pool_id, self.current_size)
+            self.logger.info(
+                "Engine Pool %s initialized with %s workers", self.pool_id, self.current_size
+            )
 
     def _create_worker(self, worker_name: str) -> EngineWorker:
         """Create a new engine worker"""
         return EngineWorker(
             worker_id=worker_name,
             capabilities=[
-                "engine.calculate", "engine.validate", "engine.transform",
-                "calc.*", "analysis.*", "validation.*", "transform.*"
+                "engine.calculate",
+                "engine.validate",
+                "engine.transform",
+                "calc.*",
+                "analysis.*",
+                "validation.*",
+                "transform.*",
             ],
-            max_concurrent_tasks=5
+            max_concurrent_tasks=5,
         )
 
     def get_available_worker(self) -> EngineWorker | None:
@@ -66,7 +74,7 @@ class EnginePool:
 
             # If no idle workers, return the least busy one
             least_busy = None
-            min_load = float('inf')
+            min_load = float("inf")
 
             for _worker_id, worker in self.active_workers.items():
                 status = worker.get_worker_status()
@@ -93,14 +101,14 @@ class EnginePool:
                     "status": "error",
                     "error": {
                         "code": "NO_AVAILABLE_WORKERS",
-                        "message": "No available engine workers in pool"
+                        "message": "No available engine workers in pool",
                     },
                     "trace": {
                         "execution_path": ["L3_EnginePool"],
                         "latency_ms": 0,
                         "pool_id": self.pool_id,
-                        "engine_version": "FACP/1.1"
-                    }
+                        "engine_version": "FACP/1.1",
+                    },
                 }
 
         # Process the request with the selected worker
@@ -163,7 +171,9 @@ class EnginePool:
                 del self.worker_status[worker_to_remove.worker_id]
 
                 # Remove from main workers list
-                self.workers = [w for w in self.workers if w.worker_id != worker_to_remove.worker_id]
+                self.workers = [
+                    w for w in self.workers if w.worker_id != worker_to_remove.worker_id
+                ]
 
                 self.current_size -= 1
                 self.logger.info("Engine Pool scaled down to %s workers", self.current_size)
@@ -220,10 +230,16 @@ class EnginePool:
                 "initial_size": self.initial_size,
                 "max_size": self.max_size,
                 "worker_statuses": worker_statuses,
-                "average_load": sum(ws["current_tasks"] / ws["max_concurrent_tasks"] for ws in worker_statuses.values()
-                                  if ws["max_concurrent_tasks"] > 0) / len(worker_statuses) if worker_statuses else 0,
+                "average_load": sum(
+                    ws["current_tasks"] / ws["max_concurrent_tasks"]
+                    for ws in worker_statuses.values()
+                    if ws["max_concurrent_tasks"] > 0
+                )
+                / len(worker_statuses)
+                if worker_statuses
+                else 0,
                 "initialized": self.is_initialized,
-                "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
+                "uptime_seconds": time.time() - getattr(self, "start_time", time.time()),
             }
 
     def get_worker_statistics(self) -> dict[str, Any]:
@@ -274,8 +290,12 @@ class EnginePool:
                 "total_queue_size": total_queue_size,
                 "total_max_queue_size": total_max_queue_size,
                 "total_tasks_waiting": total_tasks_waiting,
-                "average_queue_size_per_worker": total_queue_size / len(self.active_workers) if self.active_workers else 0,
-                "pool_congestion_ratio": total_queue_size / total_max_queue_size if total_max_queue_size > 0 else 0
+                "average_queue_size_per_worker": total_queue_size / len(self.active_workers)
+                if self.active_workers
+                else 0,
+                "pool_congestion_ratio": total_queue_size / total_max_queue_size
+                if total_max_queue_size > 0
+                else 0,
             }
 
     def add_worker_capability(self, capability: str):
@@ -314,22 +334,27 @@ class EnginePool:
                     "min_load": min(loads.values()),
                     "max_load": max(loads.values()),
                     "avg_load": sum(loads.values()) / len(loads),
-                    "std_dev_load": (sum((load - sum(loads.values())/len(loads))**2 for load in loads.values()) / len(loads))**0.5 if loads else 0
+                    "std_dev_load": (
+                        sum(
+                            (load - sum(loads.values()) / len(loads)) ** 2
+                            for load in loads.values()
+                        )
+                        / len(loads)
+                    )
+                    ** 0.5
+                    if loads
+                    else 0,
                 }
-            return {
-                "loads": {},
-                "min_load": 0,
-                "max_load": 0,
-                "avg_load": 0,
-                "std_dev_load": 0
-            }
+            return {"loads": {}, "min_load": 0, "max_load": 0, "avg_load": 0, "std_dev_load": 0}
 
     def rebalance_load(self):
         """Rebalance load across workers if there's significant imbalance"""
         load_stats = self.get_load_distribution()
 
         if load_stats["std_dev_load"] > 0.3:  # If there's significant load imbalance
-            self.logger.info("Load rebalancing initiated. Current std dev: %.2f", load_stats['std_dev_load'])
+            self.logger.info(
+                "Load rebalancing initiated. Current std dev: %.2f", load_stats["std_dev_load"]
+            )
             # In a real implementation, this would redistribute tasks among workers
             # For now, we'll just log the action
             pass  # NOSONAR - python:S2772

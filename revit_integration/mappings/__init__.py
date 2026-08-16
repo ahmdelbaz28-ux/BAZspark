@@ -6,6 +6,7 @@ Mapping engine for Revit categories to ETAP models.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from .category_mapper import CategoryMapper
 
 # Note: Other mappers (ElectricalEquipmentMapper, SpatialMapper, GeometryMapper)
@@ -15,7 +16,7 @@ from .category_mapper import CategoryMapper
 # from .geometry_mapper import GeometryMapper
 
 __all__ = [
-    'CategoryMapper',
+    "CategoryMapper",
     # 'ElectricalEquipmentMapper',
     # 'SpatialMapper',
     # 'GeometryMapper'

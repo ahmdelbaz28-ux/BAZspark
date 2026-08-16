@@ -74,7 +74,7 @@ class ConnectionManager:
         # rejected at IP limit, or a test mock without 'client' attr).
         # Without this, disconnect() raises AttributeError, preventing cleanup
         # of active_connections and _subscriptions — memory leak.
-        client = getattr(websocket, 'client', None)
+        client = getattr(websocket, "client", None)
         if client:
             return client.host
         return "unknown"
@@ -131,7 +131,11 @@ class ConnectionManager:
             if not self._ip_connections[client_ip]:
                 del self._ip_connections[client_ip]
 
-        logger.info("WebSocket client disconnected from %s. Total: %s", client_ip, len(self.active_connections))
+        logger.info(
+            "WebSocket client disconnected from %s. Total: %s",
+            client_ip,
+            len(self.active_connections),
+        )
 
     def subscribe(self, websocket: WebSocket, project_id: str) -> None:
         """Subscribe a connection to updates for a specific project."""
@@ -169,11 +173,14 @@ manager = ConnectionManager()
 
 # ── Sync endpoints ──────────────────────────────────────────────────────────
 
+
 def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
 @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
@@ -184,11 +191,14 @@ async def sync_project(request: Request, project_id: str):
     db = get_db()
 
     # Set status to syncing
-    db.set_sync_status(project_id, {
-        "status": "syncing",
-        "lastSync": datetime.now(UTC).isoformat(),
-        "pendingChanges": 0,
-    })
+    db.set_sync_status(
+        project_id,
+        {
+            "status": "syncing",
+            "lastSync": datetime.now(UTC).isoformat(),
+            "pendingChanges": 0,
+        },
+    )
 
     # database consistency check — it re-reads all devices + connections
     # and updates sync_status with real counts. It does NOT sync with
@@ -201,32 +211,41 @@ async def sync_project(request: Request, project_id: str):
     try:
         devices = db.get_all_devices_for_project(project_id)
         connections = db.get_all_connections_for_project(project_id)
-        db.set_sync_status(project_id, {
-            "status": "syncing",
-            "lastSync": datetime.now(UTC).isoformat(),
-            "pendingChanges": 0,
-            "deviceCount": len(devices),
-            "connectionCount": len(connections),
-        })
+        db.set_sync_status(
+            project_id,
+            {
+                "status": "syncing",
+                "lastSync": datetime.now(UTC).isoformat(),
+                "pendingChanges": 0,
+                "deviceCount": len(devices),
+                "connectionCount": len(connections),
+            },
+        )
     except Exception as sync_err:
         logger.warning("DB sync read failed (non-fatal): %s", sync_err)
 
     # Mark as synced
     now = datetime.now(UTC).isoformat()
-    db.set_sync_status(project_id, {
-        "status": "synced",
-        "lastSync": now,
-        "pendingChanges": 0,
-    })
+    db.set_sync_status(
+        project_id,
+        {
+            "status": "synced",
+            "lastSync": now,
+            "pendingChanges": 0,
+        },
+    )
 
     sync_status = db.get_sync_status(project_id)
 
     # Broadcast sync completion via WebSocket
-    await manager.send_to_project(project_id, {
-        "channel": "sync",
-        "type": "sync_completed",
-        "data": sync_status,
-    })
+    await manager.send_to_project(
+        project_id,
+        {
+            "channel": "sync",
+            "type": "sync_completed",
+            "data": sync_status,
+        },
+    )
 
     return {"data": sync_status, "success": True}
 
@@ -241,6 +260,7 @@ async def get_sync_status(project_id: str):
 
 
 # ── WebSocket endpoint ─────────────────────────────────────────────────────
+
 
 def _validate_ws_origin(websocket: WebSocket) -> bool:
     """
@@ -298,7 +318,9 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     return False
 
 
-def _validate_ws_api_key(_websocket: WebSocket) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+def _validate_ws_api_key(
+    _websocket: WebSocket,
+) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Check if the WebSocket connection provides a valid API key.
 
@@ -322,7 +344,9 @@ def _validate_ws_api_key(_websocket: WebSocket) -> bool:  # NOSONAR — S1172: p
 
 
 @ws_router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def websocket_endpoint(
+    websocket: WebSocket,
+) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     WebSocket endpoint for real-time project updates.
 
@@ -392,7 +416,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
 
     # If auth is required, try X-API-Key header FIRST, fall back to message auth
     if needs_auth:
-        header_api_key = websocket.headers.get("x-api-key", "") or websocket.headers.get("X-API-Key", "")
+        header_api_key = websocket.headers.get("x-api-key", "") or websocket.headers.get(
+            "X-API-Key", ""
+        )
         env_key = os.getenv("FIREAI_API_KEY")
         if header_api_key:
             # Validate header key against RBAC store and env var
@@ -406,11 +432,13 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                 # the response to their first action (e.g. pong for ping).
                 pass
             else:
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "auth_failed",
-                    "data": {"error": "Invalid API key in X-API-Key header"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "auth_failed",
+                        "data": {"error": "Invalid API key in X-API-Key header"},
+                    }
+                )
                 await websocket.close(code=4003, reason="Authentication failed")
                 return
         else:
@@ -425,25 +453,31 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                 rbac_info = validate_api_key(api_key_candidate)
                 env_match = bool(env_key) and _hmac.compare_digest(api_key_candidate, env_key)
                 if message.get("action") == "auth" and (rbac_info is not None or env_match):
-                    await websocket.send_json({
-                        "channel": "system",
-                        "type": "auth_success",
-                        "data": {"message": "Authenticated"},
-                    })
+                    await websocket.send_json(
+                        {
+                            "channel": "system",
+                            "type": "auth_success",
+                            "data": {"message": "Authenticated"},
+                        }
+                    )
                 else:
-                    await websocket.send_json({
-                        "channel": "system",
-                        "type": "auth_failed",
-                        "data": {"error": "Invalid API key"},
-                    })
+                    await websocket.send_json(
+                        {
+                            "channel": "system",
+                            "type": "auth_failed",
+                            "data": {"error": "Invalid API key"},
+                        }
+                    )
                     await websocket.close(code=4003, reason="Authentication failed")
                     return
             except (TimeoutError, json.JSONDecodeError):
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "auth_timeout",
-                    "data": {"error": "Authentication required within 5 seconds"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "auth_timeout",
+                        "data": {"error": "Authentication required within 5 seconds"},
+                    }
+                )
                 await websocket.close(code=4003, reason="Authentication timeout")
                 return
 
@@ -468,41 +502,49 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
             try:
                 message = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json({
-                    "channel": "error",
-                    "type": "invalid_message",
-                    "data": {"error": "Invalid JSON"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "error",
+                        "type": "invalid_message",
+                        "data": {"error": "Invalid JSON"},
+                    }
+                )
                 continue
 
             action = message.get("action", "")
             if action == "ping":
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "pong",
-                    "data": {"timestamp": datetime.now(UTC).isoformat()},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "pong",
+                        "data": {"timestamp": datetime.now(UTC).isoformat()},
+                    }
+                )
             elif action == "subscribe":
                 project_id = message.get("projectId", "")
                 if project_id:
                     manager.subscribe(websocket, project_id)
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "subscribed",
-                    "data": {"projectId": project_id},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "subscribed",
+                        "data": {"projectId": project_id},
+                    }
+                )
             elif action == "get_status":
                 # Allow client to request project status via WebSocket
                 project_id = message.get("projectId", "")
                 if project_id:
                     db = get_db()
                     sync_status = db.get_sync_status(project_id)
-                    await websocket.send_json({
-                        "channel": "sync",
-                        "type": "status",
-                        "data": sync_status,
-                        "projectId": project_id,
-                    })
+                    await websocket.send_json(
+                        {
+                            "channel": "sync",
+                            "type": "status",
+                            "data": sync_status,
+                            "projectId": project_id,
+                        }
+                    )
 
     except TimeoutError:
         logger.warning(f"WebSocket client {client_ip} timed out after 30s of inactivity")

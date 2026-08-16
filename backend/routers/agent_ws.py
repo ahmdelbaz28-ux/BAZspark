@@ -76,13 +76,9 @@ def _validate_origin(origin: str) -> bool:
         "CORS_ALLOWED_ORIGINS",
         "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
     )
-    allowed_origins = [
-        o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()
-    ]
+    allowed_origins = [o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()]
     origin_clean = origin.strip().lower()
-    return any(
-        origin_clean == o or origin_clean.startswith(o) for o in allowed_origins
-    )
+    return any(origin_clean == o or origin_clean.startswith(o) for o in allowed_origins)
 
 
 async def _extract_and_validate_api_key(
@@ -95,9 +91,7 @@ async def _extract_and_validate_api_key(
     """
     api_key = _extract_api_key_from_handshake(websocket)
     if not api_key:
-        logger.warning(
-            "Rejected agent connection: no API key in headers/subprotocol"
-        )
+        logger.warning("Rejected agent connection: no API key in headers/subprotocol")
         await websocket.close(code=4003)
         return None, ""
 
@@ -139,7 +133,6 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
     return await _extract_and_validate_api_key(websocket)
 
 
-
 def _register_agent(websocket: WebSocket, agent_type: str) -> None:
     """Register an active agent connection.
 
@@ -156,8 +149,7 @@ def _register_agent(websocket: WebSocket, agent_type: str) -> None:
         if existing is websocket:
             continue
         logger.warning(
-            "Replacing existing agent connection for type=%s "
-            "(newest connection wins)",
+            "Replacing existing agent connection for type=%s (newest connection wins)",
             agent_type,
         )
         _cleanup_agent(existing, agent_type)
@@ -230,9 +222,7 @@ async def _revalidate_api_key(api_key: str) -> bool:
     """Return ``True`` if *api_key* is still valid and carries the required permission."""
     try:
         info = validate_api_key(api_key)
-        return info is not None and has_permission(
-            info.role, Permission.CALCULATION_EXECUTE
-        )
+        return info is not None and has_permission(info.role, Permission.CALCULATION_EXECUTE)
     except Exception:
         return False
 
@@ -255,9 +245,7 @@ async def _check_api_key_revoked(websocket: WebSocket, api_key: str) -> bool:
     """Re-authenticate API key; close socket and return True if revoked."""
     if not api_key or await _revalidate_api_key(api_key):
         return False
-    logger.warning(
-        "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
-    )
+    logger.warning("Agent WebSocket heartbeat: API key revoked or expired — terminating connection")
     await websocket.close(code=4003)
     return True
 
@@ -285,7 +273,9 @@ async def _safe_close_websocket(websocket: WebSocket, code: int) -> None:
         pass
 
 
-def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[str, bool], Callable[[], Coroutine[Any, Any, None]]]:
+def _run_heartbeat_loop(
+    websocket: WebSocket, api_key: str = ""
+) -> tuple[dict[str, bool], Callable[[], Coroutine[Any, Any, None]]]:
     """Active ping/pong heartbeat loop with periodic token re-authentication.
 
     Sends a ping every WS_PING_INTERVAL_SECONDS. After sending, waits up
@@ -314,7 +304,6 @@ def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[s
     return _pong_received, _ping_cycle
 
 
-
 @router.websocket("/ws")
 async def agent_websocket_endpoint(websocket: WebSocket):
     """
@@ -338,7 +327,6 @@ async def agent_websocket_endpoint(websocket: WebSocket):
 
     pong_flag, ping_cycle_fn = _run_heartbeat_loop(websocket, api_key=raw_api_key)
 
-
     async def _message_loop() -> None:
         while True:
             data = await websocket.receive_text()
@@ -360,8 +348,6 @@ async def agent_websocket_endpoint(websocket: WebSocket):
         logger.warning("Agent WebSocket session ended: %s", e)
     finally:
         _cleanup_agent(websocket, agent_type)
-
-
 
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:

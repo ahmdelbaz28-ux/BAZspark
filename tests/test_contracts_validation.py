@@ -33,6 +33,7 @@ from fireai.core.contracts_validation import (
 # ContractViolation Exception
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestContractViolation:
     """Test the ContractViolation exception class."""
 
@@ -74,6 +75,7 @@ class TestContractViolation:
 
 # _has_nan_inf
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestHasNanInf:
     """Test recursive NaN/Inf detection in nested data structures."""
@@ -178,6 +180,7 @@ class TestHasNanInf:
 # _validate_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestValidatePolygon:
     """Test polygon structure validation."""
 
@@ -241,6 +244,7 @@ class TestValidatePolygon:
 # _compute_area_from_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestComputeAreaFromPolygon:
     """Test Shoelace formula area computation."""
 
@@ -258,6 +262,7 @@ class TestComputeAreaFromPolygon:
 
     def test_equilateral_triangle(self):
         import math as _math
+
         # Side length 2, area = sqrt(3)
         polygon = [[0, 0], [2, 0], [1, _math.sqrt(3)]]
         assert _compute_area_from_polygon(polygon) == pytest.approx(_math.sqrt(3))
@@ -268,9 +273,15 @@ class TestComputeAreaFromPolygon:
         assert _compute_area_from_polygon(polygon) == pytest.approx(50.0)
 
     def test_degenerate_polygon_less_than_3_vertices(self):
-        assert _compute_area_from_polygon([]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _compute_area_from_polygon([[0, 0]]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _compute_area_from_polygon([[0, 0], [1, 1]]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _compute_area_from_polygon([]) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _compute_area_from_polygon([[0, 0]]) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _compute_area_from_polygon([[0, 0], [1, 1]]) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_large_polygon(self):
         # L-shaped polygon (counterclockwise)
@@ -282,10 +293,10 @@ class TestComputeAreaFromPolygon:
         # Regular pentagon with circumradius 1
         # Not testing exact value, just that it's positive and reasonable
         import math as _math
+
         n = 5
         polygon = [
-            [_math.cos(2 * _math.pi * i / n), _math.sin(2 * _math.pi * i / n)]
-            for i in range(n)
+            [_math.cos(2 * _math.pi * i / n), _math.sin(2 * _math.pi * i / n)] for i in range(n)
         ]
         area = _compute_area_from_polygon(polygon)
         expected = 0.5 * n * _math.sin(2 * _math.pi / n)  # area of regular polygon R=1
@@ -295,6 +306,7 @@ class TestComputeAreaFromPolygon:
 # ═══════════════════════════════════════════════════════════════════════════════
 # validate_room_input — Valid Payloads
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestValidateRoomInputValid:
     """Test valid room input payloads."""
@@ -314,7 +326,9 @@ class TestValidateRoomInputValid:
         result = validate_room_input(self._base_payload())
         assert result["room_id"] == "R-101"
         assert result["detector_type"] == "smoke"
-        assert result["ceiling_height_m"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["ceiling_height_m"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result["area_m2"] == pytest.approx(50.0)
 
     def test_complete_payload_with_all_optional_fields(self):
@@ -324,7 +338,9 @@ class TestValidateRoomInputValid:
             occupancy_type="warehouse",
         )
         result = validate_room_input(payload)
-        assert result["area_m2"] == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["area_m2"] == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result["ceiling_type"] == "sloped"
         assert result["occupancy_type"] == "warehouse"
 
@@ -351,7 +367,9 @@ class TestValidateRoomInputValid:
     def test_default_occupancy_type_is_office(self):
         result = validate_room_input(self._base_payload())
         assert result["occupancy_type"] == "office"
-        assert any("occupancy_type defaulted to 'office'" in w for w in result["_contract_warnings"])
+        assert any(
+            "occupancy_type defaulted to 'office'" in w for w in result["_contract_warnings"]
+        )
 
     def test_area_computed_from_polygon_when_not_provided(self):
         # 10×5 rectangle = 50 m²
@@ -362,13 +380,17 @@ class TestValidateRoomInputValid:
     def test_provided_area_m2_preserved(self):
         payload = self._base_payload(area_m2=48.5)
         result = validate_room_input(payload)
-        assert result["area_m2"] == 48.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["area_m2"] == 48.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_provided_area_m2_integer_converted_to_float(self):
         payload = self._base_payload(area_m2=50)
         result = validate_room_input(payload)
         assert isinstance(result["area_m2"], float)
-        assert result["area_m2"] == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["area_m2"] == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_contract_warnings_populated(self):
         result = validate_room_input(self._base_payload())
@@ -387,6 +409,7 @@ class TestValidateRoomInputValid:
 # validate_room_input — Invalid Payloads (ContractViolation)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestValidateRoomInputInvalid:
     """Test that invalid payloads raise ContractViolation."""
 
@@ -404,12 +427,16 @@ class TestValidateRoomInputInvalid:
 
     def test_non_dict_payload(self):
         with pytest.raises(ContractViolation) as exc_info:
-            validate_room_input("not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_room_input(
+                "not a dict"
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert exc_info.value.field == "payload"
 
     def test_list_payload(self):
         with pytest.raises(ContractViolation) as exc_info:
-            validate_room_input([1, 2, 3])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            validate_room_input(
+                [1, 2, 3]
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert exc_info.value.field == "payload"
 
     # ── Missing required fields ────────────────────────────────────────────
@@ -445,112 +472,152 @@ class TestValidateRoomInputInvalid:
     # ── Invalid room_id ────────────────────────────────────────────────────
 
     def test_empty_room_id(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_id=""))
         assert exc_info.value.field == "room_id"
 
     def test_whitespace_only_room_id(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_id="   "))
         assert exc_info.value.field == "room_id"
 
     def test_non_string_room_id(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_id=123))
         assert exc_info.value.field == "room_id"
 
     def test_none_room_id(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_id=None))
         assert exc_info.value.field == "room_id"
 
     # ── Invalid ceiling_height_m ───────────────────────────────────────────
 
     def test_negative_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=-1.5))
         assert exc_info.value.field == "ceiling_height_m"
         assert exc_info.value.value == -1.5
 
     def test_zero_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=0))
         assert exc_info.value.field == "ceiling_height_m"
         assert "positive" in str(exc_info.value)
 
     def test_nan_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=float("nan")))
         # NaN is caught at Step 1 (NaN/Inf detection) before type validation
         assert "NaN" in str(exc_info.value) or "Inf" in str(exc_info.value)
 
     def test_inf_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=float("inf")))
         assert "Inf" in str(exc_info.value)
 
     def test_negative_inf_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=float("-inf")))
         assert "Inf" in str(exc_info.value)
 
     def test_string_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m="three"))
         assert exc_info.value.field == "ceiling_height_m"
 
     def test_none_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=None))
         assert exc_info.value.field == "ceiling_height_m"
 
     def test_list_ceiling_height(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=[3.0]))
         assert exc_info.value.field == "ceiling_height_m"
 
     # ── Invalid detector_type ──────────────────────────────────────────────
 
     def test_invalid_detector_type_string(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(detector_type="flame"))
         assert exc_info.value.field == "detector_type"
 
     def test_empty_detector_type(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(detector_type=""))
         assert exc_info.value.field == "detector_type"
 
     def test_non_string_detector_type(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(detector_type=42))
         assert exc_info.value.field == "detector_type"
 
     def test_none_detector_type(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(detector_type=None))
         assert exc_info.value.field == "detector_type"
 
     # ── Invalid polygon ────────────────────────────────────────────────────
 
     def test_polygon_less_than_3_vertices(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon=[[0, 0], [1, 1]]))
         assert exc_info.value.field == "room_polygon"
 
     def test_empty_polygon(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon=[]))
         assert exc_info.value.field == "room_polygon"
 
     def test_non_list_polygon_short_string(self):
         """A short string (len < 3) triggers the < 3 vertices check."""
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon="ab"))
         assert exc_info.value.field == "room_polygon"
 
     def test_dict_polygon(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon={"a": 1}))
         assert exc_info.value.field == "room_polygon"
 
@@ -561,13 +628,16 @@ class TestValidateRoomInputInvalid:
         of coordinate pairs. The source only raises ContractViolation for
         < 3 vertices; non-list polygons with len >= 3 slip through.
         """
-        with pytest.raises((ContractViolation, ValueError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            (ContractViolation, ValueError)
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon="bad"))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # validate_room_input — NaN/Inf Safety-Critical Paths
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestValidateRoomInputNanInfSafety:
     """SAFETY CRITICAL: NaN/Inf MUST be caught — they bypass safety checks."""
@@ -583,34 +653,46 @@ class TestValidateRoomInputNanInfSafety:
         return payload
 
     def test_nan_in_ceiling_height_rejected(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=float("nan")))
         assert "NaN" in str(exc_info.value)
 
     def test_inf_in_ceiling_height_rejected(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(ceiling_height_m=float("inf")))
         assert "Inf" in str(exc_info.value)
 
     def test_nan_in_polygon_vertex_rejected(self):
         polygon = [[0, 0], [float("nan"), 0], [10, 5], [0, 5]]
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon=polygon))
         assert "NaN" in str(exc_info.value)
 
     def test_inf_in_polygon_vertex_rejected(self):
         polygon = [[0, 0], [10, float("inf")], [10, 5], [0, 5]]
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(room_polygon=polygon))
         assert "Inf" in str(exc_info.value)
 
     def test_nan_in_provided_area_m2_rejected(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(area_m2=float("nan")))
         assert "NaN" in str(exc_info.value)
 
     def test_inf_in_provided_area_m2_rejected(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(area_m2=float("inf")))
         assert "Inf" in str(exc_info.value)
 
@@ -633,6 +715,7 @@ class TestValidateRoomInputNanInfSafety:
 # validate_room_input — Area Computation & Validation
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestValidateRoomInputArea:
     """Test area computation and validation within validate_room_input."""
 
@@ -653,9 +736,7 @@ class TestValidateRoomInputArea:
 
     def test_triangle_area_computed(self):
         """Right triangle 4×3 → area = 6 m²."""
-        payload = self._base_payload(
-            room_polygon=[[0, 0], [4, 0], [0, 3]]
-        )
+        payload = self._base_payload(room_polygon=[[0, 0], [4, 0], [0, 3]])
         result = validate_room_input(payload)
         assert result["area_m2"] == pytest.approx(6.0)
 
@@ -664,18 +745,24 @@ class TestValidateRoomInputArea:
         payload = self._base_payload(area_m2=99.0)
         result = validate_room_input(payload)
         # Provided area is used, NOT computed
-        assert result["area_m2"] == 99.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["area_m2"] == 99.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_area_m2_rejected(self):
         """Negative area is physically impossible."""
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(area_m2=-5.0))
         assert exc_info.value.field == "area_m2"
         assert "positive" in str(exc_info.value)
 
     def test_zero_area_m2_rejected(self):
         """Zero area means no detectors can be placed."""
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(area_m2=0))
         assert exc_info.value.field == "area_m2"
 
@@ -691,15 +778,15 @@ class TestValidateRoomInputArea:
         assert "zero or negative area" in str(exc_info.value)
 
     def test_string_area_m2_rejected(self):
-        with pytest.raises(ContractViolation) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ContractViolation
+        ) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             validate_room_input(self._base_payload(area_m2="fifty"))
         assert exc_info.value.field == "area_m2"
 
     def test_zero_area_polygon_rejected(self):
         """A polygon where all vertices coincide has zero area."""
-        payload = self._base_payload(
-            room_polygon=[[1, 1], [1, 1], [1, 1], [1, 1]]
-        )
+        payload = self._base_payload(room_polygon=[[1, 1], [1, 1], [1, 1], [1, 1]])
         with pytest.raises(ContractViolation) as exc_info:
             validate_room_input(payload)
         assert "zero or negative area" in str(exc_info.value)
@@ -708,6 +795,7 @@ class TestValidateRoomInputArea:
 # ═══════════════════════════════════════════════════════════════════════════════
 # validate_room_input — Defaults & Warnings
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestValidateRoomInputDefaultsAndWarnings:
     """Test default value injection and _contract_warnings."""
@@ -754,7 +842,9 @@ class TestValidateRoomInputDefaultsAndWarnings:
 
     def test_contract_warnings_includes_occupancy_type_default(self):
         result = validate_room_input(self._base_payload())
-        assert any("occupancy_type defaulted to 'office'" in w for w in result["_contract_warnings"])
+        assert any(
+            "occupancy_type defaulted to 'office'" in w for w in result["_contract_warnings"]
+        )
 
     def test_unknown_ceiling_type_produces_warning(self):
         """An unrecognized ceiling_type is allowed but flagged with a warning."""
@@ -790,6 +880,7 @@ class TestValidateRoomInputDefaultsAndWarnings:
 # validate_room_input — Edge Cases
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestValidateRoomInputEdgeCases:
     """Test edge cases and boundary conditions."""
 
@@ -806,12 +897,16 @@ class TestValidateRoomInputEdgeCases:
     def test_very_small_positive_ceiling_height(self):
         """Extremely small but positive ceiling height is technically valid."""
         result = validate_room_input(self._base_payload(ceiling_height_m=0.001))
-        assert result["ceiling_height_m"] == 0.001  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["ceiling_height_m"] == 0.001
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_very_large_ceiling_height_allowed(self):
         """Heights > 30m are allowed (flagged for AHJ review elsewhere)."""
         result = validate_room_input(self._base_payload(ceiling_height_m=50.0))
-        assert result["ceiling_height_m"] == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["ceiling_height_m"] == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_valid_detector_type_smoke(self):
         result = validate_room_input(self._base_payload(detector_type="smoke"))
@@ -830,16 +925,12 @@ class TestValidateRoomInputEdgeCases:
         assert result["detector_type"] == "heat"
 
     def test_polygon_with_tuple_vertices(self):
-        payload = self._base_payload(
-            room_polygon=[(0, 0), (10, 0), (10, 5), (0, 5)]
-        )
+        payload = self._base_payload(room_polygon=[(0, 0), (10, 0), (10, 5), (0, 5)])
         result = validate_room_input(payload)
         assert result["area_m2"] == pytest.approx(50.0)
 
     def test_polygon_with_integer_coords(self):
-        payload = self._base_payload(
-            room_polygon=[[0, 0], [10, 0], [10, 5], [0, 5]]
-        )
+        payload = self._base_payload(room_polygon=[[0, 0], [10, 0], [10, 5], [0, 5]])
         result = validate_room_input(payload)
         assert result["area_m2"] == pytest.approx(50.0)
 
@@ -867,6 +958,7 @@ class TestValidateRoomInputEdgeCases:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Integration: Full Pipeline Smoke Tests
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestIntegrationSmokeTests:
     """End-to-end smoke tests that exercise multiple validation paths."""

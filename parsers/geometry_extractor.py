@@ -17,9 +17,9 @@ from enum import Enum
 
 
 class ConfidenceLevel(Enum):
-    CERTAIN = "CERTAIN"        # إحداثيات رقمية دقيقة
-    HIGH = "HIGH"              # موثوق لكن يحتاج تأكيد
-    MODERATE = "MODERATE"      # يحتاج مراجعة
+    CERTAIN = "CERTAIN"  # إحداثيات رقمية دقيقة
+    HIGH = "HIGH"  # موثوق لكن يحتاج تأكيد
+    MODERATE = "MODERATE"  # يحتاج مراجعة
     UNACCEPTABLE = "UNACCEPTABLE"
 
 
@@ -38,7 +38,7 @@ class WallElement:
             "geometry": list(geometry_list),
             "confidence": self.confidence.value,
             "source": self.source,
-            "raw_data": self.raw_data
+            "raw_data": self.raw_data,
         }
 
     def get_area(self) -> float:
@@ -59,8 +59,8 @@ class WallElement:
             return 0.0
         perimeter = 0.0
         for i in range(len(self.geometry) - 1):
-            dx = self.geometry[i+1][0] - self.geometry[i][0]
-            dy = self.geometry[i+1][1] - self.geometry[i][1]
+            dx = self.geometry[i + 1][0] - self.geometry[i][0]
+            dy = self.geometry[i + 1][1] - self.geometry[i][1]
             perimeter += (dx**2 + dy**2) ** 0.5
         return perimeter
 
@@ -156,8 +156,8 @@ class GeometryExtractor:
                 "type": draw_type,
                 "width": width,
                 "color": draw.get("color"),
-                "layer": draw.get("layer")
-            }
+                "layer": draw.get("layer"),
+            },
         )
 
     def _extract_points_from_items(self, items: list) -> list[tuple[float, float]]:
@@ -219,7 +219,7 @@ class GeometryExtractor:
         p2_start = wall2.geometry[0]
 
         # If walls are very close, they might be the same wall
-        distance = ((p1_start[0] - p2_start[0])**2 + (p1_start[1] - p2_start[1])**2)**0.5
+        distance = ((p1_start[0] - p2_start[0]) ** 2 + (p1_start[1] - p2_start[1]) ** 2) ** 0.5
 
         # Threshold for "same wall" - this is configurable
         return distance < 1.0
@@ -233,7 +233,7 @@ class GeometryExtractor:
             geometry=all_points,
             confidence=ConfidenceLevel.MODERATE,
             source="MERGED",
-            raw_data={"merged_from": [wall1.source, wall2.source]}
+            raw_data={"merged_from": [wall1.source, wall2.source]},
         )
 
     def get_wall_count(self) -> int:
@@ -254,7 +254,7 @@ class GeometryExtractor:
             "page": self.page_number,
             "width": rect.width,
             "height": rect.height,
-            "wall_count": self.get_wall_count()
+            "wall_count": self.get_wall_count(),
         }
 
 
@@ -285,12 +285,14 @@ def extract_rooms_from_walls(walls: list[WallElement]) -> list[dict]:
     for wall in walls:
         area = wall.get_area()
         if area > 10:  # Filter out tiny shapes (likely objects, not rooms)
-            rooms.append({
-                "area": round(area, 2),
-                "perimeter": round(wall.get_perimeter(), 2),
-                "points": wall.geometry,
-                "confidence": wall.confidence.value
-            })
+            rooms.append(
+                {
+                    "area": round(area, 2),
+                    "perimeter": round(wall.get_perimeter(), 2),
+                    "points": wall.geometry,
+                    "confidence": wall.confidence.value,
+                }
+            )
 
     # Sort by area (largest first)
     rooms.sort(key=lambda r: r["area"], reverse=True)

@@ -8,6 +8,7 @@ configured/enabled proxy, and otherwise falls back to the TCP peer IP.
 VULN C-01: previously an attacker could spoof X-Forwarded-For / CF-Connecting-IP
 to evade per-IP rate limits.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -110,5 +111,7 @@ class TestProxyEnabled:
         monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
         monkeypatch.setenv("CF_ENABLED", "true")
 
-        req = _make_request("10.0.0.1", {"CF-Connecting-IP": "6.6.6.6", "X-Forwarded-For": "9.9.9.9"})
+        req = _make_request(
+            "10.0.0.1", {"CF-Connecting-IP": "6.6.6.6", "X-Forwarded-For": "9.9.9.9"}
+        )
         assert get_remote_address(req) == "6.6.6.6"

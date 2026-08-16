@@ -23,52 +23,65 @@ class TestCSRFMiddleware:
 
     def test_token_generation_is_unique(self):
         from backend.security_csrf import generate_csrf_token
+
         t1 = generate_csrf_token()
         t2 = generate_csrf_token()
         assert t1 != t2
 
     def test_token_is_43_chars_urlsafe(self):
         from backend.security_csrf import generate_csrf_token
+
         token = generate_csrf_token()
         assert len(token) >= 32  # At least 32 chars
         # URL-safe base64 characters only
         import re
-        assert re.match(r'^[A-Za-z0-9_-]+$', token)
+
+        assert re.match(r"^[A-Za-z0-9_-]+$", token)
 
     def test_validate_valid_token(self):
         from backend.security_csrf import generate_csrf_token, validate_csrf_token
+
         token = generate_csrf_token()
         assert validate_csrf_token(token) is True
 
     def test_validate_short_token_rejected(self):
         from backend.security_csrf import validate_csrf_token
+
         assert validate_csrf_token("short") is False
 
     def test_validate_empty_token_rejected(self):
         from backend.security_csrf import validate_csrf_token
+
         assert validate_csrf_token("") is False
 
     def test_validate_none_rejected(self):
         from backend.security_csrf import validate_csrf_token
-        assert validate_csrf_token(None) is False  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+
+        assert (
+            validate_csrf_token(None) is False
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_tokens_match_same(self):
         from backend.security_csrf import generate_csrf_token, tokens_match
+
         token = generate_csrf_token()
         assert tokens_match(token, token) is True
 
     def test_tokens_match_different(self):
         from backend.security_csrf import generate_csrf_token, tokens_match
+
         t1 = generate_csrf_token()
         t2 = generate_csrf_token()
         assert tokens_match(t1, t2) is False
 
     def test_tokens_match_invalid(self):
         from backend.security_csrf import tokens_match
+
         assert tokens_match("invalid", "invalid") is False
 
     def test_build_cookie_header_https(self):
         from backend.security_csrf import build_csrf_cookie_header
+
         header = build_csrf_cookie_header("test_token", is_https=True)  # NOSONAR - python:S930
         assert "fireai_csrf_token=test_token" in header
         assert "SameSite=Strict" in header
@@ -76,6 +89,7 @@ class TestCSRFMiddleware:
 
     def test_build_cookie_header_http_dev(self):
         from backend.security_csrf import build_csrf_cookie_header
+
         header = build_csrf_cookie_header("test_token", is_https=False)  # NOSONAR - python:S930
         assert "fireai_csrf_token=test_token" in header
         assert "SameSite=Strict" in header
@@ -92,6 +106,7 @@ class TestPathTraversalDefense:
     def test_validate_autocad_file_path_exists(self):
         """The validation function should be importable."""
         from backend.routers.autocad import _validate_autocad_file_path
+
         assert callable(_validate_autocad_file_path)
 
     def test_path_traversal_rejected(self):
@@ -99,6 +114,7 @@ class TestPathTraversalDefense:
         from fastapi import HTTPException
 
         from backend.routers.autocad import _validate_autocad_file_path
+
         with pytest.raises(HTTPException) as exc:
             _validate_autocad_file_path("../../etc/passwd.dwg")
         # Path traversal is blocked with 400 (if path is rejected by security)
@@ -110,6 +126,7 @@ class TestPathTraversalDefense:
         from fastapi import HTTPException
 
         from backend.routers.autocad import _validate_autocad_file_path
+
         with pytest.raises((HTTPException, Exception)):
             _validate_autocad_file_path("test.dwg\x00.txt")
 
@@ -118,8 +135,11 @@ class TestPathTraversalDefense:
         from fastapi import HTTPException
 
         from backend.routers.autocad import _validate_autocad_file_path
+
         with pytest.raises(HTTPException) as exc:
-            _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            _validate_autocad_file_path(
+                "/tmp/nonexistent_file_12345.dwg"
+            )  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert exc.value.status_code == 404
 
     def test_disallowed_extension_rejected(self):
@@ -127,6 +147,7 @@ class TestPathTraversalDefense:
         from fastapi import HTTPException
 
         from backend.routers.autocad import _validate_autocad_file_path
+
         # Create a temp file with wrong extension
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             f.write(b"test")
@@ -150,6 +171,7 @@ class TestAuditIntegrity:
     def test_record_audit_write_returns_hash(self):
         """Recording an audit write should return a hash."""
         from backend.audit_integrity_helper import record_audit_write
+
         result = record_audit_write(
             operation="test_operation",
             table="test_table",
@@ -163,6 +185,7 @@ class TestAuditIntegrity:
     def test_record_audit_write_failure(self):
         """Recording a failed write should also create audit entry."""
         from backend.audit_integrity_helper import record_audit_write
+
         result = record_audit_write(
             operation="test_failed_op",
             table="test_table",
@@ -215,13 +238,16 @@ class TestAuditIntegrity:
         """Context manager should record failure and re-raise."""
         from backend.audit_integrity_helper import audit_write_context
 
-        with pytest.raises(RuntimeError, match="ctx failure"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            RuntimeError, match="ctx failure"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             with audit_write_context("test_ctx_fail", "test_table"):
                 raise RuntimeError("ctx failure")
 
     def test_get_correlation_id_returns_none_outside_request(self):
         """Outside a request context, correlation ID should be None."""
         from backend.audit_integrity_helper import get_correlation_id
+
         # Outside a request context, should return None (not raise)
         result = get_correlation_id()
         assert result is None or isinstance(result, str)

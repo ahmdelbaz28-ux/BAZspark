@@ -62,10 +62,30 @@ DEFAULT_RADIUS_NM = 50  # nautical miles
 
 # IMO ship-type codes — tankers and hazardous-cargo vessels.
 # Source: IMO Resolution A.1106(29) Annex 5.
-HAZARDOUS_SHIP_TYPES = frozenset({
-    70, 71, 72, 73, 74, 75, 76, 77, 78, 79,  # Tankers (all)
-    80, 81, 82, 83, 84, 85, 86, 87, 88, 89,  # Tankers (continued)
-})
+HAZARDOUS_SHIP_TYPES = frozenset(
+    {
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,  # Tankers (all)
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,  # Tankers (continued)
+    }
+)
 
 # Vessel fields per AIS Hub schema (1-based index in their docs).
 # Indices are 0-based in the JSON array returned by the API.
@@ -73,16 +93,16 @@ FIELD_MMSI = 0
 FIELD_NAME = 1
 FIELD_LAT = 2
 FIELD_LON = 3
-FIELD_SOG = 4       # speed over ground (knots)
-FIELD_COG = 5       # course over ground (degrees)
+FIELD_SOG = 4  # speed over ground (knots)
+FIELD_COG = 5  # course over ground (degrees)
 FIELD_HEADING = 6
 FIELD_NAVSTAT = 7
-FIELD_SHIPTYPE = 15 # may not exist on all vessels
+FIELD_SHIPTYPE = 15  # may not exist on all vessels
 
 # Proximity thresholds (nautical miles)
-PROXIMITY_CRITICAL_NM = 1.0    # < 1 NM → CRITICAL
-PROXIMITY_HIGH_NM = 5.0        # < 5 NM → HIGH
-PROXIMITY_MEDIUM_NM = 25.0     # < 25 NM → MEDIUM
+PROXIMITY_CRITICAL_NM = 1.0  # < 1 NM → CRITICAL
+PROXIMITY_HIGH_NM = 5.0  # < 5 NM → HIGH
+PROXIMITY_MEDIUM_NM = 25.0  # < 25 NM → MEDIUM
 
 
 # ===========================================================================
@@ -93,6 +113,7 @@ PROXIMITY_MEDIUM_NM = 25.0     # < 25 NM → MEDIUM
 @dataclass(frozen=True)
 class VesselSighting:
     """One vessel returned by AIS Hub."""
+
     mmsi: str
     name: str
     lat: float
@@ -102,7 +123,7 @@ class VesselSighting:
     heading_deg: float
     ship_type_code: int
     is_hazardous_cargo: bool
-    distance_nm: float         # great-circle distance from query point
+    distance_nm: float  # great-circle distance from query point
 
 
 @dataclass(frozen=True)
@@ -150,10 +171,7 @@ def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     lat2_r = math.radians(lat2)
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlon / 2) ** 2
-    )
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlon / 2) ** 2
     c = 2 * math.asin(min(1.0, math.sqrt(a)))
     return _EARTH_RADIUS_NM * c
 
@@ -214,7 +232,7 @@ class AISVesselAdapter(ExternalApiAdapter):
 
         params = {
             "username": self._api_key,
-            "format": "1",   # JSON
+            "format": "1",  # JSON
             "lat": lat,
             "lon": lon,
             "radius": radius_nm,
@@ -224,6 +242,7 @@ class AISVesselAdapter(ExternalApiAdapter):
         from urllib.parse import urlencode
 
         from backend.integrations._ssrf_guard import validate_url
+
         _request_url = f"{self._base_url}?{urlencode(params)}"
         validate_url(_request_url)
 
@@ -246,25 +265,31 @@ class AISVesselAdapter(ExternalApiAdapter):
             try:
                 if not isinstance(v, list) or len(v) < 7:
                     continue
-                ship_type = int(v[FIELD_SHIPTYPE]) if (
-                    len(v) > FIELD_SHIPTYPE and v[FIELD_SHIPTYPE] is not None
-                ) else 0
-                distance = haversine_nm(
-                    lat, lon,
-                    float(v[FIELD_LAT]), float(v[FIELD_LON]),
+                ship_type = (
+                    int(v[FIELD_SHIPTYPE])
+                    if (len(v) > FIELD_SHIPTYPE and v[FIELD_SHIPTYPE] is not None)
+                    else 0
                 )
-                vessels.append(VesselSighting(
-                    mmsi=str(v[FIELD_MMSI]),
-                    name=str(v[FIELD_NAME] or ""),
-                    lat=float(v[FIELD_LAT]),
-                    lon=float(v[FIELD_LON]),
-                    speed_knots=float(v[FIELD_SOG] or 0.0),
-                    course_deg=float(v[FIELD_COG] or 0.0),
-                    heading_deg=float(v[FIELD_HEADING] or 0.0),
-                    ship_type_code=ship_type,
-                    is_hazardous_cargo=ship_type in HAZARDOUS_SHIP_TYPES,
-                    distance_nm=round(distance, 2),
-                ))
+                distance = haversine_nm(
+                    lat,
+                    lon,
+                    float(v[FIELD_LAT]),
+                    float(v[FIELD_LON]),
+                )
+                vessels.append(
+                    VesselSighting(
+                        mmsi=str(v[FIELD_MMSI]),
+                        name=str(v[FIELD_NAME] or ""),
+                        lat=float(v[FIELD_LAT]),
+                        lon=float(v[FIELD_LON]),
+                        speed_knots=float(v[FIELD_SOG] or 0.0),
+                        course_deg=float(v[FIELD_COG] or 0.0),
+                        heading_deg=float(v[FIELD_HEADING] or 0.0),
+                        ship_type_code=ship_type,
+                        is_hazardous_cargo=ship_type in HAZARDOUS_SHIP_TYPES,
+                        distance_nm=round(distance, 2),
+                    )
+                )
             except (KeyError, ValueError, TypeError, IndexError) as e:
                 logger.debug("Skipping malformed AIS vessel: %s", e)
                 continue
@@ -309,8 +334,7 @@ class AISVesselAdapter(ExternalApiAdapter):
         else:
             alert = "LOW"
             note = (
-                f"Nearest hazardous-cargo vessel at "
-                f"{nearest_haz.distance_nm:.2f} NM. No advisory."
+                f"Nearest hazardous-cargo vessel at {nearest_haz.distance_nm:.2f} NM. No advisory."
             )
 
         return VesselProximityAssessment(

@@ -152,7 +152,11 @@ class _DXFTextParser:
         self._current_code: int | None = None
         self._header: dict[str, Any] = {}
 
-    def parse(self, content: str) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def parse(
+        self, content: str
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self._layers = {}
         self._current_section = ""
         self._current_entity = None
@@ -205,20 +209,16 @@ class _DXFTextParser:
                 pass  # NOSONAR — S108: empty except kept for graceful degradation
             elif code == 410:
                 if self._current_entity is not None:
-                    self._current_entity.setdefault("properties", {})[
-                        "layout"
-                    ] = value_line
+                    self._current_entity.setdefault("properties", {})["layout"] = value_line
             elif code == 62:
                 if self._current_entity is not None:
                     with contextlib.suppress(ValueError):
-                        self._current_entity.setdefault(
-                            "properties", {}
-                        )["color"] = int(value_line)
+                        self._current_entity.setdefault("properties", {})["color"] = int(value_line)
             elif code == 6:
-                if self._current_entity is not None:  # NOSONAR — S1066: nested if kept for readability
-                    self._current_entity.setdefault("properties", {})[
-                        "linetype"
-                    ] = value_line
+                if (
+                    self._current_entity is not None
+                ):  # NOSONAR — S1066: nested if kept for readability
+                    self._current_entity.setdefault("properties", {})["linetype"] = value_line
 
         self._finalize_entity()
         return {
@@ -249,9 +249,7 @@ class _DXFTextParser:
     def _finalize_entity(self) -> None:
         if self._current_entity is not None:
             layer_name = self._current_entity.get("layer", "0").lower()
-            self._layers.setdefault(layer_name, []).append(
-                self._current_entity
-            )
+            self._layers.setdefault(layer_name, []).append(self._current_entity)
             self._current_entity = None
 
 
@@ -387,9 +385,7 @@ class AutoCADBridge:
             metadata={
                 "format": "DXF",
                 "parser": "ezdxf" if self._has_ezdxf else "text_fallback",
-                "entity_count": sum(
-                    len(l.entities) for l in classified_layers
-                ),
+                "entity_count": sum(len(l.entities) for l in classified_layers),
             },
         )
 
@@ -453,7 +449,9 @@ class AutoCADBridge:
         )
         return path
 
-    def export_dxf(self, design: DesignData, path: str) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def export_dxf(
+        self, design: DesignData, path: str
+    ) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Export design data to DXF format.
 
@@ -568,29 +566,18 @@ class AutoCADBridge:
 
     # ── Layer Queries ───────────────────────────────────────────────────
 
-    def get_fire_layers(
-        self, design: DesignData
-    ) -> list[LayerData]:
-        return [
-            l
-            for l in design.layers
-            if l.category in self.FIRE_LAYERS
-        ]
+    def get_fire_layers(self, design: DesignData) -> list[LayerData]:
+        return [l for l in design.layers if l.category in self.FIRE_LAYERS]
 
-    def get_arch_layers(
-        self, design: DesignData
-    ) -> list[LayerData]:
-        return [
-            l
-            for l in design.layers
-            if l.category in self.ARCH_LAYERS
-        ]
+    def get_arch_layers(self, design: DesignData) -> list[LayerData]:
+        return [l for l in design.layers if l.category in self.ARCH_LAYERS]
 
     # ── Internal: DXF Parsing ───────────────────────────────────────────
 
     def _check_ezdxf(self) -> bool:
         try:
             import ezdxf  # noqa: F401
+
             return True
         except ImportError:
             logger.warning(
@@ -599,7 +586,11 @@ class AutoCADBridge:
             )
             return False
 
-    def _parse_dxf_ezdxf(self, content: str) -> dict[str, list[dict[str, Any]]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _parse_dxf_ezdxf(
+        self, content: str
+    ) -> dict[
+        str, list[dict[str, Any]]
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         import io
 
         import ezdxf
@@ -617,13 +608,11 @@ class AutoCADBridge:
                     io.StringIO(content)  # type: ignore[arg-type]
                 )
             except Exception as exc:
-                logger.exception(
-                    "ezdxf parsing failed: %s", exc
-                )
+                logger.exception("ezdxf parsing failed: %s", exc)
                 return {}
 
         for entity in doc.modelspace():
-            layer_name = entity.dxf.layer.lower() if hasattr(entity.dxf, 'layer') else "0"
+            layer_name = entity.dxf.layer.lower() if hasattr(entity.dxf, "layer") else "0"
             entity_data = {
                 "type": entity.dxftype(),
                 "layer": entity.dxf.layer,
@@ -650,26 +639,18 @@ class AutoCADBridge:
 
         return layers
 
-    def _extract_ezdxf_coords(
-        self, entity: Any
-    ) -> list[list[float]]:
+    def _extract_ezdxf_coords(self, entity: Any) -> list[list[float]]:
         coords: list[list[float]] = []
         dxf_type = entity.dxftype()
 
         if dxf_type == "LINE":
-            coords.append(
-                [entity.dxf.start.x, entity.dxf.start.y, entity.dxf.start.z]
-            )
-            coords.append(
-                [entity.dxf.end.x, entity.dxf.end.y, entity.dxf.end.z]
-            )
+            coords.append([entity.dxf.start.x, entity.dxf.start.y, entity.dxf.start.z])
+            coords.append([entity.dxf.end.x, entity.dxf.end.y, entity.dxf.end.z])
         elif dxf_type == "LWPOLYLINE":
             for point in entity.get_points():
                 coords.append([point[0], point[1], 0.0])
         elif dxf_type == "CIRCLE":
-            coords.append(
-                [entity.dxf.center.x, entity.dxf.center.y, entity.dxf.center.z]
-            )
+            coords.append([entity.dxf.center.x, entity.dxf.center.y, entity.dxf.center.z])
         elif dxf_type == "INSERT" or dxf_type == "TEXT" or dxf_type == "MTEXT":
             coords.append(
                 [
@@ -681,9 +662,7 @@ class AutoCADBridge:
 
         return coords
 
-    def _parse_dxf_text(
-        self, content: str
-    ) -> dict[str, list[dict[str, Any]]]:
+    def _parse_dxf_text(self, content: str) -> dict[str, list[dict[str, Any]]]:
         parser = _DXFTextParser()
         return parser.parse(content)["layers"]
 
@@ -750,9 +729,7 @@ if __name__ == "__main__":
         ],
     )
 
-    with tempfile.NamedTemporaryFile(
-        suffix=".dxf", delete=False
-    ) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as tmp:
         export_path = bridge.export_dxf(sample, tmp.name)
         print(f"Exported to: {export_path}")
 

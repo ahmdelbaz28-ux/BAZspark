@@ -27,7 +27,9 @@ import pytest
 try:
     import respx
 except ImportError:
-    pytest.skip("respx not installed — skipping external API adapter tests", allow_module_level=True)
+    pytest.skip(
+        "respx not installed — skipping external API adapter tests", allow_module_level=True
+    )
 
 from fireai.integration.ais_vessel_adapter import (
     AISVesselAdapter,
@@ -66,8 +68,7 @@ class TestApiResultInvariants:
         assert r.fallback_used is False
 
     def test_ok_false_must_have_error(self):
-        r = ApiResult(ok=False, value=0, source="test", error="timeout",
-                      fallback_used=True)
+        r = ApiResult(ok=False, value=0, source="test", error="timeout", fallback_used=True)
         assert r.ok is False
         assert r.error == "timeout"
         assert r.fallback_used is True
@@ -157,19 +158,23 @@ WILDFIRE_BASE = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 
 class TestWildfireSmokeAdapter:
-
     @pytest.mark.asyncio
     @respx.mock
     async def test_happy_path_low_risk(self):
         """PM2.5 below 9.0 → LOW risk."""
-        respx.get(WILDFIRE_BASE).mock(return_value=httpx.Response(200, json={
-            "hourly": {
-                "pm2_5": [5.0] * 24,
-                "pm10": [10.0] * 24,
-                "carbon_monoxide": [100.0] * 24,
-                "nitrogen_dioxide": [20.0] * 24,
-            }
-        }))
+        respx.get(WILDFIRE_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "hourly": {
+                        "pm2_5": [5.0] * 24,
+                        "pm10": [10.0] * 24,
+                        "carbon_monoxide": [100.0] * 24,
+                        "nitrogen_dioxide": [20.0] * 24,
+                    }
+                },
+            )
+        )
         adapter = WildfireSmokeAdapter()
         result = await adapter.call(lat=30.04, lon=31.23)
         assert result.ok is True
@@ -185,14 +190,19 @@ class TestWildfireSmokeAdapter:
     @respx.mock
     async def test_high_risk_above_threshold(self):
         """PM2.5 >= 35.5 → HIGH risk (smoke detector advisory)."""
-        respx.get(WILDFIRE_BASE).mock(return_value=httpx.Response(200, json={
-            "hourly": {
-                "pm2_5": [40.0] * 24,
-                "pm10": [80.0] * 24,
-                "carbon_monoxide": [500.0] * 24,
-                "nitrogen_dioxide": [60.0] * 24,
-            }
-        }))
+        respx.get(WILDFIRE_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "hourly": {
+                        "pm2_5": [40.0] * 24,
+                        "pm10": [80.0] * 24,
+                        "carbon_monoxide": [500.0] * 24,
+                        "nitrogen_dioxide": [60.0] * 24,
+                    }
+                },
+            )
+        )
         adapter = WildfireSmokeAdapter()
         result = await adapter.call(lat=30.04, lon=31.23)
         assert result.ok is True
@@ -231,9 +241,7 @@ class TestWildfireSmokeAdapter:
     @respx.mock
     async def test_parse_error_missing_hourly(self):
         """Malformed response (no 'hourly' key) → parse_error fallback."""
-        respx.get(WILDFIRE_BASE).mock(return_value=httpx.Response(200, json={
-            "wrong_key": {}
-        }))
+        respx.get(WILDFIRE_BASE).mock(return_value=httpx.Response(200, json={"wrong_key": {}}))
         adapter = WildfireSmokeAdapter()
         result = await adapter.call(lat=30.04, lon=31.23)
         assert result.ok is False
@@ -270,10 +278,19 @@ class TestWildfireSmokeAdapter:
     @pytest.mark.asyncio
     @respx.mock
     async def test_health_check(self):
-        respx.get(WILDFIRE_BASE).mock(return_value=httpx.Response(200, json={
-            "hourly": {"pm2_5": [5.0], "pm10": [10.0],
-                       "carbon_monoxide": [100.0], "nitrogen_dioxide": [20.0]}
-        }))
+        respx.get(WILDFIRE_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "hourly": {
+                        "pm2_5": [5.0],
+                        "pm10": [10.0],
+                        "carbon_monoxide": [100.0],
+                        "nitrogen_dioxide": [20.0],
+                    }
+                },
+            )
+        )
         adapter = WildfireSmokeAdapter()
         await adapter.call(lat=30.0, lon=31.0)
         h = adapter.health()
@@ -292,14 +309,11 @@ USGS_BASE = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 
 class TestEarthquakeAdapter:
-
     @pytest.mark.asyncio
     @respx.mock
     async def test_no_events_low_priority(self):
         """Empty features list → LOW priority."""
-        respx.get(USGS_BASE).mock(return_value=httpx.Response(200, json={
-            "features": []
-        }))
+        respx.get(USGS_BASE).mock(return_value=httpx.Response(200, json={"features": []}))
         adapter = EarthquakeAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -312,14 +326,25 @@ class TestEarthquakeAdapter:
     @respx.mock
     async def test_m6_earthquake_critical(self):
         """M6.0+ earthquake → CRITICAL priority."""
-        respx.get(USGS_BASE).mock(return_value=httpx.Response(200, json={
-            "features": [{
-                "properties": {"mag": 6.5, "place": "100km NW of Cairo",
-                               "time": 1700000000000, "tsunami": 0,
-                               "url": "https://earthquake.usgs.gov/..."},
-                "geometry": {"coordinates": [31.0, 30.5, 10.0]}
-            }]
-        }))
+        respx.get(USGS_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "features": [
+                        {
+                            "properties": {
+                                "mag": 6.5,
+                                "place": "100km NW of Cairo",
+                                "time": 1700000000000,
+                                "tsunami": 0,
+                                "url": "https://earthquake.usgs.gov/...",
+                            },
+                            "geometry": {"coordinates": [31.0, 30.5, 10.0]},
+                        }
+                    ]
+                },
+            )
+        )
         adapter = EarthquakeAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -334,13 +359,25 @@ class TestEarthquakeAdapter:
     @pytest.mark.asyncio
     @respx.mock
     async def test_m5_earthquake_high(self):
-        respx.get(USGS_BASE).mock(return_value=httpx.Response(200, json={
-            "features": [{
-                "properties": {"mag": 5.3, "place": "x", "time": 1700000000000,
-                               "tsunami": 1, "url": ""},
-                "geometry": {"coordinates": [31.0, 30.5, 10.0]}
-            }]
-        }))
+        respx.get(USGS_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "features": [
+                        {
+                            "properties": {
+                                "mag": 5.3,
+                                "place": "x",
+                                "time": 1700000000000,
+                                "tsunami": 1,
+                                "url": "",
+                            },
+                            "geometry": {"coordinates": [31.0, 30.5, 10.0]},
+                        }
+                    ]
+                },
+            )
+        )
         adapter = EarthquakeAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -365,14 +402,26 @@ class TestEarthquakeAdapter:
     @respx.mock
     async def test_malformed_feature_skipped(self):
         """Malformed features are skipped, not fatal."""
-        respx.get(USGS_BASE).mock(return_value=httpx.Response(200, json={
-            "features": [
-                {"properties": {}, "geometry": {}},  # missing mag
-                {"properties": {"mag": 4.5, "place": "ok",
-                                "time": 1700000000000, "tsunami": 0, "url": ""},
-                 "geometry": {"coordinates": [31.0, 30.5, 10.0]}},
-            ]
-        }))
+        respx.get(USGS_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "features": [
+                        {"properties": {}, "geometry": {}},  # missing mag
+                        {
+                            "properties": {
+                                "mag": 4.5,
+                                "place": "ok",
+                                "time": 1700000000000,
+                                "tsunami": 0,
+                                "url": "",
+                            },
+                            "geometry": {"coordinates": [31.0, 30.5, 10.0]},
+                        },
+                    ]
+                },
+            )
+        )
         adapter = EarthquakeAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -398,23 +447,37 @@ OPENAQ_BASE = "https://api.openaq.org/v3/measurements"
 
 
 class TestOpenAQAdapter:
-
     @pytest.mark.asyncio
     @respx.mock
     async def test_happy_path_with_api_key(self, monkeypatch):
         monkeypatch.setenv("OPENAQ_API_KEY", "test-key-123")
-        respx.get(OPENAQ_BASE).mock(return_value=httpx.Response(200, json={
-            "results": [
-                {"parameter": "pm25", "value": 12.5, "unit": "µg/m³",
-                 "location": "StationA", "locationId": 42,
-                 "date": {"utc": "2026-06-30T10:00:00Z"},
-                 "coordinates": {"latitude": 30.0, "longitude": 31.0}},
-                {"parameter": "pm10", "value": 25.0, "unit": "µg/m³",
-                 "location": "StationA", "locationId": 42,
-                 "date": {"utc": "2026-06-30T10:00:00Z"},
-                 "coordinates": {"latitude": 30.0, "longitude": 31.0}},
-            ]
-        }))
+        respx.get(OPENAQ_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "results": [
+                        {
+                            "parameter": "pm25",
+                            "value": 12.5,
+                            "unit": "µg/m³",
+                            "location": "StationA",
+                            "locationId": 42,
+                            "date": {"utc": "2026-06-30T10:00:00Z"},
+                            "coordinates": {"latitude": 30.0, "longitude": 31.0},
+                        },
+                        {
+                            "parameter": "pm10",
+                            "value": 25.0,
+                            "unit": "µg/m³",
+                            "location": "StationA",
+                            "locationId": 42,
+                            "date": {"utc": "2026-06-30T10:00:00Z"},
+                            "coordinates": {"latitude": 30.0, "longitude": 31.0},
+                        },
+                    ]
+                },
+            )
+        )
         adapter = OpenAQAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -451,9 +514,7 @@ class TestOpenAQAdapter:
     @respx.mock
     async def test_empty_results_unknown(self, monkeypatch):
         monkeypatch.setenv("OPENAQ_API_KEY", "test-key")
-        respx.get(OPENAQ_BASE).mock(return_value=httpx.Response(200, json={
-            "results": []
-        }))
+        respx.get(OPENAQ_BASE).mock(return_value=httpx.Response(200, json={"results": []}))
         adapter = OpenAQAdapter()
         result = await adapter.call(lat=30.0, lon=31.0)
         assert result.ok is True
@@ -471,14 +532,18 @@ AISHUB_BASE = "http://data.aishub.net/ws.php"
 
 
 class TestAISVesselAdapter:
-
     @pytest.mark.asyncio
     @respx.mock
     async def test_no_vessels_low(self, monkeypatch):
         monkeypatch.setenv("AISHUB_API_KEY", "test-key")
-        respx.get(AISHUB_BASE).mock(return_value=httpx.Response(200, json=[
-            [{"status": "ok"}]  # metadata only
-        ]))
+        respx.get(AISHUB_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    [{"status": "ok"}]  # metadata only
+                ],
+            )
+        )
         adapter = AISVesselAdapter()
         result = await adapter.call(lat=25.0, lon=55.0)
         assert result.ok is True
@@ -492,11 +557,34 @@ class TestAISVesselAdapter:
         """Tanker (ship_type 70) < 1 NM → CRITICAL."""
         monkeypatch.setenv("AISHUB_API_KEY", "test-key")
         # Vessel at 25.001°N, 55.0°E (very close to query point 25.0, 55.0)
-        respx.get(AISHUB_BASE).mock(return_value=httpx.Response(200, json=[
-            {"status": "ok"},
-            [["123456789", "TANKER X", 25.001, 55.0, 5.0, 90.0, 90.0, 0,
-              None, None, None, None, None, None, None, 70]]
-        ]))
+        respx.get(AISHUB_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {"status": "ok"},
+                    [
+                        [
+                            "123456789",
+                            "TANKER X",
+                            25.001,
+                            55.0,
+                            5.0,
+                            90.0,
+                            90.0,
+                            0,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            70,
+                        ]
+                    ],
+                ],
+            )
+        )
         adapter = AISVesselAdapter()
         result = await adapter.call(lat=25.0, lon=55.0)
         assert result.ok is True
@@ -511,11 +599,34 @@ class TestAISVesselAdapter:
     async def test_fishing_boat_no_hazard_low(self, monkeypatch):
         """Fishing boat (ship_type 30) nearby → LOW (not hazardous)."""
         monkeypatch.setenv("AISHUB_API_KEY", "test-key")
-        respx.get(AISHUB_BASE).mock(return_value=httpx.Response(200, json=[
-            {"status": "ok"},
-            [["123456789", "FISHING-1", 25.001, 55.0, 5.0, 90.0, 90.0, 0,
-              None, None, None, None, None, None, None, 30]]
-        ]))
+        respx.get(AISHUB_BASE).mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {"status": "ok"},
+                    [
+                        [
+                            "123456789",
+                            "FISHING-1",
+                            25.001,
+                            55.0,
+                            5.0,
+                            90.0,
+                            90.0,
+                            0,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            30,
+                        ]
+                    ],
+                ],
+            )
+        )
         adapter = AISVesselAdapter()
         result = await adapter.call(lat=25.0, lon=55.0)
         assert result.ok is True
@@ -549,13 +660,12 @@ OTO_BASE = "https://api.opentopodata.org/v1/srtm30m"
 
 
 class TestElevationAdapter:
-
     @pytest.mark.asyncio
     @respx.mock
     async def test_happy_path(self):
-        respx.get(OTO_BASE).mock(return_value=httpx.Response(200, json={
-            "results": [{"elevation": 75.4}]
-        }))
+        respx.get(OTO_BASE).mock(
+            return_value=httpx.Response(200, json={"results": [{"elevation": 75.4}]})
+        )
         adapter = ElevationAdapter()
         result = await adapter.call(lat=30.04, lon=31.23)
         assert result.ok is True
@@ -567,9 +677,9 @@ class TestElevationAdapter:
     @respx.mock
     async def test_null_elevation_parse_error(self):
         """API returns null (outside SRTM coverage) → parse_error."""
-        respx.get(OTO_BASE).mock(return_value=httpx.Response(200, json={
-            "results": [{"elevation": None}]
-        }))
+        respx.get(OTO_BASE).mock(
+            return_value=httpx.Response(200, json={"results": [{"elevation": None}]})
+        )
         adapter = ElevationAdapter()
         result = await adapter.call(lat=30.04, lon=31.23)
         assert result.ok is False

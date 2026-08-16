@@ -22,12 +22,15 @@ def _lazy_import(name: str) -> object | None:
     blocking the rest of the API.
     """
     import importlib as _importlib
+
     try:
         return _importlib.import_module(f"backend.routers.{name}")
     except (ImportError, NameError, SyntaxError, AttributeError, TypeError) as exc:
         _logger.warning(
             "Router '%s' failed to load (%s: %s) — other routers continue",
-            name, type(exc).__name__, exc,
+            name,
+            type(exc).__name__,
+            exc,
         )
         return None
 

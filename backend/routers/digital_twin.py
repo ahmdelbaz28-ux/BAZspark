@@ -55,6 +55,7 @@ router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
 # Previously, service and config_manager were created at module level,
 # making testing difficult and causing import-order issues.
 
+
 def get_digital_twin_service() -> DigitalTwinService:
     """Provide DigitalTwinService instance via dependency injection."""
     return DigitalTwinService()
@@ -93,10 +94,10 @@ def _safe_resolve_upload_path(filename: str) -> str:
     This is the recommended approach per OWASP path traversal guidance.
     """
     # Validate filename at source to prevent path traversal
-    if not re.match(r'^[a-zA-Z0-9._\- ]{1,255}$', filename):
+    if not re.match(r"^[a-zA-Z0-9._\- ]{1,255}$", filename):
         raise HTTPException(  # NOSONAR:S8415: endpoint error handling is intentional(
             status_code=400,
-            detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed."
+            detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed.",
         )
 
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
@@ -114,15 +115,20 @@ def _safe_resolve_upload_path(filename: str) -> str:
     try:
         if hasattr(resolved, "is_relative_to"):
             if not resolved.is_relative_to(abs_upload):
-                raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR:S8415: endpoint error handling is intentional
+                raise HTTPException(
+                    status_code=400, detail="Invalid file path"
+                )  # NOSONAR:S8415: endpoint error handling is intentional
         else:
             resolved.relative_to(abs_upload)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR:S8415: endpoint error handling is intentional
+        raise HTTPException(
+            status_code=400, detail="Invalid file path"
+        )  # NOSONAR:S8415: endpoint error handling is intentional
     return str(resolved)
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────
+
 
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
@@ -206,7 +212,6 @@ class SimReadyConvertResponse(BaseModel):
     stage_reports: dict[str, Any] = {}
 
 
-
 class ConfigureResponse(BaseModel):
     """Response model for configuration update."""
 
@@ -261,9 +266,7 @@ _VALID_CONVERSION_TYPES = ("autocad_to_revit", "revit_to_autocad")
 _SAFE_FORMAT_RE = re.compile(r"^[a-zA-Z0-9._-]{1,32}$")
 
 
-def _validate_conversion_format(
-    fmt: str | None, field: str, default: str
-) -> str:
+def _validate_conversion_format(fmt: str | None, field: str, default: str) -> str:
     """Validate a conversion format string before it is used in a file path."""
     value = (fmt or default).strip()
     if _SAFE_FORMAT_RE.fullmatch(value) is None:
@@ -294,6 +297,7 @@ def _resolve_conversion_type(
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
+
 async def _resolve_source_filepath(request: ConvertRequest, source_format: str) -> str:
     """Resolve and validate the source file path."""
     import tempfile
@@ -305,12 +309,13 @@ async def _resolve_source_filepath(request: ConvertRequest, source_format: str) 
         # Create the dummy source file if it doesn't exist
         if not os.path.exists(source_filepath):
             import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+
             async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                 await f.write("MOCK SOURCE DATA")
         return source_filepath
 
     try:
-        return validate_input_path(source_filepath, parser_name='digital_twin_convert')
+        return validate_input_path(source_filepath, parser_name="digital_twin_convert")
     except (UnsafePathError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
 
@@ -325,7 +330,7 @@ async def _resolve_target_filepath(request: ConvertRequest, target_format: str) 
         return os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
 
     try:
-        return validate_output_path(target_filepath, parser_name='digital_twin_convert')
+        return validate_output_path(target_filepath, parser_name="digital_twin_convert")
     except (UnsafePathError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid target path: {e}")
 
@@ -376,15 +381,13 @@ async def convert_files(
         # strings that previously reached os.path.join() unvalidated — a value
         # like "../" or "../../" could escape the temp dir. Validate against a
         # strict whitelist BEFORE any path construction.
-        source_format = _validate_conversion_format(
-            request.sourceFormat, "sourceFormat", "dwg"
-        )
-        target_format = _validate_conversion_format(
-            request.targetFormat, "targetFormat", "rvt"
-        )
+        source_format = _validate_conversion_format(request.sourceFormat, "sourceFormat", "dwg")
+        target_format = _validate_conversion_format(request.targetFormat, "targetFormat", "rvt")
 
         conversion_type = _resolve_conversion_type(
-            request.conversion_type, source_format, target_format,
+            request.conversion_type,
+            source_format,
+            target_format,
         )
 
         if conversion_type not in _VALID_CONVERSION_TYPES:
@@ -402,7 +405,11 @@ async def convert_files(
         target_filepath = await _resolve_target_filepath(request, target_format)
 
         result = _execute_conversion(
-            service, conversion_type, source_filepath, target_filepath, request,
+            service,
+            conversion_type,
+            source_filepath,
+            target_filepath,
+            request,
         )
 
         return ConvertResponse(
@@ -413,14 +420,14 @@ async def convert_files(
             duration_seconds=getattr(result, "duration_seconds", None),
             errors=result.errors,
             warnings=result.warnings,
-            download_url=f"/api/v1/digital-twin/download/{os.path.basename(result.target_file)}" if result.success else None,
+            download_url=f"/api/v1/digital-twin/download/{os.path.basename(result.target_file)}"
+            if result.success
+            else None,
         )
     except HTTPException:
         raise
     except Exception as e:
         raise _safe_error(500, "Error during conversion", e)
-
-
 
 
 # Without this check, `await file.read()` reads the entire file into memory,
@@ -470,10 +477,7 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
         if ext not in (".ifc", ".dxf", ".dwg"):
             raise HTTPException(
                 status_code=400,
-                detail=(
-                    f"Unsupported file type: '{ext}'. "
-                    "Supported: .ifc, .dxf, .dwg"
-                ),
+                detail=(f"Unsupported file type: '{ext}'. Supported: .ifc, .dxf, .dwg"),
             )
 
         # The user-controlled filename flows into logger calls (S5145 log injection)
@@ -487,7 +491,7 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
         #
         # This is the correct security pattern: validate at the trust boundary,
         # not at the sink.
-        _SAFE_FILENAME_RE = re.compile(r'^[a-zA-Z0-9._\- ]{1,255}$')
+        _SAFE_FILENAME_RE = re.compile(r"^[a-zA-Z0-9._\- ]{1,255}$")
         if not _SAFE_FILENAME_RE.match(original_name):
             raise HTTPException(
                 status_code=400,
@@ -562,7 +566,8 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
             warnings=result.warnings,
             download_url=(
                 f"/api/v1/digital-twin/download/{os.path.basename(result.target_file)}"
-                if result.success else None
+                if result.success
+                else None
             ),
         )
 
@@ -571,7 +576,7 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
     except Exception as e:
         # Clean up uploaded file if conversion fails
         try:
-            if 'source_path' in locals() and os.path.exists(source_path):
+            if "source_path" in locals() and os.path.exists(source_path):
                 os.remove(source_path)
         except Exception:
             pass
@@ -606,7 +611,9 @@ async def configure_conversion(
                 success=True,
                 message="Configuration updated successfully",
             )
-        raise HTTPException(status_code=500, detail="Failed to save configuration")  # NOSONAR:S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Failed to save configuration"
+        )  # NOSONAR:S8415: assignment kept for readability / debuggability
     except HTTPException:
         raise
     except Exception as e:
@@ -710,7 +717,9 @@ async def update_single_mapping(
                 "message": f"Mapping updated: {request.layer} -> {request.category} ({request.direction})",
                 "mapping": {request.layer: request.category},
             }
-        raise HTTPException(status_code=500, detail="Failed to update mapping")  # NOSONAR:S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Failed to update mapping"
+        )  # NOSONAR:S8415: assignment kept for readability / debuggability
     except HTTPException:
         raise
     except Exception as e:
@@ -734,7 +743,9 @@ async def get_config(
         config = config_mgr.load_config()
         return {
             "config": config.to_dict(),
-            "loaded_from": str(config_mgr.config_file) if hasattr(config_mgr, "config_file") and config_mgr.config_file.exists() else "default",
+            "loaded_from": str(config_mgr.config_file)
+            if hasattr(config_mgr, "config_file") and config_mgr.config_file.exists()
+            else "default",
         }
     except Exception as e:
         raise _safe_error(500, "Error getting configuration", e)
@@ -811,7 +822,9 @@ async def convert_cad_to_simready_endpoint(
 ) -> SimReadyConvertResponse:
     """Convert CAD/BIM model into an NVIDIA SimReady OpenUSD package."""
     try:
-        validated_source = validate_input_path(request.source_filepath, parser_name="simready_convert")
+        validated_source = validate_input_path(
+            request.source_filepath, parser_name="simready_convert"
+        )
     except (UnsafePathError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
 
@@ -825,4 +838,3 @@ async def convert_cad_to_simready_endpoint(
         return SimReadyConvertResponse(**res)
     except Exception as e:
         raise _safe_error(500, "CAD to SimReady conversion failed", e)
-

@@ -761,20 +761,27 @@ if __name__ == "__main__":
     assert lc.state == RoomState.ANALYZING
 
     lc.transition_to(
-        RoomState.OPTIMIZED, "3 smoke detectors placed", "system", metadata={"detector_count": 3, "coverage_pct": 100.0}
+        RoomState.OPTIMIZED,
+        "3 smoke detectors placed",
+        "system",
+        metadata={"detector_count": 3, "coverage_pct": 100.0},
     )
     assert lc.state == RoomState.OPTIMIZED
 
     lc.transition_to(RoomState.VERIFYING, "Triple consensus start", "system")
     assert lc.state == RoomState.VERIFYING
 
-    lc.transition_to(RoomState.VERIFIED, "3/3 engines PASS", "system", metadata={"n_pass": 3, "n_total": 3})  # nosec B105 — false positive: '3' is engine count, not password
+    lc.transition_to(
+        RoomState.VERIFIED, "3/3 engines PASS", "system", metadata={"n_pass": 3, "n_total": 3}
+    )  # nosec B105 — false positive: '3' is engine count, not password
     assert lc.state == RoomState.VERIFIED
 
     lc.transition_to(RoomState.CERTIFYING, "Generating proof certificate", "system")
     assert lc.state == RoomState.CERTIFYING
 
-    lc.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system", metadata={"sha256": "abc123def456"})
+    lc.transition_to(
+        RoomState.CERTIFIED, "SHA-256 sealed", "system", metadata={"sha256": "abc123def456"}
+    )
     assert lc.state == RoomState.CERTIFIED
     assert lc.is_terminal()
     assert len(lc.history) == 6
@@ -797,7 +804,9 @@ if __name__ == "__main__":
     lc3.transition_to(RoomState.ANALYZING, "Start", "system")
     lc3.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc3.transition_to(RoomState.VERIFYING, "Verify", "system")
-    lc3.transition_to(RoomState.WARNING, "2/3 engines agree", "system", metadata={"n_pass": 2, "n_total": 3})  # nosec B105 — false positive: '2' is engine count, not password
+    lc3.transition_to(
+        RoomState.WARNING, "2/3 engines agree", "system", metadata={"n_pass": 2, "n_total": 3}
+    )  # nosec B105 — false positive: '2' is engine count, not password
     assert lc3.state == RoomState.WARNING
     assert not lc3.is_failed()
 
@@ -828,7 +837,9 @@ if __name__ == "__main__":
     print("\n[TEST 5] FAILED → PENDING (retry)")
     lc5 = RoomLifecycle(room_id="R-105")
     lc5.transition_to(RoomState.ANALYZING, "Start", "system")
-    lc5.transition_to(RoomState.FAILED, "Geometry error", "system", metadata={"error": "Room has zero area"})
+    lc5.transition_to(
+        RoomState.FAILED, "Geometry error", "system", metadata={"error": "Room has zero area"}
+    )
     assert lc5.state == RoomState.FAILED
     assert lc5.is_failed()
 
@@ -842,7 +853,9 @@ if __name__ == "__main__":
     lc6.transition_to(RoomState.ANALYZING, "Start", "system")
     lc6.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc6.transition_to(RoomState.VERIFYING, "Verify", "system")
-    lc6.transition_to(RoomState.VERIFIED, "3/3 PASS", "system")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    lc6.transition_to(
+        RoomState.VERIFIED, "3/3 PASS", "system"
+    )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     lc6.transition_to(RoomState.CERTIFYING, "Generate cert", "system")
     lc6.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system")
     lc6.transition_to(
@@ -911,8 +924,12 @@ if __name__ == "__main__":
     assert status[RoomState.CERTIFIED] == 1
     assert status[RoomState.PENDING] == 2
     assert not mgr.all_certified()
-    assert mgr.certification_progress() == (1.0 / 3.0) * 100.0  # NOSONAR — S1244: import retained for re-export / API surface
-    print(f"   ✓ Manager: {mgr.room_count()} rooms, 1 certified, progress={mgr.certification_progress():.1f}%")
+    assert (
+        mgr.certification_progress() == (1.0 / 3.0) * 100.0
+    )  # NOSONAR — S1244: import retained for re-export / API surface
+    print(
+        f"   ✓ Manager: {mgr.room_count()} rooms, 1 certified, progress={mgr.certification_progress():.1f}%"
+    )
 
     # Certify remaining rooms
     for rid in ["R-202", "R-203"]:
@@ -925,7 +942,9 @@ if __name__ == "__main__":
         r.transition_to(RoomState.CERTIFIED, "Sealed", "system")
 
     assert mgr.all_certified()
-    assert mgr.certification_progress() == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+    assert (
+        mgr.certification_progress() == 100.0
+    )  # NOSONAR — S1244: import retained for re-export / API surface
     print(f"   ✓ All rooms certified: all_certified()={mgr.all_certified()}")
 
     # ── Test 10: EventBus Integration ───────────────────────────────
@@ -960,12 +979,18 @@ if __name__ == "__main__":
     assert len(d["history"]) == 2
     assert d["history"][0]["from_state"] == "PENDING"
     assert d["history"][0]["to_state"] == "ANALYZING"
-    print(f"   ✓ Serialization: room_id={d['room_id']}, state={d['state']}, transitions={d['transition_count']}")
+    print(
+        f"   ✓ Serialization: room_id={d['room_id']}, state={d['state']}, transitions={d['transition_count']}"
+    )
 
     mgr_d = mgr.to_dict()
     assert mgr_d["room_count"] == 3
-    assert mgr_d["certification_progress"] == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
-    print(f"   ✓ Manager serialization: {mgr_d['room_count']} rooms, progress={mgr_d['certification_progress']:.1f}%")
+    assert (
+        mgr_d["certification_progress"] == 100.0
+    )  # NOSONAR — S1244: import retained for re-export / API surface
+    print(
+        f"   ✓ Manager serialization: {mgr_d['room_count']} rooms, progress={mgr_d['certification_progress']:.1f}%"
+    )
 
     # ── Test 12: Thread Safety (stress test) ────────────────────────
     print("\n[TEST 12] Thread safety stress test")
@@ -989,7 +1014,9 @@ if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = []
         for _ in range(10):
-            futures.append(executor.submit(transition_worker, "PENDING", RoomState.ANALYZING, "Thread test"))
+            futures.append(
+                executor.submit(transition_worker, "PENDING", RoomState.ANALYZING, "Thread test")
+            )
         concurrent.futures.wait(futures)
 
     assert len(errors) == 0, f"Thread safety errors: {errors}"

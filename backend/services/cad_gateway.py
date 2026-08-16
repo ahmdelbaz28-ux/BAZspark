@@ -11,13 +11,16 @@ from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
 
+
 class CADElement(BaseModel):
     id: str = Field(..., description="Unique element/entity identifier or handle")
     provider: str = Field(..., description="Provider: autocad or revit")
     type: str = Field(..., description="type of element (e.g. Wall, Line, Circle)")
     layer: str | None = Field(None, description="Layer or category of the element")
     color: int | None = Field(None, description="Color code if applicable")
-    properties: dict[str, Any] = Field(default_factory=dict, description="Custom parameters or geometries")
+    properties: dict[str, Any] = Field(
+        default_factory=dict, description="Custom parameters or geometries"
+    )
 
 
 class CADGateway:
@@ -26,6 +29,7 @@ class CADGateway:
     Exposes a unified interface for connection, status checking, reading,
     writing, and drawing operations, routing them to AutoCAD or Revit.
     """
+
     _instance: CADGateway | None = None
     _lock = threading.Lock()
 
@@ -86,17 +90,21 @@ class CADGateway:
             return {
                 "connected": service.connected,
                 "simulation_mode": getattr(service, "simulation_mode", False),
-                "details": {"app": "AutoCAD", "has_api": True}
+                "details": {"app": "AutoCAD", "has_api": True},
             }
         elif provider_lower == "revit":
             return {
                 "connected": service.connected,
                 "connection_method": service.connection_method,
-                "simulation_mode": service.simulation_mode
+                "simulation_mode": service.simulation_mode,
             }
         return {"connected": False}
 
-    def read_drawing(self, provider: str, filepath: str) -> list[CADElement]:  # NOSONAR — S3776: multi-format CAD reading requires provider-specific branching
+    def read_drawing(
+        self, provider: str, filepath: str
+    ) -> list[
+        CADElement
+    ]:  # NOSONAR — S3776: multi-format CAD reading requires provider-specific branching
         service = self.get_service(provider)
         elements = []
         provider_lower = provider.lower()
@@ -109,27 +117,27 @@ class CADGateway:
                     obj_name = ent.get("object_name") or ent.get("ObjectName") or "Unknown"
                     layer = ent.get("layer") or ent.get("Layer") or "0"
                     color = ent.get("color") or ent.get("Color") or 0
-                    elements.append(CADElement(
-                        id=handle,
-                        provider="autocad",
-                        type=obj_name,
-                        layer=layer,
-                        color=color,
-                        properties=ent
-                    ))
+                    elements.append(
+                        CADElement(
+                            id=handle,
+                            provider="autocad",
+                            type=obj_name,
+                            layer=layer,
+                            color=color,
+                            properties=ent,
+                        )
+                    )
         elif provider_lower == "revit":
             revit_elements = service.extract_element_data()
             for elem in revit_elements:
                 elem_id = elem.get("id") or elem.get("Id") or ""
                 name = elem.get("name") or elem.get("Name") or "Element"
                 cat = elem.get("category") or elem.get("Category") or ""
-                elements.append(CADElement(
-                    id=str(elem_id),
-                    provider="revit",
-                    type=name,
-                    layer=cat,
-                    properties=elem
-                ))
+                elements.append(
+                    CADElement(
+                        id=str(elem_id), provider="revit", type=name, layer=cat, properties=elem
+                    )
+                )
         return elements
 
     def write_drawing(self, provider: str, filepath: str, elements: list[CADElement]) -> bool:
@@ -138,19 +146,30 @@ class CADGateway:
         if provider_lower == "autocad":
             entities = []
             for elem in elements:
-                entities.append({
-                    "Handle": elem.id,
-                    "ObjectName": elem.type,
-                    "Layer": elem.layer or "0",
-                    "Color": elem.color or 0
-                })
+                entities.append(
+                    {
+                        "Handle": elem.id,
+                        "ObjectName": elem.type,
+                        "Layer": elem.layer or "0",
+                        "Color": elem.color or 0,
+                    }
+                )
             return service.write_dwg(filepath, entities)
         elif provider_lower == "revit":
-            logger.info("Writing %d elements to Revit file %s (Simulation)", len(elements), filepath)
+            logger.info(
+                "Writing %d elements to Revit file %s (Simulation)", len(elements), filepath
+            )
             return True
         return False
 
-    def draw_line(self, provider: str, start_point: list[float], end_point: list[float], layer: str = "0", color: int = 256) -> str:
+    def draw_line(
+        self,
+        provider: str,
+        start_point: list[float],
+        end_point: list[float],
+        layer: str = "0",
+        color: int = 256,
+    ) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -159,7 +178,14 @@ class CADGateway:
             return service.create_wall(start_point, end_point)
         return ""
 
-    def draw_polyline(self, provider: str, vertices: list[list[float]], layer: str = "0", color: int = 256, closed: bool = False) -> str:
+    def draw_polyline(
+        self,
+        provider: str,
+        vertices: list[list[float]],
+        layer: str = "0",
+        color: int = 256,
+        closed: bool = False,
+    ) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -168,7 +194,9 @@ class CADGateway:
             return service.create_floor(vertices)
         return ""
 
-    def draw_circle(self, provider: str, center: list[float], radius: float, layer: str = "0", color: int = 256) -> str:
+    def draw_circle(
+        self, provider: str, center: list[float], radius: float, layer: str = "0", color: int = 256
+    ) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":
@@ -177,7 +205,15 @@ class CADGateway:
             return service.create_column(center, "Round Column")
         return ""
 
-    def draw_text(self, provider: str, text: str, insertion_point: list[float], height: float = 0.2, layer: str = "0", color: int = 256) -> str:
+    def draw_text(
+        self,
+        provider: str,
+        text: str,
+        insertion_point: list[float],
+        height: float = 0.2,
+        layer: str = "0",
+        color: int = 256,
+    ) -> str:
         service = self.get_service(provider)
         provider_lower = provider.lower()
         if provider_lower == "autocad":

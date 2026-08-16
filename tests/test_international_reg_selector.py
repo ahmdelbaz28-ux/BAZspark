@@ -51,8 +51,13 @@ from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 class TestHazardSystem:
     def test_all_systems(self):
         expected = {
-            "NEC_DIVISION", "CEC_ZONE", "ATEX_ZONE",
-            "IECEX_ZONE", "AS_NZS_ZONE", "GOST_ZONE", "GB_ZONE",
+            "NEC_DIVISION",
+            "CEC_ZONE",
+            "ATEX_ZONE",
+            "IECEX_ZONE",
+            "AS_NZS_ZONE",
+            "GOST_ZONE",
+            "GB_ZONE",
         }
         actual = {s.value for s in HazardSystem}
         assert actual == expected
@@ -81,8 +86,13 @@ class TestNECDivision:
 class TestATEXZone:
     def test_zones(self):
         expected = {
-            "ZONE_0", "ZONE_1", "ZONE_2",
-            "ZONE_20", "ZONE_21", "ZONE_22", "SAFE",
+            "ZONE_0",
+            "ZONE_1",
+            "ZONE_2",
+            "ZONE_20",
+            "ZONE_21",
+            "ZONE_22",
+            "SAFE",
         }
         actual = {z.value for z in ATEXZone}
         assert expected == actual
@@ -305,22 +315,16 @@ class TestInternationalRegSelector:
         assert div is None
 
     def test_convert_div1_to_zone1(self, selector):
-        zone = selector.convert_division_to_zone(
-            NECDivision.DIVISION_1, HazardClass.CLASS_I
-        )
+        zone = selector.convert_division_to_zone(NECDivision.DIVISION_1, HazardClass.CLASS_I)
         assert zone == ATEXZone.ZONE_1
 
     def test_convert_div2_to_zone2(self, selector):
-        zone = selector.convert_division_to_zone(
-            NECDivision.DIVISION_2, HazardClass.CLASS_I
-        )
+        zone = selector.convert_division_to_zone(NECDivision.DIVISION_2, HazardClass.CLASS_I)
         assert zone == ATEXZone.ZONE_2
 
     def test_class3_div1_returns_none(self, selector):
         """Fix #4: CLASS_III has no IEC zone equivalent."""
-        zone = selector.convert_division_to_zone(
-            NECDivision.DIVISION_1, HazardClass.CLASS_III
-        )
+        zone = selector.convert_division_to_zone(NECDivision.DIVISION_1, HazardClass.CLASS_III)
         assert zone is None
 
     def test_list_supported_countries(self, selector):

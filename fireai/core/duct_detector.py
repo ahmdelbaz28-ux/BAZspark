@@ -182,7 +182,11 @@ class DuctAnalysisResult:
 # ============================================================================
 
 
-def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def analyse_duct(
+    duct: DuctSpec,
+) -> (
+    DuctAnalysisResult
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Compute required duct detector positions per NFPA 72 §17.7.5.
 
@@ -214,7 +218,9 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
     # When CFM is KNOWN and >2000 for supply/return/mixed ducts, detectors
     # are REQUIRED regardless of dimensions. This overrides ALL exemptions.
     cfm_override = (
-        duct.airflow_cfm is not None and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD and _is_supply_return_mixed
+        duct.airflow_cfm is not None
+        and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD
+        and _is_supply_return_mixed
     )
 
     # ── CFM unknown block (V68 FIX — life-safety conservative) ────────────
@@ -226,7 +232,9 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
 
     if not cfm_override and not cfm_unknown_blocks_exemption:
         # ── Exemption: zero-dimension ducts ──────────────────────────────
-        if duct.width_m == 0.0 or duct.length_m == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+        if (
+            duct.width_m == 0.0 or duct.length_m == 0.0
+        ):  # NOSONAR — S1244: import retained for re-export / API surface
             return DuctAnalysisResult(
                 duct_id=duct.duct_id,
                 duct_length_m=duct.length_m,
@@ -394,7 +402,11 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
             duct.duct_type.lower() in ("supply", "return", "mixed")
             and (duct.airflow_cfm is None or duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD)
         ),
-        hvac_shutdown_ref=("NFPA 72-2022 §21.7.1" if duct.duct_type.lower() in ("supply", "return", "mixed") else ""),
+        hvac_shutdown_ref=(
+            "NFPA 72-2022 §21.7.1"
+            if duct.duct_type.lower() in ("supply", "return", "mixed")
+            else ""
+        ),
     )
 
 

@@ -50,7 +50,11 @@ class IfcParser:
     STEP_PATTERN = re.compile(r"#(\d+)\s*=\s*([A-Z0-9_]+)\s*\(([^)]*)\)\s*;")
 
     @staticmethod
-    def parse_ifc(filepath: str, file_hash: str) -> Result[Building, GeometryError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def parse_ifc(
+        filepath: str, file_hash: str
+    ) -> Result[
+        Building, GeometryError
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Parses IFC file contents. Uses a regular-expression STEP parser
         if native ifcopenshell is not present.
@@ -67,17 +71,19 @@ class IfcParser:
                 parser_name="IFCParser",
             )
         except FileNotFoundError as e:
-            return Result(error=GeometryError(
-                message=str(e),
-                code_ref="OS File IO",
-                remedy="Verify file path and existence."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=str(e), code_ref="OS File IO", remedy="Verify file path and existence."
+                )
+            )
         except UnsafePathError as e:
-            return Result(error=GeometryError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .ifc/.ifcxml/.json extension."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .ifc/.ifcxml/.json extension.",
+                )
+            )
 
         try:
             validate_file_size(
@@ -86,11 +92,13 @@ class IfcParser:
                 parser_name="IFCParser",
             )
         except UnsafePathError as e:
-            return Result(error=GeometryError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="File exceeds size limit; split or reduce model complexity."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="File exceeds size limit; split or reduce model complexity.",
+                )
+            )
 
         # Use the RESOLVED (canonical) path for the actual load (TOCTOU fix)
         filepath = str(safe_path)
@@ -99,11 +107,13 @@ class IfcParser:
             with open(filepath, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception as e:
-            return Result(error=GeometryError(
-                message=f"Could not read IFC file content stream: {e!s}",
-                code_ref="IO Reader Exception",
-                remedy="Check disk health and file permissions."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"Could not read IFC file content stream: {e!s}",
+                    code_ref="IO Reader Exception",
+                    remedy="Check disk health and file permissions.",
+                )
+            )
 
         walls: list[Wall] = []
         rooms: list[Room] = []
@@ -162,18 +172,22 @@ class IfcParser:
                         "SAFETY: Wall '%s' uses placeholder geometry (start=(%.1f,%.1f), "
                         "end=(%.1f,%.1f), height=%.1f, thickness=%.2f). "
                         "Fire protection design on placeholder walls is INVALID.",
-                        wall_id, x1, y1, x2, y2, height, thickness
+                        wall_id,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        height,
+                        thickness,
                     )
 
                 start_p = Point3D(x1, y1, 0.0)
                 end_p = Point3D(x2, y2, 0.0)
-                walls.append(Wall(
-                    id=wall_id,
-                    start=start_p,
-                    end=end_p,
-                    height_m=height,
-                    thickness_m=thickness
-                ))
+                walls.append(
+                    Wall(
+                        id=wall_id, start=start_p, end=end_p, height_m=height, thickness_m=thickness
+                    )
+                )
                 wall_counter += 1
 
         # Parse spaces/rooms (IFCSPACE)
@@ -203,16 +217,18 @@ class IfcParser:
                     "(10m x 10m fallback box). The actual room shape is UNKNOWN. "
                     "Fire protection design on placeholder geometry is INVALID. "
                     "Install ifcopenshell for real IFC geometry extraction.",
-                    room_id
+                    room_id,
                 )
-                rooms.append(Room(
-                    id=room_id,
-                    name=name,
-                    boundary=boundary,
-                    area_m2=area,
-                    height_m=3.0,
-                    has_placeholder_boundary=True
-                ))
+                rooms.append(
+                    Room(
+                        id=room_id,
+                        name=name,
+                        boundary=boundary,
+                        area_m2=area,
+                        height_m=3.0,
+                        has_placeholder_boundary=True,
+                    )
+                )
                 placeholder_room_count += 1
                 room_counter += 1
 
@@ -225,30 +241,34 @@ class IfcParser:
                 logger.warning(
                     "Door '%s' location is placeholder (origin) — "
                     "actual door position is unknown from regex parsing.",
-                    f"IFC_DOOR_{inst_id}_{opening_counter:03d}"
+                    f"IFC_DOOR_{inst_id}_{opening_counter:03d}",
                 )
-                openings.append(Opening(
-                    id=f"IFC_DOOR_{inst_id}_{opening_counter:03d}",
-                    opening_type="DOOR",
-                    location=Point3D(0.0, 0.0, 0.0),
-                    width_m=0.9,
-                    height_m=2.1
-                ))
+                openings.append(
+                    Opening(
+                        id=f"IFC_DOOR_{inst_id}_{opening_counter:03d}",
+                        opening_type="DOOR",
+                        location=Point3D(0.0, 0.0, 0.0),
+                        width_m=0.9,
+                        height_m=2.1,
+                    )
+                )
                 placeholder_opening_count += 1
                 opening_counter += 1
             elif inst_type == "IFCWINDOW":
                 logger.warning(
                     "Window '%s' location is placeholder (origin) — "
                     "actual window position is unknown from regex parsing.",
-                    f"IFC_WINDOW_{inst_id}_{opening_counter:03d}"
+                    f"IFC_WINDOW_{inst_id}_{opening_counter:03d}",
                 )
-                openings.append(Opening(
-                    id=f"IFC_WINDOW_{inst_id}_{opening_counter:03d}",
-                    opening_type="WINDOW",
-                    location=Point3D(0.0, 0.0, 1.0),
-                    width_m=1.2,
-                    height_m=1.5
-                ))
+                openings.append(
+                    Opening(
+                        id=f"IFC_WINDOW_{inst_id}_{opening_counter:03d}",
+                        opening_type="WINDOW",
+                        location=Point3D(0.0, 0.0, 1.0),
+                        width_m=1.2,
+                        height_m=1.5,
+                    )
+                )
                 placeholder_opening_count += 1
                 opening_counter += 1
 
@@ -267,16 +287,18 @@ class IfcParser:
                 Point3D(0.0, 0.0, 0.0),
                 Point3D(10.0, 0.0, 0.0),
                 Point3D(10.0, 10.0, 0.0),
-                Point3D(0.0, 10.0, 0.0)
+                Point3D(0.0, 10.0, 0.0),
             )
-            rooms.append(Room(
-                id="IFC_ROOM_FALLBACK",
-                name="Fallback Room (IFC parsing found no rooms)",
-                boundary=fallback_boundary,
-                area_m2=IfcParser._calculate_polygon_area(fallback_boundary),
-                height_m=3.0,
-                has_placeholder_boundary=True
-            ))
+            rooms.append(
+                Room(
+                    id="IFC_ROOM_FALLBACK",
+                    name="Fallback Room (IFC parsing found no rooms)",
+                    boundary=fallback_boundary,
+                    area_m2=IfcParser._calculate_polygon_area(fallback_boundary),
+                    height_m=3.0,
+                    has_placeholder_boundary=True,
+                )
+            )
             has_fallback = True
 
         # SAFETY FIX (V58): Building with ANY placeholder room boundaries is INVALID.
@@ -292,7 +314,7 @@ class IfcParser:
                 "SAFETY GATE: Building has %d wall(s) with placeholder geometry. "
                 "has_fallback_geometry=True — geometry validator will REJECT this building. "
                 "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction.",
-                placeholder_wall_count
+                placeholder_wall_count,
             )
 
         # If rooms exist but ALL have placeholder boundaries, the building model is
@@ -303,7 +325,7 @@ class IfcParser:
                 "SAFETY GATE: Building has %d room(s) with placeholder boundary geometry. "
                 "has_fallback_geometry=True — geometry validator will REJECT this building. "
                 "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction.",
-                placeholder_room_count
+                placeholder_room_count,
             )
 
         # Detect IFC version from header
@@ -321,7 +343,7 @@ class IfcParser:
             walls=tuple(walls),
             rooms=tuple(rooms),
             openings=tuple(openings),
-            has_fallback_geometry=has_fallback
+            has_fallback_geometry=has_fallback,
         )
         return Result(value=b)
 
@@ -330,7 +352,9 @@ class IfcParser:
         """Extract coordinate values from STEP entity parameters."""
         result = {}
         # Try to find numeric values in params
-        nums = re.findall(r"[-+]?\d*\.?\d+", params)  # NOSONAR — S8786: assert kept for test clarity
+        nums = re.findall(
+            r"[-+]?\d*\.?\d+", params
+        )  # NOSONAR — S8786: assert kept for test clarity
         if len(nums) >= 2:
             result["x1"] = float(nums[0])
             result["y1"] = float(nums[1])
@@ -371,7 +395,7 @@ class IfcParser:
             Point3D(offset_x, offset_y, 0.0),
             Point3D(offset_x + 10.0, offset_y, 0.0),
             Point3D(offset_x + 10.0, offset_y + 10.0, 0.0),
-            Point3D(offset_x, offset_y + 10.0, 0.0)
+            Point3D(offset_x, offset_y + 10.0, 0.0),
         )
 
     @staticmethod

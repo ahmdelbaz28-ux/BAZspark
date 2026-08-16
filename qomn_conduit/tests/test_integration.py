@@ -29,26 +29,21 @@ from qomn_conduit import (
 # Test 1: Float64 operations produce identical results
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestFloat64Determinism:
     """float64 operations must produce identical results on any platform."""
 
     def test_fill_percentage_determinism(self):
         """Same cable diameters → identical fill percentage."""
         cables = [0.111, 0.111, 0.111]
-        results = [
-            calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, cables)
-            for _ in range(10)
-        ]
+        results = [calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, cables) for _ in range(10)]
         fill_pcts = [r.value.fill_percentage for r in results if r.is_ok()]
         # All must be identical
         assert all(fp == fill_pcts[0] for fp in fill_pcts)
 
     def test_bend_developed_length_determinism(self):
         """Same bend radius → identical developed length."""
-        results = [
-            verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 4.0)
-            for _ in range(10)
-        ]
+        results = [verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 4.0) for _ in range(10)]
         lengths = [r.value.developed_length_in for r in results if r.is_ok()]
         assert all(l == lengths[0] for l in lengths)
 
@@ -61,6 +56,7 @@ class TestFloat64Determinism:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 2: SHA-256 of complete run is identical across runs
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestSHA256Consistency:
     """SHA-256 hash of conduit run output must be identical across runs."""
@@ -92,6 +88,7 @@ class TestSHA256Consistency:
 # Test 3: Cross-module integration — full pipeline
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestFullPipelineIntegration:
     """End-to-end test: fill → bend → route → fittings → output."""
 
@@ -100,7 +97,7 @@ class TestFullPipelineIntegration:
         result = calculate_fill(
             conduit_type=ConduitType.EMT,
             trade_size=TradeSize.HALF_INCH,
-            cable_diameters=[0.111, 0.111, 0.111]
+            cable_diameters=[0.111, 0.111, 0.111],
         )
         assert result.is_ok()
         # Geometric formula: 3 × π(0.0555)² / 0.304 × 100 ≈ 9.55%
@@ -111,15 +108,11 @@ class TestFullPipelineIntegration:
     def test_example_2_bend_verification(self):
         r"""Example 2 from spec: Verify bend radius for ½\" EMT R=4.0\"."""
         result = verify_bend_radius(
-            conduit_type=ConduitType.EMT,
-            trade_size=TradeSize.HALF_INCH,
-            actual_radius=4.0
+            conduit_type=ConduitType.EMT, trade_size=TradeSize.HALF_INCH, actual_radius=4.0
         )
         assert result.is_ok()
         assert result.value.is_compliant is True
-        assert result.value.developed_length_in == pytest.approx(
-            math.pi * 4.0 / 2, abs=0.001
-        )
+        assert result.value.developed_length_in == pytest.approx(math.pi * 4.0 / 2, abs=0.001)
 
     def test_example_3_route_and_place_fittings(self):
         """Example 3 from spec: Route and place fittings."""
@@ -140,7 +133,9 @@ class TestFullPipelineIntegration:
             trade_size=TradeSize.THREE_QUARTER,
         )
         assert run.is_ok()
-        assert len(run.value.fittings) >= 0  # May or may not have fittings on short paths  # NOSONAR — S3981: collection size check acceptable
+        assert (
+            len(run.value.fittings) >= 0
+        )  # May or may not have fittings on short paths  # NOSONAR — S3981: collection size check acceptable
         # All EMT fittings must have catalog numbers starting with E
         for f in run.value.fittings:
             if f.fitting_type == FittingType.ELBOW_90:
@@ -152,7 +147,7 @@ class TestFullPipelineIntegration:
         result = calculate_fill(
             conduit_type=ConduitType.EMT,
             trade_size=TradeSize.HALF_INCH,
-            cable_diameters=[0.111, 0.111, 0.111]
+            cable_diameters=[0.111, 0.111, 0.111],
         )
         assert result.is_ok()
         # fill_percentage should be approximately 6.614 (per spec)
@@ -163,21 +158,18 @@ class TestFullPipelineIntegration:
 
         # Example 2: Verify bend radius
         result2 = verify_bend_radius(
-            conduit_type=ConduitType.EMT,
-            trade_size=TradeSize.HALF_INCH,
-            actual_radius=4.0
+            conduit_type=ConduitType.EMT, trade_size=TradeSize.HALF_INCH, actual_radius=4.0
         )
         assert result2.is_ok()
         assert result2.value.is_compliant is True
         # developed_length = π × 4.0 / 2
-        assert result2.value.developed_length_in == pytest.approx(
-            math.pi * 4.0 / 2, abs=0.001
-        )
+        assert result2.value.developed_length_in == pytest.approx(math.pi * 4.0 / 2, abs=0.001)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 4: Import all public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestPublicAPI:
     """All public API items must be importable from qomn_conduit."""
@@ -189,6 +181,7 @@ class TestPublicAPI:
             FittingType,
             TradeSize,
         )
+
         assert ConduitType.EMT is not None
         assert TradeSize.HALF_INCH is not None
         assert FittingType.ELBOW_90 is not None
@@ -198,6 +191,7 @@ class TestPublicAPI:
         from qomn_conduit import (
             PhysicsError,
         )
+
         assert PhysicsError is not None
 
     def test_all_functions_importable(self):
@@ -206,5 +200,6 @@ class TestPublicAPI:
             calculate_fill,
             place_fittings,
         )
+
         assert calculate_fill is not None
         assert place_fittings is not None

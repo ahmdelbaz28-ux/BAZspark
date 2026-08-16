@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     import ifcopenshell
     import ifcopenshell.geom
+
     IFC_AVAILABLE = True
 except ImportError:
     IFC_AVAILABLE = False
@@ -43,6 +44,7 @@ try:
     from fireai.core.ifc_parser import (
         SpaceInfo as _CoreSpaceInfo,  # noqa: F401
     )
+
     _HAS_CORE_IFC_PARSER = True
 except ImportError:
     _HAS_CORE_IFC_PARSER = False
@@ -53,18 +55,21 @@ except ImportError:
 
 try:
     from fireai.core.models_v21 import Obstruction as _CoreObstruction  # noqa: F401
+
     _HAS_CORE_OBSTRUCTION = True
 except ImportError:
     _HAS_CORE_OBSTRUCTION = False
 
 try:
     from fireai.core.floor_analyser import Room as _CoreRoom  # noqa: F401
+
     _HAS_CORE_ROOM = True
 except ImportError:
     _HAS_CORE_ROOM = False
 
 # Always define inline stubs — these are used when fireai.core is not
 # available (e.g. standalone deployment, testing without full package).
+
 
 @dataclass
 class Room:
@@ -78,6 +83,7 @@ class Room:
     geometry_unresolved: bool = field(default=False, repr=False)
     # geometry is a placeholder and compliance results would be INVALID.
 
+
 @dataclass
 class Device:
     """Fire protection device extracted from IfcSensor."""
@@ -86,6 +92,7 @@ class Device:
     device_type: str = "SMOKE_PHOTOELECTRIC"
     position: Point = None
     z_height: float = 0.0
+
 
 @dataclass
 class Obstruction:
@@ -102,6 +109,7 @@ try:
     from validation.spatial_normalizer import (
         SpatialNormalizer as _CoreSpatialNormalizer,
     )
+
     _HAS_CORE_NORMALIZER = True
 except ImportError:
     _HAS_CORE_NORMALIZER = False
@@ -148,7 +156,9 @@ class SpatialNormalizer:
             except Exception:
                 self._core_normalizer = None
 
-    def normalize(self, room, devices, obstructions, unit: str = "meters"):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def normalize(
+        self, room, devices, obstructions, unit: str = "meters"
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Normalize room, devices, and obstructions.
 
@@ -157,9 +167,7 @@ class SpatialNormalizer:
         # Delegate to core normalizer if available
         if self._core_normalizer is not None:
             try:
-                return self._core_normalizer.normalize(
-                    room, devices, obstructions, unit
-                )
+                return self._core_normalizer.normalize(room, devices, obstructions, unit)
             except Exception:
                 pass  # Fall through to inline implementation
 
@@ -169,9 +177,11 @@ class SpatialNormalizer:
         if room.geometry and not room.geometry.is_valid:
             room.geometry = room.geometry.buffer(0)
             if not room.geometry.is_valid:
+
                 class NormError:
                     severity = _ErrorSeverity.CRITICAL
                     message = f"Room {room.id} has irreparable geometry"
+
                 errors.append(NormError())
                 return room, devices, obstructions, errors
 
@@ -181,7 +191,9 @@ class SpatialNormalizer:
             if d.position and room.geometry and room.geometry.covers(d.position):
                 norm_devices.append(d)
             elif d.position is None:
-                norm_devices.append(d)  # Can't validate without position  # NOSONAR — S1871: branches intentionally separate
+                norm_devices.append(
+                    d
+                )  # Can't validate without position  # NOSONAR — S1871: branches intentionally separate
             # Devices outside room are excluded (spatial resolution did its job)
 
         # Repair obstruction geometry
@@ -198,11 +210,13 @@ class SpatialNormalizer:
 # Spatial Resolution Ledger
 # =============================================================================
 
+
 class ResolutionSource(Enum):
-    IFC_REL_CONTAINED = "IFC_REL_CONTAINED"       # Explicit spatial relationship
-    GEOMETRIC_COVERS = "GEOMETRIC_COVERS"          # Geometric coverage fallback
-    PLACEMENT_FALLBACK = "PLACEMENT_FALLBACK"      # Inferred from placement
-    UNASSIGNED = "UNASSIGNED"                       # Not assigned to any room
+    IFC_REL_CONTAINED = "IFC_REL_CONTAINED"  # Explicit spatial relationship
+    GEOMETRIC_COVERS = "GEOMETRIC_COVERS"  # Geometric coverage fallback
+    PLACEMENT_FALLBACK = "PLACEMENT_FALLBACK"  # Inferred from placement
+    UNASSIGNED = "UNASSIGNED"  # Not assigned to any room
+
 
 @dataclass
 class ResolutionEntry:
@@ -232,7 +246,11 @@ class IFCBridge:
         # Initialize resolution ledger
         self.resolution_log: list[ResolutionEntry] = []
 
-    def _resolve_placement(self, placement) -> tuple[float, float, float]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _resolve_placement(
+        self, placement
+    ) -> tuple[
+        float, float, float
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Resolve accumulated IfcLocalPlacement chain and return final coordinates.
         If unable to resolve, returns (0.0, 0.0, 0.0).
@@ -240,23 +258,25 @@ class IFCBridge:
         x, y, z = 0.0, 0.0, 0.0
         current = placement
         while current is not None:
-            if hasattr(current, 'RelativePlacement') and current.RelativePlacement:
+            if hasattr(current, "RelativePlacement") and current.RelativePlacement:
                 rel = current.RelativePlacement
-                if hasattr(rel, 'Location') and rel.Location:
+                if hasattr(rel, "Location") and rel.Location:
                     loc = rel.Location
-                    if hasattr(loc, 'Coordinates'):
+                    if hasattr(loc, "Coordinates"):
                         coords = loc.Coordinates
                         x += coords[0] if len(coords) > 0 else 0.0
                         y += coords[1] if len(coords) > 1 else 0.0
                         z += coords[2] if len(coords) > 2 else 0.0
             # Move to parent placement (if exists)
-            if hasattr(current, 'PlacementRelTo') and current.PlacementRelTo:
+            if hasattr(current, "PlacementRelTo") and current.PlacementRelTo:
                 current = current.PlacementRelTo
             else:
                 break
         return x, y, z
 
-    def _build_spatial_index(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _build_spatial_index(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Build spatial relationship index:
         - device_to_room: dict {device_GlobalId: room_GlobalId}
@@ -267,15 +287,15 @@ class IFCBridge:
         self.obstruction_to_room = {}
 
         for rel in self.ifc_file.by_type("IfcRelContainedInSpatialStructure"):
-            related_elements = getattr(rel, 'RelatedElements', []) or []
-            relating_structure = getattr(rel, 'RelatingStructure', None)
+            related_elements = getattr(rel, "RelatedElements", []) or []
+            relating_structure = getattr(rel, "RelatingStructure", None)
             if not relating_structure:
                 continue
-            room_id = getattr(relating_structure, 'GlobalId', None)
+            room_id = getattr(relating_structure, "GlobalId", None)
             if not room_id:
                 continue
             for elem in related_elements:
-                elem_id = getattr(elem, 'GlobalId', None)
+                elem_id = getattr(elem, "GlobalId", None)
                 if not elem_id:
                     continue
                 # Classify by type
@@ -298,7 +318,11 @@ class IFCBridge:
         lines.append(f"Total logged: {len(self.resolution_log)}")
         return "\n".join(lines)
 
-    def extract_and_normalize(self) -> tuple[list[Room], list[Device], list[Obstruction]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def extract_and_normalize(
+        self,
+    ) -> tuple[
+        list[Room], list[Device], list[Obstruction]
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Full pipeline:
         1. Extract rooms from IfcSpace
@@ -336,13 +360,15 @@ class IFCBridge:
                 if source != ResolutionSource.UNASSIGNED:
                     room_devices.append(d)
 
-                self.resolution_log.append(ResolutionEntry(
-                    element_id=d.id,
-                    element_type="DEVICE",
-                    room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
-                    source=source,
-                    confidence=conf
-                ))
+                self.resolution_log.append(
+                    ResolutionEntry(
+                        element_id=d.id,
+                        element_type="DEVICE",
+                        room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
+                        source=source,
+                        confidence=conf,
+                    )
+                )
 
             # Same logic for obstructions
             room_obs = []
@@ -364,13 +390,15 @@ class IFCBridge:
                 if source != ResolutionSource.UNASSIGNED:
                     room_obs.append(o)
 
-                self.resolution_log.append(ResolutionEntry(
-                    element_id=o.id,
-                    element_type="OBSTRUCTION",
-                    room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
-                    source=source,
-                    confidence=conf
-                ))
+                self.resolution_log.append(
+                    ResolutionEntry(
+                        element_id=o.id,
+                        element_type="OBSTRUCTION",
+                        room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
+                        source=source,
+                        confidence=conf,
+                    )
+                )
 
             # Normalize
             norm_room, norm_devs, norm_obs, errors = self.normalizer.normalize(
@@ -378,7 +406,7 @@ class IFCBridge:
             )
 
             # Reject rooms with critical errors
-            if any(getattr(e, 'severity', None) == _ErrorSeverity.CRITICAL for e in errors):
+            if any(getattr(e, "severity", None) == _ErrorSeverity.CRITICAL for e in errors):
                 continue
 
             all_rooms.append(norm_room)
@@ -387,7 +415,11 @@ class IFCBridge:
 
         return all_rooms, all_devices, all_obs
 
-    def _extract_rooms(self) -> list[Room]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_rooms(
+        self,
+    ) -> list[
+        Room
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Extract rooms from IfcSpace with Shapely Polygon geometry."""
         rooms = []
 
@@ -401,14 +433,17 @@ class IFCBridge:
 
                 # Convert to 2D polygon points
                 if len(verts) >= 6:  # At least 3 points
-                    pts_2d = [(verts[i], verts[i+1]) for i in range(0, len(verts), 3)]
+                    pts_2d = [(verts[i], verts[i + 1]) for i in range(0, len(verts), 3)]
                     poly = Polygon(pts_2d)
 
                     if not poly.is_valid or poly.area <= 0.01:
                         poly = None
             except Exception as exc:
-                logger.warning("IFC geometry extraction failed for space %s: %s",
-                               getattr(space, 'GlobalId', space.id()), exc)
+                logger.warning(
+                    "IFC geometry extraction failed for space %s: %s",
+                    getattr(space, "GlobalId", space.id()),
+                    exc,
+                )
                 poly = None
 
             # Fallback 1: Bounding Box
@@ -417,14 +452,21 @@ class IFCBridge:
                     shape = ifcopenshell.geom.create_shape(space)
                     bbox = shape.geometry.bbox  # (min_x, min_y, max_x, max_y)
                     min_x, min_y, max_x, max_y = bbox
-                    poly = Polygon([
-                        (min_x, min_y), (max_x, min_y),
-                        (max_x, max_y), (min_x, max_y),
-                        (min_x, min_y)
-                    ])
+                    poly = Polygon(
+                        [
+                            (min_x, min_y),
+                            (max_x, min_y),
+                            (max_x, max_y),
+                            (min_x, max_y),
+                            (min_x, min_y),
+                        ]
+                    )
                 except Exception as exc:
-                    logger.warning("IFC bounding box fallback failed for space %s: %s",
-                                   getattr(space, 'GlobalId', space.id()), exc)
+                    logger.warning(
+                        "IFC bounding box fallback failed for space %s: %s",
+                        getattr(space, "GlobalId", space.id()),
+                        exc,
+                    )
                     poly = None
 
             # Fallback 2: Try to use ObjectPlacement for positioned box
@@ -441,13 +483,17 @@ class IFCBridge:
                                 "IFC space %s ('%s') has no extractable geometry — "
                                 "placement at (%.1f, %.1f) but shape unknown. "
                                 "SKIPPING: fabricated geometry is a life-safety hazard.",
-                                getattr(space, 'GlobalId', space.id()),
-                                getattr(space, 'Name', 'Unnamed'),
-                                x, y
+                                getattr(space, "GlobalId", space.id()),
+                                getattr(space, "Name", "Unnamed"),
+                                x,
+                                y,
                             )
                 except Exception as exc:
-                    logger.warning("IFC placement fallback failed for space %s: %s",
-                                   getattr(space, 'GlobalId', space.id()), exc)
+                    logger.warning(
+                        "IFC placement fallback failed for space %s: %s",
+                        getattr(space, "GlobalId", space.id()),
+                        exc,
+                    )
 
             # Previous code assigned a fabricated polygon [(0,0),(10,0),(10,10),(0,10)]
             # when ALL geometry extraction methods failed. This means:
@@ -457,33 +503,38 @@ class IFCBridge:
             # This is a CRITICAL life-safety defect. Unresolvable rooms must be
             # flagged, not fabricated.
             if poly is None or not poly.is_valid or poly.area <= 0.01:
-                space_id = getattr(space, 'GlobalId', str(space.id()))
-                space_name = getattr(space, 'Name', 'Unnamed') or 'Unnamed'
+                space_id = getattr(space, "GlobalId", str(space.id()))
+                space_name = getattr(space, "Name", "Unnamed") or "Unnamed"
                 logger.critical(
                     "IFC space %s ('%s') has NO valid geometry — "
                     "all extraction methods failed. Room added with "
                     "geometry_unresolved=True; NFPA analysis MUST be skipped.",
-                    space_id, space_name
+                    space_id,
+                    space_name,
                 )
                 # Add room with placeholder flag — downstream code MUST skip NFPA
-                rooms.append(Room(
-                    id=space_id,
-                    name=space_name,
-                    geometry=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
-                    ceiling_height=3.0,
-                    ceiling_type="SMOOTH",
-                    geometry_unresolved=True,  # V111: Flag for downstream rejection
-                ))
+                rooms.append(
+                    Room(
+                        id=space_id,
+                        name=space_name,
+                        geometry=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+                        ceiling_height=3.0,
+                        ceiling_type="SMOOTH",
+                        geometry_unresolved=True,  # V111: Flag for downstream rejection
+                    )
+                )
                 continue
 
             if poly and poly.is_valid and poly.area > 0.01:
-                rooms.append(Room(
-                    id=getattr(space, 'GlobalId', str(space.id())),
-                    name=getattr(space, 'Name', 'Unnamed') or "Unnamed",
-                    geometry=poly,
-                    ceiling_height=3.0,  # Default
-                    ceiling_type="SMOOTH"
-                ))
+                rooms.append(
+                    Room(
+                        id=getattr(space, "GlobalId", str(space.id())),
+                        name=getattr(space, "Name", "Unnamed") or "Unnamed",
+                        geometry=poly,
+                        ceiling_height=3.0,  # Default
+                        ceiling_type="SMOOTH",
+                    )
+                )
 
         return rooms
 
@@ -498,14 +549,16 @@ class IFCBridge:
                     # Use placement chain resolution
                     x, y, z = self._resolve_placement(placement)
 
-                    dtype = getattr(sensor, 'PredefinedType', None) or "SMOKE_PHOTOELECTRIC"
+                    dtype = getattr(sensor, "PredefinedType", None) or "SMOKE_PHOTOELECTRIC"
 
-                    devices.append(Device(
-                        id=getattr(sensor, 'GlobalId', str(sensor.id())),
-                        device_type=dtype,
-                        position=Point(x, y),
-                        z_height=z
-                    ))
+                    devices.append(
+                        Device(
+                            id=getattr(sensor, "GlobalId", str(sensor.id())),
+                            device_type=dtype,
+                            position=Point(x, y),
+                            z_height=z,
+                        )
+                    )
             except Exception:
                 continue
 
@@ -522,15 +575,17 @@ class IFCBridge:
                     verts = shape.geometry.verts
 
                     if len(verts) >= 6:
-                        pts_2d = [(verts[i], verts[i+1]) for i in range(0, len(verts), 3)]
+                        pts_2d = [(verts[i], verts[i + 1]) for i in range(0, len(verts), 3)]
                         poly = Polygon(pts_2d)
 
                         if poly.is_valid and poly.area > 0.001:
-                            obstructions.append(Obstruction(
-                                id=getattr(entity, 'GlobalId', str(entity.id())),
-                                geometry=poly,
-                                height=2.4  # Default
-                            ))
+                            obstructions.append(
+                                Obstruction(
+                                    id=getattr(entity, "GlobalId", str(entity.id())),
+                                    geometry=poly,
+                                    height=2.4,  # Default
+                                )
+                            )
                 except Exception:
                     continue
 
@@ -547,21 +602,27 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
 
     # Basic compliance verification: check NFPA 72 spacing
     class _ComplianceOracle:
-        def verify_truth(self, room, devices, obstructions=None):  # S1172: retained for API stability
+        def verify_truth(
+            self, room, devices, obstructions=None
+        ):  # S1172: retained for API stability
             violations = []
             # Stub: check each device is within room
             for d in devices:
                 if d.position and room.geometry and not room.geometry.covers(d.position):
-                    violations.append({"type": "DEVICE_OUTSIDE_ROOM", "device_id": d.id, "room_id": room.id})
+                    violations.append(
+                        {"type": "DEVICE_OUTSIDE_ROOM", "device_id": d.id, "room_id": room.id}
+                    )
             # Flag devices that fall within a known obstruction volume
             for d in devices:
-                for obs in (obstructions or []):
+                for obs in obstructions or []:
                     if obs.geometry and d.position and obs.geometry.covers(d.position):
-                        violations.append({
-                            "type": "DEVICE_IN_OBSTRUCTION",
-                            "device_id": d.id,
-                            "room_id": room.id,
-                        })
+                        violations.append(
+                            {
+                                "type": "DEVICE_IN_OBSTRUCTION",
+                                "device_id": d.id,
+                                "room_id": room.id,
+                            }
+                        )
             return {"room_id": room.id, "violations": violations, "compliant": len(violations) == 0}
 
     oracle = _ComplianceOracle()
@@ -578,13 +639,14 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
         "rooms_processed": len(rooms),
         "total_violations": len(all_violations),
         "violations": all_violations,
-        "results": all_results
+        "results": all_results,
     }
 
 
 # =============================================================================
 # Self-Test
 # =============================================================================
+
 
 def _run_self_test():
     """Test with programmatically created IFC file with spatial relationships"""
@@ -603,40 +665,25 @@ def _run_self_test():
         ifc = ifcopenshell.file(schema="IFC4")
 
         # Create project
-        ifc.create_entity(
-            "IfcProject",
-            GlobalId="project_1",
-            Name="Test Project"
-        )
+        ifc.create_entity("IfcProject", GlobalId="project_1", Name="Test Project")
 
         # Create building
-        ifc.create_entity(
-            "IfcBuilding",
-            GlobalId="building_1",
-            Name="Test Building"
-        )
+        ifc.create_entity("IfcBuilding", GlobalId="building_1", Name="Test Building")
 
         # Create building storey
-        ifc.create_entity(
-            "IfcBuildingStorey",
-            GlobalId="storey_1",
-            Name="Ground Floor"
-        )
+        ifc.create_entity("IfcBuildingStorey", GlobalId="storey_1", Name="Ground Floor")
 
         # Create a room with placement (simple box as bounding box will be used)
         room_placement = ifc.create_entity(
             "IfcLocalPlacement",
             RelativePlacement=ifc.create_entity(
                 "IfcAxis2Placement3D",
-                Location=ifc.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))
-            )
+                Location=ifc.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+            ),
         )
 
         room = ifc.create_entity(
-            "IfcSpace",
-            GlobalId="room_1",
-            Name="Test Room",
-            ObjectPlacement=room_placement
+            "IfcSpace", GlobalId="room_1", Name="Test Room", ObjectPlacement=room_placement
         )
 
         # Create a sensor with placement at (5, 5, 2.4)
@@ -644,15 +691,15 @@ def _run_self_test():
             "IfcLocalPlacement",
             RelativePlacement=ifc.create_entity(
                 "IfcAxis2Placement3D",
-                Location=ifc.create_entity("IfcCartesianPoint", Coordinates=(5.0, 5.0, 2.4))
-            )
+                Location=ifc.create_entity("IfcCartesianPoint", Coordinates=(5.0, 5.0, 2.4)),
+            ),
         )
 
         sensor = ifc.create_entity(
             "IfcSensor",
             GlobalId="sensor_1",
             Name="Smoke Detector",
-            ObjectPlacement=sensor_placement
+            ObjectPlacement=sensor_placement,
         )
 
         # Create spatial containment relationship (sensor in room)
@@ -660,11 +707,11 @@ def _run_self_test():
             "IfcRelContainedInSpatialStructure",
             GlobalId="rel_contain_1",
             RelatingStructure=room,
-            RelatedElements=[sensor]
+            RelatedElements=[sensor],
         )
 
         # Save to temp file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ifc', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ifc", delete=False) as f:
             temp_path = f.name
 
         # Write IFC file
@@ -696,6 +743,7 @@ def _run_self_test():
 
     except Exception as e:
         import traceback
+
         print(f"\nError: {type(e).__name__}: {e}")
         traceback.print_exc()
         print("=" * 60)
@@ -703,7 +751,7 @@ def _run_self_test():
         print("=" * 60)
     finally:
         # Clean up
-        if 'temp_path' in dir() and os.path.exists(temp_path):
+        if "temp_path" in dir() and os.path.exists(temp_path):
             os.remove(temp_path)
 
 

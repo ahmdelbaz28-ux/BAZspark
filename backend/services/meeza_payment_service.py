@@ -87,49 +87,55 @@ _JSON_CONTENT_TYPE = "application/json"
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
+
 class OrderStatus(StrEnum):
     """Order lifecycle states. `paid` is terminal-success, the others are
     recoverable or terminal-failure."""
-    PENDING   = "pending"
-    PAID      = "paid"
-    FAILED    = "failed"
-    EXPIRED   = "expired"
+
+    PENDING = "pending"
+    PAID = "paid"
+    FAILED = "failed"
+    EXPIRED = "expired"
     CANCELLED = "cancelled"
-    REFUNDED  = "refunded"
+    REFUNDED = "refunded"
 
 
 class TxnStatus(StrEnum):
     """Per-transaction status. Mapped from PSP-specific codes by the adapter."""
-    PENDING   = "PENDING"
-    SUCCESS   = "SUCCESS"
-    FAILED    = "FAILED"
-    EXPIRED   = "EXPIRED"
+
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    EXPIRED = "EXPIRED"
     CANCELLED = "CANCELLED"
 
 
 class PSPName(StrEnum):
     """Supported Payment Service Providers for Meeza card routing."""
-    PAYMOB     = "paymob"
-    FAWRY      = "fawry"
-    NBE        = "nbe"
+
+    PAYMOB = "paymob"
+    FAWRY = "fawry"
+    NBE = "nbe"
     BANQUE_MISR = "banque_misr"
-    SANDBOX    = "sandbox"   # local demo / test adapter
+    SANDBOX = "sandbox"  # local demo / test adapter
 
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class MeezaConfig:
     """All Meeza-related configuration, loaded once at module import."""
+
     psp_name: PSPName
     api_key: str
     hmac_secret: str
-    hmac_algorithm: str                # "sha256" | "sha512"
+    hmac_algorithm: str  # "sha256" | "sha512"
     merchant_id: str
-    iframe_id: str                     # PayMob iframe ID, or equivalent
+    iframe_id: str  # PayMob iframe ID, or equivalent
     psp_base_url: str
     webhook_return_url: str
-    currency: str                      # ISO 4217, e.g. "EGP"
+    currency: str  # ISO 4217, e.g. "EGP"
     enabled: bool
 
     @classmethod
@@ -140,7 +146,8 @@ class MeezaConfig:
         except ValueError:
             logger.warning(
                 "MEEZA_PSP_PROVIDER=%r not in %s — falling back to sandbox",
-                psp_raw, [p.value for p in PSPName],
+                psp_raw,
+                [p.value for p in PSPName],
             )
             psp = PSPName.SANDBOX
 
@@ -301,6 +308,7 @@ _REDIS_LOCK_MODULE = None
 try:
     import redis
     import redis.lock  # noqa: F401
+
     _REDIS_LOCK_MODULE = redis
 except ImportError:
     redis = None  # type: ignore[assignment]
@@ -326,7 +334,9 @@ def _get_redis_client() -> Any:
             if _REDIS_CLIENT is None:
                 try:
                     _REDIS_CLIENT = _REDIS_LOCK_MODULE.from_url(
-                        redis_url, decode_responses=True, socket_timeout=3.0,
+                        redis_url,
+                        decode_responses=True,
+                        socket_timeout=3.0,
                     )
                     _REDIS_CLIENT.ping()  # fail fast
                     logger.info("Meeza Payment: Redis Redlock fence enabled (%s)", redis_url)
@@ -334,7 +344,8 @@ def _get_redis_client() -> Any:
                     logger.warning(
                         "Meeza Payment: Redis available but connection failed (%s); "
                         "falling back to SQLite-only atomicity. This is safe for "
-                        "single-instance deployments.", type(exc).__name__,
+                        "single-instance deployments.",
+                        type(exc).__name__,
                     )
                     _REDIS_CLIENT = None
     return _REDIS_CLIENT
@@ -361,7 +372,8 @@ class _RedlockFence:
             except Exception as exc:  # NOSONAR — broad on purpose
                 logger.warning(
                     "Meeza Payment: Redlock acquire failed (%s); proceeding "
-                    "with SQLite-only atomicity.", type(exc).__name__,
+                    "with SQLite-only atomicity.",
+                    type(exc).__name__,
                 )
                 self._lock = None
         return self
@@ -380,6 +392,7 @@ class _RedlockFence:
 
 
 # ── HMAC verification ────────────────────────────────────────────────────────
+
 
 def _hmac_digest(secret: str, message: bytes, algorithm: str) -> str:
     """Compute the HMAC hex digest."""
@@ -430,7 +443,7 @@ def verify_webhook_signature(
     expected = signature_header.strip()
     for prefix in (f"{algorithm}=", "sha256=", "sha512="):
         if expected.lower().startswith(prefix):
-            expected = expected[len(prefix):]
+            expected = expected[len(prefix) :]
             break
 
     actual = _hmac_digest(secret, payload_raw, algorithm)
@@ -440,6 +453,7 @@ def verify_webhook_signature(
 
 
 # ── Idempotency key derivation ───────────────────────────────────────────────
+
 
 def derive_idempotency_key(
     psp_name: str,
@@ -461,6 +475,7 @@ def derive_idempotency_key(
 
 # ── Public service API ───────────────────────────────────────────────────────
 
+
 @dataclass
 class Order:
     id: str
@@ -481,7 +496,7 @@ class CheckoutResult:
     order_id: str
     transaction_id: str
     checkout_url: str
-    method: str   # "iframe" | "redirect" | "sandbox"
+    method: str  # "iframe" | "redirect" | "sandbox"
     raw: dict[str, Any]
 
 
@@ -536,17 +551,29 @@ def create_order(
                  description, metadata, created_at, updated_at, expires_at, paid_at)
             VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, NULL)
             """,
-            (order_id, user_principal, amount_cents,
-             currency or cfg.currency, description, metadata_json,
-             now, now, expires_iso),
+            (
+                order_id,
+                user_principal,
+                amount_cents,
+                currency or cfg.currency,
+                description,
+                metadata_json,
+                now,
+                now,
+                expires_iso,
+            ),
         )
 
     # SonarCloud S5145: do not log user-controlled data — even truncated.
     # Use a short SHA-256 prefix as a non-reversible correlation id.
-    user_hash = hashlib.sha256(user_principal.encode("utf-8")).hexdigest()[:8] if user_principal else ""
+    user_hash = (
+        hashlib.sha256(user_principal.encode("utf-8")).hexdigest()[:8] if user_principal else ""
+    )
     logger.info(
         "Meeza Payment: order created (user_sha=%s, amount=%d %s)",
-        user_hash, amount_cents, currency or cfg.currency,
+        user_hash,
+        amount_cents,
+        currency or cfg.currency,
     )
     return {
         "id": order_id,
@@ -569,8 +596,8 @@ def get_order(order_id: str, user_principal: str | None = None) -> dict[str, Any
     _init_schema()
     with _get_conn() as conn:
         row = conn.execute(
-            "SELECT * FROM orders WHERE id = ?" +
-            (" AND user_principal = ?" if user_principal else ""),
+            "SELECT * FROM orders WHERE id = ?"
+            + (" AND user_principal = ?" if user_principal else ""),
             (order_id, user_principal) if user_principal else (order_id,),
         ).fetchone()
     if row is None:
@@ -646,15 +673,12 @@ def initiate_checkout(
     # Per-attempt idempotency key (different from webhook idempotency key,
     # which is derived from PSP-side fields). This prevents double-charge if
     # the frontend retries the checkout call.
-    init_idem = hashlib.sha256(
-        f"init|{order_id}|{txn_id}".encode()
-    ).hexdigest()
+    init_idem = hashlib.sha256(f"init|{order_id}|{txn_id}".encode()).hexdigest()
 
     if not cfg.enabled:
         # ── Sandbox / demo mode ─────────────────────────────────────────
         checkout_url = (
-            f"https://sandbox.bazspark.local/meeza/checkout?"
-            f"order_id={order_id}&txn_id={txn_id}"
+            f"https://sandbox.bazspark.local/meeza/checkout?order_id={order_id}&txn_id={txn_id}"
         )
         psp_order_id = f"sandbox-{order_id[:8]}"
         psp_payment_key = f"sandbox-key-{txn_id[:8]}"
@@ -667,7 +691,9 @@ def initiate_checkout(
         # caller can configure a supported provider.
         if cfg.psp_name == PSPName.PAYMOB:
             checkout_url, psp_order_id, psp_payment_key, raw = _paymob_checkout(
-                cfg, order, billing_data or {},
+                cfg,
+                order,
+                billing_data or {},
             )
             method = "iframe"
         else:
@@ -685,10 +711,19 @@ def initiate_checkout(
                  raw_payload, hmac_signature, created_at, updated_at, completed_at)
             VALUES (?, ?, ?, ?, ?, NULL, ?, ?, 'PENDING', ?, ?, NULL, ?, ?, NULL)
             """,
-            (txn_id, order_id, cfg.psp_name.value, psp_order_id,
-             psp_payment_key, order["amount_cents"], order["currency"],
-             init_idem, json.dumps(raw, separators=(",", ":")),
-             now, now),
+            (
+                txn_id,
+                order_id,
+                cfg.psp_name.value,
+                psp_order_id,
+                psp_payment_key,
+                order["amount_cents"],
+                order["currency"],
+                init_idem,
+                json.dumps(raw, separators=(",", ":")),
+                now,
+                now,
+            ),
         )
 
     # SonarCloud S5145: do not log user-controlled data — even truncated.
@@ -697,7 +732,9 @@ def initiate_checkout(
     txn_hash = hashlib.sha256(txn_id.encode("utf-8")).hexdigest()[:8] if txn_id else ""
     logger.info(
         "Meeza Payment: checkout initiated (order_sha=%s, txn_sha=%s, method=%s)",
-        order_hash, txn_hash, method,
+        order_hash,
+        txn_hash,
+        method,
     )
     return {
         "order_id": order_id,
@@ -738,15 +775,17 @@ def _paymob_checkout(
     # 2. Register order
     order_req = urllib.request.Request(
         f"{base}/ecommerce/orders",
-        data=json.dumps({
-            "auth_token": auth_token,
-            "delivery_needed": "false",
-            "merchant_id": cfg.merchant_id,
-            "amount_cents": order["amount_cents"],
-            "currency": order["currency"],
-            "merchant_order_id": order["id"],
-            "items": [],
-        }).encode("utf-8"),
+        data=json.dumps(
+            {
+                "auth_token": auth_token,
+                "delivery_needed": "false",
+                "merchant_id": cfg.merchant_id,
+                "amount_cents": order["amount_cents"],
+                "currency": order["currency"],
+                "merchant_order_id": order["id"],
+                "items": [],
+            }
+        ).encode("utf-8"),
         headers={"Content-type": _JSON_CONTENT_TYPE},
         method="POST",
     )
@@ -757,30 +796,32 @@ def _paymob_checkout(
     # 3. Payment key
     pay_req = urllib.request.Request(
         f"{base}/acceptance/payment_keys",
-        data=json.dumps({
-            "auth_token": auth_token,
-            "amount_cents": order["amount_cents"],
-            "expiration": 3600,
-            "order_id": psp_order_id,
-            "billing_data": {
-                "apartment": "803",
-                "email": billing_data.get("email", "customer@bazspark.com"),
-                "floor": "42",
-                "first_name": billing_data.get("first_name", "Customer"),
-                "last_name": billing_data.get("last_name", "BAZspark"),
-                "street": "Nile Street",
-                "building": "Cairo Tower",
-                "phone_number": billing_data.get("phone", "+201000000000"),
-                "shipping_method": "PKG",
-                "postal_code": "11511",
-                "city": billing_data.get("city", "Cairo"),
-                "country": "EG",
-                "state": "Cairo",
-            },
-            "currency": order["currency"],
-            "integration_id": int(os.getenv("MEEZA_PAYMOB_INTEGRATION_ID", "0")),
-            "lock_order_when_paid": "true",
-        }).encode("utf-8"),
+        data=json.dumps(
+            {
+                "auth_token": auth_token,
+                "amount_cents": order["amount_cents"],
+                "expiration": 3600,
+                "order_id": psp_order_id,
+                "billing_data": {
+                    "apartment": "803",
+                    "email": billing_data.get("email", "customer@bazspark.com"),
+                    "floor": "42",
+                    "first_name": billing_data.get("first_name", "Customer"),
+                    "last_name": billing_data.get("last_name", "BAZspark"),
+                    "street": "Nile Street",
+                    "building": "Cairo Tower",
+                    "phone_number": billing_data.get("phone", "+201000000000"),
+                    "shipping_method": "PKG",
+                    "postal_code": "11511",
+                    "city": billing_data.get("city", "Cairo"),
+                    "country": "EG",
+                    "state": "Cairo",
+                },
+                "currency": order["currency"],
+                "integration_id": int(os.getenv("MEEZA_PAYMOB_INTEGRATION_ID", "0")),
+                "lock_order_when_paid": "true",
+            }
+        ).encode("utf-8"),
         headers={"Content-type": _JSON_CONTENT_TYPE},
         method="POST",
     )
@@ -790,11 +831,16 @@ def _paymob_checkout(
 
     # 4. Iframe URL — Meeza cards are routed via PayMob's Meeza integration ID.
     iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{cfg.iframe_id}?payment_token={payment_key}"
-    return iframe_url, psp_order_id, payment_key, {
-        "psp_order_id": psp_order_id,
-        "payment_key_prefix": payment_key[:8] + "...",
-        "iframe_url_prefix": iframe_url[:60] + "...",
-    }
+    return (
+        iframe_url,
+        psp_order_id,
+        payment_key,
+        {
+            "psp_order_id": psp_order_id,
+            "payment_key_prefix": payment_key[:8] + "...",
+            "iframe_url_prefix": iframe_url[:60] + "...",
+        },
+    )
 
 
 def _extract_webhook_fields(
@@ -813,16 +859,12 @@ def _extract_webhook_fields(
     # row when /checkout was called. We only need merchant_order_id (our
     # own order id) to locate the order.
     merchant_order_id = (
-        psp_order.get("merchant_order_id")
-        or payload_parsed.get("merchant_order_id")
-        or ""
+        psp_order.get("merchant_order_id") or payload_parsed.get("merchant_order_id") or ""
     )
     return {
         "merchant_order_id": merchant_order_id,
         "psp_txn_id": str(obj.get("id") or payload_parsed.get("txn_id") or ""),
-        "amount_cents": int(
-            obj.get("amount_cents") or payload_parsed.get("amount_cents") or 0
-        ),
+        "amount_cents": int(obj.get("amount_cents") or payload_parsed.get("amount_cents") or 0),
         "success_flag": bool(obj.get("success")),
         "pending_flag": bool(obj.get("pending")),
         "is_voided": bool(obj.get("is_voided") or obj.get("voided")),
@@ -881,9 +923,7 @@ def handle_meeza_webhook(
 
     # 1. HMAC verification
     if not verify_webhook_signature(payload_raw, signature_header):
-        logger.warning(
-            "Meeza Payment: webhook rejected — HMAC verification failed"
-        )
+        logger.warning("Meeza Payment: webhook rejected — HMAC verification failed")
         return {"status": "rejected", "http_status": 401, "reason": "invalid_signature"}
 
     # 2. Parse payload
@@ -962,7 +1002,9 @@ def _persist_webhook_event(
                 if amount_cents > 0 and expected is not None and expected != amount_cents:
                     logger.warning(
                         "Meeza Payment: amount mismatch for order %s (expected=%s, webhook=%s)",
-                        merchant_order_id[:8], expected, amount_cents,
+                        merchant_order_id[:8],
+                        expected,
+                        amount_cents,
                     )
                     return {"status": "rejected", "http_status": 409, "reason": "amount_mismatch"}
 
@@ -976,15 +1018,23 @@ def _persist_webhook_event(
                          processed_at, response_code)
                     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, 200)
                     """,
-                    (event_id, merchant_order_id, txn_status.value,
-                     cfg.psp_name.value, idem_key, raw_json,
-                     sig_truncated, now),
+                    (
+                        event_id,
+                        merchant_order_id,
+                        txn_status.value,
+                        cfg.psp_name.value,
+                        idem_key,
+                        raw_json,
+                        sig_truncated,
+                        now,
+                    ),
                 )
             except sqlite3.IntegrityError:
                 # Duplicate — already processed. Return cached success.
                 logger.info(
                     "Meeza Payment: duplicate webhook suppressed (order=%s, idem=%s...)",
-                    merchant_order_id[:8], idem_key[:8],
+                    merchant_order_id[:8],
+                    idem_key[:8],
                 )
                 return {
                     "status": "duplicate",
@@ -1013,9 +1063,14 @@ def _persist_webhook_event(
                            raw_payload = ?, hmac_signature = ?
                      WHERE id = ? AND status NOT IN ('SUCCESS','FAILED','EXPIRED','CANCELLED')
                     """,
-                    (txn_status.value, now,
-                     now if txn_status == TxnStatus.SUCCESS else None,
-                     raw_json, sig_truncated, txn_id_internal),
+                    (
+                        txn_status.value,
+                        now,
+                        now if txn_status == TxnStatus.SUCCESS else None,
+                        raw_json,
+                        sig_truncated,
+                        txn_id_internal,
+                    ),
                 )
 
             # 8. Atomic order status transition.
@@ -1049,14 +1104,19 @@ def _apply_order_status_transition(
     milliseconds before a CANCELLED.
     """
     if order_status not in (
-        OrderStatus.PAID.value, OrderStatus.FAILED.value,
-        OrderStatus.EXPIRED.value, OrderStatus.CANCELLED.value,
+        OrderStatus.PAID.value,
+        OrderStatus.FAILED.value,
+        OrderStatus.EXPIRED.value,
+        OrderStatus.CANCELLED.value,
     ):
         # PENDING / REFUNDED — no order transition, just log and return
         logger.info(
             "Meeza Payment: webhook processed (order=%s, txn_status=%s, "
             "order_status=%s, idem=%s...)",
-            merchant_order_id[:8], txn_status.value, order_status, idem_key[:8],
+            merchant_order_id[:8],
+            txn_status.value,
+            order_status,
+            idem_key[:8],
         )
         return {
             "status": "processed",
@@ -1074,9 +1134,13 @@ def _apply_order_status_transition(
                paid_at = CASE WHEN ? = 'paid' THEN ? ELSE paid_at END
          WHERE id = ? AND status = 'pending'
         """,
-        (order_status, now, order_status,
-         now if order_status == OrderStatus.PAID.value else None,
-         merchant_order_id),
+        (
+            order_status,
+            now,
+            order_status,
+            now if order_status == OrderStatus.PAID.value else None,
+            merchant_order_id,
+        ),
     )
     rows_affected = cursor.rowcount
     if rows_affected == 0:
@@ -1091,7 +1155,9 @@ def _apply_order_status_transition(
         logger.info(
             "Meeza Payment: order %s already in terminal state '%s' — "
             "incoming %s webhook did NOT flip it (idempotent guard)",
-            merchant_order_id[:8], actual_status, order_status,
+            merchant_order_id[:8],
+            actual_status,
+            order_status,
         )
         return {
             "status": "duplicate",
@@ -1106,14 +1172,15 @@ def _apply_order_status_transition(
         # Fulfillment hook — extend here for subscription grants, license
         # activations, etc. Kept as a no-op log for now.
         logger.info(
-            "Meeza Payment: order %s FULFILLED (paid) — "
-            "trigger subscription grant here",
+            "Meeza Payment: order %s FULFILLED (paid) — trigger subscription grant here",
             merchant_order_id[:8],
         )
     logger.info(
-        "Meeza Payment: webhook processed (order=%s, txn_status=%s, "
-        "order_status=%s, idem=%s...)",
-        merchant_order_id[:8], txn_status.value, order_status, idem_key[:8],
+        "Meeza Payment: webhook processed (order=%s, txn_status=%s, order_status=%s, idem=%s...)",
+        merchant_order_id[:8],
+        txn_status.value,
+        order_status,
+        idem_key[:8],
     )
     return {
         "status": "processed",
@@ -1142,9 +1209,7 @@ def get_transaction(txn_id: str) -> dict[str, Any] | None:
     """Fetch a transaction by id."""
     _init_schema()
     with _get_conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM payment_transactions WHERE id = ?", (txn_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM payment_transactions WHERE id = ?", (txn_id,)).fetchone()
     if row is None:
         return None
     d = dict(row)
@@ -1157,8 +1222,7 @@ def list_transactions_for_order(order_id: str) -> list[dict[str, Any]]:
     _init_schema()
     with _get_conn() as conn:
         rows = conn.execute(
-            "SELECT * FROM payment_transactions WHERE order_id = ? "
-            "ORDER BY created_at ASC",
+            "SELECT * FROM payment_transactions WHERE order_id = ? ORDER BY created_at ASC",
             (order_id,),
         ).fetchall()
     out = []
@@ -1174,8 +1238,7 @@ def list_events_for_order(order_id: str) -> list[dict[str, Any]]:
     _init_schema()
     with _get_conn() as conn:
         rows = conn.execute(
-            "SELECT * FROM payment_events WHERE order_id = ? "
-            "ORDER BY processed_at ASC",
+            "SELECT * FROM payment_events WHERE order_id = ? ORDER BY processed_at ASC",
             (order_id,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -1191,6 +1254,7 @@ def _row_to_order_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 
 # ── Test/demo helpers ────────────────────────────────────────────────────────
+
 
 def simulate_webhook(
     order_id: str,
@@ -1216,13 +1280,16 @@ def simulate_webhook(
     # with the same arguments produce the SAME payload — exercising the real
     # idempotency path. A real PSP redelivery sends the exact same payload
     # (including the same PSP transaction id) twice; this helper mirrors that.
-    psp_txn_id_int = int(
-        hashlib.sha256(f"{order_id}|{txn_status.value}".encode()).hexdigest()[:12],
-        16,
-    ) % 1_000_000
-    psp_order_id_int = int(
-        hashlib.sha256(order_id.encode("utf-8")).hexdigest()[:12], 16
-    ) % 1_000_000
+    psp_txn_id_int = (
+        int(
+            hashlib.sha256(f"{order_id}|{txn_status.value}".encode()).hexdigest()[:12],
+            16,
+        )
+        % 1_000_000
+    )
+    psp_order_id_int = (
+        int(hashlib.sha256(order_id.encode("utf-8")).hexdigest()[:12], 16) % 1_000_000
+    )
 
     obj: dict[str, Any] = {
         "id": psp_txn_id_int,

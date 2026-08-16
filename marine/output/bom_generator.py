@@ -4,6 +4,7 @@ marine/output/bom_generator.py — Bill of Materials generator for marine fire s
 Generates a structured BOM from detector placements, extinguishing designs,
 and fire-division specs. Suitable for export to procurement / ERP systems.
 """
+
 from __future__ import annotations
 
 from marine.core.types import DetectorPlacement, ExtinguishingDesign, FireResistanceSpec

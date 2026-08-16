@@ -117,8 +117,12 @@ class AuditInput(BaseModel):
         le=1.0,
         description="Spectral optical transmittance BEFORE fouling adjustment (fouling applied in _check_fouling)",
     )
-    substance_molecular_weight: float = Field(gt=0.0, description="Molecular weight of the target gas (g/mol)")
-    detector_elevation_tier: ElevationTier = Field(description="Elevation tier where detectors are placed")
+    substance_molecular_weight: float = Field(
+        gt=0.0, description="Molecular weight of the target gas (g/mol)"
+    )
+    detector_elevation_tier: ElevationTier = Field(
+        description="Elevation tier where detectors are placed"
+    )
     jurisdiction: Jurisdiction = Field(
         default=Jurisdiction.GLOBAL_IEC, description="Regulatory jurisdiction for audit rules"
     )
@@ -185,7 +189,9 @@ class AuditResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 6.0) -> ElevationTier:
+def elevation_tier_from_detector_z(
+    z_position: float, ceiling_height_m: float = 6.0
+) -> ElevationTier:
     """
     Infer the elevation tier of a detector from its Z position.
 
@@ -494,7 +500,9 @@ class SafetyAuditEngine:
                     remediation="Use valid zone: ZONE_0, ZONE_1, ZONE_2, ZONE_20, ZONE_21, ZONE_22",
                 )
             )
-            return AuditResult(status="FAIL", violations=violations, total_checks=1, passed_checks=0)
+            return AuditResult(
+                status="FAIL", violations=violations, total_checks=1, passed_checks=0
+            )
 
         # Determine region: explicit from AuditInput, or inferred from jurisdiction
         if audit_input.region is not None:
@@ -504,7 +512,9 @@ class SafetyAuditEngine:
                 Jurisdiction.SAUDI_HCIS: RegionProfile.GULF_HCIS,
                 Jurisdiction.EGYPTIAN_FIRE_CODE: RegionProfile.EGYPT_CODE,
             }
-            region = _JURISDICTION_REGION_MAP.get(audit_input.jurisdiction, RegionProfile.STANDARD_IEC)
+            region = _JURISDICTION_REGION_MAP.get(
+                audit_input.jurisdiction, RegionProfile.STANDARD_IEC
+            )
 
         # Build EnvironmentalContext from AuditInput jurisdiction and region
         # Without this, fouling gate always uses the optimistic default (0.85)
@@ -762,7 +772,9 @@ class SafetyAuditEngine:
             total_checks += 1
             # then NaN < threshold is False → fouling gate PASSES.
             # Cannot verify optical path with corrupt spectral data.
-            if not isinstance(min_transmittance, int | float) or not math.isfinite(min_transmittance):
+            if not isinstance(min_transmittance, int | float) or not math.isfinite(
+                min_transmittance
+            ):
                 violations.append(
                     AuditViolation(
                         gate="FOULING",
@@ -914,7 +926,9 @@ class SafetyAuditEngine:
                         f"Did you mean Zone 0/1/2?"
                     ),
                     standard_ref="IEC 60079-10-1:2015 §1.3",
-                    remediation=("Re-classify using correct zone type for GAS hazard (Zone 0/1/2 per IEC 60079-10-1)."),
+                    remediation=(
+                        "Re-classify using correct zone type for GAS hazard (Zone 0/1/2 per IEC 60079-10-1)."
+                    ),
                 )
             )
         elif zone in _GAS_ZONES and hazard_type == HazardType.HYBRID:
@@ -965,7 +979,9 @@ class SafetyAuditEngine:
                         f"Provide both for complete safety audit."
                     ),
                     standard_ref="IEC 60079-10-1:2015 §1.3",
-                    remediation=("Provide zone classification and hazard type to enable zone mapping verification."),
+                    remediation=(
+                        "Provide zone classification and hazard type to enable zone mapping verification."
+                    ),
                 )
             )
         else:

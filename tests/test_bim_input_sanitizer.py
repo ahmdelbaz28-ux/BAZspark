@@ -86,17 +86,23 @@ class TestSanitizeBIMParameter:
     def test_non_string_raises(self):
         """Non-string input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(42)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
+            sanitize_bim_parameter(
+                42
+            )  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     def test_none_input_raises(self):
         """None input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(None)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
+            sanitize_bim_parameter(
+                None
+            )  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     def test_integer_input_raises(self):
         """Integer input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(100)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
+            sanitize_bim_parameter(
+                100
+            )  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     # ── Injection attack patterns ──
 

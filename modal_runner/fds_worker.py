@@ -30,29 +30,27 @@ app = modal.App("bazspark-fds-runner")
 
 # Docker image with FDS pre-installed
 # FDS official Ubuntu image from NIST
-fds_image = (
-    modal.Image.debian_slim()
-    .run_commands(
-        # Install FDS 6.8.0
-        "apt-get update -qq && apt-get install -y wget curl unzip libgomp1",
-        "wget -q https://github.com/firemodels/fds/releases/download/FDS6.8.0/"
-        "FDS6.8.0_linux_64.tar.gz -O /tmp/fds.tar.gz",
-        "mkdir -p /opt/fds && tar -xzf /tmp/fds.tar.gz -C /opt/fds --strip-components=1",
-        "chmod +x /opt/fds/bin/fds",
-        "echo 'export PATH=/opt/fds/bin:$PATH' >> /etc/environment",
-        # Python dependencies for webhook posting
-        "pip install --quiet httpx",
-    )
+fds_image = modal.Image.debian_slim().run_commands(
+    # Install FDS 6.8.0
+    "apt-get update -qq && apt-get install -y wget curl unzip libgomp1",
+    "wget -q https://github.com/firemodels/fds/releases/download/FDS6.8.0/"
+    "FDS6.8.0_linux_64.tar.gz -O /tmp/fds.tar.gz",
+    "mkdir -p /opt/fds && tar -xzf /tmp/fds.tar.gz -C /opt/fds --strip-components=1",
+    "chmod +x /opt/fds/bin/fds",
+    "echo 'export PATH=/opt/fds/bin:$PATH' >> /etc/environment",
+    # Python dependencies for webhook posting
+    "pip install --quiet httpx",
 )
 
 
 # ── Modal function ────────────────────────────────────────────────────────────
 
+
 @app.function(
     image=fds_image,
-    cpu=8,           # 8 vCPUs for parallel FDS meshes
-    memory=16384,    # 16 GB RAM
-    timeout=3600,    # 1 hour max per simulation
+    cpu=8,  # 8 vCPUs for parallel FDS meshes
+    memory=16384,  # 16 GB RAM
+    timeout=3600,  # 1 hour max per simulation
     retries=1,
 )
 def run_fds_simulation(
@@ -101,37 +99,37 @@ def run_fds_simulation(
 
             if proc.returncode != 0:
                 result_payload = {
-                    "job_id":  job_id,
-                    "status":  "failed",
-                    "error":   f"FDS exited with code {proc.returncode}:\n{stderr[:2000]}",
-                    "secret":  webhook_secret,
+                    "job_id": job_id,
+                    "status": "failed",
+                    "error": f"FDS exited with code {proc.returncode}:\n{stderr[:2000]}",
+                    "secret": webhook_secret,
                 }
             else:
                 # Parse key outputs from stdout
                 parsed = _parse_fds_output(workdir, stdout)
                 result_payload = {
-                    "job_id":  job_id,
-                    "status":  "completed",
-                    "result":  {
+                    "job_id": job_id,
+                    "status": "completed",
+                    "result": {
                         **parsed,
                         "elapsed_sec": round(elapsed, 1),
                         "fds_stdout_tail": stdout[-3000:],
                     },
-                    "secret":  webhook_secret,
+                    "secret": webhook_secret,
                 }
 
         except subprocess.TimeoutExpired:
             result_payload = {
                 "job_id": job_id,
                 "status": "failed",
-                "error":  "FDS simulation timed out after 3500 seconds",
+                "error": "FDS simulation timed out after 3500 seconds",
                 "secret": webhook_secret,
             }
         except FileNotFoundError:
             result_payload = {
                 "job_id": job_id,
                 "status": "failed",
-                "error":  "FDS binary not found at /opt/fds/bin/fds",
+                "error": "FDS binary not found at /opt/fds/bin/fds",
                 "secret": webhook_secret,
             }
 
@@ -152,6 +150,7 @@ def run_fds_simulation(
 
 # ── Output parser ─────────────────────────────────────────────────────────────
 
+
 def _parse_fds_output(workdir: str, stdout: str) -> dict[str, Any]:
     """
     Extract key safety metrics from FDS output files.
@@ -165,17 +164,20 @@ def _parse_fds_output(workdir: str, stdout: str) -> dict[str, Any]:
     if devc_files:
         try:
             import csv
+
             with open(devc_files[0], newline="") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
             if rows:
                 last = rows[-1]
                 # Extract standard BAZspark safety metrics
-                metrics["max_temperature_c"]    = _safe_float(last.get("TEMP", last.get("Temperature", "0")))
+                metrics["max_temperature_c"] = _safe_float(
+                    last.get("TEMP", last.get("Temperature", "0"))
+                )
                 metrics["smoke_layer_height_m"] = _safe_float(last.get("LAYER HEIGHT", "0"))
-                metrics["visibility_m"]          = _safe_float(last.get("VISIBILITY", "0"))
-                metrics["co_ppm_max"]            = _safe_float(last.get("CO", "0"))
-                metrics["hrr_peak_kw"]           = _safe_float(last.get("HRR", "0"))
+                metrics["visibility_m"] = _safe_float(last.get("VISIBILITY", "0"))
+                metrics["co_ppm_max"] = _safe_float(last.get("CO", "0"))
+                metrics["hrr_peak_kw"] = _safe_float(last.get("HRR", "0"))
         except Exception as exc:  # noqa: BLE001
             print(f"[FDS Worker] CSV parse error: {exc}")
 
@@ -187,11 +189,11 @@ def _parse_fds_output(workdir: str, stdout: str) -> dict[str, Any]:
                 if len(parts) > 1:
                     metrics["max_temperature_c"] = _safe_float(parts[1].strip().split()[0])
 
-    metrics.setdefault("max_temperature_c",    0.0)
+    metrics.setdefault("max_temperature_c", 0.0)
     metrics.setdefault("smoke_layer_height_m", 0.0)
-    metrics.setdefault("visibility_m",         0.0)
-    metrics.setdefault("co_ppm_max",           0.0)
-    metrics.setdefault("hrr_peak_kw",          0.0)
+    metrics.setdefault("visibility_m", 0.0)
+    metrics.setdefault("co_ppm_max", 0.0)
+    metrics.setdefault("hrr_peak_kw", 0.0)
 
     return metrics
 
@@ -216,7 +218,8 @@ if __name__ == "__main__":
 """.strip()
 
     print("Running local FDS simulation test (Modal not required)...")
-    print(json.dumps(
-        {"note": "set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET to run on Modal cloud"},
-        indent=2
-    ))
+    print(
+        json.dumps(
+            {"note": "set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET to run on Modal cloud"}, indent=2
+        )
+    )

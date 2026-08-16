@@ -26,6 +26,7 @@ from dataclasses import dataclass
 @dataclass
 class MethaneDetectorSpec:
     """Specification for a methane detector."""
+
     detector_type: str  # 'catalytic', 'infrared', 'thermal_conductivity'
     range_min_pct: float
     range_max_pct: float
@@ -127,27 +128,33 @@ class MethaneDetectorSelector:
         # Main entries: every 150m
         num_main = max(1, int(mine_length_m / 150))
         for i in range(num_main):
-            locations.append({
-                "location": f"Main entry {(i+1)*150}m",
-                "height": "roof",  # Methane is lighter than air
-                "reason": "MSHA §75.323 — periodic monitoring along main entries",
-            })
+            locations.append(
+                {
+                    "location": f"Main entry {(i + 1) * 150}m",
+                    "height": "roof",  # Methane is lighter than air
+                    "reason": "MSHA §75.323 — periodic monitoring along main entries",
+                }
+            )
 
         # Working face (assumed at end of mine)
-        locations.append({
-            "location": "Working face",
-            "height": "roof",
-            "reason": "MSHA §75.323 — continuous monitoring at working face",
-        })
+        locations.append(
+            {
+                "location": "Working face",
+                "height": "roof",
+                "reason": "MSHA §75.323 — continuous monitoring at working face",
+            }
+        )
 
         # Conveyor: every 300m
         if has_conveyor and conveyor_length_m > 0:
             num_conv = max(1, int(conveyor_length_m / 300))
             for i in range(num_conv):
-                locations.append({
-                    "location": f"Belt conveyor {(i+1)*300}m",
-                    "height": "roof",
-                    "reason": "MSHA §75.351 — belt entry monitoring",
-                })
+                locations.append(
+                    {
+                        "location": f"Belt conveyor {(i + 1) * 300}m",
+                        "height": "roof",
+                        "reason": "MSHA §75.351 — belt entry monitoring",
+                    }
+                )
 
         return locations

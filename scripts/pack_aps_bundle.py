@@ -29,7 +29,7 @@ def compile_project(csproj_path: Path) -> bool:
             cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         print(f"[SUCCESS] Compilation succeeded for {csproj_path.name}")
         return True
@@ -79,7 +79,14 @@ def pack_autocad_bundle() -> bool:
         # Try without config-specific subdir if output path is overridden
         bin_dir = REPO_ROOT / "autocad_addin" / "BazSparkAutoCADBridge" / "bin"
 
-    target_dlls = ["BazSparkAutoCADBridge.dll", "Newtonsoft.Json.dll", "Speckle.Core.dll", "Speckle.Objects.dll", "Microsoft.Web.WebView2.Wpf.dll", "Microsoft.Web.WebView2.Core.dll"]
+    target_dlls = [
+        "BazSparkAutoCADBridge.dll",
+        "Newtonsoft.Json.dll",
+        "Speckle.Core.dll",
+        "Speckle.Objects.dll",
+        "Microsoft.Web.WebView2.Wpf.dll",
+        "Microsoft.Web.WebView2.Core.dll",
+    ]
     for dll in target_dlls:
         src_dll = bin_dir / dll
         if src_dll.exists():
@@ -126,7 +133,9 @@ def pack_revit_bundle() -> bool:
         shutil.copy2(src_dll, contents_dir / dll)
         print(f"[COPY] Copied DLL: {dll}")
     else:
-        print(f"[WARNING] Warning: Compiled DLL '{dll}' not found in {bin_dir}. Run build with Revit SDK installed first.")
+        print(
+            f"[WARNING] Warning: Compiled DLL '{dll}' not found in {bin_dir}. Run build with Revit SDK installed first."
+        )
 
     # Zip the bundle
     zip_path = DIST_DIR / "BazSparkRevitBridge.zip"

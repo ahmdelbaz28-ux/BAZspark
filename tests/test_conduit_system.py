@@ -12,6 +12,7 @@ approved despite violating NEC or NFPA 72. Tests MUST NOT be skipped.
 
 Reference standard: NEC 2022 Chapter 9; NFPA 72-2022 §12.2.
 """
+
 from __future__ import annotations
 
 import math
@@ -55,6 +56,7 @@ from fireai.conduit import (
 # SECTION 1: Result[T,E] type
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestResult:
     def test_ok_is_ok(self):
         r = Result.ok(42)
@@ -89,6 +91,7 @@ class TestResult:
 # SECTION 2: Point3D
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestPoint3D:
     def test_valid_construction(self):
         p = Point3D(1.0, 2.0, 3.0)
@@ -97,15 +100,21 @@ class TestPoint3D:
         assert p.z == pytest.approx(3.0)
 
     def test_nan_x_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(float("nan"), 0, 0)
 
     def test_inf_y_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(0, float("inf"), 0)
 
     def test_neg_inf_z_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(0, 0, float("-inf"))
 
     def test_distance_zero(self):
@@ -118,7 +127,7 @@ class TestPoint3D:
         assert a.distance_to(b) == pytest.approx(5.0)
 
     def test_distance_3d(self):
-        assert Point3D(0,0,0).distance_to(Point3D(1,2,2)) == pytest.approx(3.0)
+        assert Point3D(0, 0, 0).distance_to(Point3D(1, 2, 2)) == pytest.approx(3.0)
 
     def test_manhattan_admissible(self):
         """Manhattan distance ≤ Euclidean distance (admissible heuristic)."""
@@ -128,13 +137,16 @@ class TestPoint3D:
 
     def test_immutable(self):
         p = Point3D(1, 2, 3)
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             p.x = 99  # frozen dataclass
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 3: Catalog
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestCatalog:
     def test_catalog_not_empty(self):
@@ -149,11 +161,10 @@ class TestCatalog:
 
     def test_catalog_number_pattern(self):
         import re
+
         pat = re.compile(r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$")  # NOSONAR - python:S6353
         for _, f in all_fittings().items():
-            assert pat.match(f.catalog_number), (
-                f"Bad catalog number: {f.catalog_number!r}"
-            )
+            assert pat.match(f.catalog_number), f"Bad catalog number: {f.catalog_number!r}"
 
     def test_emt_half_elbow90_golden(self):
         """NEC golden: E90-050 OD=0.706in, R=4.0in, L=π×4/2=6.283in."""
@@ -194,8 +205,14 @@ class TestCatalog:
         assert f.developed_length_m == pytest.approx(expected_m, rel=1e-6)
 
     def test_all_emt_sizes_have_elbow90(self):
-        for ts in [TradeSize.HALF, TradeSize.THREE_QTR, TradeSize.ONE,
-                   TradeSize.ONE_QTR, TradeSize.ONE_HALF, TradeSize.TWO]:
+        for ts in [
+            TradeSize.HALF,
+            TradeSize.THREE_QTR,
+            TradeSize.ONE,
+            TradeSize.ONE_QTR,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO,
+        ]:
             r = get_fitting(ConduitType.EMT, ts, FittingType.ELBOW_90)
             assert r.is_ok(), f"Missing EMT {ts.value} ELBOW_90"
 
@@ -213,6 +230,7 @@ class TestCatalog:
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 4: Conduit Fill — NEC Chapter 9, Table 1
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestConduitFill:
     """
@@ -246,7 +264,7 @@ class TestConduitFill:
         assert fr.max_allowed_pct == pytest.approx(53.0)
         assert fr.is_compliant is True
         # Verify formula: π(0.205/2)² / 0.304 × 100
-        expected = math.pi * (0.205/2)**2 / 0.304 * 100
+        expected = math.pi * (0.205 / 2) ** 2 / 0.304 * 100
         assert fr.fill_percentage == pytest.approx(expected, rel=1e-4)
 
     def test_two_conductors_max_31_pct(self):
@@ -334,6 +352,7 @@ class TestConduitFill:
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 5: Bend Radius — NEC 358.24/352.24/344.24
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestBendRadius:
     """
@@ -451,6 +470,7 @@ class TestBendRadius:
 # SECTION 6: Orthogonal A* Router
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestRouter:
     def test_straight_x_axis(self):
         r = orthogonal_astar(Point3D(0, 0, 3), Point3D(5, 0, 3))
@@ -473,8 +493,10 @@ class TestRouter:
         """Path must route around a blocking wall."""
         wall = BoundingBox(2.0, 0.0, 0.0, 2.5, 4.0, 4.0, label="WALL")
         r = orthogonal_astar(
-            Point3D(0, 2, 3), Point3D(5, 2, 3),
-            obstacles=[wall], grid_resolution_m=0.5,
+            Point3D(0, 2, 3),
+            Point3D(5, 2, 3),
+            obstacles=[wall],
+            grid_resolution_m=0.5,
         )
         assert r.is_ok()
         assert r.value.total_length_m > 5.0  # Must detour around wall
@@ -494,7 +516,9 @@ class TestRouter:
     def test_nan_start_returns_physics_error(self):
         orthogonal_astar(Point3D(0, 0, 0), Point3D(1, 1, 1))
         # Can't construct Point3D with NaN — ValueError raised in __post_init__
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             Point3D(float("nan"), 0, 0)
 
     def test_deterministic_same_input_same_path(self):
@@ -528,11 +552,9 @@ class TestRouter:
 
     def test_bounding_box_clearance_electrical(self):
         """Electrical obstacle applies 300mm clearance (not 25mm)."""
-        elec = BoundingBox(2.0, 2.0, 2.0, 2.5, 2.5, 4.0,
-                           is_electrical=True, label="ELEC")
+        elec = BoundingBox(2.0, 2.0, 2.0, 2.5, 2.5, 4.0, is_electrical=True, label="ELEC")
         assert elec.clearance_m == pytest.approx(0.300, abs=0.001)
-        non_elec = BoundingBox(2.0, 2.0, 2.0, 2.5, 2.5, 4.0,
-                               is_electrical=False, label="WALL")
+        non_elec = BoundingBox(2.0, 2.0, 2.0, 2.5, 2.5, 4.0, is_electrical=False, label="WALL")
         assert non_elec.clearance_m == pytest.approx(0.025, abs=0.001)
 
     def test_bounding_box_expanded(self):
@@ -562,6 +584,7 @@ class TestRouter:
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 7: Fitting Engine
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestFittingEngine:
     """
@@ -653,9 +676,12 @@ class TestFittingEngine:
         """
         path = RoutePath(
             waypoints=(
-                Point3D(0, 0, 3), Point3D(3, 0, 3),
-                Point3D(3, 2, 3), Point3D(6, 2, 3),
-                Point3D(6, 4, 3), Point3D(9, 4, 3),
+                Point3D(0, 0, 3),
+                Point3D(3, 0, 3),
+                Point3D(3, 2, 3),
+                Point3D(6, 2, 3),
+                Point3D(6, 4, 3),
+                Point3D(9, 4, 3),
             ),
             total_length_m=13.0,
             bend_count=4,
@@ -670,10 +696,17 @@ class TestFittingEngine:
         """5 × 90° = 450° > 360° → pull box inserted."""
         path = RoutePath(
             waypoints=(
-                Point3D(0,0,3), Point3D(2,0,3), Point3D(2,2,3),
-                Point3D(4,2,3), Point3D(4,4,3), Point3D(6,4,3),
-                Point3D(6,6,3), Point3D(8,6,3), Point3D(8,8,3),
-                Point3D(10,8,3), Point3D(10,10,3),
+                Point3D(0, 0, 3),
+                Point3D(2, 0, 3),
+                Point3D(2, 2, 3),
+                Point3D(4, 2, 3),
+                Point3D(4, 4, 3),
+                Point3D(6, 4, 3),
+                Point3D(6, 6, 3),
+                Point3D(8, 6, 3),
+                Point3D(8, 8, 3),
+                Point3D(10, 8, 3),
+                Point3D(10, 10, 3),
             ),
             total_length_m=20.0,
             bend_count=5,
@@ -733,11 +766,14 @@ class TestFittingEngine:
 # SECTION 8: Output Generation
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestOutput:
     def _make_run(self) -> ConduitRun:
         path = RoutePath(
-            waypoints=(Point3D(0,0,3), Point3D(3,0,3), Point3D(3,3,3)),
-            total_length_m=6.0, bend_count=1, elevation_change_m=0.0,
+            waypoints=(Point3D(0, 0, 3), Point3D(3, 0, 3), Point3D(3, 3, 3)),
+            total_length_m=6.0,
+            bend_count=1,
+            elevation_change_m=0.0,
         )
         r = place_fittings(path, ConduitType.EMT, TradeSize.HALF)
         assert r.is_ok()
@@ -746,8 +782,16 @@ class TestOutput:
     def test_revit_json_has_required_keys(self):
         run = self._make_run()
         j = generate_revit_conduit(run)
-        for key in ["run_id","conduit_type","trade_size","family_name",
-                    "segments","fittings","summary","sha256"]:
+        for key in [
+            "run_id",
+            "conduit_type",
+            "trade_size",
+            "family_name",
+            "segments",
+            "fittings",
+            "summary",
+            "sha256",
+        ]:
             assert key in j, f"Missing key: {key}"
 
     def test_revit_sha256_is_64_chars(self):
@@ -767,9 +811,7 @@ class TestOutput:
         for seg in j["segments"]:
             assert "length_ft" in seg
             # Verify metres × 3.28084 ≈ feet
-            assert seg["length_ft"] == pytest.approx(
-                seg["length_m"] / 0.3048, rel=1e-4
-            )
+            assert seg["length_ft"] == pytest.approx(seg["length_m"] / 0.3048, rel=1e-4)
 
     def test_autocad_layers_correct(self):
         run = self._make_run()
@@ -790,9 +832,11 @@ class TestOutput:
         lines = [e for e in entities if e["entity_type"] == "LINE"]
         for line in lines:
             # Coordinates in mm — for a 3m segment, ~3000mm expected
-            assert any(abs(v) >= 100 for v in line["start_mm"].values()
-                       ) or any(abs(v) >= 100 for v in line["end_mm"].values()
-                       ) or True  # Just check keys exist
+            assert (
+                any(abs(v) >= 100 for v in line["start_mm"].values())
+                or any(abs(v) >= 100 for v in line["end_mm"].values())
+                or True
+            )  # Just check keys exist
             for k in ("x", "y", "z"):
                 assert k in line["start_mm"]
 
@@ -825,6 +869,7 @@ class TestOutput:
 # SECTION 9: Pipeline Integration
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestPipelineIntegration:
     """
     Verify Stage 8 is registered in the pipeline and callable.
@@ -833,6 +878,7 @@ class TestPipelineIntegration:
 
     def test_stage8_registered_in_pipeline(self):
         import fireai.core.pipeline as pip
+
         assert hasattr(pip, "_stage8_conduit_fittings"), (
             "Stage 8 (_stage8_conduit_fittings) not found in pipeline.py. "
             "Conduit NEC compliance will not be checked."
@@ -840,6 +886,7 @@ class TestPipelineIntegration:
 
     def test_stage8_returns_dict(self):
         import fireai.core.pipeline as pip
+
         fn = pip._stage8_conduit_fittings
         result = fn(
             validated={"ceiling_height_m": 3.0},
@@ -851,6 +898,7 @@ class TestPipelineIntegration:
 
     def test_stage8_skips_with_fewer_than_2_positions(self):
         import fireai.core.pipeline as pip
+
         result = pip._stage8_conduit_fittings(
             validated={}, positions=[(1.0, 1.0)], cable_routing_data={}
         )
@@ -858,6 +906,7 @@ class TestPipelineIntegration:
 
     def test_stage8_completes_with_valid_positions(self):
         import fireai.core.pipeline as pip
+
         result = pip._stage8_conduit_fittings(
             validated={"ceiling_height_m": 3.0},
             positions=[(0.0, 0.0), (3.0, 0.0)],
@@ -871,26 +920,30 @@ class TestPipelineIntegration:
 
     def test_stage8_references_nec_and_nfpa(self):
         import fireai.core.pipeline as pip
+
         result = pip._stage8_conduit_fittings(
             validated={"ceiling_height_m": 3.0},
             positions=[(0.0, 0.0), (5.0, 0.0)],
             cable_routing_data={},
         )
         if result["status"] == "completed":
-            assert "NEC" in result.get("nec_reference", "") or \
-                   "NFPA" in result.get("nfpa_reference", "")
+            assert "NEC" in result.get("nec_reference", "") or "NFPA" in result.get(
+                "nfpa_reference", ""
+            )
 
     def test_public_api_importable(self):
         """All public API names importable in one line."""
         from fireai.conduit import (
             ConduitType,
         )
+
         assert ConduitType.EMT.value == "EMT"
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 10: Thread Safety + Determinism
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestDeterminismAndThreadSafety:
     def test_fill_deterministic_across_calls(self):
@@ -913,8 +966,10 @@ class TestDeterminismAndThreadSafety:
     def test_revit_output_deterministic(self):
         """SHA-256 of Revit JSON must be identical across 20 calls."""
         path = RoutePath(
-            waypoints=(Point3D(0,0,3), Point3D(3,0,3), Point3D(3,3,3)),
-            total_length_m=6.0, bend_count=1, elevation_change_m=0.0,
+            waypoints=(Point3D(0, 0, 3), Point3D(3, 0, 3), Point3D(3, 3, 3)),
+            total_length_m=6.0,
+            bend_count=1,
+            elevation_change_m=0.0,
         )
         run_r = place_fittings(path, ConduitType.EMT, TradeSize.HALF, run_id="FIXED-001")
         assert run_r.is_ok()
@@ -936,7 +991,7 @@ class TestDeterminismAndThreadSafety:
             except Exception as e:
                 errors.append(str(e))
 
-        threads = [threading.Thread(target=compute, args=(i+1,)) for i in range(10)]
+        threads = [threading.Thread(target=compute, args=(i + 1,)) for i in range(10)]
         for t in threads:
             t.start()
         for t in threads:
@@ -946,5 +1001,3 @@ class TestDeterminismAndThreadSafety:
         # Verify each result is unique (different inputs → different outputs)
         non_none = [v for v in results.values() if v is not None]
         assert len(non_none) > 0
-
-

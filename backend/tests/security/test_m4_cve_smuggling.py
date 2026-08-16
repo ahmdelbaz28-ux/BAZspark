@@ -25,6 +25,7 @@ CONTEXT:
   reverted to vulnerable versions, the tests will FAIL — even though
   the standalone M-4 claim itself has been retracted.
 """
+
 from __future__ import annotations
 
 import json
@@ -64,7 +65,9 @@ def _read_pin(filepath: Path, package: str) -> str | None:
         return m.group(0)  # full match like "cryptography>=48.0.1,<50.0.0"
 
     # Form 2: pyproject.toml array form — `"package>=1.2.3,<4.0.0"`
-    pattern_toml_array = rf'"{pkg_pattern}\s*([=<>~!]+\s*[^"\s,#]+(?:\s*,\s*[=<>~!]+\s*[^"\s,#]+)*)"'
+    pattern_toml_array = (
+        rf'"{pkg_pattern}\s*([=<>~!]+\s*[^"\s,#]+(?:\s*,\s*[=<>~!]+\s*[^"\s,#]+)*)"'
+    )
     m = re.search(pattern_toml_array, content)
     if m:
         return m.group(0)
@@ -112,15 +115,13 @@ def test_pyjwt_is_above_vulnerable_pin():
         if pin is None:
             pin = _read_pin(filepath, "pyjwt[crypto]")
         assert pin is not None, (
-            f"pyjwt not found in {filepath} — the dependency may "
-            "have been removed (unusual)."
+            f"pyjwt not found in {filepath} — the dependency may have been removed (unusual)."
         )
         assert "2.9.0" not in pin, (
             f"M-4 CLAIM IS ACCURATE: {filepath.name} still pins "
             f"pyjwt to 2.9.0 ({pin}). The C-1 fix has been reverted."
         )
-        assert ">=2.13" in pin or ">=2.14" in pin or ">=2.15" in pin \
-            or ">=3" in pin, (
+        assert ">=2.13" in pin or ">=2.14" in pin or ">=2.15" in pin or ">=3" in pin, (
             f"M-4 CLAIM UNCERTAIN: {filepath.name} pins pyjwt to "
             f"'{pin}' which is not the expected safe version (>=2.13.0)."
         )
@@ -130,15 +131,12 @@ def test_python_multipart_is_above_vulnerable_pin():
     """Verify python-multipart is no longer pinned to the vulnerable 0.0.20."""
     for filepath in (REQUIREMENTS_TXT, PYPROJECT_TOML):
         pin = _read_pin(filepath, "python-multipart")
-        assert pin is not None, (
-            f"python-multipart not found in {filepath}."
-        )
+        assert pin is not None, f"python-multipart not found in {filepath}."
         assert "0.0.20" not in pin, (
             f"M-4 CLAIM IS ACCURATE: {filepath.name} still pins "
             f"python-multipart to 0.0.0 ({pin}). C-1 fix reverted."
         )
-        assert ">=0.0.31" in pin or ">=0.0.32" in pin or ">=0.1" in pin \
-            or ">=1" in pin, (
+        assert ">=0.0.31" in pin or ">=0.0.32" in pin or ">=0.1" in pin or ">=1" in pin, (
             f"M-4 CLAIM UNCERTAIN: {filepath.name} pins "
             f"python-multipart to '{pin}' which is not the expected "
             "safe version (>=0.0.31)."
@@ -185,8 +183,9 @@ def test_no_false_python_38_justification():
 
         for i, line in enumerate(lines):
             # Check if this line is a cryptography/pyjwt/python-multipart pin
-            if not any(pkg in line.lower() for pkg in
-                       ("cryptography", "pyjwt", "python-multipart")):
+            if not any(
+                pkg in line.lower() for pkg in ("cryptography", "pyjwt", "python-multipart")
+            ):
                 continue
 
             # Skip commented-out lines (these are inactive)
@@ -202,7 +201,7 @@ def test_no_false_python_38_justification():
                         f"M-4/C-1 REGRESSION: false 'Python 3.8' "
                         f"justification found in {filepath.name} on "
                         f"the {line.split()[0] if line.split() else '?'} "
-                        f"pin. Line {i+1}: {line}"
+                        f"pin. Line {i + 1}: {line}"
                     )
 
 
@@ -231,10 +230,12 @@ def test_pip_audit_reports_no_known_vulnerabilities():
 
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "pip_audit", "-l",
-             "--desc", "off", "-f", "json"],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=100,
+            [sys.executable, "-m", "pip_audit", "-l", "--desc", "off", "-f", "json"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=100,
         )
     except FileNotFoundError:
         pytest.skip("pip-audit not installed")
@@ -254,9 +255,8 @@ def test_pip_audit_reports_no_known_vulnerabilities():
             return
         pytest.skip(
             "pip-audit did not produce a parseable report (service/"
-            "index error):\n  " + "\n  ".join(
-                line for line in output.split("\n") if line.strip()
-            )[:2000]
+            "index error):\n  "
+            + "\n  ".join(line for line in output.split("\n") if line.strip())[:2000]
         )
 
     # Only the three packages M-4 mentions are in scope.
@@ -270,14 +270,22 @@ def test_pip_audit_reports_no_known_vulnerabilities():
         # Check if project requirements explicitly enforce a safe non-vulnerable version
         req_pin = _read_pin(REQUIREMENTS_TXT, name) or _read_pin(PYPROJECT_TOML, name)
         if name == "pyjwt" and not req_pin:
-            req_pin = _read_pin(REQUIREMENTS_TXT, "pyjwt[crypto]") or _read_pin(PYPROJECT_TOML, "pyjwt[crypto]")
+            req_pin = _read_pin(REQUIREMENTS_TXT, "pyjwt[crypto]") or _read_pin(
+                PYPROJECT_TOML, "pyjwt[crypto]"
+            )
 
         pin_is_safe = False
         if req_pin:
             if (
-                ("cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50"))) or
-                ("pyjwt" in name and any(v in req_pin for v in (">=2.13", ">=2.14", ">=2.15", ">=3"))) or
-                ("python-multipart" in name and any(v in req_pin for v in (">=0.0.31", ">=0.0.32", ">=0.1", ">=1")))
+                ("cryptography" in name and any(v in req_pin for v in (">=48", ">=49", ">=50")))
+                or (
+                    "pyjwt" in name
+                    and any(v in req_pin for v in (">=2.13", ">=2.14", ">=2.15", ">=3"))
+                )
+                or (
+                    "python-multipart" in name
+                    and any(v in req_pin for v in (">=0.0.31", ">=0.0.32", ">=0.1", ">=1"))
+                )
             ):
                 pin_is_safe = True
 
@@ -286,16 +294,12 @@ def test_pip_audit_reports_no_known_vulnerabilities():
             # but the project configuration strictly enforces a safe version, do not flag project as vulnerable.
             if pin_is_safe:
                 continue
-            relevant_vulns.append(
-                f"{dep.get('name')} {dep.get('version')}: "
-                f"{vuln.get('id')}"
-            )
+            relevant_vulns.append(f"{dep.get('name')} {dep.get('version')}: {vuln.get('id')}")
 
     if relevant_vulns:
         pytest.fail(
             "M-4 CLAIM IS ACCURATE: pip-audit reports vulnerabilities in "
-            "cryptography/pyjwt/python-multipart:\n  "
-            + "\n  ".join(relevant_vulns)
+            "cryptography/pyjwt/python-multipart:\n  " + "\n  ".join(relevant_vulns)
         )
 
 
@@ -369,8 +373,7 @@ def test_m4_claim_text_REMOVED_from_active_worklog():
     )
     # The M-4 entry must appear in the RETRACTED section
     retracted_section_start = worklog_text.find(retraction_marker)
-    retracted_section = worklog_text[retracted_section_start:
-                                      retracted_section_start + 4000]
+    retracted_section = worklog_text[retracted_section_start : retracted_section_start + 4000]
     assert "M-4" in retracted_section and "RETRACTED" in retracted_section, (
         "M-4 retraction notice not found in the RETRACTED FALSE CLAIMS "
         "section. The retraction must be documented for traceability."

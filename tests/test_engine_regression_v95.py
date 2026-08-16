@@ -42,6 +42,7 @@ from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
 # BUG-V95-ENGINE-02 — Iteration reset between evaluate() calls
 # ---------------------------------------------------------------------------
 
+
 class TestBugV95Engine02IterationReset:
     """
     Regression suite for BUG-V95-ENGINE-02.
@@ -58,14 +59,16 @@ class TestBugV95Engine02IterationReset:
 
         convergence_points = []
         for i in range(8):
-            engine.assert_fact(Fact(
-                fact_type="room",
-                properties={
-                    "room_id": f"R{i}",
-                    "ceiling_height_m": 3.0,
-                    "detector_type": "smoke",
-                },
-            ))
+            engine.assert_fact(
+                Fact(
+                    fact_type="room",
+                    properties={
+                        "room_id": f"R{i}",
+                        "ceiling_height_m": 3.0,
+                        "detector_type": "smoke",
+                    },
+                )
+            )
             engine.evaluate()
             convergence_points.append(engine._iteration)
 
@@ -87,25 +90,29 @@ class TestBugV95Engine02IterationReset:
         engine.add_rules(NFPA72RuleSet.all_rules())
 
         for i in range(30):
-            engine.assert_fact(Fact(
-                fact_type="room",
-                properties={
-                    "room_id": f"NORMAL_{i}",
-                    "ceiling_height_m": 3.0,
-                    "detector_type": "smoke",
-                },
-            ))
+            engine.assert_fact(
+                Fact(
+                    fact_type="room",
+                    properties={
+                        "room_id": f"NORMAL_{i}",
+                        "ceiling_height_m": 3.0,
+                        "detector_type": "smoke",
+                    },
+                )
+            )
             engine.evaluate()
 
         # After 30 calls, inject a ceiling height that MUST trigger NFPA72-003
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "CRITICAL_HIGH_CEILING",
-                "ceiling_height_m": 15.0,   # exceeds NFPA 72 table → CRITICAL_SAFETY
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "CRITICAL_HIGH_CEILING",
+                    "ceiling_height_m": 15.0,  # exceeds NFPA 72 table → CRITICAL_SAFETY
+                    "detector_type": "smoke",
+                },
+            )
+        )
         engine.evaluate()
 
         critical = engine.get_safety_violations()
@@ -124,17 +131,21 @@ class TestBugV95Engine02IterationReset:
         engine = RulesEngine(max_iterations=100)
         engine.add_rules(NFPA72RuleSet.all_rules())
 
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
         first = engine._iteration
 
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R2", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R2", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
 
         assert engine._iteration == first, (
@@ -146,6 +157,7 @@ class TestBugV95Engine02IterationReset:
 # ---------------------------------------------------------------------------
 # BUG-V95-ENGINE-01 — Audit log inflation
 # ---------------------------------------------------------------------------
+
 
 class TestBugV95Engine01AuditInflation:
     """
@@ -160,10 +172,12 @@ class TestBugV95Engine01AuditInflation:
         """Each not-fired rule must appear at most once per evaluate() call."""
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
 
         not_fired = [a for a in engine.get_audit_log() if not a.fired]
@@ -185,10 +199,12 @@ class TestBugV95Engine01AuditInflation:
         """
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
 
         audit = engine.get_audit_log()
@@ -205,10 +221,12 @@ class TestBugV95Engine01AuditInflation:
         """The audit inflation fix must NOT remove fired rule entries."""
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
 
         fired_ids = {a.rule_id for a in engine.get_audit_log() if a.fired}
@@ -221,10 +239,12 @@ class TestBugV95Engine01AuditInflation:
         """Not-fired rules must still appear exactly once — dedup, not delete."""
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"room_id": "R1", "ceiling_height_m": 3.0, "detector_type": "smoke"},
+            )
+        )
         engine.evaluate()
 
         not_fired_ids = {a.rule_id for a in engine.get_audit_log() if not a.fired}
@@ -241,6 +261,7 @@ class TestBugV95Engine01AuditInflation:
 # Combined regression — both fixes working together
 # ---------------------------------------------------------------------------
 
+
 class TestV95Combined:
     """Integration regression: both fixes must coexist correctly."""
 
@@ -251,14 +272,16 @@ class TestV95Combined:
         len(NFPA72RuleSet.all_rules())
 
         for i in range(10):
-            engine.assert_fact(Fact(
-                fact_type="room",
-                properties={
-                    "room_id": f"R{i}",
-                    "ceiling_height_m": 3.0,
-                    "detector_type": "smoke",
-                },
-            ))
+            engine.assert_fact(
+                Fact(
+                    fact_type="room",
+                    properties={
+                        "room_id": f"R{i}",
+                        "ceiling_height_m": 3.0,
+                        "detector_type": "smoke",
+                    },
+                )
+            )
             prev = len(engine.get_audit_log())
             engine.evaluate()
             new_entries = engine.get_audit_log()[prev:]
@@ -269,11 +292,11 @@ class TestV95Combined:
             dups = {rid: cnt for rid, cnt in counts.items() if cnt > 1}
 
             assert not dups, (
-                f"Call {i+1}: not-fired rules duplicated: {dups}. "
+                f"Call {i + 1}: not-fired rules duplicated: {dups}. "
                 f"BUG-V95-ENGINE-01 regression detected."
             )
             assert engine._iteration <= engine.max_iterations, (
-                f"Call {i+1}: _iteration={engine._iteration} exceeded "
+                f"Call {i + 1}: _iteration={engine._iteration} exceeded "
                 f"max_iterations={engine.max_iterations}. "
                 f"BUG-V95-ENGINE-02 regression detected."
             )
@@ -294,24 +317,28 @@ class TestV95Combined:
         engine.add_rules(NFPA72RuleSet.all_rules())
 
         for i in range(20):
-            engine.assert_fact(Fact(
-                fact_type="room",
-                properties={
-                    "room_id": f"NORMAL_{i}",
-                    "ceiling_height_m": 3.0,
-                    "detector_type": "smoke",
-                },
-            ))
+            engine.assert_fact(
+                Fact(
+                    fact_type="room",
+                    properties={
+                        "room_id": f"NORMAL_{i}",
+                        "ceiling_height_m": 3.0,
+                        "detector_type": "smoke",
+                    },
+                )
+            )
             engine.evaluate()
 
         # Inject a dead-air-space violation (detector too close to wall)
-        engine.assert_fact(Fact(
-            fact_type="detector",
-            properties={
-                "detector_id": "WALL_VIOLATION_01",
-                "distance_to_wall_m": 0.02,   # < 0.1 m → violates NFPA 72 §17.6.3.1.1
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="detector",
+                properties={
+                    "detector_id": "WALL_VIOLATION_01",
+                    "distance_to_wall_m": 0.02,  # < 0.1 m → violates NFPA 72 §17.6.3.1.1
+                },
+            )
+        )
         engine.evaluate()
 
         violations = engine.get_safety_violations()

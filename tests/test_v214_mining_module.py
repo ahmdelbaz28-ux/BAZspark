@@ -21,6 +21,7 @@ class TestV214MiningModuleExists:
 
     def test_module_imports(self):
         import fireai.mining
+
         assert fireai.mining is not None
 
     def test_core_classes_importable(self):
@@ -30,6 +31,7 @@ class TestV214MiningModuleExists:
             MSHAComplianceChecker,
             VentilationCalculator,
         )
+
         assert MethaneCalculator is not None
         assert VentilationCalculator is not None
         assert ConveyorFireAnalyzer is not None
@@ -41,30 +43,37 @@ class TestV214MethaneCalculator:
 
     def test_classify_normal(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(0.1) == "normal"
 
     def test_classify_notify(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(0.5) == "notify"
 
     def test_classify_evacuate_area(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(1.0) == "evacuate_area"
 
     def test_classify_deenergize(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(1.5) == "deenergize"
 
     def test_classify_withdraw_all(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(2.0) == "withdraw_all"
 
     def test_classify_explosive(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.classify_hazard(5.0) == "explosive"
 
     def test_is_in_explosive_range(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         assert MethaneCalculator.is_in_explosive_range(5.0) is True
         assert MethaneCalculator.is_in_explosive_range(10.0) is True
         assert MethaneCalculator.is_in_explosive_range(15.0) is True
@@ -73,6 +82,7 @@ class TestV214MethaneCalculator:
 
     def test_layering_analysis(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         # Roof = 2%, mid = 1%, floor = 0.5% → stratified
         result = MethaneCalculator.analyze_layering(2.0, 1.0, 0.5)
         assert result.is_stratified is True
@@ -81,6 +91,7 @@ class TestV214MethaneCalculator:
 
     def test_dilution_airflow(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
+
         # Dilute 2% to 1% with current 10 m³/s → need 20 m³/s
         result = MethaneCalculator.dilution_airflow_required(2.0, 1.0, 10.0)
         assert result == 20.0  # NOSONAR: S1244 — float comparison in test
@@ -91,18 +102,21 @@ class TestV214VentilationCalculator:
 
     def test_pressure_drop_atkinson(self):
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
+
         # ΔP = R × Q² = 0.1 × 10² = 10 Pa
         result = VentilationCalculator.pressure_drop(0.1, 10.0)
         assert result == pytest.approx(10.0, rel=0.01)
 
     def test_airway_resistance(self):
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
+
         # R = (K × L × P) / A³ = (0.01 × 100 × 10) / 5³ = 10 / 125 = 0.08
         result = VentilationCalculator.airway_resistance(100.0, 10.0, 5.0)
         assert result == pytest.approx(0.08, rel=0.01)
 
     def test_msha_compliance_working_face_pass(self):
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
+
         # 5 m³/s > 1.42 m³/s minimum → compliant
         is_ok, violations = VentilationCalculator.check_msha_compliance(5.0, "working_face")
         assert is_ok is True
@@ -110,6 +124,7 @@ class TestV214VentilationCalculator:
 
     def test_msha_compliance_working_face_fail(self):
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
+
         # 1.0 m³/s < 1.42 m³/s minimum → non-compliant
         is_ok, violations = VentilationCalculator.check_msha_compliance(1.0, "working_face")
         assert is_ok is False
@@ -117,6 +132,7 @@ class TestV214VentilationCalculator:
 
     def test_methane_dilution_airflow(self):
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
+
         # 0.01 m³/s CH4 → need 1.0 m³/s airflow to keep below 1%
         result = VentilationCalculator.methane_dilution_airflow(0.01, 1.0)
         assert result == pytest.approx(1.0, rel=0.01)
@@ -127,26 +143,32 @@ class TestV214ConveyorFireAnalyzer:
 
     def test_classify_co_normal(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         assert ConveyorFireAnalyzer.classify_co_hazard(5.0) == "normal"
 
     def test_classify_co_alert(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         assert ConveyorFireAnalyzer.classify_co_hazard(10.0) == "alert"
 
     def test_classify_co_evacuate(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         assert ConveyorFireAnalyzer.classify_co_hazard(15.0) == "evacuate"
 
     def test_classify_co_withdraw(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         assert ConveyorFireAnalyzer.classify_co_hazard(30.0) == "withdraw"
 
     def test_classify_co_imminent(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         assert ConveyorFireAnalyzer.classify_co_hazard(50.0) == "imminent"
 
     def test_suppression_design_compliant(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer, ConveyorSpec
+
         spec = ConveyorSpec(
             belt_length_m=1000.0,
             belt_width_m=1.2,
@@ -160,6 +182,7 @@ class TestV214ConveyorFireAnalyzer:
 
     def test_suppression_design_non_compliant_no_fire_resistant_belt(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer, ConveyorSpec
+
         spec = ConveyorSpec(
             belt_length_m=500.0,
             belt_width_m=1.0,
@@ -172,6 +195,7 @@ class TestV214ConveyorFireAnalyzer:
 
     def test_fire_spread_rate(self):
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+
         rate = ConveyorFireAnalyzer.estimate_fire_spread_rate(2.0, "fire_resistant")
         # base 0.05 + 2.0 × 0.5 = 1.05
         assert rate == pytest.approx(1.05, rel=0.01)
@@ -182,6 +206,7 @@ class TestV214MSHAComplianceChecker:
 
     def test_full_report_all_pass(self):
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
+
         report = MSHAComplianceChecker.full_compliance_report(
             mine_name="Test Mine",
             section_name="Section A",
@@ -199,6 +224,7 @@ class TestV214MSHAComplianceChecker:
     def test_full_report_no_conveyor(self):
         """Report without conveyor should have 3 checks (no suppression check)."""
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
+
         report = MSHAComplianceChecker.full_compliance_report(
             mine_name="Test Mine",
             section_name="Section A",
@@ -213,6 +239,7 @@ class TestV214MSHAComplianceChecker:
 
     def test_full_report_methane_fail(self):
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
+
         report = MSHAComplianceChecker.full_compliance_report(
             mine_name="Test Mine",
             section_name="Section A",
@@ -224,6 +251,7 @@ class TestV214MSHAComplianceChecker:
 
     def test_full_report_co_fail(self):
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
+
         report = MSHAComplianceChecker.full_compliance_report(
             mine_name="Test Mine",
             section_name="Section A",
@@ -239,16 +267,19 @@ class TestV214MethaneDetectorSelector:
 
     def test_select_catalytic_with_oxygen(self):
         from fireai.mining.detectors.methane_detector import MethaneDetectorSelector
+
         det = MethaneDetectorSelector.select("working_face", oxygen_available=True)
         assert det.detector_type == "catalytic"
 
     def test_select_infrared_without_oxygen(self):
         from fireai.mining.detectors.methane_detector import MethaneDetectorSelector
+
         det = MethaneDetectorSelector.select("working_face", oxygen_available=False)
         assert det.detector_type == "infrared"
 
     def test_placement_locations(self):
         from fireai.mining.detectors.methane_detector import MethaneDetectorSelector
+
         locations = MethaneDetectorSelector.placement_locations(
             mine_length_m=600.0,
             has_conveyor=True,

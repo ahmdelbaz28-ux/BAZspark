@@ -52,8 +52,8 @@ class CeilingType(StrEnum):
     TRUSS = "TRUSS"
     COMBUSTIBLE = "COMBUSTIBLE"
     # ── V215: Members consolidated from device_placement.py ──────────────
-    PEAKED = "PEAKED"      # Peaked/sloped ceiling (NFPA 72 §17.7.3.2.5)
-    BEAM = "BEAM"          # Beam ceiling — alias of BEAMED for device_placement compatibility
+    PEAKED = "PEAKED"  # Peaked/sloped ceiling (NFPA 72 §17.7.3.2.5)
+    BEAM = "BEAM"  # Beam ceiling — alias of BEAMED for device_placement compatibility
     OPEN_JOIST = "OPEN_JOIST"  # Open-joist ceiling
 
 
@@ -91,10 +91,10 @@ class DetectorType(StrEnum):
     FLAME = "FLAME"
     GAS = "GAS"
     # ── V215: Members consolidated from device_placement.py ──────────────
-    DUCT = "DUCT"              # Duct smoke detector (NFPA 72 §17.7.4)
-    BEAM = "BEAM"              # Beam-type smoke detector
+    DUCT = "DUCT"  # Duct smoke detector (NFPA 72 §17.7.4)
+    BEAM = "BEAM"  # Beam-type smoke detector
     ASPIRATING = "ASPIRATING"  # Aspirating (air-sampling) smoke detector
-    MULTI = "MULTI"            # Multi-criteria detector
+    MULTI = "MULTI"  # Multi-criteria detector
 
 
 # ============================================================================
@@ -476,7 +476,11 @@ class ContractViolation(ValueError):
     pass
 
 
-def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def validate_room_input(
+    payload: dict[str, Any],
+) -> dict[
+    str, Any
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate a room input payload before it enters the calculation pipeline.
 
@@ -526,7 +530,9 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
     # 4. Validate polygon is a list of at least 3 points
     polygon = payload.get("polygon")
     if not isinstance(polygon, list | tuple) or len(polygon) < 3:
-        raise ContractViolation(f"polygon must be a list of at least 3 points, got {type(polygon).__name__}")
+        raise ContractViolation(
+            f"polygon must be a list of at least 3 points, got {type(polygon).__name__}"
+        )
 
     # 4a. Validate polygon points are numeric — prevents downstream crashes
     #     A polygon like [{"x": "abc"}] passes the len check but crashes
@@ -535,12 +541,16 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
     for i, pt in enumerate(polygon):
         if isinstance(pt, list | tuple):
             if len(pt) < 2:
-                raise ContractViolation(f"polygon point {i} must have at least 2 coordinates, got {len(pt)}")
+                raise ContractViolation(
+                    f"polygon point {i} must have at least 2 coordinates, got {len(pt)}"
+                )
             try:
                 x_val = float(pt[0])
                 y_val = float(pt[1])
             except (TypeError, ValueError):
-                raise ContractViolation(f"polygon point {i} coordinates must be numeric, got {pt!r}")
+                raise ContractViolation(
+                    f"polygon point {i} coordinates must be numeric, got {pt!r}"
+                )
             if not (math.isfinite(x_val) and math.isfinite(y_val)):
                 raise ContractViolation(
                     f"polygon point {i} contains non-finite coordinate: ({x_val}, {y_val}). "
@@ -557,12 +567,16 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
             x_val = pt.get("x", pt.get("X"))
             y_val = pt.get("y", pt.get("Y"))
             if x_val is None or y_val is None:
-                raise ContractViolation(f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}")
+                raise ContractViolation(
+                    f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}"
+                )
             try:
                 x_val = float(x_val)
                 y_val = float(y_val)
             except (TypeError, ValueError):
-                raise ContractViolation(f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}")
+                raise ContractViolation(
+                    f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}"
+                )
             if not (math.isfinite(x_val) and math.isfinite(y_val)):
                 raise ContractViolation(
                     f"polygon point {i} dict contains non-finite coordinate: ({x_val}, {y_val})."
@@ -574,7 +588,9 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR �
                 )
             coords.append((x_val, y_val))
         else:
-            raise ContractViolation(f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}")
+            raise ContractViolation(
+                f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}"
+            )
 
     # 4b. Polygon self-intersection check — prevents wrong area calculations.
     #     A self-intersecting polygon (e.g. figure-8) has ambiguous area
@@ -638,7 +654,11 @@ FORBIDDEN_LOOP_DERIVED_FIELDS: tuple = (
 )
 
 
-def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def validate_loop_input(
+    payload: dict[str, Any],
+) -> dict[
+    str, Any
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate an SLC loop input payload before design.
 

@@ -19,6 +19,7 @@ v2 BUGFIXES:
     - No scope check: any zone (engine room, cargo hold) was accepted.
       Now validates passenger-ship + escape-route preconditions.
 """
+
 from __future__ import annotations
 
 import math
@@ -80,7 +81,8 @@ def calculate_thermal_alarm_count(
 
     """
     result = ComplianceResult(
-        compliant=True, standard_reference="ISO 15370 §6.4",
+        compliant=True,
+        standard_reference="ISO 15370 §6.4",
     )
 
     # Scope check: ISO 15370 applies ONLY to passenger-ship escape routes
@@ -94,8 +96,7 @@ def calculate_thermal_alarm_count(
             return result
         if ship.passenger_capacity <= 36:
             result.add_finding(
-                f"ISO 15370 requires passenger_capacity > 36 "
-                f"(got {ship.passenger_capacity})."
+                f"ISO 15370 requires passenger_capacity > 36 (got {ship.passenger_capacity})."
             )
             return result
     if zone.space_category != SpaceCategory.ESCAPE_ROUTE:

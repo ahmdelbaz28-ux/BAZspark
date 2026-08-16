@@ -60,7 +60,7 @@ class TestSemanticMapper:
             "entity_type": "LINE",
             "layer": "Walls",
             "start_point": [0, 0, 0],
-            "end_point": [1000, 0, 0]
+            "end_point": [1000, 0, 0],
         }
 
         revit_spec = mapper.map_autocad_to_revit(autocad_entity)
@@ -79,7 +79,7 @@ class TestSemanticMapper:
             "entity_type": "INSERT",
             "name": "Furniture",  # This determines the family
             "insertion_point": [1000, 1000, 0],
-            "layer": "Furniture"  # This determines the category
+            "layer": "Furniture",  # This determines the category
         }
 
         revit_spec = mapper.map_autocad_to_revit(autocad_entity)
@@ -87,7 +87,9 @@ class TestSemanticMapper:
         assert revit_spec is not None
         assert revit_spec["element_type"] == "FamilyInstance"
         # The family name is determined by the block name, not the layer
-        assert revit_spec["family_name"] == "Desk"  # From block_to_family mapping {"Furniture": "Desk"}
+        assert (
+            revit_spec["family_name"] == "Desk"
+        )  # From block_to_family mapping {"Furniture": "Desk"}
 
     def test_map_unknown_layer_returns_none(self):
         """Test that unknown layers return None."""
@@ -98,7 +100,7 @@ class TestSemanticMapper:
             "entity_type": "LINE",
             "layer": "UnknownLayer",
             "start_point": [0, 0, 0],
-            "end_point": [1000, 0, 0]
+            "end_point": [1000, 0, 0],
         }
 
         revit_spec = mapper.map_autocad_to_revit(autocad_entity)
@@ -110,10 +112,7 @@ class TestSemanticMapper:
         config = ConversionConfig()
         mapper = SemanticMapper(config)
 
-        revit_element = {
-            "category": "Walls",
-            "location_curve": [[0, 0, 0], [1000, 0, 0]]
-        }
+        revit_element = {"category": "Walls", "location_curve": [[0, 0, 0], [1000, 0, 0]]}
 
         autocad_spec = mapper.map_revit_to_autocad(revit_element)
 
@@ -135,7 +134,7 @@ class TestVersionManager:
                 target_file="test_target.rvt",
                 conversion_type="autocad_to_revit",
                 elements_count=5,
-                status="success"
+                status="success",
             )
 
             history = vm.get_history()
@@ -161,8 +160,8 @@ class TestDigitalTwinService:
         assert service.engine.mapper is not None
         assert service.engine.version_manager is not None
 
-    @patch('backend.services.autocad_service.AutoCADService')
-    @patch('backend.services.revit_service.RevitService')
+    @patch("backend.services.autocad_service.AutoCADService")
+    @patch("backend.services.revit_service.RevitService")
     def test_convert_autocad_to_revit_stubbed(self, mock_revit_service, mock_autocad_service):
         """Test AutoCAD to Revit conversion with mocked services."""
         # Setup mocks
@@ -179,9 +178,9 @@ class TestDigitalTwinService:
                     "entity_type": "LINE",
                     "layer": "Walls",
                     "start_point": [0, 0, 0],
-                    "end_point": [1000, 0, 0]
+                    "end_point": [1000, 0, 0],
                 }
-            ]
+            ],
         }
 
         mock_acad_instance.save.return_value = True
@@ -195,9 +194,9 @@ class TestDigitalTwinService:
         # Test conversion
         service = DigitalTwinService()
 
-        with tempfile.NamedTemporaryFile(suffix='.dwg', delete=False) as temp_dwg:
+        with tempfile.NamedTemporaryFile(suffix=".dwg", delete=False) as temp_dwg:
             temp_dwg_path = temp_dwg.name
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as temp_rvt:
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as temp_rvt:
             temp_rvt_path = temp_rvt.name
 
         try:
@@ -217,8 +216,8 @@ class TestDigitalTwinService:
                 if os.path.exists(temp_file):
                     os.unlink(temp_file)
 
-    @patch('backend.services.autocad_service.AutoCADService')
-    @patch('backend.services.revit_service.RevitService')
+    @patch("backend.services.autocad_service.AutoCADService")
+    @patch("backend.services.revit_service.RevitService")
     def test_convert_revit_to_autocad_stubbed(self, mock_revit_service, mock_autocad_service):
         """Test Revit to AutoCAD conversion with mocked services."""
         # Setup mocks
@@ -229,24 +228,14 @@ class TestDigitalTwinService:
         mock_revit_instance.initialize.return_value = True
 
         mock_revit_instance.read_current_document.return_value = {
-            "elements": [
-                {
-                    "category": "Walls",
-                    "location_curve": [[0, 0, 0], [1000, 0, 0]]
-                }
-            ]
+            "elements": [{"category": "Walls", "location_curve": [[0, 0, 0], [1000, 0, 0]]}]
         }
 
         mock_acad_instance.save.return_value = True
         mock_acad_instance.write_dwg.return_value = True
         mock_revit_instance.read_rvt.return_value = {
             "success": True,
-            "elements": [
-                {
-                    "category": "Walls",
-                    "location_curve": [[0, 0, 0], [1000, 0, 0]]
-                }
-            ]
+            "elements": [{"category": "Walls", "location_curve": [[0, 0, 0], [1000, 0, 0]]}],
         }
 
         mock_autocad_service.return_value = mock_acad_instance
@@ -255,9 +244,9 @@ class TestDigitalTwinService:
         # Test conversion
         service = DigitalTwinService()
 
-        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as temp_rvt:
+        with tempfile.NamedTemporaryFile(suffix=".rvt", delete=False) as temp_rvt:
             temp_rvt_path = temp_rvt.name
-        with tempfile.NamedTemporaryFile(suffix='.dwg', delete=False) as temp_dwg:
+        with tempfile.NamedTemporaryFile(suffix=".dwg", delete=False) as temp_dwg:
             temp_dwg_path = temp_dwg.name
 
         try:
@@ -300,7 +289,9 @@ class TestIntegration:
         # Test mapping configuration
         assert "Walls" in config.layer_to_category
         assert "Doors" in config.layer_to_category
-        assert "A-WALL" in config.category_to_layer.values()  # Check if A-WALL is a value, not a key
+        assert (
+            "A-WALL" in config.category_to_layer.values()
+        )  # Check if A-WALL is a value, not a key
 
         # Test mapper
         mapper = service.engine.mapper

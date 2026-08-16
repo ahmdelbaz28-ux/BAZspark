@@ -199,6 +199,7 @@ class TestCSPEnvironmentAwareness:
         os.environ["CORS_ALLOWED_ORIGINS"] = "https://app.example.com"
         try:
             from backend.security_middleware import _build_csp, _is_production_env
+
             assert _is_production_env()
             csp = _build_csp({"type": "http"})
             assert "'unsafe-eval'" not in csp, (
@@ -215,6 +216,7 @@ class TestCSPEnvironmentAwareness:
         """Development CSP MUST include 'unsafe-eval' (Vite HMR requirement)."""
         os.environ["FIREAI_ENV"] = "development"
         from backend.security_middleware import _build_csp, _is_production_env
+
         assert not _is_production_env()
         csp = _build_csp({"type": "http"})
         assert "'unsafe-eval'" in csp
@@ -229,36 +231,43 @@ class TestBackendAppCorsHardening:
     def test_production_requires_cors_origins_env_var(self):
         """Production + no CORS_ALLOWED_ORIGINS → RuntimeError (fail-safe)."""
         with pytest.raises(RuntimeError, match="CORS_ALLOWED_ORIGINS.*REQUIRED"):
-            _reload_backend_app({
-                "FIREAI_ENV": "production",
-                "CORS_ORIGINS": None,
-                "CORS_ALLOWED_ORIGINS": None,
-                "FIREAI_API_KEY": "",
-            })
+            _reload_backend_app(
+                {
+                    "FIREAI_ENV": "production",
+                    "CORS_ORIGINS": None,
+                    "CORS_ALLOWED_ORIGINS": None,
+                    "FIREAI_API_KEY": "",
+                }
+            )
 
     def test_production_rejects_wildcard_origin(self):
         """Production + CORS_ALLOWED_ORIGINS='*' → RuntimeError."""
         with pytest.raises(RuntimeError, match=r"'\*'.*forbidden"):
-            _reload_backend_app({
-                "FIREAI_ENV": "production",
-                "CORS_ORIGINS": "*",
-                "CORS_ALLOWED_ORIGINS": "*",
-                "FIREAI_API_KEY": "",
-            })
+            _reload_backend_app(
+                {
+                    "FIREAI_ENV": "production",
+                    "CORS_ORIGINS": "*",
+                    "CORS_ALLOWED_ORIGINS": "*",
+                    "FIREAI_API_KEY": "",
+                }
+            )
 
     def test_production_accepts_explicit_origins(self):
         """Production + explicit origins → CORS configured correctly."""
-        backend_app = _reload_backend_app({
-            "FIREAI_ENV": "production",
-            "CORS_ORIGINS": None,
-            "CORS_ALLOWED_ORIGINS": "https://app.example.com,https://admin.example.com",
-            "FIREAI_API_KEY": "",
-        })
+        backend_app = _reload_backend_app(
+            {
+                "FIREAI_ENV": "production",
+                "CORS_ORIGINS": None,
+                "CORS_ALLOWED_ORIGINS": "https://app.example.com,https://admin.example.com",
+                "FIREAI_API_KEY": "",
+            }
+        )
         from starlette.middleware.cors import CORSMiddleware
+
         kwargs = None
         for m in backend_app.app.user_middleware:
             if m.cls is CORSMiddleware:
-                kwargs = m.kwargs if hasattr(m, 'kwargs') else m.options  # V268: Starlette compat
+                kwargs = m.kwargs if hasattr(m, "kwargs") else m.options  # V268: Starlette compat
                 break
         assert kwargs is not None
         assert "https://app.example.com" in kwargs["allow_origins"]

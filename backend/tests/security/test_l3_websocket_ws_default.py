@@ -33,6 +33,7 @@ NON-VACUOUSNESS:
   Each test below is proven to fail when its assertion is violated.
   Verified by /home/z/my-project/scripts/verify_l1_l2_l3_post_fix_nonvacuous.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -43,12 +44,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WEBSOCKET_TRANSPORT_PY = (
-    REPO_ROOT / "facp_distributed" / "transport" / "websocket_transport.py"
-)
-TRANSPORT_INIT_PY = (
-    REPO_ROOT / "facp_distributed" / "transport" / "__init__.py"
-)
+WEBSOCKET_TRANSPORT_PY = REPO_ROOT / "facp_distributed" / "transport" / "websocket_transport.py"
+TRANSPORT_INIT_PY = REPO_ROOT / "facp_distributed" / "transport" / "__init__.py"
 
 
 # ─── L-3 part (a): file exists ──────────────────────────────────────────────
@@ -84,7 +81,7 @@ def test_l3_default_url_is_now_wss():
     )
     assert wss_default_pattern.search(source), (
         "No `wss://` default URL pattern (e.g., "
-        "`f\"wss://{self.host}:{self.port}\"`) found in "
+        '`f"wss://{self.host}:{self.port}"`) found in '
         "websocket_transport.py. The L-3 fix requires the default "
         "outbound URL to be `wss://` (secure-by-default). RESTORE the "
         "L-3 fix."
@@ -118,7 +115,7 @@ def test_l3_old_ws_default_is_REMOVED():
         r'node\s*=\s*target_node\s+or\s+f?"ws://',
     )
     assert not forbidden_pattern.search(source), (
-        "The OLD `node = target_node or f\"ws://...\"` default fallback "
+        'The OLD `node = target_node or f"ws://..."` default fallback '
         "is still present. The L-3 fix requires this to be `wss://`. "
         "RESTORE the L-3 fix."
     )
@@ -140,7 +137,7 @@ def test_l3_allow_insecure_ws_parameter_exists():
 
     # Look for `allow_insecure_ws: bool = False` in the __init__ signature.
     param_pattern = re.compile(
-        r'def\s+__init__\s*\([^)]*allow_insecure_ws\s*:\s*bool\s*=\s*False',
+        r"def\s+__init__\s*\([^)]*allow_insecure_ws\s*:\s*bool\s*=\s*False",
         re.MULTILINE | re.DOTALL,
     )
     assert param_pattern.search(source), (
@@ -169,7 +166,7 @@ def test_l3_allow_insecure_ws_defaults_to_false():
     # Match `allow_insecure_ws: bool = False` (allowed)
     # Reject `allow_insecure_ws: bool = True` (forbidden)
     true_default_pattern = re.compile(
-        r'allow_insecure_ws\s*:\s*bool\s*=\s*True',
+        r"allow_insecure_ws\s*:\s*bool\s*=\s*True",
     )
     assert not true_default_pattern.search(source), (
         "The `allow_insecure_ws` parameter defaults to `True` — this "
@@ -207,7 +204,7 @@ def test_l3_ws_rejection_logic_exists():
     # Find the rejection block and verify it raises ValueError.
     rejection_block_pattern = re.compile(
         r'node\.startswith\s*\(\s*["\']ws://["\']\s*\)\s+and\s+not\s+self\.allow_insecure_ws'
-        r'.*?raise\s+ValueError',
+        r".*?raise\s+ValueError",
         re.MULTILINE | re.DOTALL,
     )
     assert rejection_block_pattern.search(source), (
@@ -238,7 +235,7 @@ def test_l3_class_not_instantiated_in_production():
     if not WEBSOCKET_TRANSPORT_PY.exists():
         pytest.skip("websocket_transport.py not found")
 
-    instantiation_pattern = re.compile(r'WebSocketTransport\s*\(')
+    instantiation_pattern = re.compile(r"WebSocketTransport\s*\(")
 
     production_instantiations = []
     for py_file in REPO_ROOT.rglob("*.py"):
@@ -246,9 +243,14 @@ def test_l3_class_not_instantiated_in_production():
         if py_file == WEBSOCKET_TRANSPORT_PY:
             continue
         path_str = str(rel_path)
-        if "/tests/" in path_str or "/test/" in path_str \
-            or path_str.startswith("tests/") or path_str.startswith("test/") \
-            or "conftest.py" in path_str or "test_" in py_file.stem:
+        if (
+            "/tests/" in path_str
+            or "/test/" in path_str
+            or path_str.startswith("tests/")
+            or path_str.startswith("test/")
+            or "conftest.py" in path_str
+            or "test_" in py_file.stem
+        ):
             continue
         if py_file.name == "__init__.py":
             continue
@@ -258,15 +260,20 @@ def test_l3_class_not_instantiated_in_production():
             continue
         for m in instantiation_pattern.finditer(text):
             start = max(0, m.start() - 30)
-            prefix = text[start:m.start()]
-            if re.search(r'\bclass\s+$', prefix) or re.search(r'\bdef\s+$', prefix) \
-                or re.search(r'\bfrom\s+$', prefix) or re.search(r'\bimport\s+$', prefix):
+            prefix = text[start : m.start()]
+            if (
+                re.search(r"\bclass\s+$", prefix)
+                or re.search(r"\bdef\s+$", prefix)
+                or re.search(r"\bfrom\s+$", prefix)
+                or re.search(r"\bimport\s+$", prefix)
+            ):
                 continue
             production_instantiations.append(str(rel_path))
 
     assert not production_instantiations, (
         "WebSocketTransport is now INSTANTIATED in production code: "
-        + str(production_instantiations) + ". "
+        + str(production_instantiations)
+        + ". "
         "The L-3 risk is no longer latent — but the L-3 fix (secure-by-"
         "default wss:// + ValueError on ws:// without opt-in) should "
         "still prevent insecure usage. Re-evaluate the L-3 claim's "
@@ -296,8 +303,8 @@ def test_l3_class_is_exported_from_package():
     init_source = TRANSPORT_INIT_PY.read_text(encoding="utf-8")
 
     export_pattern = re.compile(
-        r'from\s+\.websocket_transport\s+import\s+WebSocketTransport'
-        r'|from\s+facp_distributed\.transport\.websocket_transport\s+import\s+WebSocketTransport',
+        r"from\s+\.websocket_transport\s+import\s+WebSocketTransport"
+        r"|from\s+facp_distributed\.transport\.websocket_transport\s+import\s+WebSocketTransport",
     )
     assert export_pattern.search(init_source), (
         "WebSocketTransport is no longer exported from "
@@ -334,8 +341,12 @@ def test_l3_claim_text_reflects_resolved_state():
     if low_section_start == -1:
         pytest.skip("LOW ISSUES section not found in worklog")
     after_low = worklog_text[low_section_start:]
-    end_markers = ["RETRACTED FALSE CLAIMS", "NUMERICAL ERRORS",
-                   "FALSE ACCUSATION PATTERNS", "POSITIVES VERIFIED"]
+    end_markers = [
+        "RETRACTED FALSE CLAIMS",
+        "NUMERICAL ERRORS",
+        "FALSE ACCUSATION PATTERNS",
+        "POSITIVES VERIFIED",
+    ]
     end_idx = len(after_low)
     for marker in end_markers:
         idx = after_low.find(marker)
@@ -347,15 +358,18 @@ def test_l3_claim_text_reflects_resolved_state():
     # Extract the L-3 entry specifically (from "L-3:" up to the next
     # section marker or end). L-3 is the LAST entry in LOW ISSUES, so
     # the end is the end of the section.
-    l3_match = re.search(r'L-3:.*?(?=\s*(?:RETRACTED|NUMERICAL|FALSE|POSITIVES|LOW ISSUES|$))',
-                         low_normalized, re.DOTALL)
+    l3_match = re.search(
+        r"L-3:.*?(?=\s*(?:RETRACTED|NUMERICAL|FALSE|POSITIVES|LOW ISSUES|$))",
+        low_normalized,
+        re.DOTALL,
+    )
     assert l3_match, (
         "L-3 entry missing from LOW ISSUES section. The LOW ISSUES "
         "section should contain entries L-1, L-2, L-3."
     )
     l3_entry = l3_match.group(0)
 
-    assert ("RESOLVED" in l3_entry or "FIXED" in l3_entry), (
+    assert "RESOLVED" in l3_entry or "FIXED" in l3_entry, (
         "L-3 entry in LOW ISSUES does not mention RESOLVED or FIXED. "
         "The L-3 fix has been applied — update the worklog to reflect "
         "the RESOLVED state."
@@ -389,12 +403,11 @@ def test_l3_runtime_ws_rejected_without_opt_in(monkeypatch):
     # Import the class dynamically (the module path may not be on sys.path
     # by default — add the repo root).
     import importlib
+
     if str(REPO_ROOT) not in sys.path:
         monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
-        mod = importlib.import_module(
-            "facp_distributed.transport.websocket_transport"
-        )
+        mod = importlib.import_module("facp_distributed.transport.websocket_transport")
         WebSocketTransport = mod.WebSocketTransport
     except Exception as e:
         pytest.skip(f"Cannot import WebSocketTransport: {e}")
@@ -405,10 +418,12 @@ def test_l3_runtime_ws_rejected_without_opt_in(monkeypatch):
     # Call send_request with a ws:// target_node. This should raise
     # ValueError because allow_insecure_ws is False.
     with pytest.raises(ValueError, match="insecure ws://"):
-        asyncio.run(transport.send_request(
-            target_node="ws://insecure.example.com:8002",
-            request_data={"id": "test", "method": "ping"},
-        ))
+        asyncio.run(
+            transport.send_request(
+                target_node="ws://insecure.example.com:8002",
+                request_data={"id": "test", "method": "ping"},
+            )
+        )
 
 
 # ─── L-3 part (k): RUNTIME — wss:// default works without opt-in ────────────
@@ -427,12 +442,11 @@ def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
         pytest.skip("websocket_transport.py not found")
 
     import importlib
+
     if str(REPO_ROOT) not in sys.path:
         monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
-        mod = importlib.import_module(
-            "facp_distributed.transport.websocket_transport"
-        )
+        mod = importlib.import_module("facp_distributed.transport.websocket_transport")
         WebSocketTransport = mod.WebSocketTransport
     except Exception as e:
         pytest.skip(f"Cannot import WebSocketTransport: {e}")
@@ -461,9 +475,7 @@ def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
         # failed), NOT a successful response (we didn't actually
         # connect to anything).
         if not isinstance(result, dict):
-            pytest.fail(
-                f"Expected dict result, got {type(result).__name__}: {result}"
-            )
+            pytest.fail(f"Expected dict result, got {type(result).__name__}: {result}")
     except ValueError as e:
         if "insecure ws://" in str(e):
             pytest.fail(
@@ -498,18 +510,19 @@ def test_l3_runtime_ws_allowed_with_opt_in(monkeypatch):
         pytest.skip("websocket_transport.py not found")
 
     import importlib
+
     if str(REPO_ROOT) not in sys.path:
         monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
-        mod = importlib.import_module(
-            "facp_distributed.transport.websocket_transport"
-        )
+        mod = importlib.import_module("facp_distributed.transport.websocket_transport")
         WebSocketTransport = mod.WebSocketTransport
     except Exception as e:
         pytest.skip(f"Cannot import WebSocketTransport: {e}")
 
     transport = WebSocketTransport(
-        host="example.com", port=8002, allow_insecure_ws=True,
+        host="example.com",
+        port=8002,
+        allow_insecure_ws=True,
     )
 
     async def _call():

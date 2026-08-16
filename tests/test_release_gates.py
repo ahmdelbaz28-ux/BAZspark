@@ -34,6 +34,7 @@ from fireai.core.release_gates import (
 # FIXTURES — reusable inputs for a fully-passing scenario
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _green_input_payload() -> dict[str, Any]:
     """Minimal input_payload that passes G1, and carries G3/G4/G8 data."""
     return {
@@ -72,6 +73,7 @@ def _full_green_kwargs() -> dict[str, Any]:
 # ═══════════════════════════════════════════════════════════════════════════════
 # G1 — Input Validation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestG1InputValidation:
     """G1: Input payload must have been validated."""
@@ -124,6 +126,7 @@ class TestG1InputValidation:
 # G2 — NFPA 72 Spacing
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestG2NfpaSpacing:
     """G2: NFPA 72 spacing calculation must have succeeded."""
 
@@ -173,6 +176,7 @@ class TestG2NfpaSpacing:
 # ═══════════════════════════════════════════════════════════════════════════════
 # G3 — Coverage Verification
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestG3Coverage:
     """G3: Coverage must meet 99.0% standard threshold."""
@@ -228,11 +232,14 @@ class TestG3Coverage:
 # G4 — Wall Distance
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestG4WallDistance:
     """G4: No dead-air-space wall distance violations."""
 
     def test_none_violations_fails(self) -> None:
-        result = _gate_wall_distance(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        result = _gate_wall_distance(
+            None
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result["passed"] is False
         assert "not checked" in result["reason"].lower()
 
@@ -249,12 +256,15 @@ class TestG4WallDistance:
     def test_zero_violations_passes(self) -> None:
         result = _gate_wall_distance(0)
         assert result["passed"] is True
-        assert "no wall" in result["reason"].lower() or "no wall distance" in result["reason"].lower()
+        assert (
+            "no wall" in result["reason"].lower() or "no wall distance" in result["reason"].lower()
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # G5 — Battery Adequacy
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestG5Battery:
     """G5: Battery must be adequate per NFPA 72 §10.6.7 (skips if None)."""
@@ -302,6 +312,7 @@ class TestG5Battery:
 # G6 — Voltage Drop
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestG6VoltageDrop:
     """G6: Voltage drop within limits per NFPA 72 §10.6.4 (skips if None)."""
 
@@ -348,7 +359,9 @@ class TestG6VoltageDrop:
         loop_data = {"voltage_drop": "invalid"}
         result = _gate_voltage_drop(loop_data)
         assert result["passed"] is False
-        assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
+        assert (
+            "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
+        )
 
     def test_voltage_drop_dict_missing_is_compliant_blocks(self) -> None:
         """
@@ -368,6 +381,7 @@ class TestG6VoltageDrop:
 # ═══════════════════════════════════════════════════════════════════════════════
 # G7 — Fault Isolation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestG7FaultIsolation:
     """G7: SLC fault isolator placement per NFPA 72 §12.3 (skips if None)."""
@@ -426,7 +440,9 @@ class TestG7FaultIsolation:
         loop_data = {"fault_isolation": "invalid"}
         result = _gate_fault_isolation(loop_data)
         assert result["passed"] is False
-        assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
+        assert (
+            "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
+        )
 
     def test_fault_isolation_dict_missing_compliant_blocks(self) -> None:
         """
@@ -458,6 +474,7 @@ class TestG7FaultIsolation:
 # ═══════════════════════════════════════════════════════════════════════════════
 # G8 — Safety Tier
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestG8SafetyTier:
     """G8: Safety tier must be PROOF_VERIFIED or PROOF_VALID."""
@@ -502,6 +519,7 @@ class TestG8SafetyTier:
 # ═══════════════════════════════════════════════════════════════════════════════
 # verify_and_evaluate() — main function
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestVerifyAndEvaluate:
     """Integration tests for the main gate evaluation function."""
@@ -767,8 +785,13 @@ class TestVerifyAndEvaluate:
     def test_return_structure_keys(self) -> None:
         result = verify_and_evaluate(**_full_green_kwargs())
         expected_keys = {
-            "release_status", "blockers", "checks",
-            "gate_details", "total_gates", "passed_gates", "failed_gates",
+            "release_status",
+            "blockers",
+            "checks",
+            "gate_details",
+            "total_gates",
+            "passed_gates",
+            "failed_gates",
         }
         assert set(result.keys()) == expected_keys
 
@@ -780,6 +803,7 @@ class TestVerifyAndEvaluate:
 # ═══════════════════════════════════════════════════════════════════════════════
 # describe_blockers() — human-readable blocker descriptions
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestDescribeBlockers:
     """describe_blockers() converts gate results to readable descriptions."""
@@ -834,6 +858,7 @@ class TestDescribeBlockers:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SAFETY PRINCIPLE — false negatives acceptable, false positives NOT
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSafetyPrinciple:
     """

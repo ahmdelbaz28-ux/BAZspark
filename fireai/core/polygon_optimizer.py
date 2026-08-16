@@ -137,7 +137,14 @@ class PolygonRoom:
                 (ox + tw, oy + tl),
                 (ox, oy + tl),
             ],
-            "SW": [(ox, oy), (ox + tw, oy), (ox + tw, oy + tl), (ox, oy + tl), (ox, oy + cl), (ox + cw, oy + cl)],
+            "SW": [
+                (ox, oy),
+                (ox + tw, oy),
+                (ox + tw, oy + tl),
+                (ox, oy + tl),
+                (ox, oy + cl),
+                (ox + cw, oy + cl),
+            ],
         }
         return cls(
             room_id=room_id,
@@ -245,7 +252,11 @@ def _greedy_set_cover(
     n = len(interior_points)
     coverage: list[list[int]] = []
     for _ci, cand in enumerate(interior_points):
-        covered = [i for i, pt in enumerate(interior_points) if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2]
+        covered = [
+            i
+            for i, pt in enumerate(interior_points)
+            if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2
+        ]
         coverage.append(covered)
 
     uncovered = set(range(n))
@@ -255,7 +266,9 @@ def _greedy_set_cover(
         # Pick candidate with maximum overlap with uncovered set
         best_ci = max(
             range(len(interior_points)),
-            key=lambda ci: len(uncovered.intersection(coverage[ci])),  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+            key=lambda ci: len(
+                uncovered.intersection(coverage[ci])
+            ),  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         )
         chosen.append(interior_points[best_ci])
         uncovered -= set(coverage[best_ci])
@@ -273,7 +286,9 @@ def _coverage_percentage(
         return 100.0
     r2 = radius * radius
     covered = sum(
-        1 for pt in interior_points if any((pt[0] - d[0]) ** 2 + (pt[1] - d[1]) ** 2 <= r2 for d in detectors)
+        1
+        for pt in interior_points
+        if any((pt[0] - d[0]) ** 2 + (pt[1] - d[1]) ** 2 <= r2 for d in detectors)
     )
     return round(100.0 * covered / len(interior_points), 4)
 
@@ -312,7 +327,9 @@ def _audit_nfpa_spacing(
         max_gap = max(max_gap, min_dist)
 
     if max_gap > max_spacing * 1.01:
-        violations.append(f"Max inter-detector spacing {max_gap:.2f}m > S={max_spacing:.2f}m (NFPA 72 §17.6.3)")
+        violations.append(
+            f"Max inter-detector spacing {max_gap:.2f}m > S={max_spacing:.2f}m (NFPA 72 §17.6.3)"
+        )
     return violations
 
 
@@ -372,7 +389,9 @@ class PolygonDensityOptimizer:
         t0 = time.time()
 
         # Calculate NFPA 72 coverage radius from ceiling height
-        cov_det_type: Literal['smoke', 'heat'] = "heat" if "heat" in room.detector_type.lower() else "smoke"
+        cov_det_type: Literal["smoke", "heat"] = (
+            "heat" if "heat" in room.detector_type.lower() else "smoke"
+        )
         spec = calculate_coverage_radius_from_height(room.ceiling_height, cov_det_type)
         radius = spec.radius
 
@@ -515,7 +534,9 @@ class PolygonDensityOptimizer:
                 except TypeError:
                     summary.duct_warnings.append(f"Invalid duct spec: {d}")
             else:
-                summary.duct_warnings.append(f"Duct entry must be DuctSpec or dict, got {type(d).__name__}")
+                summary.duct_warnings.append(
+                    f"Duct entry must be DuctSpec or dict, got {type(d).__name__}"
+                )
 
         if not duct_specs:
             return

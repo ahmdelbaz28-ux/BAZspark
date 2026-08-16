@@ -1,4 +1,5 @@
 """Setup file for Distributed FACP System"""
+
 import os
 
 from setuptools import find_packages, setup
@@ -18,7 +19,7 @@ def read_readme():
     """Read README file"""
     readme_file = os.path.join(os.path.dirname(__file__), "..", "README.md")
     try:
-        with open(readme_file, encoding='utf-8') as f:
+        with open(readme_file, encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return "Distributed FireAI Agent Communication Protocol (FACP) System"
@@ -44,7 +45,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: System :: Distributed Computing",
-        "Topic :: Communications"
+        "Topic :: Communications",
     ],
     python_requires=">=3.10",
     install_requires=[
@@ -63,7 +64,7 @@ setup(
         "psutil>=5.9.0",
         "prometheus-client>=0.19.0",
         "structlog>=23.0.0",
-        "python-json-logger>=2.0.0"
+        "python-json-logger>=2.0.0",
     ],
     extras_require={
         "dev": [
@@ -86,7 +87,7 @@ setup(
             "opentelemetry-api>=1.20.0",
             "opentelemetry-sdk>=1.20.0",
             "opentelemetry-instrumentation-fastapi>=0.41b0",
-        ]
+        ],
     },
     entry_points={
         "console_scripts": [

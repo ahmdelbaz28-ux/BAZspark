@@ -232,7 +232,11 @@ class ContractValidator:
             if self.severity == ContractSeverity.STRICT:
                 raise
 
-            logger.exception("Contract violation on %s: %s. Returning unvalidated response (severity=LOG).", key, e.errors())
+            logger.exception(
+                "Contract violation on %s: %s. Returning unvalidated response (severity=LOG).",
+                key,
+                e.errors(),
+            )
             return data
 
     def validate_request(

@@ -71,21 +71,21 @@ _AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
     # stranded values for true conservatism (higher R → higher V_drop →
     # never underestimates).
     # Source: NEC 2023 Chapter 9 Table 8, Copper, STRANDED, Class B, 75°C column.
-    "18": 25.49,   # 7.770 Ω/kft, solid (no stranded column for AWG 18)
-    "16": 16.04,   # 4.890 Ω/kft, solid (no stranded column for AWG 16)
-    "14": 10.30,   # 3.140 Ω/kft, STRANDED @ 75°C (was 10.07 = solid @ 75°C)
-    "12": 6.50,    # 1.980 Ω/kft, STRANDED @ 75°C (was 6.33 = solid @ 75°C)
-    "10": 4.10,    # 1.250 Ω/kft, STRANDED @ 75°C (was 3.97 = solid @ 75°C)
-    "8":  2.62,    # 0.800 Ω/kft, STRANDED @ 75°C (was 2.55 = solid @ 75°C)
-    "6":  1.65,    # 0.504 Ω/kft, STRANDED @ 75°C (was 1.61 = solid @ 75°C)
-    "4":  1.04,    # 0.318 Ω/kft, STRANDED @ 75°C
-    "3":  0.83,    # 0.253 Ω/kft, STRANDED @ 75°C
-    "2":  0.66,    # 0.202 Ω/kft, STRANDED @ 75°C
-    "1":  0.52,    # 0.159 Ω/kft, STRANDED @ 75°C
-    "1/0": 0.41,   # 0.126 Ω/kft, STRANDED @ 75°C
-    "2/0": 0.33,   # 0.100 Ω/kft, STRANDED @ 75°C
-    "3/0": 0.26,   # 0.0797 Ω/kft, STRANDED @ 75°C
-    "4/0": 0.21,   # 0.0630 Ω/kft, STRANDED @ 75°C
+    "18": 25.49,  # 7.770 Ω/kft, solid (no stranded column for AWG 18)
+    "16": 16.04,  # 4.890 Ω/kft, solid (no stranded column for AWG 16)
+    "14": 10.30,  # 3.140 Ω/kft, STRANDED @ 75°C (was 10.07 = solid @ 75°C)
+    "12": 6.50,  # 1.980 Ω/kft, STRANDED @ 75°C (was 6.33 = solid @ 75°C)
+    "10": 4.10,  # 1.250 Ω/kft, STRANDED @ 75°C (was 3.97 = solid @ 75°C)
+    "8": 2.62,  # 0.800 Ω/kft, STRANDED @ 75°C (was 2.55 = solid @ 75°C)
+    "6": 1.65,  # 0.504 Ω/kft, STRANDED @ 75°C (was 1.61 = solid @ 75°C)
+    "4": 1.04,  # 0.318 Ω/kft, STRANDED @ 75°C
+    "3": 0.83,  # 0.253 Ω/kft, STRANDED @ 75°C
+    "2": 0.66,  # 0.202 Ω/kft, STRANDED @ 75°C
+    "1": 0.52,  # 0.159 Ω/kft, STRANDED @ 75°C
+    "1/0": 0.41,  # 0.126 Ω/kft, STRANDED @ 75°C
+    "2/0": 0.33,  # 0.100 Ω/kft, STRANDED @ 75°C
+    "3/0": 0.26,  # 0.0797 Ω/kft, STRANDED @ 75°C
+    "4/0": 0.21,  # 0.0630 Ω/kft, STRANDED @ 75°C
 }
 
 # NEC Table 8 — Solid conductor areas (mm²) for reference
@@ -295,7 +295,7 @@ def calculate_battery_backup(
     standby_load_a: float,  # Amperes (NOT milliamps — BUG-13 confusion)
     alarm_load_a: float,  # Amperes during alarm
     standby_hours: float = 24.0,  # NFPA 72-2022 §10.6.7.2
-    alarm_hours: float = 5/60,  # 5 minutes per NFPA 72 §10.6.7.4
+    alarm_hours: float = 5 / 60,  # 5 minutes per NFPA 72 §10.6.7.4
     derating_factor: float = 0.80,  # 80% usable capacity per §10.6.7.1
     temperature_c: float = 25.0,  # Ambient temperature
 ) -> dict[str, float]:
@@ -383,6 +383,7 @@ def calculate_battery_backup(
     # V FIX: Deprecation warning at end of function to avoid interfering
     # with existing NFPA 24h standby warning tests that check w[0].
     import warnings as _warnings
+
     _warnings.warn(
         "calculate_battery_backup() is DEPRECATED — use battery_aging_derating.size_battery() "
         "which includes IEEE 485 temperature correction and Peukert discharge rate correction. "

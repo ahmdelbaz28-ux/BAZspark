@@ -34,6 +34,7 @@ Usage:
     session_store.get_failed_attempts(client_ip)  # → list of timestamps
     session_store.clear_failed_attempts(client_ip)
 """
+
 from __future__ import annotations
 
 import json
@@ -51,7 +52,7 @@ logger = logging.getLogger(__name__)
 _SESSION_TTL = int(os.getenv("FIREAI_SESSION_TTL", "86400"))  # 24 hours default
 
 # Failed-attempt window in seconds (must match _FAILED_ATTEMPT_WINDOW in auth.py)
-_FAILED_ATTEMPT_WINDOW = 300 # 5 minutes
+_FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
 
 # Maximum failed attempts (must match _MAX_FAILED_ATTEMPTS in auth.py)
 _MAX_FAILED_ATTEMPTS = 5
@@ -98,10 +99,15 @@ def _get_redis() -> Any:
         # Test the connection
         _redis_client.ping()
         _redis_available = True
-        logger.info("Redis connected at %s — sessions will persist across restarts", _redis_client.redis_url if hasattr(_redis_client, 'redis_url') else redis_url)
+        logger.info(
+            "Redis connected at %s — sessions will persist across restarts",
+            _redis_client.redis_url if hasattr(_redis_client, "redis_url") else redis_url,
+        )
         return _redis_client
     except ImportError:
-        logger.warning("redis package not installed — falling back to in-memory session store. Install with: pip install redis")
+        logger.warning(
+            "redis package not installed — falling back to in-memory session store. Install with: pip install redis"
+        )
         return None
     except Exception as e:
         logger.warning("Redis connection failed (%s) — falling back to in-memory session store", e)
@@ -241,8 +247,7 @@ class SessionStore:
             if client_ip not in _mem_failed:
                 return []
             _mem_failed[client_ip] = [
-                t for t in _mem_failed[client_ip]
-                if now - t < _FAILED_ATTEMPT_WINDOW
+                t for t in _mem_failed[client_ip] if now - t < _FAILED_ATTEMPT_WINDOW
             ]
             return list(_mem_failed[client_ip])
 
@@ -323,10 +328,7 @@ class SessionStore:
         now = time.time()
         removed = 0
         with _mem_lock:
-            expired_keys = [
-                k for k, v in _mem_sessions.items()
-                if now > v.get("expires_at", 0)
-            ]
+            expired_keys = [k for k, v in _mem_sessions.items() if now > v.get("expires_at", 0)]
             for k in expired_keys:
                 _mem_sessions.pop(k, None)
                 removed += 1
@@ -337,4 +339,3 @@ class SessionStore:
 
 # Singleton instance for import
 session_store = SessionStore()
-

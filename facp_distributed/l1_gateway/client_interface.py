@@ -1,5 +1,6 @@
 # NOSONAR
 """Client Interface for L1 Gateway in Distributed FACP System"""
+
 import threading
 import time
 import uuid
@@ -51,15 +52,15 @@ class ClientInterface:
                             "status": "error",
                             "error": {
                                 "code": "INVALID_FORMAT",
-                                "message": f"Request format validation failed: {'; '.join(errors)}"
+                                "message": f"Request format validation failed: {'; '.join(errors)}",
                             },
                             "trace": {
                                 "execution_path": ["L1_client_interface"],
                                 "latency_ms": 0,
                                 "node_id": self.node_id,
-                                "engine_version": "FACP/1.1"
-                            }
-                        }
+                                "engine_version": "FACP/1.1",
+                            },
+                        },
                     )
 
                 # Process through L1 gateway
@@ -82,15 +83,15 @@ class ClientInterface:
                         "status": "error",
                         "error": {
                             "code": "CLIENT_INTERFACE_ERROR",
-                            "message": safe_msg  # lgtm[py/stack-trace-exposure] — sanitized
+                            "message": safe_msg,  # lgtm[py/stack-trace-exposure] — sanitized
                         },
                         "trace": {
                             "execution_path": ["L1_client_interface"],
                             "latency_ms": 0,
                             "node_id": self.node_id,
-                            "engine_version": "FACP/1.1"
-                        }
-                    }
+                            "engine_version": "FACP/1.1",
+                        },
+                    },
                 )
 
         @self.app.get("/health")
@@ -101,7 +102,7 @@ class ClientInterface:
                 "node_id": self.node_id,
                 "node_type": "l1_gateway",
                 "timestamp": time.time(),
-                "gateway_status": self.l1_gateway.get_gateway_status()
+                "gateway_status": self.l1_gateway.get_gateway_status(),
             }
 
         @self.app.get("/metrics")
@@ -110,18 +111,14 @@ class ClientInterface:
             return {
                 "gateway_metrics": self.l1_gateway.get_request_metrics(),
                 "security_stats": self.l1_gateway.get_security_stats(),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
     def start(self):
         """Start the client interface server"""
+
         def run_server():
-            uvicorn.run(
-                self.app,
-                host=self.host,
-                port=self.port,
-                log_level="info"
-            )
+            uvicorn.run(self.app, host=self.host, port=self.port, log_level="info")
 
         self.server_thread = threading.Thread(target=run_server, daemon=True)
         self.server_thread.start()
@@ -142,9 +139,9 @@ class ClientInterface:
             "node_id": self.node_id,
             "host": self.host,
             "port": self.port,
-            "running": self.server_thread.is_alive() if hasattr(self, 'server_thread') else False,
+            "running": self.server_thread.is_alive() if hasattr(self, "server_thread") else False,
             "registered_handlers": list(self.request_handlers.keys()),
-            "gateway_status": self.l1_gateway.get_gateway_status()
+            "gateway_status": self.l1_gateway.get_gateway_status(),
         }
 
 
@@ -168,20 +165,20 @@ class RequestNormalizer:
                 "payload": raw_request.get("data", {}),
                 "context": {
                     "editor": "vscode",
-                    "extension_version": raw_request.get("extensionVersion", "unknown")
-                }
+                    "extension_version": raw_request.get("extensionVersion", "unknown"),
+                },
             },
             "security": {
                 "auth_token": raw_request.get("authToken"),
                 "permissions": raw_request.get("permissions", []),
                 "risk_level": raw_request.get("riskLevel", "low"),
-                "idempotency_key": raw_request.get("idempotencyKey")
+                "idempotency_key": raw_request.get("idempotencyKey"),
             },
             "constraints": {
                 "timeout_ms": raw_request.get("timeout", 8000),
                 "max_memory_mb": raw_request.get("maxMemory", 512),
-                "max_recursion_depth": raw_request.get("maxDepth", 5)
-            }
+                "max_recursion_depth": raw_request.get("maxDepth", 5),
+            },
         }
 
     @staticmethod
@@ -201,25 +198,25 @@ class RequestNormalizer:
                 "payload": {
                     "drawing_data": raw_request.get("drawingData", {}),
                     "selection_set": raw_request.get("selectionSet", []),
-                    "command_params": raw_request.get("commandParams", {})
+                    "command_params": raw_request.get("commandParams", {}),
                 },
                 "context": {
                     "application": "autocad",
                     "version": raw_request.get("applicationVersion", "unknown"),
-                    "drawing_name": raw_request.get("drawingName", "untitled")
-                }
+                    "drawing_name": raw_request.get("drawingName", "untitled"),
+                },
             },
             "security": {
                 "auth_token": raw_request.get("authToken"),
                 "permissions": ["read", "write", "execute"],
                 "risk_level": "medium",
-                "idempotency_key": raw_request.get("requestGuid")
+                "idempotency_key": raw_request.get("requestGuid"),
             },
             "constraints": {
                 "timeout_ms": raw_request.get("timeout", 15000),  # AutoCAD might need more time
                 "max_memory_mb": raw_request.get("maxMemory", 1024),
-                "max_recursion_depth": raw_request.get("maxDepth", 3)
-            }
+                "max_recursion_depth": raw_request.get("maxDepth", 3),
+            },
         }
 
     @staticmethod
@@ -239,25 +236,25 @@ class RequestNormalizer:
                 "payload": {
                     "bim_data": raw_request.get("bimData", {}),
                     "element_ids": raw_request.get("elementIds", []),
-                    "command_params": raw_request.get("commandParams", {})
+                    "command_params": raw_request.get("commandParams", {}),
                 },
                 "context": {
                     "application": "revit",
                     "version": raw_request.get("revitVersion", "unknown"),
-                    "project_name": raw_request.get("projectName", "unnamed")
-                }
+                    "project_name": raw_request.get("projectName", "unnamed"),
+                },
             },
             "security": {
                 "auth_token": raw_request.get("authToken"),
                 "permissions": ["read", "write", "execute", "bim_access"],
                 "risk_level": "medium",
-                "idempotency_key": raw_request.get("transactionGuid")
+                "idempotency_key": raw_request.get("transactionGuid"),
             },
             "constraints": {
                 "timeout_ms": raw_request.get("timeout", 20000),  # BIM operations might take longer
                 "max_memory_mb": raw_request.get("maxMemory", 2048),
-                "max_recursion_depth": raw_request.get("maxDepth", 5)
-            }
+                "max_recursion_depth": raw_request.get("maxDepth", 5),
+            },
         }
 
     @staticmethod
@@ -283,19 +280,21 @@ class RequestNormalizer:
             "params": {
                 "task": raw_request.get("task", "unknown"),
                 "payload": raw_request.get("payload", raw_request.get("data", {})),
-                "context": raw_request.get("context", {})
+                "context": raw_request.get("context", {}),
             },
             "security": {
                 "auth_token": raw_request.get("authToken", raw_request.get("auth_token")),
                 "permissions": raw_request.get("permissions", []),
                 "risk_level": raw_request.get("riskLevel", "low"),
-                "idempotency_key": raw_request.get("idempotencyKey", raw_request.get("idempotency_key"))
+                "idempotency_key": raw_request.get(
+                    "idempotencyKey", raw_request.get("idempotency_key")
+                ),
             },
             "constraints": {
                 "timeout_ms": raw_request.get("timeout", 8000),
                 "max_memory_mb": raw_request.get("maxMemory", 512),
-                "max_recursion_depth": raw_request.get("maxDepth", 5)
-            }
+                "max_recursion_depth": raw_request.get("maxDepth", 5),
+            },
         }
 
     @staticmethod
@@ -311,7 +310,9 @@ class RequestNormalizer:
 
         # Validate protocol version
         if request_data.get("protocol") != "FACP/1.1":
-            errors.append(f"Invalid protocol version: {request_data.get('protocol')}, expected FACP/1.1")
+            errors.append(
+                f"Invalid protocol version: {request_data.get('protocol')}, expected FACP/1.1"
+            )
 
         # Validate type
         req_type = request_data.get("type")
@@ -330,12 +331,16 @@ class RequestNormalizer:
         # Validate execution state
         exec_state = request_data.get("execution_state")
         if exec_state != "RECEIVED":
-            errors.append(f"Invalid execution state: {exec_state}, expected 'RECEIVED' for new requests")
+            errors.append(
+                f"Invalid execution state: {exec_state}, expected 'RECEIVED' for new requests"
+            )
 
         return len(errors) == 0, errors
 
 
-def create_client_interface_with_gateway(validation_firewall, transport_config=None) -> ClientInterface:
+def create_client_interface_with_gateway(
+    validation_firewall, transport_config=None
+) -> ClientInterface:
     """Factory function to create a complete L1 client interface with gateway"""
     from ..transport.http_transport import HTTPTransport
 
@@ -343,7 +348,7 @@ def create_client_interface_with_gateway(validation_firewall, transport_config=N
     transport = HTTPTransport(
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
         port=transport_config.get("gateway_port", 8001) if transport_config else 8001,
-        node_type="l1_gateway"
+        node_type="l1_gateway",
     )
 
     # Create the L1 gateway
@@ -353,6 +358,5 @@ def create_client_interface_with_gateway(validation_firewall, transport_config=N
     return ClientInterface(
         l1_gateway=l1_gateway,
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
-        port=transport_config.get("interface_port", 8000) if transport_config else 8000
+        port=transport_config.get("interface_port", 8000) if transport_config else 8000,
     )
-

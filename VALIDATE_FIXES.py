@@ -6,6 +6,7 @@ VALIDATE_FIXES.py — Validation Script for Database Fixes
 This script validates that all reported issues in backend/database.py have been resolved.
 """
 
+
 def validate_fixes():
     """Validate that all reported issues have been fixed."""
     print("🔍 Validating Database Module Fixes")
@@ -18,6 +19,7 @@ def validate_fixes():
         # Check 1: Import without errors
         print("\n✅ Check 1: Import validation")
         from backend.database import Database, get_db
+
         print("   ✓ Successfully imported Database class and get_db function")
         success_count += 1
     except Exception as e:
@@ -27,6 +29,7 @@ def validate_fixes():
         # Check 2: Configuration handling
         print("\n✅ Check 2: Configuration handling")
         import os
+
         # Test that the database module uses environment variables properly
         db_path = os.environ.get("DIGITAL_TWIN_DB_PATH", "./db/digital_twin.db")
         print(f"   ✓ Database path correctly uses environment variable: {db_path}")
@@ -78,6 +81,7 @@ def show_multi_db_status():
 
     try:
         from backend.multi_db_service import get_multi_db_service
+
         service = get_multi_db_service()
         health = service.health_check()
 
@@ -99,6 +103,8 @@ if __name__ == "__main__":
     show_multi_db_status()
 
     if all_fixed:
-        print("\n✨ The multi-database system is ready for use with Supabase, Qdrant, Neo4j, and Redis!")
+        print(
+            "\n✨ The multi-database system is ready for use with Supabase, Qdrant, Neo4j, and Redis!"
+        )
     else:
         print("\n⚠️  Some issues may still need attention.")

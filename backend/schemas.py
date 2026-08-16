@@ -37,6 +37,7 @@ from backend.schema_base import (
 # ENUMERATIONS (mirroring core/models.py)
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class ElementType(StrEnum):
     WALL = "wall"
     DOOR = "door"
@@ -72,6 +73,7 @@ class ProjectStatus(StrEnum):
 # GEOMETRY SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class Point3DCreate(BaseModel):
     x: float
     y: float
@@ -99,6 +101,7 @@ class GeometryResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # SEMANTIC PROPERTIES SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class SemanticPropertiesCreate(BaseModel):
     element_type: ElementType
@@ -142,6 +145,7 @@ class SemanticPropertiesResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # ELEMENT SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class ElementCreate(BaseModel):
     """Schema for creating a new element."""
@@ -205,6 +209,7 @@ class ElementListResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # PROJECT SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class ProjectCreate(BaseModel):
     """Schema for creating a new project."""
@@ -289,6 +294,7 @@ class ProjectListResponse(CamelModel):
 # DEVICE SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class DeviceCreate(BaseModel):
     """Schema for creating a device (element with electrical/equipment type)."""
 
@@ -309,7 +315,7 @@ class DeviceCreate(BaseModel):
         if v is None:
             return v
         # Validate the serialized size of the properties dict
-        raw = v.model_dump() if hasattr(v, 'model_dump') else v
+        raw = v.model_dump() if hasattr(v, "model_dump") else v
         _validate_json_size_and_depth(raw, "properties", max_bytes=10240, max_depth=5)
         return v
 
@@ -334,6 +340,7 @@ class DeviceResponse(CamelModel):
 # CONNECTION / RELATIONSHIP SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class ConnectionCreate(BaseModel):
     """Schema for creating a connection (relationship)."""
 
@@ -355,7 +362,9 @@ class ConnectionCreate(BaseModel):
         """
         from_id = info.data.get("from_element_id")
         if from_id and v == from_id:
-            raise ValueError("to_element_id must be different from from_element_id — self-connections are not allowed")
+            raise ValueError(
+                "to_element_id must be different from from_element_id — self-connections are not allowed"
+            )
         return v
 
 
@@ -383,6 +392,7 @@ class ConnectionListResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # CONFLICT SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class ConflictResolveRequest(BaseModel):
     """Schema for resolving a conflict."""
@@ -419,6 +429,7 @@ class ConflictListResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # STATISTICS SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class StatisticsResponse(CamelModel):
     """Database statistics response."""
