@@ -2127,6 +2127,22 @@ export const adminConfigApi = {
 	updateEnvConfig: (data: Record<string, unknown>) =>
 		apiCall("/env-config", { method: "PUT", body: JSON.stringify(data) }),
 
+	/** GET /settings/runtime — Get runtime boolean toggles */
+	getRuntimeSettings: () =>
+		apiCall<Record<string, boolean>>("/settings/runtime", { method: "GET" }),
+
+	/** POST /settings/runtime — Update runtime boolean toggles */
+	updateRuntimeSettings: (data: Record<string, boolean>) =>
+		apiCall("/settings/runtime", { method: "POST", body: JSON.stringify(data) }),
+
+	/** GET /settings/bootstrap — Get bootstrap configuration */
+	getBootstrapSettings: () =>
+		apiCall<Record<string, string>>("/settings/bootstrap", { method: "GET" }),
+
+	/** GET /settings/config — Get read-only environment variables */
+	getSettingsConfig: () =>
+		apiCall<Record<string, string>>("/settings/config", { method: "GET" }),
+
 	/** POST /settings/secret-rotation/rotate — Rotate secrets */
 	rotateSecret: (data: { secret_type?: string }) =>
 		apiCall("/settings/secret-rotation/rotate", {
@@ -2137,6 +2153,116 @@ export const adminConfigApi = {
 	/** POST /settings/admin-token/rotate — Rotate admin token */
 	rotateAdminToken: () =>
 		apiCall("/settings/admin-token/rotate", { method: "POST" }),
+};
+
+// ─── Engineering Configuration API ──────────────────────────────────────────
+
+export interface AcousticConfigShape {
+	ambient_noise_db: number;
+	spl_drop_per_doubling_db: number;
+	min_snr_dba: number;
+	strobe_sync_enabled: boolean;
+	strobe_flash_rate_hz: number;
+}
+
+export interface HydraulicConfigShape {
+	default_fluid_density_kg_m3: number;
+	default_fluid_viscosity_pa_s: number;
+	default_pipe_roughness_mm: number;
+	default_c_factor: number;
+	colebrook_tolerance: number;
+	max_solver_iterations: number;
+}
+
+export interface BatteryConfigShape {
+	ambient_temperature_c: number;
+	standby_duration_hours: number;
+	alarm_duration_minutes: number;
+	aging_safety_margin_pct: number;
+	battery_derating_factor: number;
+}
+
+export interface IntegrationConfigShape {
+	speckle_server_url: string;
+	revit_bridge_url: string;
+	autocad_bridge_port: number;
+	fds_max_concurrent_simulations: number;
+	fds_queue_timeout_seconds: number;
+}
+
+export interface EngineeringConfigData {
+	acoustic: AcousticConfigShape;
+	hydraulic: HydraulicConfigShape;
+	battery: BatteryConfigShape;
+	integration: IntegrationConfigShape;
+}
+
+export const engineeringConfigApi = {
+	/** GET /settings/engineering-config — Get active engineering calculation parameters */
+	get: () =>
+		apiCall<{
+			success: boolean;
+			data: {
+				config: EngineeringConfigData;
+				metadata: Record<string, { standard: string; units: Record<string, string> }>;
+			};
+		}>("/settings/engineering-config", { method: "GET" }),
+
+	/** PUT /settings/engineering-config — Update engineering calculation parameters */
+	update: (data: Partial<EngineeringConfigData>) =>
+		apiCall<{
+			success: boolean;
+			data: { config: EngineeringConfigData; message: string };
+		}>("/settings/engineering-config", {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+};
+
+// ─── CAD & Cloud Bridges Configuration API ─────────────────────────────────
+
+export interface CadConfigData {
+	autocad: {
+		path?: string;
+		version?: string;
+		template?: string;
+		units?: string;
+		bridge_port?: number;
+	};
+	revit: {
+		path?: string;
+		version?: string;
+		template?: string;
+		units?: string;
+		bridge_url?: string;
+	};
+	cloud: {
+		speckle_server?: string;
+		speckle_stream_id?: string;
+		speckle_token?: string;
+		aps_client_id?: string;
+		aps_client_secret?: string;
+		aps_activity_id?: string;
+	};
+}
+
+export const cadConfigApi = {
+	/** GET /settings/cad-config — Get CAD, Revit, and Cloud connector settings */
+	get: () =>
+		apiCall<{
+			success: boolean;
+			data: CadConfigData;
+		}>("/settings/cad-config", { method: "GET" }),
+
+	/** PUT /settings/cad-config — Save CAD, Revit, and Cloud connector settings */
+	update: (data: Partial<CadConfigData>) =>
+		apiCall<{
+			success: boolean;
+			data: { message: string; autocad: unknown; revit: unknown };
+		}>("/settings/cad-config", {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
 };
 
 // ─── Connections V2 API (backend/routers/connections_v2.py) ─────────────────

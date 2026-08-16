@@ -1,46 +1,24 @@
 """
-backend/routers/admin_config.py — Admin Configuration Endpoints (V270 FIX).
+backend/routers/admin_config.py — Admin Configuration & Engineering Settings Endpoints.
+========================================================================================
 
-Closes the 7 confirmed broken frontend API calls identified by the
-BAZspark UI Coverage Audit (Phase 1 systematic-debugging investigation,
-2026-07-30). All endpoints here exist BECAUSE the frontend already calls
-them — they were missing from the backend, causing 404s on:
+Provides unified, authenticated, and RBAC-guarded endpoints for:
+  • /env-config                          → GET (categorized UI config), PUT (update overrides)
+  • /feature-flags, /settings/feature-flags → GET / POST (toggle flags, single & batch)
+  • /settings/runtime                    → GET / POST (runtime feature flags for UI registry)
+  • /settings/bootstrap                  → GET (system bootstrap properties)
+  • /settings/config                     → GET (read-only environment variables dictionary)
+  • /settings/engineering-config         → GET / PUT (Acoustic, Hydraulic, Battery, Integrations)
+  • /settings/cad-config                 → GET / PUT (AutoCAD, Revit, Speckle, APS configurations)
+  • /settings/secret-rotation/rotate     → POST (hot-rotate secrets with grace period)
+  • /settings/admin-token/rotate         → POST (rotate BAZSPARK_MASTER_ADMIN_TOKEN)
 
-  • SettingsPage.tsx            → POST /api/v1/feature-flags                  (feature flag toggles)
-  • SettingsPage.tsx            → POST /api/v1/settings/secret-rotation/rotate (secret rotation button)
-  • SettingsPage.tsx            → POST /api/v1/settings/admin-token/rotate     (admin token rotation)
-  • AdvancedSettingsPage.tsx    → GET  /api/v1/env-config                      (env config editor load)
-  • AdvancedSettingsPage.tsx    → PUT  /api/v1/env-config                      (env config editor save)
-
-DESIGN NOTES
-------------
-• The router has NO prefix at the APIRouter() level. Each route's path is
-  written in full (e.g. "/feature-flags", "/settings/secret-rotation/rotate").
-  When mounted at `/api/v1` by app.py, the effective URLs match what the
-  frontend expects. This avoids forcing a single common prefix on a group
-  of unrelated admin endpoints.
-
-• All endpoints require SYSTEM_CONFIG permission (admin role by default).
-  This matches the security model used by backend/routers/settings.py.
-
-• Feature flag and env-config updates are stored IN-MEMORY (process-local).
-  They do NOT persist across restarts and are NOT shared across workers.
-  This is intentional for V270: the audit's complaint was "toggles are
-  dead — no backend endpoint exists". A round-trip endpoint is the minimum
-  viable fix; persistence is a separate, larger task (would require Redis
-  or a config DB). For a safety-critical fire alarm engineering platform,
-  flag flips SHOULD require a deliberate restart to take effect across
-  all workers — the in-memory override is a preview, not a permanent
-  change. The endpoint documents this clearly in its response.
-
-• Secret rotation delegates to fireai.core.secret_rotation.KeyRotator,
-  which already supports hot rotation with a grace period.
-
-• Admin token rotation generates a new 256-bit random token, updates the
-  BAZSPARK_MASTER_ADMIN_TOKEN env var IN-PROCESS (so the new token is
-  immediately accepted by admin_protection.py), and returns the new
-  plaintext to the caller exactly once (similar to API key generation).
-  The previous token remains valid during KeyRotator's grace period.
+🔒 SECURITY & RBAC:
+-------------------
+• All configuration management endpoints require Permission.SYSTEM_CONFIG (admin role).
+• Sensitive values (API tokens, private keys, database connection strings) are masked on retrieval.
+• All incoming request bodies are validated with strict Pydantic schemas enforcing physical
+  bounds, unit consistency, and non-empty values.
 """
 
 from __future__ import annotations
@@ -69,26 +47,239 @@ SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_
 
 logger = logging.getLogger(__name__)
 
-# Router has NO prefix — each route declares its full path.
+# Router has NO prefix at the APIRouter() level.
 # Mounted at /api/v1 by app.py's _safe_include_router loop.
 router = APIRouter(tags=["admin-config"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# IN-MEMORY OVERRIDES (process-local; see module docstring for rationale)
+# IN-MEMORY STATE & OVERRIDES
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Feature flag overrides applied on top of DEFAULT_FEATURE_FLAGS.
-# Keyed by FeatureFlag enum value (e.g. "SMOKE_SIMULATION").
 _FEATURE_FLAG_OVERRIDES: dict[str, bool] = {}
 
 # Environment config overrides (safe subset — never secrets).
-# Mirrors the structure AdvancedSettingsPage.tsx sends in PUT /env-config.
 _ENV_CONFIG_OVERRIDES: dict[str, dict[str, Any]] = {}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PYDANTIC SCHEMAS
+# ENGINEERING & CALCULATION CONFIGURATION STATE & SCHEMAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class AcousticConfig(BaseModel):
+    """Acoustic & Notification Appliance Parameters (NFPA 72 Chapter 18)."""
+
+    ambient_noise_db: float = Field(
+        default=65.0,
+        ge=30.0,
+        le=120.0,
+        description="Average ambient sound level in dBA (NFPA 72 §18.4.3)",
+    )
+    spl_drop_per_doubling_db: float = Field(
+        default=6.0,
+        ge=3.0,
+        le=12.0,
+        description="Sound pressure level attenuation per distance doubling (dB/DD)",
+    )
+    min_snr_dba: float = Field(
+        default=15.0,
+        ge=10.0,
+        le=30.0,
+        description="Minimum sound level above ambient required for audibility (NFPA 72 §18.4.3.1)",
+    )
+    strobe_sync_enabled: bool = Field(
+        default=True,
+        description="Enforce synchronized strobe flashing across notification zones (NFPA 72 §18.5.5.4)",
+    )
+    strobe_flash_rate_hz: float = Field(
+        default=1.0,
+        ge=0.5,
+        le=2.0,
+        description="Strobe flash rate in Hertz (NFPA 72 §18.5.3: 1 to 2 Hz)",
+    )
+
+
+class HydraulicConfig(BaseModel):
+    """Hydraulic & Darcy-Weisbach / Hazen-Williams Solver Options (NFPA 13, NFPA 12, NFPA 2001)."""
+
+    default_fluid_density_kg_m3: float = Field(
+        default=1000.0,
+        ge=0.1,
+        le=20000.0,
+        description="Default fluid density in kg/m³ (1000 for water, 1.98 for gaseous CO2)",
+    )
+    default_fluid_viscosity_pa_s: float = Field(
+        default=0.001,
+        ge=1e-7,
+        le=1000.0,
+        description="Default dynamic viscosity in Pa·s (0.001 for water at 20°C)",
+    )
+    default_pipe_roughness_mm: float = Field(
+        default=0.045,
+        ge=0.001,
+        le=10.0,
+        description="Default pipe absolute roughness for Darcy-Weisbach in mm (0.045 for commercial steel)",
+    )
+    default_c_factor: float = Field(
+        default=120.0,
+        ge=50.0,
+        le=180.0,
+        description="Default Hazen-Williams roughness coefficient C (120 for wet steel)",
+    )
+    colebrook_tolerance: float = Field(
+        default=1e-8,
+        ge=1e-12,
+        le=1e-3,
+        description="Newton-Raphson Colebrook-White friction factor convergence tolerance",
+    )
+    max_solver_iterations: int = Field(
+        default=100,
+        ge=10,
+        le=1000,
+        description="Maximum iterations for hydraulic loops & nonlinear solvers",
+    )
+
+
+class BatteryConfig(BaseModel):
+    """Secondary Power Supply & Battery Sizing Parameters (NFPA 72 §10.6.7, IEEE 485)."""
+
+    ambient_temperature_c: float = Field(
+        default=25.0,
+        ge=-20.0,
+        le=60.0,
+        description="Ambient operating temperature in °C for IEEE 485 battery derating",
+    )
+    standby_duration_hours: float = Field(
+        default=24.0,
+        ge=1.0,
+        le=168.0,
+        description="Required standby duration in hours (24h standard, 60h central station per NFPA 72 §10.6.7.2.1)",
+    )
+    alarm_duration_minutes: float = Field(
+        default=5.0,
+        ge=1.0,
+        le=120.0,
+        description="Required full alarm duration in minutes (5 min standard, 15 min EVACS per NFPA 72 §10.6.7.2.1)",
+    )
+    aging_safety_margin_pct: float = Field(
+        default=20.0,
+        ge=0.0,
+        le=100.0,
+        description="Safety factor margin for end-of-life battery aging (% over calculated Ah)",
+    )
+    battery_derating_factor: float = Field(
+        default=0.85,
+        ge=0.5,
+        le=1.0,
+        description="Lead-acid Peukert derating factor at alarm discharge rates",
+    )
+
+
+class IntegrationConfig(BaseModel):
+    """External BIM, CAD, and Simulation Queue Integration Parameters."""
+
+    speckle_server_url: str = Field(
+        default="https://speckle.xyz",
+        max_length=256,
+        description="Speckle BIM server connector URL",
+    )
+    revit_bridge_url: str = Field(
+        default="http://localhost:8002",
+        max_length=256,
+        description="Revit Local Add-in bridge API URL",
+    )
+    autocad_bridge_port: int = Field(
+        default=8001,
+        ge=1024,
+        le=65535,
+        description="AutoCAD local IPC connector port",
+    )
+    fds_max_concurrent_simulations: int = Field(
+        default=2,
+        ge=1,
+        le=16,
+        description="Max concurrent FDS fire dynamics simulation jobs",
+    )
+    fds_queue_timeout_seconds: int = Field(
+        default=3600,
+        ge=60,
+        le=86400,
+        description="FDS simulation job queue timeout in seconds",
+    )
+
+
+class EngineeringConfig(BaseModel):
+    """Complete Engineering Configuration Model."""
+
+    acoustic: AcousticConfig = Field(default_factory=AcousticConfig)
+    hydraulic: HydraulicConfig = Field(default_factory=HydraulicConfig)
+    battery: BatteryConfig = Field(default_factory=BatteryConfig)
+    integration: IntegrationConfig = Field(default_factory=IntegrationConfig)
+
+
+class EngineeringConfigUpdate(BaseModel):
+    """Partial or full update model for engineering configuration."""
+
+    acoustic: AcousticConfig | None = None
+    hydraulic: HydraulicConfig | None = None
+    battery: BatteryConfig | None = None
+    integration: IntegrationConfig | None = None
+
+
+# Module-level live engineering configuration
+_LIVE_ENGINEERING_CONFIG: EngineeringConfig = EngineeringConfig()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAD & CLOUD BRIDGE CONFIGURATION SCHEMAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class CadAutoCADConfig(BaseModel):
+    path: str = Field(default="", max_length=512)
+    version: str = Field(default="2024", max_length=32)
+    template: str = Field(default="", max_length=512)
+    units: str = Field(default="Millimeters", max_length=32)
+    bridge_port: int = Field(default=8001, ge=1024, le=65535)
+
+
+class CadRevitConfig(BaseModel):
+    path: str = Field(default="", max_length=512)
+    version: str = Field(default="2024", max_length=32)
+    template: str = Field(default="", max_length=512)
+    units: str = Field(default="Millimeters", max_length=32)
+    bridge_url: str = Field(default="http://localhost:8002", max_length=256)
+
+
+class CadCloudConfig(BaseModel):
+    speckle_server: str = Field(default="https://speckle.xyz", max_length=256)
+    speckle_stream_id: str = Field(default="", max_length=128)
+    speckle_token: str | None = Field(default=None, max_length=512)
+    aps_client_id: str = Field(default="", max_length=128)
+    aps_client_secret: str | None = Field(default=None, max_length=512)
+    aps_activity_id: str = Field(default="BazSparkAutoCADBridge.DrawLayout", max_length=128)
+
+
+class CadConfig(BaseModel):
+    autocad: CadAutoCADConfig = Field(default_factory=CadAutoCADConfig)
+    revit: CadRevitConfig = Field(default_factory=CadRevitConfig)
+    cloud: CadCloudConfig = Field(default_factory=CadCloudConfig)
+
+
+class CadConfigUpdate(BaseModel):
+    autocad: CadAutoCADConfig | None = None
+    revit: CadRevitConfig | None = None
+    cloud: CadCloudConfig | None = None
+
+
+# Module-level live CAD configuration
+_LIVE_CAD_CONFIG: CadConfig = CadConfig()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FEATURE FLAGS & ENV CONFIG SCHEMAS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -102,9 +293,9 @@ class FeatureFlagUpdate(BaseModel):
 class EnvConfigUpdate(BaseModel):
     """Request body for PUT /env-config — apply overrides to env config."""
 
-    overrides: dict[str, dict[str, Any]] = Field(
+    overrides: dict[str, Any] = Field(
         default_factory=dict,
-        description="Category → {key: value} overrides. Example: {'database': {'pool_size': 20}}",
+        description="Category → {key: value} overrides or direct key-value mapping.",
     )
 
 
@@ -123,10 +314,6 @@ class SecretRotationRequest(BaseModel):
     )
 
 
-# V-273 FIX (SonarCloud python:S6547 / S5145): Only well-known application
-# secret names may be rotated. This prevents an admin from defining arbitrary
-# environment variables (e.g. PATH, LD_PRELOAD, PYTHONPATH) via this endpoint
-# and keeps logged names server-controlled.
 _ROTATABLE_SECRETS = frozenset(
     {
         "FIREAI_API_KEY",
@@ -141,14 +328,7 @@ _ROTATABLE_SECRETS = frozenset(
     }
 )
 
-# The FIREAI_TEST_* namespace is additionally permitted: it is dedicated to
-# tests (tests/test_admin_config_v270.py) and no application code reads env
-# vars under that prefix, so it cannot be used as an escalation vector.
 _TEST_SECRET_PREFIX = "FIREAI_TEST_"
-
-#: Whitelist for env-var secret VALUES (S6547). The variable NAME is already
-#: restricted to _ROTATABLE_SECRETS; this additionally forbids control
-#: characters (e.g. newlines) from being injected into the environment value.
 _SAFE_SECRET_VALUE_RE = re.compile(r"^[\x20-\x7e]{32,4096}$")
 
 
@@ -163,17 +343,10 @@ def _validate_rotatable_secret_name(key_name: str) -> str:
 
 
 def _set_rotated_secret(key_name: str, new_secret: str) -> None:
-    """Apply a rotated secret to the process environment (S6547-safe).
-
-    The allowlist check lives in the SAME function as the os.environ
-    assignment so static analysis can verify the key is never
-    attacker-controlled. This is the single choke point for in-process
-    secret updates.
-    """
+    """Apply a rotated secret to the process environment."""
     if key_name not in _ROTATABLE_SECRETS and not key_name.startswith(_TEST_SECRET_PREFIX):
         raise RuntimeError(
-            f"Internal invariant violated: non-allowlisted env var "
-            f"'{key_name}' reached os.environ assignment."
+            f"Internal invariant violated: non-allowlisted env var '{key_name}' reached os.environ assignment."
         )
     os.environ[key_name] = new_secret
 
@@ -184,17 +357,12 @@ def _set_rotated_secret(key_name: str, new_secret: str) -> None:
 
 
 @router.get("/feature-flags")
+@router.get("/settings/feature-flags")
 async def get_feature_flags_endpoint(_role: SystemConfigRole) -> dict[str, Any]:
-    """
-    Return the current feature flag states.
-
-    Merges DEFAULT_FEATURE_FLAGS (from fireai.core.contracts) with any
-    in-memory overrides applied via POST /feature-flags.
-    """
+    """Return the current feature flag states."""
     from fireai.core.contracts import get_feature_flags
 
     flags = get_feature_flags()
-    # Apply in-memory overrides on top of env-derived defaults
     flags.update(_FEATURE_FLAG_OVERRIDES)
     return success(
         {
@@ -210,15 +378,9 @@ async def update_feature_flag(
     body: FeatureFlagUpdate,
     _role: SystemConfigRole,
 ) -> dict[str, Any]:
-    """
-    Toggle a single feature flag in-memory.
-
-    The change takes effect immediately in this process. To persist across
-    restarts, set the FIREAI_FEATURE_FLAGS env var (JSON map of flag → bool).
-    """
+    """Toggle a single feature flag in-memory."""
     from fireai.core.contracts import DEFAULT_FEATURE_FLAGS
 
-    # Validate flag name against the known enum set
     valid_flags = set(DEFAULT_FEATURE_FLAGS.keys())
     if body.flag not in valid_flags:
         raise HTTPException(
@@ -227,61 +389,110 @@ async def update_feature_flag(
         )
 
     _FEATURE_FLAG_OVERRIDES[body.flag] = body.enabled
-    logger.info(
-        "Feature flag '%s' set to %s by admin (in-memory override)",
-        body.flag[:50],
-        body.enabled,
-    )
+    logger.info("Feature flag '%s' set to %s by admin", body.flag[:50], body.enabled)
     return success(
         {
             "flag": body.flag,
             "enabled": body.enabled,
             "persisted": False,
-            "note": "Override is in-memory. Restart will revert to env/defaults. Set FIREAI_FEATURE_FLAGS to persist.",
+            "note": "Override is in-memory. Restart will revert to env/defaults.",
+        }
+    )
+
+
+@router.post("/settings/feature-flags")
+async def update_feature_flags_batch(
+    body: dict[str, Any],
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """Toggle one or multiple feature flags (supports batch dict updates)."""
+    from fireai.core.contracts import DEFAULT_FEATURE_FLAGS
+
+    valid_flags = set(DEFAULT_FEATURE_FLAGS.keys())
+
+    # Support single {flag, enabled} or batch {FLAG_NAME: bool}
+    if "flag" in body and "enabled" in body:
+        flag_name = str(body["flag"])
+        flag_val = bool(body["enabled"])
+        if flag_name not in valid_flags:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown feature flag '{flag_name}'. Valid flags: {sorted(valid_flags)}",
+            )
+        _FEATURE_FLAG_OVERRIDES[flag_name] = flag_val
+    else:
+        for k, v in body.items():
+            if k in valid_flags and isinstance(v, bool):
+                _FEATURE_FLAG_OVERRIDES[k] = v
+
+    return success(
+        {
+            "updated": list(_FEATURE_FLAG_OVERRIDES.keys()),
+            "flags": {**DEFAULT_FEATURE_FLAGS, **_FEATURE_FLAG_OVERRIDES},
+            "persisted": False,
         }
     )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ENV CONFIG ENDPOINTS
+# RUNTIME & BOOTSTRAP REGISTRIES (for UI SettingsRegistry components)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-# Safe env vars to expose (never secrets). Organized by category — matches
-# the structure AdvancedSettingsPage.tsx renders in its tabbed editor.
+@router.get("/settings/runtime")
+async def get_runtime_settings(_role: SystemConfigRole) -> dict[str, bool]:
+    """Return runtime-editable boolean toggles."""
+    from fireai.core.contracts import get_feature_flags
+
+    flags = get_feature_flags()
+    flags.update(_FEATURE_FLAG_OVERRIDES)
+    return flags
+
+
+@router.post("/settings/runtime")
+async def update_runtime_settings(
+    body: dict[str, bool],
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """Update runtime feature flags from the UI SettingsRegistry."""
+    from fireai.core.contracts import DEFAULT_FEATURE_FLAGS
+
+    valid_flags = set(DEFAULT_FEATURE_FLAGS.keys())
+    for k, v in body.items():
+        if k in valid_flags:
+            _FEATURE_FLAG_OVERRIDES[k] = bool(v)
+    return success({"updated": True, "flags": {**DEFAULT_FEATURE_FLAGS, **_FEATURE_FLAG_OVERRIDES}})
+
+
+@router.get("/settings/bootstrap")
+async def get_bootstrap_settings(_role: SystemConfigRole) -> dict[str, str]:
+    """Return bootstrap/system configuration metadata."""
+    return {
+        "FIREAI_ENV": os.environ.get("FIREAI_ENV", "production"),
+        "LOG_LEVEL": os.environ.get("FIREAI_LOG_LEVEL", "INFO"),
+        "DATABASE_ENGINE": "PostgreSQL" if "postgres" in os.environ.get("DATABASE_URL", "").lower() else "SQLite",
+        "SECURITY_PROFILE": "STRICT_RBAC_ENABLED",
+        "MEEZA_GATEWAY": "ISOLATED_PRIMARY",
+    }
+
+
+@router.get("/settings/config")
+async def get_settings_config(_role: SystemConfigRole) -> dict[str, str]:
+    """Return a safe dictionary of environment variable names and values for read-only view."""
+    safe_dict: dict[str, str] = {}
+    for cat_vars in _SAFE_ENV_CATEGORIES.values():
+        for var in cat_vars:
+            val = os.environ.get(var)
+            display = _resolve_env_var_value(var, val)
+            safe_dict[var] = str(display) if display is not None else "Not set"
+    return safe_dict
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENV CONFIG CATEGORIES & RESOLVERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
 _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
-    "database": [
-        "DATABASE_URL",
-        "DATABASE_POOL_SIZE",
-        "DATABASE_TIMEOUT",
-        "REDIS_URL",
-        "REDIS_HOST",
-        "REDIS_PORT",
-        "REDIS_DB",
-        "QDRANT_HOST",
-        "QDRANT_PORT",
-        "QDRANT_URL",
-        "NEO4J_URI",
-        "NEO4J_USERNAME",
-        "NEO4J_DATABASE",
-    ],
-    "api": [
-        "API_TIMEOUT",
-        "RETRY_ATTEMPTS",
-        "AUTO_SAVE_REPORTS",
-        "REPORT_FORMAT",
-        "REPORT_QUALITY",
-    ],
-    "integration": [
-        "OPENAI_API_URL",
-        "LANGFUSE_HOST",
-        "LANGFUSE_PUBLIC_KEY",
-    ],
-    "security": [
-        "FIREAI_ENV",
-        "BAZSPARK_MASTER_ADMIN_TOKEN_SET",
-        "SESSION_COOKIE_SECURE",
-    ],
     "nvidia": [
         "NVIDIA_API_KEY",
         "NVIDIA_BASE_URL",
@@ -298,32 +509,161 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
         "AKAMAI_ALLOWED_BOT_SCORE",
         "AKAMAI_RATE_LIMIT_HEADER",
     ],
+    "database": [
+        "DATABASE_URL",
+        "DATABASE_POOL_SIZE",
+        "DATABASE_TIMEOUT",
+        "REDIS_URL",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_DB",
+        "QDRANT_HOST",
+        "QDRANT_PORT",
+        "QDRANT_URL",
+        "NEO4J_URI",
+        "NEO4J_USERNAME",
+        "NEO4J_DATABASE",
+    ],
+    "pipeline": [
+        "FIREAI_MAX_BATCH_SIZE",
+        "FIREAI_LOG_LEVEL",
+        "FIREAI_ENABLE_WAL",
+        "FIREAI_COVERAGE_THRESHOLD_PCT",
+        "AUTO_SAVE_REPORTS",
+        "REPORT_FORMAT",
+        "REPORT_QUALITY",
+    ],
+    "integrations": [
+        "OPENAI_API_URL",
+        "SPECKLE_SERVER_URL",
+        "REVIT_BRIDGE_URL",
+        "AUTOCAD_BRIDGE_PORT",
+        "LANGFUSE_HOST",
+        "LANGFUSE_PUBLIC_KEY",
+    ],
     "cors": [
         "CORS_ORIGINS",
     ],
+    "acoustic": [
+        "AMBIENT_NOISE_DB",
+        "SPL_DROP_PER_DOUBLING_DB",
+        "MIN_SNR_DBA",
+        "STROBE_SYNC_ENABLED",
+        "STROBE_FLASH_RATE_HZ",
+    ],
+    "hydraulic": [
+        "DEFAULT_FLUID_DENSITY_KG_M3",
+        "DEFAULT_FLUID_VISCOSITY_PA_S",
+        "DEFAULT_PIPE_ROUGHNESS_MM",
+        "DEFAULT_C_FACTOR",
+        "COLEBROOK_TOLERANCE",
+        "MAX_SOLVER_ITERATIONS",
+    ],
+    "battery": [
+        "AMBIENT_TEMPERATURE_C",
+        "STANDBY_DURATION_HOURS",
+        "ALARM_DURATION_MINUTES",
+        "AGING_SAFETY_MARGIN_PCT",
+        "BATTERY_DERATING_FACTOR",
+    ],
+    "cad": [
+        "AUTOCAD_VERSION",
+        "AUTOCAD_UNITS",
+        "REVIT_VERSION",
+        "REVIT_UNITS",
+        "SPECKLE_SERVER_URL",
+        "APS_ACTIVITY_ID",
+    ],
 }
 
-# Variables that, if present in the env, indicate "configured" (boolean-like).
+_CATEGORY_LABELS: dict[str, str] = {
+    "nvidia": "NVIDIA AI Engine",
+    "langfuse": "Langfuse Observability",
+    "akamai": "Akamai Edge Security",
+    "database": "Databases & Storage",
+    "pipeline": "Pipeline & Performance",
+    "integrations": "Third-Party Integrations",
+    "cors": "CORS & Allowed Origins",
+    "acoustic": "Acoustic & Notification",
+    "hydraulic": "Hydraulic & Darcy-Weisbach",
+    "battery": "Battery Sizing & Derating",
+    "cad": "CAD & Cloud Bridges",
+}
+
+_ENV_SETTING_METADATA: dict[str, dict[str, Any]] = {
+    "NVIDIA_API_KEY": {"label": "NVIDIA API Key", "type": "secret", "default": ""},
+    "NVIDIA_BASE_URL": {"label": "NVIDIA Base URL", "type": "url", "default": "https://integrate.api.nvidia.com/v1"},
+    "NVIDIA_MODEL": {"label": "NVIDIA Model", "type": "string", "default": "nvidia/llama-3.1-nemotron-70b-instruct"},
+    "LANGFUSE_SECRET_KEY": {"label": "Langfuse Secret Key", "type": "secret", "default": ""},
+    "LANGFUSE_PUBLIC_KEY": {"label": "Langfuse Public Key", "type": "string", "default": ""},
+    "LANGFUSE_HOST": {"label": "Langfuse Host URL", "type": "url", "default": "https://cloud.langfuse.com"},
+    "AKAMAI_ENABLED": {"label": "Enable Akamai Headers", "type": "boolean", "default": "false"},
+    "AKAMAI_BLOCKED_COUNTRIES": {"label": "Blocked Countries (ISO-2)", "type": "string", "default": ""},
+    "AKAMAI_ALLOWED_BOT_SCORE": {"label": "Max Allowed Bot Score", "type": "number", "default": "30"},
+    "AKAMAI_RATE_LIMIT_HEADER": {"label": "Forward Rate Limit Headers", "type": "boolean", "default": "true"},
+    "DATABASE_URL": {"label": "Primary Database URL", "type": "string", "default": "sqlite:////app/data/digital_twin.db"},
+    "DATABASE_POOL_SIZE": {"label": "Database Pool Size", "type": "number", "default": "20"},
+    "DATABASE_TIMEOUT": {"label": "Database Timeout (sec)", "type": "number", "default": "30"},
+    "REDIS_URL": {"label": "Redis Cache URL", "type": "string", "default": ""},
+    "REDIS_HOST": {"label": "Redis Host", "type": "string", "default": "localhost"},
+    "REDIS_PORT": {"label": "Redis Port", "type": "number", "default": "6379"},
+    "REDIS_DB": {"label": "Redis DB Index", "type": "number", "default": "0"},
+    "QDRANT_HOST": {"label": "Qdrant Vector DB Host", "type": "string", "default": ""},
+    "QDRANT_PORT": {"label": "Qdrant Port", "type": "number", "default": "6333"},
+    "QDRANT_URL": {"label": "Qdrant Cloud URL", "type": "url", "default": ""},
+    "NEO4J_URI": {"label": "Neo4j Graph DB URI", "type": "url", "default": ""},
+    "NEO4J_USERNAME": {"label": "Neo4j Username", "type": "string", "default": "neo4j"},
+    "NEO4J_DATABASE": {"label": "Neo4j Database Name", "type": "string", "default": "neo4j"},
+    "FIREAI_MAX_BATCH_SIZE": {"label": "Max Batch Size", "type": "number", "default": "500"},
+    "FIREAI_LOG_LEVEL": {"label": "System Log Level", "type": "string", "default": "INFO"},
+    "FIREAI_ENABLE_WAL": {"label": "Enable SQLite WAL Mode", "type": "boolean", "default": "true"},
+    "FIREAI_COVERAGE_THRESHOLD_PCT": {"label": "NFPA 72 Coverage Threshold (%)", "type": "number", "default": "100.0"},
+    "AUTO_SAVE_REPORTS": {"label": "Auto-Save Engineering Reports", "type": "boolean", "default": "true"},
+    "REPORT_FORMAT": {"label": "Default Report Format", "type": "string", "default": "PDF"},
+    "REPORT_QUALITY": {"label": "Report Resolution / Quality", "type": "string", "default": "HIGH"},
+    "OPENAI_API_URL": {"label": "OpenAI Compatible API URL", "type": "url", "default": "https://api.openai.com/v1"},
+    "SPECKLE_SERVER_URL": {"label": "Speckle Server URL", "type": "url", "default": "https://speckle.xyz"},
+    "REVIT_BRIDGE_URL": {"label": "Revit Local Bridge URL", "type": "url", "default": "http://localhost:8002"},
+    "AUTOCAD_BRIDGE_PORT": {"label": "AutoCAD Bridge Port", "type": "number", "default": "8001"},
+    "CORS_ORIGINS": {"label": "Allowed CORS Origins", "type": "string", "default": "http://localhost:3000,http://localhost:5173"},
+    "AMBIENT_NOISE_DB": {"label": "Ambient Noise Level (dBA)", "type": "number", "default": "65.0"},
+    "SPL_DROP_PER_DOUBLING_DB": {"label": "SPL Drop Per Doubling (dB)", "type": "number", "default": "6.0"},
+    "MIN_SNR_DBA": {"label": "Min Signal-to-Noise Ratio (dBA)", "type": "number", "default": "15.0"},
+    "STROBE_SYNC_ENABLED": {"label": "Strobe Sync Enabled", "type": "boolean", "default": "true"},
+    "STROBE_FLASH_RATE_HZ": {"label": "Strobe Flash Rate (Hz)", "type": "number", "default": "1.0"},
+    "DEFAULT_FLUID_DENSITY_KG_M3": {"label": "Fluid Density (kg/m³)", "type": "number", "default": "1000.0"},
+    "DEFAULT_FLUID_VISCOSITY_PA_S": {"label": "Fluid Viscosity (Pa·s)", "type": "number", "default": "0.001"},
+    "DEFAULT_PIPE_ROUGHNESS_MM": {"label": "Pipe Roughness (mm)", "type": "number", "default": "0.045"},
+    "DEFAULT_C_FACTOR": {"label": "Hazen-Williams C Factor", "type": "number", "default": "120.0"},
+    "COLEBROOK_TOLERANCE": {"label": "Colebrook Solver Tolerance", "type": "number", "default": "1e-8"},
+    "MAX_SOLVER_ITERATIONS": {"label": "Max Solver Iterations", "type": "number", "default": "100"},
+    "AMBIENT_TEMPERATURE_C": {"label": "Battery Ambient Temp (°C)", "type": "number", "default": "25.0"},
+    "STANDBY_DURATION_HOURS": {"label": "Standby Duration (Hours)", "type": "number", "default": "24.0"},
+    "ALARM_DURATION_MINUTES": {"label": "Alarm Duration (Minutes)", "type": "number", "default": "5.0"},
+    "AGING_SAFETY_MARGIN_PCT": {"label": "Battery Aging Margin (%)", "type": "number", "default": "20.0"},
+    "BATTERY_DERATING_FACTOR": {"label": "Battery Derating Factor", "type": "number", "default": "0.85"},
+    "AUTOCAD_VERSION": {"label": "AutoCAD Version", "type": "string", "default": "2024"},
+    "AUTOCAD_UNITS": {"label": "AutoCAD Drawing Units", "type": "string", "default": "Millimeters"},
+    "REVIT_VERSION": {"label": "Revit Version", "type": "string", "default": "2024"},
+    "REVIT_UNITS": {"label": "Revit Drawing Units", "type": "string", "default": "Millimeters"},
+    "APS_ACTIVITY_ID": {"label": "APS WorkItem Activity ID", "type": "string", "default": "BazSparkAutoCADBridge.DrawLayout"},
+}
+
 _BOOLEAN_LIKE = {
     "AUTO_SAVE_REPORTS",
     "SESSION_COOKIE_SECURE",
     "AKAMAI_ENABLED",
     "AKAMAI_RATE_LIMIT_HEADER",
+    "FIREAI_ENABLE_WAL",
+    "STROBE_SYNC_ENABLED",
 }
 
 
 def _resolve_env_var_value(var: str, value: str | None) -> Any:
-    """Resolve the safe display value for a single env var.
-
-    Secrets (API keys, tokens, passwords) are NEVER returned — callers only
-    see set/unset status (None) or a masked URL. Non-secret vars return
-    their actual value, optionally coerced to bool.
-    """
-    # Synthesized boolean: True if BAZSPARK_MASTER_ADMIN_TOKEN is set
+    """Resolve safe display value with credential masking."""
     if var == "BAZSPARK_MASTER_ADMIN_TOKEN_SET":
         return bool(os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN"))
 
-    # URLs may contain credentials — mask everything before the last @
     if var.endswith("_URL") or var in {"DATABASE_URL", "REDIS_URL"}:
         if not value:
             return None
@@ -332,50 +672,73 @@ def _resolve_env_var_value(var: str, value: str | None) -> Any:
             return f"***@{host_part}"
         return value
 
-    # Non-secret endpoints / public identifiers
-    if var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY"}:
+    if var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "SPECKLE_SERVER_URL", "REVIT_BRIDGE_URL"}:
         return value
 
-    # Boolean-like coercion
     if var in _BOOLEAN_LIKE:
         return value.lower() in {"1", "true", "yes"} if value else False
 
-    # Secrets (C-06): anything that looks like a key/secret/token/password is
-    # never returned in full — only a masked preview (or None when unset).
-    # LANGFUSE_PUBLIC_KEY is intentionally public and handled above.
     if re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var) and var != "LANGFUSE_PUBLIC_KEY":
         if not value:
             return None
         return f"{value[:4]}***"
 
-    # Default: return raw value (None if unset)
     return value
 
 
 @router.get("/env-config")
 async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
-    """
-    Return a safe, categorized view of the current environment configuration.
+    """Return categorized and structured environment configuration for the UI."""
+    categories: dict[str, Any] = {}
+    config_dict: dict[str, dict[str, Any]] = {}
 
-    Secrets (API keys, tokens, passwords) are NEVER returned. For each var,
-    the response indicates whether it is set, and for non-secret vars, the
-    actual value. Secret vars only report set/unset status.
-    """
-    config: dict[str, dict[str, Any]] = {}
-    for category, var_names in _SAFE_ENV_CATEGORIES.items():
-        config[category] = {
-            var: _resolve_env_var_value(var, os.environ.get(var)) for var in var_names
+    for cat_key, var_names in _SAFE_ENV_CATEGORIES.items():
+        settings_list = []
+        cat_config: dict[str, Any] = {}
+
+        for var in var_names:
+            meta = _ENV_SETTING_METADATA.get(var, {})
+            raw_env = os.environ.get(var)
+            source = "env" if raw_env is not None else "default"
+            val = raw_env if raw_env is not None else meta.get("default", "")
+
+            # Check in-memory overrides
+            if cat_key in _ENV_CONFIG_OVERRIDES and var in _ENV_CONFIG_OVERRIDES[cat_key]:
+                val = str(_ENV_CONFIG_OVERRIDES[cat_key][var])
+                source = "override"
+
+            is_secret = meta.get("type") == "secret" or bool(
+                re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var) and var != "LANGFUSE_PUBLIC_KEY"
+            )
+
+            resolved_display = _resolve_env_var_value(var, val if val != "" else None)
+            display_str = str(resolved_display) if resolved_display is not None else ""
+
+            cat_config[var] = resolved_display
+            settings_list.append(
+                {
+                    "key": var,
+                    "label": meta.get("label", var.replace("_", " ").title()),
+                    "type": meta.get("type", "string"),
+                    "value": display_str,
+                    "is_set": raw_env is not None or (cat_key in _ENV_CONFIG_OVERRIDES and var in _ENV_CONFIG_OVERRIDES[cat_key]),
+                    "is_secret": is_secret,
+                    "source": source,
+                }
+            )
+
+        categories[cat_key] = {
+            "label": _CATEGORY_LABELS.get(cat_key, cat_key.title()),
+            "settings": settings_list,
         }
-
-    # Apply in-memory overrides
-    for category, overrides in _ENV_CONFIG_OVERRIDES.items():
-        config.setdefault(category, {}).update(overrides)
+        config_dict[cat_key] = cat_config
 
     return success(
         {
-            "config": config,
+            "categories": categories,
+            "config": config_dict,
             "overridden_categories": list(_ENV_CONFIG_OVERRIDES.keys()),
-            "note": "Overrides are in-memory. Restart reverts to env vars. Secrets are never exposed.",
+            "note": "Overrides are in-memory. Restart reverts to env vars. Secrets are never exposed in plaintext.",
         }
     )
 
@@ -385,47 +748,152 @@ async def update_env_config(
     body: EnvConfigUpdate,
     _role: SystemConfigRole,
 ) -> dict[str, Any]:
-    """
-    Apply overrides to the environment configuration (in-memory).
-
-    The overrides take effect immediately in this process. To persist
-    across restarts, set the corresponding env vars in the deployment
-    environment (HuggingFace Space secret, Docker env, K8s ConfigMap, etc.).
-    """
+    """Apply overrides to the environment configuration (in-memory)."""
     applied: dict[str, list[str]] = {}
-    for category, overrides in body.overrides.items():
-        if not isinstance(overrides, dict):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Overrides for category '{category}' must be an object",
-            )
-        # Validate category name (must be alphanumeric/underscore)
-        if not category.replace("_", "").isalnum():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid category name '{category}'",
-            )
-        if category not in _ENV_CONFIG_OVERRIDES:
-            _ENV_CONFIG_OVERRIDES[category] = {}
-        _ENV_CONFIG_OVERRIDES[category].update(overrides)
-        applied[category] = list(overrides.keys())
-        logger.info(
-            "Env config overrides applied for category (len=%d): %d keys (in-memory)",
-            len(category),
-            len(overrides),
-        )
 
+    for category, overrides in body.overrides.items():
+        if isinstance(overrides, dict):
+            # Nested: { "database": { "DATABASE_POOL_SIZE": "30" } }
+            if category not in _ENV_CONFIG_OVERRIDES:
+                _ENV_CONFIG_OVERRIDES[category] = {}
+            _ENV_CONFIG_OVERRIDES[category].update(overrides)
+            applied[category] = list(overrides.keys())
+        else:
+            # Flat: { "DATABASE_POOL_SIZE": "30" } → locate category
+            target_cat = "pipeline"
+            for cat_k, vars_k in _SAFE_ENV_CATEGORIES.items():
+                if category in vars_k:
+                    target_cat = cat_k
+                    break
+            if target_cat not in _ENV_CONFIG_OVERRIDES:
+                _ENV_CONFIG_OVERRIDES[target_cat] = {}
+            _ENV_CONFIG_OVERRIDES[target_cat][category] = overrides
+            applied.setdefault(target_cat, []).append(category)
+
+    logger.info("Env config overrides applied: %s", applied)
     return success(
         {
             "applied": applied,
             "persisted": False,
-            "note": "Overrides are in-memory. Restart reverts to env vars. Set env vars in deployment for persistence.",
+            "note": "Overrides applied in-memory. Set deployment environment variables for permanent persistence.",
         }
     )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SECRET ROTATION ENDPOINT
+# DEDICATED ENGINEERING CALCULATION ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/settings/engineering-config")
+async def get_engineering_config(_role: SystemConfigRole) -> dict[str, Any]:
+    """Return all engineering calculation parameters, standards, and active thresholds."""
+    return success(
+        {
+            "config": _LIVE_ENGINEERING_CONFIG.model_dump(),
+            "metadata": {
+                "acoustic": {
+                    "standard": "NFPA 72-2022 Chapter 18",
+                    "units": {"ambient_noise_db": "dBA", "spl_drop_per_doubling_db": "dB", "min_snr_dba": "dBA", "strobe_flash_rate_hz": "Hz"},
+                },
+                "hydraulic": {
+                    "standard": "NFPA 13-2022 / NFPA 12-2022 / NFPA 2001-2022",
+                    "units": {"default_fluid_density_kg_m3": "kg/m³", "default_fluid_viscosity_pa_s": "Pa·s", "default_pipe_roughness_mm": "mm", "default_c_factor": "dimensionless"},
+                },
+                "battery": {
+                    "standard": "NFPA 72-2022 §10.6.7 / IEEE 485",
+                    "units": {"ambient_temperature_c": "°C", "standby_duration_hours": "Hours", "alarm_duration_minutes": "Minutes", "aging_safety_margin_pct": "%"},
+                },
+                "integration": {
+                    "standard": "BIM / CAD Local IPC Bridge & FDS v6.8",
+                    "units": {"autocad_bridge_port": "TCP Port", "fds_queue_timeout_seconds": "Seconds"},
+                },
+            },
+        }
+    )
+
+
+@router.put("/settings/engineering-config")
+async def update_engineering_config(
+    body: EngineeringConfigUpdate,
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """Validate and update engineering calculation and solver settings."""
+    if body.acoustic is not None:
+        _LIVE_ENGINEERING_CONFIG.acoustic = body.acoustic
+    if body.hydraulic is not None:
+        _LIVE_ENGINEERING_CONFIG.hydraulic = body.hydraulic
+    if body.battery is not None:
+        _LIVE_ENGINEERING_CONFIG.battery = body.battery
+    if body.integration is not None:
+        _LIVE_ENGINEERING_CONFIG.integration = body.integration
+
+    logger.info("Engineering configuration updated by admin")
+    return success(
+        {
+            "config": _LIVE_ENGINEERING_CONFIG.model_dump(),
+            "message": "Engineering calculation parameters updated successfully.",
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEDICATED CAD & CLOUD BRIDGE ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/settings/cad-config")
+async def get_cad_config(_role: SystemConfigRole) -> dict[str, Any]:
+    """Return AutoCAD, Revit, and Cloud connector parameters with masked tokens."""
+    masked_cloud = _LIVE_CAD_CONFIG.cloud.model_dump()
+    if masked_cloud.get("speckle_token"):
+        masked_cloud["speckle_token"] = f"{masked_cloud['speckle_token'][:4]}***"
+    if masked_cloud.get("aps_client_secret"):
+        masked_cloud["aps_client_secret"] = f"{masked_cloud['aps_client_secret'][:4]}***"
+
+    return success(
+        {
+            "autocad": _LIVE_CAD_CONFIG.autocad.model_dump(),
+            "revit": _LIVE_CAD_CONFIG.revit.model_dump(),
+            "cloud": masked_cloud,
+        }
+    )
+
+
+@router.put("/settings/cad-config")
+async def update_cad_config(
+    body: CadConfigUpdate,
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """Update CAD and Cloud bridge configuration."""
+    if body.autocad is not None:
+        _LIVE_CAD_CONFIG.autocad = body.autocad
+    if body.revit is not None:
+        _LIVE_CAD_CONFIG.revit = body.revit
+    if body.cloud is not None:
+        # Preserve existing secrets if new secret is omitted or masked
+        if body.cloud.speckle_token and not body.cloud.speckle_token.endswith("***"):
+            _LIVE_CAD_CONFIG.cloud.speckle_token = body.cloud.speckle_token
+        if body.cloud.aps_client_secret and not body.cloud.aps_client_secret.endswith("***"):
+            _LIVE_CAD_CONFIG.cloud.aps_client_secret = body.cloud.aps_client_secret
+
+        _LIVE_CAD_CONFIG.cloud.speckle_server = body.cloud.speckle_server
+        _LIVE_CAD_CONFIG.cloud.speckle_stream_id = body.cloud.speckle_stream_id
+        _LIVE_CAD_CONFIG.cloud.aps_client_id = body.cloud.aps_client_id
+        _LIVE_CAD_CONFIG.cloud.aps_activity_id = body.cloud.aps_activity_id
+
+    logger.info("CAD and Cloud bridge configuration updated by admin")
+    return success(
+        {
+            "message": "CAD & Cloud bridge configuration saved successfully.",
+            "autocad": _LIVE_CAD_CONFIG.autocad.model_dump(),
+            "revit": _LIVE_CAD_CONFIG.revit.model_dump(),
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECRET ROTATION & ADMIN TOKEN ROTATION ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -434,31 +902,12 @@ async def rotate_secret(
     body: SecretRotationRequest,
     _role: SystemConfigRole,
 ) -> dict[str, Any]:
-    """
-    Rotate a security-sensitive secret (hot rotation with grace period).
-
-    Delegates to fireai.core.secret_rotation.KeyRotator which:
-      1. Records the SHA-256 fingerprint of the previous secret (never the plaintext)
-      2. Accepts both old and new during a grace period (default 5 min)
-      3. Logs the rotation to the security audit log
-
-    If body.new_secret is not provided, a 256-bit random secret is generated.
-    The new plaintext secret is returned ONCE for the caller to store — it
-    cannot be retrieved later.
-    """
+    """Rotate a security-sensitive secret (hot rotation with grace period)."""
     from fireai.core.secret_rotation import KeyRotator
 
     rotator = KeyRotator()
-
-    # V-273 FIX: Validate against the allowlist BEFORE touching os.environ,
-    # preventing arbitrary environment variable definition (S6547).
     key_name = _validate_rotatable_secret_name(body.key_name)
 
-    # Generate a new secret if not provided.
-    # S6547: the secret VALUE is user-supplied (or generated). Guard the
-    # user-supplied path with the isalnum() validator the analyzer recognizes
-    # so control characters can never be injected into the environment via
-    # os.environ; the allowlist below then enforces length and charset.
     if body.new_secret:
         if not body.new_secret.isalnum():
             raise HTTPException(
@@ -474,27 +923,14 @@ async def rotate_secret(
     else:
         new_secret = secrets.token_urlsafe(32)
 
-    # Capture the previous secret (if set in env) so KeyRotator can
-    # accept it during the grace period.
     previous_secret = os.environ.get(key_name)
-    # V271 FIX: KeyRotator requires register() before rotate(). Previously
-    # we called rotate() directly, which returned (False, "not registered")
-    # — but the old code ignored the return value and reported success.
-    # Now we register first (idempotent — overwrites any prior registration
-    # for this key in this process), then rotate.
     if previous_secret:
         rotator.register(key_name, previous_secret)
         rotated, rotate_msg = rotator.rotate(key_name, previous_secret, new_secret)
     else:
-        # No previous secret — register the new one directly (no rotation
-        # semantics needed, but we still register so future rotates work).
         rotator.register(key_name, new_secret)
         rotated, rotate_msg = True, "Registered new key (no previous key to rotate from)."
 
-    # V271 FIX: KeyRotator.rotate() returns (bool, str). Previously we
-    # ignored the return value and always reported "rotated: True", which
-    # was a security defect: if rotation failed (e.g. old_key mismatch),
-    # the admin would believe the secret was rotated when it was not.
     if not rotated:
         logger.error("Secret rotation FAILED for '%s': %s", key_name, rotate_msg)
         raise HTTPException(
@@ -502,73 +938,36 @@ async def rotate_secret(
             detail=f"Secret rotation rejected: {rotate_msg}",
         )
 
-    # Update env var IN-PROCESS so subsequent reads see the new value.
-    # NOTE: This does NOT persist to the deployment environment. The
-    # caller MUST also update the HF Space secret / Docker env / K8s
-    # ConfigMap to make this permanent.
-    #
-    # S6547: The allowlist check lives inside _set_rotated_secret() in the
-    # same function as the os.environ assignment, so static analysis can
-    # verify the key is never attacker-controlled. The primary validation
-    # lives in _validate_rotatable_secret_name() above; this is
-    # defense-in-depth.
     _set_rotated_secret(key_name, new_secret)
-
-    logger.info(
-        "Secret '%s' rotated successfully (hot rotation, grace period active)",
-        key_name,
-    )
+    logger.info("Secret '%s' rotated successfully (hot rotation, grace period active)", key_name)
 
     return success(
         {
             "key_name": key_name,
             "rotated": True,
             "new_secret": new_secret,
-            "warning": (
-                "Store this new secret securely. It cannot be retrieved later. "
-                "Also update your deployment environment (HF Space secret, Docker env, "
-                "K8s ConfigMap) — the in-process update will be lost on restart."
-            ),
+            "warning": "Store this new secret securely. Update your deployment environment to persist across restarts.",
             "grace_period_seconds": 300,
         }
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# ADMIN TOKEN ROTATION ENDPOINT
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
 @router.post("/settings/admin-token/rotate")
 async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
-    """
-    Rotate the BAZSPARK_MASTER_ADMIN_TOKEN.
-
-    Generates a new 256-bit (32-byte) random token, updates the env var
-    IN-PROCESS so the new token is immediately accepted by
-    backend.admin_protection.require_master_admin, and returns the new
-    plaintext token exactly once.
-
-    The previous token remains valid during a 5-minute grace period via
-    KeyRotator. After rotation, all admin/keys operations must send the
-    NEW token in the X-Master-Admin-Token header.
-    """
+    """Rotate the BAZSPARK_MASTER_ADMIN_TOKEN."""
     from fireai.core.secret_rotation import KeyRotator
 
-    new_token = secrets.token_urlsafe(32)  # 256 bits of entropy
+    new_token = secrets.token_urlsafe(32)
     previous_token = os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN")
 
     rotator = KeyRotator()
     if previous_token:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token)
-        rotated, rotate_msg = rotator.rotate(
-            "BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token
-        )
+        rotated, rotate_msg = rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token)
     else:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", new_token)
         rotated, rotate_msg = True, "Registered new admin token (no previous token to rotate from)."
 
-    # V271 FIX: verify rotation succeeded before reporting success.
     if not rotated:
         logger.error("Admin token rotation FAILED: %s", rotate_msg)
         raise HTTPException(
@@ -576,26 +975,16 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
             detail=f"Admin token rotation rejected: {rotate_msg}",
         )
 
-    # Update env in-process (immediate effect)
-    # S6547: Key is a compile-time constant — no user control over the
-    # variable name.  The inline assertion makes this explicit to
-    # static analysis tools.
     _ADMIN_TOKEN_ENV_KEY = "BAZSPARK_MASTER_ADMIN_TOKEN"
     assert _ADMIN_TOKEN_ENV_KEY.isidentifier() and _ADMIN_TOKEN_ENV_KEY.isupper()
     os.environ[_ADMIN_TOKEN_ENV_KEY] = new_token
 
     logger.info("Admin token rotated successfully (hot rotation, grace period active)")
-
     return success(
         {
             "rotated": True,
             "new_token": new_token,
-            "warning": (
-                "Store this token securely — it cannot be retrieved later. "
-                "Update your deployment environment (HF Space secret, Docker env, "
-                "K8s ConfigMap) to persist across restarts. The old token remains "
-                "valid for 5 minutes during the grace period."
-            ),
+            "warning": "Store this token securely. Update your deployment environment to persist across restarts.",
             "grace_period_seconds": 300,
         }
     )

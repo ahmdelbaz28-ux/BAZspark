@@ -7,6 +7,7 @@
 import { Key, Lock, Server, Settings } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { adminConfigApi } from "@/services/fullApi";
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 import {
 	Card,
@@ -24,25 +25,27 @@ export const SettingsRegistry: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
+		let active = true;
 		const fetchSettings = async () => {
 			try {
-				// P0-6 FIX: no hardcoded http://localhost:8000 and no "test-key"
-				// fallback — auth flows via the HttpOnly session cookie.
-				const apiBase = (import.meta.env.VITE_API_URL || "/").replace(/\/$/, "");
-				const [rtRes, bsRes] = await Promise.all([
-					fetch(`${apiBase}/settings/runtime`, { credentials: "same-origin" }),
-					fetch(`${apiBase}/settings/bootstrap`, { credentials: "same-origin" }),
+				const [rtData, bsData] = await Promise.all([
+					adminConfigApi.getRuntimeSettings(),
+					adminConfigApi.getBootstrapSettings(),
 				]);
-
-				if (rtRes.ok) setRuntime(await rtRes.json());
-				if (bsRes.ok) setBootstrap(await bsRes.json());
+				if (active) {
+					if (rtData) setRuntime(rtData);
+					if (bsData) setBootstrap(bsData);
+				}
 			} catch (err) {
 				console.error("Failed to load settings", err);
 			} finally {
-				setLoading(false);
+				if (active) setLoading(false);
 			}
 		};
 		fetchSettings();
+		return () => {
+			active = false;
+		};
 	}, []);
 
 	const handleToggle = async (key: string, checked: boolean) => {
@@ -58,15 +61,7 @@ export const SettingsRegistry: React.FC = () => {
 		setRuntime(newSettings);
 
 		try {
-			const apiBase = (import.meta.env.VITE_API_URL || "/").replace(/\/$/, "");
-			await fetch(`${apiBase}/settings/runtime`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				credentials: "same-origin",
-				body: JSON.stringify(newSettings),
-			});
+			await adminConfigApi.updateRuntimeSettings(newSettings);
 		} catch (err) {
 			console.error("Failed to save setting", err);
 		}

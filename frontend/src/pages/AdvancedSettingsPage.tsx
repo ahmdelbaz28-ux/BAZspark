@@ -80,6 +80,22 @@ const CATEGORY_META: Record<string, { icon: string; description: string }> = {
 		icon: "🌐",
 		description: "Cross-Origin Resource Sharing and allowed origins",
 	},
+	acoustic: {
+		icon: "🔊",
+		description: "NFPA 72 Acoustic noise, decibel drop, and strobe synchronization",
+	},
+	hydraulic: {
+		icon: "💧",
+		description: "Hydraulic & Darcy-Weisbach / Hazen-Williams fluid properties and roughness",
+	},
+	battery: {
+		icon: "🔋",
+		description: "Secondary power supply, ambient temperature profile, and battery aging derating",
+	},
+	cad: {
+		icon: "📐",
+		description: "AutoCAD and Revit connection paths, versions, units, and bridge ports",
+	},
 	_cache: {
 		icon: "💾",
 		description: "In-memory cache management — view stats, clear entries",

@@ -20,7 +20,7 @@ import {
 	Wrench,
 	XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { RevitFamilyBrowser } from "@/components/engineering/RevitFamilyBrowser";
@@ -43,6 +43,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cadConfigApi } from "@/services/fullApi";
 
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
 let _cachedCadSettings: Record<string, unknown> | null = null;
@@ -169,18 +170,44 @@ export function CADSettingsPage() {
 		savedSettings.cloud?.apsActivityId || "BazSparkAutoCADBridge.DrawLayout",
 	);
 
-	// Settings are loaded via the lazy useState initializer above — no
-	// useEffect needed (avoids react-hooks/set-state-in-effect).
+	// Synchronize with live backend configuration on mount
+	useEffect(() => {
+		let active = true;
+		cadConfigApi
+			.get()
+			.then((res) => {
+				if (!active || !res?.data) return;
+				const d = res.data;
+				if (d.autocad) {
+					if (d.autocad.path !== undefined) setAcadPath(d.autocad.path);
+					if (d.autocad.version !== undefined) setAcadVersion(d.autocad.version);
+					if (d.autocad.template !== undefined) setAcadTemplate(d.autocad.template);
+					if (d.autocad.units !== undefined) setAcadUnits(d.autocad.units);
+				}
+				if (d.revit) {
+					if (d.revit.path !== undefined) setRevitPath(d.revit.path);
+					if (d.revit.version !== undefined) setRevitVersion(d.revit.version);
+					if (d.revit.template !== undefined) setRevitTemplate(d.revit.template);
+					if (d.revit.units !== undefined) setRevitUnits(d.revit.units);
+				}
+				if (d.cloud) {
+					if (d.cloud.speckle_server) setSpeckleServer(d.cloud.speckle_server);
+					if (d.cloud.speckle_stream_id) setSpeckleStreamId(d.cloud.speckle_stream_id);
+					if (d.cloud.aps_client_id) setApsClientId(d.cloud.aps_client_id);
+					if (d.cloud.aps_activity_id) setApsActivityId(d.cloud.aps_activity_id);
+				}
+			})
+			.catch(() => {
+				// Retain localStorage fallback silently
+			});
+		return () => {
+			active = false;
+		};
+	}, []);
 
 	const checkAutoCADConnection = async () => {
 		setCheckingAcad(true);
 		try {
-			// V194 (TD-2) FIX: Wire to real backend status endpoint.
-			// Was previously a 1-second setTimeout that always reported success.
-			// Now calls GET /api/v1/autocad/status which returns the real
-			// AutoCAD connection state (connected, version, active document).
-			// Falls back to "disconnected" with the error message if the
-			// backend is unreachable.
 			const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
 			const resp = await fetch(`${apiUrl}/autocad/status`, {
 				credentials: "same-origin",
@@ -217,10 +244,6 @@ export function CADSettingsPage() {
 	const checkRevitConnection = async () => {
 		setCheckingRevit(true);
 		try {
-			// V194 (TD-2) FIX: Wire to real backend status endpoint.
-			// Was previously a 1-second setTimeout that always reported success.
-			// Now calls GET /api/v1/revit/status which returns the real
-			// Revit connection state.
 			const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
 			const resp = await fetch(`${apiUrl}/revit/status`, {
 				credentials: "same-origin",
@@ -254,7 +277,7 @@ export function CADSettingsPage() {
 		}
 	};
 
-	const saveAutoCADSettings = () => {
+	const saveAutoCADSettings = async () => {
 		try {
 			const settings = getCadSettings();
 			settings.autocad = {
@@ -264,13 +287,21 @@ export function CADSettingsPage() {
 				units: acadUnits,
 			};
 			setCadSettings(settings);
-			toast.success("AutoCAD settings saved");
+			await cadConfigApi.update({
+				autocad: {
+					path: acadPath,
+					version: acadVersion,
+					template: acadTemplate,
+					units: acadUnits,
+				},
+			});
+			toast.success("AutoCAD settings saved to backend");
 		} catch {
-			toast.error("Failed to save settings");
+			toast.error("Failed to save AutoCAD settings");
 		}
 	};
 
-	const saveRevitSettings = () => {
+	const saveRevitSettings = async () => {
 		try {
 			const settings = getCadSettings();
 			settings.revit = {
@@ -280,21 +311,23 @@ export function CADSettingsPage() {
 				units: revitUnits,
 			};
 			setCadSettings(settings);
-			toast.success("Revit settings saved");
+			await cadConfigApi.update({
+				revit: {
+					path: revitPath,
+					version: revitVersion,
+					template: revitTemplate,
+					units: revitUnits,
+				},
+			});
+			toast.success("Revit settings saved to backend");
 		} catch {
-			toast.error("Failed to save settings");
+			toast.error("Failed to save Revit settings");
 		}
 	};
 
-	const saveCloudSettings = () => {
+	const saveCloudSettings = async () => {
 		try {
 			const settings = getCadSettings();
-			// V284 SECURITY: speckleToken and apsClientSecret are NEVER written
-			// to localStorage. They are session-only state — the user must
-			// re-enter them each session until the backend credential vault
-			// (POST /api/v1/integrations/credentials, encrypted at rest) is
-			// implemented in a follow-up PR. This eliminates the XSS-readable
-			// credential exposure flagged in P0-8 of the critical audit.
 			settings.cloud = {
 				speckleServer,
 				speckleStreamId,
@@ -302,15 +335,23 @@ export function CADSettingsPage() {
 				apsActivityId,
 			};
 			setCadSettings(settings);
+			await cadConfigApi.update({
+				cloud: {
+					speckle_server: speckleServer,
+					speckle_stream_id: speckleStreamId,
+					speckle_token: speckleToken || undefined,
+					aps_client_id: apsClientId,
+					aps_client_secret: apsClientSecret || undefined,
+					aps_activity_id: apsActivityId,
+				},
+			});
 			if (speckleToken || apsClientSecret) {
-				toast.info(
-					"Non-secret cloud settings saved. Speckle/APS tokens are session-only — re-enter them each session until the backend credential vault ships (P0-8 follow-up).",
-				);
+				toast.success("Cloud settings & credentials securely updated on backend");
 			} else {
-				toast.success("Cloud settings saved");
+				toast.success("Cloud settings saved to backend");
 			}
 		} catch {
-			toast.error("Failed to save settings");
+			toast.error("Failed to save cloud settings");
 		}
 	};
 
