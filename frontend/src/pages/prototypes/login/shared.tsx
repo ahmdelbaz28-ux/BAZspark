@@ -117,6 +117,7 @@ export function ApiKeyInputField({
 				id="api-key"
 				type={showKey ? "text" : "password"}
 				name="api_key"
+				className="login-input-control"
 				autoComplete="off"
 				autoFocus
 				placeholder={t.inputPlaceholder}
@@ -209,6 +210,7 @@ export function LoginSubmitButton({
 		<button
 			type="submit"
 			disabled={disabled}
+			className="login-submit-btn"
 			data-testid="initialize-session-btn"
 			style={{
 				width: "100%",
