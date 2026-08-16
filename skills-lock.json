@@ -187,6 +187,12 @@
       "skillPath": ".github/skills/test-engineer/SKILL.md",
       "computedHash": "3397c778c1eaeec32ed9450ec7ddd6a3e3c8e644a74091cf94f33cd5d3788699"
     },
+    "fix-dependabot": {
+      "source": "remotion-dev/remotion",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/fix-dependabot/SKILL.md",
+      "computedHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
     "using-superpowers": {
       "source": "obra/superpowers",
       "sourceType": "github",
@@ -213,3 +219,4 @@
     }
   }
 }
+
