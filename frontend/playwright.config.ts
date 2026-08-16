@@ -10,14 +10,13 @@ export default defineConfig({
   // NOTE: global-auth-setup.ts is a test fixture extension, not a globalSetup file.
   // It's imported directly in test files that need auth mocking.
   use: {
-    baseURL: process.env.PLAYWRIGHT_VISUAL_TESTS ? "http://localhost:5173" : undefined,
+    baseURL: process.env.PLAYWRIGHT_VISUAL_TESTS || process.env.CI ? "http://localhost:5173" : undefined,
     headless: true,
     viewport: { width: 1280, height: 720 },
     ignoreHTTPSErrors: true,
   },
-  // Disable webServer for most tests (they mock API calls and don't need a real server).
-  // Only enable for visual regression tests that require the full app.
-  webServer: process.env.PLAYWRIGHT_VISUAL_TESTS
+  // Start webServer in CI or when visual tests are explicitly requested
+  webServer: (process.env.PLAYWRIGHT_VISUAL_TESTS || process.env.CI)
     ? {
       command: "npx vite preview --port 5173",
       url: "http://localhost:5173",
