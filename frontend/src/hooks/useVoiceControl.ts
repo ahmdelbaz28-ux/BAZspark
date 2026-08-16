@@ -91,6 +91,7 @@ export interface VoiceControlReturn {
 export function sanitizeVoiceInput(raw: string): string {
 	if (!raw) return "";
 	return raw
+		// eslint-disable-next-line no-control-regex
 		.replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // strip control characters
 		.replace(/[`${}\\]/g, " ") // neutralize escape/interpolation chars
 		.replace(/\s+/g, " ") // normalize whitespace

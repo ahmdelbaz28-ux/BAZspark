@@ -59,6 +59,8 @@ vi.mock("@/i18n", () => {
 });
 
 // Mock SpeechRecognition Class
+let latestMockInstance: MockSpeechRecognition | null = null;
+
 class MockSpeechRecognition {
 	continuous = false;
 	interimResults = false;
@@ -67,6 +69,11 @@ class MockSpeechRecognition {
 	onresult: ((event: unknown) => void) | null = null;
 	onerror: ((event: unknown) => void) | null = null;
 	onend: (() => void) | null = null;
+
+	constructor() {
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		latestMockInstance = this;
+	}
 
 	start = vi.fn(() => {
 		if (this.onstart) this.onstart();
@@ -136,6 +143,7 @@ describe("useVoiceControl Hook", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		latestMockInstance = null;
 		originalSpeechRecognition = (window as unknown as { SpeechRecognition: unknown }).SpeechRecognition;
 		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = MockSpeechRecognition;
 	});
@@ -170,16 +178,6 @@ describe("useVoiceControl Hook", () => {
 	});
 
 	it("processes English voice commands and adds generator element", () => {
-		let recognitionInstance: MockSpeechRecognition | null = null;
-
-		class CapturingSpeechRecognition extends MockSpeechRecognition {
-			constructor() {
-				super();
-				recognitionInstance = this;
-			}
-		}
-		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = CapturingSpeechRecognition;
-
 		const onCommandMock = vi.fn();
 		const onTranscriptMock = vi.fn();
 
@@ -196,8 +194,8 @@ describe("useVoiceControl Hook", () => {
 
 		// Trigger result with "add generator"
 		act(() => {
-			if (recognitionInstance?.onresult) {
-				recognitionInstance.onresult({
+			if (latestMockInstance?.onresult) {
+				latestMockInstance.onresult({
 					results: [
 						Object.assign([{ transcript: "Add generator", confidence: 0.98 }], {
 							isFinal: true,
@@ -218,16 +216,6 @@ describe("useVoiceControl Hook", () => {
 	});
 
 	it("processes Arabic voice commands for battery addition and simulation", () => {
-		let recognitionInstance: MockSpeechRecognition | null = null;
-
-		class CapturingSpeechRecognition extends MockSpeechRecognition {
-			constructor() {
-				super();
-				recognitionInstance = this;
-			}
-		}
-		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = CapturingSpeechRecognition;
-
 		const onCommandMock = vi.fn();
 		const { result } = renderHook(() => useVoiceControl({ onCommand: onCommandMock }));
 
@@ -237,8 +225,8 @@ describe("useVoiceControl Hook", () => {
 
 		// Arabic battery command
 		act(() => {
-			if (recognitionInstance?.onresult) {
-				recognitionInstance.onresult({
+			if (latestMockInstance?.onresult) {
+				latestMockInstance.onresult({
 					results: [
 						Object.assign([{ transcript: "اضف بطارية", confidence: 0.95 }], {
 							isFinal: true,
@@ -257,8 +245,8 @@ describe("useVoiceControl Hook", () => {
 
 		// Arabic simulation command
 		act(() => {
-			if (recognitionInstance?.onresult) {
-				recognitionInstance.onresult({
+			if (latestMockInstance?.onresult) {
+				latestMockInstance.onresult({
 					results: [
 						Object.assign([{ transcript: "تشغيل المحاكاة", confidence: 0.97 }], {
 							isFinal: true,
@@ -275,16 +263,6 @@ describe("useVoiceControl Hook", () => {
 	});
 
 	it("triggers toast notification on permission-denied error", () => {
-		let recognitionInstance: MockSpeechRecognition | null = null;
-
-		class CapturingSpeechRecognition extends MockSpeechRecognition {
-			constructor() {
-				super();
-				recognitionInstance = this;
-			}
-		}
-		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = CapturingSpeechRecognition;
-
 		const onErrorMock = vi.fn();
 		const { result } = renderHook(() => useVoiceControl({ onError: onErrorMock }));
 
@@ -293,8 +271,8 @@ describe("useVoiceControl Hook", () => {
 		});
 
 		act(() => {
-			if (recognitionInstance?.onerror) {
-				recognitionInstance.onerror({ error: "not-allowed" });
+			if (latestMockInstance?.onerror) {
+				latestMockInstance.onerror({ error: "not-allowed" });
 			}
 		});
 
@@ -309,16 +287,6 @@ describe("useVoiceControl Hook", () => {
 	});
 
 	it("triggers toast notification on network error", () => {
-		let recognitionInstance: MockSpeechRecognition | null = null;
-
-		class CapturingSpeechRecognition extends MockSpeechRecognition {
-			constructor() {
-				super();
-				recognitionInstance = this;
-			}
-		}
-		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = CapturingSpeechRecognition;
-
 		const { result } = renderHook(() => useVoiceControl());
 
 		act(() => {
@@ -326,8 +294,8 @@ describe("useVoiceControl Hook", () => {
 		});
 
 		act(() => {
-			if (recognitionInstance?.onerror) {
-				recognitionInstance.onerror({ error: "network" });
+			if (latestMockInstance?.onerror) {
+				latestMockInstance.onerror({ error: "network" });
 			}
 		});
 
