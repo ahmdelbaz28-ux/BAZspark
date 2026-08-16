@@ -267,7 +267,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: build
+    needs: [test, build]
     if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
@@ -357,7 +357,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: build
+    needs: [test, build]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     environment:
       name: production

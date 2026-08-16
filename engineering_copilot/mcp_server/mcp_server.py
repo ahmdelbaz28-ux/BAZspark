@@ -59,6 +59,78 @@ async def verify_copilot_api_key(
     return provided_key
 
 
+def validate_safe_path(requested_path: str, allowed_root_dir: str | None = None) -> str:
+    """Resolve and validate a requested file path against path traversal attacks.
+
+    Resolves the canonical absolute path using os.path.abspath(os.path.realpath(requested_path)).
+    Validates that the canonical path strictly resides within the allowed workspace root:
+    canonical_path == canonical_root or canonical_path.startswith(canonical_root + os.sep)
+    Raises PermissionError on any directory traversal attempt (../ or root escape).
+    """
+    if not requested_path or not isinstance(requested_path, str):
+        raise ValueError("Invalid or empty path")
+
+    if allowed_root_dir is None:
+        allowed_root_dir = os.environ.get("WORKSPACE_ROOT", os.getcwd())
+
+    canonical_root = os.path.abspath(os.path.realpath(allowed_root_dir))
+    canonical_path = os.path.abspath(os.path.realpath(requested_path))
+
+    # Validate that canonical path strictly starts with designated root
+    if not (canonical_path == canonical_root or canonical_path.startswith(canonical_root + os.sep)):
+        raise PermissionError(
+            f"Path traversal detected: '{requested_path}' resolves to '{canonical_path}' "
+            f"which is outside designated workspace root '{canonical_root}'"
+        )
+
+    return canonical_path
+
+
+def write_project_file(
+    requested_path: str, content: str | bytes, allowed_root_dir: str | None = None
+) -> str:
+    """Safely write a project file within the designated workspace boundary."""
+    safe_path = validate_safe_path(requested_path, allowed_root_dir)
+    os.makedirs(os.path.dirname(safe_path), exist_ok=True)
+    mode = "wb" if isinstance(content, bytes) else "w"
+    encoding = None if isinstance(content, bytes) else "utf-8"
+    with open(safe_path, mode, encoding=encoding) as f:
+        f.write(content)
+    return safe_path
+
+
+def read_project_file(requested_path: str, allowed_root_dir: str | None = None) -> str:
+    """Safely read a project file within the designated workspace boundary."""
+    safe_path = validate_safe_path(requested_path, allowed_root_dir)
+    with open(safe_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def execute_tool(
+    tool_name: str, params: dict[str, Any], allowed_root_dir: str | None = None
+) -> dict[str, Any]:
+    """Execute MCP tool with strict path traversal hardening on any file parameters."""
+    if "file_path" in params and isinstance(params["file_path"], str):
+        params["file_path"] = validate_safe_path(params["file_path"], allowed_root_dir)
+    if "path" in params and isinstance(params["path"], str):
+        params["path"] = validate_safe_path(params["path"], allowed_root_dir)
+    if "source_asset" in params and isinstance(params["source_asset"], str):
+        params["source_asset"] = validate_safe_path(params["source_asset"], allowed_root_dir)
+
+    if tool_name == "write_project_file":
+        path = params.get("path") or params.get("file_path")
+        content = params.get("content", "")
+        written_path = write_project_file(path, content, allowed_root_dir)
+        return {"success": True, "path": written_path, "tool": tool_name}
+
+    if tool_name == "read_project_file":
+        path = params.get("path") or params.get("file_path")
+        content = read_project_file(path, allowed_root_dir)
+        return {"success": True, "path": path, "content": content, "tool": tool_name}
+
+    return {"success": True, "tool": tool_name, "params": params}
+
+
 class MCPServer:
     """
     MCP Server for Engineering Copilot operations.
@@ -103,6 +175,9 @@ class MCPServer:
         self.app.post("/run_engineering_checks", dependencies=auth_dep)(self.run_engineering_checks)
         self.app.post("/process_request", dependencies=auth_dep)(self.process_request)
         self.app.post("/convert_simready", dependencies=auth_dep)(self.convert_simready)
+        self.app.post("/execute_tool", dependencies=auth_dep)(self.execute_tool_endpoint)
+        self.app.post("/write_project_file", dependencies=auth_dep)(self.write_project_file_endpoint)
+        self.app.post("/read_project_file", dependencies=auth_dep)(self.read_project_file_endpoint)
 
     # Request models
     class DrawingRequest(BaseModel):
@@ -556,10 +631,76 @@ class MCPServer:
         profile: str = "Prop-Robotics-Neutral"
         property_assignment: str = "run"
 
+    class ExecuteToolRequest(BaseModel):
+        tool: str
+        parameters: dict[str, Any] = {}
+
+    class WriteProjectFileRequest(BaseModel):
+        path: str
+        content: str
+
+    class ReadProjectFileRequest(BaseModel):
+        path: str
+
+    async def execute_tool_endpoint(self, request: ExecuteToolRequest) -> dict[str, Any]:
+        """Execute tool with path traversal hardening."""
+        try:
+            self.logger.info(f"Executing tool: {request.tool}")
+            result = execute_tool(request.tool, request.parameters)
+            self._log_operation("execute_tool", request.dict(), result)
+            return result
+        except PermissionError as e:
+            self.logger.warning(f"Permission denied executing tool {request.tool}: {e}")
+            raise HTTPException(status_code=403, detail=str(e))
+        except Exception as e:
+            self.logger.error(f"Error executing tool {request.tool}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def write_project_file_endpoint(self, request: WriteProjectFileRequest) -> dict[str, Any]:
+        """Write project file safely within workspace root."""
+        try:
+            self.logger.info(f"Writing project file: {request.path}")
+            safe_path = write_project_file(request.path, request.content)
+            result = {
+                "success": True,
+                "path": safe_path,
+                "written_at": datetime.now().isoformat(),
+                "message": f"File '{request.path}' written successfully",
+            }
+            self._log_operation("write_project_file", request.dict(), result)
+            return result
+        except PermissionError as e:
+            self.logger.warning(f"Path traversal blocked on write: {e}")
+            raise HTTPException(status_code=403, detail=str(e))
+        except Exception as e:
+            self.logger.error(f"Error writing project file: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def read_project_file_endpoint(self, request: ReadProjectFileRequest) -> dict[str, Any]:
+        """Read project file safely within workspace root."""
+        try:
+            self.logger.info(f"Reading project file: {request.path}")
+            content = read_project_file(request.path)
+            result = {
+                "success": True,
+                "path": request.path,
+                "content": content,
+                "read_at": datetime.now().isoformat(),
+            }
+            self._log_operation("read_project_file", request.dict(), result)
+            return result
+        except PermissionError as e:
+            self.logger.warning(f"Path traversal blocked on read: {e}")
+            raise HTTPException(status_code=403, detail=str(e))
+        except Exception as e:
+            self.logger.error(f"Error reading project file: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     async def convert_simready(self, request: SimReadyRequest) -> dict[str, Any]:
         """Convert CAD/BIM model into NVIDIA SimReady OpenUSD package."""
         try:
             self.logger.info(f"Converting asset to SimReady: {request.source_asset}")
+            validate_safe_path(request.source_asset)
             from backend.services.simready_adapter import SimReadyAdapter, SimReadyPipelineConfig
 
             adapter = SimReadyAdapter()
@@ -579,6 +720,9 @@ class MCPServer:
             }
             self._log_operation("convert_simready", request.dict(), result)
             return result
+        except PermissionError as e:
+            self.logger.warning(f"Path traversal blocked in convert_simready: {e}")
+            raise HTTPException(status_code=403, detail=str(e))
         except Exception as e:
             self.logger.error(f"Error converting asset to SimReady: {e}")
             raise HTTPException(status_code=500, detail=str(e))

@@ -81,5 +81,6 @@ def test_empty_secret_is_hard(monkeypatch):
 def test_assert_environment_raises_on_legacy_placeholder(monkeypatch):
     """Production boot must refuse to start with an old default key."""
     monkeypatch.setenv("FIREAI_API_KEY", "dev-fireai-key-local")
+    monkeypatch.setenv("FIREAI_ENV_VALIDATION", "strict")
     with pytest.raises(RuntimeError, match="FIREAI_API_KEY"):
         ev.assert_environment(prod_mode=True)

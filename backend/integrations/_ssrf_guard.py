@@ -63,6 +63,7 @@ __all__ = [
     "resolve_to_safe_ip",
     "resolve_to_safe_ip_with_hostname",
     "validate_host_for_user_input",
+    "validate_integration_url",
     "validate_url",
 ]
 
@@ -452,23 +453,24 @@ def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> tup
     return _resolve_to_safe_ip_impl(host, dns_timeout)
 
 
-def validate_url(
+def validate_integration_url(
     url: str,
     allowed_schemes: tuple[str, ...] = ("http", "https"),
     dns_timeout: float = 5.0,
 ) -> str:
-    """Validate a destination URL against SSRF attacks before network execution.
+    """Validate integration destination URL against SSRF attacks before network execution.
 
     Enforces:
       1. Non-empty string and valid URL syntax
-      2. Strict scheme whitelist (http/https only by default)
-      3. Host extraction and format validation
-      4. Host safety check (blocks localhost, metadata, private/loopback/cloud ranges)
-      5. DNS resolution verification to ensure host resolves to a public safe IP
+      2. Strict scheme whitelist (http/https only by default) - denies non-HTTP/HTTPS schemes
+      3. Host extraction and malformed/encoded IP bypass checks (octal, hex, decimal integer bypasses)
+      4. Host safety check (blocks loopback, private ranges RFC 1918, link-local/cloud metadata, CGNAT, multicast)
+      5. Synchronous pre-flight DNS resolution using socket.getaddrinfo() to resolve hostnames to IP addresses
+      6. Parsing of each resolved IP with ipaddress.ip_address() and verification against unsafe CIDR ranges
 
     Args:
         url: Complete URL string (e.g. "https://api.example.com/data?q=1").
-        allowed_schemes: Permitted URL schemes.
+        allowed_schemes: Permitted URL schemes (default: http, https).
         dns_timeout: Max seconds to wait for DNS lookup.
 
     Returns:
@@ -495,8 +497,97 @@ def validate_url(
     if not hostname:
         raise SSRFError(f"Could not extract a valid hostname from URL: '{url}'")
 
+    # Check for integer decimal notation (e.g. 2130706433)
+    if hostname.isdigit():
+        try:
+            num_val = int(hostname)
+            if 0 <= num_val <= 0xFFFFFFFF:
+                ip = ipaddress.IPv4Address(num_val)
+                if _is_unsafe_ip(ip):
+                    raise SSRFError(
+                        f"Host '{hostname}' (decimal IP {ip}) is an unsafe IP address. SSRF protection: refused."
+                    )
+        except (ValueError, OverflowError):
+            pass
+
+    # Check for hex representation (e.g. 0x7f000001)
+    if hostname.lower().startswith("0x"):
+        try:
+            hex_val = int(hostname, 16)
+            if 0 <= hex_val <= 0xFFFFFFFF:
+                ip = ipaddress.IPv4Address(hex_val)
+                if _is_unsafe_ip(ip):
+                    raise SSRFError(
+                        f"Host '{hostname}' (hex IP {ip}) is an unsafe IP address. SSRF protection: refused."
+                    )
+        except (ValueError, OverflowError):
+            pass
+
+    # Check for octal / zero-padded dotted notation (e.g. 0177.0.0.1 or 0177.0000.0000.0001)
+    parts = hostname.split(".")
+    if len(parts) == 4 and all(p.isalnum() for p in parts):
+        try:
+            parsed_parts = [int(p, 0) for p in parts]
+            if all(0 <= p <= 255 for p in parsed_parts):
+                ip_from_parts = ipaddress.IPv4Address(
+                    (parsed_parts[0] << 24)
+                    | (parsed_parts[1] << 16)
+                    | (parsed_parts[2] << 8)
+                    | parsed_parts[3]
+                )
+                if _is_unsafe_ip(ip_from_parts):
+                    raise SSRFError(
+                        f"Host '{hostname}' (normalized IP {ip_from_parts}) is an unsafe IP address. SSRF protection: refused."
+                    )
+        except (ValueError, OverflowError):
+            pass
+
+    # Check static blocked hostnames
+    if _is_blocked_hostname(hostname):
+        raise SSRFError(f"Host '{hostname}' is blocked. SSRF protection: refused to connect.")
+
+    # Synchronous pre-flight DNS resolution and CIDR verification
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as e:
+        raise SSRFError(f"Could not resolve host '{hostname}': {e}") from e
+
+    if not addr_infos:
+        raise SSRFError(f"Host '{hostname}' did not resolve to any IP address")
+
+    for info in addr_infos:
+        ip_str = info[4][0]
+        try:
+            ip_obj = ipaddress.ip_address(ip_str)
+        except ValueError as e:
+            raise SSRFError(f"Invalid resolved IP address '{ip_str}' for host '{hostname}'") from e
+
+        if _is_unsafe_ip(ip_obj):
+            raise SSRFError(
+                f"Host '{hostname}' resolves to unsafe IP address '{ip_str}' "
+                f"(private/loopback/link-local/cloud metadata/carrier-grade NAT/multicast). SSRF protection: refused."
+            )
+
+    # Re-verify through standard service guard to populate cache
     resolve_to_safe_ip(hostname, dns_timeout=dns_timeout)
     return url
+
+
+def validate_url(
+    url: str,
+    allowed_schemes: tuple[str, ...] = ("http", "https"),
+    dns_timeout: float = 5.0,
+) -> str:
+    """Validate a destination URL against SSRF attacks before network execution.
+
+    Enforces:
+      1. Non-empty string and valid URL syntax
+      2. Strict scheme whitelist (http/https only by default)
+      3. Host extraction and format validation
+      4. Host safety check (blocks localhost, metadata, private/loopback/cloud ranges)
+      5. DNS resolution verification to ensure host resolves to a public safe IP
+    """
+    return validate_integration_url(url, allowed_schemes=allowed_schemes, dns_timeout=dns_timeout)
 
 
 def _try_resolve_literal_ip(host: str) -> tuple[str, str] | None:

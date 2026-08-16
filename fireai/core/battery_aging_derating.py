@@ -93,7 +93,7 @@ _CITE_IEEE_1188 = "IEEE 1188"
 # Values represent the percentage of rated capacity available at each temperature.
 # Conservative interpolation is used for temperatures between data points.
 TEMPERATURE_DERATING = {
-    # temperature_c: capacity_fraction
+    # temperature_c: capacity_fraction per IEEE 485 / NFPA 72 §10.6.7.2
     -10: 0.60,  # Severe cold — only 60% of rated capacity
     -5: 0.65,
     0: 0.72,  # Battery loses ~28% at freezing point
@@ -104,7 +104,9 @@ TEMPERATURE_DERATING = {
     25: 1.00,  # Reference temperature (rated capacity)
     30: 1.00,  # Elevated temp accelerates VRLA aging — cap at 1.00
     35: 1.00,
-    40: 1.00,  # No capacity gain; accelerated aging
+    40: 1.00,  # Elevated temp — no capacity gain allowed for safety
+    45: 1.00,
+    50: 1.00,  # Extreme temp limit
 }
 
 # ============================================================================
@@ -918,6 +920,57 @@ def battery_result_for_gate(result: BatterySizingResult) -> dict[str, Any]:
     }
 
 
+class BatteryCalculator:
+    """High-level Battery Calculator per NFPA 72 §10.6.7 and IEEE 485."""
+
+    @staticmethod
+    def get_temperature_derating_factor(temperature_c: float) -> float:
+        return get_temperature_derating_factor(temperature_c)
+
+    @staticmethod
+    def get_temperature_correction_factor_kt(temperature_c: float) -> float:
+        """Get the IEEE 485 Kt multiplier (Kt >= 1.0 for T <= 25C)."""
+        fraction = get_temperature_derating_factor(temperature_c)
+        return 1.0 / fraction if fraction > 0 else 1.0
+
+    @staticmethod
+    def calculate_standby_ah(
+        standby_load_amps: float,
+        standby_hours: float = 24.0,
+        min_temperature_c: float = 20.0,
+    ) -> float:
+        """Calculate required standby Ampere-hours with temperature correction."""
+        if standby_load_amps < 0 or standby_hours < 0:
+            raise ValueError("Load and duration must be non-negative")
+        base_ah = standby_load_amps * standby_hours
+        temp_factor = get_temperature_derating_factor(min_temperature_c)
+        return base_ah / temp_factor if temp_factor > 0 else base_ah
+
+    @staticmethod
+    def size_battery(
+        standby_load_amps: float,
+        alarm_load_amps: float,
+        standby_hours: float = 24.0,
+        alarm_hours: float = 5 / 60,
+        battery: BatterySpec | None = None,
+        min_temperature_c: float = 20.0,
+        service_life_years: float = DEFAULT_SERVICE_LIFE_YEARS,
+        safety_margin_pct: float = 0.0,
+        nfpa_supervisory_period: str = "24h",
+    ) -> BatterySizingResult:
+        return size_battery(
+            standby_load_amps=standby_load_amps,
+            alarm_load_amps=alarm_load_amps,
+            standby_hours=standby_hours,
+            alarm_hours=alarm_hours,
+            battery=battery,
+            min_temperature_c=min_temperature_c,
+            service_life_years=service_life_years,
+            safety_margin_pct=safety_margin_pct,
+            nfpa_supervisory_period=nfpa_supervisory_period,
+        )
+
+
 # ============================================================================
 # Module exports
 # ============================================================================
@@ -929,6 +982,7 @@ __all__ = [
     "NOMINAL_CELL_VOLTAGE",
     "TEMPERATURE_DERATING",
     "BatteryAuditor",
+    "BatteryCalculator",
     "BatterySizingResult",
     "BatterySpec",
     "LoadProfile",
