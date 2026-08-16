@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.limiter import limiter
-from backend.rbac import Permission, Role
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 

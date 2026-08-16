@@ -493,21 +493,11 @@ async def get_settings_config(_role: SystemConfigRole) -> dict[str, str]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
-    "nvidia": [
-        "NVIDIA_API_KEY",
+    "api": [
+        "API_TIMEOUT",
+        "RETRY_ATTEMPTS",
+        "OPENAI_API_URL",
         "NVIDIA_BASE_URL",
-        "NVIDIA_MODEL",
-    ],
-    "langfuse": [
-        "LANGFUSE_SECRET_KEY",
-        "LANGFUSE_PUBLIC_KEY",
-        "LANGFUSE_HOST",
-    ],
-    "akamai": [
-        "AKAMAI_ENABLED",
-        "AKAMAI_BLOCKED_COUNTRIES",
-        "AKAMAI_ALLOWED_BOT_SCORE",
-        "AKAMAI_RATE_LIMIT_HEADER",
     ],
     "database": [
         "DATABASE_URL",
@@ -523,6 +513,34 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
         "NEO4J_URI",
         "NEO4J_USERNAME",
         "NEO4J_DATABASE",
+    ],
+    "integration": [
+        "SPECKLE_SERVER_URL",
+        "REVIT_BRIDGE_URL",
+        "AUTOCAD_BRIDGE_PORT",
+        "LANGFUSE_HOST",
+    ],
+    "security": [
+        "SESSION_COOKIE_SECURE",
+        "AKAMAI_ENABLED",
+        "AKAMAI_RATE_LIMIT_HEADER",
+        "CORS_ORIGINS",
+    ],
+    "nvidia": [
+        "NVIDIA_API_KEY",
+        "NVIDIA_BASE_URL",
+        "NVIDIA_MODEL",
+    ],
+    "langfuse": [
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_HOST",
+    ],
+    "akamai": [
+        "AKAMAI_ENABLED",
+        "AKAMAI_BLOCKED_COUNTRIES",
+        "AKAMAI_ALLOWED_BOT_SCORE",
+        "AKAMAI_RATE_LIMIT_HEADER",
     ],
     "pipeline": [
         "FIREAI_MAX_BATCH_SIZE",
@@ -577,10 +595,13 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
 }
 
 _CATEGORY_LABELS: dict[str, str] = {
+    "api": "API & Networking",
+    "database": "Databases & Storage",
+    "integration": "Integrations & Bridges",
+    "security": "Security & Headers",
     "nvidia": "NVIDIA AI Engine",
     "langfuse": "Langfuse Observability",
     "akamai": "Akamai Edge Security",
-    "database": "Databases & Storage",
     "pipeline": "Pipeline & Performance",
     "integrations": "Third-Party Integrations",
     "cors": "CORS & Allowed Origins",
@@ -591,6 +612,9 @@ _CATEGORY_LABELS: dict[str, str] = {
 }
 
 _ENV_SETTING_METADATA: dict[str, dict[str, Any]] = {
+    "API_TIMEOUT": {"label": "API Request Timeout (sec)", "type": "number", "default": "30"},
+    "RETRY_ATTEMPTS": {"label": "API Retry Attempts", "type": "number", "default": "3"},
+    "SESSION_COOKIE_SECURE": {"label": "Session Cookie Secure", "type": "boolean", "default": "true"},
     "NVIDIA_API_KEY": {"label": "NVIDIA API Key", "type": "secret", "default": ""},
     "NVIDIA_BASE_URL": {"label": "NVIDIA Base URL", "type": "url", "default": "https://integrate.api.nvidia.com/v1"},
     "NVIDIA_MODEL": {"label": "NVIDIA Model", "type": "string", "default": "nvidia/llama-3.1-nemotron-70b-instruct"},
@@ -696,7 +720,14 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
         settings_list = []
         cat_config: dict[str, Any] = {}
 
-        for var in var_names:
+        # Merge in any overridden variables for this category
+        all_vars = list(var_names)
+        if cat_key in _ENV_CONFIG_OVERRIDES:
+            for ov_var in _ENV_CONFIG_OVERRIDES[cat_key]:
+                if ov_var not in all_vars:
+                    all_vars.append(ov_var)
+
+        for var in all_vars:
             meta = _ENV_SETTING_METADATA.get(var, {})
             raw_env = os.environ.get(var)
             source = "env" if raw_env is not None else "default"
@@ -704,14 +735,17 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
 
             # Check in-memory overrides
             if cat_key in _ENV_CONFIG_OVERRIDES and var in _ENV_CONFIG_OVERRIDES[cat_key]:
-                val = str(_ENV_CONFIG_OVERRIDES[cat_key][var])
+                val = _ENV_CONFIG_OVERRIDES[cat_key][var]
                 source = "override"
 
             is_secret = meta.get("type") == "secret" or bool(
                 re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var) and var != "LANGFUSE_PUBLIC_KEY"
             )
 
-            resolved_display = _resolve_env_var_value(var, val if val != "" else None)
+            if isinstance(val, int | float | bool):
+                resolved_display = val
+            else:
+                resolved_display = _resolve_env_var_value(var, str(val) if val != "" else None)
             display_str = str(resolved_display) if resolved_display is not None else ""
 
             cat_config[var] = resolved_display
@@ -752,6 +786,12 @@ async def update_env_config(
     applied: dict[str, list[str]] = {}
 
     for category, overrides in body.overrides.items():
+        if not re.match(r"^[a-zA-Z0-9_-]+$", category):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid category name '{category}'. Only alphanumeric, hyphen, and underscore characters are permitted.",
+            )
+
         if isinstance(overrides, dict):
             # Nested: { "database": { "DATABASE_POOL_SIZE": "30" } }
             if category not in _ENV_CONFIG_OVERRIDES:

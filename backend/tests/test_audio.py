@@ -11,6 +11,7 @@ Validates:
 from __future__ import annotations
 
 import io
+
 import pytest
 from fastapi.testclient import TestClient
 
