@@ -95,6 +95,18 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(
 # =====================================================================
 
 
+__all__ = [
+    "ErrorSeverity",
+    "LLMUnavailableError",
+    "PhysicsGuardViolation",
+    "SafetyCriticalFailure",
+    "SafetyResult",
+    "SecurityError",
+    "SystemStatus",
+    "self_healing",
+]
+
+
 class SecurityError(Exception):
     """
     Raised when a security policy violation prevents continuation.

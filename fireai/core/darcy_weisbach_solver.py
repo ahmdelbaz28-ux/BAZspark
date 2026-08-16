@@ -98,8 +98,8 @@ logger = logging.getLogger(__name__)
 
 GRAVITY_M_S2: float = 9.80665  # Standard gravity (m/s²) per ISO 80000-3
 
-# Reynolds number flow regime boundaries (per Munson, Fundamentals of Fluid Mechanics)
-RE_LAMINAR_MAX: float = 2300.0
+# Reynolds number flow regime boundaries (per Munson / fluid dynamics standards)
+RE_LAMINAR_MAX: float = 2000.0
 RE_TURBULENT_MIN: float = 4000.0
 
 # Iteration convergence for Colebrook-White (Newton-Raphson)
@@ -303,7 +303,7 @@ def calculate_darcy_weisbach_friction_loss(
     warnings = []
 
     # ── Edge Case: Zero flow ──
-    if abs(flow_rate_kg_s) < 1e-12:  # S1244: float equality check replaced with tolerance
+    if flow_rate_kg_s <= 0.0 or abs(flow_rate_kg_s) < 1e-12:  # S1244: float equality check replaced with tolerance
         return DarcyWeisbachResult(
             head_loss_m=0.0,
             pressure_loss_pa=0.0,
@@ -318,10 +318,28 @@ def calculate_darcy_weisbach_friction_loss(
 
     # ── Compute flow velocity ──
     # v = ṁ / (ρ × A), where A = π × d² / 4
+    if pipe_diameter_m <= 0:
+        raise ValueError(f"pipe_diameter_m must be strictly positive: {pipe_diameter_m}")
+    if density <= 0:
+        raise ValueError(f"density must be strictly positive: {density}")
+
     cross_sectional_area = math.pi * (pipe_diameter_m**2) / 4.0
     if cross_sectional_area <= 0:
         raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
     flow_velocity = flow_rate_kg_s / (density * cross_sectional_area)
+
+    if flow_velocity <= 0.0 or abs(flow_velocity) < 1e-12:
+        return DarcyWeisbachResult(
+            head_loss_m=0.0,
+            pressure_loss_pa=0.0,
+            pressure_loss_psi=0.0,
+            friction_factor=0.0,
+            reynolds_number=0.0,
+            flow_velocity_m_s=0.0,
+            flow_regime="no_flow",
+            fluid_type=fluid_type.value,
+            warnings=["Flow velocity is zero — no friction loss calculated."],
+        )
 
     # The OLD code accepted any velocity, even supersonic (1000+ m/s).
     # For fire suppression systems, velocities > 100 m/s indicate either:
@@ -351,7 +369,7 @@ def calculate_darcy_weisbach_friction_loss(
         warnings.append(
             f"Reynolds number {reynolds:.0f} is in transitional regime "
             f"({RE_LAMINAR_MAX:.0f} ≤ Re ≤ {RE_TURBULENT_MIN:.0f}). "
-            f"Friction factor is less certain in this range."
+            f"Friction factor is calculated via continuous cubic transition in this range."
         )
 
     # ── Compute friction factor ──
@@ -363,6 +381,9 @@ def calculate_darcy_weisbach_friction_loss(
     # h_f = f × (L / d) × (v² / (2 × g))
     if pipe_diameter_m <= 0:
         raise ValueError(f"Pipe diameter must be positive: {pipe_diameter_m}")
+    if GRAVITY_M_S2 <= 0:
+        raise ValueError(f"Gravity constant must be positive: {GRAVITY_M_S2}")
+
     head_loss = (
         friction_factor
         * (pipe_length_m / pipe_diameter_m)
@@ -436,11 +457,13 @@ def _compute_friction_factor(
         # Turbulent flow: Use Colebrook-White equation (implicit)
         return _solve_colebrook_white(reynolds, roughness, diameter)
 
-    # Transitional: linear interpolation between laminar and turbulent
+    # Transitional (2000 <= Re <= 4000): continuous cubic Hermite interpolation
     f_laminar = 64.0 / reynolds if reynolds > 0 else 0.0
     f_turbulent, _ = _solve_colebrook_white(reynolds, roughness, diameter)
-    alpha = (reynolds - RE_LAMINAR_MAX) / (RE_TURBULENT_MIN - RE_LAMINAR_MAX)
-    return f_laminar * (1 - alpha) + f_turbulent * alpha, True
+    x = (reynolds - RE_LAMINAR_MAX) / (RE_TURBULENT_MIN - RE_LAMINAR_MAX)
+    # Cubic smoothstep: 3x^2 - 2x^3 ensures C1 continuity
+    alpha = 3.0 * (x**2) - 2.0 * (x**3)
+    return f_laminar * (1.0 - alpha) + f_turbulent * alpha, True
 
 
 def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm

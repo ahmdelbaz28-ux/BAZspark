@@ -103,11 +103,23 @@ def upgrade() -> None:
         if_not_exists=True,
     )
     op.create_index("idx_evt_order", "payment_events", ["order_id"], if_not_exists=True)
+    op.create_index("idx_evt_txn", "payment_events", ["transaction_id"], if_not_exists=True)
     op.create_index("idx_evt_idem", "payment_events", ["idempotency_key"], if_not_exists=True)
 
 
 def downgrade() -> None:
-    """Drop billing tables in reverse dependency order."""
+    """Drop billing tables and indexes in reverse dependency order."""
+    op.drop_index("idx_evt_idem", table_name="payment_events", if_exists=True)
+    op.drop_index("idx_evt_txn", table_name="payment_events", if_exists=True)
+    op.drop_index("idx_evt_order", table_name="payment_events", if_exists=True)
     op.drop_table("payment_events", if_exists=True)
+
+    op.drop_index("idx_txn_psp", table_name="payment_transactions", if_exists=True)
+    op.drop_index("idx_txn_status", table_name="payment_transactions", if_exists=True)
+    op.drop_index("idx_txn_order", table_name="payment_transactions", if_exists=True)
     op.drop_table("payment_transactions", if_exists=True)
+
+    op.drop_index("idx_orders_created", table_name="orders", if_exists=True)
+    op.drop_index("idx_orders_status", table_name="orders", if_exists=True)
+    op.drop_index("idx_orders_user", table_name="orders", if_exists=True)
     op.drop_table("orders", if_exists=True)

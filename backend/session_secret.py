@@ -224,7 +224,10 @@ class SessionSecretManager:
         For rotation: set FIREAI_SESSION_SECRET_NEW to the new secret.
         The old FIREAI_SESSION_SECRET becomes the "previous" secret.
         """
-        is_production = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
+        is_production = (
+            os.getenv("FIREAI_ENV", os.getenv("ENVIRONMENT", "production")).lower()
+            in ("production", "prod", "staging")
+        )
 
         # Load primary secret
         primary = _load_single_secret(
@@ -381,6 +384,45 @@ def get_secret_manager() -> SessionSecretManager:
         _secret_manager = SessionSecretManager()
         _secret_manager.load()
     return _secret_manager
+
+
+def get_session_secret() -> str:
+    """Get or validate the active session secret.
+
+    Enforces that in production and staging environments, SESSION_SECRET (or
+    FIREAI_SESSION_SECRET / FIREAI_SESSION_SECRET_FILE) must be set, non-empty,
+    and at least 32 characters long.
+
+    In local/development environments, if no secret is provided, a secure transient
+    key is generated using secrets.token_urlsafe(32) with a warning.
+    """
+    env = os.environ.get("FIREAI_ENV", os.environ.get("ENVIRONMENT", "production")).lower()
+    is_prod = env in ("production", "prod", "staging")
+
+    secret = (
+        os.environ.get("SESSION_SECRET")
+        or os.environ.get("FIREAI_SESSION_SECRET")
+        or os.environ.get("JWT_SECRET")
+    )
+    if not secret:
+        file_path = os.environ.get("FIREAI_SESSION_SECRET_FILE", "")
+        if file_path:
+            secret = _read_secret_from_file(file_path)
+
+    if is_prod:
+        if not secret or len(secret.strip()) < 32:
+            raise RuntimeError("FATAL: Insecure or missing SESSION_SECRET in production mode.")
+        validate_secret(secret, f"get_session_secret ({env})")
+        return secret
+
+    if secret:
+        return secret
+
+    logger.warning(
+        "SESSION_SECRET not set in development mode — generating transient key. "
+        "Sessions will be lost on restart."
+    )
+    return secrets.token_urlsafe(32)
 
 
 # CLI
