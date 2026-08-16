@@ -148,7 +148,11 @@ class BoundingBox3D:
 
     def contains_point(self, x: float, y: float, z: float) -> bool:
         """Check if a 3D point is inside this bounding box."""
-        return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y and self.min_z <= z <= self.max_z
+        return (
+            self.min_x <= x <= self.max_x
+            and self.min_y <= y <= self.max_y
+            and self.min_z <= z <= self.max_z
+        )
 
     def overlaps(self, other: BoundingBox3D) -> bool:
         """Check if this bounding box overlaps another (AABB intersection)."""
@@ -346,7 +350,11 @@ def _extract_fire_rating(  # NOSONAR — S3776: cognitive complexity is inherent
     return is_rated, rating_hours
 
 
-def _compute_world_placement(element) -> tuple[float, float, float] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _compute_world_placement(
+    element,
+) -> (
+    tuple[float, float, float] | None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Recursively resolve nested IfcLocalPlacement chain to world coordinates.
 
@@ -428,7 +436,11 @@ def _compute_world_placement(element) -> tuple[float, float, float] | None:  # N
         return None
 
 
-def _extract_extrusion_direction(item) -> tuple[float, float, float] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _extract_extrusion_direction(
+    item,
+) -> (
+    tuple[float, float, float] | None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract the extrusion direction from an IfcExtrudedAreaSolid.
 
@@ -485,7 +497,11 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
     return abs(nx) < tolerance and abs(ny) < tolerance
 
 
-def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _get_element_bbox(
+    element, settings=None
+) -> (
+    BoundingBox3D | None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract bounding box from an IFC element.
 
@@ -534,7 +550,11 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                         if pos and hasattr(pos, "Location"):
                             px = float(pos.Location.Coordinates[0])
                             py = float(pos.Location.Coordinates[1])
-                            pz = float(pos.Location.Coordinates[2]) if len(pos.Location.Coordinates) > 2 else 0.0
+                            pz = (
+                                float(pos.Location.Coordinates[2])
+                                if len(pos.Location.Coordinates) > 2
+                                else 0.0
+                            )
                         else:
                             px, py, pz = 0.0, 0.0, 0.0
 
@@ -782,7 +802,9 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
     # cables will route through an invisible wall.
     volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
     # without volume produce unrouteable targets for the cable router.
-    if volume == 0.0 and element_type in _BLOCKING_TYPES:  # NOSONAR — S1244: import retained for re-export / API surface
+    if (
+        volume == 0.0 and element_type in _BLOCKING_TYPES
+    ):  # NOSONAR — S1244: import retained for re-export / API surface
         log.critical(
             "V93 SAFETY: Zero-volume BoundingBox3D for BLOCKING element %s "
             "(type=%s, bbox=(%s,%s,%s)-(%s,%s,%s)). This element will be "
@@ -798,7 +820,9 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
             max_z,
         )
         return None
-    if volume == 0.0 and element_type == IfcElementType.SPACE:  # NOSONAR — S1244: import retained for re-export / API surface
+    if (
+        volume == 0.0 and element_type == IfcElementType.SPACE
+    ):  # NOSONAR — S1244: import retained for re-export / API surface
         log.warning(
             "V106: Zero-volume SPACE element %s (bbox=(%s,%s,%s)-(%s,%s,%s)). "
             "DROPPING — phantom spaces produce unrouteable cable targets.",
@@ -852,8 +876,9 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError("IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell")
-
+        raise ImportError(
+            "IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell"
+        )
 
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"IFC file not found: {file_path}")
@@ -885,7 +910,9 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError("IfcOpenShell is required for IFC parsing. Install with: pip install ifcopenshell")
+        raise ImportError(
+            "IfcOpenShell is required for IFC parsing. Install with: pip install ifcopenshell"
+        )
 
     try:
         import tempfile
@@ -898,13 +925,16 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
             model = ifs.open(temp_path)
             return _extract_building_model(model)
         finally:
-
             os.unlink(temp_path)
     except Exception as exc:
         raise ValueError(f"Cannot parse IFC content: {exc}") from exc
 
 
-def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _extract_building_model(
+    ifc_model,
+) -> (
+    BuildingModel
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract building model from an IfcOpenShell model object.
 
@@ -964,7 +994,9 @@ def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: c
                             SpaceInfo(
                                 space_id=bbox.element_id,
                                 space_name=getattr(element, "Name", "") or "",
-                                space_number=getattr(element, "LongName", "") or getattr(element, "Name", "") or "",
+                                space_number=getattr(element, "LongName", "")
+                                or getattr(element, "Name", "")
+                                or "",
                                 bounding_box=bbox,
                                 floor_elevation=bbox.min_z,
                                 ceiling_elevation=bbox.max_z,

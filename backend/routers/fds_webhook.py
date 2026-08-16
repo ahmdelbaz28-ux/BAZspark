@@ -44,25 +44,29 @@ SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
 
+
 class FDSSubmitRequest(BaseModel):
     """Request body for submitting an FDS simulation."""
-    fds_input:  str             = Field(..., min_length=10, max_length=10_000_000,
-                                        description="Raw FDS input file content")
-    project_id: str             = Field(default="",
-                                        description="BAZspark project ID")
-    metadata:   dict[str, Any]  = Field(default_factory=dict)
+
+    fds_input: str = Field(
+        ..., min_length=10, max_length=10_000_000, description="Raw FDS input file content"
+    )
+    project_id: str = Field(default="", description="BAZspark project ID")
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class FDSWebhookPayload(BaseModel):
     """Payload sent by Modal worker when a job completes."""
-    job_id:  str
-    status:  str
-    secret:  str
-    result:  dict[str, Any] | None = None
-    error:   str | None            = None
+
+    job_id: str
+    status: str
+    secret: str
+    result: dict[str, Any] | None = None
+    error: str | None = None
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.post("/submit", summary="Submit an FDS simulation job")
 async def submit_simulation(
@@ -103,7 +107,9 @@ async def get_job_status(
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
     if result.get("error"):
-        raise HTTPException(status_code=404, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
+        raise HTTPException(
+            status_code=404, detail=result["error"]
+        )  # NOSONAR — S8415: endpoint error handling is intentional
     return result
 
 
@@ -134,7 +140,9 @@ async def fds_result_webhook(
     result = handle_fds_webhook(payload.model_dump())
 
     if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
+        raise HTTPException(
+            status_code=400, detail=result["error"]
+        )  # NOSONAR — S8415: endpoint error handling is intentional
 
     # Broadcast completion event to subscribed WebSocket clients
     try:
@@ -150,12 +158,14 @@ async def fds_result_webhook(
             await ws_manager.send_to_project(project_id, notification)
             logger.info(
                 "FDS WebSocket notification sent for job (len=%d, project_len=%d)",
-                len(payload.job_id), len(project_id),
+                len(payload.job_id),
+                len(project_id),
             )
     except Exception as exc:
         logger.warning(
             "FDS WebSocket notification failed for job (len=%d): %s",
-            len(payload.job_id), type(exc).__name__,
+            len(payload.job_id),
+            type(exc).__name__,
         )
 
     return result

@@ -80,7 +80,9 @@ class ConnectionManager:
         self._seen_nonces: dict[str, set[str]] = {}
         self._last_seq: dict[str, int] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str, api_key: str | None = None) -> None:
+    async def connect(
+        self, websocket: WebSocket, client_id: str, api_key: str | None = None
+    ) -> None:
         _validate_ws_origin(websocket)
         verify_api_key_ws(api_key)
         await websocket.accept()
@@ -110,7 +112,9 @@ class ConnectionManager:
         if nonce:
             nonces = self._seen_nonces.setdefault(client_id, set())
             if nonce in nonces:
-                logger.warning("Replay attack detected for client %s with nonce %s", client_id, nonce)
+                logger.warning(
+                    "Replay attack detected for client %s with nonce %s", client_id, nonce
+                )
                 return False
             nonces.add(nonce)
             if len(nonces) > 5000:  # prune oldest
@@ -120,7 +124,12 @@ class ConnectionManager:
         if seq is not None and isinstance(seq, int):
             last = self._last_seq.get(client_id, 0)
             if seq <= last and last > 0:
-                logger.warning("Out-of-order/replayed sequence for client %s: seq=%d <= last=%d", client_id, seq, last)
+                logger.warning(
+                    "Out-of-order/replayed sequence for client %s: seq=%d <= last=%d",
+                    client_id,
+                    seq,
+                    last,
+                )
                 return False
             self._last_seq[client_id] = seq
 
@@ -139,7 +148,9 @@ class ConnectionManager:
 
     async def broadcast(self, message: str) -> int:
         sent_count = 0
-        for client_id, websocket in list(self._active_connections.items()):  # NOSONAR - python:S7504
+        for client_id, websocket in list(
+            self._active_connections.items()
+        ):  # NOSONAR - python:S7504
             try:
                 await websocket.send_text(message)
                 sent_count += 1

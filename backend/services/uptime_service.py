@@ -161,14 +161,8 @@ class UptimeService:
             return {"success": False, "error": "User API Key is not configured."}
 
         url = "https://api.uptimerobot.com/v2/getMonitors"
-        payload = {
-            "api_key": user_key,
-            "format": "json",
-            "logs": 1
-        }
-        headers = {
-            "content-type": "application/x-www-form-urlencoded"
-        }
+        payload = {"api_key": user_key, "format": "json", "logs": 1}
+        headers = {"content-type": "application/x-www-form-urlencoded"}
 
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -177,7 +171,10 @@ class UptimeService:
                     data = res.json()
                     if data.get("stat") == "ok":
                         return {"success": True, "monitors": data.get("monitors", [])}
-                    return {"success": False, "error": data.get("error", {}).get("message", "API Error")}
+                    return {
+                        "success": False,
+                        "error": data.get("error", {}).get("message", "API Error"),
+                    }
                 return {"success": False, "error": f"HTTP {res.status_code}"}
         except Exception as e:
             logger.exception("Failed to query UptimeRobot API: %s", e)

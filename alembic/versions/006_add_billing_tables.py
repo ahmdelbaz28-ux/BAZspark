@@ -48,9 +48,9 @@ def upgrade() -> None:
         ),
         if_not_exists=True,
     )
-    op.create_index("idx_orders_user",    "orders", ["user_principal"], if_not_exists=True)
-    op.create_index("idx_orders_status",  "orders", ["status"],          if_not_exists=True)
-    op.create_index("idx_orders_created", "orders", ["created_at"],      if_not_exists=True)
+    op.create_index("idx_orders_user", "orders", ["user_principal"], if_not_exists=True)
+    op.create_index("idx_orders_status", "orders", ["status"], if_not_exists=True)
+    op.create_index("idx_orders_created", "orders", ["created_at"], if_not_exists=True)
 
     # ── payment_transactions ────────────────────────────────────────────
     op.create_table(
@@ -78,9 +78,9 @@ def upgrade() -> None:
         sa.UniqueConstraint("idempotency_key", name="uq_payment_transactions_idempotency_key"),
         if_not_exists=True,
     )
-    op.create_index("idx_txn_order",  "payment_transactions", ["order_id"],   if_not_exists=True)
-    op.create_index("idx_txn_status", "payment_transactions", ["status"],     if_not_exists=True)
-    op.create_index("idx_txn_psp",    "payment_transactions", ["psp_txn_id"], if_not_exists=True)
+    op.create_index("idx_txn_order", "payment_transactions", ["order_id"], if_not_exists=True)
+    op.create_index("idx_txn_status", "payment_transactions", ["status"], if_not_exists=True)
+    op.create_index("idx_txn_psp", "payment_transactions", ["psp_txn_id"], if_not_exists=True)
 
     # ── payment_events ──────────────────────────────────────────────────
     op.create_table(
@@ -95,13 +95,15 @@ def upgrade() -> None:
         sa.Column("hmac_signature", sa.Text, nullable=True),
         sa.Column("processed_at", sa.Text, nullable=False),
         sa.Column("response_code", sa.Integer, nullable=False, server_default="200"),
-        sa.ForeignKeyConstraint(["transaction_id"], ["payment_transactions.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["transaction_id"], ["payment_transactions.id"], ondelete="SET NULL"
+        ),
         sa.ForeignKeyConstraint(["order_id"], ["orders.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("idempotency_key", name="uq_payment_events_idempotency_key"),
         if_not_exists=True,
     )
-    op.create_index("idx_evt_order", "payment_events", ["order_id"],        if_not_exists=True)
-    op.create_index("idx_evt_idem",  "payment_events", ["idempotency_key"], if_not_exists=True)
+    op.create_index("idx_evt_order", "payment_events", ["order_id"], if_not_exists=True)
+    op.create_index("idx_evt_idem", "payment_events", ["idempotency_key"], if_not_exists=True)
 
 
 def downgrade() -> None:

@@ -18,6 +18,7 @@ Gap 3: export_to_etap / import_from_etap have no SSRF defense contract.
 Gap 4: No TLS/SNI story — when HTTPS is added, certificate validation
        must use the ORIGINAL hostname, not the resolved IP.
 """
+
 from __future__ import annotations
 
 import socket
@@ -60,8 +61,7 @@ def test_resolve_to_safe_ip_does_not_mutate_global_default_timeout():
     socket.setdefaulttimeout(99.0)
     resolve_to_safe_ip("example.com", dns_timeout=2.5)
     assert socket.getdefaulttimeout() == 99.0, (
-        "resolve_to_safe_ip overwrote a caller's default timeout — "
-        "this is a race condition source."
+        "resolve_to_safe_ip overwrote a caller's default timeout — this is a race condition source."
     )
     socket.setdefaulttimeout(None)
 
@@ -80,7 +80,7 @@ def test_resolve_to_safe_ip_concurrent_calls_do_not_interfere(monkeypatch):
     # Mock getaddrinfo to return immediately (no real DNS lookup)
     monkeypatch.setattr(
         "backend.integrations._ssrf_guard.socket.getaddrinfo",
-        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
     )
 
     socket.setdefaulttimeout(None)
@@ -119,6 +119,7 @@ def test_resolve_to_safe_ip_enforces_dns_timeout_even_when_getaddrinfo_hangs(mon
     This test simulates a hanging getaddrinfo and asserts that
     resolve_to_safe_ip returns (or raises) within a reasonable bound.
     """
+
     def slow_getaddrinfo(host, *args, **kwargs):
         # Simulate a hung DNS resolver
         time.sleep(30)
@@ -155,11 +156,19 @@ def test_export_to_etap_must_use_resolve_to_safe_ip_when_real_network_added():
 
     from backend.integrations.etap_service import EtapService
 
-    src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(EtapService.import_from_etap)
+    src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(
+        EtapService.import_from_etap
+    )
 
     # If the source contains an HTTP client call, it must also contain
     # resolve_to_safe_ip.
-    http_indicators = ["requests.", "httpx.", "urllib.request", "aiohttp.", "socket.create_connection"]
+    http_indicators = [
+        "requests.",
+        "httpx.",
+        "urllib.request",
+        "aiohttp.",
+        "socket.create_connection",
+    ]
     uses_http = any(ind in src for ind in http_indicators)
     uses_resolver = "resolve_to_safe_ip" in src
 
@@ -179,7 +188,9 @@ def test_export_to_etap_has_explicit_ssrf_contract_comment():
 
     from backend.integrations.etap_service import EtapService
 
-    src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(EtapService.import_from_etap)
+    src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(
+        EtapService.import_from_etap
+    )
     assert "resolve_to_safe_ip" in src or "SSRF" in src or "ssrf" in src.lower(), (
         "export_to_etap / import_from_etap must reference resolve_to_safe_ip "
         "or SSRF in comments — future developers need to know to call the guard."
@@ -209,9 +220,7 @@ def test_resolve_to_safe_ip_returns_original_hostname_for_tls_sni():
     from backend.integrations._ssrf_guard import resolve_to_safe_ip_with_hostname
 
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo") as mock:
-        mock.return_value = [
-            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))
-        ]
+        mock.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
         result = resolve_to_safe_ip_with_hostname("example.com")
         # Must return a tuple of (safe_ip, original_hostname)
         assert isinstance(result, tuple), "Must return (safe_ip, hostname) tuple"
@@ -225,4 +234,5 @@ def test_resolve_to_safe_ip_returns_original_hostname_for_tls_sni():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

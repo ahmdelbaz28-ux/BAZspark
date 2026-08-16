@@ -96,7 +96,9 @@ class TestBuildingReport:
         assert report.non_compliant_floors == []
         assert report.unsafe_floors == []
         assert report.building_warnings == []
-        assert report.analysis_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            report.analysis_time_s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert report.project_profile is None
         assert report.zone_reports == {}
         assert report.cache_stats is None

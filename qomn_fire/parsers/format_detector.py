@@ -57,7 +57,11 @@ class FormatDetector:
     OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
     @staticmethod
-    def detect_format_and_version(filepath: str) -> Result[tuple[str, str], FormatError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def detect_format_and_version(
+        filepath: str,
+    ) -> Result[
+        tuple[str, str], FormatError
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Reads first bytes of a file to detect format and version.
         Returns Result containing (format, version) or FormatError.
@@ -75,17 +79,21 @@ class FormatDetector:
                 parser_name="FormatDetector",
             )
         except FileNotFoundError as e:
-            return Result(error=FormatError(
-                message=str(e),
-                code_ref="OS File IO Exception",
-                remedy="Ensure path correctness before parsing."
-            ))
+            return Result(
+                error=FormatError(
+                    message=str(e),
+                    code_ref="OS File IO Exception",
+                    remedy="Ensure path correctness before parsing.",
+                )
+            )
         except UnsafePathError as e:
-            return Result(error=FormatError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension."
-            ))
+            return Result(
+                error=FormatError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension.",
+                )
+            )
 
         try:
             validate_file_size(
@@ -94,11 +102,13 @@ class FormatDetector:
                 parser_name="FormatDetector",
             )
         except UnsafePathError as e:
-            return Result(error=FormatError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="File exceeds size limit."
-            ))
+            return Result(
+                error=FormatError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="File exceeds size limit.",
+                )
+            )
 
         # Use the RESOLVED (canonical) path for all subsequent operations (TOCTOU fix)
         filepath = str(safe_path)
@@ -107,18 +117,22 @@ class FormatDetector:
             with open(filepath, "rb") as f:
                 header_bytes = f.read(1024)
         except Exception as e:
-            return Result(error=FormatError(
-                message=f"Unreadable file stream: {e!s}",
-                code_ref="OS Security Exception",
-                remedy="Check file permission levels."
-            ))
+            return Result(
+                error=FormatError(
+                    message=f"Unreadable file stream: {e!s}",
+                    code_ref="OS Security Exception",
+                    remedy="Check file permission levels.",
+                )
+            )
 
         if len(header_bytes) == 0:
-            return Result(error=FormatError(
-                message="File contains zero bytes — empty or corrupted.",
-                code_ref="Format Specifications",
-                remedy="Provide a non-empty, valid BIM file."
-            ))
+            return Result(
+                error=FormatError(
+                    message="File contains zero bytes — empty or corrupted.",
+                    code_ref="Format Specifications",
+                    remedy="Provide a non-empty, valid BIM file.",
+                )
+            )
 
         # Decode header as text for text-based format detection (IFC, DXF)
         header_text = header_bytes.decode("utf-8", errors="ignore")
@@ -150,7 +164,9 @@ class FormatDetector:
             # r"\\$ACADVER\\s*\\n\\s*9\\s*\\n\\s*(AC\\d+)" which would NEVER match
             # because \\s matches literal backslash-s, not whitespace.
             # Fixed: proper single-escaped regex.
-            ver_match = re.search(r"\$ACADVER\s*\n\s*9\s*\n\s*(AC\d+)", header_text)  # NOSONAR — S8786: assert kept for test clarity
+            ver_match = re.search(
+                r"\$ACADVER\s*\n\s*9\s*\n\s*(AC\d+)", header_text
+            )  # NOSONAR — S8786: assert kept for test clarity
             version = "Generic DXF"
             if ver_match:
                 version = f"DXF {ver_match.group(1)}"
@@ -160,8 +176,10 @@ class FormatDetector:
         if "0\nSECTION" in header_text or b"0\nSECTION" in header_bytes:
             return Result(value=("DXF", "DXF (minimal)"))
 
-        return Result(error=FormatError(
-            message="Unrecognized file header signature.",
-            code_ref="Format Specifications",
-            remedy="Provide a valid, unencrypted IFC, DXF, DWG, or RVT file."
-        ))
+        return Result(
+            error=FormatError(
+                message="Unrecognized file header signature.",
+                code_ref="Format Specifications",
+                remedy="Provide a valid, unencrypted IFC, DXF, DWG, or RVT file.",
+            )
+        )

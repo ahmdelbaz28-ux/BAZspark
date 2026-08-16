@@ -3,6 +3,7 @@
 BAZSPARK End-to-End Production Validation
 Runs comprehensive checks to verify production readiness.
 """
+
 import asyncio
 import os
 import sys
@@ -11,13 +12,13 @@ import httpx
 import psycopg2
 
 # Load .env file if present
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
     with open(env_path) as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, value = line.split('=', 1)
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
                 os.environ.setdefault(key.strip(), value.strip())
 
 # ─── Constants ────────────────────────────────────────────────────────
@@ -31,29 +32,36 @@ DOCUMENTATION_LABEL = "Documentation"
 ENV_VARS_LABEL = "Environment Variables"
 EXTERNAL_CONNECTIVITY_LABEL = "External Connectivity"
 
+
 class Colors:
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    RESET = '\033[0m'
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    RESET = "\033[0m"
+
 
 def print_header(text: str):
-    print(f"\n{Colors.BLUE}{'='*70}{Colors.RESET}")
+    print(f"\n{Colors.BLUE}{'=' * 70}{Colors.RESET}")
     print(f"{Colors.BLUE}{text.center(70)}{Colors.RESET}")
-    print(f"{Colors.BLUE}{'='*70}{Colors.RESET}\n")
+    print(f"{Colors.BLUE}{'=' * 70}{Colors.RESET}\n")
+
 
 def print_success(text: str):
     print(f"{Colors.GREEN}[OK] {text}{Colors.RESET}")
 
+
 def print_error(text: str):
     print(f"{Colors.RED}[FAIL] {text}{Colors.RESET}")
+
 
 def print_warning(text: str):
     print(f"{Colors.YELLOW}[WARN] {text}{Colors.RESET}")
 
+
 def print_info(text: str):
     print(f"{Colors.BLUE}[INFO] {text}{Colors.RESET}")
+
 
 class ProductionValidator:
     def __init__(self):
@@ -78,13 +86,11 @@ class ProductionValidator:
                     return self.check(
                         HEALTH_ENDPOINT_LABEL,
                         True,
-                        f"Status: {response.status_code}, Response: {data}"
+                        f"Status: {response.status_code}, Response: {data}",
                     )
                 else:
                     return self.check(
-                        HEALTH_ENDPOINT_LABEL,
-                        False,
-                        f"Expected 200, got {response.status_code}"
+                        HEALTH_ENDPOINT_LABEL, False, f"Expected 200, got {response.status_code}"
                     )
         except Exception as e:
             error_msg = str(e)
@@ -92,7 +98,7 @@ class ProductionValidator:
                 return self.check(
                     HEALTH_ENDPOINT_LABEL,
                     True,
-                    "WARN: Server not running (expected in validation-only mode)"
+                    "WARN: Server not running (expected in validation-only mode)",
                 )
             return self.check(HEALTH_ENDPOINT_LABEL, False, f"Error: {error_msg}")
 
@@ -109,7 +115,7 @@ class ProductionValidator:
             return self.check(
                 DATABASE_CONNECTION_LABEL,
                 True,
-                "WARN: Current Supabase URL unreachable, but NEON_DATABASE_URL fallback configured"
+                "WARN: Current Supabase URL unreachable, but NEON_DATABASE_URL fallback configured",
             )
 
         # Try NEON fallback if Supabase fails
@@ -118,7 +124,7 @@ class ProductionValidator:
             return self.check(
                 DATABASE_CONNECTION_LABEL,
                 True,
-                "WARN: NEON_DATABASE_URL placeholder present, needs real credentials"
+                "WARN: NEON_DATABASE_URL placeholder present, needs real credentials",
             )
 
         try:
@@ -135,7 +141,7 @@ class ProductionValidator:
                 return self.check(
                     DATABASE_CONNECTION_LABEL,
                     True,
-                    "WARN: DNS failure - verify host or use NEON fallback"
+                    "WARN: DNS failure - verify host or use NEON fallback",
                 )
             return self.check(DATABASE_CONNECTION_LABEL, False, f"Error: {error_msg}")
 
@@ -160,16 +166,10 @@ class ProductionValidator:
                 missing.append(var)
 
         if missing:
-            return self.check(
-                ENV_VARS_LABEL,
-                False,
-                f"Missing: {', '.join(missing)}"
-            )
+            return self.check(ENV_VARS_LABEL, False, f"Missing: {', '.join(missing)}")
         else:
             return self.check(
-                ENV_VARS_LABEL,
-                True,
-                f"All {len(required_vars)} required variables set"
+                ENV_VARS_LABEL, True, f"All {len(required_vars)} required variables set"
             )
 
     def test_cors_configuration(self) -> bool:
@@ -184,40 +184,22 @@ class ProductionValidator:
 
         # Check for wildcards
         if "*" in cors_origins:
-            return self.check(
-                CORS_CONFIG_LABEL,
-                False,
-                "Wildcard (*) not allowed in production"
-            )
+            return self.check(CORS_CONFIG_LABEL, False, "Wildcard (*) not allowed in production")
 
-        return self.check(
-            CORS_CONFIG_LABEL,
-            True,
-            f"Configured with {len(origins)} origin(s)"
-        )
+        return self.check(CORS_CONFIG_LABEL, True, f"Configured with {len(origins)} origin(s)")
 
     def test_session_secret_strength(self) -> bool:
         """Test session secret strength"""
         secret = os.getenv("FIREAI_SESSION_SECRET", "")
         if len(secret) < 32:
             return self.check(
-                SECRET_STRENGTH_LABEL,
-                False,
-                f"Too short: {len(secret)} chars (min 32)"
+                SECRET_STRENGTH_LABEL, False, f"Too short: {len(secret)} chars (min 32)"
             )
         elif len(secret) < 64:
             print_warning(f"Session secret is {len(secret)} chars (recommended 64+)")
-            return self.check(
-                SECRET_STRENGTH_LABEL,
-                True,
-                f"Acceptable: {len(secret)} chars"
-            )
+            return self.check(SECRET_STRENGTH_LABEL, True, f"Acceptable: {len(secret)} chars")
         else:
-            return self.check(
-                SECRET_STRENGTH_LABEL,
-                True,
-                f"Strong: {len(secret)} chars"
-            )
+            return self.check(SECRET_STRENGTH_LABEL, True, f"Strong: {len(secret)} chars")
 
     def test_gitignore(self) -> bool:
         """Test .gitignore properly excludes .env"""
@@ -233,28 +215,22 @@ class ProductionValidator:
 
             failed = [msg for check, msg in checks if not check]
             if failed:
-                return self.check(
-                    GITIGNORE_LABEL,
-                    False,
-                    f"Missing patterns: {', '.join(failed)}"
-                )
+                return self.check(GITIGNORE_LABEL, False, f"Missing patterns: {', '.join(failed)}")
             else:
-                return self.check(
-                    GITIGNORE_LABEL,
-                    True,
-                    "All critical patterns present"
-                )
+                return self.check(GITIGNORE_LABEL, True, "All critical patterns present")
         except Exception as e:
             return self.check(GITIGNORE_LABEL, False, f"Error: {str(e)}")
 
-    def test_no_hardcoded_secrets(self) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def test_no_hardcoded_secrets(
+        self,
+    ) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Test for hardcoded secrets in Python files"""
         import glob
         import re
 
         secret_patterns = [
             r'(api_key|secret|token|password|private_key)\s*[:=]\s*["\']([a-zA-Z0-9_\-]{20,})["\']',
-            r'(ghp_|github_pat_|sk-|pk-|vcp_|dtn_|csb_|cfut_|hf_|sbp_|sb_secret_)',
+            r"(ghp_|github_pat_|sk-|pk-|vcp_|dtn_|csb_|cfut_|hf_|sbp_|sb_secret_)",
         ]
 
         # Known false-positive files (test fixtures / sample data / public test keys / utility scripts)
@@ -294,14 +270,10 @@ class ProductionValidator:
             return self.check(
                 HARDCODED_SECRETS_LABEL,
                 False,
-                f"Potential secrets found in: {', '.join(violations[:3])}"
+                f"Potential secrets found in: {', '.join(violations[:3])}",
             )
         else:
-            return self.check(
-                HARDCODED_SECRETS_LABEL,
-                True,
-                "No secrets detected in source code"
-            )
+            return self.check(HARDCODED_SECRETS_LABEL, True, "No secrets detected in source code")
 
     async def test_external_connectivity(self) -> bool:
         """Test connectivity to external services"""
@@ -327,11 +299,7 @@ class ProductionValidator:
         all_ok = all("OK" in r for r in results)
         message = ", ".join(results)
 
-        return self.check(
-            EXTERNAL_CONNECTIVITY_LABEL,
-            all_ok,
-            message
-        )
+        return self.check(EXTERNAL_CONNECTIVITY_LABEL, all_ok, message)
 
     def test_documentation_exists(self) -> bool:
         """Test that required documentation exists"""
@@ -345,16 +313,10 @@ class ProductionValidator:
         missing = [doc for doc in required_docs if not os.path.exists(doc)]
 
         if missing:
-            return self.check(
-                DOCUMENTATION_LABEL,
-                False,
-                f"Missing: {', '.join(missing)}"
-            )
+            return self.check(DOCUMENTATION_LABEL, False, f"Missing: {', '.join(missing)}")
         else:
             return self.check(
-                DOCUMENTATION_LABEL,
-                True,
-                f"All {len(required_docs)} required docs present"
+                DOCUMENTATION_LABEL, True, f"All {len(required_docs)} required docs present"
             )
 
     async def run_all_tests(self):
@@ -423,6 +385,7 @@ class ProductionValidator:
 
         print()
 
+
 async def main():
     validator = ProductionValidator()
     await validator.run_all_tests()
@@ -430,6 +393,7 @@ async def main():
     # Exit with error code if any tests failed
     failed = sum(1 for _, success, _ in validator.results if not success)
     sys.exit(0 if failed == 0 else 1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

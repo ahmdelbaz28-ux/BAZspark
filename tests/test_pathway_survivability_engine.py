@@ -291,7 +291,9 @@ class TestCableRequirements:
         assert len(riser) == 1
         assert riser[0].cable_type == CableType.CI
         assert riser[0].in_rated_enclosure is True
-        assert riser[0].enclosure_rating_hr == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            riser[0].enclosure_rating_hr == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_plenum_always_fplp_or_ci(self, engine):
         """Plenum always requires FPLP minimum; Level 2+ requires CI."""

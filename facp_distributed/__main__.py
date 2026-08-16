@@ -1,4 +1,5 @@
 """Main Entry Point for Distributed FACP System"""
+
 import argparse
 import logging
 import sys
@@ -24,11 +25,8 @@ def setup_logging():
     """set up logging for the distributed system"""
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('facp_distributed.log'),
-            logging.StreamHandler(sys.stdout)
-        ]
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.FileHandler("facp_distributed.log"), logging.StreamHandler(sys.stdout)],
     )
 
 
@@ -48,7 +46,7 @@ def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str,
         raise RuntimeError(
             "create_distributed_system: 'auth_secret' is required in config. "
             "Generate a strong secret with: "
-            "python3 -c \"import secrets; print(secrets.token_urlsafe(48))\" "
+            'python3 -c "import secrets; print(secrets.token_urlsafe(48))" '
             "and set it via config['auth_secret'] or the FACP_AUTH_SECRET env var. "
             "Refusing to start with no auth secret (V289 life-safety fix)."
         )
@@ -72,26 +70,25 @@ def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str,
         task_scheduler=task_scheduler,
         load_balancer=load_balancer,
         permission_checker=permission_checker,
-        agent_registry=agent_registry
+        agent_registry=agent_registry,
     )
 
     # set up L3 engine controller
     engine_controller = DistributedEngineController(
         pool_size=config.get("engine_pool_size", 3),
         max_pool_size=config.get("engine_max_pool_size", 10),
-        node_location=config.get("node_location", "primary")
+        node_location=config.get("node_location", "primary"),
     )
 
     # set up L1 gateway with transport
     transport_config = {
         "host": config.get("l2_host", "0.0.0.0"),
         "gateway_port": config.get("l2_port", 8001),
-        "interface_port": config.get("l1_port", 8000)
+        "interface_port": config.get("l1_port", 8000),
     }
 
     client_interface = create_client_interface_with_gateway(
-        validation_firewall=validation_firewall,
-        transport_config=transport_config
+        validation_firewall=validation_firewall, transport_config=transport_config
     )
 
     # Connect components together
@@ -116,7 +113,7 @@ def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str,
         "agent_registry": agent_registry,
         "orchestrator": orchestrator,
         "engine_controller": engine_controller,
-        "client_interface": client_interface
+        "client_interface": client_interface,
     }
 
 
@@ -134,7 +131,9 @@ def run_distributed_system(config: dict[str, Any] | None = None):
 
     # Start the client interface (L1)
     system_components["client_interface"].start()
-    print(f"✅ L1 Client Interface started on {system_components['client_interface'].host}:{system_components['client_interface'].port}")
+    print(
+        f"✅ L1 Client Interface started on {system_components['client_interface'].host}:{system_components['client_interface'].port}"
+    )
 
     # Print system status
     print("\n📋 System Status:")
@@ -145,7 +144,9 @@ def run_distributed_system(config: dict[str, Any] | None = None):
     print("\n🌐 Available Endpoints:")
     print(f"   Health Check: http://localhost:{system_components['client_interface'].port}/health")
     print(f"   Metrics: http://localhost:{system_components['client_interface'].port}/metrics")
-    print(f"   FACP Request: http://localhost:{system_components['client_interface'].port}/facp/request")
+    print(
+        f"   FACP Request: http://localhost:{system_components['client_interface'].port}/facp/request"
+    )
 
     print("\n🔧 System Components Ready:")
     print("   Authentication Provider: ✅ Configured")
@@ -221,24 +222,17 @@ def run_test_scenario():
                 "length": 50,
                 "resistance": 0.02,
                 "supply_voltage": 230,
-                "system_type": "single_phase"
+                "system_type": "single_phase",
             },
-            "context": {
-                "application": "test_client",
-                "version": "1.0.0"
-            }
+            "context": {"application": "test_client", "version": "1.0.0"},
         },
         "security": {
             "auth_token": "test-token-123",
             "permissions": ["engine_access", "execute"],
             "risk_level": "low",
-            "idempotency_key": "test-key-123"
+            "idempotency_key": "test-key-123",
         },
-        "constraints": {
-            "timeout_ms": 8000,
-            "max_memory_mb": 512,
-            "max_recursion_depth": 5
-        }
+        "constraints": {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
     }
 
     print(f"📤 Sending test request: {test_request['method']}")
@@ -254,20 +248,26 @@ def run_test_scenario():
     print("   L1: Receiving request...")
 
     # Simulate L1 processing
-    success, _l1_response = system_components["client_interface"].l1_gateway.handle_client_request(test_request)
+    success, _l1_response = system_components["client_interface"].l1_gateway.handle_client_request(
+        test_request
+    )
     print(f"   L1: Request {'accepted' if success else 'rejected'} by validation firewall")
 
     if success:
         print("   L2: Orchestrator routing request...")
         # Simulate L2 processing
-        orch_success, _orch_response = system_components["orchestrator"].process_request(test_request)
+        orch_success, _orch_response = system_components["orchestrator"].process_request(
+            test_request
+        )
         print(f"   L2: Request {'processed' if orch_success else 'failed'} by orchestrator")
 
         if orch_success:
             print("   L3: Engine executing calculation...")
             # Simulate L3 processing
             engine_result = system_components["engine_controller"].process_request(test_request)
-            print(f"   L3: Calculation {'completed' if engine_result.get('status') == 'success' else 'failed'}")
+            print(
+                f"   L3: Calculation {'completed' if engine_result.get('status') == 'success' else 'failed'}"
+            )
 
     print("\n✅ Test scenario completed!")
 
@@ -282,22 +282,22 @@ def run_test_scenario():
 
 def main():
     """Main entry point for the distributed FACP system"""
-    parser = argparse.ArgumentParser(description='Distributed FACP System')
-    parser.add_argument('--mode', choices=['run', 'test'], default='run',
-                       help='Run mode: run the system or test it')
-    parser.add_argument('--config', type=str, help='Configuration file path')
-    parser.add_argument('--port', type=int, default=8000, help='Port for L1 interface')
-    parser.add_argument('--l2-port', dest='l2_port', type=int, default=8001, help='Port for L2 orchestrator')
+    parser = argparse.ArgumentParser(description="Distributed FACP System")
+    parser.add_argument(
+        "--mode", choices=["run", "test"], default="run", help="Run mode: run the system or test it"
+    )
+    parser.add_argument("--config", type=str, help="Configuration file path")
+    parser.add_argument("--port", type=int, default=8000, help="Port for L1 interface")
+    parser.add_argument(
+        "--l2-port", dest="l2_port", type=int, default=8001, help="Port for L2 orchestrator"
+    )
 
     args = parser.parse_args()
 
-    if args.mode == 'test':
+    if args.mode == "test":
         run_test_scenario()
     else:
-        config = {
-            "l1_port": args.port,
-            "l2_port": args.l2_port
-        }
+        config = {"l1_port": args.port, "l2_port": args.l2_port}
         run_distributed_system(config)
 
 

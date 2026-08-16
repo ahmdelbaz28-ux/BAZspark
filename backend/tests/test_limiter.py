@@ -3,6 +3,7 @@ test_limiter.py — Tests for backend/limiter.py.
 
 Verifies the rate limiter module configuration.
 """
+
 from __future__ import annotations
 
 from backend.limiter import get_remote_address, limiter

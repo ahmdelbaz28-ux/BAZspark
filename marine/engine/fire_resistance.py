@@ -27,8 +27,9 @@ from marine.solas.chapter_ii_2 import required_fire_class_between
 # BUGFIX v2: previously generate_division_specs returned "intumescent_board"
 # for B-15, while select_insulation_material returned "intumescent_paint".
 # Both code paths now share this single function.
-def _pick_insulation_material(fire_class: FireClass,
-                              ambient_humidity_pct: float = 75.0) -> str | None:
+def _pick_insulation_material(
+    fire_class: FireClass, ambient_humidity_pct: float = 75.0
+) -> str | None:
     """
     Pick insulation material for a fire class (single source of truth).
 
@@ -78,9 +79,7 @@ def generate_division_specs(  # NOSONAR — S3776: cognitive complexity is inher
                 continue
 
             try:
-                required = required_fire_class_between(
-                    zone.space_category, adj.space_category
-                )
+                required = required_fire_class_between(zone.space_category, adj.space_category)
             except FireClassAssignmentError:
                 # BUGFIX v2: previously `except Exception` mapped EVERY error
                 # (including KeyboardInterrupt, MemoryError) to A-60 — both
@@ -103,17 +102,19 @@ def generate_division_specs(  # NOSONAR — S3776: cognitive complexity is inher
                 insulation = _pick_insulation_material(required)
                 thickness = 0.0
 
-            specs.append(FireResistanceSpec(
-                division_id=f"DIV-{zone.zone_id}-{adj.zone_id}",
-                from_zone=zone.zone_id,
-                to_zone=adj.zone_id,
-                required_class=required,
-                material=material,
-                insulation_material=insulation,
-                insulation_thickness_mm=thickness,
-                penetration_protected=True,
-                standard_reference="SOLAS II-2/9.2 Table 9.1",
-            ))
+            specs.append(
+                FireResistanceSpec(
+                    division_id=f"DIV-{zone.zone_id}-{adj.zone_id}",
+                    from_zone=zone.zone_id,
+                    to_zone=adj.zone_id,
+                    required_class=required,
+                    material=material,
+                    insulation_material=insulation,
+                    insulation_thickness_mm=thickness,
+                    penetration_protected=True,
+                    standard_reference="SOLAS II-2/9.2 Table 9.1",
+                )
+            )
 
     return specs
 

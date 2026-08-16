@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -34,6 +35,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -56,8 +58,11 @@ def project_with_alarm_devices(client):
             "name": "Smoke Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0,
-            "voltage": 24.0, "current": 0.05, "load": 0.05,
+            "x": 10.0,
+            "y": 20.0,
+            "voltage": 24.0,
+            "current": 0.05,
+            "load": 0.05,
         },
     )
 
@@ -68,8 +73,11 @@ def project_with_alarm_devices(client):
             "name": "Horn Strobe HS-01",
             "type": "FA_SOUND_STROBE",
             "category": "FIRE_ALARM",
-            "x": 30.0, "y": 40.0,
-            "voltage": 24.0, "current": 0.5, "load": 0.5,
+            "x": 30.0,
+            "y": 40.0,
+            "voltage": 24.0,
+            "current": 0.5,
+            "load": 0.5,
         },
     )
 
@@ -92,8 +100,11 @@ def project_with_connected_devices(client):
             "name": "Panel P-01",
             "type": "FA_PANEL",
             "category": "FIRE_ALARM",
-            "x": 0.0, "y": 0.0,
-            "voltage": 24.0, "current": 2.0, "load": 2.0,
+            "x": 0.0,
+            "y": 0.0,
+            "voltage": 24.0,
+            "current": 2.0,
+            "load": 2.0,
         },
     )
     dev1 = dev1_resp.json().get("data", dev1_resp.json())
@@ -104,8 +115,11 @@ def project_with_connected_devices(client):
             "name": "Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 50.0, "y": 50.0,
-            "voltage": 22.8, "current": 0.1, "load": 0.1,
+            "x": 50.0,
+            "y": 50.0,
+            "voltage": 22.8,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     dev2 = dev2_resp.json().get("data", dev2_resp.json())
@@ -135,7 +149,9 @@ def project_with_connected_devices(client):
 class TestReportGeneration:
     """Tests for report generation with various types."""
 
-    def test_generate_nfpa72_battery_with_alarm_devices(self, client, project_with_alarm_devices) -> None:
+    def test_generate_nfpa72_battery_with_alarm_devices(
+        self, client, project_with_alarm_devices
+    ) -> None:
         """NFPA 72 battery report must classify alarm vs standby devices correctly."""
         pid = project_with_alarm_devices
         resp = client.post(
@@ -153,7 +169,9 @@ class TestReportGeneration:
             if content:
                 assert "standbyLoadA" in content or "requiredAh" in content
 
-    def test_generate_voltage_drop_with_connections(self, client, project_with_connected_devices) -> None:
+    def test_generate_voltage_drop_with_connections(
+        self, client, project_with_connected_devices
+    ) -> None:
         """Voltage drop report must include circuit data from connections."""
         pid = project_with_connected_devices
         resp = client.post(
@@ -346,7 +364,9 @@ class TestV213VoltageDropRealCalculations:
     not just list circuits as before.
     """
 
-    def test_voltage_drop_report_has_computed_count_field(self, client, project_with_connected_devices) -> None:
+    def test_voltage_drop_report_has_computed_count_field(
+        self, client, project_with_connected_devices
+    ) -> None:
         """The report must include ``computedCircuits`` and
         ``skippedCircuits`` summary fields (V213).
         """
@@ -365,7 +385,9 @@ class TestV213VoltageDropRealCalculations:
             assert "skippedCircuits" in content
             assert "nonCompliantCircuits" in content
 
-    def test_voltage_drop_circuit_has_real_calculation_fields(self, client, project_with_connected_devices) -> None:
+    def test_voltage_drop_circuit_has_real_calculation_fields(
+        self, client, project_with_connected_devices
+    ) -> None:
         """Each computed circuit must include ``voltage_drop_v``,
         ``drop_pct``, ``is_compliant``, ``nec_section``, ``formula``,
         and ``computation_hash`` from the real qomn_kernel.
@@ -385,9 +407,7 @@ class TestV213VoltageDropRealCalculations:
             # The fixture connects Panel P-01 → Detector SD-01 with 1.5mm² cable, 30m length
             # 1.5mm² maps to AWG 16 → compute_voltage_drop should succeed
             computed = [c for c in circuits if c.get("calculation") == "computed"]
-            assert len(computed) > 0, (
-                f"Expected at least one computed circuit, got: {circuits}"
-            )
+            assert len(computed) > 0, f"Expected at least one computed circuit, got: {circuits}"
             c = computed[0]
             assert "voltage_drop_v" in c
             assert "drop_pct" in c
@@ -397,7 +417,9 @@ class TestV213VoltageDropRealCalculations:
             assert "computation_hash" in c
             assert "NEC" in c["nec_section"]
 
-    def test_voltage_drop_formula_uses_real_ohm_per_m(self, client, project_with_connected_devices) -> None:
+    def test_voltage_drop_formula_uses_real_ohm_per_m(
+        self, client, project_with_connected_devices
+    ) -> None:
         """The formula string must include the real resistance value
         from NEC Table 8 (not a placeholder).
         """
@@ -433,16 +455,40 @@ class TestV213VoltageDropRealCalculations:
         proj_data = proj_resp.json().get("data", proj_resp.json())
         pid = proj_data.get("id") or proj_data.get("project_id")
 
-        dev1 = client.post(
-            f"/api/projects/{pid}/devices",
-            json={"name": "Dev A", "type": "FA_PANEL", "category": "FIRE_ALARM",
-                  "x": 0.0, "y": 0.0, "voltage": 24.0, "current": 1.0, "load": 1.0},
-        ).json().get("data", {})
-        dev2 = client.post(
-            f"/api/projects/{pid}/devices",
-            json={"name": "Dev B", "type": "FA_SMOKE", "category": "FIRE_ALARM",
-                  "x": 10.0, "y": 10.0, "voltage": 24.0, "current": 0.1, "load": 0.1},
-        ).json().get("data", {})
+        dev1 = (
+            client.post(
+                f"/api/projects/{pid}/devices",
+                json={
+                    "name": "Dev A",
+                    "type": "FA_PANEL",
+                    "category": "FIRE_ALARM",
+                    "x": 0.0,
+                    "y": 0.0,
+                    "voltage": 24.0,
+                    "current": 1.0,
+                    "load": 1.0,
+                },
+            )
+            .json()
+            .get("data", {})
+        )
+        dev2 = (
+            client.post(
+                f"/api/projects/{pid}/devices",
+                json={
+                    "name": "Dev B",
+                    "type": "FA_SMOKE",
+                    "category": "FIRE_ALARM",
+                    "x": 10.0,
+                    "y": 10.0,
+                    "voltage": 24.0,
+                    "current": 0.1,
+                    "load": 0.1,
+                },
+            )
+            .json()
+            .get("data", {})
+        )
 
         client.post(
             f"/api/projects/{pid}/connections",
@@ -474,6 +520,7 @@ class TestV213VoltageDropRealCalculations:
     def test_cable_size_to_awg_direct_awg(self):
         """_cable_size_to_awg must parse direct AWG strings."""
         from backend.routers.reports import _cable_size_to_awg
+
         assert _cable_size_to_awg("12") == "12"
         assert _cable_size_to_awg("12 AWG") == "12"
         assert _cable_size_to_awg("#12") == "12"
@@ -483,6 +530,7 @@ class TestV213VoltageDropRealCalculations:
     def test_cable_size_to_awg_metric_mm2(self):
         """_cable_size_to_awg must map metric mm² to nearest AWG."""
         from backend.routers.reports import _cable_size_to_awg
+
         assert _cable_size_to_awg("1.5mm²") == "16"
         assert _cable_size_to_awg("2.5mm²") == "14"
         assert _cable_size_to_awg("4.0mm²") == "12"
@@ -492,6 +540,7 @@ class TestV213VoltageDropRealCalculations:
     def test_cable_size_to_awg_unmappable_returns_none(self):
         """_cable_size_to_awg must return None for unmappable strings."""
         from backend.routers.reports import _cable_size_to_awg
+
         assert _cable_size_to_awg("exotic_unknown") is None
         assert _cable_size_to_awg("") is None
         assert _cable_size_to_awg(None) is None  # NOSONAR: python:S5655
@@ -594,7 +643,9 @@ class TestV213AhjSubmittalEndpoint:
         detail = resp.json().get("detail", "")
         assert "devices" in detail.lower() or "rooms" in detail.lower()
 
-    def test_ahj_submittal_document_has_six_sections(self, client, project_with_alarm_devices) -> None:
+    def test_ahj_submittal_document_has_six_sections(
+        self, client, project_with_alarm_devices
+    ) -> None:
         """The generated document must contain all 6 mandatory sections:
         header, design criteria, room summary, detailed results, consensus
         summary, certification.
@@ -611,7 +662,9 @@ class TestV213AhjSubmittalEndpoint:
         # The certification section includes "Engineer" or "Certification"
         assert "Certification" in body or "Engineer" in body or "PE" in body
 
-    def test_ahj_submittal_content_disposition_is_markdown(self, client, project_with_alarm_devices) -> None:
+    def test_ahj_submittal_content_disposition_is_markdown(
+        self, client, project_with_alarm_devices
+    ) -> None:
         """The Content-Disposition header must specify a .md filename."""
         pid = project_with_alarm_devices
         resp = client.post(

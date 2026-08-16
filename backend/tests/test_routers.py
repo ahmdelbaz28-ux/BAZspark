@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -41,6 +42,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -69,8 +71,12 @@ def project_with_devices(client, sample_project):
             "name": "Smoke Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0, "z": 2.4,
-            "voltage": 24.0, "current": 0.1, "load": 0.1,
+            "x": 10.0,
+            "y": 20.0,
+            "z": 2.4,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     dev1 = dev1_resp.json().get("data", dev1_resp.json())
@@ -82,8 +88,12 @@ def project_with_devices(client, sample_project):
             "name": "Horn Strobe HS-01",
             "type": "FA_SOUND_STROBE",
             "category": "FIRE_ALARM",
-            "x": 30.0, "y": 40.0, "z": 2.4,
-            "voltage": 24.0, "current": 0.5, "load": 0.5,
+            "x": 30.0,
+            "y": 40.0,
+            "z": 2.4,
+            "voltage": 24.0,
+            "current": 0.5,
+            "load": 0.5,
         },
     )
     dev2 = dev2_resp.json().get("data", dev2_resp.json())
@@ -94,6 +104,7 @@ def project_with_devices(client, sample_project):
 # ══════════════════════════════════════════════════════════════════════════════
 # HEALTH ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestHealthRouter:
     """Tests for backend/routers/health.py — 3 endpoints."""
@@ -161,6 +172,7 @@ class TestHealthRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # PROJECTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestProjectsRouter:
     """Tests for backend/routers/projects.py — 5 endpoints."""
@@ -268,6 +280,7 @@ class TestProjectsRouter:
 # DEVICES ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDevicesRouter:
     """Tests for backend/routers/devices.py — 5 endpoints + load conversion."""
 
@@ -280,7 +293,8 @@ class TestDevicesRouter:
                 "name": "Smoke Detector",
                 "type": "smoke_detector",
                 "category": "detection",
-                "x": 10.0, "y": 20.0,
+                "x": 10.0,
+                "y": 20.0,
             },
         )
         assert response.status_code == 201
@@ -289,7 +303,13 @@ class TestDevicesRouter:
         """Creating a device in a nonexistent project must return 404."""
         response = client.post(
             "/api/projects/nonexistent-id/devices",
-            json={"name": "Ghost", "type": "smoke_detector", "category": "detection", "x": 0.0, "y": 0.0},
+            json={
+                "name": "Ghost",
+                "type": "smoke_detector",
+                "category": "detection",
+                "x": 0.0,
+                "y": 0.0,
+            },
         )
         assert response.status_code == 404
 
@@ -299,8 +319,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "mA Device", "type": "smoke_detector", "category": "detection",
-                "x": 1.0, "y": 2.0, "voltage": 24.0, "load": 500.0, "load_unit": "mA",
+                "name": "mA Device",
+                "type": "smoke_detector",
+                "category": "detection",
+                "x": 1.0,
+                "y": 2.0,
+                "voltage": 24.0,
+                "load": 500.0,
+                "load_unit": "mA",
             },
         )
         assert response.status_code == 201
@@ -314,8 +340,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Watts Device", "type": "horn", "category": "notification",
-                "x": 5.0, "y": 5.0, "voltage": 24.0, "load": 12.0, "load_unit": "W",
+                "name": "Watts Device",
+                "type": "horn",
+                "category": "notification",
+                "x": 5.0,
+                "y": 5.0,
+                "voltage": 24.0,
+                "load": 12.0,
+                "load_unit": "W",
             },
         )
         assert response.status_code == 201
@@ -329,8 +361,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Bad Watts", "type": "horn", "category": "notification",
-                "x": 0.0, "y": 0.0, "voltage": 0.0, "load": 12.0, "load_unit": "W",
+                "name": "Bad Watts",
+                "type": "horn",
+                "category": "notification",
+                "x": 0.0,
+                "y": 0.0,
+                "voltage": 0.0,
+                "load": 12.0,
+                "load_unit": "W",
             },
         )
         assert response.status_code == 400
@@ -447,6 +485,7 @@ class TestDevicesRouter:
 # CONNECTIONS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConnectionsRouter:
     """Tests for backend/routers/connections.py — 3 endpoints."""
 
@@ -530,6 +569,7 @@ class TestConnectionsRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # REPORTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestReportsRouter:
     """Tests for backend/routers/reports.py — 4 endpoints."""
@@ -649,6 +689,7 @@ class TestReportsRouter:
 # EXPORTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestExportsRouter:
     """Tests for backend/routers/exports.py — 3 endpoints."""
 
@@ -698,9 +739,7 @@ class TestV213ExportsExcel:
         assert response.status_code == 200
         body = response.content
         # XLSX files are ZIP archives — they must start with b"PK\x03\x04"
-        assert body[:4] == b"PK\x03\x04", (
-            f"Expected ZIP magic bytes for XLSX, got: {body[:16]!r}"
-        )
+        assert body[:4] == b"PK\x03\x04", f"Expected ZIP magic bytes for XLSX, got: {body[:16]!r}"
         # The literal mock string MUST NOT appear anywhere
         assert b"MOCK EXCEL EXPORT DATA" not in body
         assert b"MOCK EXPORT DATA" not in body
@@ -710,6 +749,7 @@ class TestV213ExportsExcel:
         expected sheets: Project, Devices, Connections, Bill of Quantities.
         """
         from openpyxl import load_workbook
+
         response = client.post("/api/exports", json={"exportType": "excel"})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
@@ -719,11 +759,14 @@ class TestV213ExportsExcel:
         assert "Connections" in sheet_names
         assert "Bill of Quantities" in sheet_names
 
-    def test_excel_export_devices_sheet_contains_real_data(self, client, project_with_devices) -> None:
+    def test_excel_export_devices_sheet_contains_real_data(
+        self, client, project_with_devices
+    ) -> None:
         """The Devices sheet must contain the actual devices created by the
         project_with_devices fixture (SD-01 + HS-01), not placeholder rows.
         """
         from openpyxl import load_workbook
+
         response = client.post("/api/exports", json={"exportType": "excel"})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
@@ -742,11 +785,14 @@ class TestV213ExportsExcel:
         assert any("SD-01" in n for n in names), f"SD-01 not found in {names}"
         assert any("HS-01" in n for n in names), f"HS-01 not found in {names}"
 
-    def test_excel_export_boq_sheet_has_deterministic_counts(self, client, project_with_devices) -> None:
+    def test_excel_export_boq_sheet_has_deterministic_counts(
+        self, client, project_with_devices
+    ) -> None:
         """The Bill of Quantities sheet must contain real aggregated counts,
         not random or hardcoded numbers.
         """
         from openpyxl import load_workbook
+
         response = client.post("/api/exports", json={"exportType": "excel"})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
@@ -758,9 +804,7 @@ class TestV213ExportsExcel:
         # Total device count should equal 2 (SD-01 + HS-01)
         device_rows = [r for r in rows if r[0] != "Cable"]
         total_devices = sum(int(r[2] or 0) for r in device_rows)
-        assert total_devices == 2, (
-            f"Expected 2 devices in BOQ (SD-01 + HS-01), got {total_devices}"
-        )
+        assert total_devices == 2, f"Expected 2 devices in BOQ (SD-01 + HS-01), got {total_devices}"
 
     def test_excel_export_content_type_is_xlsx(self, client, project_with_devices) -> None:
         """Content-Type must be the official XLSX MIME type."""
@@ -769,7 +813,9 @@ class TestV213ExportsExcel:
         ct = response.headers.get("content-type", "")
         assert "spreadsheetml" in ct, f"Expected XLSX content-type, got: {ct}"
 
-    def test_non_excel_export_returns_json_manifest_not_mock(self, client, project_with_devices) -> None:
+    def test_non_excel_export_returns_json_manifest_not_mock(
+        self, client, project_with_devices
+    ) -> None:
         """For non-Excel exportType, the endpoint must return a real JSON
         manifest (with project info + available endpoints), NOT the previous
         ``b"MOCK EXPORT DATA"`` bytes.
@@ -782,6 +828,7 @@ class TestV213ExportsExcel:
         assert b"MOCK EXCEL EXPORT DATA" not in body
         # Must be valid JSON
         import json
+
         data = json.loads(body.decode("utf-8"))
         assert "project" in data
         assert "availableEndpoints" in data
@@ -805,6 +852,7 @@ class TestV213ExportsExcel:
 # ══════════════════════════════════════════════════════════════════════════════
 # SYNC ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSyncRouter:
     """Tests for backend/routers/sync.py — 2 REST endpoints."""
@@ -835,6 +883,7 @@ class TestSyncRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ELEMENTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestElementsRouter:
     """Tests for backend/routers/elements.py — 5 endpoints."""
@@ -911,6 +960,7 @@ class TestElementsRouter:
 # CONNECTIONS V2 ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConnectionsV2Router:
     """Tests for backend/routers/connections_v2.py — 3 endpoints."""
 
@@ -921,7 +971,9 @@ class TestConnectionsV2Router:
 
     def test_list_connections_v2_with_filters(self, client) -> None:
         """GET /api/connections with filter params must work."""
-        response = client.get("/api/connections?relationship_type=cable_connection&page=1&page_size=10")
+        response = client.get(
+            "/api/connections?relationship_type=cable_connection&page=1&page_size=10"
+        )
         assert response.status_code == 200
 
     def test_create_connection_v2(self, client) -> None:
@@ -1111,13 +1163,8 @@ class TestConnectionsV2RegressionV188:
         )
         items = list_resp.json().get("data", {}).get("items", [])
         # Items may use camelCase or snake_case — accept both
-        ids = [
-            item.get("connection_id") or item.get("connectionId")
-            for item in items
-        ]
-        assert connection_id in ids, (
-            f"Created connection {connection_id} not in list: {ids}"
-        )
+        ids = [item.get("connection_id") or item.get("connectionId") for item in items]
+        assert connection_id in ids, f"Created connection {connection_id} not in list: {ids}"
 
     def test_v2_delete_connection_returns_200_not_500(self, client) -> None:
         """
@@ -1147,21 +1194,15 @@ class TestConnectionsV2RegressionV188:
         # Delete — MUST be 200, not 500
         delete_resp = client.delete(f"/api/connections/{connection_id}")
         assert delete_resp.status_code == 200, (
-            f"Expected 200 OK on delete, got {delete_resp.status_code}: "
-            f"{delete_resp.text}"
+            f"Expected 200 OK on delete, got {delete_resp.status_code}: {delete_resp.text}"
         )
 
         # Verify it's actually gone
         list_resp = client.get(f"/api/connections?element_id={from_id}")
         assert list_resp.status_code == 200
         items = list_resp.json().get("data", {}).get("items", [])
-        ids = [
-            item.get("connection_id") or item.get("connectionId")
-            for item in items
-        ]
-        assert connection_id not in ids, (
-            f"Deleted connection {connection_id} still in list: {ids}"
-        )
+        ids = [item.get("connection_id") or item.get("connectionId") for item in items]
+        assert connection_id not in ids, f"Deleted connection {connection_id} still in list: {ids}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1193,14 +1234,16 @@ class TestV191MetadataPreservation:
             "/api/elements",
             json={"properties": {"element_type": "wall", "name": "V191-Meta-A"}},
         )
-        from_id = elem_a.json().get("data", {}).get("element_id") or \
-                  elem_a.json().get("data", {}).get("elementId")
+        from_id = elem_a.json().get("data", {}).get("element_id") or elem_a.json().get(
+            "data", {}
+        ).get("elementId")
         elem_b = client.post(
             "/api/elements",
             json={"properties": {"element_type": "wall", "name": "V191-Meta-B"}},
         )
-        to_id = elem_b.json().get("data", {}).get("element_id") or \
-                elem_b.json().get("data", {}).get("elementId")
+        to_id = elem_b.json().get("data", {}).get("element_id") or elem_b.json().get(
+            "data", {}
+        ).get("elementId")
 
         # Create a connection with camelCase metadata keys
         camel_metadata = {
@@ -1256,6 +1299,7 @@ class TestV191MetadataPreservation:
 # CONFLICTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConflictsRouter:
     """Tests for backend/routers/conflicts.py — 3 endpoints."""
 
@@ -1298,6 +1342,7 @@ class TestConflictsRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ENVIRONMENT ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestEnvironmentRouter:
     """Tests for backend/routers/environment.py — 10 endpoints."""
@@ -1361,6 +1406,7 @@ class TestEnvironmentRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # FACP ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestFACPRouter:
     """Tests for backend/routers/facp.py — 5 endpoints."""
@@ -1444,6 +1490,7 @@ class TestFACPRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # QOMN ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestQOMNRouter:
     """Tests for backend/routers/qomn.py — 8+ endpoints."""
@@ -1531,6 +1578,7 @@ class TestQOMNRouter:
 # DWG ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDWGRouter:
     """Tests for backend/routers/dwg.py — 1 endpoint."""
 
@@ -1575,6 +1623,7 @@ class TestDWGRouter:
 # WORKFLOW ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestWorkflowRouter:
     """Tests for backend/routers/workflow.py — 5 endpoints."""
 
@@ -1586,27 +1635,51 @@ class TestWorkflowRouter:
     def test_start_workflow_invalid_path(self, client) -> None:
         """POST /api/workflow/start with invalid path must fail."""
         response = client.post("/api/workflow/start?file_path=/etc/passwd")
-        assert response.status_code in (400, 401, 403, 404, 405, 422, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            400,
+            401,
+            403,
+            404,
+            405,
+            422,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_get_workflow_status_nonexistent(self, client) -> None:
         """GET /api/workflow/{id}/status for nonexistent must return 404."""
         response = client.get("/api/workflow/nonexistent-id/status")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_approve_workflow_nonexistent(self, client) -> None:
         """POST /api/workflow/{id}/approve for nonexistent must return 404."""
         response = client.post("/api/workflow/nonexistent-id/approve")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_reject_workflow_nonexistent(self, client) -> None:
         """POST /api/workflow/{id}/reject for nonexistent must return 404."""
         response = client.post("/api/workflow/nonexistent-id/reject")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MEMORY ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMemoryRouter:
     """Tests for backend/routers/memory.py — 6 endpoints."""
@@ -1654,6 +1727,7 @@ class TestMemoryRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ROOT & MISC ENDPOINT TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRootAndMiscEndpoints:
     """Tests for root endpoint and other misc routes."""

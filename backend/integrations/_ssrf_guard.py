@@ -489,9 +489,7 @@ def validate_url(
         raise SSRFError(f"Missing URL scheme in '{url}'")
 
     if scheme not in [s.lower() for s in allowed_schemes]:
-        raise SSRFError(
-            f"Scheme '{scheme}' is not permitted. Allowed schemes: {allowed_schemes}"
-        )
+        raise SSRFError(f"Scheme '{scheme}' is not permitted. Allowed schemes: {allowed_schemes}")
 
     hostname = parsed.hostname
     if not hostname:

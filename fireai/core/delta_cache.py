@@ -70,7 +70,9 @@ def _content_hash(obj: Any) -> str:
     Consistent: same logical content → same hash (sorted keys).
     """
     try:
-        payload = json.dumps(obj, sort_keys=True, default=str, separators=(",", ":"), ensure_ascii=False)
+        payload = json.dumps(
+            obj, sort_keys=True, default=str, separators=(",", ":"), ensure_ascii=False
+        )
     except (TypeError, ValueError):
         payload = str(obj)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -599,9 +601,13 @@ class DeltaCache:
                 # subsequent lookups are fast).
                 if cached is None and room_id in self._loaded_results:
                     cached = self._loaded_results.pop(room_id)
-                    self.put_room(room_dict, cached if isinstance(cached, dict) else {"result": cached})
+                    self.put_room(
+                        room_dict, cached if isinstance(cached, dict) else {"result": cached}
+                    )
                 if cached is not None:
-                    cached_with_meta = dict(cached) if isinstance(cached, dict) else {"result": cached}
+                    cached_with_meta = (
+                        dict(cached) if isinstance(cached, dict) else {"result": cached}
+                    )
                     cached_with_meta["_cache_hit"] = True
                     cached_with_meta["_geometry_hash"] = self._compute_geometry_hash(room_dict)
                     results.append(cached_with_meta)
@@ -838,7 +844,9 @@ class DeltaCache:
             self._loaded_results = {}
 
             for row in rows:
-                (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = row
+                (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = (
+                    row
+                )
                 try:
                     result = json.loads(result_json)
                 except json.JSONDecodeError:

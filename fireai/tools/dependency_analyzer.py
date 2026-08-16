@@ -133,13 +133,17 @@ class ImportCollector(ast.NodeVisitor):
         self.generic_visit(node)
         self._scope_stack.pop()
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    def visit_AsyncFunctionDef(
+        self, node: ast.AsyncFunctionDef
+    ) -> None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         self.defined_names.add(node.name)
         self._scope_stack.append(set())
         self.generic_visit(node)
         self._scope_stack.pop()
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    def visit_ClassDef(
+        self, node: ast.ClassDef
+    ) -> None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         self.defined_names.add(node.name)
         self._scope_stack.append(set())
         self.generic_visit(node)
@@ -158,7 +162,9 @@ class ImportCollector(ast.NodeVisitor):
     def _is_internal(self, module_name: str) -> bool:
         """Check if a module is part of the FireAI project."""
         return (
-            module_name.startswith("fireai")  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+            module_name.startswith(
+                "fireai"
+            )  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             or module_name.startswith("core")
             or module_name.startswith("spatial_engine")
             or module_name.startswith("bridges")
@@ -357,7 +363,9 @@ def _find_unused_public_modules(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def _print_report(report: DependencyReport, root: Path) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _print_report(
+    report: DependencyReport, root: Path
+) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Print the dependency analysis report and return exit code."""
     sep = "=" * 78
     print(sep)
@@ -406,7 +414,9 @@ def _print_report(report: DependencyReport, root: Path) -> int:  # NOSONAR — S
 
     # Unused public modules
     if report.unused_public_modules:
-        print(f"\n[WARN] Modules not imported by any other module ({len(report.unused_public_modules)}):")
+        print(
+            f"\n[WARN] Modules not imported by any other module ({len(report.unused_public_modules)}):"
+        )
         for mod in report.unused_public_modules[:20]:
             print(f"  {mod}")
         if len(report.unused_public_modules) > 20:
@@ -417,7 +427,11 @@ def _print_report(report: DependencyReport, root: Path) -> int:  # NOSONAR — S
     # Summary
     print(f"\n{sep}")
     has_critical = any(c.severity == "CRITICAL" for c in report.circular_imports)
-    status = "FAIL" if has_critical else ("WARN" if report.circular_imports or report.dead_code_issues else "PASS")  # NOSONAR — S3358: nested ternary acceptable in this localized context
+    status = (
+        "FAIL"
+        if has_critical
+        else ("WARN" if report.circular_imports or report.dead_code_issues else "PASS")
+    )  # NOSONAR — S3358: nested ternary acceptable in this localized context
     print(f"Status: {status}")
     print(sep)
     return 1 if has_critical else 0

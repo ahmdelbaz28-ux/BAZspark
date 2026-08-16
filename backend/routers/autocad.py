@@ -86,7 +86,9 @@ def _validate_autocad_file_path(filepath: str) -> str:
             parser_name="autocad_router",
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="File not found.") from exc  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="File not found."
+        ) from exc  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     except UnsafePathError as exc:
         logger.warning("Path traversal blocked in autocad router: %s", exc)
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -94,6 +96,7 @@ def _validate_autocad_file_path(filepath: str) -> str:
             detail="File path is outside allowed directories. Contact administrator.",
         ) from exc
     return str(safe_path)
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
@@ -103,11 +106,12 @@ router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
 # both see _autocad_service as None and create separate instances.
 # Delegates to the unified CADGateway to ensure singleton consistency.
 
+
 def get_autocad_service() -> AutoCADService:
     """Get or initialize AutoCAD service singleton (thread-safe)."""
     from backend.services.cad_gateway import CADGateway
-    return CADGateway().get_service("autocad")
 
+    return CADGateway().get_service("autocad")
 
 
 # ── Safe error helper (FIX #20) ────────────────────────────────────────────
@@ -121,6 +125,7 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 
 # ── Pydantic request/response models ───────────────────────────────────────
+
 
 class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
@@ -250,7 +255,12 @@ class OperationResponse(BaseModel):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.post("/connect", response_model=ConnectResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+
+@router.post(
+    "/connect",
+    response_model=ConnectResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def connect_to_autocad(request: Request, body: ConnectRequest) -> ConnectResponse:
     """Connect to AutoCAD application.
@@ -292,7 +302,11 @@ async def connect_to_autocad(request: Request, body: ConnectRequest) -> ConnectR
         raise _safe_error(503, "Failed to connect to AutoCAD", e)
 
 
-@router.post("/disconnect", response_model=ConnectResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/disconnect",
+    response_model=ConnectResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def disconnect_from_autocad(request: Request) -> ConnectResponse:
     """Disconnect from AutoCAD application."""
@@ -302,7 +316,9 @@ async def disconnect_from_autocad(request: Request) -> ConnectResponse:
 
         return ConnectResponse(
             success=success,
-            message="Successfully disconnected from AutoCAD" if success else "Failed to disconnect from AutoCAD",
+            message="Successfully disconnected from AutoCAD"
+            if success
+            else "Failed to disconnect from AutoCAD",
             connected=service.connected,
             simulation_mode=service.simulation_mode,
         )
@@ -310,7 +326,11 @@ async def disconnect_from_autocad(request: Request) -> ConnectResponse:
         raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
 
 
-@router.get("/documents", response_model=DocumentsResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
+@router.get(
+    "/documents",
+    response_model=DocumentsResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)  # NOSONAR - python:S8409
 async def list_autocad_documents() -> DocumentsResponse:
     """list open documents in AutoCAD."""
     try:
@@ -321,23 +341,30 @@ async def list_autocad_documents() -> DocumentsResponse:
                 return DocumentsResponse(
                     success=True,
                     documents=[
-                        {"name": "Drawing1.dwg", "path": "C:\\MockPath\\Drawing1.dwg", "active": True}
-                    ]
+                        {
+                            "name": "Drawing1.dwg",
+                            "path": "C:\\MockPath\\Drawing1.dwg",
+                            "active": True,
+                        }
+                    ],
                 )
-            raise HTTPException(status_code=503, detail="AutoCAD service not connected")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=503, detail="AutoCAD service not connected"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
         doc_info = service.get_document_info()
-        return DocumentsResponse(
-            success=True,
-            documents=[doc_info] if doc_info else []
-        )
+        return DocumentsResponse(success=True, documents=[doc_info] if doc_info else [])
     except HTTPException:
         raise
     except Exception as e:
         raise _safe_error(500, "Error getting documents", e)
 
 
-@router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
+@router.post(
+    "/read_dwg",
+    response_model=ReadFileResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def read_dwg_file(request: Request, body: ReadDwgRequest) -> ReadFileResponse:
     """Read entities from a DWG file."""
@@ -351,8 +378,7 @@ async def read_dwg_file(request: Request, body: ReadDwgRequest) -> ReadFileRespo
 
         if not result.get("success", False):
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=400,
-                detail=result.get("error", "Unknown error reading file")
+                status_code=400, detail=result.get("error", "Unknown error reading file")
             )
 
         return ReadFileResponse(
@@ -369,7 +395,11 @@ async def read_dwg_file(request: Request, body: ReadDwgRequest) -> ReadFileRespo
         raise _safe_error(500, "Error reading DWG file", e)
 
 
-@router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/write_dwg",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationResponse:
     """Write entities to a DWG file."""
@@ -379,7 +409,7 @@ async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationRe
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                detail="AutoCAD not connected. Call /connect first.",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             )
 
         safe_path = _validate_autocad_file_path(body.filepath)
@@ -388,21 +418,21 @@ async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationRe
 
         if not success:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=500,
-                detail="Failed to write DWG file"
+                status_code=500, detail="Failed to write DWG file"
             )
 
-        return OperationResponse(
-            success=True,
-            message="Successfully wrote DWG file"
-        )
+        return OperationResponse(success=True, message="Successfully wrote DWG file")
     except HTTPException:
         raise
     except Exception as e:
         raise _safe_error(500, "Error writing DWG file", e)
 
 
-@router.post("/draw_line", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/draw_line",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_line(request: Request, body: DrawLineRequest) -> OperationResponse:
     """Draw a line in AutoCAD."""
@@ -412,23 +442,23 @@ async def draw_line(request: Request, body: DrawLineRequest) -> OperationRespons
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         line_handle = service.draw_line(
             start_point=body.start_point,
             end_point=body.end_point,
             layer=body.layer,
-            color=body.color
+            color=body.color,
         )
 
         if not line_handle:
-            raise HTTPException(status_code=500, detail="Failed to draw line")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=500, detail="Failed to draw line"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
         return OperationResponse(
-            success=True,
-            message="Line drawn successfully",
-            handle=line_handle
+            success=True, message="Line drawn successfully", handle=line_handle
         )
     except HTTPException:
         raise
@@ -436,7 +466,11 @@ async def draw_line(request: Request, body: DrawLineRequest) -> OperationRespons
         raise _safe_error(500, "Error drawing line", e)
 
 
-@router.post("/draw_polyline", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/draw_polyline",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_polyline(request: Request, body: DrawPolylineRequest) -> OperationResponse:
     """Draw a polyline in AutoCAD."""
@@ -446,23 +480,20 @@ async def draw_polyline(request: Request, body: DrawPolylineRequest) -> Operatio
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         polyline_handle = service.draw_polyline(
-            vertices=body.vertices,
-            layer=body.layer,
-            color=body.color,
-            closed=body.closed
+            vertices=body.vertices, layer=body.layer, color=body.color, closed=body.closed
         )
 
         if not polyline_handle:
-            raise HTTPException(status_code=500, detail="Failed to draw polyline")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=500, detail="Failed to draw polyline"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
         return OperationResponse(
-            success=True,
-            message="Polyline drawn successfully",
-            handle=polyline_handle
+            success=True, message="Polyline drawn successfully", handle=polyline_handle
         )
     except HTTPException:
         raise
@@ -470,7 +501,11 @@ async def draw_polyline(request: Request, body: DrawPolylineRequest) -> Operatio
         raise _safe_error(500, "Error drawing polyline", e)
 
 
-@router.post("/draw_circle", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/draw_circle",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationResponse:
     """Draw a circle in AutoCAD."""
@@ -480,23 +515,20 @@ async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationRes
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         circle_handle = service.draw_circle(
-            center=body.center,
-            radius=body.radius,
-            layer=body.layer,
-            color=body.color
+            center=body.center, radius=body.radius, layer=body.layer, color=body.color
         )
 
         if not circle_handle:
-            raise HTTPException(status_code=500, detail="Failed to draw circle")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=500, detail="Failed to draw circle"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
         return OperationResponse(
-            success=True,
-            message="Circle drawn successfully",
-            handle=circle_handle
+            success=True, message="Circle drawn successfully", handle=circle_handle
         )
     except HTTPException:
         raise
@@ -504,7 +536,11 @@ async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationRes
         raise _safe_error(500, "Error drawing circle", e)
 
 
-@router.post("/draw_text", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/draw_text",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_text(request: Request, body: DrawTextRequest) -> OperationResponse:
     """Draw text in AutoCAD."""
@@ -514,7 +550,7 @@ async def draw_text(request: Request, body: DrawTextRequest) -> OperationRespons
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         text_handle = service.draw_text(
@@ -522,16 +558,16 @@ async def draw_text(request: Request, body: DrawTextRequest) -> OperationRespons
             insertion_point=body.insertion_point,
             height=body.height,
             layer=body.layer,
-            color=body.color
+            color=body.color,
         )
 
         if not text_handle:
-            raise HTTPException(status_code=500, detail="Failed to draw text")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=500, detail="Failed to draw text"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
         return OperationResponse(
-            success=True,
-            message="Text drawn successfully",
-            handle=text_handle
+            success=True, message="Text drawn successfully", handle=text_handle
         )
     except HTTPException:
         raise
@@ -539,7 +575,11 @@ async def draw_text(request: Request, body: DrawTextRequest) -> OperationRespons
         raise _safe_error(500, "Error drawing text", e)
 
 
-@router.get("/status", response_model=StatusResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
+@router.get(
+    "/status",
+    response_model=StatusResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)  # NOSONAR - python:S8409
 async def get_autocad_status() -> StatusResponse:
     """Get the current AutoCAD connection status."""
     try:
@@ -552,13 +592,17 @@ async def get_autocad_status() -> StatusResponse:
         return StatusResponse(
             connected=service.connected,
             message="AutoCAD service status" if service.connected else "AutoCAD not connected",
-            document_info=doc_info if doc_info else None
+            document_info=doc_info if doc_info else None,
         )
     except Exception as e:
         raise _safe_error(500, "Error getting AutoCAD status", e)
 
 
-@router.post("/save", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/save",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def save_document(request: Request, body: SaveRequest) -> OperationResponse:
     """Save the current AutoCAD document."""
@@ -568,7 +612,7 @@ async def save_document(request: Request, body: SaveRequest) -> OperationRespons
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         safe_path = _validate_autocad_file_path(body.filepath)
@@ -576,12 +620,11 @@ async def save_document(request: Request, body: SaveRequest) -> OperationRespons
         success = service.save(safe_path)
 
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to save document")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=500, detail="Failed to save document"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
-        return OperationResponse(
-            success=True,
-            message="Document saved successfully"
-        )
+        return OperationResponse(success=True, message="Document saved successfully")
     except HTTPException:
         raise
     except Exception as e:
@@ -592,10 +635,20 @@ async def save_document(request: Request, body: SaveRequest) -> OperationRespons
 _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
-@router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
-@router.post("/upload", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post(
+    "/upload_dwg",
+    response_model=ReadFileResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
+@router.post(
+    "/upload",
+    response_model=ReadFileResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
-async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:  # NOSONAR - python:S8410
+async def upload_and_read_dwg(
+    request: Request, file: UploadFile = File(...)
+) -> ReadFileResponse:  # NOSONAR - python:S8410
     """
     Upload a DWG file and read its contents.
 
@@ -609,15 +662,19 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
         # Read file contents with size check
         contents = await file.read()
         if len(contents) > _MAX_UPLOAD_SIZE:
-            raise HTTPException(status_code=413, detail="File too large (max 50MB)")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=413, detail="File too large (max 50MB)"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
         # FIX #5: Use safe temp path instead of f"temp_{file.filename}"
         # file.filename could contain ../../../etc/passwd (path traversal)
-        safe_name = re.sub(r'[^\w\-.]', '_', file.filename or "upload.dwg")
+        safe_name = re.sub(r"[^\w\-.]", "_", file.filename or "upload.dwg")
         temp_dir = tempfile.mkdtemp()
         temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
 
-        with open(temp_path, "wb") as buffer:  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+        with (
+            open(temp_path, "wb") as buffer
+        ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
             buffer.write(contents)
 
         # Read the file
@@ -625,8 +682,7 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
 
         if not result.get("success", False):
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=400,
-                detail=result.get("error", "Unknown error reading file")
+                status_code=400, detail=result.get("error", "Unknown error reading file")
             )
 
         return ReadFileResponse(
@@ -651,71 +707,79 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
                 pass
 
 
-@router.delete("/entity/{handle}", response_model=DeleteEntityResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])  # NOSONAR - python:S8409
+@router.delete(
+    "/entity/{handle}",
+    response_model=DeleteEntityResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
     # are hex strings (e.g. "1A2F"). Reject anything else to break the taint
     # flow from URL path → logger calls in autocad_service.py.
-    if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
-        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")  # NOSONAR — S8415: endpoint error handling is intentional
+    if not re.match(r"^[0-9A-Fa-f]{1,16}$", handle):
+        raise HTTPException(
+            status_code=400, detail="Invalid handle: must be 1-16 hex chars"
+        )  # NOSONAR — S8415: endpoint error handling is intentional
     try:
         service = get_autocad_service()
 
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         success = service.delete_entity(handle)
 
         if not success:
-            raise HTTPException(status_code=400, detail="Failed to delete entity")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=400, detail="Failed to delete entity"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
-        return DeleteEntityResponse(
-            success=True,
-            message="Entity deleted successfully"
-        )
+        return DeleteEntityResponse(success=True, message="Entity deleted successfully")
     except HTTPException:
         raise
     except Exception as e:
         raise _safe_error(500, "Error deleting entity", e)
 
 
-@router.put("/entity/{handle}", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])  # NOSONAR - python:S8409
+@router.put(
+    "/entity/{handle}",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))],
+)  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
-async def update_entity(request: Request, handle: str, body: ModifyEntityRequest) -> OperationResponse:
+async def update_entity(
+    request: Request, handle: str, body: ModifyEntityRequest
+) -> OperationResponse:
     """Update an AutoCAD entity's properties."""
-    if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
-        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")  # NOSONAR — S8415: endpoint error handling is intentional
+    if not re.match(r"^[0-9A-Fa-f]{1,16}$", handle):
+        raise HTTPException(
+            status_code=400, detail="Invalid handle: must be 1-16 hex chars"
+        )  # NOSONAR — S8415: endpoint error handling is intentional
     try:
         service = get_autocad_service()
 
         if not service.connected:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first.",
             )
 
         if handle != body.handle:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=400,
-                detail="Handle in URL and request body must match"
+                status_code=400, detail="Handle in URL and request body must match"
             )
 
-        success = service.modify_entity(
-            handle=body.handle,
-            properties=body.properties
-        )
+        success = service.modify_entity(handle=body.handle, properties=body.properties)
 
         if not success:
-            raise HTTPException(status_code=400, detail="Failed to modify entity")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=400, detail="Failed to modify entity"
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
-        return OperationResponse(
-            success=True,
-            message="Entity modified successfully"
-        )
+        return OperationResponse(success=True, message="Entity modified successfully")
     except HTTPException:
         raise
     except Exception as e:

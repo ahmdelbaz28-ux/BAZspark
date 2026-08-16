@@ -144,15 +144,23 @@ class TestProofCertificate:
             detector_positions=[],
         )
         assert cert.proof_method == "delta_conservative_grid"
-        assert cert.grid_step_m == 0.20  # NOSONAR — S1244: import retained for re-export / API surface
-        assert cert.wall_min_m == 0.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.grid_step_m == 0.20
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.wall_min_m == 0.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert cert.fireai_version == "1.0.0"
 
     def test_warnings_default_empty(self):
         cert = ProofCertificate(
-            room_id="R", room_width_m=1, room_length_m=1,
-            room_ceiling_height_m=1, room_area_sqm=1,
-            n_detectors=0, detector_positions=[],
+            room_id="R",
+            room_width_m=1,
+            room_length_m=1,
+            room_ceiling_height_m=1,
+            room_area_sqm=1,
+            n_detectors=0,
+            detector_positions=[],
         )
         assert cert.warnings == []
 
@@ -193,12 +201,16 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-SMALL",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
         )
         assert cert.coverage_guaranteed is True
         assert cert.n_uncovered == 0
-        assert cert.coverage_lower_bound_pct == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.coverage_lower_bound_pct == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert cert.nfpa_compliant is False  # not set to True in this call
 
     def test_large_room_few_detectors_uncovered(self):
@@ -206,7 +218,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-LARGE",
-            width=30.0, length=30.0, ceiling_height=3.0,
+            width=30.0,
+            length=30.0,
+            ceiling_height=3.0,
             detectors=[(5, 5)],  # Only 1 detector for 30×30m room
         )
         assert cert.n_uncovered > 0
@@ -218,11 +232,13 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator(grid_step=0.20, coverage_radius=1.0)
         cert = gen.generate(
             room_id="R-TEST",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(0.5, 0.5)],  # Very small radius, will leave many uncovered
         )
         if cert.n_uncovered > 0:
-            expected_upper = cert.n_uncovered * (0.20 ** 2)
+            expected_upper = cert.n_uncovered * (0.20**2)
             assert cert.uncovered_area_upper_bound_sqm == pytest.approx(expected_upper, abs=0.01)
             expected_bound = max(0.0, 100.0 * (1 - expected_upper / 100.0))
             assert cert.coverage_lower_bound_pct == pytest.approx(expected_bound, abs=0.01)
@@ -233,7 +249,9 @@ class TestProofCertificateGenerator:
         positions = [(2.5, 2.5), (7.5, 7.5)]
         cert = gen.generate(
             room_id="R-POS",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=positions,
         )
         assert len(cert.detector_positions) == 2
@@ -243,19 +261,31 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-DIM",
-            width=8.0, length=12.0, ceiling_height=4.0,
+            width=8.0,
+            length=12.0,
+            ceiling_height=4.0,
             detectors=[(4, 6)],
         )
-        assert cert.room_width_m == 8.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert cert.room_length_m == 12.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert cert.room_ceiling_height_m == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert cert.room_area_sqm == 96.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.room_width_m == 8.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.room_length_m == 12.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.room_ceiling_height_m == 4.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.room_area_sqm == 96.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_detector_type_propagated(self):
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-HEAT",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
             detector_type="heat",
         )
@@ -265,7 +295,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-NFPA",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
             nfpa_compliant=True,
         )
@@ -275,7 +307,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-WALL",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
             wall_coverage_complete=True,
         )
@@ -285,7 +319,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-SPACE",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
             spacing_compliant=True,
         )
@@ -296,7 +332,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator(grid_step=0.20, coverage_radius=1.0)
         cert = gen.generate(
             room_id="R-WARN",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(0.5, 0.5)],
         )
         if cert.n_uncovered > 0:
@@ -307,7 +345,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator(grid_step=0.20, coverage_radius=1.0)
         cert = gen.generate(
             room_id="R-LOW",
-            width=20.0, length=20.0, ceiling_height=3.0,
+            width=20.0,
+            length=20.0,
+            ceiling_height=3.0,
             detectors=[(0.5, 0.5)],
         )
         if cert.coverage_lower_bound_pct < 99.9:
@@ -318,7 +358,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-HIGH",
-            width=5.0, length=5.0, ceiling_height=10.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=10.0,
             detectors=[(2.5, 2.5)],
         )
         assert any("9.1m" in w for w in cert.warnings)
@@ -327,7 +369,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-PM",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
         )
         assert cert.proof_method == "delta_conservative_grid"
@@ -336,17 +380,23 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator(grid_step=0.10)
         cert = gen.generate(
             room_id="R-GS",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
         )
-        assert cert.grid_step_m == 0.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cert.grid_step_m == 0.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_zero_detectors(self):
         """Room with no detectors should have all points uncovered."""
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-NODET",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[],
         )
         assert cert.n_uncovered == cert.n_grid_points
@@ -358,7 +408,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-CORNER",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(0, 0)],
         )
         assert cert.n_grid_points > 0
@@ -369,7 +421,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-LIFE",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
             nfpa_compliant=True,
         )
@@ -383,7 +437,9 @@ class TestProofCertificateGenerator:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-JSON",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
         )
         cert.seal()
@@ -407,7 +463,9 @@ class TestMathematicalCorrectness:
         gen = ProofCertificateGenerator(grid_step=1.0)
         cert = gen.generate(
             room_id="R-MATH",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(5, 5)],
         )
         # For 10×10 room with step=1.0: xs = 0,1,2,...,10 (11) × ys = 0,1,...,10 (11)
@@ -419,7 +477,9 @@ class TestMathematicalCorrectness:
         gen = ProofCertificateGenerator()
         cert = gen.generate(
             room_id="R-CG",
-            width=5.0, length=5.0, ceiling_height=3.0,
+            width=5.0,
+            length=5.0,
+            ceiling_height=3.0,
             detectors=[(2.5, 2.5)],
         )
         if cert.n_uncovered == 0:
@@ -432,12 +492,14 @@ class TestMathematicalCorrectness:
         gen = ProofCertificateGenerator(grid_step=0.20, coverage_radius=1.0)
         cert = gen.generate(
             room_id="R-V15",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(0.5, 0.5)],
         )
         if cert.n_uncovered > 0:
             # Square cell: uncovered_area = n_uncovered * δ²
-            expected = cert.n_uncovered * (0.20 ** 2)
+            expected = cert.n_uncovered * (0.20**2)
             assert cert.uncovered_area_upper_bound_sqm == pytest.approx(expected, abs=0.01)
 
     def test_effective_radius_less_than_coverage_radius(self):
@@ -450,12 +512,16 @@ class TestMathematicalCorrectness:
         gen = ProofCertificateGenerator(coverage_radius=3.0)
         cert1 = gen.generate(
             room_id="R-1DET",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(5, 5)],
         )
         cert2 = gen.generate(
             room_id="R-2DET",
-            width=10.0, length=10.0, ceiling_height=3.0,
+            width=10.0,
+            length=10.0,
+            ceiling_height=3.0,
             detectors=[(3, 3), (7, 7)],
         )
         assert cert2.n_covered >= cert1.n_covered

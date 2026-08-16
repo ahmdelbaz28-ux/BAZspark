@@ -39,9 +39,9 @@ def simulate_bim_element_data(element_id: str) -> dict:
         "properties": {
             "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),  # NOSONAR
             "thermal_resistance": round(_rand_float(0.5, 5.0), 2),
-            "cost_per_unit": round(_rand_float(50, 500), 2)
+            "cost_per_unit": round(_rand_float(50, 500), 2),
         },
-        "created_at": "2024-01-01T00:00:00Z"
+        "created_at": "2024-01-01T00:00:00Z",
     }
 
 
@@ -101,7 +101,9 @@ def example_bim_workflow():  # NOSONAR — S3776: cognitive complexity is inhere
     # Step 3: Create relationships in Neo4j
     print("\n🔗 Step 3: Creating element relationships in Neo4j...")
     for element_id in element_ids:
-        related_elements = simulate_relationships([eid for eid in element_ids if eid != element_id], 2)
+        related_elements = simulate_relationships(
+            [eid for eid in element_ids if eid != element_id], 2
+        )
 
         if related_elements:
             print(f"  Creating relationships for {element_id} -> {related_elements}")
@@ -119,7 +121,9 @@ def example_bim_workflow():  # NOSONAR — S3776: cognitive complexity is inhere
     sample_element = element_ids[0]
     cached_data = db_service.get_cached_bim_element(sample_element)
     if cached_data:
-        print(f"    ✓ Found {sample_element} in cache: {cached_data['type']} in {cached_data['level']}")
+        print(
+            f"    ✓ Found {sample_element} in cache: {cached_data['type']} in {cached_data['level']}"
+        )
     else:
         print(f"    ✗ Element {sample_element} not found in cache")
 
@@ -177,7 +181,9 @@ def example_error_handling():
     print("\n  Current database availability:")
     for db_name, is_available in health.items():
         status = "✅" if is_available else "❌"
-        print(f"    {status} {db_name.capitalize()}: {'Available' if is_available else 'Unavailable'}")
+        print(
+            f"    {status} {db_name.capitalize()}: {'Available' if is_available else 'Unavailable'}"
+        )
 
     print("\n  The system gracefully degrades when databases are unavailable:")
     print("  • If Redis is down: Cache misses, slower repeated queries")

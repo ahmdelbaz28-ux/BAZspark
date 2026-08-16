@@ -63,6 +63,7 @@ from fireai.core.revit_exporter import (
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @pytest.fixture
 def simple_building() -> BuildingModel:
     """Simple building with a room and a wall."""
@@ -70,38 +71,62 @@ def simple_building() -> BuildingModel:
         BoundingBox3D(
             element_id="wall-north",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=10.0, min_z=0.0,
-            max_x=10.0, max_y=10.2, max_z=3.0,
+            min_x=0.0,
+            min_y=10.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=10.2,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-south",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=10.0, max_y=0.2, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=0.2,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-east",
             element_type=IfcElementType.WALL,
-            min_x=9.8, min_y=0.0, min_z=0.0,
-            max_x=10.0, max_y=10.2, max_z=3.0,
+            min_x=9.8,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=10.2,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-west",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=0.2, max_y=10.2, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=0.2,
+            max_y=10.2,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="slab-floor",
             element_type=IfcElementType.SLAB,
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=10.0, max_y=10.2, max_z=0.2,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=10.2,
+            max_z=0.2,
         ),
         BoundingBox3D(
             element_id="slab-ceiling",
             element_type=IfcElementType.SLAB,
-            min_x=0.0, min_y=0.0, min_z=2.8,
-            max_x=10.0, max_y=10.2, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=2.8,
+            max_x=10.0,
+            max_y=10.2,
+            max_z=3.0,
         ),
     ]
     spaces = [
@@ -111,8 +136,12 @@ def simple_building() -> BuildingModel:
             bounding_box=BoundingBox3D(
                 element_id="room-101",
                 element_type=IfcElementType.SPACE,
-                min_x=0.2, min_y=0.2, min_z=0.2,
-                max_x=9.8, max_y=10.0, max_z=2.8,
+                min_x=0.2,
+                min_y=0.2,
+                min_z=0.2,
+                max_x=9.8,
+                max_y=10.0,
+                max_z=2.8,
             ),
             floor_elevation=0.2,
             ceiling_elevation=2.8,
@@ -129,40 +158,64 @@ def corridor_building() -> BuildingModel:
         BoundingBox3D(
             element_id="wall-1",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=20.0, max_y=0.2, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=20.0,
+            max_y=0.2,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-2",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=4.8, min_z=0.0,
-            max_x=20.0, max_y=5.0, max_z=3.0,
+            min_x=0.0,
+            min_y=4.8,
+            min_z=0.0,
+            max_x=20.0,
+            max_y=5.0,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-3",
             element_type=IfcElementType.WALL,
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=0.2, max_y=5.0, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=0.2,
+            max_y=5.0,
+            max_z=3.0,
         ),
         BoundingBox3D(
             element_id="wall-4",
             element_type=IfcElementType.WALL,
-            min_x=19.8, min_y=0.0, min_z=0.0,
-            max_x=20.0, max_y=5.0, max_z=3.0,
+            min_x=19.8,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=20.0,
+            max_y=5.0,
+            max_z=3.0,
         ),
         # Interior wall with door opening
         BoundingBox3D(
             element_id="interior-wall",
             element_type=IfcElementType.WALL,
-            min_x=9.8, min_y=0.0, min_z=0.0,
-            max_x=10.0, max_y=2.0, max_z=3.0,
+            min_x=9.8,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=2.0,
+            max_z=3.0,
         ),
         # Door
         BoundingBox3D(
             element_id="door-1",
             element_type=IfcElementType.DOOR,
-            min_x=9.8, min_y=2.0, min_z=0.0,
-            max_x=10.0, max_y=3.0, max_z=2.1,
+            min_x=9.8,
+            min_y=2.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=3.0,
+            max_z=2.1,
         ),
     ]
     return build_abstract_model(obstacles, building_name="Corridor Building")
@@ -183,6 +236,7 @@ def router(simple_building) -> CableRouter:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. IFC PARSER TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestIfcElementType:
     """Test IfcElementType enum and classification."""
@@ -209,8 +263,12 @@ class TestBoundingBox3D:
     def test_dimensions(self):
         bbox = BoundingBox3D(
             element_id="test",
-            min_x=1.0, min_y=2.0, min_z=3.0,
-            max_x=4.0, max_y=6.0, max_z=9.0,
+            min_x=1.0,
+            min_y=2.0,
+            min_z=3.0,
+            max_x=4.0,
+            max_y=6.0,
+            max_z=9.0,
         )
         assert bbox.width_x == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert bbox.depth_y == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
@@ -220,8 +278,12 @@ class TestBoundingBox3D:
     def test_contains_point(self):
         bbox = BoundingBox3D(
             element_id="test",
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=10.0, max_y=10.0, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=10.0,
+            max_y=10.0,
+            max_z=3.0,
         )
         assert bbox.contains_point(5.0, 5.0, 1.5) is True
         assert bbox.contains_point(15.0, 5.0, 1.5) is False
@@ -231,18 +293,30 @@ class TestBoundingBox3D:
     def test_overlaps(self):
         bbox1 = BoundingBox3D(
             element_id="a",
-            min_x=0.0, min_y=0.0, min_z=0.0,
-            max_x=5.0, max_y=5.0, max_z=3.0,
+            min_x=0.0,
+            min_y=0.0,
+            min_z=0.0,
+            max_x=5.0,
+            max_y=5.0,
+            max_z=3.0,
         )
         bbox2 = BoundingBox3D(
             element_id="b",
-            min_x=3.0, min_y=3.0, min_z=0.0,
-            max_x=8.0, max_y=8.0, max_z=3.0,
+            min_x=3.0,
+            min_y=3.0,
+            min_z=0.0,
+            max_x=8.0,
+            max_y=8.0,
+            max_z=3.0,
         )
         bbox3 = BoundingBox3D(
             element_id="c",
-            min_x=10.0, min_y=10.0, min_z=0.0,
-            max_x=15.0, max_y=15.0, max_z=3.0,
+            min_x=10.0,
+            min_y=10.0,
+            min_z=0.0,
+            max_x=15.0,
+            max_y=15.0,
+            max_z=3.0,
         )
         assert bbox1.overlaps(bbox2) is True
         assert bbox1.overlaps(bbox3) is False
@@ -255,7 +329,9 @@ class TestBoundingBox3D:
             fire_rating_hours=2.0,
         )
         assert bbox.is_fire_rated is True
-        assert bbox.fire_rating_hours == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            bbox.fire_rating_hours == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestBuildingModel:
@@ -265,7 +341,9 @@ class TestBuildingModel:
         assert simple_building.building_name == "Test Building"
         assert len(simple_building.elements) > 0
         assert simple_building.grid_size != (0, 0, 0)
-        assert simple_building.grid_resolution == 0.1  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            simple_building.grid_resolution == 0.1
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_grid_coordinate_conversion(self, simple_building):
         # World → Grid → World round-trip
@@ -319,6 +397,7 @@ class TestDoorOpening:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. CONSTRAINT ENGINE TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestNACMaxLength:
     """Test NAC circuit max length per NFPA 72 §23.6.2."""
@@ -539,21 +618,20 @@ class TestCostFunction:
     """Test A* cost function calculations."""
 
     def test_straight_move_cost(self, constraint_engine):
-        cost = constraint_engine.compute_move_cost(
-            (0, 0, 0), (1, 0, 0), grid_resolution=0.1
-        )
-        assert cost == 0.1  # One cell  # NOSONAR — S1244: import retained for re-export / API surface
+        cost = constraint_engine.compute_move_cost((0, 0, 0), (1, 0, 0), grid_resolution=0.1)
+        assert (
+            cost == 0.1
+        )  # One cell  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_elevation_change_cost(self, constraint_engine):
-        cost = constraint_engine.compute_move_cost(
-            (0, 0, 0), (0, 0, 1), grid_resolution=0.1
-        )
+        cost = constraint_engine.compute_move_cost((0, 0, 0), (0, 0, 1), grid_resolution=0.1)
         # Base (0.1) + elevation penalty (2.0)
         assert abs(cost - 2.1) < 0.01
 
     def test_electrical_proximity_cost(self, constraint_engine):
         cost = constraint_engine.compute_move_cost(
-            (0, 0, 0), (1, 0, 0),
+            (0, 0, 0),
+            (1, 0, 0),
             is_near_electrical=True,
             grid_resolution=0.1,
         )
@@ -587,6 +665,7 @@ class TestCostFunction:
 # 3. CABLE ROUTER TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCableRouterBasic:
     """Basic cable router functionality."""
 
@@ -608,12 +687,16 @@ class TestCableRouterBasic:
         assert len(route.waypoints) >= 1
 
     def test_nan_input_rejected(self, router):
-        with pytest.raises(ContractViolation):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            router.route(start=(float('nan'), 5.0, 1.5), end=(8.0, 8.0, 1.5))
+        with pytest.raises(
+            ContractViolation
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            router.route(start=(float("nan"), 5.0, 1.5), end=(8.0, 8.0, 1.5))
 
     def test_inf_input_rejected(self, router):
-        with pytest.raises(ContractViolation):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            router.route(start=(5.0, 5.0, 1.5), end=(float('inf'), 8.0, 1.5))
+        with pytest.raises(
+            ContractViolation
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            router.route(start=(5.0, 5.0, 1.5), end=(float("inf"), 8.0, 1.5))
 
     def test_blocked_start_rejected(self, router):
         with pytest.raises(ValueError, match="BLOCKED"):
@@ -629,15 +712,23 @@ class TestCableRouterBasic:
             BoundingBox3D(
                 element_id="wall-1",
                 element_type=IfcElementType.WALL,
-                min_x=0.0, min_y=0.0, min_z=0.0,
-                max_x=10.0, max_y=0.2, max_z=3.0,
+                min_x=0.0,
+                min_y=0.0,
+                min_z=0.0,
+                max_x=10.0,
+                max_y=0.2,
+                max_z=3.0,
             ),
             BoundingBox3D(
                 element_id="electrical-panel-1",  # "electrical" keyword
                 element_type=IfcElementType.UNKNOWN,
                 ifc_class="IfcElectricDistributionBoard",
-                min_x=4.0, min_y=4.0, min_z=1.0,
-                max_x=4.5, max_y=4.5, max_z=2.0,
+                min_x=4.0,
+                min_y=4.0,
+                min_z=1.0,
+                max_x=4.5,
+                max_y=4.5,
+                max_z=2.0,
             ),
         ]
         model = build_abstract_model(obstacles, building_name="Electrical Test")
@@ -651,8 +742,12 @@ class TestCableRouterBasic:
             BoundingBox3D(
                 element_id="wall-1",
                 element_type=IfcElementType.WALL,
-                min_x=0.0, min_y=0.0, min_z=0.0,
-                max_x=10.0, max_y=0.2, max_z=3.0,
+                min_x=0.0,
+                min_y=0.0,
+                min_z=0.0,
+                max_x=10.0,
+                max_y=0.2,
+                max_z=3.0,
             ),
         ]
         model = build_abstract_model(obstacles, building_name="No Electrical Test")
@@ -728,7 +823,9 @@ class TestCableRouterVoltageDrop:
             end=(5.0, 5.0, 1.5),
             alarm_current_a=0.0,
         )
-        assert route.voltage_drop_v == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            route.voltage_drop_v == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestCableRouterConstraints:
@@ -778,8 +875,8 @@ class TestCableRouterMultiRoute:
 
     def test_route_all(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5), 'alarm_current_a': 0.5},
-            {'start': (2.0, 8.0, 1.5), 'end': (8.0, 2.0, 1.5), 'alarm_current_a': 0.3},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5), "alarm_current_a": 0.5},
+            {"start": (2.0, 8.0, 1.5), "end": (8.0, 2.0, 1.5), "alarm_current_a": 0.3},
         ]
         schedule = router.route_all(connections, project_name="Test FA")
         assert len(schedule.routes) == 2
@@ -801,22 +898,26 @@ class TestDirections:
     def test_all_axes_covered(self):
         axes = set()
         for dx, dy, dz in DIRECTIONS_6:
-            if dx != 0: axes.add('x')
-            if dy != 0: axes.add('y')
-            if dz != 0: axes.add('z')
-        assert axes == {'x', 'y', 'z'}
+            if dx != 0:
+                axes.add("x")
+            if dy != 0:
+                axes.add("y")
+            if dz != 0:
+                axes.add("z")
+        assert axes == {"x", "y", "z"}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. REVIT EXPORTER TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestScheduleGeneration:
     """Test cable schedule generation."""
 
     def test_schedule_from_routing(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -827,7 +928,7 @@ class TestScheduleGeneration:
 
     def test_schedule_csv_output(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -842,7 +943,7 @@ class TestIFCElementGeneration:
 
     def test_ifc_elements_generated(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -854,7 +955,7 @@ class TestIFCElementGeneration:
 
     def test_ifc_elements_on_fa_workset(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -864,7 +965,7 @@ class TestIFCElementGeneration:
 
     def test_ifc_elements_have_code_references(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -876,7 +977,7 @@ class TestIFCElementGeneration:
         """A route with a bend should produce IfcPipeFitting elements."""
         # Use a route that will have at least one bend
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (2.0, 8.0, 1.5)},  # L-shaped
+            {"start": (2.0, 2.0, 1.5), "end": (2.0, 8.0, 1.5)},  # L-shaped
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -886,7 +987,7 @@ class TestIFCElementGeneration:
 
     def test_ifc_json_output(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -901,7 +1002,7 @@ class TestRevitModelLines:
 
     def test_model_lines_generated(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         exporter = RevitExporter()
@@ -918,8 +1019,8 @@ class TestReportGeneration:
 
     def test_report_summary(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
-            {'start': (2.0, 8.0, 1.5), 'end': (8.0, 2.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
+            {"start": (2.0, 8.0, 1.5), "end": (8.0, 2.0, 1.5)},
         ]
         schedule = router.route_all(connections, project_name="Test Report")
         exporter = RevitExporter()
@@ -930,7 +1031,7 @@ class TestReportGeneration:
 
     def test_text_report(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections, project_name="Text Report Test")
         exporter = RevitExporter()
@@ -944,6 +1045,7 @@ class TestReportGeneration:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. GOLDEN FILE / DETERMINISM TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestGoldenFiles:
     """Golden file tests — verify deterministic output hashes."""
@@ -966,8 +1068,8 @@ class TestGoldenFiles:
     def test_schedule_hash_stability(self, router):
         """Run the same schedule 3 times — hash must never change."""
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 2.0, 1.5)},
-            {'start': (2.0, 4.0, 1.5), 'end': (8.0, 4.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 2.0, 1.5)},
+            {"start": (2.0, 4.0, 1.5), "end": (8.0, 4.0, 1.5)},
         ]
         hashes = set()
         for _ in range(3):
@@ -1000,6 +1102,7 @@ class TestNoML:
 # 6. INTEGRATION TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestEndToEnd:
     """End-to-end integration: Building → Route → Export."""
 
@@ -1010,26 +1113,42 @@ class TestEndToEnd:
             BoundingBox3D(
                 element_id="wall-1",
                 element_type=IfcElementType.WALL,
-                min_x=0.0, min_y=0.0, min_z=0.0,
-                max_x=15.0, max_y=0.2, max_z=3.0,
+                min_x=0.0,
+                min_y=0.0,
+                min_z=0.0,
+                max_x=15.0,
+                max_y=0.2,
+                max_z=3.0,
             ),
             BoundingBox3D(
                 element_id="wall-2",
                 element_type=IfcElementType.WALL,
-                min_x=0.0, min_y=7.8, min_z=0.0,
-                max_x=15.0, max_y=8.0, max_z=3.0,
+                min_x=0.0,
+                min_y=7.8,
+                min_z=0.0,
+                max_x=15.0,
+                max_y=8.0,
+                max_z=3.0,
             ),
             BoundingBox3D(
                 element_id="wall-3",
                 element_type=IfcElementType.WALL,
-                min_x=0.0, min_y=0.0, min_z=0.0,
-                max_x=0.2, max_y=8.0, max_z=3.0,
+                min_x=0.0,
+                min_y=0.0,
+                min_z=0.0,
+                max_x=0.2,
+                max_y=8.0,
+                max_z=3.0,
             ),
             BoundingBox3D(
                 element_id="wall-4",
                 element_type=IfcElementType.WALL,
-                min_x=14.8, min_y=0.0, min_z=0.0,
-                max_x=15.0, max_y=8.0, max_z=3.0,
+                min_x=14.8,
+                min_y=0.0,
+                min_z=0.0,
+                max_x=15.0,
+                max_y=8.0,
+                max_z=3.0,
             ),
         ]
         model = build_abstract_model(obstacles, building_name="Integration Test")
@@ -1038,10 +1157,10 @@ class TestEndToEnd:
         router = CableRouter(model)
         connections = [
             {
-                'start': (1.0, 1.0, 2.5),
-                'end': (14.0, 7.0, 2.5),
-                'alarm_current_a': 0.8,
-                'route_id': 'SLC-1',
+                "start": (1.0, 1.0, 2.5),
+                "end": (14.0, 7.0, 2.5),
+                "alarm_current_a": 0.8,
+                "route_id": "SLC-1",
             },
         ]
         schedule = router.route_all(connections, project_name="E2E Test")
@@ -1110,13 +1229,19 @@ class TestProjectSpecConstants:
     """Verify project specification constants are correct."""
 
     def test_min_conduit_3_4_inch(self):
-        assert MIN_CONDUIT_INCHES == 0.75  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MIN_CONDUIT_INCHES == 0.75
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_electrical_separation_300mm(self):
-        assert MIN_ELECTRICAL_SEPARATION_MM == 300.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MIN_ELECTRICAL_SEPARATION_MM == 300.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_fastening_457mm(self):
-        assert MAX_CABLE_FASTENING_INTERVAL_MM == 457.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_CABLE_FASTENING_INTERVAL_MM == 457.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_emt_3_4_diameter(self):
         assert abs(EMT_3_4_OUTER_DIAMETER_MM - 19.05) < 0.01
@@ -1125,10 +1250,14 @@ class TestProjectSpecConstants:
         assert BEND_PENALTY_M == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_elevation_penalty(self):
-        assert ELEVATION_PENALTY_M == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ELEVATION_PENALTY_M == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_electrical_proximity_penalty(self):
-        assert ELECTRICAL_PROXIMITY_PENALTY_M == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ELECTRICAL_PROXIMITY_PENALTY_M == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestConstraintSource:
@@ -1172,8 +1301,12 @@ class TestSpaceInfo:
             ceiling_elevation=3.0,
         )
         assert space.space_id == "room-101"
-        assert space.floor_elevation == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert space.ceiling_elevation == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            space.floor_elevation == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            space.ceiling_elevation == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestCellState:
@@ -1205,14 +1338,16 @@ class TestIFCParserImportError:
     def test_parse_ifc_file_without_ifcopenshell(self, monkeypatch):
         """Should raise ImportError if IfcOpenShell is not available."""
         import fireai.core.ifc_parser as ip
-        monkeypatch.setattr(ip, '_get_ifcopenshell', lambda: None)
+
+        monkeypatch.setattr(ip, "_get_ifcopenshell", lambda: None)
 
         with pytest.raises(ImportError, match="IfcOpenShell"):
             ip.parse_ifc_file("test.ifc")
 
     def test_parse_ifc_from_string_without_ifcopenshell(self, monkeypatch):
         import fireai.core.ifc_parser as ip
-        monkeypatch.setattr(ip, '_get_ifcopenshell', lambda: None)
+
+        monkeypatch.setattr(ip, "_get_ifcopenshell", lambda: None)
 
         with pytest.raises(ImportError, match="IfcOpenShell"):
             ip.parse_ifc_from_string("HEADER;...")
@@ -1247,7 +1382,7 @@ class TestRoutingSchedule:
 
     def test_schedule_hash_auto_computed(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         assert schedule.computation_hash != ""
@@ -1255,8 +1390,8 @@ class TestRoutingSchedule:
 
     def test_schedule_max_circuit_length(self, router):
         connections = [
-            {'start': (2.0, 2.0, 1.5), 'end': (4.0, 4.0, 1.5)},
-            {'start': (2.0, 2.0, 1.5), 'end': (8.0, 8.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (4.0, 4.0, 1.5)},
+            {"start": (2.0, 2.0, 1.5), "end": (8.0, 8.0, 1.5)},
         ]
         schedule = router.route_all(connections)
         assert schedule.max_circuit_length_m > 0

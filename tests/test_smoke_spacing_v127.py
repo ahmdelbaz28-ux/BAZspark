@@ -58,20 +58,22 @@ class TestV130FlatSpacing:
     Per NFPA 72-2022 §17.7.3.2.3: 30 ft (9.1 m) — NO height reduction.
     """
 
-    @pytest.mark.parametrize("height", [
-        3.0,    # 10 ft — standard ceiling
-        3.7,    # ~12 ft
-        4.6,    # ~15 ft
-        6.1,    # 20 ft
-        9.1,    # 30 ft
-        12.2,   # 40 ft (table max)
-    ])
+    @pytest.mark.parametrize(
+        "height",
+        [
+            3.0,  # 10 ft — standard ceiling
+            3.7,  # ~12 ft
+            4.6,  # ~15 ft
+            6.1,  # 20 ft
+            9.1,  # 30 ft
+            12.2,  # 40 ft (table max)
+        ],
+    )
     def test_flat_spacing_at_all_table_heights(self, height):
         """Spacing must be 9.1m at ALL heights — flat per §17.7.3.2.3."""
         r = compute_smoke_detector_spacing(height)
         assert r.listed_spacing_m == pytest.approx(9.10, abs=1e-3), (
-            f"At h={height}m, expected S=9.1m (flat per §17.7.3.2.3), "
-            f"got S={r.listed_spacing_m}m"
+            f"At h={height}m, expected S=9.1m (flat per §17.7.3.2.3), got S={r.listed_spacing_m}m"
         )
 
     def test_h_above_table_flat_spacing(self):
@@ -129,7 +131,9 @@ class TestV130AuditNotice:
         r = compute_smoke_detector_spacing(10.0)
         notice = getattr(r, "audit_notice", "")
         assert "17.7.1.11" in notice, f"Missing §17.7.1.11 ref: {notice}"  # NOSONAR - python:S1313
-        assert "17.7.4.6" in notice or "beam" in notice.lower(), f"Missing beam ref: {notice}"  # NOSONAR - python:S1313
+        assert "17.7.4.6" in notice or "beam" in notice.lower(), (
+            f"Missing beam ref: {notice}"
+        )  # NOSONAR - python:S1313
 
     def test_audit_notice_confirms_flat_spacing(self):
         """Audit notice must confirm 9.1m flat spacing per §17.7.3.2.3."""
@@ -162,24 +166,34 @@ class TestPhysicsGuards:
     """Pre-existing physics guards must still function."""
 
     def test_zero_height_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(0.0)
 
     def test_negative_height_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(-1.0)
 
     def test_height_above_hard_limit_rejected(self):
         """H > 18.288m must be rejected by guard."""
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(19.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # NOSONAR — S5958: parameter name documents intent at call site  # noqa: S5778
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # NOSONAR — S5958: parameter name documents intent at call site  # noqa: S5778
             compute_smoke_detector_spacing(float("nan"))
 
     def test_inf_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float("inf"))
 
 
@@ -193,7 +207,9 @@ class TestSSoTConsistency:
 
     def test_max_spacing_matches_constants(self):
         """Kernel SMOKE_MAX_SPACING_M must match constants."""
-        assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_spacing_matches_constant_at_all_heights(self):
         """Spacing at any height must equal SMOKE_MAX_SPACING_M."""
@@ -201,10 +217,19 @@ class TestSSoTConsistency:
             r = compute_smoke_detector_spacing(h)
             assert r.listed_spacing_m == pytest.approx(SMOKE_MAX_SPACING_M, abs=1e-3)
 
+
 class TestTableLengthAndAlignment:
     def test_table_lengths_and_alignment(self):
-        assert len(NFPA72_SMOKE_SPACING_TABLE) == 9, f"SMOKE table has {len(NFPA72_SMOKE_SPACING_TABLE)} rows, expected 9"
-        assert len(NFPA72_HEIGHT_SPACING_TABLE) == 9, f"COMBINED table has {len(NFPA72_HEIGHT_SPACING_TABLE)} rows, expected 9"
-        for i, (smoke, combined) in enumerate(zip(NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE, strict=False)):
-            assert abs(smoke[0] - combined[0]) < 0.01, f"Row {i} height mismatch: SMOKE={smoke[0]} COMBINED={combined[0]}"
+        assert len(NFPA72_SMOKE_SPACING_TABLE) == 9, (
+            f"SMOKE table has {len(NFPA72_SMOKE_SPACING_TABLE)} rows, expected 9"
+        )
+        assert len(NFPA72_HEIGHT_SPACING_TABLE) == 9, (
+            f"COMBINED table has {len(NFPA72_HEIGHT_SPACING_TABLE)} rows, expected 9"
+        )
+        for i, (smoke, combined) in enumerate(
+            zip(NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE, strict=False)
+        ):
+            assert abs(smoke[0] - combined[0]) < 0.01, (
+                f"Row {i} height mismatch: SMOKE={smoke[0]} COMBINED={combined[0]}"
+            )
             # Spacing may differ: SMOKE is flat 9.1m per V130, COMBINED includes heat reduction

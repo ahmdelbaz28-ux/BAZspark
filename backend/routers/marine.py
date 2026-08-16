@@ -51,6 +51,7 @@ router = APIRouter(prefix="/marine", tags=["Marine"])
 
 # ─── Pydantic Request Models ────────────────────────────────────────────────
 
+
 class ShipProjectRequest(BaseModel):
     project_id: str = Field(..., description="Unique project identifier")
     ship_name: str = Field(..., description="Ship name")
@@ -67,14 +68,18 @@ class ShipProjectRequest(BaseModel):
     def to_domain(self) -> ShipProject:
         """Convert Pydantic model to domain dataclass."""
         from marine.core.types import ShipService
+
         try:
             service = ShipService(self.service)
         except ValueError:
             service = ShipService.BULK_CARRIER
         return ShipProject(
-            project_id=self.project_id, ship_name=self.ship_name,
-            imo_number=self.imo_number, ship_type=self.ship_type,
-            service=service, length_overall_m=self.length_overall_m,
+            project_id=self.project_id,
+            ship_name=self.ship_name,
+            imo_number=self.imo_number,
+            ship_type=self.ship_type,
+            service=service,
+            length_overall_m=self.length_overall_m,
             gross_tonnage=self.gross_tonnage,
             passenger_capacity=self.passenger_capacity,
             flag_state=self.flag_state,
@@ -170,6 +175,7 @@ def _detector_request_to_domain(dpr: DetectorPlacementRequest) -> DetectorPlacem
 
 # ─── Endpoints ──────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/standards",
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
@@ -179,26 +185,66 @@ async def list_standards(request: Request) -> dict[str, Any]:
     """list the marine standards supported by this module."""
     return {
         "standards": [
-            {"code": "SOLAS II-2", "title": "Construction — Fire protection, detection, extinction",
-             "issuer": "IMO", "edition": "2024 consolidated"},
-            {"code": "IEC 60092-502", "title": "Electrical installations in ships — Tankers",
-             "issuer": "IEC", "edition": "1999"},
-            {"code": "IEC 60092-504", "title": "Ships carrying dangerous goods",
-             "issuer": "IEC", "edition": "2016"},
-            {"code": "ISO 15370", "title": "Thermal alarms for passenger ships",
-             "issuer": "ISO", "edition": "2001"},
-            {"code": "LR Rules Part 6", "title": "Fire Protection, Detection & Extinguishment",
-             "issuer": "Lloyd's Register", "edition": "2024"},
-            {"code": "NFPA 302", "title": "Fire Protection for Craft and Small Commercial Vessels",
-             "issuer": "NFPA", "edition": "2020"},
-            {"code": "IMO MSC.1/Circ.1316", "title": "CO2 total flooding guidelines",
-             "issuer": "IMO", "edition": "2021 rev.1"},
-            {"code": "IMO MSC.1/Circ.1165", "title": "Water mist fire-extinguishing systems",
-             "issuer": "IMO", "edition": "2005"},
-            {"code": "FSS Code Ch. 9", "title": "Fixed fire detection and fire alarm systems",
-             "issuer": "IMO", "edition": "2023"},
-            {"code": "FSS Code Ch. 14", "title": "Sprinkler systems",
-             "issuer": "IMO", "edition": "2023"},
+            {
+                "code": "SOLAS II-2",
+                "title": "Construction — Fire protection, detection, extinction",
+                "issuer": "IMO",
+                "edition": "2024 consolidated",
+            },
+            {
+                "code": "IEC 60092-502",
+                "title": "Electrical installations in ships — Tankers",
+                "issuer": "IEC",
+                "edition": "1999",
+            },
+            {
+                "code": "IEC 60092-504",
+                "title": "Ships carrying dangerous goods",
+                "issuer": "IEC",
+                "edition": "2016",
+            },
+            {
+                "code": "ISO 15370",
+                "title": "Thermal alarms for passenger ships",
+                "issuer": "ISO",
+                "edition": "2001",
+            },
+            {
+                "code": "LR Rules Part 6",
+                "title": "Fire Protection, Detection & Extinguishment",
+                "issuer": "Lloyd's Register",
+                "edition": "2024",
+            },
+            {
+                "code": "NFPA 302",
+                "title": "Fire Protection for Craft and Small Commercial Vessels",
+                "issuer": "NFPA",
+                "edition": "2020",
+            },
+            {
+                "code": "IMO MSC.1/Circ.1316",
+                "title": "CO2 total flooding guidelines",
+                "issuer": "IMO",
+                "edition": "2021 rev.1",
+            },
+            {
+                "code": "IMO MSC.1/Circ.1165",
+                "title": "Water mist fire-extinguishing systems",
+                "issuer": "IMO",
+                "edition": "2005",
+            },
+            {
+                "code": "FSS Code Ch. 9",
+                "title": "Fixed fire detection and fire alarm systems",
+                "issuer": "IMO",
+                "edition": "2023",
+            },
+            {
+                "code": "FSS Code Ch. 14",
+                "title": "Sprinkler systems",
+                "issuer": "IMO",
+                "edition": "2023",
+            },
         ]
     }
 
@@ -212,8 +258,7 @@ async def list_fire_classes(request: Request) -> dict[str, Any]:
     """list SOLAS fire division classes and their insulation minutes."""
     return {
         "fire_classes": [
-            {"class": c.value, "insulation_minutes": c.insulation_minutes}
-            for c in FireClass
+            {"class": c.value, "insulation_minutes": c.insulation_minutes} for c in FireClass
         ]
     }
 
@@ -226,15 +271,19 @@ async def list_fire_classes(request: Request) -> dict[str, Any]:
 async def validate_ship(request: Request, body: DesignRequest) -> dict[str, Any]:
     """Validate a ship's SOLAS compliance (zones, divisions, escape routes)."""
     ship = body.ship.to_domain()
-    zones = [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None  # V264: model_dump() (Pydantic v2)
+    zones = (
+        [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None
+    )  # V264: model_dump() (Pydantic v2)
     if zones is None:
         from marine.engine.zone_mapper import divide_into_main_vertical_zones
+
         zones = divide_into_main_vertical_zones(ship.length_overall_m, ship)
 
     from marine.solas.chapter_ii_2 import (
         validate_escape_routes,
         validate_main_vertical_zones,
     )
+
     mvz = validate_main_vertical_zones(zones, ship)
     esc = validate_escape_routes(zones)
 
@@ -259,12 +308,16 @@ async def design_full(request: Request, body: DesignRequest) -> dict[str, Any]:
     compliance validation results.
     """
     ship = body.ship.to_domain()
-    zones = [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None  # V264: model_dump() (Pydantic v2)
+    zones = (
+        [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None
+    )  # V264: model_dump() (Pydantic v2)
     service = get_marine_service()
     try:
         return service.design_full(ship, zones)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Design failed: {e}") from e  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail=f"Design failed: {e}"
+        ) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.post(
@@ -275,6 +328,7 @@ async def design_full(request: Request, body: DesignRequest) -> dict[str, Any]:
 async def divide_zones(request: Request, ship: ShipProjectRequest) -> dict[str, Any]:
     """Divide a ship into SOLAS main vertical zones."""
     from marine.engine.zone_mapper import divide_into_main_vertical_zones
+
     domain = ship.to_domain()
     zones = divide_into_main_vertical_zones(domain.length_overall_m, domain)
     return {
@@ -295,6 +349,7 @@ async def design_extinguishing(
 ) -> dict[str, Any]:
     """Size an extinguishing system for a single zone."""
     from marine.engine.extinguishment import size_system
+
     design = size_system(zone_to_domain(zone), ship.to_domain())
     return design.__dict__
 
@@ -313,6 +368,7 @@ async def generate_alarm_logic(
     from marine.core.types import DetectorType
     from marine.engine.alarm_logic import export_to_plc_script, generate_logic_tree
     from marine.iec60092.part_502 import place_detectors_grid, select_detector_type
+
     domain_ship = ship.to_domain()
     all_nodes = []
     for zr in zones:
@@ -344,6 +400,7 @@ async def generate_scada(
         build_mqtt_topics,
         build_pyscada_yaml,
     )
+
     tags = build_mqtt_topics(imo, zone_ids)
     return {
         "tag_count": len(tags),
@@ -381,11 +438,13 @@ async def design_detection(
         count_result = calculate_detector_count(domain_zone, dt)
         dps = place_detectors_grid(domain_zone, dt)
         placements.extend([dp.__dict__ for dp in dps])
-        counts.append({
-            "detector_type": dt_str,
-            "count_result": count_result.__dict__,
-            "placement_count": len(dps),
-        })
+        counts.append(
+            {
+                "detector_type": dt_str,
+                "count_result": count_result.__dict__,
+                "placement_count": len(dps),
+            }
+        )
 
     return {
         "selection": selection.__dict__,
@@ -400,13 +459,17 @@ async def design_detection(
 )
 @limiter.limit("30/minute")
 async def generate_divisions(
-    request: Request, body: DesignRequest,
+    request: Request,
+    body: DesignRequest,
 ) -> dict[str, Any]:
     """Generate fire-division specs for a list of zones."""
     from marine.engine.fire_resistance import generate_division_specs
+
     zones = [zone_to_domain(z) for z in (body.zones or [])]
     if not zones:
-        raise HTTPException(status_code=400, detail="No zones provided.")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail="No zones provided."
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     specs = generate_division_specs(zones)
     return {
         "division_count": len(specs),
@@ -420,10 +483,12 @@ async def generate_divisions(
 )
 @limiter.limit("30/minute")
 async def design_power(
-    request: Request, body: PowerDesignRequest,
+    request: Request,
+    body: PowerDesignRequest,
 ) -> dict[str, Any]:
     """Design the electrical power supply for fire systems."""
     from marine.iec60092.electrical_installations import design_fire_system_power
+
     ship = body.ship.to_domain()
     spec = design_fire_system_power(
         ship,
@@ -440,7 +505,8 @@ async def design_power(
 )
 @limiter.limit("30/minute")
 async def generate_etap(
-    request: Request, body: EtapExportRequest,
+    request: Request,
+    body: EtapExportRequest,
 ) -> dict[str, Any]:
     """Generate ETAP-compatible load and source CSVs."""
     from marine.iec60092.electrical_installations import design_fire_system_power
@@ -448,6 +514,7 @@ async def generate_etap(
         export_etap_loads_csv,
         export_etap_sources_csv,
     )
+
     ship = body.ship.to_domain()
     spec = design_fire_system_power(
         ship,
@@ -457,7 +524,8 @@ async def generate_etap(
     )
     return {
         "loads_csv": export_etap_loads_csv(
-            ship, spec,
+            ship,
+            spec,
             detection_load_w=body.detection_load_w,
             alarm_load_w=body.alarm_load_w,
             extinguish_load_w=body.extinguish_load_w,
@@ -473,15 +541,14 @@ async def generate_etap(
 )
 @limiter.limit("30/minute")
 async def generate_dxf(
-    request: Request, body: DxfExportRequest,
+    request: Request,
+    body: DxfExportRequest,
 ) -> dict[str, Any]:
     """Generate a complete AutoCAD DXF file."""
     from marine.integration.autocad_exporter import generate_full_dxf
+
     zones = [zone_to_domain(z) for z in body.zones]
-    dps = [
-        _detector_request_to_domain(d)
-        for d in (body.detector_placements or [])
-    ]
+    dps = [_detector_request_to_domain(d) for d in (body.detector_placements or [])]
     dxf = generate_full_dxf(
         zones,
         detector_placements=dps,
@@ -500,7 +567,8 @@ async def generate_dxf(
 )
 @limiter.limit("30/minute")
 async def generate_revit(
-    request: Request, body: RevitExportRequest,
+    request: Request,
+    body: RevitExportRequest,
 ) -> dict[str, Any]:
     """Generate Revit families, placements, and division elements."""
     from marine.engine.fire_resistance import generate_division_specs
@@ -509,17 +577,12 @@ async def generate_revit(
         generate_revit_family,
         generate_revit_placement,
     )
+
     zones = [zone_to_domain(z) for z in body.zones]
-    dps = [
-        _detector_request_to_domain(d)
-        for d in (body.detector_placements or [])
-    ]
+    dps = [_detector_request_to_domain(d) for d in (body.detector_placements or [])]
     families = [generate_revit_family(dp) for dp in dps]
     placements = [generate_revit_placement(dp) for dp in dps]
-    divisions = [
-        generate_revit_division(s)
-        for s in generate_division_specs(zones)
-    ]
+    divisions = [generate_revit_division(s) for s in generate_division_specs(zones)]
     return {
         "family_count": len(families),
         "placement_count": len(placements),
@@ -532,15 +595,21 @@ async def generate_revit(
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
+
 def zone_to_domain(zr: ZoneRequest) -> MarineZone:
     """Convert Pydantic ZoneRequest to MarineZone dataclass."""
     shape_polygon = None
     if zr.shape_polygon is not None:
         shape_polygon = [(p[0], p[1]) for p in zr.shape_polygon]
     return MarineZone(
-        zone_id=zr.zone_id, name=zr.name, space_category=zr.space_category,
-        deck=zr.deck, frame_start=zr.frame_start, frame_end=zr.frame_end,
-        area_m2=zr.area_m2, height_m=zr.height_m,
+        zone_id=zr.zone_id,
+        name=zr.name,
+        space_category=zr.space_category,
+        deck=zr.deck,
+        frame_start=zr.frame_start,
+        frame_end=zr.frame_end,
+        area_m2=zr.area_m2,
+        height_m=zr.height_m,
         has_escape_route=zr.has_escape_route,
         escape_route_count=zr.escape_route_count,
         max_distance_to_stairway_m=zr.max_distance_to_stairway_m,

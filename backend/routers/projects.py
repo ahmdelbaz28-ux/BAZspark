@@ -69,7 +69,9 @@ async def list_projects(
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))]
+)
 @limiter.limit("30/minute")
 async def create_project(request: Request, input_data: CreateProjectInput):
     """Create a new project."""
@@ -92,28 +94,42 @@ async def create_project(request: Request, input_data: CreateProjectInput):
     return success(project)
 
 
-@router.get("/{project_id}", responses={404: {"description": "Project not found"}}, dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
+@router.get(
+    "/{project_id}",
+    responses={404: {"description": "Project not found"}},
+    dependencies=[Depends(require_permission(Permission.PROJECT_READ))],
+)
 async def get_project(project_id: str):
     """Get a project by ID."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     validate_project(project)
     return success(project)
 
 
-@router.put("/{project_id}", responses={404: {"description": "Project not found"}}, dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
+@router.put(
+    "/{project_id}",
+    responses={404: {"description": "Project not found"}},
+    dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))],
+)
 @limiter.limit("30/minute")
 async def update_project(request: Request, project_id: str, input_data: UpdateProjectInput):
     """Update an existing project."""
     db = get_db()
     updates = input_data.model_dump(exclude_none=True)
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail="No fields to update"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     project = db.update_project(project_id, updates)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR — S7632: test function documented via class name / module path
     validate_project(project)
 
     # Sync update to UDM (System B) — non-blocking, never raises
@@ -127,7 +143,12 @@ async def update_project(request: Request, project_id: str, input_data: UpdatePr
 
 # ── Project Export Endpoints (DXF, Revit, IFC) ────────────────────────────────────────
 
-@router.get("/{project_id}/export/dxf", responses={404: {"description": "Project not found"}}, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+
+@router.get(
+    "/{project_id}/export/dxf",
+    responses={404: {"description": "Project not found"}},
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def export_project_dxf(project_id: str) -> StreamingResponse:
     """Export a project as DXF (placeholder implementation)."""
     db = get_db()
@@ -135,10 +156,19 @@ async def export_project_dxf(project_id: str) -> StreamingResponse:
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     content = b"Mock DXF content for project " + project_id.encode()
-    filename = f"{project.get('name','project')}_export.dxf"
-    return StreamingResponse(io.BytesIO(content), media_type="application/dxf", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
+    filename = f"{project.get('name', 'project')}_export.dxf"
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/dxf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
-@router.get("/{project_id}/export/revit", responses={404: {"description": "Project not found"}}, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+
+@router.get(
+    "/{project_id}/export/revit",
+    responses={404: {"description": "Project not found"}},
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def export_project_revit(project_id: str) -> StreamingResponse:
     """Export a project as Revit JSON (placeholder)."""
     db = get_db()
@@ -147,10 +177,22 @@ async def export_project_revit(project_id: str) -> StreamingResponse:
         raise HTTPException(status_code=404, detail="Project not found")
     data = {"project_id": project_id, "devices": [], "connections": [], "version": "1.0"}
     content = json.dumps(data).encode()
-    filename = f"{project.get('name','project')}_export.json"
-    return StreamingResponse(io.BytesIO(content), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
+    filename = f"{project.get('name', 'project')}_export.json"
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
-@router.get("/{project_id}/export/ifc", responses={404: {"description": "Project not found"}, 422: {"description": "Invalid IFC version"}}, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+
+@router.get(
+    "/{project_id}/export/ifc",
+    responses={
+        404: {"description": "Project not found"},
+        422: {"description": "Invalid IFC version"},
+    },
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def export_project_ifc(project_id: str, version: str | None = None) -> StreamingResponse:
     """Export a project as IFC (placeholder).
     Accepts optional version parameter; only known versions are allowed.
@@ -165,16 +207,28 @@ async def export_project_ifc(project_id: str, version: str | None = None) -> Str
         raise HTTPException(status_code=422, detail="Invalid IFC version")
     # Simple placeholder IFC content
     content = f"IFC placeholder for project {project_id}, version {version or 'default'}".encode()
-    filename = f"{project.get('name','project')}_export.ifc"
-    return StreamingResponse(io.BytesIO(content), media_type="application/ifc", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
-@router.delete("/{project_id}", responses={404: {"description": "Project not found"}}, dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
+    filename = f"{project.get('name', 'project')}_export.ifc"
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/ifc",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.delete(
+    "/{project_id}",
+    responses={404: {"description": "Project not found"}},
+    dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))],
+)
 @limiter.limit("30/minute")
 async def delete_project(request: Request, project_id: str):
     """Delete a project and all its children."""
     db = get_db()
     deleted = db.delete_project(project_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR — S7632: test function documented via class name / module path
 
     # Sync deletion to UDM (System B) — non-blocking, never raises
     try:

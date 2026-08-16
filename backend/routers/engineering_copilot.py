@@ -6,6 +6,7 @@ FastAPI router for Engineering Copilot operations.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import logging
 from datetime import datetime
 from typing import Any
@@ -24,25 +25,25 @@ translation_engine = None
 
 
 try:
-
     from engineering_copilot.ai_agent.ai_agent import AICopilot
     from engineering_copilot.models.unified_model import UnifiedEngineeringModel
     from engineering_copilot.translation_engine.translation_engine import TranslationEngine
+
     ai_copilot = AICopilot()
     translation_engine = TranslationEngine()
 except Exception as _err:
     logger.warning("Engineering copilot module initialization warning: %s", _err)
 
 
-
-
 class ChatRequest(BaseModel):
     """Request model for chat-based interaction."""
+
     request: str
 
 
 class EngineeringRequest(BaseModel):
     """Request model for engineering operations."""
+
     request: str
     target_systems: list[str] = ["AutoCAD", "ETAP", "Revit"]
     generate_reports: bool = True
@@ -51,6 +52,7 @@ class EngineeringRequest(BaseModel):
 
 class EntityRequest(BaseModel):
     """Request model for creating specific entities."""
+
     name: str
     entity_type: str
     description: str = ""
@@ -60,12 +62,17 @@ class EntityRequest(BaseModel):
 
 class SyncRequest(BaseModel):
     """Request model for synchronization operations."""
+
     source_system: str
     target_system: str
     model_data: dict[str, Any] = {}
 
 
-@router.post("/chat", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/chat",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 async def chat_with_copilot(request: ChatRequest) -> dict[str, Any]:
     """
     Chat with the Engineering Copilot using natural language.
@@ -82,10 +89,7 @@ async def chat_with_copilot(request: ChatRequest) -> dict[str, Any]:
     """
     try:
         logger.info("Processing engineering chat request")
-        result = ai_copilot.process_request(
-            request.request,
-            ["AutoCAD", "ETAP", "Revit"]
-        )
+        result = ai_copilot.process_request(request.request, ["AutoCAD", "ETAP", "Revit"])
         # Extract the response text for the chat UI
         response_text = result.get("response", result.get("message", "Processing complete."))
         return {
@@ -102,7 +106,11 @@ async def chat_with_copilot(request: ChatRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error processing chat request") from exc
 
 
-@router.post("/process-request", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/process-request",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 async def process_engineering_request(request: EngineeringRequest) -> dict[str, Any]:
     """
     Process a natural language engineering request.
@@ -117,23 +125,22 @@ async def process_engineering_request(request: EngineeringRequest) -> dict[str, 
         logger.info("Processing engineering request")  # nosec: S5145 — request details not logged to avoid user-controlled data in logs
 
         # Process the request using the AI Copilot
-        result = ai_copilot.process_request(
-            request.request,
-            request.target_systems
-        )
+        result = ai_copilot.process_request(request.request, request.target_systems)
 
         # Generate reports if requested
         if request.generate_reports:
-            reports = ai_copilot.generate_reports(result['unified_model'])
-            result['reports'] = reports
+            reports = ai_copilot.generate_reports(result["unified_model"])
+            result["reports"] = reports
 
         # Perform validation if requested
         if request.validate_model:
-            result['validation'] = result['validation_report']
+            result["validation"] = result["validation_report"]
 
-        result['processed_at'] = datetime.now().isoformat()
+        result["processed_at"] = datetime.now().isoformat()
 
-        logger.info(f"Engineering request processed successfully for {len(request.target_systems)} systems")
+        logger.info(
+            f"Engineering request processed successfully for {len(request.target_systems)} systems"
+        )
         return result
 
     except HTTPException:
@@ -143,7 +150,11 @@ async def process_engineering_request(request: EngineeringRequest) -> dict[str, 
         raise HTTPException(status_code=500, detail="Error processing request") from exc
 
 
-@router.post("/create-entity", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post(
+    "/create-entity",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)
 async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
     """
     Create a specific engineering entity.
@@ -174,7 +185,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
         coordinates = Coordinates(
             request.coordinates.get("x", 0.0),
             request.coordinates.get("y", 0.0),
-            request.coordinates.get("z", 0.0)
+            request.coordinates.get("z", 0.0),
         )
 
         # Create entity based on type
@@ -187,7 +198,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 current_rating=request.properties.get("current_rating", 400.0),
                 feeder_count=request.properties.get("feeder_count", 5),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "transformer":
             entity = Transformer(
@@ -197,7 +208,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 secondary_voltage=request.properties.get("secondary_voltage", 480.0),
                 power_rating=request.properties.get("power_rating", 1000.0),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "bus":
             entity = Bus(
@@ -206,7 +217,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 voltage_rating=request.properties.get("voltage_rating", 480.0),
                 current_rating=request.properties.get("current_rating", 2000.0),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "cable":
             entity = Cable(
@@ -216,7 +227,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 conductor_size=request.properties.get("conductor_size", "500kcmil"),
                 length=request.properties.get("length", 100.0),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "breaker":
             entity = Breaker(
@@ -226,7 +237,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 current_rating=request.properties.get("current_rating", 200.0),
                 interrupting_rating=request.properties.get("interrupting_rating", 65.0),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "load":
             entity = Load(
@@ -235,7 +246,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 power_rating=request.properties.get("power_rating", 100.0),
                 power_factor=request.properties.get("power_factor", 0.9),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "generator":
             entity = Generator(
@@ -244,7 +255,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 power_rating=request.properties.get("power_rating", 500.0),
                 voltage_rating=request.properties.get("voltage_rating", 480.0),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         elif request.entity_type.lower() == "equipment":
             entity = Equipment(
@@ -252,10 +263,12 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
                 description=request.description,
                 equipment_type=request.properties.get("equipment_type", "General Equipment"),
                 coordinates=coordinates,
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
         else:
-            raise HTTPException(status_code=400, detail=f"Unknown entity type: {request.entity_type}")
+            raise HTTPException(
+                status_code=400, detail=f"Unknown entity type: {request.entity_type}"
+            )
 
         # Create a unified model and add the entity
         model = UnifiedEngineeringModel()
@@ -278,7 +291,7 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
             "name": request.name,
             "created_at": datetime.now().isoformat(),
             "system_outputs": results,
-            "message": f"{request.entity_type} '{request.name}' created successfully"
+            "message": f"{request.entity_type} '{request.name}' created successfully",
         }
 
         logger.info("Created %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
@@ -291,7 +304,11 @@ async def create_engineering_entity(request: EntityRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error creating entity") from exc
 
 
-@router.post("/translate-model", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/translate-model",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 async def translate_engineering_model(request: SyncRequest) -> dict[str, Any]:
     """
     Translate engineering model between systems.
@@ -319,9 +336,7 @@ async def translate_engineering_model(request: SyncRequest) -> dict[str, Any]:
 
         # Perform the translation
         translated_data = translation_engine.translate(
-            unified_model,
-            request.source_system,
-            request.target_system
+            unified_model, request.source_system, request.target_system
         )
 
         translation_result = {
@@ -330,7 +345,7 @@ async def translate_engineering_model(request: SyncRequest) -> dict[str, Any]:
             "target_system": request.target_system,
             "translated_data": translated_data,
             "translated_at": datetime.now().isoformat(),
-            "message": f"Model translated from {request.source_system} to {request.target_system}"
+            "message": f"Model translated from {request.source_system} to {request.target_system}",
         }
 
         logger.info("Translated model from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
@@ -343,7 +358,11 @@ async def translate_engineering_model(request: SyncRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Error translating model") from exc
 
 
-@router.post("/validate-model", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/validate-model",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 async def validate_engineering_model(model_data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate an engineering model for common issues.
@@ -376,7 +395,11 @@ async def validate_engineering_model(model_data: dict[str, Any]) -> dict[str, An
         raise HTTPException(status_code=500, detail="Error validating model") from exc
 
 
-@router.post("/generate-reports", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+@router.post(
+    "/generate-reports",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))],
+)
 async def generate_engineering_reports(model_data: dict[str, Any]) -> dict[str, Any]:
     """
     Generate engineering reports from a model.
@@ -409,7 +432,11 @@ async def generate_engineering_reports(model_data: dict[str, Any]) -> dict[str, 
         raise HTTPException(status_code=500, detail="Error generating reports") from exc
 
 
-@router.get("/health", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
+@router.get(
+    "/health",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.HEALTH_READ))],
+)
 async def health_check() -> dict[str, Any]:
     """
     Health check endpoint for the Engineering Copilot.
@@ -426,9 +453,9 @@ async def health_check() -> dict[str, Any]:
             "translation_engine_ready": True,
             "connectors": {
                 "autocad": "not_connected",  # Would check actual connection
-                "revit": "not_connected",     # Would check actual connection
-                "etap": "not_connected"       # Would check actual connection
-            }
+                "revit": "not_connected",  # Would check actual connection
+                "etap": "not_connected",  # Would check actual connection
+            },
         }
 
         logger.info("Health check completed")
@@ -439,7 +466,11 @@ async def health_check() -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Health check failed") from exc
 
 
-@router.get("/capabilities", response_model=dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
+@router.get(
+    "/capabilities",
+    response_model=dict[str, Any],
+    dependencies=[Depends(require_permission(Permission.CALCULATION_READ))],
+)
 async def get_capabilities() -> dict[str, Any]:
     """
     Get the capabilities of the Engineering Copilot.
@@ -449,44 +480,50 @@ async def get_capabilities() -> dict[str, Any]:
     """
     capabilities = {
         "natural_language_processing": True,
-        "cad_generation": {
-            "autocad": True,
-            "revit": True,
-            "auto_generate_drawings": True
-        },
+        "cad_generation": {"autocad": True, "revit": True, "auto_generate_drawings": True},
         "etap_integration": {
             "model_sync": True,
             "analysis_studies": True,
-            "single_line_diagrams": True
+            "single_line_diagrams": True,
         },
         "bim_integration": {
             "revit_sync": True,
             "family_placement": True,
-            "parameter_updates": True
+            "parameter_updates": True,
         },
         "translation_engine": {
             "etap_to_autocad": True,
             "autocad_to_revit": True,
             "revit_to_etap": True,
-            "unified_model_support": True
+            "unified_model_support": True,
         },
         "ai_capabilities": {
             "intent_recognition": True,
             "entity_extraction": True,
             "engineering_validation": True,
             "conflict_detection": True,
-            "report_generation": True
+            "report_generation": True,
         },
         "supported_entities": [
-            "Panel", "Transformer", "Bus", "Cable", "Breaker",
-            "Load", "Generator", "Equipment", "Conduit", "Tray"
+            "Panel",
+            "Transformer",
+            "Bus",
+            "Cable",
+            "Breaker",
+            "Load",
+            "Generator",
+            "Equipment",
+            "Conduit",
+            "Tray",
         ],
         "available_reports": [
-            "Bill of Materials", "Panel Schedule", "Electrical Schedule",
-            "Design Documentation", "Validation Report"
-        ]
+            "Bill of Materials",
+            "Panel Schedule",
+            "Electrical Schedule",
+            "Design Documentation",
+            "Validation Report",
+        ],
     }
 
     logger.info("Capabilities retrieved")
     return capabilities
-

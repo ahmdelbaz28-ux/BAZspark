@@ -30,12 +30,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import backend.services.workflow_service as _wfs_mod  # noqa: F401
+
     _WORKFLOW_AVAILABLE = True
 except ModuleNotFoundError:
     _WORKFLOW_AVAILABLE = False
 
 if not _WORKFLOW_AVAILABLE:
     import pytest as _pytest
+
     _pytest.skip(
         "backend.services.workflow_service not installed — skipping workflow tests",
         allow_module_level=True,
@@ -60,6 +62,7 @@ from backend.services.workflow_service import (
 )
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def service():
@@ -108,6 +111,7 @@ def sample_state() -> PipelineState:
 
 # ── 1. Service Initialization Tests ──────────────────────────────────────────
 
+
 class TestServiceInit:
     def test_service_creates_successfully(self, service):
         """WorkflowService must initialize without errors."""
@@ -119,9 +123,13 @@ class TestServiceInit:
         """The StateGraph must contain all 8 required nodes."""
         graph = build_fireai_workflow()
         expected_nodes = [
-            "initialize", "parse", "validate",
-            "fetch_env_context", "nfpa_analysis",
-            "conflict_detection", "human_review_gate",
+            "initialize",
+            "parse",
+            "validate",
+            "fetch_env_context",
+            "nfpa_analysis",
+            "conflict_detection",
+            "human_review_gate",
             "generate_report",
         ]
         for node in expected_nodes:
@@ -140,6 +148,7 @@ class TestServiceInit:
 
 
 # ── 2. Node Unit Tests ──────────────────────────────────────────────────────
+
 
 class TestNodeValidate:
     def test_validate_passes_with_valid_rooms(self, sample_state):
@@ -211,14 +220,17 @@ class TestNodeConflictDetection:
             {"name": "room_1", "detector_count": 2, "occupancy_type": "unknown"},
         ]
         result = node_conflict_detection(sample_state)
-        assert any(
-            c["type"] == "UNKNOWN_OCCUPANCY" for c in result["conflicts"]
-        )
+        assert any(c["type"] == "UNKNOWN_OCCUPANCY" for c in result["conflicts"])
 
     def test_no_conflicts_for_compliant_rooms(self, sample_state):
         """Must report no conflicts when all rooms are compliant."""
         sample_state["nfpa_results"] = [
-            {"name": "office_1", "detector_count": 3, "occupancy_type": "office", "is_flagged": False},
+            {
+                "name": "office_1",
+                "detector_count": 3,
+                "occupancy_type": "office",
+                "is_flagged": False,
+            },
         ]
         result = node_conflict_detection(sample_state)
         assert result["conflict_count"] == 0
@@ -291,6 +303,7 @@ class TestNodeGenerateReport:
 
 # ── 3. Conditional Edge Tests ────────────────────────────────────────────────
 
+
 class TestConditionalEdges:
     def test_parse_success_routes_to_validate(self, sample_state):
         """Successful parse must route to validate."""
@@ -335,6 +348,7 @@ class TestConditionalEdges:
 
 # ── 4. Audit Trail Tests ────────────────────────────────────────────────────
 
+
 class TestAuditTrail:
     def test_transition_log_is_append_only(self, sample_state):
         """Transition log must be append-only — no deletion."""
@@ -372,6 +386,7 @@ class TestAuditTrail:
 
 # ── 5. Error Handling Tests ──────────────────────────────────────────────────
 
+
 class TestErrorHandling:
     def test_initialize_fails_gracefully_for_missing_file(self, sample_state):
         """Initialize must set FAILED status for missing files."""
@@ -384,7 +399,9 @@ class TestErrorHandling:
         """Initialize must compute SHA-256 of the input file."""
         # Allow test_data directory for path traversal check
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        monkeypatch.setenv(
+            "FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}"
+        )  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         # Use the actual test file that exists
         sample_state["file_path"] = "test_data/hybrid/single_office.pdf"
         if os.path.exists(sample_state["file_path"]):
@@ -400,18 +417,21 @@ class TestErrorHandling:
 
 # ── 6. Integration Tests ────────────────────────────────────────────────────
 
+
 class TestWorkflowIntegration:
     @pytest.fixture(autouse=True)
     def _allow_test_data_dir(self, monkeypatch):
         """Allow test_data directory for path traversal security check."""
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        monkeypatch.setenv(
+            "FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}"
+        )  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     @pytest.mark.asyncio
     @pytest.mark.xfail(
         reason="V301: Pre-existing workflow service bug — 'Connection' object has no attribute 'is_alive' "
-               "causes workflow to fail with 0 transitions. Not caused by CI/CD fixes. "
-               "Tracked separately for workflow service remediation."
+        "causes workflow to fail with 0 transitions. Not caused by CI/CD fixes. "
+        "Tracked separately for workflow service remediation."
     )
     async def test_full_workflow_with_pdf(self, service):
         """Full workflow must complete successfully with a valid PDF."""

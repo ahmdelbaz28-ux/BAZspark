@@ -96,10 +96,20 @@ def _write_devices_sheet(wb, devices):
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     dev_cols = [
-        "ID", "Name", "Type", "Category",
-        "X", "Y", "Z", "Rotation",
-        "Voltage (V)", "Current (A)", "Load (W)",
-        "Created At", "Updated At", "Properties",
+        "ID",
+        "Name",
+        "Type",
+        "Category",
+        "X",
+        "Y",
+        "Z",
+        "Rotation",
+        "Voltage (V)",
+        "Current (A)",
+        "Load (W)",
+        "Created At",
+        "Updated At",
+        "Properties",
     ]
     for col, name in enumerate(dev_cols, start=1):
         cell = ws_dev.cell(row=1, column=col, value=name)
@@ -110,12 +120,19 @@ def _write_devices_sheet(wb, devices):
         props = d.get("properties") or {}
         props_str = json.dumps(props, ensure_ascii=False) if props else ""
         row_vals = [
-            d.get("id", ""), d.get("name", ""),
-            d.get("type", ""), d.get("category", ""),
-            d.get("x", 0.0), d.get("y", 0.0), d.get("z", 0.0),
+            d.get("id", ""),
+            d.get("name", ""),
+            d.get("type", ""),
+            d.get("category", ""),
+            d.get("x", 0.0),
+            d.get("y", 0.0),
+            d.get("z", 0.0),
             d.get("rotation", 0.0),
-            d.get("voltage", 0.0), d.get("current", 0.0), d.get("load", 0.0),
-            d.get("createdAt", ""), d.get("updatedAt", ""),
+            d.get("voltage", 0.0),
+            d.get("current", 0.0),
+            d.get("load", 0.0),
+            d.get("createdAt", ""),
+            d.get("updatedAt", ""),
             props_str,
         ]
         for col, val in enumerate(row_vals, start=1):
@@ -137,9 +154,13 @@ def _write_connections_sheet(wb, connections):
         cell.alignment = Alignment(horizontal="center")
     for i, c in enumerate(connections, start=2):
         row_vals = [
-            c.get("id", ""), c.get("fromId", ""), c.get("toId", ""),
-            c.get("cableSize", ""), c.get("length", 0.0),
-            c.get("type", ""), c.get("createdAt", ""),
+            c.get("id", ""),
+            c.get("fromId", ""),
+            c.get("toId", ""),
+            c.get("cableSize", ""),
+            c.get("length", 0.0),
+            c.get("type", ""),
+            c.get("createdAt", ""),
         ]
         for col, val in enumerate(row_vals, start=1):
             ws_conn.cell(row=i, column=col, value=val)
@@ -252,7 +273,9 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
     if not projects or not projects.get("data"):
-        raise HTTPException(status_code=404, detail="No projects found to export data")  # NOSONAR — S8415
+        raise HTTPException(
+            status_code=404, detail="No projects found to export data"
+        )  # NOSONAR — S8415
 
     project_id = projects["data"][0]["id"]
     project = projects["data"][0]
@@ -265,10 +288,12 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     if export_type == "excel":
         content, media_type, filename = _generate_excel_export(project, devices, connections)
     else:
-        content, media_type, filename = _generate_manifest_export(project, devices, connections, export_type, project_id)
+        content, media_type, filename = _generate_manifest_export(
+            project, devices, connections, export_type, project_id
+        )
 
     return StreamingResponse(
         io.BytesIO(content),
         media_type=media_type,
-        headers={"Content-Disposition": f"attachment; filename=\"{filename}\""}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

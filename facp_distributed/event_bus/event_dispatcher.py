@@ -1,5 +1,6 @@
 # NOSONAR
 """Event Dispatcher for Event Bus in Distributed FACP System"""
+
 import threading
 import time
 import uuid
@@ -12,8 +13,13 @@ from .message_queue import Message, MessagePriority, MessageQueue
 class EventListener:
     """Represents an event listener in the distributed system"""
 
-    def __init__(self, name: str, callback: Callable[[dict[str, Any]], None],
-                 event_types: list[str] | None = None, node_filters: list[str] | None = None):
+    def __init__(
+        self,
+        name: str,
+        callback: Callable[[dict[str, Any]], None],
+        event_types: list[str] | None = None,
+        node_filters: list[str] | None = None,
+    ):
         self.id = f"listener_{name}_{uuid.uuid4().hex[:8]}"
         self.name = name
         self.callback = callback
@@ -37,7 +43,9 @@ class EventListener:
         type_match = "*" in self.event_types or event_type in self.event_types
 
         # Check node filter match
-        node_match = not self.node_filters or source_node in self.node_filters or "*" in self.node_filters
+        node_match = (
+            not self.node_filters or source_node in self.node_filters or "*" in self.node_filters
+        )
 
         return type_match and node_match
 
@@ -68,7 +76,7 @@ class EventDispatcher:
             "events_dispatched": 0,
             "events_filtered_out": 0,
             "listener_invocations": 0,
-            "listener_errors": 0
+            "listener_errors": 0,
         }
         self.running = False
         self.dispatch_thread = None
@@ -77,8 +85,13 @@ class EventDispatcher:
         self.worker_queue = queue.Queue()
         self.broadcast_targets = set()  # set of target identifiers for broadcasting
 
-    def register_listener(self, name: str, callback: Callable[[dict[str, Any]], None],
-                         event_types: list[str] | None = None, node_filters: list[str] | None = None) -> str:
+    def register_listener(
+        self,
+        name: str,
+        callback: Callable[[dict[str, Any]], None],
+        event_types: list[str] | None = None,
+        node_filters: list[str] | None = None,
+    ) -> str:
         """Register a new event listener"""
         with self.lock:
             listener = EventListener(name, callback, event_types, node_filters)
@@ -111,7 +124,9 @@ class EventDispatcher:
     def dispatch_event(self, event_data: dict[str, Any]) -> list[str]:
         """Dispatch an event to interested listeners"""
         event_type = event_data.get("event_type", "unknown")
-        _ = event_data.get("source_node", "unknown")  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
+        _ = event_data.get(
+            "source_node", "unknown"
+        )  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
 
         matched_listeners = []
 
@@ -162,12 +177,14 @@ class EventDispatcher:
             "method": facp_message.get("method", "unknown"),
             "protocol": facp_message.get("protocol", "unknown"),
             "facp_message": facp_message,
-            "dispatched_at": time.time()
+            "dispatched_at": time.time(),
         }
 
         return self.dispatch_event(event_data)
 
-    def broadcast_event(self, event_data: dict[str, Any], targets: list[str] | None = None) -> dict[str, list[str]]:
+    def broadcast_event(
+        self, event_data: dict[str, Any], targets: list[str] | None = None
+    ) -> dict[str, list[str]]:
         """Broadcast an event to multiple targets (simulated for distributed system)"""
         if targets is None:
             targets = list(self.broadcast_targets)
@@ -185,13 +202,15 @@ class EventDispatcher:
 
         return results
 
-    def queue_event(self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> bool:
+    def queue_event(
+        self, event_data: dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL
+    ) -> bool:
         """Queue an event for later processing"""
         message = Message(
             topic="events",
             data=event_data,
             priority=priority,
-            headers={"event_type": event_data.get("event_type", "unknown")}
+            headers={"event_type": event_data.get("event_type", "unknown")},
         )
 
         return self.event_queue.publish(message)
@@ -275,7 +294,7 @@ class EventDispatcher:
                     "is_active": listener.is_active,
                     "last_invoked": listener.last_invoked,
                     "invocation_count": listener.invocation_count,
-                    "errors": listener.errors
+                    "errors": listener.errors,
                 }
         return None
 
@@ -296,7 +315,7 @@ class EventDispatcher:
                 "queue_size": self.event_queue.get_queue_size(),
                 "broadcast_targets_count": len(self.broadcast_targets),
                 "running": self.running,
-                "uptime_seconds": time.time() - getattr(self, 'start_time', time.time())
+                "uptime_seconds": time.time() - getattr(self, "start_time", time.time()),
             }
 
     def get_statistics(self) -> dict[str, Any]:
@@ -307,8 +326,10 @@ class EventDispatcher:
                 listener_stats[lid] = {
                     "invocation_count": listener.invocation_count,
                     "errors": listener.errors,
-                    "success_rate": listener.invocation_count / (listener.invocation_count + listener.errors)
-                                    if (listener.invocation_count + listener.errors) > 0 else 0
+                    "success_rate": listener.invocation_count
+                    / (listener.invocation_count + listener.errors)
+                    if (listener.invocation_count + listener.errors) > 0
+                    else 0,
                 }
 
             return {
@@ -316,13 +337,15 @@ class EventDispatcher:
                 "total_events_dispatched": self.stats["events_dispatched"],
                 "total_listener_invocations": self.stats["listener_invocations"],
                 "total_listener_errors": self.stats["listener_errors"],
-                "average_listeners_per_event": self.stats["listener_invocations"] / self.stats["events_dispatched"]
-                                               if self.stats["events_dispatched"] > 0 else 0,
+                "average_listeners_per_event": self.stats["listener_invocations"]
+                / self.stats["events_dispatched"]
+                if self.stats["events_dispatched"] > 0
+                else 0,
                 "listener_statistics": listener_stats,
                 "queue_statistics": {
                     "size": self.event_queue.get_queue_size(),
-                    "stats": self.event_queue.get_stats()
-                }
+                    "stats": self.event_queue.get_stats(),
+                },
             }
 
     def filter_event(self, event_data: dict[str, Any]) -> bool:
@@ -356,8 +379,13 @@ class EventDispatcher:
                 return True
         return False
 
-    def update_listener_filters(self, listener_id: str, event_types: list[str] | None = None,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-                               node_filters: list[str] | None = None) -> bool:
+    def update_listener_filters(
+        self,
+        listener_id: str,
+        event_types: list[str]
+        | None = None,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        node_filters: list[str] | None = None,
+    ) -> bool:
         """Update filters for a listener"""
         with self.lock:
             if listener_id in self.listeners:
@@ -421,13 +449,15 @@ class DistributedEventDispatcher(EventDispatcher):
             # Notify cluster about this event
             if self.cluster_sync_callback:
                 try:
-                    self.cluster_sync_callback({
-                        "action": "event_dispatched",
-                        "event_data": event_data,
-                        "node_id": self.node_id,
-                        "timestamp": time.time(),
-                        "dispatcher_id": self.dispatcher_id
-                    })
+                    self.cluster_sync_callback(
+                        {
+                            "action": "event_dispatched",
+                            "event_data": event_data,
+                            "node_id": self.node_id,
+                            "timestamp": time.time(),
+                            "dispatcher_id": self.dispatcher_id,
+                        }
+                    )
                 except Exception as e:
                     print(f"Error notifying cluster: {e}")
 
@@ -468,13 +498,15 @@ class DistributedEventDispatcher(EventDispatcher):
     def get_cluster_aware_status(self) -> dict[str, Any]:
         """Get status including cluster information"""
         base_status = self.get_dispatcher_status()
-        base_status.update({
-            "node_id": self.node_id,
-            "cluster_listeners_count": len(self.cluster_listeners),
-            "cluster_events_queue_size": len(self.cluster_events_queue),
-            "federation_enabled": self.federation_enabled,
-            "local_only_events": list(self.local_only_events)
-        })
+        base_status.update(
+            {
+                "node_id": self.node_id,
+                "cluster_listeners_count": len(self.cluster_listeners),
+                "cluster_events_queue_size": len(self.cluster_events_queue),
+                "federation_enabled": self.federation_enabled,
+                "local_only_events": list(self.local_only_events),
+            }
+        )
         return base_status
 
 

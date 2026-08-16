@@ -189,7 +189,9 @@ def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent 
         if not room_poly.is_valid:
             room_poly = room_poly.buffer(0)
     except Exception as e:
-        logger.warning("V112: grid_polygon_verify: failed to construct room polygon from coords: %s", e)
+        logger.warning(
+            "V112: grid_polygon_verify: failed to construct room polygon from coords: %s", e
+        )
         return False, 0.0
 
     min_x, min_y, max_x, max_y = polygon_bounds(room_coords)
@@ -206,7 +208,10 @@ def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent 
         while y <= max_y + 1e-9:
             # Check if point is inside polygon
             try:
-                if room_poly.contains(Point(x, y)) or room_poly.boundary.distance(Point(x, y)) < 1e-6:
+                if (
+                    room_poly.contains(Point(x, y))
+                    or room_poly.boundary.distance(Point(x, y)) < 1e-6
+                ):
                     total_points += 1
                     # Check if covered by any detector
                     for dx, dy in detectors:
@@ -530,7 +535,11 @@ class ConsensusEngineV2:
     # ── Consensus computation (shared with v1) ─────────────────────────────
 
     @staticmethod
-    def _compute_consensus(verdicts: list[EngineVerdict]) -> ConsensusResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _compute_consensus(
+        verdicts: list[EngineVerdict],
+    ) -> (
+        ConsensusResult
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Compute consensus from a list of engine verdicts.
 

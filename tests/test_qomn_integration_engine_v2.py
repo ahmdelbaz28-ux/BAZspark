@@ -98,14 +98,20 @@ class TestPoint3D:
 class TestConduitType:
     def test_emt_bend_multiplier(self):
         """NEC Article 358: EMT minimum bend radius = 4× diameter."""
-        assert ConduitType.EMT.min_bend_radius_multiplier == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConduitType.EMT.min_bend_radius_multiplier == 4.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_rmc_bend_multiplier(self):
         """NEC Article 344: RMC minimum bend radius = 5× diameter."""
-        assert ConduitType.RMC.min_bend_radius_multiplier == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConduitType.RMC.min_bend_radius_multiplier == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_fmc_bend_multiplier(self):
-        assert ConduitType.FMC.min_bend_radius_multiplier == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ConduitType.FMC.min_bend_radius_multiplier == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_all_types(self):
         assert {ct.value for ct in ConduitType} == {"EMT", "RMC", "FMC"}
@@ -254,7 +260,9 @@ class TestCableRouterBends:
 
     def test_straight_zero_bends(self):
         path = [Point3D(0, 0, 0), Point3D(5, 0, 0), Point3D(10, 0, 0)]
-        assert CableRouter.calculate_total_bends_degrees(path) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            CableRouter.calculate_total_bends_degrees(path) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_one_90_degree_bend(self):
         path = [Point3D(0, 0, 0), Point3D(5, 0, 0), Point3D(5, 5, 0)]
@@ -269,11 +277,15 @@ class TestCableRouterBends:
     def test_short_path_zero_bends(self):
         """Path with < 3 points has no bends."""
         path = [Point3D(0, 0, 0), Point3D(5, 0, 0)]
-        assert CableRouter.calculate_total_bends_degrees(path) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            CableRouter.calculate_total_bends_degrees(path) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_single_point_zero_bends(self):
         path = [Point3D(0, 0, 0)]
-        assert CableRouter.calculate_total_bends_degrees(path) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            CableRouter.calculate_total_bends_degrees(path) == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nec_violation_exceeds_360(self):
         """Route exceeding 360° total bends raises NECViolationError."""
@@ -310,16 +322,24 @@ class TestSmokeDetectorBoundary:
         assert len(verts) == 8
 
     def test_zero_radius_rejected(self):
-        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            HatchPlacementError, match="> 0"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), 0.0)
 
     def test_negative_radius_rejected(self):
-        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            HatchPlacementError, match="> 0"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), -5.0)
 
     def test_too_few_sides_rejected(self):
-        with pytest.raises(HatchPlacementError, match=">= 4"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), 5.0, num_sides=3)
+        with pytest.raises(
+            HatchPlacementError, match=">= 4"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            HatchPlacementEngine.generate_smoke_detector_boundary(
+                Point3D(0, 0, 0), 5.0, num_sides=3
+            )
 
     def test_vertices_on_circle(self):
         """All vertices should be at distance radius from center."""
@@ -391,11 +411,15 @@ class TestCableHatchIntegrator:
         assert integrator.grid_map.is_blocked(gp)
 
     def test_negative_radius_rejected(self, integrator):
-        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="> 0"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.add_smoke_detector("SD-1", Point3D(5, 5, 3), -1.0)
 
     def test_zero_radius_rejected(self, integrator):
-        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="> 0"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.add_smoke_detector("SD-1", Point3D(5, 5, 3), 0.0)
 
     def test_place_cable_with_hatch(self, integrator):

@@ -30,6 +30,7 @@ Focus areas:
  19. CSP bypass via data: URIs
  20. HSTS subdomain takeover risk
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -107,11 +108,14 @@ def test_timing_attack_validate() -> None:
         # This IS a timing oracle: attacker can distinguish valid vs invalid keys!
         # The fix: add a deliberate delay on invalid keys to match bcrypt time.
         if avg_valid_ms > 100 and avg_invalid_ms < 50:
-            record("timing_oracle_exists", "FAIL",
-                   f"CRITICAL: Timing oracle! Valid key takes {avg_valid_ms:.0f}ms, "
-                   f"invalid takes {avg_invalid_ms:.0f}ms. Attacker can enumerate "
-                   f"valid keys by measuring response time. FIX: Add artificial "
-                   f"delay on failed lookup to match bcrypt cost (~250ms).")
+            record(
+                "timing_oracle_exists",
+                "FAIL",
+                f"CRITICAL: Timing oracle! Valid key takes {avg_valid_ms:.0f}ms, "
+                f"invalid takes {avg_invalid_ms:.0f}ms. Attacker can enumerate "
+                f"valid keys by measuring response time. FIX: Add artificial "
+                f"delay on failed lookup to match bcrypt cost (~250ms).",
+            )
         else:
             record("timing_oracle_exists", "PASS", "No timing oracle detected")
     except Exception as e:
@@ -129,6 +133,7 @@ def test_path_prefix_bypass() -> None:
     print("\n[STRICT 2] Path Prefix Bypass")
     try:
         from backend.security_middleware import _is_public_path
+
         # STRICT FIX B/E: Now uses _is_public_path which does exact match.
         # /health/ is NOT public (different from /health). FastAPI may
         # return 404 for /health/ or redirect to /health, but either way
@@ -150,17 +155,21 @@ def test_path_prefix_bypass() -> None:
             if _is_public_path(test_path):
                 # Only the exact public paths should be public
                 if test_path not in (
-                    "/health", "/docs", "/redoc", "/openapi.json",
-                    "/api/v1/health", "/api/v2/health", "/api/health",
-                    "/api/health/statistics", "/api/reports/statistics",
+                    "/health",
+                    "/docs",
+                    "/redoc",
+                    "/openapi.json",
+                    "/api/v1/health",
+                    "/api/v2/health",
+                    "/api/health",
+                    "/api/health/statistics",
+                    "/api/reports/statistics",
                 ):
                     bypassed.append(p)
         if bypassed:
-            record("prefix_bypass", "FAIL",
-                   f"These paths bypass auth: {bypassed}")
+            record("prefix_bypass", "FAIL", f"These paths bypass auth: {bypassed}")
         else:
-            record("prefix_bypass", "PASS",
-                   "No prefix bypass detected in _is_public_path")
+            record("prefix_bypass", "PASS", "No prefix bypass detected in _is_public_path")
     except Exception as e:
         record("prefix_bypass_test", "FAIL", f"Exception: {e}")
 
@@ -176,7 +185,9 @@ def test_cache_large_value_dos() -> None:
     print("\n[STRICT 3] Cache Large Value DoS")
     try:
         for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
-            if "backend.app" in mod:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            if (
+                "backend.app" in mod
+            ):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 del sys.modules[mod]
         from backend.app import _CACHE_MAX_VALUE_SIZE, cache_get, cache_set
 
@@ -185,12 +196,18 @@ def test_cache_large_value_dos() -> None:
         asyncio.run(cache_set("big_key", big_value, expire=300))
         v = asyncio.run(cache_get("big_key"))
         if v is None:
-            record("cache_large_value_accepted", "PASS",
-                   f"Cache rejected {_CACHE_MAX_VALUE_SIZE + 1} byte value "
-                   f"(cap = {_CACHE_MAX_VALUE_SIZE})")
+            record(
+                "cache_large_value_accepted",
+                "PASS",
+                f"Cache rejected {_CACHE_MAX_VALUE_SIZE + 1} byte value "
+                f"(cap = {_CACHE_MAX_VALUE_SIZE})",
+            )
         else:
-            record("cache_large_value_accepted", "FAIL",
-                   "Cache accepted oversized value — memory DoS risk")
+            record(
+                "cache_large_value_accepted",
+                "FAIL",
+                "Cache accepted oversized value — memory DoS risk",
+            )
     except Exception as e:
         record("cache_large_test", "FAIL", f"Exception: {e}")
 
@@ -221,6 +238,7 @@ def test_cache_expired_cleanup_gap() -> None:
         async def _set_short():
             for i in range(50):
                 await cache_set(f"short_{i}", f"v{i}", expire=1)
+
         asyncio.run(_set_short())
 
         # Wait for reaper to run (interval=1s + buffer)
@@ -229,16 +247,24 @@ def test_cache_expired_cleanup_gap() -> None:
         # The reaper should have cleaned all expired entries
         remaining = len(_cache)
         if remaining == 0:
-            record("cache_expired_retention", "PASS",
-                   f"Background reaper cleaned all {50} expired entries")
+            record(
+                "cache_expired_retention",
+                "PASS",
+                f"Background reaper cleaned all {50} expired entries",
+            )
         elif remaining < 50:
-            record("cache_expired_retention", "WARN",
-                   f"Reaper cleaned {50 - remaining}/50 expired entries "
-                   f"({remaining} remain — reaper may not have run yet)")
+            record(
+                "cache_expired_retention",
+                "WARN",
+                f"Reaper cleaned {50 - remaining}/50 expired entries "
+                f"({remaining} remain — reaper may not have run yet)",
+            )
         else:
-            record("cache_expired_retention", "FAIL",
-                   f"{remaining}/50 expired entries still in cache. "
-                   f"Reaper did not clean them.")
+            record(
+                "cache_expired_retention",
+                "FAIL",
+                f"{remaining}/50 expired entries still in cache. Reaper did not clean them.",
+            )
         os.environ.pop("FIREAI_CACHE_REAPER_INTERVAL", None)
     except Exception as e:
         record("cache_cleanup_test", "FAIL", f"Exception: {e}")
@@ -263,17 +289,23 @@ def test_websocket_auth_handling() -> None:
         import inspect
 
         from backend.security_middleware import _PUBLIC_PATH_PREFIXES, ApiKeyMiddleware
+
         src = inspect.getsource(ApiKeyMiddleware)
 
         if 'scope["type"] != "http"' in src:
-            record("ws_handshake_checked", "INFO",
-                   "HTTP handshake (incl. WS upgrade) goes through auth")
+            record(
+                "ws_handshake_checked",
+                "INFO",
+                "HTTP handshake (incl. WS upgrade) goes through auth",
+            )
         if "/sync" in _PUBLIC_PATH_PREFIXES:
-            record("ws_sync_public", "FAIL",
-                   "/sync is in public paths — WS bypasses auth!")
+            record("ws_sync_public", "FAIL", "/sync is in public paths — WS bypasses auth!")
         else:
-            record("ws_sync_public", "PASS",
-                   "/sync is NOT in public paths — WS handshake requires auth")
+            record(
+                "ws_sync_public",
+                "PASS",
+                "/sync is NOT in public paths — WS handshake requires auth",
+            )
     except Exception as e:
         record("ws_test", "FAIL", f"Exception: {e}")
 
@@ -288,31 +320,34 @@ def test_head_options_auth() -> None:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app)
 
         # OPTIONS without auth — should be allowed for CORS preflight
         # but only if the route exists; otherwise 401 (must auth).
         # FastAPI's CORSMiddleware handles OPTIONS preflight BEFORE our auth
         # runs, so CORS preflight returns 200 even without auth.
-        r = client.options("/api/v1/projects",
-                          headers={"Origin": "http://localhost:3000",
-                                   "Access-Control-Request-Method": "GET"})
+        r = client.options(
+            "/api/v1/projects",
+            headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "GET"},
+        )
         # 200 or 204 = CORS preflight OK (no auth needed for preflight)
         # 401 = auth required (breaks CORS preflight)
         if r.status_code in (200, 204):
-            record("options_preflight_ok", "PASS",
-                   f"CORS preflight → {r.status_code} (allowed)")
+            record("options_preflight_ok", "PASS", f"CORS preflight → {r.status_code} (allowed)")
         else:
-            record("options_preflight_ok", "WARN",
-                   f"CORS preflight → {r.status_code} (may break frontend)")
+            record(
+                "options_preflight_ok",
+                "WARN",
+                f"CORS preflight → {r.status_code} (may break frontend)",
+            )
 
         # HEAD without auth on /api/v1/projects
         r = client.head("/api/v1/projects")
         if r.status_code == 401:
             record("head_auth_required", "PASS", "HEAD requires auth")
         else:
-            record("head_auth_required", "FAIL",
-                   f"HEAD → {r.status_code} (expected 401)")
+            record("head_auth_required", "FAIL", f"HEAD → {r.status_code} (expected 401)")
     except Exception as e:
         record("head_options_test", "FAIL", f"Exception: {e}")
 
@@ -328,6 +363,7 @@ def test_concurrent_add_race() -> None:
         from backend.rbac import Role
 
         errors = []
+
         def _worker():
             try:
                 for i in range(10):
@@ -342,22 +378,23 @@ def test_concurrent_add_race() -> None:
             t.join()
 
         if errors:
-            record("concurrent_add_errors", "FAIL",
-                   f"Errors: {errors[:3]}")
+            record("concurrent_add_errors", "FAIL", f"Errors: {errors[:3]}")
         else:
-            record("concurrent_add_errors", "PASS",
-                   "No errors in 5 threads × 10 adds of same key")
+            record("concurrent_add_errors", "PASS", "No errors in 5 threads × 10 adds of same key")
 
         # Verify only ONE entry exists for the key
         keys = _load_keys()
         from backend.api_keys import _lookup_key
+
         lookup = _lookup_key("race_key_same")
         if lookup in keys:
-            record("concurrent_add_single_entry", "PASS",
-                   "Only one entry for race_key_same")
+            record("concurrent_add_single_entry", "PASS", "Only one entry for race_key_same")
         else:
-            record("concurrent_add_single_entry", "FAIL",
-                   "race_key_same not found after concurrent adds")
+            record(
+                "concurrent_add_single_entry",
+                "FAIL",
+                "race_key_same not found after concurrent adds",
+            )
     except Exception as e:
         record("concurrent_add_test", "FAIL", f"Exception: {e}")
 
@@ -365,7 +402,9 @@ def test_concurrent_add_race() -> None:
 # ============================================================================
 # TEST 8: Empty/None/Unicode API key handling
 # ============================================================================
-def test_edge_case_keys() -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def test_edge_case_keys() -> (
+    None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     print("\n[STRICT 8] Edge Case API Keys")
     try:
         from backend.api_keys import _MAX_KEY_LENGTH, add_api_key, validate_api_key
@@ -387,12 +426,14 @@ def test_edge_case_keys() -> None:  # NOSONAR — S3776: cognitive complexity is
             # timing-equalization dummy bcrypt verify. This is CORRECT
             # behavior — it prevents timing-based enumeration of valid keys.
             if elapsed_ms > 100:
-                record("long_key_rejected_fast", "PASS",
-                       f"10KB key rejected in {elapsed_ms:.0f}ms "
-                       f"(slow due to timing equalization — CORRECT)")
+                record(
+                    "long_key_rejected_fast",
+                    "PASS",
+                    f"10KB key rejected in {elapsed_ms:.0f}ms "
+                    f"(slow due to timing equalization — CORRECT)",
+                )
             else:
-                record("long_key_rejected_fast", "PASS",
-                       f"10KB key rejected in {elapsed_ms:.1f}ms")
+                record("long_key_rejected_fast", "PASS", f"10KB key rejected in {elapsed_ms:.1f}ms")
         else:
             record("long_key_rejected_fast", "FAIL", "10KB key accepted!")
 
@@ -400,20 +441,20 @@ def test_edge_case_keys() -> None:  # NOSONAR — S3776: cognitive complexity is
         at_cap_key = "y" * _MAX_KEY_LENGTH
         add_api_key(at_cap_key, Role.VIEWER, "at cap test")
         if validate_api_key(at_cap_key) is not None:
-            record("key_at_cap_accepted", "PASS",
-                   f"Key at cap ({_MAX_KEY_LENGTH} bytes) accepted")
+            record("key_at_cap_accepted", "PASS", f"Key at cap ({_MAX_KEY_LENGTH} bytes) accepted")
         else:
-            record("key_at_cap_accepted", "FAIL",
-                   f"Key at cap ({_MAX_KEY_LENGTH} bytes) rejected")
+            record("key_at_cap_accepted", "FAIL", f"Key at cap ({_MAX_KEY_LENGTH} bytes) rejected")
 
         # Key just over the cap (should be rejected)
         over_cap_key = "z" * (_MAX_KEY_LENGTH + 1)
         if validate_api_key(over_cap_key) is None:
-            record("key_over_cap_rejected", "PASS",
-                   f"Key over cap ({_MAX_KEY_LENGTH + 1} bytes) rejected")
+            record(
+                "key_over_cap_rejected",
+                "PASS",
+                f"Key over cap ({_MAX_KEY_LENGTH + 1} bytes) rejected",
+            )
         else:
-            record("key_over_cap_rejected", "FAIL",
-                   "Key over cap accepted — should be rejected")
+            record("key_over_cap_rejected", "FAIL", "Key over cap accepted — should be rejected")
 
         # Unicode normalization — "ﬁ" (ligature) vs "fi"
         add_api_key("normalization_test_ﬁ", Role.VIEWER, "unicode test")
@@ -423,11 +464,17 @@ def test_edge_case_keys() -> None:  # NOSONAR — S3776: cognitive complexity is
             record("unicode_key_works", "FAIL", "Unicode key not found")
 
         if validate_api_key("normalization_test_fi") is None:
-            record("unicode_no_collision", "PASS",
-                   "ﬁ and fi treated as different keys (no normalization)")
+            record(
+                "unicode_no_collision",
+                "PASS",
+                "ﬁ and fi treated as different keys (no normalization)",
+            )
         else:
-            record("unicode_no_collision", "FAIL",
-                   "ﬁ and fi collided — Unicode normalization is a risk")
+            record(
+                "unicode_no_collision",
+                "FAIL",
+                "ﬁ and fi collided — Unicode normalization is a risk",
+            )
     except Exception as e:
         record("edge_case_test", "FAIL", f"Exception: {e}")
 
@@ -446,18 +493,23 @@ def test_middleware_state_on_request() -> None:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app)
 
         # Admin can access cache/stats
-        r = client.get("/api/v1/cache/stats",
-                       headers={"X-API-Key": "strict_test_admin_key"})
+        r = client.get("/api/v1/cache/stats", headers={"X-API-Key": "strict_test_admin_key"})
         if r.status_code == 200:
-            record("state_visible_to_dep", "PASS",
-                   "require_permission() sees fireai_role set by middleware")
+            record(
+                "state_visible_to_dep",
+                "PASS",
+                "require_permission() sees fireai_role set by middleware",
+            )
         else:
-            record("state_visible_to_dep", "FAIL",
-                   f"Admin got {r.status_code} — middleware state not visible "
-                   f"to require_permission()")
+            record(
+                "state_visible_to_dep",
+                "FAIL",
+                f"Admin got {r.status_code} — middleware state not visible to require_permission()",
+            )
     except Exception as e:
         record("state_test", "FAIL", f"Exception: {e}")
 
@@ -472,35 +524,36 @@ def test_dwg_endpoint_auth_enforced() -> None:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app)
 
         # No auth → 401
-        r = client.post("/api/v1/parse-dwg")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        r = client.post(
+            "/api/v1/parse-dwg"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         if r.status_code == 401:
-            record("dwg_no_auth_rejected", "PASS",
-                   "POST /parse-dwg without auth → 401")
+            record("dwg_no_auth_rejected", "PASS", "POST /parse-dwg without auth → 401")
         elif r.status_code == 403:
-            record("dwg_no_auth_rejected", "PASS",
-                   "POST /parse-dwg without auth → 403 (denied)")
+            record("dwg_no_auth_rejected", "PASS", "POST /parse-dwg without auth → 403 (denied)")
         else:
-            record("dwg_no_auth_rejected", "FAIL",
-                   f"POST /parse-dwg without auth → {r.status_code} (expected 401/403)")
+            record(
+                "dwg_no_auth_rejected",
+                "FAIL",
+                f"POST /parse-dwg without auth → {r.status_code} (expected 401/403)",
+            )
 
         # Viewer auth → 403 (lacks PROJECT_CREATE)
-        r = client.post("/api/v1/parse-dwg",
-                        headers={"X-API-Key": "viewer_key_strict_test"})
+        r = client.post("/api/v1/parse-dwg", headers={"X-API-Key": "viewer_key_strict_test"})
         # First add the viewer key
         from backend.api_keys import add_api_key
         from backend.rbac import Role
+
         add_api_key("viewer_key_strict_test", Role.VIEWER, "strict test")
-        r = client.post("/api/v1/parse-dwg",
-                        headers={"X-API-Key": "viewer_key_strict_test"})
+        r = client.post("/api/v1/parse-dwg", headers={"X-API-Key": "viewer_key_strict_test"})
         if r.status_code == 403:
-            record("dwg_viewer_rejected", "PASS",
-                   "Viewer → 403 (lacks PROJECT_CREATE)")
+            record("dwg_viewer_rejected", "PASS", "Viewer → 403 (lacks PROJECT_CREATE)")
         else:
-            record("dwg_viewer_rejected", "FAIL",
-                   f"Viewer → {r.status_code} (expected 403)")
+            record("dwg_viewer_rejected", "FAIL", f"Viewer → {r.status_code} (expected 403)")
     except Exception as e:
         record("dwg_auth_test", "FAIL", f"Exception: {e}")
 
@@ -518,14 +571,18 @@ def test_secret_file_toctou() -> None:
         from backend.security_middleware import _PUBLIC_PATH_PREFIXES  # noqa
         import inspect
         from backend import api_keys as ak_mod
+
         src = inspect.getsource(ak_mod._load_server_secret)
         if "O_CREAT" in src and "O_EXCL" in src:
             record("secret_excl", "PASS", "Uses O_CREAT|O_EXCL (no TOCTOU)")
         elif "O_CREAT" in src:
-            record("secret_excl", "WARN",
-                   "Uses O_CREAT without O_EXCL — two processes could race "
-                   "on first startup, both writing different secrets. The "
-                   "second writer wins, invalidating the first process's keys.")
+            record(
+                "secret_excl",
+                "WARN",
+                "Uses O_CREAT without O_EXCL — two processes could race "
+                "on first startup, both writing different secrets. The "
+                "second writer wins, invalidating the first process's keys.",
+            )
         else:
             record("secret_excl", "FAIL", "No O_CREAT — uses Path.write_bytes")
     except Exception as e:
@@ -545,15 +602,16 @@ def test_keys_file_permissions() -> None:
         import inspect
 
         from backend import api_keys as ak_mod
+
         src = inspect.getsource(ak_mod._save_keys)
         # The temp file is created with 0o600, then os.replace preserves
         # the temp file's permissions.
         if "0o600" in src:
-            record("keys_file_perms", "PASS",
-                   "Keys file created with 0o600 permissions")
+            record("keys_file_perms", "PASS", "Keys file created with 0o600 permissions")
         else:
-            record("keys_file_perms", "FAIL",
-                   "Keys file may have default (world-readable) permissions")
+            record(
+                "keys_file_perms", "FAIL", "Keys file may have default (world-readable) permissions"
+            )
     except Exception as e:
         record("keys_perms_test", "FAIL", f"Exception: {e}")
 
@@ -561,7 +619,9 @@ def test_keys_file_permissions() -> None:
 # ============================================================================
 # TEST 13: Cache lock holds during eviction (no starvation)
 # ============================================================================
-def test_cache_lock_starvation() -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def test_cache_lock_starvation() -> (
+    None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     If cache_set holds the lock during eviction of many entries,
     concurrent cache_get calls starve. Test with sustained writes + reads.
@@ -577,11 +637,13 @@ def test_cache_lock_starvation() -> None:  # NOSONAR — S3776: cognitive comple
         async def _fill():
             for i in range(_CACHE_MAX_ENTRIES):
                 await cache_set(f"fill_{i}", f"v{i}", expire=300)
+
         asyncio.run(_fill())
 
         # Now concurrent writes (triggering eviction) + reads
         errors = []
         read_times = []
+
         async def _writer():
             for i in range(50):
                 try:
@@ -606,12 +668,18 @@ def test_cache_lock_starvation() -> None:  # NOSONAR — S3776: cognitive comple
         if errors:
             record("cache_lock_errors", "FAIL", f"Errors: {errors[:3]}")
         elif max_read_ms > 100:
-            record("cache_lock_starvation", "WARN",
-                   f"Max read latency: {max_read_ms:.1f}ms — possible lock "
-                   f"starvation during eviction. Consider finer-grained locking.")
+            record(
+                "cache_lock_starvation",
+                "WARN",
+                f"Max read latency: {max_read_ms:.1f}ms — possible lock "
+                f"starvation during eviction. Consider finer-grained locking.",
+            )
         else:
-            record("cache_lock_starvation", "PASS",
-                   f"Max read latency: {max_read_ms:.1f}ms (no starvation)")
+            record(
+                "cache_lock_starvation",
+                "PASS",
+                f"Max read latency: {max_read_ms:.1f}ms (no starvation)",
+            )
     except Exception as e:
         record("cache_starvation_test", "FAIL", f"Exception: {e}")
 
@@ -630,6 +698,7 @@ def test_path_normalization_bypass() -> None:
         from fastapi.testclient import TestClient
 
         from backend.app import app
+
         client = TestClient(app)
 
         # Try various traversal attempts (with valid auth — testing that
@@ -648,15 +717,21 @@ def test_path_normalization_bypass() -> None:
                 try:
                     body = r_no_auth.json()
                     if "total_keys" in str(body) or "max_entries" in str(body):
-                        record(f"traversal_{path[:30]}", "FAIL",
-                               f"Auth BYPASSED via path: {path} → 200 cache/stats (no auth!)")
+                        record(
+                            f"traversal_{path[:30]}",
+                            "FAIL",
+                            f"Auth BYPASSED via path: {path} → 200 cache/stats (no auth!)",
+                        )
                         continue
                 except Exception:
                     pass
             # With auth — 200 is fine
             r = client.get(path, headers={"X-API-Key": "strict_test_admin_key"})
-            record(f"traversal_{path[:30]}", "PASS",
-                   f"no-auth→{r_no_auth.status_code}, with-auth→{r.status_code}")
+            record(
+                f"traversal_{path[:30]}",
+                "PASS",
+                f"no-auth→{r_no_auth.status_code}, with-auth→{r.status_code}",
+            )
     except Exception as e:
         record("path_norm_test", "FAIL", f"Exception: {e}")
 
@@ -672,13 +747,14 @@ def test_dwg_size_limit_boundary() -> None:
     print("\n[STRICT 15] DWG Size Limit Boundary")
     try:
         from backend.routers.dwg import _MAX_DWG_SIZE_BYTES
+
         # Just verify the constant is what we expect
         if _MAX_DWG_SIZE_BYTES == 50 * 1024 * 1024:
-            record("dwg_size_constant", "PASS",
-                   f"Size limit = {_MAX_DWG_SIZE_BYTES} (50 MB)")
+            record("dwg_size_constant", "PASS", f"Size limit = {_MAX_DWG_SIZE_BYTES} (50 MB)")
         else:
-            record("dwg_size_constant", "FAIL",
-                   f"Size limit = {_MAX_DWG_SIZE_BYTES} (expected 50MB)")
+            record(
+                "dwg_size_constant", "FAIL", f"Size limit = {_MAX_DWG_SIZE_BYTES} (expected 50MB)"
+            )
     except Exception as e:
         record("dwg_size_test", "FAIL", f"Exception: {e}")
 
@@ -693,15 +769,19 @@ def test_middleware_no_body_buffer() -> None:
         import inspect
 
         from backend.security_middleware import ApiKeyMiddleware
+
         src = inspect.getsource(ApiKeyMiddleware)
         # The middleware should NOT call await receive() anywhere
         if "await receive" in src:
-            record("mw_no_body_buffer", "FAIL",
-                   "Middleware calls await receive() — buffers body, "
-                   "breaks StreamingResponse")
+            record(
+                "mw_no_body_buffer",
+                "FAIL",
+                "Middleware calls await receive() — buffers body, breaks StreamingResponse",
+            )
         else:
-            record("mw_no_body_buffer", "PASS",
-                   "Middleware never reads body (StreamingResponse-safe)")
+            record(
+                "mw_no_body_buffer", "PASS", "Middleware never reads body (StreamingResponse-safe)"
+            )
     except Exception as e:
         record("mw_buffer_test", "FAIL", f"Exception: {e}")
 
@@ -718,9 +798,12 @@ def test_401_response_timing() -> None:
     print("\n[STRICT 17] 401 Response Timing")
     try:
         # Already covered by TEST 1 — just record INFO
-        record("http_timing_covered", "INFO",
-               "Covered by TEST 1 (timing_attack_validate). "
-               "Fix: add deliberate bcrypt-equivalent delay on 401.")
+        record(
+            "http_timing_covered",
+            "INFO",
+            "Covered by TEST 1 (timing_attack_validate). "
+            "Fix: add deliberate bcrypt-equivalent delay on 401.",
+        )
     except Exception as e:
         record("http_timing_test", "FAIL", f"Exception: {e}")
 
@@ -738,14 +821,21 @@ def test_cache_value_size_limit_exists() -> None:
         import inspect
 
         from backend import app as app_mod
+
         src = inspect.getsource(app_mod)
         if "_CACHE_MAX_VALUE_SIZE" in src:
-            record("cache_value_limit_exists", "PASS",
-                   "Cache value size limit (_CACHE_MAX_VALUE_SIZE) defined")
+            record(
+                "cache_value_limit_exists",
+                "PASS",
+                "Cache value size limit (_CACHE_MAX_VALUE_SIZE) defined",
+            )
         else:
-            record("cache_value_limit_exists", "FAIL",
-                   "No cache value size limit — attacker can store arbitrary-"
-                   "sized values (memory DoS via single entry)")
+            record(
+                "cache_value_limit_exists",
+                "FAIL",
+                "No cache value size limit — attacker can store arbitrary-"
+                "sized values (memory DoS via single entry)",
+            )
     except Exception as e:
         record("cache_value_test", "FAIL", f"Exception: {e}")
 
@@ -763,14 +853,17 @@ def test_api_key_length_cap() -> None:
         import inspect
 
         from backend import api_keys as ak_mod
+
         src = inspect.getsource(ak_mod)
         if "_MAX_KEY_LENGTH" in src:
-            record("key_length_cap_exists", "PASS",
-                   "API key length cap (_MAX_KEY_LENGTH) defined")
+            record("key_length_cap_exists", "PASS", "API key length cap (_MAX_KEY_LENGTH) defined")
         else:
-            record("key_length_cap_exists", "FAIL",
-                   "No API key length cap — attacker can send 10MB keys, "
-                   "HMAC computes on full input (CPU DoS)")
+            record(
+                "key_length_cap_exists",
+                "FAIL",
+                "No API key length cap — attacker can send 10MB keys, "
+                "HMAC computes on full input (CPU DoS)",
+            )
     except Exception as e:
         record("key_cap_test", "FAIL", f"Exception: {e}")
 
@@ -778,7 +871,9 @@ def test_api_key_length_cap() -> None:
 # ============================================================================
 # TEST 20: Concurrent atomic write doesn't lose data
 # ============================================================================
-def test_concurrent_save_no_data_loss() -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def test_concurrent_save_no_data_loss() -> (
+    None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Two threads adding DIFFERENT keys simultaneously — both should
     be persisted (no lost update).
@@ -789,6 +884,7 @@ def test_concurrent_save_no_data_loss() -> None:  # NOSONAR — S3776: cognitive
         from backend.rbac import Role
 
         errors = []
+
         def _worker(worker_id: int):
             try:
                 for i in range(20):
@@ -809,14 +905,13 @@ def test_concurrent_save_no_data_loss() -> None:  # NOSONAR — S3776: cognitive
                 if validate_api_key(f"concurrent_w{w}_k{i}") is not None:
                     ok += 1
         if ok == 100:
-            record("no_data_loss", "PASS",
-                   "All 100 concurrent adds persisted and validate")
+            record("no_data_loss", "PASS", "All 100 concurrent adds persisted and validate")
         elif len(errors) > 0:
-            record("no_data_loss", "FAIL",
-                   f"{len(errors)} errors during concurrent adds: {errors[:3]}")
+            record(
+                "no_data_loss", "FAIL", f"{len(errors)} errors during concurrent adds: {errors[:3]}"
+            )
         else:
-            record("no_data_loss", "FAIL",
-                   f"Only {ok}/100 keys validate — data loss!")
+            record("no_data_loss", "FAIL", f"Only {ok}/100 keys validate — data loss!")
     except Exception as e:
         record("concurrent_save_test", "FAIL", f"Exception: {e}")
 
@@ -835,6 +930,7 @@ def main() -> int:
     try:
         from backend.api_keys import add_api_key
         from backend.rbac import Role
+
         add_api_key("strict_test_admin_key", Role.ADMIN, "strict test admin")
         add_api_key("strict_test_engineer_key", Role.ENGINEER, "strict test eng")
     except Exception as e:
@@ -886,7 +982,9 @@ def main() -> int:
     with open(out_path, "w") as f:
         json.dump(
             [{"test": n, "status": s, "details": d} for n, s, d in RESULTS],
-            f, indent=2, ensure_ascii=False,
+            f,
+            indent=2,
+            ensure_ascii=False,
         )
     print(f"\n  Detailed results saved to: {out_path}")
     return 1 if by_status.get("FAIL", 0) > 0 else 0

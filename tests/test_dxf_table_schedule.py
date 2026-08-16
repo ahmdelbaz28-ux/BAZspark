@@ -165,7 +165,10 @@ class TestTrueAECDraftingTable:
             t.draft_device_boq_table(msp, [])
             MockTable.assert_called_once()
             call_args = MockTable.call_args
-            assert call_args.kwargs.get("insert", call_args[1].get("insert", None)) == pos or call_args[0][0] == pos
+            assert (
+                call_args.kwargs.get("insert", call_args[1].get("insert", None)) == pos
+                or call_args[0][0] == pos
+            )
 
 
 if __name__ == "__main__":

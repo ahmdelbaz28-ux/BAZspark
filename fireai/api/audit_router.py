@@ -6,6 +6,7 @@ from fireai.audit.merkle import get_audit_tree
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
 
+
 @router.get("/chain", response_model=list[dict[str, Any]])
 async def get_audit_chain():
     """
@@ -14,6 +15,7 @@ async def get_audit_chain():
     """
     tree = get_audit_tree()
     return tree.get_chain()
+
 
 @router.get("/verify")
 async def verify_audit_chain():
@@ -25,5 +27,7 @@ async def verify_audit_chain():
     is_valid = tree.verify_integrity()
     return {
         "valid": is_valid,
-        "message": "Audit chain is cryptographically valid." if is_valid else "WARNING: AUDIT CHAIN INTEGRITY COMPROMISED!"
+        "message": "Audit chain is cryptographically valid."
+        if is_valid
+        else "WARNING: AUDIT CHAIN INTEGRITY COMPROMISED!",
     }

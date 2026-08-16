@@ -544,7 +544,7 @@ class TestConcurrentSolver:
             diff = problem.grid_points[:, None, :] - placed[None, :, :]
             d2 = np.einsum("ijk,ijk->ij", diff, diff)
             min_d2 = d2.min(axis=1)
-            assert (min_d2 <= problem.radius ** 2).all(), (
+            assert (min_d2 <= problem.radius**2).all(), (
                 "Greedy fallback must cover every grid point within radius"
             )
 
@@ -881,12 +881,26 @@ class TestStreamingParser:
         """A minimal LWPOLYLINE entity with 4 vertices → 1 wall."""
         parser = StreamingParser()
         lines = [
-            "0", "LWPOLYLINE",
-            "10", "0.0", "20", "0.0",
-            "10", "10.0", "20", "0.0",
-            "10", "10.0", "20", "10.0",
-            "10", "0.0", "20", "10.0",
-            "0", "EOF",
+            "0",
+            "LWPOLYLINE",
+            "10",
+            "0.0",
+            "20",
+            "0.0",
+            "10",
+            "10.0",
+            "20",
+            "0.0",
+            "10",
+            "10.0",
+            "20",
+            "10.0",
+            "10",
+            "0.0",
+            "20",
+            "10.0",
+            "0",
+            "EOF",
         ]
         walls = parser._parse_dxf_chunk(lines)
         assert len(walls) == 1
@@ -896,11 +910,20 @@ class TestStreamingParser:
         """Non-numeric codes must be skipped gracefully."""
         parser = StreamingParser()
         lines = [
-            "INVALID", "value",
-            "0", "LWPOLYLINE",
-            "10", "0.0", "20", "0.0",
-            "10", "5.0", "20", "0.0",
-            "0", "EOF",
+            "INVALID",
+            "value",
+            "0",
+            "LWPOLYLINE",
+            "10",
+            "0.0",
+            "20",
+            "0.0",
+            "10",
+            "5.0",
+            "20",
+            "0.0",
+            "0",
+            "EOF",
         ]
         walls = parser._parse_dxf_chunk(lines)
         assert len(walls) == 1
@@ -909,10 +932,18 @@ class TestStreamingParser:
         """Non-LWPOLYLINE entities (LINE, CIRCLE) must not produce walls."""
         parser = StreamingParser()
         lines = [
-            "0", "LINE",
-            "10", "0.0", "20", "0.0",
-            "11", "10.0", "21", "0.0",
-            "0", "EOF",
+            "0",
+            "LINE",
+            "10",
+            "0.0",
+            "20",
+            "0.0",
+            "11",
+            "10.0",
+            "21",
+            "0.0",
+            "0",
+            "EOF",
         ]
         walls = parser._parse_dxf_chunk(lines)
         assert walls == []

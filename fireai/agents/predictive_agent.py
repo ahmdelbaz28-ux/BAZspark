@@ -165,8 +165,10 @@ class PredictiveAgent:
                         y=round(y, 2),
                         z=room.height,
                         confidence=round(confidence, 4),
-                        rationale=f"grid placement ({(i+1)}, {(j+1)} of {suggested_count}x{suggested_count})",
-                        expected_coverage_improvement=round(min(0.95, 0.75 + suggested_count * 0.05), 4),
+                        rationale=f"grid placement ({(i + 1)}, {(j + 1)} of {suggested_count}x{suggested_count})",
+                        expected_coverage_improvement=round(
+                            min(0.95, 0.75 + suggested_count * 0.05), 4
+                        ),
                     )
                 )
                 if len(suggestions) >= 20:
@@ -177,12 +179,25 @@ class PredictiveAgent:
         suggestions.sort(key=lambda s: s.confidence, reverse=True)
         return suggestions[:10]
 
-    def analyze_future_state(self, design: DesignData, changes: DesignChange) -> FutureState:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def analyze_future_state(
+        self, design: DesignData, changes: DesignChange
+    ) -> (
+        FutureState
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         current_coverage = sum(r.coverage_pct for r in design.rooms) / max(len(design.rooms), 1)
 
         projected_rooms: list[RoomDesignData] = []
         for room in design.rooms:
-            room_dict = {"area": room.area, "ceiling_height": room.ceiling_height, "detector_count": room.detector_count, "obstruction_count": room.obstruction_count, "beam_depth_ratio": room.beam_depth_ratio, "wall_proximity_min": room.wall_proximity_min, "hvac_proximity_min": room.hvac_proximity_min, "coverage_pct": room.coverage_pct}
+            room_dict = {
+                "area": room.area,
+                "ceiling_height": room.ceiling_height,
+                "detector_count": room.detector_count,
+                "obstruction_count": room.obstruction_count,
+                "beam_depth_ratio": room.beam_depth_ratio,
+                "wall_proximity_min": room.wall_proximity_min,
+                "hvac_proximity_min": room.hvac_proximity_min,
+                "coverage_pct": room.coverage_pct,
+            }
             updated = dict(room_dict)
             for key, val in changes.changes.items():
                 if key in room_dict:
@@ -205,7 +220,9 @@ class PredictiveAgent:
             )
 
         projected_design = DesignData(building_id=design.building_id, rooms=projected_rooms)
-        projected_coverage = sum(r.coverage_pct for r in projected_design.rooms) / max(len(projected_design.rooms), 1)
+        projected_coverage = sum(r.coverage_pct for r in projected_design.rooms) / max(
+            len(projected_design.rooms), 1
+        )
 
         compliance = "compliant" if current_coverage >= 0.85 else "non_compliant"
         projected_comp = "compliant" if projected_coverage >= 0.85 else "non_compliant"
@@ -221,7 +238,9 @@ class PredictiveAgent:
 
         recs: list[str] = []
         if projected_coverage < 0.90:
-            recs.append(f"Add detectors to improve coverage from {projected_coverage:.1%} to >= 90%")
+            recs.append(
+                f"Add detectors to improve coverage from {projected_coverage:.1%} to >= 90%"
+            )
         if risks:
             recs.append("Address identified risks before finalizing design")
 
@@ -239,7 +258,9 @@ class PredictiveAgent:
         )
 
     def what_if(self, design: DesignData, scenario: str) -> WhatIfResult:
-        baseline = self.analyze_future_state(design, DesignChange(description="baseline", changes={}))
+        baseline = self.analyze_future_state(
+            design, DesignChange(description="baseline", changes={})
+        )
 
         scenario_map: dict[str, dict[str, Any]] = {
             "add_detectors": {"add_detectors": 2},
@@ -251,7 +272,9 @@ class PredictiveAgent:
         }
         scenario_changes = scenario_map.get(scenario, {})
 
-        projected = self.analyze_future_state(design, DesignChange(description=scenario, changes=scenario_changes))
+        projected = self.analyze_future_state(
+            design, DesignChange(description=scenario, changes=scenario_changes)
+        )
 
         delta_cov = projected.projected_coverage - baseline.projected_coverage
         if delta_cov > 0.02:

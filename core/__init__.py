@@ -21,9 +21,11 @@ from typing import Any
 
 _original_zip = builtins.zip
 
+
 def _patched_zip(*args: Any, strict: bool = False, **kwargs: Any) -> Any:
     # The ``strict`` flag is ignored; behavior matches the default Python 3.8 zip.
     return _original_zip(*args, **kwargs)
+
 
 # setattr avoids a static "cannot assign to a type" error: patching a builtin
 # is an intentional runtime re-export, not a type-level assignment.

@@ -137,7 +137,11 @@ class BatchResult:
 # ════════════════════════════════════════════════════════════════════════════
 
 
-def _optimize_room_worker(args: tuple) -> tuple[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _optimize_room_worker(
+    args: tuple,
+) -> tuple[
+    str, Any
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Worker function for multiprocessing batch optimization.
 
@@ -165,7 +169,9 @@ def _optimize_room_worker(args: tuple) -> tuple[str, Any]:  # NOSONAR — S3776:
                 points = room_spec_dict["vertices"]
                 if Point3D is not None:
                     points = [
-                        Point3D(x=p[0], y=p[1], z=p[2] if len(p) > 2 else 0.0) if not isinstance(p, Point3D) else p
+                        Point3D(x=p[0], y=p[1], z=p[2] if len(p) > 2 else 0.0)
+                        if not isinstance(p, Point3D)
+                        else p
                         for p in points
                     ]
                 if Geometry is not None:
@@ -258,10 +264,18 @@ class DensityOptimizerV2:
         self.chunk_size = max(1, chunk_size)
         self.timeout_per_room_s = timeout_per_room_s
 
-        if DensityOptimizer is None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-            log.warning("DensityOptimizer not available — batch optimization will return errors for all rooms")
+        if (
+            DensityOptimizer is None
+        ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+            log.warning(
+                "DensityOptimizer not available — batch optimization will return errors for all rooms"
+            )
 
-    def optimize_batch(self, room_specs: dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def optimize_batch(
+        self, room_specs: dict[str, Any], detector_type: str = "smoke", **kwargs
+    ) -> (
+        BatchResult
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Optimize detector placement for a batch of rooms.
 
@@ -346,7 +360,9 @@ class DensityOptimizerV2:
 
         for room_id, spec in room_specs.items():
             try:
-                room_id_result, result = _optimize_room_worker((room_id, spec, detector_type, kwargs))
+                room_id_result, result = _optimize_room_worker(
+                    (room_id, spec, detector_type, kwargs)
+                )
                 if isinstance(result, dict) and "error" in result:
                     failed += 1
                     log.error(f"Room {room_id}: {result['error']}")
@@ -380,7 +396,9 @@ class DensityOptimizerV2:
     ) -> BatchResult:
         """Multiprocessing batch optimization."""
         # Prepare work items
-        work_items = [(room_id, spec, detector_type, kwargs) for room_id, spec in room_specs.items()]
+        work_items = [
+            (room_id, spec, detector_type, kwargs) for room_id, spec in room_specs.items()
+        ]
 
         results: dict[str, Any] = {}
         successful = 0
@@ -402,9 +420,13 @@ class DensityOptimizerV2:
 
                 # Wait with timeout
                 try:
-                    worker_results = async_results.get(timeout=self.timeout_per_room_s * len(work_items))
+                    worker_results = async_results.get(
+                        timeout=self.timeout_per_room_s * len(work_items)
+                    )
                 except multiprocessing.TimeoutError:
-                    log.exception(f"Batch optimization timed out after {self.timeout_per_room_s * len(work_items)}s")
+                    log.exception(
+                        f"Batch optimization timed out after {self.timeout_per_room_s * len(work_items)}s"
+                    )
                     worker_results = []
 
                 for room_id, result in worker_results:
@@ -444,7 +466,9 @@ class DensityOptimizerV2:
             n_workers=self.n_workers,
         )
 
-    def optimize_single(self, room_id: str, room_spec: Any, detector_type: str = "smoke", **kwargs) -> Any:
+    def optimize_single(
+        self, room_id: str, room_spec: Any, detector_type: str = "smoke", **kwargs
+    ) -> Any:
         """
         Optimize a single room (convenience wrapper).
 
@@ -514,7 +538,9 @@ def _self_test():
 
     # ── 4. n_workers validation ──
     batch_neg = DensityOptimizerV2(n_workers=-1)
-    check("Negative n_workers clamped", batch_neg.n_workers == 1, f"n_workers={batch_neg.n_workers}")
+    check(
+        "Negative n_workers clamped", batch_neg.n_workers == 1, f"n_workers={batch_neg.n_workers}"
+    )
 
     batch_huge = DensityOptimizerV2(n_workers=1000)
     cpu_count = os.cpu_count() or 4
@@ -525,14 +551,24 @@ def _self_test():
     )
 
     # ── 5. BatchResult structure ──
-    check("BatchResult version", empty_result.version == FIREAI_VERSION, f"version={empty_result.version}")
+    check(
+        "BatchResult version",
+        empty_result.version == FIREAI_VERSION,
+        f"version={empty_result.version}",
+    )
 
     # ── 6. Chunk size validation ──
     batch_chunk = DensityOptimizerV2(chunk_size=0)
-    check("Zero chunk_size clamped", batch_chunk.chunk_size == 1, f"chunk_size={batch_chunk.chunk_size}")
+    check(
+        "Zero chunk_size clamped",
+        batch_chunk.chunk_size == 1,
+        f"chunk_size={batch_chunk.chunk_size}",
+    )
 
     # ── 7. Timeout validation ──
-    check("Default timeout", batch.timeout_per_room_s == 60.0, f"timeout={batch.timeout_per_room_s}")  # NOSONAR — S1244: import retained for re-export / API surface
+    check(
+        "Default timeout", batch.timeout_per_room_s == 60.0, f"timeout={batch.timeout_per_room_s}"
+    )  # NOSONAR — S1244: import retained for re-export / API surface
 
     print(f"\n{'=' * 60}")
     print(f"Density Optimizer V2 Self-Test: {passed} PASS, {failed} FAIL")

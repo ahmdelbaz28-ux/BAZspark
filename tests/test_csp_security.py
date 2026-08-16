@@ -47,6 +47,7 @@ def _load_build_csp_in_isolation():
     (logger, etc.). This avoids importing the heavy app.py.
     """
     import ast
+
     source = _APP_PATH.read_text(encoding="utf-8")
     tree = ast.parse(source)
 
@@ -61,11 +62,11 @@ def _load_build_csp_in_isolation():
 
     # Minimal module containing only what build_csp needs: os + logger
     module = types.ModuleType("backend_csp_isolated")
-    exec("import os; import logging; logger = logging.getLogger('backend.csp')",
-         module.__dict__)
+    exec("import os; import logging; logger = logging.getLogger('backend.csp')", module.__dict__)
     # Compile and execute just the function definition
-    func_code = compile(ast.Module(body=[build_csp_node], type_ignores=[]),
-                        filename=str(_APP_PATH), mode="exec")
+    func_code = compile(
+        ast.Module(body=[build_csp_node], type_ignores=[]), filename=str(_APP_PATH), mode="exec"
+    )
     exec(func_code, module.__dict__)
     return module.build_csp
 
@@ -193,8 +194,11 @@ class TestCSPLoggingEscalation:
         monkeypatch.setenv("CSP_UNSAFE_EVAL", "true")
         with caplog.at_level(logging.ERROR, logger="backend.app"):
             _build_csp()
-        error_messages = [r.message for r in caplog.records
-                          if r.levelno >= logging.ERROR and "unsafe-eval" in r.message]
+        error_messages = [
+            r.message
+            for r in caplog.records
+            if r.levelno >= logging.ERROR and "unsafe-eval" in r.message
+        ]
         assert not error_messages, (
             f"Development unsafe-eval should NOT log at ERROR. Got: {error_messages}"
         )
@@ -205,8 +209,11 @@ class TestCSPLoggingEscalation:
         # CSP_UNSAFE_EVAL deliberately unset
         with caplog.at_level(logging.ERROR, logger="backend.app"):
             _build_csp()
-        error_messages = [r.message for r in caplog.records
-                          if r.levelno >= logging.ERROR and "unsafe-eval" in r.message]
+        error_messages = [
+            r.message
+            for r in caplog.records
+            if r.levelno >= logging.ERROR and "unsafe-eval" in r.message
+        ]
         assert not error_messages, "Secure default should produce no error log"
 
 

@@ -38,12 +38,20 @@ CANONICAL_CONSTANTS: dict[str, tuple[float, str, str]] = {
     # models_v21.py — molecular weight of dry air (CRC Handbook, 97th Ed.)
     "_MW_AIR": (28.96, "models_v21", "CRC Handbook — dry air MW"),
     # semi_cfast_engine.py — aligned to 28.96 (CRC Handbook, same as _MW_AIR)
-    "AIR_MOLAR_MASS_G_MOL": (28.96, "semi_cfast_engine", "CRC Handbook — dry air MW (aligned with _MW_AIR)"),
+    "AIR_MOLAR_MASS_G_MOL": (
+        28.96,
+        "semi_cfast_engine",
+        "CRC Handbook — dry air MW (aligned with _MW_AIR)",
+    ),
     # Gravity
     "GRAVITY": (9.81, "", "SI standard (local approx)"),
     "GRAVITY_M_S2": (9.81, "", "SI standard (local approx)"),
     # Standard conditions
-    "STD_TEMP_C": (20.0, "", "NFPA standard conditions"),  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    "STD_TEMP_C": (
+        20.0,
+        "",
+        "NFPA standard conditions",
+    ),  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "STD_TEMP_K": (293.15, "", "NFPA standard conditions"),
     # Duct detector spacing
     "_DUCT_DETECTOR_MAX_SPACING_M": (10.0, "nfpa72_calculations", "NFPA 72 §17.7.5.4.2"),
@@ -381,7 +389,9 @@ def _check_cross_module_consistency(
         for name in names:
             if name in registry:
                 for occ in registry[name]:
-                    values[round(occ.value, 4)].append(f"{occ.file.name}:{occ.line} ({name}={occ.value})")
+                    values[round(occ.value, 4)].append(
+                        f"{occ.file.name}:{occ.line} ({name}={occ.value})"
+                    )
         if len(values) > 1:
             details = " | ".join(f"{v}: {locs}" for v, locs in sorted(values.items()))
             issues.append(
@@ -449,7 +459,9 @@ def _canonical_mismatch_check(
     return critical
 
 
-def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _print_report(
+    report: ConsistencyReport, root: Path
+) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Print report and return exit code (0=clean, 1=issues found)."""
     sep = "=" * 78
     print(sep)
@@ -468,7 +480,9 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — 
 
     # Dict constant mismatches (e.g., PHYSICAL_CONSTANTS dict values)
     if report.dict_constant_issues:
-        print(f"\n[CRITICAL] Dict-literal constant mismatches ({len(report.dict_constant_issues)}):")
+        print(
+            f"\n[CRITICAL] Dict-literal constant mismatches ({len(report.dict_constant_issues)}):"
+        )
         for msg in report.dict_constant_issues:
             print(f"  X {msg}")
     else:
@@ -476,7 +490,9 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — 
 
     # Cross-module consistency group issues
     if report.cross_module_issues:
-        print(f"\n[CRITICAL] Cross-module consistency group violations ({len(report.cross_module_issues)}):")
+        print(
+            f"\n[CRITICAL] Cross-module consistency group violations ({len(report.cross_module_issues)}):"
+        )
         for msg in report.cross_module_issues:
             print(f"  X {msg}")
     else:
@@ -514,13 +530,20 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — 
 
     # Consistent
     if report.consistent:
-        print(f"\n[PASS] Consistent constants ({len(report.consistent)}): {', '.join(report.consistent)}")
+        print(
+            f"\n[PASS] Consistent constants ({len(report.consistent)}): {', '.join(report.consistent)}"
+        )
 
     print(f"\n{sep}")
     has_issues = bool(
-        canonical_issues or report.inconsistent or report.cross_module_issues or report.dict_constant_issues
+        canonical_issues
+        or report.inconsistent
+        or report.cross_module_issues
+        or report.dict_constant_issues
     )
-    status = "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")  # NOSONAR — S3358: nested ternary acceptable in this localized context
+    status = (
+        "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")
+    )  # NOSONAR — S3358: nested ternary acceptable in this localized context
     print(f"Status: {status}")
     print(sep)
     return 1 if has_issues else 0

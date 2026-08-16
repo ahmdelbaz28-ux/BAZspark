@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers
-revision = '003'
-down_revision = '002'
+revision = "003"
+down_revision = "002"
 branch_labels = None
 depends_on = None
 
@@ -26,17 +26,17 @@ def upgrade() -> None:
 
     # Adding a full-text search index conceptually for properties field
     # For now, just add a standard index on the properties column
-    op.create_index('idx_devices_properties', 'devices', ['properties'], if_not_exists=True)
+    op.create_index("idx_devices_properties", "devices", ["properties"], if_not_exists=True)
 
     # Add columns for additional performance metrics tracking
-    op.add_column('sync_operations',
-                  sa.Column('query_performance_ms', sa.Integer, server_default='0'))
-    op.add_column('sync_operations',
-                  sa.Column('last_accessed', sa.Text, server_default=None))
+    op.add_column(
+        "sync_operations", sa.Column("query_performance_ms", sa.Integer, server_default="0")
+    )
+    op.add_column("sync_operations", sa.Column("last_accessed", sa.Text, server_default=None))
 
 
 def downgrade() -> None:
     """Remove the added index and columns."""
-    op.drop_index('idx_devices_properties', table_name='devices', if_exists=True)
-    op.drop_column('sync_operations', 'query_performance_ms')
-    op.drop_column('sync_operations', 'last_accessed')
+    op.drop_index("idx_devices_properties", table_name="devices", if_exists=True)
+    op.drop_column("sync_operations", "query_performance_ms")
+    op.drop_column("sync_operations", "last_accessed")

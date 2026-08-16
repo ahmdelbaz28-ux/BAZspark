@@ -53,13 +53,17 @@ class TestConfidenceLevel:
 class TestPlacementProof:
     def test_defaults(self):
         p = PlacementProof()
-        assert p.coverage_fraction == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            p.coverage_fraction == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert p.proof_valid is False
         assert p.max_gap_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom(self):
         p = PlacementProof(coverage_fraction=0.99, proof_valid=True, max_gap_m=2.5)
-        assert p.coverage_fraction == 0.99  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            p.coverage_fraction == 0.99
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert p.proof_valid is True
 
 
@@ -125,7 +129,9 @@ class TestEnhancedRoomResult:
     def test_coverage_result_no_proof(self):
         r = EnhancedRoomResult(compliant=False, placement_proof=None)
         cr = r.coverage_result
-        assert cr.coverage_percentage == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cr.coverage_percentage == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -138,13 +144,17 @@ class TestResolveDbPath:
         assert _resolve_db_path(":memory:") == ":memory:"
 
     def test_explicit_path(self):
-        result = _resolve_db_path("/tmp/test_audit.db")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        result = _resolve_db_path(
+            "/tmp/test_audit.db"
+        )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         # Cross-platform: os.path.abspath normalizes the path
         assert "test_audit.db" in result
         assert result == os.path.abspath(result)  # must be absolute
 
     def test_env_variable(self):
-        with patch.dict(os.environ, {"FIREAI_DB_PATH": "/tmp/env_audit.db"}):  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        with patch.dict(
+            os.environ, {"FIREAI_DB_PATH": "/tmp/env_audit.db"}
+        ):  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
             result = _resolve_db_path(None)
             # Cross-platform: os.path.abspath normalizes the path
             assert "env_audit.db" in result
@@ -190,17 +200,29 @@ class TestFireAISystem:
 
     def test_analyse_room_invalid_user_id(self, system):
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=5.0,
+            depth_m=5.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         with pytest.raises(ValueError, match="user_id"):
             system.analyse_room(spec, user_id="")
 
-    def test_analyse_room_empty_user_id(self, system):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    def test_analyse_room_empty_user_id(
+        self, system
+    ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=5.0,
+            depth_m=5.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         with pytest.raises(ValueError, match="user_id"):
             system.analyse_room(spec, user_id="")
 
@@ -209,7 +231,9 @@ class TestFireAISystem:
             system.analyse_floor([])
 
     def test_analyse_floor_too_many_rooms(self, system):
-        with pytest.raises(ValueError, match="Maximum 500"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="Maximum 500"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             system.analyse_floor([MagicMock()] * 501)
 
     def test_get_audit_trail(self, system):
@@ -257,9 +281,14 @@ class TestAnalysisIntegration:
         system._expert = mock_expert
 
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=8.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=10.0,
+            depth_m=8.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         result = system.analyse_room(spec, user_id="test_user", run_resilience=False)
 
         assert result.room_id == "R1"
@@ -276,9 +305,14 @@ class TestAnalysisIntegration:
         system._expert = mock_expert
 
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=5.0,
+            depth_m=5.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         result = system.analyse_room(spec, user_id="test_user")
 
         assert result.confidence == ConfidenceLevel.UNSAFE
@@ -298,9 +332,14 @@ class TestAnalysisIntegration:
         system._expert = mock_expert
 
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=10.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=10.0,
+            depth_m=10.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         result = system.analyse_room(spec, user_id="test_user", run_resilience=False)
 
         assert result.confidence == ConfidenceLevel.LOW
@@ -320,9 +359,14 @@ class TestAnalysisIntegration:
         system._expert = mock_expert
 
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
-        spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=10.0,
-                        ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                        occupancy_type="office")
+
+        spec = RoomSpec(
+            room_id="R1",
+            width_m=10.0,
+            depth_m=10.0,
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            occupancy_type="office",
+        )
         result = system.analyse_room(spec, user_id="test_user", run_resilience=False)
 
         assert result.confidence == ConfidenceLevel.UNSAFE
@@ -340,10 +384,15 @@ class TestAnalysisIntegration:
         system._expert = mock_expert
 
         from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
+
         specs = [
-            RoomSpec(room_id=f"R{i}", width_m=5.0, depth_m=5.0,
-                     ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-                     occupancy_type="office")
+            RoomSpec(
+                room_id=f"R{i}",
+                width_m=5.0,
+                depth_m=5.0,
+                ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+                occupancy_type="office",
+            )
             for i in range(3)
         ]
         results = system.analyse_floor(specs, user_id="test_user", run_resilience=False)
@@ -353,16 +402,19 @@ class TestAnalysisIntegration:
 
     def test_safe_to_submit_explicit(self, system):
         """safe_to_submit is set explicitly by analyse_room, not computed."""
-        r = EnhancedRoomResult(compliant=True, confidence=ConfidenceLevel.MEDIUM,
-                               safe_to_submit=True)
+        r = EnhancedRoomResult(
+            compliant=True, confidence=ConfidenceLevel.MEDIUM, safe_to_submit=True
+        )
         assert r.safe_to_submit is True
 
-        r2 = EnhancedRoomResult(compliant=True, confidence=ConfidenceLevel.UNSAFE,
-                                safe_to_submit=False)
+        r2 = EnhancedRoomResult(
+            compliant=True, confidence=ConfidenceLevel.UNSAFE, safe_to_submit=False
+        )
         assert r2.safe_to_submit is False
 
-        r3 = EnhancedRoomResult(compliant=False, confidence=ConfidenceLevel.HIGH,
-                                safe_to_submit=False)
+        r3 = EnhancedRoomResult(
+            compliant=False, confidence=ConfidenceLevel.HIGH, safe_to_submit=False
+        )
         assert r3.safe_to_submit is False
 
     def test_safe_to_submit_default_false(self):

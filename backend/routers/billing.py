@@ -61,14 +61,19 @@ _CONTENT_TYPE_JSON = "application/json"
 
 # ── Pydantic request/response models ────────────────────────────────────────
 
+
 class OrderCreateRequest(BaseModel):
     amount_cents: int = Field(
-        ..., gt=0, le=10_000_000_000,
+        ...,
+        gt=0,
+        le=10_000_000_000,
         description="Amount in smallest currency unit (piastres for EGP).",
         examples=[50000],  # 500.00 EGP
     )
     currency: str | None = Field(
-        default=None, min_length=3, max_length=3,
+        default=None,
+        min_length=3,
+        max_length=3,
         description="ISO 4217 currency code. Defaults to EGP.",
     )
     description: str = Field(default="", max_length=500)
@@ -109,7 +114,7 @@ class CheckoutResponse(BaseModel):
 
 
 class WebhookResponse(BaseModel):
-    status: str   # "processed" | "duplicate" | "rejected"
+    status: str  # "processed" | "duplicate" | "rejected"
     http_status: int
     order_id: str | None = None
     transaction_status: str | None = None
@@ -122,6 +127,7 @@ class WebhookResponse(BaseModel):
 # SonarCloud S8415: HTTPException raises must be documented on the endpoint
 # via the `responses=` parameter. Centralising the exception instances here
 # keeps the response docs DRY (one place to update status codes / examples).
+
 
 def _require_principal(principal: str | None) -> str:
     """Return the principal or raise 401. Used by every authenticated endpoint."""
@@ -142,15 +148,34 @@ def _raise_txn_not_found() -> None:
 
 
 # Standard response models reused across endpoints (for OpenAPI `responses=`)
-_ERROR_401 = {"description": "Authentication required", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_AUTH_REQUIRED}}}}
-_ERROR_400 = {"description": "Bad request (validation or business rule)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
-_ERROR_403 = {"description": "Forbidden (role required or sandbox-only)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
-_ERROR_404 = {"description": "Order or transaction not found", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_ORDER_NOT_FOUND}}}}
-_ERROR_501 = {"description": "Not implemented (live PSP not configured)", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}}}
-_ERROR_502 = {"description": "PSP communication error", "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "PSP communication error: ..."}}}}
+_ERROR_401 = {
+    "description": "Authentication required",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_AUTH_REQUIRED}}},
+}
+_ERROR_400 = {
+    "description": "Bad request (validation or business rule)",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}},
+}
+_ERROR_403 = {
+    "description": "Forbidden (role required or sandbox-only)",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}},
+}
+_ERROR_404 = {
+    "description": "Order or transaction not found",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": _MSG_ORDER_NOT_FOUND}}},
+}
+_ERROR_501 = {
+    "description": "Not implemented (live PSP not configured)",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "..."}}},
+}
+_ERROR_502 = {
+    "description": "PSP communication error",
+    "content": {_CONTENT_TYPE_JSON: {"example": {"detail": "PSP communication error: ..."}}},
+}
 
 
 # ── Order endpoints ──────────────────────────────────────────────────────────
+
 
 @router.post(
     "/orders",
@@ -176,9 +201,7 @@ async def create_order(
             expires_in_seconds=body.expires_in_seconds,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get(
@@ -196,7 +219,8 @@ async def list_orders(
     user = _require_principal(principal)
     return svc.list_orders(
         user_principal=user,
-        limit=limit, offset=offset,
+        limit=limit,
+        offset=offset,
         status=status_filter,
     )
 
@@ -223,8 +247,10 @@ async def get_order(
     response_model=CheckoutResponse,
     summary="Initiate Meeza checkout for an order",
     responses={
-        401: _ERROR_401, 400: _ERROR_400,
-        501: _ERROR_501, 502: _ERROR_502,
+        401: _ERROR_401,
+        400: _ERROR_400,
+        501: _ERROR_501,
+        502: _ERROR_502,
     },
 )
 async def initiate_checkout(
@@ -254,8 +280,8 @@ async def initiate_checkout(
 # ── Direct Meeza Gateway Endpoints (Removed: Legacy unauthenticated stubs replaced by secure /orders/{id}/checkout) ──
 
 
-
 # ── Transaction / event audit endpoints ─────────────────────────────────────
+
 
 @router.get(
     "/transactions/{txn_id}",
@@ -312,6 +338,7 @@ async def list_events_for_order(
 
 # ── Meeza webhook receiver (UNAUTHENTICATED — HMAC-verified) ─────────────────
 
+
 @router.post(
     "/webhooks/meeza",
     response_model=WebhookResponse,
@@ -350,6 +377,7 @@ async def meeza_webhook(
 
 
 # ── Sandbox-only simulate endpoint (gated behind BILLING_MANAGE) ────────────
+
 
 @router.post(
     "/orders/{order_id}/simulate-webhook",

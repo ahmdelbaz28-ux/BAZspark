@@ -274,7 +274,11 @@ class DetectorState:
     @property
     def position_drift_m(self) -> float:
         """Euclidean distance from design position to current position."""
-        return ((self.x - self.design_x) ** 2 + (self.y - self.design_y) ** 2 + (self.z - self.design_z) ** 2) ** 0.5
+        return (
+            (self.x - self.design_x) ** 2
+            + (self.y - self.design_y) ** 2
+            + (self.z - self.design_z) ** 2
+        ) ** 0.5
 
     @property
     def is_active(self) -> bool:
@@ -686,7 +690,9 @@ class TwinSimulator:
                 dets[did].status = DetectorStatus.OFFLINE
 
     @staticmethod
-    def _apply_status_change(dets: dict[str, DetectorState], ids: list[str], status: DetectorStatus) -> None:
+    def _apply_status_change(
+        dets: dict[str, DetectorState], ids: list[str], status: DetectorStatus
+    ) -> None:
         for did in ids:
             if did in dets:
                 dets[did].status = status
@@ -781,12 +787,16 @@ class TwinSerializer:
         twin = DigitalTwin.__new__(DigitalTwin)
         twin._lock = threading.RLock()
         twin._building_id = state["building_id"]
-        twin._detectors = {did: DetectorState.from_dict(ddata) for did, ddata in state["detectors"].items()}
+        twin._detectors = {
+            did: DetectorState.from_dict(ddata) for did, ddata in state["detectors"].items()
+        }
         twin._events = deque(
             [TwinEvent.from_dict(edata) for edata in state.get("events", [])],
             maxlen=10_000,
         )
-        twin._drift_records = [DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])]
+        twin._drift_records = [
+            DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])
+        ]
         twin._room_ids = set(state.get("room_ids", []))
         twin._created_at = state["created_at"]
         twin._bus = EventBus.instance()
@@ -855,7 +865,9 @@ class DigitalTwin:
         # The old code stored AuditStore (class), which meant _audit_log
         # called class methods instead of instance methods — no state,
         # no database connection, no hash chain.
-        self._audit_store = AuditStore() if AuditStore is not None else None  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        self._audit_store = (
+            AuditStore() if AuditStore is not None else None
+        )  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
 
         # Compose sub-components
         self._drift_analyzer = TwinDriftAnalyzer()
@@ -890,27 +902,29 @@ class DigitalTwin:
     # "smoke_photoelec" (missing "tric") does not silently fall back
     # to the default smoke radius while the type field is wrong —
     # which would cause downstream confusion in reports and BOM.
-    _KNOWN_DETECTOR_TYPES: frozenset[str] = frozenset({
-        "smoke",
-        "smoke_photoelectric",
-        "smoke_ionization",
-        "smoke_duct",
-        "duct_smoke",
-        "heat",
-        "heat_fixed",
-        "heat_rate_of_rise",
-        "flame",
-        "gas",
-        "carbon_monoxide",
-        "co",
-        "combination",
-        "multi_sensor",
-        "aspirating",
-        "beam",
-        "projected_beam",
-        "reflected_beam",
-        "spot_type",
-    })
+    _KNOWN_DETECTOR_TYPES: frozenset[str] = frozenset(
+        {
+            "smoke",
+            "smoke_photoelectric",
+            "smoke_ionization",
+            "smoke_duct",
+            "duct_smoke",
+            "heat",
+            "heat_fixed",
+            "heat_rate_of_rise",
+            "flame",
+            "gas",
+            "carbon_monoxide",
+            "co",
+            "combination",
+            "multi_sensor",
+            "aspirating",
+            "beam",
+            "projected_beam",
+            "reflected_beam",
+            "spot_type",
+        }
+    )
 
     @staticmethod
     def _validate_finite_coord(name: str, value: float) -> None:
@@ -953,9 +967,7 @@ class DigitalTwin:
           - Silent corruption of audit logs (room_id="" in every record)
         """
         if not isinstance(value, str):
-            raise ValueError(
-                f"{name} must be a string, got {type(value).__name__}"
-            )
+            raise ValueError(f"{name} must be a string, got {type(value).__name__}")
         if not value.strip():
             raise ValueError(
                 f"{name} must be a non-empty, non-whitespace string. "
@@ -1012,9 +1024,7 @@ class DigitalTwin:
         self._validate_finite_coord("z", z)
 
         if not isinstance(detector_type, str) or not detector_type.strip():
-            raise ValueError(
-                f"detector_type must be a non-empty string, got {detector_type!r}"
-            )
+            raise ValueError(f"detector_type must be a non-empty string, got {detector_type!r}")
         # types. We accept them because custom/proprietary types exist
         # in the field, but we log a WARNING so the operator notices
         # typos. Rejecting would break existing deployments that use
@@ -1041,9 +1051,7 @@ class DigitalTwin:
                     f"coverage_radius must be a number, got {coverage_radius!r}"
                 ) from e
             if not math.isfinite(r):
-                raise ValueError(
-                    f"coverage_radius must be finite (not NaN or Inf), got {r!r}"
-                )
+                raise ValueError(f"coverage_radius must be finite (not NaN or Inf), got {r!r}")
             if r <= 0:
                 raise ValueError(
                     f"coverage_radius must be positive, got {r!r}. "
@@ -1468,7 +1476,9 @@ class DigitalTwin:
         # Health score: weighted combination
         if total == 0:
             health_score = 0.0
-            critical_issues: list[str] = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
+            critical_issues: list[str] = [
+                "ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"
+            ]
         else:
             active_total = total - decommed
             if active_total == 0:
@@ -1493,7 +1503,9 @@ class DigitalTwin:
             )
 
         if planned > 0:
-            warnings.append(f"{planned} detector(s) are PLANNED (not yet installed) — they provide NO fire protection")
+            warnings.append(
+                f"{planned} detector(s) are PLANNED (not yet installed) — they provide NO fire protection"
+            )
 
         if faulted > 0:
             warnings.append(f"{faulted} detector(s) are in FAULT state")
@@ -1639,7 +1651,9 @@ class DigitalTwin:
         with self._lock:
             detectors_copy = dict(self._detectors)
 
-        result = self._simulator.simulate_add_detector(detectors_copy, room_id, x, y, z, detector_type)
+        result = self._simulator.simulate_add_detector(
+            detectors_copy, room_id, x, y, z, detector_type
+        )
 
         self._record_event(
             event_type=EventType.SIMULATION_RUN,
@@ -1908,7 +1922,11 @@ class DigitalTwin:
         return []
 
     @staticmethod
-    def _pipeline_result_to_room_dict(pr: Any) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _pipeline_result_to_room_dict(
+        pr: Any,
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Convert a PipelineResult to a room result dict.
 
@@ -2106,7 +2124,9 @@ if __name__ == "__main__":
     check("Planned detectors", report.planned_detectors == 1)  # D-002 is PLANNED
     check("Health score", 0.0 < report.health_score <= 1.0)
     check("Rooms with coverage", report.rooms_with_coverage == 2)  # R-01 and R-02 both have OK
-    check("Coverage pct", report.coverage_pct == 100.0)  # NOSONAR — S1244: import retained for re-export / API surface
+    check(
+        "Coverage pct", report.coverage_pct == 100.0
+    )  # NOSONAR — S1244: import retained for re-export / API surface
 
     # Test with an uncovered room
     twin.register_detector(
@@ -2124,10 +2144,15 @@ if __name__ == "__main__":
     # ── Test 7: Simulation ───────────────────────────────────────
     sim = twin.simulate_offline(["D-001"])
     check("Simulation result", sim.simulation_id != "")
-    check("Simulation score change", sim.original_health_score != sim.simulated_health_score or True)
+    check(
+        "Simulation score change", sim.original_health_score != sim.simulated_health_score or True
+    )
 
     sim_commission = twin.simulate_commission_all()
-    check("Commission simulation", sim_commission.simulated_health_score >= sim_commission.original_health_score)
+    check(
+        "Commission simulation",
+        sim_commission.simulated_health_score >= sim_commission.original_health_score,
+    )
 
     sim_add = twin.simulate_add_detector("R-03", x=5.0, y=5.0, z=3.0)
     check("Add detector simulation", sim_add.simulation_id != "")
@@ -2214,7 +2239,10 @@ if __name__ == "__main__":
 
     # Verify detectors were registered as PLANNED by default
     dets_b1 = twin_audit.get_detectors_by_room("R-B1")
-    check("Building report detectors PLANNED", all(d.status == DetectorStatus.PLANNED for d in dets_b1))
+    check(
+        "Building report detectors PLANNED",
+        all(d.status == DetectorStatus.PLANNED for d in dets_b1),
+    )
 
     # Test from_building_report with INSTALLED status
     twin_audit2 = DigitalTwin(building_id="INSTALLED-TEST")

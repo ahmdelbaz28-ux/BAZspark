@@ -200,6 +200,7 @@ class CUAAgent:
         """
         self._step_count += 1
         from datetime import datetime
+
         timestamp = datetime.now(UTC).isoformat()
 
         # 1. Capture screenshot (or use provided one)

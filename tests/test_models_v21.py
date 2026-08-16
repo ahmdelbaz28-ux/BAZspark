@@ -108,26 +108,64 @@ class TestEnums:
 
     def test_temperature_class_extended(self):
         """V21.2: Extended T-class subdivisions T2A-T2D, T3A-T3C, T4A."""
-        expected = {"T1", "T2", "T2A", "T2B", "T2C", "T2D", "T3", "T3A",
-                     "T3B", "T3C", "T4", "T4A", "T5", "T6"}
+        expected = {
+            "T1",
+            "T2",
+            "T2A",
+            "T2B",
+            "T2C",
+            "T2D",
+            "T3",
+            "T3A",
+            "T3B",
+            "T3C",
+            "T4",
+            "T4A",
+            "T5",
+            "T6",
+        }
         assert {v.value for v in TemperatureClass} == expected
 
     def test_t_class_max_values(self):
         """IEC 60079-0:2017 §7.3 Table 3 — key values."""
-        assert _T_CLASS_MAX["T1"] == 450.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _T_CLASS_MAX["T4"] == 135.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _T_CLASS_MAX["T6"] == 85.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _T_CLASS_MAX["T2A"] == 280.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert _T_CLASS_MAX["T3B"] == 165.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _T_CLASS_MAX["T1"] == 450.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _T_CLASS_MAX["T4"] == 135.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _T_CLASS_MAX["T6"] == 85.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _T_CLASS_MAX["T2A"] == 280.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _T_CLASS_MAX["T3B"] == 165.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_t_class_descending_order(self):
         """T-class max temps must be strictly descending."""
-        ordered = ["T1", "T2", "T2A", "T2B", "T2C", "T2D", "T3", "T3A",
-                    "T3B", "T3C", "T4", "T4A", "T5", "T6"]
+        ordered = [
+            "T1",
+            "T2",
+            "T2A",
+            "T2B",
+            "T2C",
+            "T2D",
+            "T3",
+            "T3A",
+            "T3B",
+            "T3C",
+            "T4",
+            "T4A",
+            "T5",
+            "T6",
+        ]
         for i in range(len(ordered) - 1):
             assert _T_CLASS_MAX[ordered[i]] > _T_CLASS_MAX[ordered[i + 1]], (
                 f"{ordered[i]} ({_T_CLASS_MAX[ordered[i]]}) should be > "
-                f"{ordered[i+1]} ({_T_CLASS_MAX[ordered[i+1]]})"
+                f"{ordered[i + 1]} ({_T_CLASS_MAX[ordered[i + 1]]})"
             )
 
     def test_wavelength_band_members(self):
@@ -144,8 +182,14 @@ class TestEnums:
         assert {v.value for v in ThermalMarginRule} == {"STRICT_5PCT", "STANDARD_5PCT", "BASIC"}
 
     def test_region_profile_members(self):
-        expected = {"STANDARD_IEC", "MENA_SUMMER_OUTDOOR", "GULF_HCIS",
-                     "EGYPT_CODE", "EUROPE_IEC", "USA_NFPA"}
+        expected = {
+            "STANDARD_IEC",
+            "MENA_SUMMER_OUTDOOR",
+            "GULF_HCIS",
+            "EGYPT_CODE",
+            "EUROPE_IEC",
+            "USA_NFPA",
+        }
         assert {v.value for v in RegionProfile} == expected
 
     def test_jurisdiction_members(self):
@@ -183,8 +227,10 @@ class TestSubstanceProperties:
 
     def test_hybrid_valid_with_both(self):
         s = SubstanceProperties(
-            name="Hybrid Mix", hazard_type=HazardType.HYBRID,
-            lfl_vol_pct=2.0, mec_g_m3=0.05,
+            name="Hybrid Mix",
+            hazard_type=HazardType.HYBRID,
+            lfl_vol_pct=2.0,
+            mec_g_m3=0.05,
         )
         assert s.hazard_type == HazardType.HYBRID
 
@@ -213,28 +259,38 @@ class TestSubstanceProperties:
         """NFPA 497 §4.2: flash_point must be < autoignition."""
         with pytest.raises(ValidationError, match="flash_point_c"):
             SubstanceProperties(
-                name="Bad", hazard_type=HazardType.GAS, lfl_vol_pct=5.0,
-                flash_point_c=500.0, autoignition_c=400.0,
+                name="Bad",
+                hazard_type=HazardType.GAS,
+                lfl_vol_pct=5.0,
+                flash_point_c=500.0,
+                autoignition_c=400.0,
             )
 
     def test_flash_point_below_autoignition_valid(self):
         s = SubstanceProperties(
-            name="Propane", hazard_type=HazardType.GAS, lfl_vol_pct=2.1,
-            flash_point_c=-104.0, autoignition_c=450.0,
+            name="Propane",
+            hazard_type=HazardType.GAS,
+            lfl_vol_pct=2.1,
+            flash_point_c=-104.0,
+            autoignition_c=450.0,
         )
         assert s.flash_point_c == -104.0
 
     def test_lfl_gte_ufl_rejected(self):
         with pytest.raises(ValidationError, match="lfl_vol_pct"):
             SubstanceProperties(
-                name="Bad", hazard_type=HazardType.GAS,
-                lfl_vol_pct=10.0, ufl_vol_pct=5.0,
+                name="Bad",
+                hazard_type=HazardType.GAS,
+                lfl_vol_pct=10.0,
+                ufl_vol_pct=5.0,
             )
 
     def test_lfl_lt_ufl_valid(self):
         s = SubstanceProperties(
-            name="Good", hazard_type=HazardType.GAS,
-            lfl_vol_pct=2.0, ufl_vol_pct=10.0,
+            name="Good",
+            hazard_type=HazardType.GAS,
+            lfl_vol_pct=2.0,
+            ufl_vol_pct=10.0,
         )
         assert s.lfl_vol_pct < s.ufl_vol_pct
 
@@ -278,20 +334,20 @@ class TestZoneExtent:
     def test_volume_exceeds_hemisphere(self):
         """IEC 60079-10-1 Annex A: volume > 105% of hemisphere rejected."""
         r = 3.0
-        max_vol = (2.0 / 3.0) * math.pi * r ** 3 * 1.05
+        max_vol = (2.0 / 3.0) * math.pi * r**3 * 1.05
         with pytest.raises(ValidationError, match="hemisphere"):
             ZoneExtent(horizontal_m=r, vertical_m=r, volume_m3=max_vol + 10.0)
 
     def test_volume_within_5pct_tolerance(self):
         """5% tolerance for rounding — volume just within tolerance."""
         r = 3.0
-        max_vol = (2.0 / 3.0) * math.pi * r ** 3 * 1.04  # 4% over
+        max_vol = (2.0 / 3.0) * math.pi * r**3 * 1.04  # 4% over
         ze = ZoneExtent(horizontal_m=r, vertical_m=r, volume_m3=max_vol)
         assert ze.volume_m3 == max_vol
 
     def test_outdoor_sphere_check(self):
         r = 3.0
-        max_vol = (4.0 / 3.0) * math.pi * r ** 3
+        max_vol = (4.0 / 3.0) * math.pi * r**3
         ze = ZoneExtent(horizontal_m=r, vertical_m=r, volume_m3=max_vol, is_outdoor=True)
         assert ze.is_outdoor is True
 
@@ -307,8 +363,10 @@ class TestHACResult:
 
     def test_non_critical_combination(self):
         hr = HACResult(
-            zone=ZoneType.ZONE_2, extent=self._make_extent(),
-            ventilation=VentilationLevel.MEDIUM, hazard_type=HazardType.GAS,
+            zone=ZoneType.ZONE_2,
+            extent=self._make_extent(),
+            ventilation=VentilationLevel.MEDIUM,
+            hazard_type=HazardType.GAS,
         )
         assert hr.critical_flags == []
 
@@ -320,15 +378,21 @@ class TestHACResult:
             "Mandatory engineering review required. "
             "[IEC 60079-10-1 §6.3]"
         )
-        with pytest.raises(ValidationError, match="CRITICAL"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValidationError, match="CRITICAL"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HACResult(
-                zone=ZoneType.ZONE_0, extent=self._make_extent(),
-                ventilation=VentilationLevel.POOR, hazard_type=HazardType.GAS,
+                zone=ZoneType.ZONE_0,
+                extent=self._make_extent(),
+                ventilation=VentilationLevel.POOR,
+                hazard_type=HazardType.GAS,
             )
         # With flag explicitly set, should pass
         hr = HACResult(
-            zone=ZoneType.ZONE_0, extent=self._make_extent(),
-            ventilation=VentilationLevel.POOR, hazard_type=HazardType.GAS,
+            zone=ZoneType.ZONE_0,
+            extent=self._make_extent(),
+            ventilation=VentilationLevel.POOR,
+            hazard_type=HazardType.GAS,
             critical_flags=[flag],
         )
         assert flag in hr.critical_flags
@@ -341,8 +405,10 @@ class TestHACResult:
             "[IEC 60079-10-1 §6.3]"
         )
         hr = HACResult(
-            zone=ZoneType.ZONE_20, extent=self._make_extent(),
-            ventilation=VentilationLevel.POOR, hazard_type=HazardType.DUST,
+            zone=ZoneType.ZONE_20,
+            extent=self._make_extent(),
+            ventilation=VentilationLevel.POOR,
+            hazard_type=HazardType.DUST,
             critical_flags=[flag],
         )
         assert flag in hr.critical_flags
@@ -427,52 +493,73 @@ class TestSelectTempClassWithMargin:
 class TestATEXEquipmentSpec:
     def test_valid_zone0_ga(self):
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_0, epl_required="Ga", atex_category="1G",
-            temp_class=TemperatureClass.T4, protection_modes=["ia"],
+            zone=ZoneType.ZONE_0,
+            epl_required="Ga",
+            atex_category="1G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["ia"],
         )
         assert spec.epl_required == "Ga"
 
     def test_ga_sufficient_for_zone1(self):
         """Ga satisfies Gb requirement for Zone 1 (Fix #14)."""
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_1, epl_required="Ga", atex_category="1G",
-            temp_class=TemperatureClass.T4, protection_modes=["ia"],
+            zone=ZoneType.ZONE_1,
+            epl_required="Ga",
+            atex_category="1G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["ia"],
         )
         assert spec.epl_required == "Ga"
 
     def test_gc_insufficient_for_zone0(self):
         with pytest.raises(ValidationError, match="INSUFFICIENT"):
             ATEXEquipmentSpec(
-                zone=ZoneType.ZONE_0, epl_required="Gc", atex_category="3G",
-                temp_class=TemperatureClass.T4, protection_modes=["ic"],
+                zone=ZoneType.ZONE_0,
+                epl_required="Gc",
+                atex_category="3G",
+                temp_class=TemperatureClass.T4,
+                protection_modes=["ic"],
             )
 
     def test_invalid_atex_category(self):
         with pytest.raises(ValidationError, match="not a valid ATEX"):
             ATEXEquipmentSpec(
-                zone=ZoneType.ZONE_1, epl_required="Gb", atex_category="4G",
-                temp_class=TemperatureClass.T4, protection_modes=["d"],
+                zone=ZoneType.ZONE_1,
+                epl_required="Gb",
+                atex_category="4G",
+                temp_class=TemperatureClass.T4,
+                protection_modes=["d"],
             )
 
     def test_zone0_rejects_flameproof(self):
         """V25 FIX: 'd' (flameproof) is EPL Gb — Zone 1 only."""
         with pytest.raises(ValidationError, match="not permitted"):
             ATEXEquipmentSpec(
-                zone=ZoneType.ZONE_0, epl_required="Ga", atex_category="1G",
-                temp_class=TemperatureClass.T4, protection_modes=["d"],
+                zone=ZoneType.ZONE_0,
+                epl_required="Ga",
+                atex_category="1G",
+                temp_class=TemperatureClass.T4,
+                protection_modes=["d"],
             )
 
     def test_zone1_allows_flameproof(self):
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_1, epl_required="Gb", atex_category="2G",
-            temp_class=TemperatureClass.T4, protection_modes=["d"],
+            zone=ZoneType.ZONE_1,
+            epl_required="Gb",
+            atex_category="2G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["d"],
         )
         assert "d" in spec.protection_modes
 
     def test_zone2_allows_ic(self):
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_2, epl_required="Gc", atex_category="3G",
-            temp_class=TemperatureClass.T4, protection_modes=["ic"],
+            zone=ZoneType.ZONE_2,
+            epl_required="Gc",
+            atex_category="3G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["ic"],
         )
         assert "ic" in spec.protection_modes
 
@@ -480,30 +567,42 @@ class TestATEXEquipmentSpec:
         """Zone 20: 'tb' is EPL Db (Zone 21 only)."""
         with pytest.raises(ValidationError, match="not permitted"):
             ATEXEquipmentSpec(
-                zone=ZoneType.ZONE_20, epl_required="Da", atex_category="1D",
-                temp_class=TemperatureClass.T4, protection_modes=["tb"],
+                zone=ZoneType.ZONE_20,
+                epl_required="Da",
+                atex_category="1D",
+                temp_class=TemperatureClass.T4,
+                protection_modes=["tb"],
             )
 
     def test_zone21_rejects_tc(self):
         """V48 FIX: 'tc' is EPL Dc (Zone 22 only)."""
         with pytest.raises(ValidationError, match="not permitted"):
             ATEXEquipmentSpec(
-                zone=ZoneType.ZONE_21, epl_required="Db", atex_category="2D",
-                temp_class=TemperatureClass.T4, protection_modes=["tc"],
+                zone=ZoneType.ZONE_21,
+                epl_required="Db",
+                atex_category="2D",
+                temp_class=TemperatureClass.T4,
+                protection_modes=["tc"],
             )
 
     def test_zone22_allows_tc(self):
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_22, epl_required="Dc", atex_category="3D",
-            temp_class=TemperatureClass.T4, protection_modes=["tc"],
+            zone=ZoneType.ZONE_22,
+            epl_required="Dc",
+            atex_category="3D",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["tc"],
         )
         assert "tc" in spec.protection_modes
 
     def test_thermal_margin_violation_zone1(self):
         """V54 FIX: T-class exceeding 95% of autoignition → hac_critical."""
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_1, epl_required="Gb", atex_category="2G",
-            temp_class=TemperatureClass.T3, protection_modes=["d"],
+            zone=ZoneType.ZONE_1,
+            epl_required="Gb",
+            atex_category="2G",
+            temp_class=TemperatureClass.T3,
+            protection_modes=["d"],
             autoignition_c=200.0,  # 95% = 190; T3 max=200 > 190
         )
         assert len(spec.hac_critical) > 0
@@ -511,8 +610,11 @@ class TestATEXEquipmentSpec:
 
     def test_thermal_margin_ok_zone1(self):
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_1, epl_required="Gb", atex_category="2G",
-            temp_class=TemperatureClass.T4, protection_modes=["d"],
+            zone=ZoneType.ZONE_1,
+            epl_required="Gb",
+            atex_category="2G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["d"],
             autoignition_c=200.0,  # 95% = 190; T4 max=135 < 190
         )
         assert len(spec.hac_critical) == 0
@@ -520,8 +622,11 @@ class TestATEXEquipmentSpec:
     def test_thermal_margin_violation_zone2_strict_below(self):
         """Zone 2: T-class max must be strictly below autoignition."""
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_2, epl_required="Gc", atex_category="3G",
-            temp_class=TemperatureClass.T4, protection_modes=["ic"],
+            zone=ZoneType.ZONE_2,
+            epl_required="Gc",
+            atex_category="3G",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["ic"],
             autoignition_c=135.0,  # T4 max=135, not strictly below
         )
         assert len(spec.hac_critical) > 0
@@ -529,8 +634,11 @@ class TestATEXEquipmentSpec:
     def test_da_sufficient_for_zone21(self):
         """Da satisfies Db requirement for Zone 21."""
         spec = ATEXEquipmentSpec(
-            zone=ZoneType.ZONE_21, epl_required="Da", atex_category="1D",
-            temp_class=TemperatureClass.T4, protection_modes=["tb"],
+            zone=ZoneType.ZONE_21,
+            epl_required="Da",
+            atex_category="1D",
+            temp_class=TemperatureClass.T4,
+            protection_modes=["tb"],
         )
         assert spec.epl_required == "Da"
 
@@ -544,7 +652,9 @@ class TestObstruction:
     def test_default_opaque(self):
         o = Obstruction(obstruction_id="wall1", vertices=[[0, 0, 0], [1, 0, 0], [1, 1, 0]])
         for band in WavelengthBand:
-            assert o.transmittance_for(band) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+            assert (
+                o.transmittance_for(band) == 0.0
+            )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_glass_partial_transparency(self):
         o = Obstruction(
@@ -623,7 +733,9 @@ class TestFlameDetectorSpec:
             )
 
     def test_nan_position_rejected(self):
-        with pytest.raises(ValidationError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValidationError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             FlameDetectorSpec(
                 detector_id="FD-NAN",
                 position=[1.0, float("nan"), 3.0],
@@ -634,7 +746,9 @@ class TestFlameDetectorSpec:
             )
 
     def test_inf_position_rejected(self):
-        with pytest.raises(ValidationError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValidationError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             FlameDetectorSpec(
                 detector_id="FD-INF",
                 position=[1.0, 2.0, float("inf")],
@@ -757,11 +871,17 @@ class TestEnvironmentalContext:
     def test_defaults(self):
         """Defaults are worst-case: F stability, 0.5 m/s wind, 40C."""
         ctx = EnvironmentalContext()
-        assert ctx.ambient_temp_c == 40.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert ctx.wind_speed_m_s == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ctx.ambient_temp_c == 40.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ctx.wind_speed_m_s == 0.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert ctx.stability_class == PasquillStability.F
         assert ctx.is_indoor is True
-        assert ctx.lens_fouling_factor == 0.85  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ctx.lens_fouling_factor == 0.85
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_unstable_with_low_wind_rejected(self):
         """Pasquill-Gifford: A/B stability needs ≥2 m/s wind."""
@@ -882,11 +1002,15 @@ class TestVaporDensityTier:
 
     def test_nan_rejected(self):
         """V57 FIX: NaN molecular_weight must raise ValueError."""
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             vapor_density_tier(float("nan"))
 
     def test_inf_rejected(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             vapor_density_tier(float("inf"))
 
     def test_negative_mw_rejected(self):
@@ -906,7 +1030,9 @@ class TestVaporDensityTier:
 class TestRoomPurgeTime:
     def test_basic_calculation(self):
         """T = -3600/ACH * ln(target_fraction)."""
-        t = room_purge_time(room_volume_m3=100.0, ach=6.0, target_fraction=0.01)  # NOSONAR - python:S930
+        t = room_purge_time(
+            room_volume_m3=100.0, ach=6.0, target_fraction=0.01
+        )  # NOSONAR - python:S930
         expected = -3600.0 / 6.0 * math.log(0.01)
         assert t == pytest.approx(expected, rel=1e-6)
 
@@ -1025,8 +1151,12 @@ class TestSpectralSignature:
             alpha_ir1=3.0,
             alpha_ir3=4.0,
         )
-        assert sig.alpha_for(WavelengthBand.UV) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert sig.alpha_for(WavelengthBand.IR3) == 4.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            sig.alpha_for(WavelengthBand.UV) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            sig.alpha_for(WavelengthBand.IR3) == 4.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_alpha_rejected(self):
         with pytest.raises(ValidationError):
@@ -1165,7 +1295,9 @@ class TestVolumetricMedium:
             bbox_max=[10, 10, 3],
         )
         alpha = vm.get_alpha(WavelengthBand.UV)
-        assert alpha == 0.0  # Fallback  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            alpha == 0.0
+        )  # Fallback  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1176,13 +1308,19 @@ class TestVolumetricMedium:
 class TestBeerLambertTransmittance:
     def test_clear_path(self):
         """alpha=0 → T=1.0 (no absorption)."""
-        assert beer_lambert_transmittance(0.0, 10.0) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            beer_lambert_transmittance(0.0, 10.0) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_zero_length(self):
-        assert beer_lambert_transmittance(1.0, 0.0) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            beer_lambert_transmittance(1.0, 0.0) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_alpha(self):
-        assert beer_lambert_transmittance(-1.0, 10.0) == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            beer_lambert_transmittance(-1.0, 10.0) == 1.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_known_absorption(self):
         """T = exp(-0.5 * 2) = exp(-1) ≈ 0.368."""
@@ -1216,7 +1354,9 @@ class TestVolumetricPathTransmittance:
             bbox_max=[60, 60, 3],
         )
         t = volumetric_path_transmittance((0, 0, 0), (10, 0, 0), [vm], WavelengthBand.IR3)
-        assert t == 1.0  # Ray doesn't intersect  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            t == 1.0
+        )  # Ray doesn't intersect  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_media_in_path_reduces_transmittance(self):
         vm = VolumetricMedium(
@@ -1239,22 +1379,28 @@ class TestRayAABBPathLength:
     def test_ray_through_box(self):
         """Ray from (0,5,1.5) to (20,5,1.5) through box [2,8]x[0,10]x[0,3]."""
         path = _ray_aabb_path_length(
-            (0, 5, 1.5), (20, 5, 1.5),
-            [2.0, 0.0, 0.0], [8.0, 10.0, 3.0],
+            (0, 5, 1.5),
+            (20, 5, 1.5),
+            [2.0, 0.0, 0.0],
+            [8.0, 10.0, 3.0],
         )
         assert path == pytest.approx(6.0, abs=0.1)  # 8-2=6 along X
 
     def test_ray_misses_box(self):
         path = _ray_aabb_path_length(
-            (0, 20, 5), (10, 20, 5),
-            [2.0, 0.0, 0.0], [8.0, 10.0, 3.0],
+            (0, 20, 5),
+            (10, 20, 5),
+            [2.0, 0.0, 0.0],
+            [8.0, 10.0, 3.0],
         )
         assert path == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ray_parallel_to_face(self):
         path = _ray_aabb_path_length(
-            (0, 5, 5), (10, 5, 5),  # z=5, above box
-            [2.0, 0.0, 0.0], [8.0, 10.0, 3.0],
+            (0, 5, 5),
+            (10, 5, 5),  # z=5, above box
+            [2.0, 0.0, 0.0],
+            [8.0, 10.0, 3.0],
         )
         assert path == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
@@ -1273,7 +1419,9 @@ class TestDefaultMediumAlpha:
 
     def test_clear_is_zero(self):
         clear = _DEFAULT_MEDIUM_ALPHA["CLEAR"]
-        assert all(v == 0.0 for v in clear.values())  # NOSONAR — S1244: import retained for re-export / API surface
+        assert all(
+            v == 0.0 for v in clear.values()
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_all_types_present(self):
         expected = {"SMOKE", "STEAM", "DUST_SUSPENSION", "GAS_CLOUD", "MIST", "CLEAR"}

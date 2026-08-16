@@ -150,8 +150,10 @@ class TestCeilingTypeEnum:
 class TestBeamObstruction:
     def test_create_beam(self):
         beam = BeamObstruction(
-            x_start_m=0.0, y_start_m=0.0,
-            x_end_m=10.0, y_end_m=0.0,
+            x_start_m=0.0,
+            y_start_m=0.0,
+            x_end_m=10.0,
+            y_end_m=0.0,
             depth_m=0.5,
         )
         assert beam.depth_m == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
@@ -173,7 +175,9 @@ class TestExitDoor:
 
     def test_custom_width(self):
         door = ExitDoor(x_m=5.0, y_m=0.0, door_width_m=1.2)
-        assert door.door_width_m == 1.2  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            door.door_width_m == 1.2
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -202,16 +206,22 @@ class TestDPRoomSpec:
 
     def test_validate_reject_negative_slope(self):
         room = DPRoomSpec(
-            room_id="R1", width_m=10, length_m=8,
-            ceiling_height_m=3.0, slope_degrees=-5,
+            room_id="R1",
+            width_m=10,
+            length_m=8,
+            ceiling_height_m=3.0,
+            slope_degrees=-5,
         )
         with pytest.raises(PhysicsGuardError, match="slope"):
             room.validate()
 
     def test_validate_reject_slope_above_45(self):
         room = DPRoomSpec(
-            room_id="R1", width_m=10, length_m=8,
-            ceiling_height_m=3.0, slope_degrees=50,
+            room_id="R1",
+            width_m=10,
+            length_m=8,
+            ceiling_height_m=3.0,
+            slope_degrees=50,
         )
         with pytest.raises(PhysicsGuardError, match="slope"):
             room.validate()
@@ -232,7 +242,9 @@ class TestPlacedDevice:
         dev = PlacedDevice(
             device_id="R1-D001",
             device_type=DPDetectorType.SMOKE,
-            x_m=5.0, y_m=5.0, z_m=2.95,
+            x_m=5.0,
+            y_m=5.0,
+            z_m=2.95,
             spacing_used_m=9.1,
             radius_m=6.37,
             nfpa_section="NFPA 72-2022 §17.7",
@@ -261,7 +273,9 @@ class TestPlacementResult:
             computation_hash="abc123",
         )
         assert result.is_fully_compliant is True
-        assert result.coverage_pct == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.coverage_pct == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -323,7 +337,9 @@ class TestDetectorPlacementEngineSmoke:
 class TestDetectorPlacementEngineHeat:
     def test_heat_detector_type(self, engine):
         room = DPRoomSpec(
-            room_id="HR1", width_m=15.0, length_m=12.0,
+            room_id="HR1",
+            width_m=15.0,
+            length_m=12.0,
             ceiling_height_m=3.0,
             detector_type=DPDetectorType.HEAT,
         )
@@ -341,12 +357,16 @@ class TestDetectorPlacementEngineHeat:
         room area. Verify both detector types produce valid placements.
         """
         room_heat = DPRoomSpec(
-            room_id="H", width_m=20.0, length_m=20.0,
+            room_id="H",
+            width_m=20.0,
+            length_m=20.0,
             ceiling_height_m=3.0,
             detector_type=DPDetectorType.HEAT,
         )
         room_smoke = DPRoomSpec(
-            room_id="S", width_m=20.0, length_m=20.0,
+            room_id="S",
+            width_m=20.0,
+            length_m=20.0,
             ceiling_height_m=3.0,
             detector_type=DPDetectorType.SMOKE,
         )
@@ -372,7 +392,9 @@ class TestBeamObstruction:  # noqa: F811  (duplicate test class — second defin
     def test_beam_below_threshold_no_section(self, engine):
         """Beam depth ≤ 10% ceiling height: NOT a wall."""
         room = DPRoomSpec(
-            room_id="beam1", width_m=10.0, length_m=10.0,
+            room_id="beam1",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             beams=[BeamObstruction(0, 0, 10, 0, depth_m=0.29)],  # < 10% of 3.0
         )
@@ -382,7 +404,9 @@ class TestBeamObstruction:  # noqa: F811  (duplicate test class — second defin
     def test_beam_above_threshold_creates_section(self, engine):
         """Beam depth > 10% ceiling height: creates separate section."""
         room = DPRoomSpec(
-            room_id="beam2", width_m=10.0, length_m=10.0,
+            room_id="beam2",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             beams=[BeamObstruction(0, 0, 10, 0, depth_m=0.5)],  # > 10% of 3.0
         )
@@ -391,7 +415,9 @@ class TestBeamObstruction:  # noqa: F811  (duplicate test class — second defin
 
     def test_multiple_qualifying_beams(self, engine):
         room = DPRoomSpec(
-            room_id="beam3", width_m=10.0, length_m=10.0,
+            room_id="beam3",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             beams=[
                 BeamObstruction(0, 3, 10, 3, depth_m=0.5),
@@ -403,7 +429,9 @@ class TestBeamObstruction:  # noqa: F811  (duplicate test class — second defin
 
     def test_beam_nfpa_reference(self, engine):
         room = DPRoomSpec(
-            room_id="beam4", width_m=10.0, length_m=10.0,
+            room_id="beam4",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             beams=[BeamObstruction(0, 0, 10, 0, depth_m=0.5)],
         )
@@ -419,7 +447,9 @@ class TestBeamObstruction:  # noqa: F811  (duplicate test class — second defin
 class TestSlopedCeiling:
     def test_sloped_ceiling_nfpa_reference(self, engine):
         room = DPRoomSpec(
-            room_id="sloped", width_m=10.0, length_m=10.0,
+            room_id="sloped",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             ceiling_type=DPCeilingType.SLOPED,
             slope_degrees=15.0,
@@ -429,7 +459,9 @@ class TestSlopedCeiling:
 
     def test_peaked_ceiling_nfpa_reference(self, engine):
         room = DPRoomSpec(
-            room_id="peaked", width_m=10.0, length_m=10.0,
+            room_id="peaked",
+            width_m=10.0,
+            length_m=10.0,
             ceiling_height_m=3.0,
             ceiling_type=DPCeilingType.PEAKED,
         )
@@ -485,7 +517,9 @@ class TestNotificationAppliancePlacement:
     def test_notification_candela_sleeping(self, engine):
         """Sleeping area: 177 cd per NFPA 72 §18.5.5.7."""
         room = DPRoomSpec(
-            room_id="sleep", width_m=10.0, length_m=8.0,
+            room_id="sleep",
+            width_m=10.0,
+            length_m=8.0,
             ceiling_height_m=3.0,
             is_sleeping_area=True,
         )
@@ -512,7 +546,10 @@ class TestPlaceDuctDetector:
     def test_narrow_duct_one_detector(self):
         """Duct width ≤ 0.305m: one detector."""
         spec = DuctDetectorSpec(
-            duct_id="D1", width_m=0.3, height_m=0.3, velocity_m_s=5.0,
+            duct_id="D1",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert result["n_detectors"] == 1
@@ -520,7 +557,10 @@ class TestPlaceDuctDetector:
     def test_medium_duct_two_detectors(self):
         """Duct width 0.305–0.914m: two detectors."""
         spec = DuctDetectorSpec(
-            duct_id="D2", width_m=0.6, height_m=0.3, velocity_m_s=5.0,
+            duct_id="D2",
+            width_m=0.6,
+            height_m=0.3,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert result["n_detectors"] == 2
@@ -528,35 +568,50 @@ class TestPlaceDuctDetector:
     def test_wide_duct_multiple_detectors(self):
         """Duct width > 0.914m: more detectors."""
         spec = DuctDetectorSpec(
-            duct_id="D3", width_m=2.0, height_m=0.5, velocity_m_s=5.0,
+            duct_id="D3",
+            width_m=2.0,
+            height_m=0.5,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert result["n_detectors"] >= 3
 
     def test_reject_zero_velocity(self):
         spec = DuctDetectorSpec(
-            duct_id="D4", width_m=0.3, height_m=0.3, velocity_m_s=0.0,
+            duct_id="D4",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=0.0,
         )
         with pytest.raises(PhysicsGuardError, match="air velocity must be > 0"):
             place_duct_detector(spec)
 
     def test_reject_negative_velocity(self):
         spec = DuctDetectorSpec(
-            duct_id="D5", width_m=0.3, height_m=0.3, velocity_m_s=-1.0,
+            duct_id="D5",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=-1.0,
         )
         with pytest.raises(PhysicsGuardError, match="air velocity must be > 0"):
             place_duct_detector(spec)
 
     def test_reject_nan_velocity(self):
         spec = DuctDetectorSpec(
-            duct_id="D6", width_m=0.3, height_m=0.3, velocity_m_s=float("nan"),
+            duct_id="D6",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=float("nan"),
         )
         with pytest.raises(PhysicsGuardError):
             place_duct_detector(spec)
 
     def test_reject_inf_velocity(self):
         spec = DuctDetectorSpec(
-            duct_id="D7", width_m=0.3, height_m=0.3, velocity_m_s=float("inf"),
+            duct_id="D7",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=float("inf"),
         )
         with pytest.raises(PhysicsGuardError):
             place_duct_detector(spec)
@@ -564,7 +619,10 @@ class TestPlaceDuctDetector:
     def test_reject_velocity_below_min(self):
         """NFPA 72 §17.7.4.2.2: minimum 0.305 m/s (60 fpm)."""
         spec = DuctDetectorSpec(
-            duct_id="D8", width_m=0.3, height_m=0.3, velocity_m_s=0.1,
+            duct_id="D8",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=0.1,
         )
         with pytest.raises(PhysicsGuardError, match="below minimum"):
             place_duct_detector(spec)
@@ -572,28 +630,40 @@ class TestPlaceDuctDetector:
     def test_reject_velocity_above_max(self):
         """NFPA 72 §17.7.4.2.2: maximum 15.24 m/s (3000 fpm)."""
         spec = DuctDetectorSpec(
-            duct_id="D9", width_m=0.3, height_m=0.3, velocity_m_s=20.0,
+            duct_id="D9",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=20.0,
         )
         with pytest.raises(PhysicsGuardError, match="exceeds maximum"):
             place_duct_detector(spec)
 
     def test_nfpa_section_in_result(self):
         spec = DuctDetectorSpec(
-            duct_id="D10", width_m=0.3, height_m=0.3, velocity_m_s=5.0,
+            duct_id="D10",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert "17.7.4" in result["nfpa_section"]
 
     def test_duct_id_preserved(self):
         spec = DuctDetectorSpec(
-            duct_id="MY-DUCT", width_m=0.3, height_m=0.3, velocity_m_s=5.0,
+            duct_id="MY-DUCT",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert result["duct_id"] == "MY-DUCT"
 
     def test_compliance_note_present(self):
         spec = DuctDetectorSpec(
-            duct_id="D11", width_m=0.3, height_m=0.3, velocity_m_s=5.0,
+            duct_id="D11",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=5.0,
         )
         result = place_duct_detector(spec)
         assert "compliance_note" in result
@@ -601,7 +671,10 @@ class TestPlaceDuctDetector:
     def test_velocity_at_min_boundary(self):
         """Exactly 0.305 m/s: should pass."""
         spec = DuctDetectorSpec(
-            duct_id="D12", width_m=0.3, height_m=0.3, velocity_m_s=0.305,
+            duct_id="D12",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=0.305,
         )
         result = place_duct_detector(spec)
         assert result["n_detectors"] >= 1
@@ -609,7 +682,10 @@ class TestPlaceDuctDetector:
     def test_velocity_at_max_boundary(self):
         """Exactly 15.24 m/s: should pass."""
         spec = DuctDetectorSpec(
-            duct_id="D13", width_m=0.3, height_m=0.3, velocity_m_s=15.24,
+            duct_id="D13",
+            width_m=0.3,
+            height_m=0.3,
+            velocity_m_s=15.24,
         )
         result = place_duct_detector(spec)
         assert result["n_detectors"] >= 1

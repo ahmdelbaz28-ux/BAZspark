@@ -159,8 +159,14 @@ class SensorPhysicsAdvisor:
         perf_based = False
 
         # ─── Check 1: Height beyond NFPA table ───────────────────
-        max_h = _POINT_DETECTOR_MAX_HEIGHT_SMOKE if detector_type == "smoke" else _POINT_DETECTOR_MAX_HEIGHT_HEAT
-        warn_h = _HIGH_CEILING_WARNING_SMOKE if detector_type == "smoke" else _HIGH_CEILING_WARNING_HEAT
+        max_h = (
+            _POINT_DETECTOR_MAX_HEIGHT_SMOKE
+            if detector_type == "smoke"
+            else _POINT_DETECTOR_MAX_HEIGHT_HEAT
+        )
+        warn_h = (
+            _HIGH_CEILING_WARNING_SMOKE if detector_type == "smoke" else _HIGH_CEILING_WARNING_HEAT
+        )
 
         if ceiling_height_m > max_h:
             severity = "CRITICAL"
@@ -170,7 +176,9 @@ class SensorPhysicsAdvisor:
                 f"maximum ({max_h}m) for point-type {detector_type} detectors. "
                 f"Projected beam-type detectors are REQUIRED per NFPA 72 §17.7.2."
             )
-            nfpa_refs.append("NFPA 72-2022 §17.7.2")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            nfpa_refs.append(
+                "NFPA 72-2022 §17.7.2"
+            )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             nfpa_refs.append("NFPA 72-2022 Table 17.6.3.1.1")
 
         elif ceiling_height_m > warn_h:

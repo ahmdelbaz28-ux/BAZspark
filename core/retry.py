@@ -42,6 +42,7 @@ from tenacity import (
 
 class CircuitBreakerOpenError(Exception):
     """Raised when the circuit breaker is in the OPEN state."""
+
     pass
 
 
@@ -52,6 +53,7 @@ class CircuitBreaker:
     When failures exceed the threshold, the circuit opens and subsequent
     calls fail fast without attempting the operation.
     """
+
     def __init__(self, max_failures: int = 5, reset_timeout: int = 30):
         self.max_failures = max_failures
         self.reset_timeout = reset_timeout
@@ -89,7 +91,6 @@ class CircuitBreaker:
             self.failures = 0
             self.opened_at = None
 
-
     async def call(self, func: Callable[..., Any], *args, **kwargs) -> Any:
         """Execute the function, applying circuit breaker logic."""
         if await self.is_open():
@@ -102,6 +103,7 @@ class CircuitBreaker:
             await self.record_failure()
             raise
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,11 +111,7 @@ def network_retry(
     max_attempts: int = 3,
     max_delay: int = 300,  # 5 minutes max
     multiplier: float = 1.0,
-    exceptions: tuple[type[BaseException], ...] = (
-        ConnectionError,
-        TimeoutError,
-        OSError
-    )
+    exceptions: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, OSError),
 ):
     """
     Retry decorator for network operations with exponential backoff.
@@ -125,22 +123,21 @@ def network_retry(
         exceptions: tuple of exception types to retry on
 
     """
+
     def retry_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             return retry(
                 stop=stop_after_attempt(max_attempts),
-                wait=wait_exponential(
-                    multiplier=multiplier,
-                    min=1,
-                    max=max_delay
-                ),
+                wait=wait_exponential(multiplier=multiplier, min=1, max=max_delay),
                 retry=retry_if_exception_type(exceptions),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -152,8 +149,8 @@ def skill_retry(
         ImportError,
         ModuleNotFoundError,
         AttributeError,
-        SyntaxError
-    )
+        SyntaxError,
+    ),
 ):
     """
     Retry decorator for skill loading and initialization.
@@ -165,29 +162,26 @@ def skill_retry(
         exceptions: tuple of exception types to retry on
 
     """
+
     def retry_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             return retry(
                 stop=stop_after_attempt(max_attempts),
-                wait=wait_exponential(
-                    multiplier=multiplier,
-                    min=1,
-                    max=max_delay
-                ),
+                wait=wait_exponential(multiplier=multiplier, min=1, max=max_delay),
                 retry=retry_if_exception_type(exceptions),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
 def conditional_retry(
-    condition_func: Callable[[Any], bool],
-    max_attempts: int = 3,
-    max_delay: int = 60
+    condition_func: Callable[[Any], bool], max_attempts: int = 3, max_delay: int = 60
 ):
     """
     Retry decorator that retries based on return value condition.
@@ -198,6 +192,7 @@ def conditional_retry(
         max_delay: Maximum delay between retries in seconds
 
     """
+
     def retry_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -209,14 +204,16 @@ def conditional_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
 def timeout_retry(
     timeout_seconds: int = 60,
     max_delay: int = 10,
-    exceptions: tuple[type[BaseException], ...] = (TimeoutError,)
+    exceptions: tuple[type[BaseException], ...] = (TimeoutError,),
 ):
     """
     Retry decorator with total timeout constraint.
@@ -227,6 +224,7 @@ def timeout_retry(
         exceptions: tuple of exception types to retry on
 
     """
+
     def retry_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -238,7 +236,9 @@ def timeout_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -248,8 +248,8 @@ def persistent_retry(
         ConnectionError,
         TimeoutError,
         OSError,
-        RuntimeError
-    )
+        RuntimeError,
+    ),
 ):
     """
     Persistent retry decorator for critical operations.
@@ -259,6 +259,7 @@ def persistent_retry(
         exceptions: tuple of exception types to retry on
 
     """
+
     def retry_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -270,7 +271,9 @@ def persistent_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -282,23 +285,22 @@ def async_network_retry(
         TimeoutError,
         ConnectionError,
         OSError,
-    )
+    ),
 ):
     """Async version of network retry decorator."""
+
     def retry_decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await retry(
                 stop=stop_after_attempt(max_attempts),
-                wait=wait_exponential(
-                    multiplier=multiplier,
-                    min=1,
-                    max=max_delay
-                ),
+                wait=wait_exponential(multiplier=multiplier, min=1, max=max_delay),
                 retry=retry_if_exception_type(exceptions),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator

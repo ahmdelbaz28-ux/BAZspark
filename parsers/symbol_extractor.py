@@ -16,6 +16,7 @@ from parsers._device_types import DeviceType
 
 class SymbolType(Enum):
     """NFPA 170 device types."""
+
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     PULL_STATION = "PULL_STATION"
@@ -52,7 +53,7 @@ class SymbolElement:
             "bbox": self.bbox,
             "confidence": self.confidence.value,
             "text": self.text,
-            "page": self.page
+            "page": self.page,
         }
 
 
@@ -73,45 +74,51 @@ DEVICE_TYPE_TO_SYMBOL = {
 class SymbolExtractor:
     KEYWORDS = {
         SymbolType.SMOKE_DETECTOR: [
-            r'\bSD\b', r'\bSMOKE\b', r'\bSMOKE\s*DETECTOR\b',
-            r'\bSMOKE\s*DET\b', r'\bPHOTO\b', r'\bION\b',
-            r'\bPHOTOELECTRIC\b'
+            r"\bSD\b",
+            r"\bSMOKE\b",
+            r"\bSMOKE\s*DETECTOR\b",
+            r"\bSMOKE\s*DET\b",
+            r"\bPHOTO\b",
+            r"\bION\b",
+            r"\bPHOTOELECTRIC\b",
         ],
         SymbolType.HEAT_DETECTOR: [
-            r'\bHD\b', r'\bHEAT\b', r'\bHEAT\s*DETECTOR\b',
-            r'\bTHERMAL\b', r'\bROR\b', r'\bFIXED\s*TEMP\b',
-            r'\bRATE[ -]*OF[ -]*RISE\b'
+            r"\bHD\b",
+            r"\bHEAT\b",
+            r"\bHEAT\s*DETECTOR\b",
+            r"\bTHERMAL\b",
+            r"\bROR\b",
+            r"\bFIXED\s*TEMP\b",
+            r"\bRATE[ -]*OF[ -]*RISE\b",
         ],
         SymbolType.PULL_STATION: [
-            r'\bPULL\b', r'\bPULL\s*STATION\b', r'\bMANUAL\s*PULL\b',
-            r'\bMANUAL\s*STATION\b', r'\bPS\b', r'\bBREAK\s*GLASS\b'
+            r"\bPULL\b",
+            r"\bPULL\s*STATION\b",
+            r"\bMANUAL\s*PULL\b",
+            r"\bMANUAL\s*STATION\b",
+            r"\bPS\b",
+            r"\bBREAK\s*GLASS\b",
         ],
         SymbolType.HORN_STROBE: [
-            r'\bH/S\b', r'\bHORN/STROBE\b', r'\bHORN\s*STROBE\b',
-            r'\bA/V\b', r'\bAV\b'
+            r"\bH/S\b",
+            r"\bHORN/STROBE\b",
+            r"\bHORN\s*STROBE\b",
+            r"\bA/V\b",
+            r"\bAV\b",
         ],
-        SymbolType.HORN: [
-            r'\bHORN\b', r'\bH\b'
-        ],
-        SymbolType.STROBE: [
-            r'\bSTROBE\b', r'\bVISUAL\b'
-        ],
-        SymbolType.SPEAKER: [
-            r'\bSPEAKER\b', r'\bSPKR\b', r'\bSP\b'
-        ],
-        SymbolType.NAC_PANEL: [
-            r'\bNAC\b', r'\bNOTIFICATION\s*APPLIANCE\s*CIRCUIT\b'
-        ],
+        SymbolType.HORN: [r"\bHORN\b", r"\bH\b"],
+        SymbolType.STROBE: [r"\bSTROBE\b", r"\bVISUAL\b"],
+        SymbolType.SPEAKER: [r"\bSPEAKER\b", r"\bSPKR\b", r"\bSP\b"],
+        SymbolType.NAC_PANEL: [r"\bNAC\b", r"\bNOTIFICATION\s*APPLIANCE\s*CIRCUIT\b"],
         SymbolType.FIRE_ALARM_PANEL: [
-            r'\bFACP\b', r'\bFIRE\s*ALARM\s*PANEL\b', r'\bMAIN\s*PANEL\b',
-            r'\bCONTROL\s*PANEL\b', r'\bPANEL\b'
+            r"\bFACP\b",
+            r"\bFIRE\s*ALARM\s*PANEL\b",
+            r"\bMAIN\s*PANEL\b",
+            r"\bCONTROL\s*PANEL\b",
+            r"\bPANEL\b",
         ],
-        SymbolType.SPRINKLER: [
-            r'\bSPRINKLER\b', r'\bSPR\b', r'\bHEAD\b'
-        ],
-        SymbolType.FLOW_SWITCH: [
-            r'\bFLOW\s*SWITCH\b', r'\bWATERFLOW\b'
-        ],
+        SymbolType.SPRINKLER: [r"\bSPRINKLER\b", r"\bSPR\b", r"\bHEAD\b"],
+        SymbolType.FLOW_SWITCH: [r"\bFLOW\s*SWITCH\b", r"\bWATERFLOW\b"],
     }
 
     def __init__(self, pdf_path: str, page_number: int = 0):
@@ -135,13 +142,15 @@ class SymbolExtractor:
             for sym_type, patterns in self.KEYWORDS.items():
                 for pat in patterns:
                     if re.search(pat, text, re.IGNORECASE):
-                        symbols.append(SymbolElement(
-                            symbol_type=sym_type,
-                            bbox=bbox,
-                            text=text,
-                            page=self.page_number,
-                            raw={"word": word}
-                        ))
+                        symbols.append(
+                            SymbolElement(
+                                symbol_type=sym_type,
+                                bbox=bbox,
+                                text=text,
+                                page=self.page_number,
+                                raw={"word": word},
+                            )
+                        )
                         break
 
         self.doc.close()

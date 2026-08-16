@@ -90,7 +90,9 @@ class TestMaskSensitive:
         assert "eyJhbGciOiJIUzI1NiJ9payload" not in result
 
     def test_password_masked(self) -> None:
-        result = mask_sensitive('password = os.getenv("PASSWORD")')  # NOSONAR: S2068 test fixture password  # NOSONAR — S7632: test function documented via class name / module path
+        result = mask_sensitive(
+            'password = os.getenv("PASSWORD")'
+        )  # NOSONAR: S2068 test fixture password  # NOSONAR — S7632: test function documented via class name / module path
         assert "***REDACTED***" in result
 
     def test_auth_key_masked(self) -> None:
@@ -105,10 +107,14 @@ class TestMaskSensitive:
         assert mask_sensitive("") == ""
 
     def test_none_returns_empty(self) -> None:
-        assert mask_sensitive(None) == ""  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        assert (
+            mask_sensitive(None) == ""
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_non_string_input_converted(self) -> None:
-        result = mask_sensitive(42)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        result = mask_sensitive(
+            42
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result == "42"
 
     def test_chain_hash_not_corrupted(self) -> None:
@@ -161,8 +167,13 @@ class TestSensitiveDataFilter:
     def test_filter_masks_string_msg(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg='api_key = os.getenv("API_KEY")', args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg='api_key = os.getenv("API_KEY")',
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True  # Filter always returns True (allows record)
@@ -172,8 +183,13 @@ class TestSensitiveDataFilter:
     def test_filter_with_dict_args(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="Key: %(key)s", args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="Key: %(key)s",
+            args=None,
+            exc_info=None,
         )
         # Simulate dict args (logging uses %(key)s format for dict args)
         record.args = {"key": 'token = os.getenv("TOKEN")'}
@@ -183,8 +199,13 @@ class TestSensitiveDataFilter:
     def test_filter_with_tuple_args(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="Key: %s", args=('api_key = os.getenv("API_KEY")',), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="Key: %s",
+            args=('api_key = os.getenv("API_KEY")',),
+            exc_info=None,
         )
         f.filter(record)
         assert "mykey12345678" not in str(record.args)
@@ -192,8 +213,13 @@ class TestSensitiveDataFilter:
     def test_filter_non_string_msg_passes(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg=42, args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg=42,
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True
@@ -201,8 +227,13 @@ class TestSensitiveDataFilter:
     def test_filter_none_args_passes(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="normal message", args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="normal message",
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True
@@ -343,7 +374,9 @@ class TestSecurityAuditLoggerLogEvent:
         assert event2["chain_hash"] != event1["chain_hash"]
 
     def test_log_event_masks_sensitive_details(self, audit_logger, temp_log_dir) -> None:
-        audit_logger.log_event("AUTH_FAILURE", api_key = os.getenv("API_KEY"))  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+        audit_logger.log_event(
+            "AUTH_FAILURE", api_key=os.getenv("API_KEY")
+        )  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         log_path = temp_log_dir / "security_audit.log"
         content = log_path.read_text()
         assert "sk-secret12345678" not in content

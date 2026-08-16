@@ -56,12 +56,12 @@ logger = logging.getLogger(__name__)
 # Source: EPA 2024 PM2.5 AQI breakpoints (technical document).
 # These are ADVISORY thresholds, not NFPA mandates.
 PM25_BREAKPOINTS = {
-    "GOOD":                 (0.0,   9.0),    # AQI 0-50
-    "MODERATE":             (9.1,  35.4),    # AQI 51-100
-    "UNHEALTHY_SG":         (35.5, 55.4),    # AQI 101-150 — sensitive groups
-    "UNHEALTHY":            (55.5, 125.4),   # AQI 151-200
-    "VERY_UNHEALTHY":       (125.5, 225.4),  # AQI 201-300
-    "HAZARDOUS":            (225.5, float("inf")),
+    "GOOD": (0.0, 9.0),  # AQI 0-50
+    "MODERATE": (9.1, 35.4),  # AQI 51-100
+    "UNHEALTHY_SG": (35.5, 55.4),  # AQI 101-150 — sensitive groups
+    "UNHEALTHY": (55.5, 125.4),  # AQI 151-200
+    "VERY_UNHEALTHY": (125.5, 225.4),  # AQI 201-300
+    "HAZARDOUS": (225.5, float("inf")),
 }
 
 # Threshold at which we flag HIGH false-alarm risk (above EPA "Unhealthy for SG")
@@ -154,12 +154,11 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
         )
         # Override base URL is mostly for tests; can also be set via env var
         # for on-prem air-quality proxies.
-        self._base_url = (
-            base_url
-            or os.environ.get("OPEN_METEO_AIR_QUALITY_URL", DEFAULT_BASE_URL)
-        )
+        self._base_url = base_url or os.environ.get("OPEN_METEO_AIR_QUALITY_URL", DEFAULT_BASE_URL)
 
-    async def _fetch(self, lat: float, lon: float, *, forecast_hours: int = 24) -> WildfireSmokeAssessment:
+    async def _fetch(
+        self, lat: float, lon: float, *, forecast_hours: int = 24
+    ) -> WildfireSmokeAssessment:
         """
         Fetch air-quality forecast for the next `forecast_hours` hours.
 
@@ -189,11 +188,11 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
         from urllib.parse import urlencode
 
         from backend.integrations._ssrf_guard import validate_url
+
         _request_url = f"{self._base_url}?{urlencode(params)}"
         validate_url(_request_url)
 
         resp = await client.get(self._base_url, params=params)
-
 
         resp.raise_for_status()
         data = resp.json()
@@ -251,7 +250,9 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
             coordinates=(lat, lon),
         )
 
-    def _fallback(self, lat: float, lon: float, *, forecast_hours: int = 24) -> WildfireSmokeAssessment:
+    def _fallback(
+        self, lat: float, lon: float, *, forecast_hours: int = 24
+    ) -> WildfireSmokeAssessment:
         """
         Conservative fallback when the API is unavailable.
 

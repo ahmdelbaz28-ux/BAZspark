@@ -47,7 +47,9 @@ def test_devcontainer_json_parses(devcontainer_config: dict) -> None:
     assert isinstance(devcontainer_config, dict), "devcontainer.json must be a JSON object"
 
 
-@pytest.mark.parametrize("field", ["name", "build", "features", "postCreateCommand", "forwardPorts"])
+@pytest.mark.parametrize(
+    "field", ["name", "build", "features", "postCreateCommand", "forwardPorts"]
+)
 def test_required_fields_present(devcontainer_config: dict, field: str) -> None:
     """Each required field must be present — CodeSandbox devbox won't boot without them."""
     assert field in devcontainer_config, f"Missing required field: {field}"
@@ -99,12 +101,16 @@ def test_codesandbox_resource_fields(devcontainer_config: dict, field: str) -> N
 
 def test_codesandbox_memory_is_8gb(devcontainer_config: dict) -> None:
     """CodeSandbox free tier gives 8GB RAM — devbox must request exactly that."""
-    assert devcontainer_config["codesandbox"]["memory"] == 8, "Expected 8GB RAM for CodeSandbox devbox"
+    assert devcontainer_config["codesandbox"]["memory"] == 8, (
+        "Expected 8GB RAM for CodeSandbox devbox"
+    )
 
 
 def test_codesandbox_regenerate_hours_is_40(devcontainer_config: dict) -> None:
     """CodeSandbox free tier gives 40h/month regenerates — must match operator's plan."""
-    assert devcontainer_config["codesandbox"]["regenerateHours"] == 40, "Expected 40h/month regenerate budget"
+    assert devcontainer_config["codesandbox"]["regenerateHours"] == 40, (
+        "Expected 40h/month regenerate budget"
+    )
 
 
 # ── 4. Features ────────────────────────────────────────────────────────────
@@ -150,7 +156,9 @@ def test_node_feature_version(devcontainer_config: dict) -> None:
     node_cfg = devcontainer_config["features"][node_feature]
     if isinstance(node_cfg, dict):
         version = node_cfg.get("version", "")
-        assert version == "20" or version.startswith("20"), f"Node version must be 20.x, got {version}"
+        assert version == "20" or version.startswith("20"), (
+            f"Node version must be 20.x, got {version}"
+        )
 
 
 # ── 5. Post-create / post-start scripts ────────────────────────────────────
@@ -177,6 +185,7 @@ def test_post_create_script_is_executable(devcontainer_config: dict) -> None:
     script_path = REPO_ROOT / cmd.replace("bash", "").strip()
     # On Windows this check is N/A, but on Linux/Mac it must pass
     import sys
+
     if sys.platform != "win32":
         mode = script_path.stat().st_mode
         assert mode & 0o100, f"{script_path.name} is not executable (chmod +x required)"
@@ -192,10 +201,7 @@ def test_dockerfile_uses_python_312_base() -> None:
     # was a tautology — both sides were identical. The second operand should have
     # been "mcr.microsoft.com/devcontainers/python:3.12" to also match the
     # devcontainer base image variant.
-    assert (
-        "python:3.12" in content
-        or "mcr.microsoft.com/devcontainers/python:3.12" in content
-    ), (
+    assert "python:3.12" in content or "mcr.microsoft.com/devcontainers/python:3.12" in content, (
         "Dockerfile must use Python 3.12 base image (pyproject.toml requires >=3.12)"
     )
 
@@ -212,4 +218,6 @@ def test_dockerfile_installs_playwright_deps() -> None:
     # At least one of the Playwright browser deps must be present
     playwright_markers = ["libnss3", "libatk", "libgbm", "libxkbcommon", "playwright"]
     found = [m for m in playwright_markers if m in content.lower()]
-    assert found, f"None of Playwright deps found in Dockerfile: expected at least one of {playwright_markers}"
+    assert found, (
+        f"None of Playwright deps found in Dockerfile: expected at least one of {playwright_markers}"
+    )

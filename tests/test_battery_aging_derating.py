@@ -137,7 +137,9 @@ class TestLoadProfile:
         assert lp.alarm_hours == pytest.approx(5 / 60, rel=1e-3)
 
     def test_custom_hours(self):
-        lp = LoadProfile(standby_load_amps=0.5, alarm_load_amps=2.0, standby_hours=60.0, alarm_hours=0.25)
+        lp = LoadProfile(
+            standby_load_amps=0.5, alarm_load_amps=2.0, standby_hours=60.0, alarm_hours=0.25
+        )
         assert lp.standby_hours == pytest.approx(60.0)
         assert lp.alarm_hours == pytest.approx(0.25)
 
@@ -211,11 +213,15 @@ class TestAgingDerating:
 
     def test_new_installation_returns_1_0(self):
         """New installation (age=0) returns 1.0 — sizing uses EOL factor separately."""
-        assert get_aging_derating_factor(service_life_years=5, current_age_years=0) == pytest.approx(1.0)
+        assert get_aging_derating_factor(
+            service_life_years=5, current_age_years=0
+        ) == pytest.approx(1.0)
 
     def test_negative_age_returns_1_0(self):
         """Negative age should return 1.0 (new installation)."""
-        assert get_aging_derating_factor(service_life_years=5, current_age_years=-1) == pytest.approx(1.0)
+        assert get_aging_derating_factor(
+            service_life_years=5, current_age_years=-1
+        ) == pytest.approx(1.0)
 
     def test_end_of_life_80_pct(self):
         """At end of service life (5 years), capacity should be 80%."""
@@ -343,7 +349,9 @@ class TestSizeBattery:
             standby_hours=24.0,
             nfpa_supervisory_period="24h",
         )
-        assert not any(v["code"] == "BATTERY-SUPERVISORY-PERIOD-MISMATCH" for v in result.violations)
+        assert not any(
+            v["code"] == "BATTERY-SUPERVISORY-PERIOD-MISMATCH" for v in result.violations
+        )
 
     def test_safety_margin_increases_required_ah(self):
         """Safety margin > 0 increases required capacity."""
@@ -380,7 +388,9 @@ class TestSizeBattery:
     def test_details_dict_populated(self):
         result = size_battery(standby_load_amps=0.5, alarm_load_amps=2.0, min_temperature_c=0.0)
         assert "min_temperature_c" in result.details
-        assert result.details["min_temperature_c"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.details["min_temperature_c"] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert "derating_breakdown" in result.details
 
     def test_voltage_drop_warning_for_12v_battery(self):
@@ -602,7 +612,9 @@ class TestBatterySizingResult:
             min_temperature_c=25.0,
         )
         if result.required_ah > 0:
-            expected_margin = ((result.installed_ah - result.required_ah) / result.required_ah) * 100.0
+            expected_margin = (
+                (result.installed_ah - result.required_ah) / result.required_ah
+            ) * 100.0
             assert result.margin_pct == pytest.approx(expected_margin, rel=0.01)
 
 

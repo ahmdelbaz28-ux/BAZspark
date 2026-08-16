@@ -23,6 +23,7 @@ class TestLangWatchIntegration:
         """Without API key, client should still initialize (no-op mode)."""
         monkeypatch.delenv("LANGWATCH_API_KEY", raising=False)
         from fireai.infrastructure.langwatch_integration import LangWatchClient
+
         client = LangWatchClient()
         assert client.is_available is False
 
@@ -40,6 +41,7 @@ class TestLangWatchIntegration:
     def test_hallucination_check_safe_spacing(self):
         """Spacing within NFPA 72 limits should NOT be flagged as hallucination."""
         from fireai.infrastructure.langwatch_integration import hallucination_check_spacing
+
         result = hallucination_check_spacing(
             suggested_spacing_m=8.0,  # < 9.1m max for smoke
             detector_type="smoke",
@@ -51,6 +53,7 @@ class TestLangWatchIntegration:
     def test_hallucination_check_violating_spacing(self):
         """Spacing exceeding NFPA 72 limits should be flagged as hallucination."""
         from fireai.infrastructure.langwatch_integration import hallucination_check_spacing
+
         result = hallucination_check_spacing(
             suggested_spacing_m=12.0,  # > 9.1m max for smoke
             detector_type="smoke",
@@ -62,6 +65,7 @@ class TestLangWatchIntegration:
     def test_hallucination_check_heat_detector(self):
         """Heat detector spacing should use 6.1m limit."""
         from fireai.infrastructure.langwatch_integration import hallucination_check_spacing
+
         result = hallucination_check_spacing(
             suggested_spacing_m=7.0,  # > 6.1m max for heat
             detector_type="heat",
@@ -72,6 +76,7 @@ class TestLangWatchIntegration:
     def test_hallucination_check_nan_spacing(self):
         """NaN spacing should be flagged as hallucination."""
         from fireai.infrastructure.langwatch_integration import hallucination_check_spacing
+
         result = hallucination_check_spacing(
             suggested_spacing_m=float("nan"),
             detector_type="smoke",
@@ -81,6 +86,7 @@ class TestLangWatchIntegration:
     def test_record_confidence_score_valid(self):
         """Valid confidence score should be recorded."""
         from fireai.infrastructure.langwatch_integration import record_confidence_score
+
         # Should not raise
         record_confidence_score(
             decision="smoke_detector_placement",
@@ -91,6 +97,7 @@ class TestLangWatchIntegration:
     def test_record_confidence_score_invalid_clamped(self):
         """Out-of-range confidence should be clamped, not rejected."""
         from fireai.infrastructure.langwatch_integration import record_confidence_score
+
         # Should not raise — clamps to [0, 1]
         record_confidence_score(
             decision="test",
@@ -107,8 +114,9 @@ class TestLangWatchIntegration:
             NFPA72_MAX_HEAT_SPACING_M,
             NFPA72_MAX_SMOKE_SPACING_M,
         )
+
         assert NFPA72_MAX_SMOKE_SPACING_M == pytest.approx(9.1)  # 30 ft
-        assert NFPA72_MAX_HEAT_SPACING_M == pytest.approx(6.1)   # 20 ft
+        assert NFPA72_MAX_HEAT_SPACING_M == pytest.approx(6.1)  # 20 ft
 
 
 # ---------------------------------------------------------------------------
@@ -123,12 +131,14 @@ class TestSmitheryMCP:
         """Without API key, client should still work (local docs only)."""
         monkeypatch.delenv("SMITHERY_API_KEY", raising=False)
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         assert client.api_key is None
 
     def test_search_revit_api_returns_list(self):
         """search_revit_api should return a list (possibly empty)."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         results = client.search_revit_api("Wall", revit_version="2023")
         assert isinstance(results, list)
@@ -136,6 +146,7 @@ class TestSmitheryMCP:
     def test_verify_revit_class_returns_bool(self):
         """verify_revit_class should return a boolean."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         result = client.verify_revit_class("Wall", revit_version="2023")
         assert isinstance(result, bool)
@@ -147,6 +158,7 @@ class TestSmitheryMCP:
             ActionType,
             SmitheryMCPClient,
         )
+
         client = SmitheryMCPClient()
         action = client.propose_create_detector(
             room_id="R-001",
@@ -166,6 +178,7 @@ class TestSmitheryMCP:
             ActionType,
             SmitheryMCPClient,
         )
+
         client = SmitheryMCPClient()
         action = client.propose_update_element(
             element_id="ELEMENT-001",
@@ -181,6 +194,7 @@ class TestSmitheryMCP:
             ActionType,
             SmitheryMCPClient,
         )
+
         client = SmitheryMCPClient()
         action = client.propose_delete_element(
             element_id="ELEMENT-002",
@@ -193,6 +207,7 @@ class TestSmitheryMCP:
     def test_proposed_action_has_unique_id(self):
         """Each proposal should have a unique ID."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         a1 = client.propose_create_detector("R-001", (1, 1, 1))
         a2 = client.propose_create_detector("R-001", (2, 2, 2))
@@ -201,6 +216,7 @@ class TestSmitheryMCP:
     def test_proposed_action_includes_timestamp(self):
         """Proposals should include an ISO timestamp."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         action = client.propose_create_detector("R-001", (1, 1, 1))
         assert action.proposed_at  # Not empty
@@ -209,6 +225,7 @@ class TestSmitheryMCP:
     def test_read_rooms_from_bim_returns_list(self):
         """read_rooms_from_bim should return a list (possibly empty)."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         rooms = client.read_rooms_from_bim()
         assert isinstance(rooms, list)
@@ -217,6 +234,7 @@ class TestSmitheryMCP:
         """Without API key, connect_to_smithery should return False."""
         monkeypatch.delenv("SMITHERY_API_KEY", raising=False)
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         assert client.connect_to_smithery() is False
 
@@ -226,6 +244,7 @@ class TestSmitheryMCP:
             SmitheryMCPClient,
             get_smithery_client,
         )
+
         c1 = get_smithery_client()
         c2 = get_smithery_client()
         assert c1 is c2
@@ -246,6 +265,7 @@ class TestSafetyDesign:
             ActionStatus,
             SmitheryMCPClient,
         )
+
         client = SmitheryMCPClient()
         action = client.propose_create_detector("R-001", (1, 1, 1))
         assert action.status == ActionStatus.PROPOSED
@@ -256,6 +276,7 @@ class TestSafetyDesign:
     def test_proposed_action_to_dict_includes_safety_fields(self):
         """Serialized proposals should include review tracking fields."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         action = client.propose_create_detector("R-001", (1, 1, 1))
         d = action.to_dict()
@@ -269,6 +290,7 @@ class TestSafetyDesign:
     def test_no_direct_execute_method_exists(self):
         """SmitheryMCPClient must NOT have an execute_action method."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         # Verify there's no method to directly execute a proposed action
         assert not hasattr(client, "execute_action")
@@ -279,13 +301,21 @@ class TestSafetyDesign:
     def test_only_propose_methods_exist(self):
         """SmitheryMCPClient should only have 'propose_*' methods for writes."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         # Write methods should all start with "propose_"
         write_methods = [
-            m for m in dir(client)
-            if callable(getattr(client, m)) and not m.startswith("_")
-            and m not in ("search_revit_api", "verify_revit_class",
-                         "read_rooms_from_bim", "connect_to_smithery")
+            m
+            for m in dir(client)
+            if callable(getattr(client, m))
+            and not m.startswith("_")
+            and m
+            not in (
+                "search_revit_api",
+                "verify_revit_class",
+                "read_rooms_from_bim",
+                "connect_to_smithery",
+            )
         ]
         for method in write_methods:
             assert method.startswith("propose_"), (

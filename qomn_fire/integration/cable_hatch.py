@@ -48,7 +48,7 @@ def route_conduit_and_hatch(
     spec: HatchSpec,
     trade_size: str = "",
     wire_gauge: str = _DEFAULT_WIRE_GAUGE,
-    wire_count: int = _DEFAULT_WIRE_COUNT
+    wire_count: int = _DEFAULT_WIRE_COUNT,
 ) -> Result[tuple[ConduitRun, Any], NECViolationError | HatchPlacementError | ConduitFillError]:
     """
     BUG-CH1 FIX: Added trade_size parameter to pass through to routing and fill engines.
@@ -71,8 +71,10 @@ def route_conduit_and_hatch(
     # EMT and RMC have different internal areas for the same trade size.
     # Using wrong conduit type in fill calculation = wrong fill ratio = potential overfill.
     fill_res = calculate_conduit_fill(
-        conduit_run.trade_size, wire_gauge, wire_count,
-        conduit_type=conduit.value  # Pass conduit type (EMT/RMC) for correct area lookup
+        conduit_run.trade_size,
+        wire_gauge,
+        wire_count,
+        conduit_type=conduit.value,  # Pass conduit type (EMT/RMC) for correct area lookup
     )
     if fill_res.is_failure:
         return Result(error=fill_res.error)
@@ -83,7 +85,7 @@ def route_conduit_and_hatch(
     width_m = 0.20
 
     for i in range(len(pts) - 1):
-        p1, p2 = pts[i], pts[i+1]
+        p1, p2 = pts[i], pts[i + 1]
         dx = p2.x - p1.x
         dy = p2.y - p1.y
         seg_len = math.sqrt(dx * dx + dy * dy)
@@ -99,12 +101,14 @@ def route_conduit_and_hatch(
         perp_x = -dy / seg_len * width_m
         perp_y = dx / seg_len * width_m
 
-        boundary_points.extend([
-            (round(p1.x + perp_x, 4), round(p1.y + perp_y, 4)),
-            (round(p2.x + perp_x, 4), round(p2.y + perp_y, 4)),
-            (round(p2.x - perp_x, 4), round(p2.y - perp_y, 4)),
-            (round(p1.x - perp_x, 4), round(p1.y - perp_y, 4))
-        ])
+        boundary_points.extend(
+            [
+                (round(p1.x + perp_x, 4), round(p1.y + perp_y, 4)),
+                (round(p2.x + perp_x, 4), round(p2.y + perp_y, 4)),
+                (round(p2.x - perp_x, 4), round(p2.y - perp_y, 4)),
+                (round(p1.x - perp_x, 4), round(p1.y - perp_y, 4)),
+            ]
+        )
 
     # Deduplicate boundary points
     unique_points = []
@@ -127,8 +131,8 @@ def route_conduit_and_hatch(
     for i in range(len(pts) - 1):
         msp.add_line(
             pts[i].to_tuple()[:2],
-            pts[i+1].to_tuple()[:2],
-            dxfattribs={"layer": "A-FIRE-CABLES", "color": 2}
+            pts[i + 1].to_tuple()[:2],
+            dxfattribs={"layer": "A-FIRE-CABLES", "color": 2},
         )
 
     return Result(value=(conduit_run, hatch_entity))

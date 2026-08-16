@@ -38,6 +38,7 @@ from fireai.core.pipeline import (
 
 # ─── Shared Fixtures ──────────────────────────────────────────────────────────
 
+
 def _valid_payload(**overrides):
     """Build a valid room payload with sensible defaults."""
     base = {
@@ -56,6 +57,7 @@ def _valid_payload(**overrides):
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. analyze_room() — valid payload
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAnalyzeRoomValid:
     """Test analyze_room with a valid room payload — happy path."""
@@ -92,9 +94,7 @@ class TestAnalyzeRoomValid:
     def test_safety_tier_is_set(self):
         result = analyze_room(_valid_payload())
         assert result.safety_tier  # non-empty string
-        assert result.safety_tier in {
-            "PROOF_VERIFIED", "PROOF_VALID", "FALLBACK_USED", "REJECTED"
-        }
+        assert result.safety_tier in {"PROOF_VERIFIED", "PROOF_VALID", "FALLBACK_USED", "REJECTED"}
 
     def test_release_status_is_set(self):
         result = analyze_room(_valid_payload())
@@ -211,6 +211,7 @@ class TestAnalyzeRoomValid:
 # 2. analyze_room() — with battery calculation
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAnalyzeRoomBattery:
     """Test analyze_room with battery sizing parameters."""
 
@@ -275,6 +276,7 @@ class TestAnalyzeRoomBattery:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. analyze_room() — with voltage drop calculation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAnalyzeRoomVoltageDrop:
     """Test analyze_room with voltage drop parameters."""
@@ -342,6 +344,7 @@ class TestAnalyzeRoomVoltageDrop:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. analyze_room() — with fault isolation (loop_data)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAnalyzeRoomFaultIsolation:
     """Test analyze_room with SLC loop data for fault isolation."""
@@ -420,6 +423,7 @@ class TestAnalyzeRoomFaultIsolation:
 # 5. analyze_room() — invalid payload → ContractViolation caught
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAnalyzeRoomInvalidPayload:
     """Test that invalid inputs are caught at Stage 0 and NEVER raise."""
 
@@ -481,7 +485,9 @@ class TestAnalyzeRoomInvalidPayload:
 
     def test_none_payload(self):
         """Passing None must not raise — pipeline captures the error."""
-        result = analyze_room(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        result = analyze_room(
+            None
+        )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result.success is False
 
     def test_invalid_payload_produces_stage0_error(self):
@@ -519,6 +525,7 @@ class TestAnalyzeRoomInvalidPayload:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. NaN / Inf inputs caught at Stage 0
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestNanInfInputs:
     """Test that NaN and Inf inputs are caught at Stage 0 — never propagate."""
@@ -571,7 +578,9 @@ class TestNanInfInputs:
         """NaN input must never cause an unhandled exception."""
         try:  # NOSONAR - python:S8714
             result = analyze_room(_valid_payload(ceiling_height_m=float("nan")))
-            assert isinstance(result, PipelineResult)  # NOSONAR — S5779: pickle used intentionally for ML model serialization
+            assert isinstance(
+                result, PipelineResult
+            )  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         except Exception:
             pytest.fail("Pipeline raised an exception on NaN input")
 
@@ -579,6 +588,7 @@ class TestNanInfInputs:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7. analyze_building() — multiple rooms, concurrent processing
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAnalyzeBuilding:
     """Test batch analysis of multiple rooms."""
@@ -683,6 +693,7 @@ class TestAnalyzeBuilding:
 # 8. Failed pipeline — critical stage failure produces blocked result
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestFailedPipeline:
     """Test that critical stage failures produce blocked results."""
 
@@ -695,7 +706,9 @@ class TestFailedPipeline:
 
     def test_stage0_failure_coverage_zero(self):
         result = analyze_room({})
-        assert result.coverage_pct == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.coverage_pct == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_stage0_failure_no_detectors(self):
         result = analyze_room({})
@@ -729,9 +742,7 @@ class TestFailedPipeline:
     def test_degenerate_polygon_produces_blocked(self):
         """A polygon that collapses to zero area should fail."""
         # Collinear points — zero area
-        result = analyze_room(
-            _valid_payload(room_polygon=[(0, 0), (5, 0), (10, 0), (15, 0)])
-        )
+        result = analyze_room(_valid_payload(room_polygon=[(0, 0), (5, 0), (10, 0), (15, 0)]))
         assert result.success is False
         assert result.release_status == "blocked"
 
@@ -739,6 +750,7 @@ class TestFailedPipeline:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 9. Cross-cutting invariants
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestPipelineInvariants:
     """Cross-cutting invariants that hold for ALL pipeline invocations."""
@@ -750,8 +762,12 @@ class TestPipelineInvariants:
             _valid_payload(ceiling_height_m=float("nan")),
             {},
             None,
-            {"room_id": "X", "room_polygon": [(0, 0), (1, 0), (1, 1), (0, 1)],
-             "ceiling_height_m": 3.0, "detector_type": "heat"},
+            {
+                "room_id": "X",
+                "room_polygon": [(0, 0), (1, 0), (1, 1), (0, 1)],
+                "ceiling_height_m": 3.0,
+                "detector_type": "heat",
+            },
             _valid_payload(ceiling_height_m=-5.0),
         ]
         for p in payloads:
@@ -830,6 +846,7 @@ class TestPipelineInvariants:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 10. Stage-specific data checks
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestStageData:
     """Verify that each stage produces the expected data shape."""

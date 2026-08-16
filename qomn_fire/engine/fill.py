@@ -63,31 +63,29 @@ from qomn_fire.core.errors import ConduitFillError, Result
 CONDUIT_INTERNAL_AREAS_MM2 = {
     # EMT (Electrical Metallic Tubing) -- NEC Table 4, Article 358
     # Verified: pi*(ID/2)^2 matches each value within 0.1% (NEC rounding)
-    "EMT 1/2": 196.0,     # ID=15.8mm, pi*7.9^2=196.1 -> NEC=196
-    "EMT 3/4": 343.0,     # ID=20.9mm, pi*10.45^2=343.0
-    "EMT 1": 556.0,       # ID=26.6mm, pi*13.3^2=555.7 -> NEC=556
-    "EMT 1-1/4": 968.0,   # ID=35.1mm, pi*17.55^2=967.6 -> NEC=968
+    "EMT 1/2": 196.0,  # ID=15.8mm, pi*7.9^2=196.1 -> NEC=196
+    "EMT 3/4": 343.0,  # ID=20.9mm, pi*10.45^2=343.0
+    "EMT 1": 556.0,  # ID=26.6mm, pi*13.3^2=555.7 -> NEC=556
+    "EMT 1-1/4": 968.0,  # ID=35.1mm, pi*17.55^2=967.6 -> NEC=968
     "EMT 1-1/2": 1314.0,  # ID=40.9mm, pi*20.45^2=1313.8
-    "EMT 2": 2165.0,      # ID=52.5mm, pi*26.25^2=2164.8
+    "EMT 2": 2165.0,  # ID=52.5mm, pi*26.25^2=2164.8
     "EMT 2-1/2": 3117.0,  # BUG-RMC3: Was 3150 (1.1% TOO LARGE -- safety risk)
-    "EMT 3": 4840.0,      # Was 4680 (3.3% too small)
+    "EMT 3": 4840.0,  # Was 4680 (3.3% too small)
     "EMT 3-1/2": 6376.0,  # Was 5910 (7.3% too small)
-    "EMT 4": 8217.0,      # Was 7620 (7.3% too small)
-
+    "EMT 4": 8217.0,  # Was 7620 (7.3% too small)
     # RMC (Rigid Metal Conduit) -- NEC Table 4, Article 344
     # BUG-RMC3 FIX: Previous values were 12-31% too small.
     # Verified against fireai/constants/nec.py: pi*(ID/2)^2 matches every value.
-    "RMC 1/2": 209.0,     # ID=16.3mm. Was 143.8 (31.2% too small!)
-    "RMC 3/4": 359.0,     # ID=21.4mm. Was 262.4 (26.9% too small)
-    "RMC 1": 573.0,       # ID=27.0mm. Was 437.5 (23.6% too small)
-    "RMC 1-1/4": 984.0,   # ID=35.4mm. Was 792.6 (19.5% too small)
+    "RMC 1/2": 209.0,  # ID=16.3mm. Was 143.8 (31.2% too small!)
+    "RMC 3/4": 359.0,  # ID=21.4mm. Was 262.4 (26.9% too small)
+    "RMC 1": 573.0,  # ID=27.0mm. Was 437.5 (23.6% too small)
+    "RMC 1-1/4": 984.0,  # ID=35.4mm. Was 792.6 (19.5% too small)
     "RMC 1-1/2": 1334.0,  # ID=41.2mm. Was 1100.0 (17.5% too small)
-    "RMC 2": 2198.0,      # ID=52.9mm. Was 1780.0 (19.0% too small)
+    "RMC 2": 2198.0,  # ID=52.9mm. Was 1780.0 (19.0% too small)
     "RMC 2-1/2": 3138.0,  # ID=63.2mm. Was 2760.0 (12.0% too small)
-    "RMC 3": 4840.0,      # ID=78.5mm. Was 4240.0 (12.4% too small)
+    "RMC 3": 4840.0,  # ID=78.5mm. Was 4240.0 (12.4% too small)
     "RMC 3-1/2": 6454.0,  # ID=90.7mm. Was 5420.0 (16.0% too small)
-    "RMC 4": 8217.0,      # ID=102.3mm. Was 7150.0 (13.0% too small)
-
+    "RMC 4": 8217.0,  # ID=102.3mm. Was 7150.0 (13.0% too small)
     # FMC (Flexible Metal Conduit) -- NEC Table 4, Article 348
     # BUG-FMC10 FIX: FMC was completely missing -- any FMC conduit would fail.
     # Values from NEC Table 4 Article 348, verified via:
@@ -97,17 +95,17 @@ CONDUIT_INTERNAL_AREAS_MM2 = {
     #   - NECA-IBEW Electricians reference PDF
     # Mathematical verification: pi*(ID/2)^2 matches each value within 0.1%.
     # Consistent across NEC 2011, 2014, 2017, 2020, 2023 editions.
-    "FMC 3/8": 74.0,      # ID=9.7mm (0.384in) -- smallest FMC trade size
-    "FMC 1/2": 204.0,     # ID=16.1mm (0.635in)
-    "FMC 3/4": 343.0,     # ID=20.9mm (0.824in)
-    "FMC 1": 527.0,       # ID=25.9mm (1.020in)
-    "FMC 1-1/4": 824.0,   # ID=32.4mm (1.275in)
+    "FMC 3/8": 74.0,  # ID=9.7mm (0.384in) -- smallest FMC trade size
+    "FMC 1/2": 204.0,  # ID=16.1mm (0.635in)
+    "FMC 3/4": 343.0,  # ID=20.9mm (0.824in)
+    "FMC 1": 527.0,  # ID=25.9mm (1.020in)
+    "FMC 1-1/4": 824.0,  # ID=32.4mm (1.275in)
     "FMC 1-1/2": 1201.0,  # ID=39.1mm (1.538in)
-    "FMC 2": 2107.0,      # ID=51.8mm (2.040in)
+    "FMC 2": 2107.0,  # ID=51.8mm (2.040in)
     "FMC 2-1/2": 3167.0,  # ID=63.5mm (2.500in)
-    "FMC 3": 4560.0,      # ID=76.2mm (3.000in)
+    "FMC 3": 4560.0,  # ID=76.2mm (3.000in)
     "FMC 3-1/2": 6207.0,  # ID=88.9mm (3.500in)
-    "FMC 4": 8107.0,      # ID=101.6mm (4.000in)
+    "FMC 4": 8107.0,  # ID=101.6mm (4.000in)
 }
 
 # BUG-19 FIX: Fire alarm cable cross-sectional areas per conductor (NEC Chapter 9, Table 5/5A)
@@ -126,15 +124,15 @@ CONDUIT_INTERNAL_AREAS_MM2 = {
 # For multi-conductor cable totals, use the cable manufacturer's datasheet or
 # NEC Table 5A which lists actual cable cross-sections.
 FIRE_ALARM_CABLE_AREAS = {
-    "FPLP 14": 6.26,    # FPLP 14 AWG single conductor = same as 14 AWG THHN
-    "FPLP 12": 8.58,    # FPLP 12 AWG single conductor
-    "FPLP 10": 13.61,   # FPLP 10 AWG single conductor
-    "FPL 14": 6.26,     # FPL 14 AWG single conductor
-    "FPL 12": 8.58,     # FPL 12 AWG single conductor
-    "FPL 10": 13.61,    # FPL 10 AWG single conductor
-    "FPLR 14": 6.26,    # FPLR 14 AWG single conductor
-    "FPLR 12": 8.58,    # FPLR 12 AWG single conductor
-    "FPLR 10": 13.61,   # FPLR 10 AWG single conductor
+    "FPLP 14": 6.26,  # FPLP 14 AWG single conductor = same as 14 AWG THHN
+    "FPLP 12": 8.58,  # FPLP 12 AWG single conductor
+    "FPLP 10": 13.61,  # FPLP 10 AWG single conductor
+    "FPL 14": 6.26,  # FPL 14 AWG single conductor
+    "FPL 12": 8.58,  # FPL 12 AWG single conductor
+    "FPL 10": 13.61,  # FPL 10 AWG single conductor
+    "FPLR 14": 6.26,  # FPLR 14 AWG single conductor
+    "FPLR 12": 8.58,  # FPLR 12 AWG single conductor
+    "FPLR 10": 13.61,  # FPLR 10 AWG single conductor
     # Standard THHN/THWN building wire (NEC Table 5) -- per conductor
     "THHN 14": 6.26,
     "THHN 12": 8.58,
@@ -144,17 +142,15 @@ FIRE_ALARM_CABLE_AREAS = {
     "THWN 10": 13.61,
     # Multi-conductor cable totals (NEC Table 5A) -- per CABLE, not per conductor
     # wire_count=1 for these entries means 1 cable (not 1 conductor)
-    "FPLP 14-2C": 15.0,   # FPLP 14 AWG 2-conductor cable (approx from NEC Table 5A)
-    "FPLP 12-2C": 20.0,   # FPLP 12 AWG 2-conductor cable
-    "FPLR 14-2C": 15.0,   # FPLR 14 AWG 2-conductor cable
-    "FPLR 12-2C": 20.0,   # FPLR 12 AWG 2-conductor cable
+    "FPLP 14-2C": 15.0,  # FPLP 14 AWG 2-conductor cable (approx from NEC Table 5A)
+    "FPLP 12-2C": 20.0,  # FPLP 12 AWG 2-conductor cable
+    "FPLR 14-2C": 15.0,  # FPLR 14 AWG 2-conductor cable
+    "FPLR 12-2C": 20.0,  # FPLR 12 AWG 2-conductor cable
 }
 
+
 def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    conduit_size: str,
-    wire_gauge: str,
-    wire_count: int,
-    conduit_type: str = "EMT"
+    conduit_size: str, wire_gauge: str, wire_count: int, conduit_type: str = "EMT"
 ) -> Result[float, ConduitFillError]:
     """
     Calculate conduit fill ratio per NEC Chapter 9 Table 1.
@@ -175,22 +171,26 @@ def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inhere
 
     """
     if wire_count <= 0:
-        return Result(error=ConduitFillError(
-            message="Wire count must be a positive integer.",
-            code_ref="NEC Ch.9 Table 1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-            remedy="Increase wire count parameter above zero."
-        ))
+        return Result(
+            error=ConduitFillError(
+                message="Wire count must be a positive integer.",
+                code_ref="NEC Ch.9 Table 1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                remedy="Increase wire count parameter above zero.",
+            )
+        )
 
     # BUG-F1 FIX: Removed math.isfinite(wire_count) -- Python int is ALWAYS finite.
     # math.isfinite() only returns False for float NaN and Inf, which cannot occur
     # for int types. The check was dead code that provided zero protection.
     # Instead, validate that wire_count is actually an integer type.
     if not isinstance(wire_count, int):
-        return Result(error=ConduitFillError(
-            message=f"Wire count must be an integer, got {type(wire_count).__name__}.",
-            code_ref="NEC Ch.9 Table 1",
-            remedy="Provide an integer wire count."
-        ))
+        return Result(
+            error=ConduitFillError(
+                message=f"Wire count must be an integer, got {type(wire_count).__name__}.",
+                code_ref="NEC Ch.9 Table 1",
+                remedy="Provide an integer wire count.",
+            )
+        )
 
     conduit_area = 0.0
 
@@ -206,15 +206,15 @@ def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inhere
     elif conduit_size == "1":
         conduit_area = EMT_INTERNAL_AREA_1_MM2
     else:
-        supported_sizes = sorted({
-            k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2
-        })
-        return Result(error=ConduitFillError(
-            message=f"Unsupported conduit size '{conduit_size}' for type '{conduit_type}'.",
-            code_ref="NEC Table 4",
-            remedy=f"Use standard trade sizes: {', '.join(supported_sizes)}. "
-                   f"Supported types: EMT, RMC, FMC."
-        ))
+        supported_sizes = sorted({k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2})
+        return Result(
+            error=ConduitFillError(
+                message=f"Unsupported conduit size '{conduit_size}' for type '{conduit_type}'.",
+                code_ref="NEC Table 4",
+                remedy=f"Use standard trade sizes: {', '.join(supported_sizes)}. "
+                f"Supported types: EMT, RMC, FMC.",
+            )
+        )
 
     # BUG-19 FIX: Support fire alarm cable types (FPLP, FPL, FPLR) and
     # standard building wire (THHN, THWN) in addition to generic AWG.
@@ -228,14 +228,16 @@ def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inhere
     elif wire_gauge == "10 AWG":
         wire_area = WIRE_AREA_10_AWG_MM2
     else:
-        supported = ", ".join(sorted(set(
-            list(FIRE_ALARM_CABLE_AREAS.keys()) + ["14 AWG", "12 AWG", "10 AWG"]
-        )))
-        return Result(error=ConduitFillError(
-            message=f"Unsupported wire/cable type '{wire_gauge}'",
-            code_ref="NEC Table 5/5A",
-            remedy=f"Select a compliant wire/cable type. Supported: {supported}"
-        ))
+        supported = ", ".join(
+            sorted(set(list(FIRE_ALARM_CABLE_AREAS.keys()) + ["14 AWG", "12 AWG", "10 AWG"]))
+        )
+        return Result(
+            error=ConduitFillError(
+                message=f"Unsupported wire/cable type '{wire_gauge}'",
+                code_ref="NEC Table 5/5A",
+                remedy=f"Select a compliant wire/cable type. Supported: {supported}",
+            )
+        )
 
     total_wire_area = wire_area * wire_count
     fill_ratio = total_wire_area / conduit_area
@@ -248,10 +250,12 @@ def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inhere
         limit = NEC_FILL_LIMIT_OVER_2_WIRES
 
     if fill_ratio > limit:
-        return Result(error=ConduitFillError(
-            message=f"Conduit fill exceeds permissible NEC threshold limit: {fill_ratio:.2%} > {limit:.2%}",
-            code_ref="NEC Ch.9 Table 1",
-            remedy="Upsize conduit selection or reduce wire run count."
-        ))
+        return Result(
+            error=ConduitFillError(
+                message=f"Conduit fill exceeds permissible NEC threshold limit: {fill_ratio:.2%} > {limit:.2%}",
+                code_ref="NEC Ch.9 Table 1",
+                remedy="Upsize conduit selection or reduce wire run count.",
+            )
+        )
 
     return Result(value=fill_ratio)

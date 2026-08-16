@@ -40,7 +40,6 @@ from fireai.core.blockchain_readiness_gate import (
 
 
 class TestConstants:
-
     def test_empty_hash_is_64_zeros(self):
         assert EMPTY_HASH == "0" * 64
 
@@ -54,7 +53,6 @@ class TestConstants:
 
 
 class TestHelperFunctions:
-
     def test_sha256_hex_deterministic(self):
         h1 = _sha256_hex("test data")
         h2 = _sha256_hex("test data")
@@ -86,7 +84,6 @@ class TestHelperFunctions:
 
 
 class TestMerkleProof:
-
     def test_frozen(self):
         proof = MerkleProof(0, "leaf_hash", ("sib1",), "root")
         with pytest.raises(dataclasses.FrozenInstanceError):
@@ -132,7 +129,6 @@ class TestMerkleProof:
 
 
 class TestMerkleTree:
-
     def test_empty_tree_root(self):
         tree = MerkleTree([])
         assert tree.merkle_root == EMPTY_HASH
@@ -222,7 +218,6 @@ class TestMerkleTree:
 
 
 class TestBlockchainReadinessGate:
-
     def test_init_with_artifacts(self):
         gate = BlockchainReadinessGate(["art1", "art2", "art3"])
         assert gate.artifact_count == 3
@@ -316,7 +311,6 @@ class TestBlockchainReadinessGate:
 
 
 class TestIntegrationScenario:
-
     def test_full_lifecycle(self):
         """Build gate → verify proofs → check tamper → anchor to chain."""
         artifacts = ["detector_report.json", "voltage_drop.csv", "coverage_map.dxf"]

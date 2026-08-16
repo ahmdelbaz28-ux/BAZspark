@@ -1,5 +1,6 @@
 # NOSONAR
 """L1 Gateway for Distributed FACP System"""
+
 import logging
 import time
 import uuid
@@ -24,7 +25,9 @@ class L1Gateway:
         self.request_counter = 0
         self.active_requests = {}  # request_id -> request_info
 
-    def handle_client_request(self, request_data: dict[str, Any], source_ip: str = "unknown") -> tuple[bool, dict[str, Any]]:
+    def handle_client_request(
+        self, request_data: dict[str, Any], source_ip: str = "unknown"
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Handle an incoming request from external client
         :param request_data: Raw request data from external client
@@ -37,7 +40,7 @@ class L1Gateway:
         request_data["routing"] = {
             "source_node": self.node_id,
             "source_ip": source_ip,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         # Generate request ID if not provided
@@ -55,21 +58,23 @@ class L1Gateway:
         is_valid, basic_errors = validator.validate_request(FACPRequest.from_dict(request_data))
 
         if not is_valid:
-            self.logger.warning("L1[%s]: Request %s failed basic validation: %s", self.node_id, request_id, basic_errors)
+            self.logger.warning(
+                "L1[%s]: Request %s failed basic validation: %s",
+                self.node_id,
+                request_id,
+                basic_errors,
+            )
 
             error_response = FACPResponse(
                 id=request_id,
                 status="error",
-                error={
-                    "code": "BASIC_VALIDATION_FAILED",
-                    "message": "; ".join(basic_errors)
-                },
+                error={"code": "BASIC_VALIDATION_FAILED", "message": "; ".join(basic_errors)},
                 trace={
                     "execution_path": ["L1"],
                     "latency_ms": 0,
                     "node_id": self.node_id,
-                    "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                }
+                    "engine_version": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                },
             ).to_dict()
 
             return False, error_response
@@ -78,29 +83,36 @@ class L1Gateway:
         self.active_requests[request_id] = {
             "received_at": time.time(),
             "source_ip": source_ip,
-            "method": request_data.get("method", "unknown")
+            "method": request_data.get("method", "unknown"),
         }
 
         # Forward to validation firewall (this is the critical security boundary)
-        is_valid, _processed_data, validation_errors = \
-            self.validation_firewall.process_request(request_data, self.node_id)
+        is_valid, _processed_data, validation_errors = self.validation_firewall.process_request(
+            request_data, self.node_id
+        )
 
         if not is_valid:
-            self.logger.warning("L1[%s]: Request %s failed validation firewall: %s", self.node_id, request_id, validation_errors)
+            self.logger.warning(
+                "L1[%s]: Request %s failed validation firewall: %s",
+                self.node_id,
+                request_id,
+                validation_errors,
+            )
 
             error_response = FACPResponse(
                 id=request_id,
                 status="error",
                 error={
                     "code": "VALIDATION_FIREWALL_BLOCKED",
-                    "message": "; ".join(validation_errors)
+                    "message": "; ".join(validation_errors),
                 },
                 trace={
                     "execution_path": ["L1", "validation_firewall"],
-                    "latency_ms": (time.time() - self.active_requests[request_id]["received_at"]) * 1000,
+                    "latency_ms": (time.time() - self.active_requests[request_id]["received_at"])
+                    * 1000,
                     "node_id": self.node_id,
-                    "engine_version": "FACP/1.1"
-                }
+                    "engine_version": "FACP/1.1",
+                },
             ).to_dict()
 
             # Clean up active request tracking
@@ -109,27 +121,37 @@ class L1Gateway:
             return False, error_response
 
         # Request passed validation firewall, now forward to orchestrator
-        self.logger.info("L1[%s]: Request %s passed validation, forwarding to orchestrator", self.node_id, request_id)
+        self.logger.info(
+            "L1[%s]: Request %s passed validation, forwarding to orchestrator",
+            self.node_id,
+            request_id,
+        )
 
         # Update execution state
         request_data["execution_state"] = "VALIDATED"
 
         # Forward to orchestrator via transport
         try:
-            orchestrator_response = self.transport.send_request(request_data, target_node="l2_orchestrator")
+            orchestrator_response = self.transport.send_request(
+                request_data, target_node="l2_orchestrator"
+            )
 
             # Update execution path in response
             if "trace" in orchestrator_response:
-                orchestrator_response["trace"]["execution_path"] = ["L1", "L2_Orchestrator"] + \
-                    orchestrator_response["trace"].get("execution_path", [])
-                orchestrator_response["trace"]["l1_latency_ms"] = \
-                    (time.time() - self.active_requests[request_id]["received_at"]) * 1000
+                orchestrator_response["trace"]["execution_path"] = [
+                    "L1",
+                    "L2_Orchestrator",
+                ] + orchestrator_response["trace"].get("execution_path", [])
+                orchestrator_response["trace"]["l1_latency_ms"] = (
+                    time.time() - self.active_requests[request_id]["received_at"]
+                ) * 1000
             else:
                 orchestrator_response["trace"] = {
                     "execution_path": ["L1", "L2_Orchestrator"],
-                    "l1_latency_ms": (time.time() - self.active_requests[request_id]["received_at"]) * 1000,
+                    "l1_latency_ms": (time.time() - self.active_requests[request_id]["received_at"])
+                    * 1000,
                     "node_id": self.node_id,
-                    "engine_version": "FACP/1.1"
+                    "engine_version": "FACP/1.1",
                 }
 
             # Clean up active request tracking
@@ -138,21 +160,27 @@ class L1Gateway:
             return True, orchestrator_response
 
         except Exception as e:
-            self.logger.error("L1[%s]: Failed to forward request %s to orchestrator: %s", self.node_id, request_id, str(e))
+            self.logger.error(
+                "L1[%s]: Failed to forward request %s to orchestrator: %s",
+                self.node_id,
+                request_id,
+                str(e),
+            )
 
             error_response = FACPResponse(
                 id=request_id,
                 status="error",
                 error={
                     "code": "FORWARDING_ERROR",
-                    "message": f"Failed to forward request to orchestrator: {e!s}"
+                    "message": f"Failed to forward request to orchestrator: {e!s}",
                 },
                 trace={
                     "execution_path": ["L1"],
-                    "latency_ms": (time.time() - self.active_requests[request_id]["received_at"]) * 1000,
+                    "latency_ms": (time.time() - self.active_requests[request_id]["received_at"])
+                    * 1000,
                     "node_id": self.node_id,
-                    "engine_version": "FACP/1.1"
-                }
+                    "engine_version": "FACP/1.1",
+                },
             ).to_dict()
 
             # Clean up active request tracking
@@ -160,20 +188,32 @@ class L1Gateway:
 
             return False, error_response
 
-    def handle_client_response(self, request_id: str, response_data: dict[str, Any]) -> dict[str, Any]:
+    def handle_client_response(
+        self, request_id: str, response_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle response from downstream services and prepare for client delivery"""
-        self.logger.info("L1[%s]: Preparing response for client request %s", self.node_id, request_id)
+        self.logger.info(
+            "L1[%s]: Preparing response for client request %s", self.node_id, request_id
+        )
 
         # Add L1-specific trace information
         if "trace" not in response_data:
             response_data["trace"] = {}
 
-        response_data["trace"].update({
-            "node_id": self.node_id,
-            "engine_version": "FACP/1.1",
-            "final_delivery_node": self.node_id,
-            "l1_processing_time_ms": (time.time() - self.active_requests.get(request_id, {"received_at": time.time()})["received_at"]) * 1000
-        })
+        response_data["trace"].update(
+            {
+                "node_id": self.node_id,
+                "engine_version": "FACP/1.1",
+                "final_delivery_node": self.node_id,
+                "l1_processing_time_ms": (
+                    time.time()
+                    - self.active_requests.get(request_id, {"received_at": time.time()})[
+                        "received_at"
+                    ]
+                )
+                * 1000,
+            }
+        )
 
         # Update execution path if not already present
         if "execution_path" not in response_data["trace"]:
@@ -188,8 +228,8 @@ class L1Gateway:
             "request_counter": self.request_counter,
             "active_requests": len(self.active_requests),
             "uptime_seconds": time.time() - self.active_requests.get("startup_time", time.time()),
-            "transport_status": getattr(self.transport, 'is_running', False),
-            "validation_firewall_status": "active"  # Simplified
+            "transport_status": getattr(self.transport, "is_running", False),
+            "validation_firewall_status": "active",  # Simplified
         }
 
     def cleanup_completed_requests(self):
@@ -198,7 +238,8 @@ class L1Gateway:
         timeout_threshold = 300  # 5 minutes timeout
 
         expired_requests = [
-            req_id for req_id, req_info in self.active_requests.items()
+            req_id
+            for req_id, req_info in self.active_requests.items()
             if current_time - req_info["received_at"] > timeout_threshold
         ]
 
@@ -235,6 +276,7 @@ class L1Gateway:
 
         # Wait for active requests to complete (up to a timeout)
         import time
+
         timeout = 30  # 30 seconds
         start_time = time.time()
 
@@ -243,12 +285,16 @@ class L1Gateway:
 
         # Force cleanup if timeout reached
         if len(self.active_requests) > 0:
-            self.logger.warning("L1[%s]: Force cleaning up %s remaining requests", self.node_id, len(self.active_requests))
+            self.logger.warning(
+                "L1[%s]: Force cleaning up %s remaining requests",
+                self.node_id,
+                len(self.active_requests),
+            )
 
         self.active_requests.clear()
 
         # Shutdown transport
-        if hasattr(self.transport, 'stop'):
+        if hasattr(self.transport, "stop"):
             self.transport.stop()
 
         self.logger.info("L1[%s]: Shutdown complete", self.node_id)

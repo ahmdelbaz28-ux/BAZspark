@@ -26,6 +26,7 @@ from qomn_conduit.errors import CatalogError
 # Test 1: All catalog entries have positive dimensions
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCatalogPositiveDimensions:
     """Every fitting must have positive OD, weight, and appropriate radius/length."""
 
@@ -72,6 +73,7 @@ class TestCatalogPositiveDimensions:
 # Test 2: Catalog lookup returns correct fitting for valid input
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCatalogLookup:
     """Valid (conduit_type, trade_size, fitting_type) must return the correct fitting."""
 
@@ -113,6 +115,7 @@ class TestCatalogLookup:
 # Test 3: Catalog lookup returns error for invalid combination
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCatalogInvalidLookup:
     """Invalid combinations must return Result.err(CatalogError)."""
 
@@ -131,6 +134,7 @@ class TestCatalogInvalidLookup:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 4: Catalog numbers match expected pattern
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestCatalogNumberPattern:
     """All catalog numbers must follow the [E|P|S|R][90|45|C|S]-[size] pattern."""
@@ -155,6 +159,7 @@ class TestCatalogNumberPattern:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 5: Golden test — E90-050 dimensions match NEC Table
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestGoldenCatalogData:
     """Verified against NEC published dimensional data."""
@@ -195,21 +200,31 @@ class TestGoldenCatalogData:
 # Test 6: Catalog covers all conduit types and trade sizes for elbows
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCatalogCoverage:
     """All conduit types must have elbow entries for all trade sizes."""
 
-    @pytest.mark.parametrize("ct", [
-        ConduitType.EMT, ConduitType.UPVC_SCH40,
-        ConduitType.UPVC_SCH80, ConduitType.RGD,
-    ])
-    @pytest.mark.parametrize("ts", [
-        TradeSize.HALF_INCH, TradeSize.THREE_QUARTER,
-        TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,
-        TradeSize.ONE_HALF, TradeSize.TWO_INCH,
-    ])
+    @pytest.mark.parametrize(
+        "ct",
+        [
+            ConduitType.EMT,
+            ConduitType.UPVC_SCH40,
+            ConduitType.UPVC_SCH80,
+            ConduitType.RGD,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.HALF_INCH,
+            TradeSize.THREE_QUARTER,
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_QUARTER,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO_INCH,
+        ],
+    )
     def test_elbow_90_exists_for_all_combinations(self, ct, ts):
         """Every (conduit_type, trade_size) combination must have an ELBOW_90."""
         result = get_fitting(ct, ts, FittingType.ELBOW_90)
-        assert result.is_ok(), (
-            f"Missing ELBOW_90 for {ct.value} {ts.value}"
-        )
+        assert result.is_ok(), f"Missing ELBOW_90 for {ct.value} {ts.value}"

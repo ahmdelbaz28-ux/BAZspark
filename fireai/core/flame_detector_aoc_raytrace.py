@@ -456,7 +456,9 @@ class FlameDetectorAOCRayTrace:
 
         # Stage 2: Volumetric media (Beer-Lambert)
         if volumetric_media:
-            return volumetric_path_transmittance(ray_start, ray_end, volumetric_media, band, self._spectral_registry)
+            return volumetric_path_transmittance(
+                ray_start, ray_end, volumetric_media, band, self._spectral_registry
+            )
 
         return 1.0
 
@@ -553,7 +555,9 @@ class FlameDetectorAOCRayTrace:
 
             best_transmittance = 0.0
             for band in detector.spectral_bands:
-                t = self._ray_spectral_transmittance_v21(src, tgt, obstructions, volumetric_media, band)  # type: ignore[arg-type]
+                t = self._ray_spectral_transmittance_v21(
+                    src, tgt, obstructions, volumetric_media, band
+                )  # type: ignore[arg-type]
                 best_transmittance = max(best_transmittance, t)
 
             # Point is covered if best transmittance >= threshold
@@ -614,9 +618,13 @@ class FlameDetectorAOCRayTrace:
         for det in detectors:
             result = self.analyse_single_v21(det, target_grid, obstructions, volumetric_media)
             if fouling < 1.0:
-                fouled_map = {k: round(v * fouling, 4) for k, v in result.spectral_transmittance_map.items()}
+                fouled_map = {
+                    k: round(v * fouling, 4) for k, v in result.spectral_transmittance_map.items()
+                }
                 # Re-evaluate covered points after fouling
-                fouled_covered = frozenset(k for k, v in fouled_map.items() if v >= self.detector_threshold)
+                fouled_covered = frozenset(
+                    k for k, v in fouled_map.items() if v >= self.detector_threshold
+                )
                 result = SingleDetectorResult(
                     detector_id=result.detector_id,
                     covered_pts=fouled_covered,
@@ -735,7 +743,9 @@ class FlameDetectorAOCRayTrace:
         coverage_polygon = self._convex_hull_2d(covered_points)
 
         # Fix #18: median instead of max
-        covered_distances = sorted(r.distance_m for r in ray_results if r.coverage_quality == CoverageQuality.CLEAR)
+        covered_distances = sorted(
+            r.distance_m for r in ray_results if r.coverage_quality == CoverageQuality.CLEAR
+        )
         if covered_distances:
             mid = len(covered_distances) // 2
             effective_range = covered_distances[mid]
@@ -743,10 +753,14 @@ class FlameDetectorAOCRayTrace:
             effective_range = 0.0
 
         if coverage_pct < 85.0:
-            warnings.append(f"Coverage {coverage_pct:.1f}% < 85% threshold. FM Global DS 5-48 §4.2.")
+            warnings.append(
+                f"Coverage {coverage_pct:.1f}% < 85% threshold. FM Global DS 5-48 §4.2."
+            )
 
         if not detector.nfpa_listed:
-            warnings.append("Detector is not NFPA-listed. NFPA 72-2022 §17.8.1 requires listed equipment.")
+            warnings.append(
+                "Detector is not NFPA-listed. NFPA 72-2022 §17.8.1 requires listed equipment."
+            )
 
         return DetectorCoverageResult(
             detector=detector,
@@ -891,7 +905,9 @@ class FlameDetectorAOCRayTrace:
             for obs in obstructions:
                 if obs.is_transparent:
                     continue
-                if self._ray_intersects_bbox(detector.position, ray_dir, distance, obs.bbox_min, obs.bbox_max):
+                if self._ray_intersects_bbox(
+                    detector.position, ray_dir, distance, obs.bbox_min, obs.bbox_max
+                ):
                     blocking = obs.obstruction_id
                     los_clear = False
                     break

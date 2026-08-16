@@ -5,6 +5,7 @@ from enum import StrEnum
 
 class DeviceType(StrEnum):
     """NFPA 170 device classification symbols used across all parsers."""
+
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     MANUAL_PULL_STATION = "MANUAL_PULL_STATION"

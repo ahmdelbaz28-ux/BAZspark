@@ -1,5 +1,3 @@
-
-
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
@@ -86,7 +84,9 @@ class GenerativeDesignRequest(BaseModel):
     """
 
     room_width: float = Field(..., gt=0, le=1000.0, description="Room width in metres (max 1000m)")
-    room_length: float = Field(..., gt=0, le=1000.0, description="Room length in metres (max 1000m)")
+    room_length: float = Field(
+        ..., gt=0, le=1000.0, description="Room length in metres (max 1000m)"
+    )
     room_height: float = Field(3.0, gt=0, le=30.0, description="Ceiling height in metres (max 30m)")
     room_name: str = Field("API_Room", max_length=200, description="Room identifier")
     occupancy_type: str = Field("office", max_length=100, description="NFPA 101 occupancy")
@@ -97,8 +97,8 @@ class GenerativeDesignRequest(BaseModel):
 class BIMExtractRoomsRequest(BaseModel):
     """Request body for /api/v2/bim/extract-rooms."""
 
-    source: str | None =  Field(None, description="File path or URL")
-    provider: str | None =  Field(None, description="Provider name (default: env var)")
+    source: str | None = Field(None, description="File path or URL")
+    provider: str | None = Field(None, description="Provider name (default: env var)")
 
 
 class IFC43MapDetectorRequest(BaseModel):
@@ -145,7 +145,7 @@ class WebhookPublishRequest(BaseModel):
     event_type: str
     source: str
     data: dict[str, Any]
-    trace_id: str | None =  None
+    trace_id: str | None = None
 
 
 class SmokeDensityPointRequest(BaseModel):
@@ -170,7 +170,7 @@ class SmokeSimulationStateRequest(BaseModel):
         default_factory=list, max_length=10000
     )
     visibility_at_height: dict[float, float] = Field(default_factory=dict)
-    fds_run_id: str | None =  None
+    fds_run_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -178,9 +178,13 @@ class SmokeSimulationStateRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))]
+)
 @limiter.limit("10/minute")
-async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> dict[str, Any]:
+async def generate_design_variants(
+    request: Request, req: GenerativeDesignRequest
+) -> dict[str, Any]:
     """
     Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
@@ -208,11 +212,15 @@ async def generate_design_variants(request: Request, req: GenerativeDesignReques
     except ValueError as e:
         # CodeQL: py/stack-trace-exposure — sanitize error message
         safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Validation error"
-        raise HTTPException(status_code=422, detail=safe_msg) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=safe_msg
+        ) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as e:
         logger.exception("Generative design failed: %s", e)
         # CodeQL: py/stack-trace-exposure — never expose internal errors to client
-        raise HTTPException(status_code=500, detail="Generation failed. Check server logs for details.") from e  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Generation failed. Check server logs for details."
+        ) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 # ---------------------------------------------------------------------------
@@ -235,9 +243,15 @@ async def list_bim_providers(
     }
 
 
-@router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))]
+)
 @limiter.limit("10/minute")
-async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def extract_rooms(
+    request: Request, req: BIMExtractRoomsRequest
+) -> dict[
+    str, Any
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract rooms via configured BIM provider.
 
@@ -257,6 +271,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[s
             )
         import os
         from pathlib import Path
+
         try:
             source_path = Path(req.source).resolve()  # NOSONAR
             # instead of str.startswith() which matches "/tmp_evil" against "/tmp"
@@ -267,6 +282,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[s
                 Path("/var/tmp"),  # NOSONAR
                 Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             ]
+
             # using proper path containment (not string prefix)
             def _is_within(path: Path, root: Path) -> bool:
                 try:
@@ -297,11 +313,14 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[s
         except HTTPException:
             raise
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=f"Invalid source path: {exc}") from exc  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
+                status_code=400, detail=f"Invalid source path: {exc}"
+            ) from exc  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     provider = get_provider(req.provider)
     if provider is None:
         from fireai.bridges.bim_provider import BIMProviderRegistry
+
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail=f"No BIM provider available. set FIREAI_BIM_PROVIDER env var. "
@@ -345,7 +364,9 @@ async def bim_health() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
+@router.post(
+    "/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))]
+)
 @limiter.limit("30/minute")
 async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
@@ -365,7 +386,9 @@ async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) 
     }
 
 
-@router.post("/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
+@router.post(
+    "/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))]
+)
 @limiter.limit("10/minute")
 async def map_project_to_ifc43(request: Request, req: dict[str, Any]) -> dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
@@ -411,14 +434,16 @@ async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str
     if req.nodes:
         nodes = []
         for n in req.nodes:
-            nodes.append(ARSceneNode(
-                id=n.get("id", "unknown"),
-                name=n.get("name", ""),
-                node_type=n.get("node_type", "detector"),
-                position=tuple(n.get("position", (0, 0, 0))),
-                is_behind_wall=n.get("is_behind_wall", False),
-                inspection_critical=n.get("inspection_critical", False),
-            ))
+            nodes.append(
+                ARSceneNode(
+                    id=n.get("id", "unknown"),
+                    name=n.get("name", ""),
+                    node_type=n.get("node_type", "detector"),
+                    position=tuple(n.get("position", (0, 0, 0))),
+                    is_behind_wall=n.get("is_behind_wall", False),
+                    inspection_critical=n.get("inspection_critical", False),
+                )
+            )
         snapshot = ARSnapshot(building_id=req.building_id, nodes=nodes)
     else:
         # Without DigitalTwin access in API context, return empty snapshot
@@ -446,7 +471,9 @@ async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str
 # ---------------------------------------------------------------------------
 
 
-@router.post("/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@router.post(
+    "/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))]
+)
 @limiter.limit("30/minute")
 async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> dict[str, Any]:
     """Subscribe to webhook events."""
@@ -473,7 +500,9 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> d
     except ValueError as e:
         # CodeQL: py/stack-trace-exposure — sanitize error message
         safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Validation error"
-        raise HTTPException(status_code=422, detail=safe_msg) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=safe_msg
+        ) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.get("/webhooks/subscriptions")
@@ -499,7 +528,10 @@ async def list_webhook_subscriptions(
     }
 
 
-@router.delete("/webhooks/subscriptions/{sub_id}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@router.delete(
+    "/webhooks/subscriptions/{sub_id}",
+    dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
+)
 @limiter.limit("30/minute")
 async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
     """Remove a webhook subscription."""
@@ -508,11 +540,15 @@ async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
     service = get_webhook_service()
     removed = service.unsubscribe(sub_id)
     if not removed:
-        raise HTTPException(status_code=404, detail=f"Subscription {sub_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail=f"Subscription {sub_id} not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     return {"subscription_id": sub_id, "removed": True}
 
 
-@router.post("/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@router.post(
+    "/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))]
+)
 @limiter.limit("30/minute")
 async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
@@ -537,7 +573,10 @@ async def publish_webhook_event(request: Request, req: WebhookPublishRequest) ->
 # ---------------------------------------------------------------------------
 
 
-@router.post("/smoke-simulation/state", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/smoke-simulation/state",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 @limiter.limit("10/minute")
 async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> dict[str, Any]:
     """
@@ -559,7 +598,8 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
         # and emit a WARNING if the format doesn't match. Full provenance
         # verification would require querying an FDS runner service.
         import re
-        FDS_RUN_ID_PATTERN = r'^fds-\d{4}-\d{3,}$'  # e.g., "fds-2026-001"
+
+        FDS_RUN_ID_PATTERN = r"^fds-\d{4}-\d{3,}$"  # e.g., "fds-2026-001"
         if not re.match(FDS_RUN_ID_PATTERN, req.fds_run_id):
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=422,
@@ -574,7 +614,9 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
         # Create validated state from FDS results
         points = [
             SmokeDensityPoint(
-                x=p.x, y=p.y, z=p.z,
+                x=p.x,
+                y=p.y,
+                z=p.z,
                 density_kg_m3=p.density_kg_m3,
             )
             for p in req.smoke_density_points
@@ -600,7 +642,9 @@ class VectorMemoryStoreRequest(BaseModel):
     """Request body for /api/v2/memory/store."""
 
     content: str = Field(..., min_length=1, max_length=10000)
-    memory_type: str = Field("conversation", description="conversation|study_result|document|etap_knowledge")
+    memory_type: str = Field(
+        "conversation", description="conversation|study_result|document|etap_knowledge"
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -645,14 +689,19 @@ async def store_memory(request: Request, req: VectorMemoryStoreRequest) -> dict[
         MemoryType,
         get_vector_memory,
     )
+
     service = get_vector_memory()
     try:
         mem_type = MemoryType(req.memory_type)
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=f"Invalid memory_type: {req.memory_type}"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     entry_id = service.store(content=req.content, memory_type=mem_type, metadata=req.metadata)
     if entry_id is None:
-        raise HTTPException(status_code=503, detail="Qdrant unavailable — memory not stored")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=503, detail="Qdrant unavailable — memory not stored"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     return {"entry_id": entry_id, "stored": True, "memory_type": req.memory_type}
 
 
@@ -668,14 +717,19 @@ async def search_memory(
         MemoryType,
         get_vector_memory,
     )
+
     service = get_vector_memory()
     try:
         mem_type = MemoryType(req.memory_type)
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=f"Invalid memory_type: {req.memory_type}"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     result = service.search(
-        query=req.query, memory_type=mem_type,
-        limit=req.limit, score_threshold=req.score_threshold,
+        query=req.query,
+        memory_type=mem_type,
+        limit=req.limit,
+        score_threshold=req.score_threshold,
     )
     return result.to_dict()
 
@@ -686,10 +740,13 @@ async def memory_health(
 ) -> dict[str, Any]:
     """Check Qdrant vector database health."""
     from fireai.infrastructure.vector_memory_service import get_vector_memory
+
     return get_vector_memory().health_check()
 
 
-@router.post("/topology/element", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/topology/element", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))]
+)
 @limiter.limit("30/minute")
 async def add_topology_element(request: Request, req: TopologyAddElementRequest) -> dict[str, Any]:
     """Add a network element to the Neo4j topology graph."""
@@ -698,42 +755,59 @@ async def add_topology_element(request: Request, req: TopologyAddElementRequest)
         NetworkElement,
         get_topology_service,
     )
+
     service = get_topology_service()
     try:
         et = ElementType(req.element_type)
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid element_type: {req.element_type}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=f"Invalid element_type: {req.element_type}"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     element = NetworkElement(
-        element_id=req.element_id, element_type=et,
-        name=req.name, properties=req.properties,
+        element_id=req.element_id,
+        element_type=et,
+        name=req.name,
+        properties=req.properties,
     )
     added = service.add_element(element)
     return {"element_id": req.element_id, "added": added}
 
 
-@router.post("/topology/connection", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/topology/connection",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 @limiter.limit("30/minute")
-async def add_topology_connection(request: Request, req: TopologyAddConnectionRequest) -> dict[str, Any]:
+async def add_topology_connection(
+    request: Request, req: TopologyAddConnectionRequest
+) -> dict[str, Any]:
     """Add a connection between two network elements."""
     from fireai.infrastructure.topology_graph_service import (
         NetworkConnection,
         RelationshipType,
         get_topology_service,
     )
+
     service = get_topology_service()
     try:
         rt = RelationshipType(req.relationship_type)
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid relationship_type: {req.relationship_type}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=422, detail=f"Invalid relationship_type: {req.relationship_type}"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     conn = NetworkConnection(
-        from_element=req.from_element, to_element=req.to_element,
-        relationship_type=rt, properties=req.properties,
+        from_element=req.from_element,
+        to_element=req.to_element,
+        relationship_type=rt,
+        properties=req.properties,
     )
     added = service.add_connection(conn)
     return {"from": req.from_element, "to": req.to_element, "added": added}
 
 
-@router.post("/topology/impact", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/topology/impact", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))]
+)
 @limiter.limit("30/minute")
 async def analyze_impact(request: Request, req: TopologyImpactRequest) -> dict[str, Any]:
     """
@@ -742,6 +816,7 @@ async def analyze_impact(request: Request, req: TopologyImpactRequest) -> dict[s
     Answers: "If I trip this breaker, which loads and buses are affected?"
     """
     from fireai.infrastructure.topology_graph_service import get_topology_service
+
     service = get_topology_service()
     result = service.analyze_breaker_impact(req.breaker_id)
     return result.to_dict()
@@ -753,6 +828,7 @@ async def topology_health(
 ) -> dict[str, Any]:
     """Check Neo4j topology graph health."""
     from fireai.infrastructure.topology_graph_service import get_topology_service
+
     return get_topology_service().health_check()
 
 
@@ -780,9 +856,14 @@ class GraphRAGSearchRequest(BaseModel):
     limit: int = Field(5, ge=1, le=50)
 
 
-@router.post("/graphrag/knowledge", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/graphrag/knowledge",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 @limiter.limit("30/minute")
-async def add_graphrag_knowledge(request: Request, req: GraphRAGAddKnowledgeRequest) -> dict[str, Any]:
+async def add_graphrag_knowledge(
+    request: Request, req: GraphRAGAddKnowledgeRequest
+) -> dict[str, Any]:
     """
     Add knowledge to GraphRAG (vector + entity/relationship graph).
 
@@ -806,7 +887,9 @@ async def add_graphrag_knowledge(request: Request, req: GraphRAGAddKnowledgeRequ
     return {"stored": True, "extract_entities": req.extract_entities, "text_length": len(req.text)}
 
 
-@router.post("/graphrag/ask", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+@router.post(
+    "/graphrag/ask", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))]
+)
 @limiter.limit("30/minute")
 async def ask_graphrag(request: Request, req: GraphRAGAskRequest) -> dict[str, Any]:
     """
@@ -824,7 +907,9 @@ async def ask_graphrag(request: Request, req: GraphRAGAskRequest) -> dict[str, A
     return {"question": req.question, "answer": answer}
 
 
-@router.post("/graphrag/search", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
+@router.post(
+    "/graphrag/search", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))]
+)
 @limiter.limit("30/minute")
 async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> dict[str, Any]:
     """Semantic search in GraphRAG vector store (no LLM, fast)."""
@@ -916,17 +1001,21 @@ async def get_csrf_token(request: Request) -> dict[str, Any]:
     forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
     is_https = forwarded_proto == "https" or request.url.scheme == "https"
 
-    cookie_header = build_csrf_cookie_header(token, is_https=is_https)  # NOSONAR — S930: is_https accepted by build_csrf_cookie_header(token, is_https=True); SonarCloud can't resolve delayed import inside try block
+    cookie_header = build_csrf_cookie_header(
+        token, is_https=is_https
+    )  # NOSONAR — S930: is_https accepted by build_csrf_cookie_header(token, is_https=True); SonarCloud can't resolve delayed import inside try block
 
-    response = JSONResponse(content={
-        "csrf_token": token,
-        "cookie_name": CSRF_COOKIE_NAME,
-        "header_name": "X-CSRF-Token",
-        "instructions": (
-            "Include this token in the X-CSRF-Token header for all "
-            "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
-        ),
-    })
+    response = JSONResponse(
+        content={
+            "csrf_token": token,
+            "cookie_name": CSRF_COOKIE_NAME,
+            "header_name": "X-CSRF-Token",
+            "instructions": (
+                "Include this token in the X-CSRF-Token header for all "
+                "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
+            ),
+        }
+    )
     response.headers["set-Cookie"] = cookie_header
     return response
 

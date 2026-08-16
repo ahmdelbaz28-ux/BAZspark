@@ -39,26 +39,36 @@ from fireai.core.safety_assurance import (
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConstants:
     """Verify that safety threshold constants have the expected values."""
 
     def test_absolute_minimum_coverage(self):
-        assert ABSOLUTE_MINIMUM_COVERAGE == 90.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            ABSOLUTE_MINIMUM_COVERAGE == 90.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_minimum_coverage_for_submission(self):
-        assert MINIMUM_COVERAGE_FOR_SUBMISSION == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MINIMUM_COVERAGE_FOR_SUBMISSION == 95.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_standard_coverage_threshold(self):
-        assert STANDARD_COVERAGE_THRESHOLD == 99.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            STANDARD_COVERAGE_THRESHOLD == 99.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_proof_verified_threshold(self):
         # C-08 FIX: must be 99.99 to match the SafetyTier docstring (Tier 1 = >= 99.99%).
-        assert PROOF_VERIFIED_THRESHOLD == 99.99  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            PROOF_VERIFIED_THRESHOLD == 99.99
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SafetyTier ENUM
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSafetyTier:
     """Verify SafetyTier enum values and membership."""
@@ -86,6 +96,7 @@ class TestSafetyTier:
 
 # classify_safety_tier
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestClassifySafetyTier:
     """Test every classification rule in classify_safety_tier()."""
@@ -263,6 +274,7 @@ class TestClassifySafetyTier:
 # apply_fail_safe
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestApplyFailSafe:
     """Test fail-safe action generation for each tier."""
 
@@ -283,7 +295,9 @@ class TestApplyFailSafe:
         assert result["fail_safe_required"] is True
         assert result["tier"] == "FALLBACK_USED"
         # Must include FPE review action
-        fpe_actions = [a for a in result["actions"] if "FPE" in a or "Fire Protection Engineer" in a]
+        fpe_actions = [
+            a for a in result["actions"] if "FPE" in a or "Fire Protection Engineer" in a
+        ]
         assert len(fpe_actions) > 0
         assert "Do NOT submit" in result["recommendation"]
 
@@ -291,13 +305,17 @@ class TestApplyFailSafe:
         """FALLBACK_USED with coverage < 99% should suggest adding detectors."""
         result = apply_fail_safe(SafetyTier.FALLBACK_USED, 96.5, [])
         assert result["fail_safe_required"] is True
-        detector_actions = [a for a in result["actions"] if "detector" in a.lower() or "adding" in a.lower()]
+        detector_actions = [
+            a for a in result["actions"] if "detector" in a.lower() or "adding" in a.lower()
+        ]
         assert len(detector_actions) > 0
 
     def test_fallback_used_coverage_at_standard_no_detector_advice(self):
         """FALLBACK_USED with coverage >= 99% — no 'consider adding detectors' message."""
         result = apply_fail_safe(SafetyTier.FALLBACK_USED, 99.0, [])
-        detector_actions = [a for a in result["actions"] if "consider adding detectors" in a.lower()]
+        detector_actions = [
+            a for a in result["actions"] if "consider adding detectors" in a.lower()
+        ]
         assert len(detector_actions) == 0
 
     def test_rejected_requires_redesign(self):
@@ -342,6 +360,7 @@ class TestApplyFailSafe:
 # tier_requires_fpe_review
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestTierRequiresFpeReview:
     """Test which tiers require Fire Protection Engineer review."""
 
@@ -362,6 +381,7 @@ class TestTierRequiresFpeReview:
 # tier_can_submit
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestTierCanSubmit:
     """Test which tiers allow submission."""
 
@@ -381,6 +401,7 @@ class TestTierCanSubmit:
 # ═══════════════════════════════════════════════════════════════════════════════
 # OverrideRole ENUM
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestOverrideRole:
     """Verify OverrideRole enum values."""
@@ -409,6 +430,7 @@ class TestOverrideRole:
 # ═══════════════════════════════════════════════════════════════════════════════
 # OverrideRecord DATACLASS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestOverrideRecord:
     """Test OverrideRecord creation and auto-timestamp."""
@@ -482,6 +504,7 @@ class TestOverrideRecord:
 # EngineeringEvidencePackage
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _make_evidence_package(**overrides):
     """Helper to create a standard evidence package with optional overrides."""
     defaults = {
@@ -517,15 +540,23 @@ class TestEngineeringEvidencePackage:
         assert pkg.package_id == "PKG-001"
         assert pkg.room_id == "ROOM-A1"
         assert pkg.room_polygon == [(0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)]
-        assert pkg.room_area_m2 == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert pkg.ceiling_height_m == 3.6  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pkg.room_area_m2 == 80.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pkg.ceiling_height_m == 3.6
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert pkg.ceiling_type == "smooth"
         assert pkg.occupancy_type == "office"
         assert pkg.detector_positions == [(3.3, 2.7), (6.6, 5.4)]
         assert pkg.detector_type == "photoelectric"
         assert pkg.spacing_m == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
-        assert pkg.coverage_radius_m == 6.4  # NOSONAR — S1244: import retained for re-export / API surface
-        assert pkg.coverage_pct == 99.7  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pkg.coverage_radius_m == 6.4
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pkg.coverage_pct == 99.7
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert pkg.wall_violations == 0
         assert pkg.nfpa_references == ["NFPA 72 §17.6.3.1", "NFPA 72 §17.7.4.2.3.1"]
         assert pkg.compliance_status == "COMPLIANT"
@@ -619,9 +650,7 @@ class TestEngineeringEvidencePackage:
 
     def test_hash_changes_when_nfpa_references_change(self):
         original = _make_evidence_package()
-        modified = _make_evidence_package(
-            nfpa_references=["NFPA 72 §10.6.7", "NFPA 72 §10.6.4"]
-        )
+        modified = _make_evidence_package(nfpa_references=["NFPA 72 §10.6.7", "NFPA 72 §10.6.4"])
         assert original.compute_integrity_hash() != modified.compute_integrity_hash()
 
     def test_hash_changes_when_compliance_status_changes(self):

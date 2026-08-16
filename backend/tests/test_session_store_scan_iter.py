@@ -5,6 +5,7 @@ Verifies that the session store never calls Redis KEYS (which blocks the
 server on large key sets) — only SCAN-based iteration — in the three
 production-reachable bulk operations.
 """
+
 from __future__ import annotations
 
 import pytest

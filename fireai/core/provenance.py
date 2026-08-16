@@ -209,9 +209,7 @@ class DecisionProvenance:
         automatically generates decision_id and timestamp if not provided.
         """
         if "decision_id" not in kwargs:
-            kwargs["decision_id"] = (
-                f"dp-{hashlib.sha256(str(kwargs).encode()).hexdigest()[:12]}"
-            )
+            kwargs["decision_id"] = f"dp-{hashlib.sha256(str(kwargs).encode()).hexdigest()[:12]}"
         if "timestamp" not in kwargs:
             kwargs["timestamp"] = time.time()
         return cls(**kwargs)

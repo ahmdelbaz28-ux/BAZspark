@@ -91,24 +91,26 @@ SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 # Paths exempt from CSRF (API-key-only endpoints, health checks, docs)
 # Per Rule 12: be conservative — only exempt what's truly safe
-CSRF_EXEMPT_PATHS = frozenset({
-    "/api/v2/health",
-    "/api/v1/health",
-    "/api/health",
-    "/health",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/api/v1/auth/login",
-    "/api/v1/auth/session/login",
-    # P0-2 FIX: server-to-server webhooks are HMAC-authenticated (never
-    # browser-originated), so CSRF does not apply — and the PSP cannot
-    # echo a CSRF cookie. Without this, Meeza callbacks died with
-    # CSRF_VALIDATION_FAILED before reaching the HMAC handler.
-    # (FDS webhook had the same latent bug — both fixed together.)
-    "/api/v1/billing/webhooks/meeza",
-    "/api/v2/fds/webhook",
-})
+CSRF_EXEMPT_PATHS = frozenset(
+    {
+        "/api/v2/health",
+        "/api/v1/health",
+        "/api/health",
+        "/health",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/api/v1/auth/login",
+        "/api/v1/auth/session/login",
+        # P0-2 FIX: server-to-server webhooks are HMAC-authenticated (never
+        # browser-originated), so CSRF does not apply — and the PSP cannot
+        # echo a CSRF cookie. Without this, Meeza callbacks died with
+        # CSRF_VALIDATION_FAILED before reaching the HMAC handler.
+        # (FDS webhook had the same latent bug — both fixed together.)
+        "/api/v1/billing/webhooks/meeza",
+        "/api/v2/fds/webhook",
+    }
+)
 
 
 def extract_csrf_header(headers: MutableMapping[str, str] | dict) -> str | None:
@@ -130,7 +132,11 @@ import os as _os
 # The OLD hardcoded True overrode the dev_allow_http parameter, causing the
 # Secure attribute to be omitted in production behind TLS-terminating proxies.
 # _DEV_ALLOW_HTTP_COOKIES: when True, drops Secure requirement (dev fallback).
-_DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in ("1", "true", "yes")
+_DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +179,7 @@ def validate_csrf_token(token: str) -> bool:
     try:
         # Verify it's valid URL-safe base64 by attempting to decode
         import base64
+
         # Add padding if needed
         padded = token + "=" * (4 - len(token) % 4) if len(token) % 4 else token
         decoded = base64.urlsafe_b64decode(padded)
@@ -247,7 +254,9 @@ class CSRFMiddleware:
         # The OLD code did `dev_allow_http or _DEV_ALLOW_HTTP_COOKIES` which
         # ignored False values (False or True = True). Now the parameter is
         # authoritative; _DEV_ALLOW_HTTP_COOKIES is only a module-level default.
-        self.dev_allow_http = bool(dev_allow_http) if dev_allow_http is not None else _DEV_ALLOW_HTTP_COOKIES
+        self.dev_allow_http = (
+            bool(dev_allow_http) if dev_allow_http is not None else _DEV_ALLOW_HTTP_COOKIES
+        )
 
     async def __call__(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
@@ -285,6 +294,7 @@ class CSRFMiddleware:
                 # Extract hostname from Origin URL
                 try:
                     from urllib.parse import urlparse
+
                     origin_parsed = urlparse(origin)
                     origin_host = origin_parsed.hostname or ""
                     # Extract hostname from Host header (strip port)
@@ -301,23 +311,28 @@ class CSRFMiddleware:
                         logger.warning(
                             "CSWSH BLOCKED: WebSocket connection from untrusted origin '%s' "
                             "(host='%s'). Rejecting connection per OWASP CSWSH prevention.",
-                            origin, host,
+                            origin,
+                            host,
                         )
                         # Send close frame with policy violation code
-                        await send({
-                            "type": "websocket.close",
-                            "code": 1008,  # Policy Violation
-                            "reason": "Untrusted origin",
-                        })
+                        await send(
+                            {
+                                "type": "websocket.close",
+                                "code": 1008,  # Policy Violation
+                                "reason": "Untrusted origin",
+                            }
+                        )
                         return
                 except Exception as exc:
                     logger.warning("WebSocket origin check error: %s", exc)
                     # Fail-safe: reject if we can't verify
-                    await send({
-                        "type": "websocket.close",
-                        "code": 1008,
-                        "reason": "Origin verification failed",
-                    })
+                    await send(
+                        {
+                            "type": "websocket.close",
+                            "code": 1008,
+                            "reason": "Origin verification failed",
+                        }
+                    )
                     return
 
             await self.app(scope, receive, send)
@@ -370,8 +385,11 @@ class CSRFMiddleware:
             # CSRF validation failed
             logger.warning(
                 "CSRF validation failed for %s %s: cookie_present=%s header_present=%s content_type=%s",
-                method, path,
-                bool(cookie_token), bool(header_token), content_type,
+                method,
+                path,
+                bool(cookie_token),
+                bool(header_token),
+                content_type,
             )
             await self._send_403(scope, send, "CSRF token missing or invalid")
             return
@@ -448,26 +466,32 @@ class CSRFMiddleware:
         """
         import json
 
-        body = json.dumps({
-            "detail": detail,
-            "success": False,
-            "error_code": "CSRF_VALIDATION_FAILED",
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "detail": detail,
+                "success": False,
+                "error_code": "CSRF_VALIDATION_FAILED",
+            }
+        ).encode("utf-8")
 
-        await send({
-            "type": "http.response.start",
-            "status": 403,
-            "headers": [
-                (b"content-type", b"application/json"),
-                (b"content-length", str(len(body)).encode("ascii")),
-                # Don't cache error responses
-                (b"cache-control", b"no-store"),
-            ],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": body,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 403,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                    # Don't cache error responses
+                    (b"cache-control", b"no-store"),
+                ],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": body,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -475,7 +499,9 @@ class CSRFMiddleware:
 # ---------------------------------------------------------------------------
 
 
-def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:  # NOSONAR — S1172: accepted for API stability; transport security flag flows here to decide Secure attribute on CSRF cookie
+def build_csrf_cookie_header(
+    token: str, is_https: bool = True
+) -> str:  # NOSONAR — S1172: accepted for API stability; transport security flag flows here to decide Secure attribute on CSRF cookie
     """
     Build the Set-Cookie header value for the CSRF token.
 
@@ -501,13 +527,7 @@ def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:  # NOSON
     # which we don't support (security > dev convenience).
     secure_attr = "Secure; "  # Always include for __Host- prefix
 
-    return (
-        f"{CSRF_COOKIE_NAME}={token}; "
-        "Path=/; "
-        "SameSite=Strict; "
-        f"{secure_attr}"
-        "Max-Age=86400"
-    )
+    return f"{CSRF_COOKIE_NAME}={token}; Path=/; SameSite=Strict; {secure_attr}Max-Age=86400"
 
 
 __all__ = [

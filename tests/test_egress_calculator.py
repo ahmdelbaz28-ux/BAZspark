@@ -75,7 +75,9 @@ class TestCalculateEgressTime:
             travel_distance_m=30.0,
             exit_width_m=0.91,
         )
-        assert result.travel_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.travel_time_s == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.rset_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.safety_factor == float("inf")
         assert result.is_adequate is True
@@ -160,18 +162,24 @@ class TestCalculateEgressTime:
 
     def test_float_occupant_count_raises(self):
         with pytest.raises(ValueError, match="non-negative integer"):
-            calculate_egress_time(occupant_count=10.5, travel_distance_m=30.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            calculate_egress_time(
+                occupant_count=10.5, travel_distance_m=30.0
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_negative_travel_distance_raises(self):
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_egress_time(occupant_count=10, travel_distance_m=-5.0)
 
     def test_nan_travel_distance_raises(self):
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_egress_time(occupant_count=10, travel_distance_m=float("nan"))
 
     def test_inf_travel_distance_raises(self):
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_egress_time(occupant_count=10, travel_distance_m=float("inf"))
 
     def test_zero_exit_width_raises(self):
@@ -183,8 +191,12 @@ class TestCalculateEgressTime:
             calculate_egress_time(occupant_count=10, travel_distance_m=30.0, exit_width_m=-1.0)
 
     def test_nan_exit_width_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            calculate_egress_time(occupant_count=10, travel_distance_m=30.0, exit_width_m=float("nan"))
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            calculate_egress_time(
+                occupant_count=10, travel_distance_m=30.0, exit_width_m=float("nan")
+            )
 
     def test_zero_aset_raises(self):
         with pytest.raises(ValueError, match="positive finite"):
@@ -196,7 +208,9 @@ class TestCalculateEgressTime:
 
     def test_negative_premovement_raises(self):
         with pytest.raises(ValueError, match="non-negative finite"):
-            calculate_egress_time(occupant_count=10, travel_distance_m=30.0, premovement_time_s=-10.0)
+            calculate_egress_time(
+                occupant_count=10, travel_distance_m=30.0, premovement_time_s=-10.0
+            )
 
     def test_zero_travel_distance(self):
         """Zero distance — only flow time matters."""

@@ -1,5 +1,6 @@
 # NOSONAR
 """Audit Logging System for Distributed FACP System"""
+
 import hashlib
 import json
 import os
@@ -30,7 +31,9 @@ class EventType(Enum):
 class DistributedEventLogger:
     """Event logging system for distributed environment"""
 
-    def __init__(self, log_file: str = "facp_distributed_events.log", max_log_size: int = 10 * 1024 * 1024):  # 10MB
+    def __init__(
+        self, log_file: str = "facp_distributed_events.log", max_log_size: int = 10 * 1024 * 1024
+    ):  # 10MB
         self.log_file = log_file
         self.max_log_size = max_log_size
         self.lock = threading.Lock()
@@ -42,17 +45,25 @@ class DistributedEventLogger:
         log_path = Path(self.log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def log_event(self, event_type: EventType, details: dict[str, Any], severity: str = "INFO", source_node: str | None = None):
+    def log_event(
+        self,
+        event_type: EventType,
+        details: dict[str, Any],
+        severity: str = "INFO",
+        source_node: str | None = None,
+    ):
         """Log an event in distributed context"""
         with self.lock:
             event = {
-            # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
+                # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
                 "timestamp": datetime.now(UTC).isoformat(),
                 "event_type": event_type.value,
                 "severity": severity,
                 "source_node": source_node or self.node_id,
                 "details": details,
-                "event_id": hashlib.sha256(f"{time.time()}{event_type.value}{details}".encode()).hexdigest()[:16]
+                "event_id": hashlib.sha256(
+                    f"{time.time()}{event_type.value}{details}".encode()
+                ).hexdigest()[:16],
             }
 
             # Rotate log if too large
@@ -104,15 +115,20 @@ class AuditLogger:
         self.node_communication_log = {}  # track communication between nodes
         self.security_alerts = []  # alerts that need attention
 
-    def log_authentication(self, user_id: str, success: bool, source_node: str = "unknown",
-                          target_node: str = "unknown"):
+    def log_authentication(
+        self,
+        user_id: str,
+        success: bool,
+        source_node: str = "unknown",
+        target_node: str = "unknown",
+    ):
         """Log authentication event in distributed context"""
         details = {
             "user_id": user_id,
             "success": success,
             "source_node": source_node,
             "target_node": target_node,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if success else "WARNING"
@@ -124,8 +140,15 @@ class AuditLogger:
         if not success:
             self._track_failed_auth(user_id, source_node)
 
-    def log_authorization(self, user_id: str, method: str, allowed: bool, permissions: list[str],
-                         source_node: str = "unknown", target_node: str = "unknown"):
+    def log_authorization(
+        self,
+        user_id: str,
+        method: str,
+        allowed: bool,
+        permissions: list[str],
+        source_node: str = "unknown",
+        target_node: str = "unknown",
+    ):
         """Log authorization check in distributed context"""
         details = {
             "user_id": user_id,
@@ -134,7 +157,7 @@ class AuditLogger:
             "permissions": permissions,
             "source_node": source_node,
             "target_node": target_node,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if allowed else "WARNING"
@@ -142,8 +165,15 @@ class AuditLogger:
 
         self.event_logger.log_event(event_type, details, severity, source_node)
 
-    def log_request_processed(self, request_id: str, user_id: str, method: str, risk_level: str,
-                            source_node: str = "unknown", target_node: str = "unknown"):
+    def log_request_processed(
+        self,
+        request_id: str,
+        user_id: str,
+        method: str,
+        risk_level: str,
+        source_node: str = "unknown",
+        target_node: str = "unknown",
+    ):
         """Log processed request in distributed context"""
         details = {
             "request_id": request_id,
@@ -152,13 +182,20 @@ class AuditLogger:
             "risk_level": risk_level,
             "source_node": source_node,
             "target_node": target_node,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         self.event_logger.log_event(EventType.REQUEST_VALIDATED, details, "INFO", source_node)
 
-    def log_engine_execution(self, request_id: str, user_id: str, method: str,
-                           execution_time: float, success: bool, source_node: str = "unknown"):
+    def log_engine_execution(
+        self,
+        request_id: str,
+        user_id: str,
+        method: str,
+        execution_time: float,
+        success: bool,
+        source_node: str = "unknown",
+    ):
         """Log engine execution in distributed context"""
         details = {
             "request_id": request_id,
@@ -167,7 +204,7 @@ class AuditLogger:
             "execution_time_ms": execution_time,
             "success": success,
             "source_node": source_node,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if success else "ERROR"
@@ -175,8 +212,15 @@ class AuditLogger:
 
         self.event_logger.log_event(event_type, details, severity, source_node)
 
-    def log_node_communication(self, from_node: str, to_node: str, message_type: str,
-                             success: bool, latency: float, request_id: str | None = None):
+    def log_node_communication(
+        self,
+        from_node: str,
+        to_node: str,
+        message_type: str,
+        success: bool,
+        latency: float,
+        request_id: str | None = None,
+    ):
         """Log communication between nodes"""
         details = {
             "from_node": from_node,
@@ -185,7 +229,7 @@ class AuditLogger:
             "success": success,
             "latency_ms": latency,
             "request_id": request_id,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if success else "WARNING"
@@ -199,8 +243,9 @@ class AuditLogger:
             self.node_communication_log[comm_key] = []
         self.node_communication_log[comm_key].append(details)
 
-    def log_security_violation(self, violation_type: str, details: dict[str, Any],
-                             source_node: str = "unknown"):
+    def log_security_violation(
+        self, violation_type: str, details: dict[str, Any], source_node: str = "unknown"
+    ):
         """Log security violation in distributed context"""
         details["violation_type"] = violation_type
         details["source_node"] = source_node
@@ -209,14 +254,18 @@ class AuditLogger:
         self.event_logger.log_event(EventType.SECURITY_VIOLATION, details, "CRITICAL", source_node)
 
         # Add to alerts
-        self.security_alerts.append({
-            "violation_type": violation_type,
-            "details": details,
-            "alert_time": time.time()
-        })
+        self.security_alerts.append(
+            {"violation_type": violation_type, "details": details, "alert_time": time.time()}
+        )
 
-    def log_compliance_check(self, check_type: str, resource: str, compliant: bool,
-                           details: dict[str, Any], node_context: str = "unknown"):
+    def log_compliance_check(
+        self,
+        check_type: str,
+        resource: str,
+        compliant: bool,
+        details: dict[str, Any],
+        node_context: str = "unknown",
+    ):
         """Log compliance check in distributed context"""
         compliance_details = {
             "check_type": check_type,
@@ -224,21 +273,24 @@ class AuditLogger:
             "compliant": compliant,
             "details": details,
             "node_context": node_context,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if compliant else "WARNING"
-        self.event_logger.log_event(EventType.REQUEST_VALIDATED, compliance_details, severity, node_context)
+        self.event_logger.log_event(
+            EventType.REQUEST_VALIDATED, compliance_details, severity, node_context
+        )
 
-    def log_cluster_sync(self, sync_operation: str, nodes_involved: list[str],
-                        success: bool, sync_time: float):
+    def log_cluster_sync(
+        self, sync_operation: str, nodes_involved: list[str], success: bool, sync_time: float
+    ):
         """Log cluster synchronization events"""
         details = {
             "sync_operation": sync_operation,
             "nodes_involved": nodes_involved,
             "success": success,
             "sync_time_ms": sync_time,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         severity = "INFO" if success else "WARNING"
@@ -264,7 +316,9 @@ class AuditLogger:
         if key not in self.session_tracking:
             return False
 
-        recent_attempts = [t for t in self.session_tracking[key] if t > time.time() - 300]  # 5 minutes
+        recent_attempts = [
+            t for t in self.session_tracking[key] if t > time.time() - 300
+        ]  # 5 minutes
         return len(recent_attempts) >= threshold
 
     def get_audit_summary(self) -> dict[str, Any]:
@@ -280,7 +334,7 @@ class AuditLogger:
             "failed_auth_attempts": 0,
             "node_communications": len(self.node_communication_log),
             "security_alerts": len(self.security_alerts),
-            "active_sessions": len(self.session_tracking)
+            "active_sessions": len(self.session_tracking),
         }
 
         for event in recent_events:
@@ -301,8 +355,10 @@ class AuditLogger:
                 stats["recent_security_violations"].append(event)
 
             # Count failed authentications
-            if (event_type == EventType.AUTHENTICATION_ATTEMPT.value and
-                event.get("details", {}).get("success") is False):
+            if (
+                event_type == EventType.AUTHENTICATION_ATTEMPT.value
+                and event.get("details", {}).get("success") is False
+            ):
                 stats["failed_auth_attempts"] += 1
 
         return stats
@@ -315,8 +371,10 @@ class AuditLogger:
 
             # Filter events by date
             filtered_events = [
-                event for event in recent_events
-                if datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00")).timestamp() > cutoff
+                event
+                for event in recent_events
+                if datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00")).timestamp()
+                > cutoff
             ]
 
             report = {
@@ -329,7 +387,7 @@ class AuditLogger:
                     node_pair: len(logs) for node_pair, logs in self.node_communication_log.items()
                 },
                 "security_alerts": self.security_alerts,
-                "summary": self.get_audit_summary()
+                "summary": self.get_audit_summary(),
             }
 
             with open(output_file, "w", encoding="utf-8") as f:
@@ -343,7 +401,9 @@ class AuditLogger:
     def cleanup_old_alerts(self, max_age_hours: int = 24):
         """Clean up old security alerts"""
         cutoff = time.time() - (max_age_hours * 3600)
-        self.security_alerts = [alert for alert in self.security_alerts if alert["alert_time"] > cutoff]
+        self.security_alerts = [
+            alert for alert in self.security_alerts if alert["alert_time"] > cutoff
+        ]
 
     def generate_security_insights(self) -> dict[str, Any]:
         """Generate security insights from audit logs"""
@@ -353,20 +413,25 @@ class AuditLogger:
             "top_talkers": sorted(summary["by_node"].items(), key=lambda x: x[1], reverse=True)[:5],
             "most_common_violations": sorted(
                 [(k, v) for k, v in summary["by_type"].items() if "violation" in k.lower()],
-                key=lambda x: x[1], reverse=True
+                key=lambda x: x[1],
+                reverse=True,
             ),
             "potential_security_risks": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Identify potential security risks
         for node, count in summary["by_node"].items():
             if count > 1000:  # Arbitrary threshold
-                insights["potential_security_risks"].append(f"High activity from node {node}: {count} events")
+                insights["potential_security_risks"].append(
+                    f"High activity from node {node}: {count} events"
+                )
 
         # Add recommendations
         if summary["failed_auth_attempts"] > 10:
-            insights["recommendations"].append("Consider implementing rate limiting for authentication attempts")
+            insights["recommendations"].append(
+                "Consider implementing rate limiting for authentication attempts"
+            )
 
         if summary["security_alerts"] > 5:
             insights["recommendations"].append("Review security configuration and access controls")

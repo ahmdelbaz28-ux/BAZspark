@@ -109,15 +109,17 @@ DEFAULT_RETRY_BACKOFF_MAX: float = 60.0  # seconds
 DEFAULT_DLQ_MAX_SIZE: int = 1000
 
 # Event types that can trigger webhooks (per FireAI event taxonomy)
-WEBHOOK_EVENT_TYPES = frozenset({
-    "DESIGN_COMPLETED",
-    "ROOM_ANALYSIS_COMPLETED",
-    "GENERATIVE_ATTEMPT",
-    "COMPLIANCE_VIOLATION_DETECTED",
-    "BUILDING_ANALYSIS_COMPLETED",
-    "EXPORT_COMPLETED",
-    "AUDIT_CHAIN_EVENT",
-})
+WEBHOOK_EVENT_TYPES = frozenset(
+    {
+        "DESIGN_COMPLETED",
+        "ROOM_ANALYSIS_COMPLETED",
+        "GENERATIVE_ATTEMPT",
+        "COMPLIANCE_VIOLATION_DETECTED",
+        "BUILDING_ANALYSIS_COMPLETED",
+        "EXPORT_COMPLETED",
+        "AUDIT_CHAIN_EVENT",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +173,11 @@ class WebhookSubscription:
     event_types: tuple[str, ...] = field(default_factory=tuple)
     status: WebhookStatus = WebhookStatus.ACTIVE
     created_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        default_factory=lambda: datetime.now(UTC)
+        .isoformat()
+        .replace(
+            "+00:00", "Z"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -331,6 +337,7 @@ class WebhookDeliveryService:
         self._event_bus = None
         try:
             from fireai.infrastructure.event_bus import InMemoryEventBus
+
             # Use in-memory bus by default; can be swapped for Redis/Kafka
             self._event_bus = InMemoryEventBus.get_instance()
             logger.info("WebhookDeliveryService connected to InMemoryEventBus")
@@ -364,7 +371,9 @@ class WebhookDeliveryService:
 
         logger.info(
             "Webhook subscription registered: id=%s url=%s events=%s",
-            subscription.id, subscription.url, subscription.event_types or ["*"],
+            subscription.id,
+            subscription.url,
+            subscription.event_types or ["*"],
         )
 
     def unsubscribe(self, subscription_id: str) -> bool:
@@ -392,7 +401,9 @@ class WebhookDeliveryService:
         with self._lock:
             return self._subscriptions.get(subscription_id)
 
-    def _validate_subscription(self, sub: WebhookSubscription) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _validate_subscription(
+        self, sub: WebhookSubscription
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validate a subscription before registering.
 
@@ -411,9 +422,7 @@ class WebhookDeliveryService:
             raise ValueError(f"Invalid URL: {sub.url}: {exc}") from exc
 
         if parsed.scheme not in ("http", "https"):
-            raise ValueError(
-                f"URL must use http or https scheme, got: {parsed.scheme}"
-            )
+            raise ValueError(f"URL must use http or https scheme, got: {parsed.scheme}")
 
         # HTTPS enforcement in production
         if parsed.scheme == "http" and not self.allow_http:
@@ -425,14 +434,14 @@ class WebhookDeliveryService:
         # Host allowlist check
         if self.allowed_hosts and parsed.hostname not in self.allowed_hosts:
             raise ValueError(
-                f"Host '{parsed.hostname}' not in allowlist. "
-                f"Allowed hosts: {self.allowed_hosts}"
+                f"Host '{parsed.hostname}' not in allowlist. Allowed hosts: {self.allowed_hosts}"
             )
 
         # SSRF protection: Block internal/private IPs and cloud metadata endpoints.
         # In dev mode (allow_http=True), allow localhost for local development.
         import ipaddress
         import socket
+
         LOCALHOST_HOSTNAMES = frozenset({"localhost", "127.0.0.1", "::1", "[::1]"})
         try:
             # Resolve hostname to IP
@@ -468,9 +477,10 @@ class WebhookDeliveryService:
         for et in sub.event_types:
             if et not in WEBHOOK_EVENT_TYPES:
                 logger.warning(
-                    "Subscription %s uses non-standard event type: %s. "
-                    "Standard types: %s",
-                    sub.id, et, WEBHOOK_EVENT_TYPES,
+                    "Subscription %s uses non-standard event type: %s. Standard types: %s",
+                    sub.id,
+                    et,
+                    WEBHOOK_EVENT_TYPES,
                 )
 
     # ------------------------------------------------------------------
@@ -504,20 +514,22 @@ class WebhookDeliveryService:
         # Find matching subscriptions
         with self._lock:
             matching = [
-                sub for sub in self._subscriptions.values()
-                if sub.matches_event(event_type)
+                sub for sub in self._subscriptions.values() if sub.matches_event(event_type)
             ]
 
         if not matching:
             logger.debug(
                 "Event %s (type=%s) has no matching subscribers — skipping",
-                event_id, event_type,
+                event_id,
+                event_type,
             )
             return event_id
 
         logger.info(  # NOSONAR
             "Publishing event %s (type=%s) to %d subscriber(s)",
-            event_id, event_type, len(matching),
+            event_id,
+            event_type,
+            len(matching),
         )
 
         # The V135 F-11 "fix" used `concurrent.futures.wait()` which does NOT
@@ -564,7 +576,9 @@ class WebhookDeliveryService:
                 logger.warning(
                     "Webhook delivery timed out after %ds for event %s "
                     "(%d subscribers may not have received it — cancelled)",
-                    GLOBAL_DELIVERY_TIMEOUT_S, event_id, cancelled,
+                    GLOBAL_DELIVERY_TIMEOUT_S,
+                    event_id,
+                    cancelled,
                 )
             finally:
                 # continue mutating _dlq/_delivery_history. Cancel ALL pending futures
@@ -595,6 +609,7 @@ class WebhookDeliveryService:
         if self._event_bus is not None:
             try:
                 from fireai.infrastructure.event_bus import Event
+
                 event = Event(
                     id=event_id,
                     type=event_type,
@@ -607,7 +622,8 @@ class WebhookDeliveryService:
             except Exception as exc:
                 logger.warning(
                     "Failed to publish event %s to EventBus: %s",
-                    event_id, exc,
+                    event_id,
+                    exc,
                 )
 
         return event_id
@@ -631,14 +647,17 @@ class WebhookDeliveryService:
 
         Per agent.md Rule 17 (No Half-Solutions): full retry + DLQ.
         """
-        payload = json.dumps({
-            "id": event_id,
-            "type": event_type,
-            "source": source,
-            "data": data,
-            "timestamp": timestamp,
-            "trace_id": trace_id,
-        }, sort_keys=True).encode("utf-8")
+        payload = json.dumps(
+            {
+                "id": event_id,
+                "type": event_type,
+                "source": source,
+                "data": data,
+                "timestamp": timestamp,
+                "trace_id": trace_id,
+            },
+            sort_keys=True,
+        ).encode("utf-8")
 
         signature = compute_webhook_signature(payload, subscription.secret)
 
@@ -669,12 +688,14 @@ class WebhookDeliveryService:
             with self._lock:
                 self._delivery_history.append(attempt)
                 if len(self._delivery_history) > self.history_max_size:
-                    self._delivery_history = self._delivery_history[-self.history_max_size:]
+                    self._delivery_history = self._delivery_history[-self.history_max_size :]
 
             if attempt.status == DeliveryStatus.SUCCESS:
                 logger.info(
                     "Webhook delivered: sub=%s event=%s attempt=%d status=%d",
-                    subscription.id, event_id, attempt_num,
+                    subscription.id,
+                    event_id,
+                    attempt_num,
                     attempt.response_status_code or 0,
                 )
                 return
@@ -686,9 +707,11 @@ class WebhookDeliveryService:
                     self.retry_backoff_max,
                 )
                 logger.warning(
-                    "Webhook delivery failed (attempt %d/%d): %s. "
-                    "Retrying in %.1fs.",
-                    attempt_num, self.max_retries, attempt.error, backoff,
+                    "Webhook delivery failed (attempt %d/%d): %s. Retrying in %.1fs.",
+                    attempt_num,
+                    self.max_retries,
+                    attempt.error,
+                    backoff,
                 )
                 time.sleep(backoff)
 
@@ -707,17 +730,20 @@ class WebhookDeliveryService:
             self._dlq.append(dlq_entry)
             # LRU eviction
             if len(self._dlq) > self.dlq_max_size:
-                self._dlq = self._dlq[-self.dlq_max_size:]
+                self._dlq = self._dlq[-self.dlq_max_size :]
 
         logger.error(
-            "Webhook dead-lettered: sub=%s event=%s after %d attempts. "
-            "Final error: %s",
-            subscription.id, event_id, len(attempts), dlq_entry.final_error,
+            "Webhook dead-lettered: sub=%s event=%s after %d attempts. Final error: %s",
+            subscription.id,
+            event_id,
+            len(attempts),
+            dlq_entry.final_error,
         )
 
         # Record audit event (per NFPA 72 §7.5)
         try:
             from fireai.core.audit_store import AuditStore
+
             AuditStore.add_event(
                 event_type="WEBHOOK_DELIVERY_FAILED",
                 room_id=str(data.get("room_id", "UNKNOWN")),
@@ -742,7 +768,9 @@ class WebhookDeliveryService:
                 "AUDIT FAILURE: Failed to record WEBHOOK_DELIVERY_FAILED event "
                 "for subscription %s event %s: %s. "
                 "NFPA 72 §7.5 audit trail integrity at risk — investigate AuditStore.",
-                subscription.id, event_id, audit_exc,
+                subscription.id,
+                event_id,
+                audit_exc,
                 exc_info=True,
             )
 
@@ -814,7 +842,8 @@ class WebhookDeliveryService:
             # the SSRF check, bypassing protection. Now we BLOCK.
             logger.warning(
                 "SSRF check error for %s: %s — BLOCKING request (fail-closed)",
-                url, exc,
+                url,
+                exc,
             )
             return f"SSRF check failed: {exc}"
 
@@ -1002,7 +1031,8 @@ class WebhookDeliveryService:
         if sub is None or sub.status != WebhookStatus.ACTIVE:
             logger.warning(
                 "Cannot replay DLQ entry %s: subscription %s not active — re-queuing",
-                entry.event_id, entry.subscription_id,
+                entry.event_id,
+                entry.subscription_id,
             )
             with self._lock:
                 self._dlq.insert(dlq_index, entry)
@@ -1010,7 +1040,9 @@ class WebhookDeliveryService:
 
         logger.info(
             "Replaying DLQ entry %s for subscription %s (event_type=%s)",
-            entry.event_id, entry.subscription_id, entry.event_type,
+            entry.event_id,
+            entry.subscription_id,
+            entry.event_type,
         )
 
         try:

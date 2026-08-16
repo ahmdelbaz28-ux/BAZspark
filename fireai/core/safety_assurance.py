@@ -276,7 +276,9 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
     if isinstance(coverage_pct_or_tier, SafetyTier):
         # OLD convention: apply_fail_safe(tier, coverage_pct, errors)
         tier_arg = coverage_pct_or_tier
-        coverage_pct = proof_valid_or_coverage if isinstance(proof_valid_or_coverage, int | float) else None
+        coverage_pct = (
+            proof_valid_or_coverage if isinstance(proof_valid_or_coverage, int | float) else None
+        )
         errors = errors_or_proof if isinstance(errors_or_proof, list) else []
         # Derive proof_valid from tier
         proof_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)
@@ -330,7 +332,9 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
                     f"Catastrophically low coverage ({coverage_pct:.1f}%) — fire will spread undetected"
                 )
             elif coverage_pct < 95:
-                actions_list.append(f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72")
+                actions_list.append(
+                    f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72"
+                )
             actions_list.extend(f"Error: {e}" for e in (errors or [])[:5])
             return {
                 "safe_to_submit": False,
@@ -345,13 +349,17 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
         if proof_valid is False:
             reasons.append("Mathematical proof failed — coverage cannot be guaranteed.")
         elif proof_valid is None:
-            reasons.append("Mathematical proof not verified or not provided — coverage cannot be guaranteed.")
+            reasons.append(
+                "Mathematical proof not verified or not provided — coverage cannot be guaranteed."
+            )
 
     # Classify tier
     # because NaN is truthy in Python. NaN propagates into classifier.
     import math as _fs_math
 
-    safe_coverage = coverage_pct if (coverage_pct is not None and _fs_math.isfinite(coverage_pct)) else 0.0
+    safe_coverage = (
+        coverage_pct if (coverage_pct is not None and _fs_math.isfinite(coverage_pct)) else 0.0
+    )
     tier = classify_safety_tier(
         coverage_pct=safe_coverage,
         proof_valid=proof_valid or False,
@@ -367,9 +375,13 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
     if tier == SafetyTier.REJECTED:
         actions.append("Complete redesign required — current design does not meet safety standards")
         if coverage_pct is not None and coverage_pct < 90:
-            actions.append(f"Catastrophically low coverage ({coverage_pct:.1f}%) — fire will spread undetected")
+            actions.append(
+                f"Catastrophically low coverage ({coverage_pct:.1f}%) — fire will spread undetected"
+            )
         elif coverage_pct is not None and coverage_pct < 95:
-            actions.append(f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72")
+            actions.append(
+                f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72"
+            )
         # Include error items (limited to 5)
         if errors:
             for err in errors[:5]:
@@ -377,7 +389,9 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
     elif tier == SafetyTier.FALLBACK_USED:
         actions.append("FPE (Fire Protection Engineer) review required before submission")
         if coverage_pct is not None and coverage_pct < 99:
-            actions.append(f"Consider adding detectors to improve coverage from {coverage_pct:.1f}% to ≥99%")
+            actions.append(
+                f"Consider adding detectors to improve coverage from {coverage_pct:.1f}% to ≥99%"
+            )
     elif tier == SafetyTier.PROOF_VALID:
         pass  # No actions needed — proof valid means design is safe
     elif tier == SafetyTier.PROOF_VERIFIED:
@@ -594,7 +608,11 @@ def check_review_triggers(  # NOSONAR — S3776: cognitive complexity is inheren
         )
 
     # ceiling_height_m: None or non-finite or > 9.1m → MUST trigger review
-    if ceiling_height_m is None or not _review_math.isfinite(ceiling_height_m) or ceiling_height_m > 9.1:
+    if (
+        ceiling_height_m is None
+        or not _review_math.isfinite(ceiling_height_m)
+        or ceiling_height_m > 9.1
+    ):
         val_str = (
             f"height={'NaN/Inf' if ceiling_height_m is not None and not _review_math.isfinite(ceiling_height_m) else ceiling_height_m:.1f}m"  # NOSONAR — S3358: nested ternary acceptable in this localized context
             if ceiling_height_m is not None
@@ -616,7 +634,11 @@ def check_review_triggers(  # NOSONAR — S3776: cognitive complexity is inheren
         )
 
     # confidence_score: None or non-finite or < 80 → MUST trigger review
-    if confidence_score is None or not _review_math.isfinite(confidence_score) or confidence_score < 80.0:
+    if (
+        confidence_score is None
+        or not _review_math.isfinite(confidence_score)
+        or confidence_score < 80.0
+    ):
         val_str = (
             f"confidence={'NaN/Inf' if confidence_score is not None and not _review_math.isfinite(confidence_score) else confidence_score:.1f}"  # NOSONAR — S3358: nested ternary acceptable in this localized context
             if confidence_score is not None

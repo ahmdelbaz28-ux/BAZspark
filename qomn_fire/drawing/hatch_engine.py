@@ -18,7 +18,9 @@ from qomn_fire.core.errors import HatchPlacementError, Result
 from qomn_fire.core.types import HatchSpec, Point3D
 
 
-def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16) -> list[tuple[float, float]]:
+def generate_circle_polyline(
+    center: Point3D, radius: float, num_sides: int = 16
+) -> list[tuple[float, float]]:
     poly = []
     for i in range(num_sides):
         angle = (2.0 * math.pi * i) / num_sides
@@ -27,35 +29,39 @@ def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16
         poly.append((round(x, 4), round(y, 4)))
     return poly
 
+
 def place_boundary_hatch(
-    doc,
-    boundary_points: list[tuple[float, float]],
-    spec: HatchSpec,
-    run_id: str
+    doc, boundary_points: list[tuple[float, float]], spec: HatchSpec, run_id: str
 ) -> Result[Any, HatchPlacementError]:
     if ezdxf is None:
-        return Result(error=HatchPlacementError(
-            message="ezdxf library is required for hatch placement. Install with: pip install ezdxf",
-            code_ref="CAD Dependency",
-            remedy="Install ezdxf or disable DXF drawing output."
-        ))
+        return Result(
+            error=HatchPlacementError(
+                message="ezdxf library is required for hatch placement. Install with: pip install ezdxf",
+                code_ref="CAD Dependency",
+                remedy="Install ezdxf or disable DXF drawing output.",
+            )
+        )
 
     if spec.scale < 0.001:
-        return Result(error=HatchPlacementError(
-            message=f"Hatch scaling factor {spec.scale} is too small (< 0.001).",
-            code_ref="CAD Drafting Standards",
-            remedy="Increase hatch scale parameter bounds above 0.01."
-        ))
+        return Result(
+            error=HatchPlacementError(
+                message=f"Hatch scaling factor {spec.scale} is too small (< 0.001).",
+                code_ref="CAD Drafting Standards",
+                remedy="Increase hatch scale parameter bounds above 0.01.",
+            )
+        )
 
     # SAFETY: A hatch boundary with fewer than 3 points is geometrically invalid.
     # A 0/1/2 point boundary produces a degenerate polyline that renders
     # incorrectly in CAD viewers and may cause DXF file corruption.
     if len(boundary_points) < 3:
-        return Result(error=HatchPlacementError(
-            message=f"Hatch boundary for '{run_id}' has {len(boundary_points)} points — minimum 3 required for a valid polygon.",
-            code_ref="CAD Drafting Standards / ISO 19650",
-            remedy="Ensure the hatch boundary encloses a valid area with at least 3 distinct vertices."
-        ))
+        return Result(
+            error=HatchPlacementError(
+                message=f"Hatch boundary for '{run_id}' has {len(boundary_points)} points — minimum 3 required for a valid polygon.",
+                code_ref="CAD Drafting Standards / ISO 19650",
+                remedy="Ensure the hatch boundary encloses a valid area with at least 3 distinct vertices.",
+            )
+        )
 
     msp = doc.modelspace()
     if spec.layer not in doc.layers:

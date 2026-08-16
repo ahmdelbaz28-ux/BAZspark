@@ -6,10 +6,8 @@ Event definitions and publishers for Revit integration.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from .event_definitions import *
 from .event_publisher import RevitEventPublisher
 
-__all__ = [
-    'REVIT_EVENT_TYPES',
-    'RevitEventPublisher'
-]
+__all__ = ["REVIT_EVENT_TYPES", "RevitEventPublisher"]

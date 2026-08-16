@@ -420,7 +420,9 @@ class DigitalTwinInterface:
                     old_value={"room_count": old_version.room_count},
                     new_value={"room_count": new_version.room_count},
                     author="system",
-                    reason=(f"Room count changed from {old_version.room_count} to {new_version.room_count}"),
+                    reason=(
+                        f"Room count changed from {old_version.room_count} to {new_version.room_count}"
+                    ),
                 )
             )
 
@@ -505,7 +507,9 @@ class DigitalTwinInterface:
                             or abs(old_det.get("y", 0) - new_det.get("y", 0)) > 1e-6
                             or abs(old_det.get("z", 0) - new_det.get("z", 0)) > 1e-6
                         )
-                        radius_changed = abs(old_det.get("radius", 0) - new_det.get("radius", 0)) > 1e-6
+                        radius_changed = (
+                            abs(old_det.get("radius", 0) - new_det.get("radius", 0)) > 1e-6
+                        )
 
                         if position_changed:
                             changes.append(
@@ -568,7 +572,11 @@ class DigitalTwinInterface:
 
     # ── IFC Export ───────────────────────────────────────────────────
 
-    def export_ifc_payload(self, room_results: list[dict[str, Any]]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def export_ifc_payload(
+        self, room_results: list[dict[str, Any]]
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Export detector placements as an IFC4-compatible payload.
 
@@ -595,7 +603,9 @@ class DigitalTwinInterface:
         # Group rooms by floor
         floors: dict[str, list[dict[str, Any]]] = {}
         for room in room_results:
-            floor_name = room.get("floor_name", "Level 1")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            floor_name = room.get(
+                "floor_name", "Level 1"
+            )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             if floor_name not in floors:
                 floors[floor_name] = []
             floors[floor_name].append(room)
@@ -1263,7 +1273,9 @@ if __name__ == "__main__":
     assert "IFCBUILDINGSTOREY" in entity_types
     assert "IFCSPACE" in entity_types
     assert "IFCFLOWSENSOR" in entity_types
-    print(f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, {len(ifc['property_sets'])} property sets")
+    print(
+        f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, {len(ifc['property_sets'])} property sets"
+    )
     print(f"   ✓ Entity types: {sorted(set(entity_types))}")
 
     # ── Test 9: gBXML Export ──────────────────────────────────────────

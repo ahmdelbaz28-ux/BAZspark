@@ -490,9 +490,7 @@ def test_manifest_and_result_json_serialization() -> None:
         or any(
             # Mirror the validator: reject chars that are NOT letters, marks,
             # digits, hyphens, or underscores.
-            not (unicodedata.category(c).startswith(("L", "M"))
-                 or c.isdigit()
-                 or c in "-_")
+            not (unicodedata.category(c).startswith(("L", "M")) or c.isdigit() or c in "-_")
             for c in value.strip()
         )
     ),
@@ -533,10 +531,7 @@ def test_short_description_rejected(short_description: str) -> None:
         st.text(min_size=0, max_size=10),
         min_size=0,
         max_size=5,
-    ).filter(
-        lambda words: len(words) == 0
-        or any(w.strip() == "" for w in words)
-    ),
+    ).filter(lambda words: len(words) == 0 or any(w.strip() == "" for w in words)),
 )
 def test_empty_trigger_words_rejected(trigger_words: list[str]) -> None:
     with pytest.raises(ValueError):
@@ -567,7 +562,9 @@ def test_invalid_max_execution_time_rejected(max_execution_time: int) -> None:
     ).filter(lambda value: not is_two_part_numeric_version(value)),
 )
 def test_invalid_version_compatibility_rejected(bad_version_compatibility: str) -> None:
-    with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+    with pytest.raises(
+        ValueError
+    ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
         SkillManifest(
             metadata=SkillMetadata(name="test_skill", version="1.0.0", author="test_author"),
             description=SkillDescription(

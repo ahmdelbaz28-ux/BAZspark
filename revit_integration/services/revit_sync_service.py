@@ -6,6 +6,7 @@ Service for synchronizing Revit models with the Digital Twin.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import asyncio
 import logging
 import os
@@ -45,7 +46,9 @@ class RevitSyncService:
         self.element_cache = {}
         self.sync_cache = {}
 
-    async def sync_project(self, project_dto: RevitProjectDTO) -> SyncStatusDTO:  # NOSONAR:S3776: multi-step sync must handle all project data
+    async def sync_project(
+        self, project_dto: RevitProjectDTO
+    ) -> SyncStatusDTO:  # NOSONAR:S3776: multi-step sync must handle all project data
         """
         Synchronize a Revit project with the Digital Twin.
 
@@ -62,7 +65,7 @@ class RevitSyncService:
             sync_id=sync_id,
             project_id=project_dto.project_id,
             status="in_progress",
-            start_time=datetime.now(UTC)
+            start_time=datetime.now(UTC),
         )
 
         # Add to active syncs
@@ -70,11 +73,14 @@ class RevitSyncService:
 
         try:
             # Publish sync started event
-            await self.event_publisher.publish_event("RevitSyncStarted", {
-                "sync_id": sync_id,
-                "project_id": project_dto.project_id,
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitSyncStarted",
+                {
+                    "sync_id": sync_id,
+                    "project_id": project_dto.project_id,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
             # Get model metadata
             if project_dto.revit_file_path:
@@ -111,15 +117,20 @@ class RevitSyncService:
                     sync_status.processed_elements = processed_count
                     sync_status.successful_elements = successful_count
                     sync_status.failed_elements = failed_count
-                    sync_status.progress = (processed_count / len(elements)) * 100.0 if elements else 0.0
+                    sync_status.progress = (
+                        (processed_count / len(elements)) * 100.0 if elements else 0.0
+                    )
 
                     # Publish element processed event
-                    await self.event_publisher.publish_event("RevitElementProcessed", {
-                        "sync_id": sync_id,
-                        "element_id": element.id,
-                        "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.now(UTC).isoformat()
-                    })
+                    await self.event_publisher.publish_event(
+                        "RevitElementProcessed",
+                        {
+                            "sync_id": sync_id,
+                            "element_id": element.id,
+                            "status": "success" if processed_successfully else "failed",
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        },
+                    )
 
                     # Small delay to allow other operations
                     await asyncio.sleep(0.01)
@@ -137,15 +148,18 @@ class RevitSyncService:
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish sync completed event
-            await self.event_publisher.publish_event("RevitSyncCompleted", {
-                "sync_id": sync_id,
-                "project_id": project_dto.project_id,
-                "successful_elements": successful_count,
-                "failed_elements": failed_count,
-                "total_elements": processed_count,
-                "duration": (sync_status.end_time - sync_status.start_time).total_seconds(),
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitSyncCompleted",
+                {
+                    "sync_id": sync_id,
+                    "project_id": project_dto.project_id,
+                    "successful_elements": successful_count,
+                    "failed_elements": failed_count,
+                    "total_elements": processed_count,
+                    "duration": (sync_status.end_time - sync_status.start_time).total_seconds(),
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
             # Update project last sync time
             project_dto.last_sync = datetime.now(UTC)
@@ -159,12 +173,15 @@ class RevitSyncService:
             sync_status.error_details = {"error": str(e)}
 
             # Publish sync failed event
-            await self.event_publisher.publish_event("RevitSyncFailed", {
-                "sync_id": sync_id,
-                "project_id": project_dto.project_id,
-                "error": str(e),
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitSyncFailed",
+                {
+                    "sync_id": sync_id,
+                    "project_id": project_dto.project_id,
+                    "error": str(e),
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
             return sync_status
 
@@ -173,7 +190,9 @@ class RevitSyncService:
             if sync_id in self.active_syncs:
                 del self.active_syncs[sync_id]
 
-    async def incremental_sync(self, project_id: str, changed_elements: list[RevitElementDTO]) -> SyncStatusDTO:
+    async def incremental_sync(
+        self, project_id: str, changed_elements: list[RevitElementDTO]
+    ) -> SyncStatusDTO:
         """
         Perform an incremental sync of changed elements.
 
@@ -191,7 +210,7 @@ class RevitSyncService:
             project_id=project_id,
             status="in_progress",
             total_elements=len(changed_elements),
-            start_time=datetime.now(UTC)
+            start_time=datetime.now(UTC),
         )
 
         try:
@@ -212,15 +231,20 @@ class RevitSyncService:
                     sync_status.processed_elements = i + 1
                     sync_status.successful_elements = successful_count
                     sync_status.failed_elements = failed_count
-                    sync_status.progress = ((i + 1) / len(changed_elements)) * 100.0 if changed_elements else 0.0
+                    sync_status.progress = (
+                        ((i + 1) / len(changed_elements)) * 100.0 if changed_elements else 0.0
+                    )
 
                     # Publish element updated event
-                    await self.event_publisher.publish_event("RevitElementUpdated", {
-                        "sync_id": sync_id,
-                        "element_id": element.id,
-                        "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.now(UTC).isoformat()
-                    })
+                    await self.event_publisher.publish_event(
+                        "RevitElementUpdated",
+                        {
+                            "sync_id": sync_id,
+                            "element_id": element.id,
+                            "status": "success" if processed_successfully else "failed",
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        },
+                    )
 
                 except Exception as e:
                     failed_count += 1
@@ -232,13 +256,16 @@ class RevitSyncService:
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish incremental sync completed event
-            await self.event_publisher.publish_event("RevitIncrementalSyncCompleted", {
-                "sync_id": sync_id,
-                "project_id": project_id,
-                "successful_elements": successful_count,
-                "failed_elements": failed_count,
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitIncrementalSyncCompleted",
+                {
+                    "sync_id": sync_id,
+                    "project_id": project_id,
+                    "successful_elements": successful_count,
+                    "failed_elements": failed_count,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
             return sync_status
 
@@ -249,7 +276,9 @@ class RevitSyncService:
             sync_status.error_details = {"error": str(e)}
             return sync_status
 
-    async def _extract_elements_from_revit(self, project_dto: RevitProjectDTO) -> list[RevitElementDTO]:
+    async def _extract_elements_from_revit(
+        self, project_dto: RevitProjectDTO
+    ) -> list[RevitElementDTO]:
         """
         Extract elements from Revit model.
         In a real implementation, this would connect to the Revit API.
@@ -274,11 +303,15 @@ class RevitSyncService:
                 RevitElementDTO(
                     id=f"ele_{i}",
                     name=f"Element_{i}",
-                    category="Electrical Equipment" if i % 3 == 0 else "Rooms" if i % 3 == 1 else "Cable Tray",
+                    category="Electrical Equipment"
+                    if i % 3 == 0
+                    else "Rooms"
+                    if i % 3 == 1
+                    else "Cable Tray",
                     family="Generic",
                     type="Default",
                     parameters={"Power": 100 + i, "Voltage": 480},
-                    location={"x": float(i), "y": float(i*2), "z": 0.0} if i % 2 == 0 else None
+                    location={"x": float(i), "y": float(i * 2), "z": 0.0} if i % 2 == 0 else None,
                 )
                 for i in range(min(50, 1000))  # Simulate up to 50 elements
             ]
@@ -286,7 +319,9 @@ class RevitSyncService:
 
         return elements
 
-    async def _process_element(self, element_dto: RevitElementDTO, _project_dto: RevitProjectDTO | None) -> bool:
+    async def _process_element(
+        self, element_dto: RevitElementDTO, _project_dto: RevitProjectDTO | None
+    ) -> bool:
         """
         Process a single Revit element for synchronization.
 
@@ -299,30 +334,36 @@ class RevitSyncService:
         """
         try:
             # Validate the element
-            validation_result = self.category_mapper.validate_mapping({
-                'id': element_dto.id,
-                'name': element_dto.name,
-                'category': element_dto.category,
-                'parameters': element_dto.parameters
-            })
+            validation_result = self.category_mapper.validate_mapping(
+                {
+                    "id": element_dto.id,
+                    "name": element_dto.name,
+                    "category": element_dto.category,
+                    "parameters": element_dto.parameters,
+                }
+            )
 
-            if not validation_result['valid']:
-                self.logger.warning(f"Invalid element {element_dto.id}: {validation_result['issues']}")
+            if not validation_result["valid"]:
+                self.logger.warning(
+                    f"Invalid element {element_dto.id}: {validation_result['issues']}"
+                )
                 return False
 
             # Transform element to ETAP format
-            etap_element = self.category_mapper.transform_for_etap({
-                'id': element_dto.id,
-                'name': element_dto.name,
-                'category': element_dto.category,
-                'parameters': element_dto.parameters,
-                'location': element_dto.location,
-                'geometry': element_dto.geometry,
-                'level': element_dto.level,
-                'workset': element_dto.workset,
-                'created_at': element_dto.created_at,
-                'updated_at': element_dto.updated_at
-            })
+            etap_element = self.category_mapper.transform_for_etap(
+                {
+                    "id": element_dto.id,
+                    "name": element_dto.name,
+                    "category": element_dto.category,
+                    "parameters": element_dto.parameters,
+                    "location": element_dto.location,
+                    "geometry": element_dto.geometry,
+                    "level": element_dto.level,
+                    "workset": element_dto.workset,
+                    "created_at": element_dto.created_at,
+                    "updated_at": element_dto.updated_at,
+                }
+            )
 
             # Determine target model based on category
             target_model = self.category_mapper.get_target_model(element_dto.category)
@@ -333,18 +374,23 @@ class RevitSyncService:
                 await self._sync_to_etap_model(etap_element, target_model.value)
 
             # Extract electrical asset if applicable
-            if element_dto.category and 'electrical' in element_dto.category.lower():
-                electrical_asset = self.element_adapter.extract_electrical_asset(MockRevitElement(element_dto))
+            if element_dto.category and "electrical" in element_dto.category.lower():
+                electrical_asset = self.element_adapter.extract_electrical_asset(
+                    MockRevitElement(element_dto)
+                )
                 if electrical_asset:
                     await self._sync_electrical_asset(electrical_asset)
 
             # Publish element imported event
-            await self.event_publisher.publish_event("RevitElementImported", {
-                "element_id": element_dto.id,
-                "category": element_dto.category,
-                "target_model": target_model.value if target_model else "Unknown",
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitElementImported",
+                {
+                    "element_id": element_dto.id,
+                    "category": element_dto.category,
+                    "target_model": target_model.value if target_model else "Unknown",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
             return True
 
@@ -369,12 +415,15 @@ class RevitSyncService:
 
         # Publish topology changed event if it's an electrical element
         if model_type == "ElectricalModel":
-            await self.event_publisher.publish_event("RevitTopologyChanged", {
-                "element_id": etap_element['id'],
-                "model_type": model_type,
-                "change_type": "element_added",
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitTopologyChanged",
+                {
+                    "element_id": etap_element["id"],
+                    "model_type": model_type,
+                    "change_type": "element_added",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
 
         return True
 
@@ -390,15 +439,20 @@ class RevitSyncService:
         """
         # In a real implementation, this would sync to the electrical model
         # For now, we'll just log the operation
-        self.logger.debug(f"Syncing electrical asset {electrical_asset.element_id} to electrical model")
+        self.logger.debug(
+            f"Syncing electrical asset {electrical_asset.element_id} to electrical model"
+        )
 
         # Publish electrical asset event
-        await self.event_publisher.publish_event("ElectricalAssetSynced", {
-            "element_id": electrical_asset.element_id,
-            "asset_type": electrical_asset.asset_type,
-            "name": electrical_asset.name,
-            "timestamp": datetime.now(UTC).isoformat()
-        })
+        await self.event_publisher.publish_event(
+            "ElectricalAssetSynced",
+            {
+                "element_id": electrical_asset.element_id,
+                "asset_type": electrical_asset.asset_type,
+                "name": electrical_asset.name,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+        )
 
         return True
 
@@ -427,7 +481,7 @@ class RevitSyncService:
             modified_date=datetime.now(),
             author="Simulated Author",
             organization="Simulated Organization",
-            description="Simulated Revit Model"
+            description="Simulated Revit Model",
         )
 
     async def get_active_syncs(self) -> list[SyncStatusDTO]:
@@ -450,10 +504,10 @@ class RevitSyncService:
             sync_status.end_time = datetime.now(UTC)
 
             # Publish sync cancelled event
-            await self.event_publisher.publish_event("RevitSyncCancelled", {
-                "sync_id": sync_id,
-                "timestamp": datetime.now(UTC).isoformat()
-            })
+            await self.event_publisher.publish_event(
+                "RevitSyncCancelled",
+                {"sync_id": sync_id, "timestamp": datetime.now(UTC).isoformat()},
+            )
 
             del self.active_syncs[sync_id]
             return True
@@ -499,7 +553,13 @@ class MockParameter:
     def __init__(self, name: str, value: Any):
         self.Definition = MockParameterDef(name)
         self.HasValue = value is not None
-        self.StorageType = 'String' if isinstance(value, str) else 'Double' if isinstance(value, int | float) else 'String'
+        self.StorageType = (
+            "String"
+            if isinstance(value, str)
+            else "Double"
+            if isinstance(value, int | float)
+            else "String"
+        )
         self._value = value
 
     def AsString(self):
@@ -522,11 +582,12 @@ class MockLocation:
     def __init__(self, location_data: dict[str, float] | None):
         if location_data:
             from collections import namedtuple
-            Point = namedtuple('Point', ['X', 'Y', 'Z'])
+
+            Point = namedtuple("Point", ["X", "Y", "Z"])
             self.Point = Point(
-                X=location_data.get('x', 0.0),
-                Y=location_data.get('y', 0.0),
-                Z=location_data.get('z', 0.0)
+                X=location_data.get("x", 0.0),
+                Y=location_data.get("y", 0.0),
+                Z=location_data.get("z", 0.0),
             )
         else:
             self.Point = None

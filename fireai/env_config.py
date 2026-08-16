@@ -86,7 +86,9 @@ class FireAIConfig:
         return self.environment == "testing"
 
 
-def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def _load_config() -> (
+    FireAIConfig
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Load and validate configuration from environment variables."""
 
     def _env(key: str, default: str) -> str:
@@ -129,7 +131,9 @@ def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity i
 
     # Detect personal developer paths and warn loudly
     raw_db_path = os.environ.get("FIREAI_DB_PATH", "").strip()
-    if raw_db_path.startswith("/home/") or raw_db_path.startswith("C:\\Users\\"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+    if raw_db_path.startswith("/home/") or raw_db_path.startswith(
+        "C:\\Users\\"
+    ):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
         logger.warning(
             "FIREAI_DB_PATH appears to be a developer personal path: '%s'. "
             "In production, use an absolute server path like /var/fireai/data/fireai.db",
@@ -138,7 +142,9 @@ def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity i
 
     environment = _env("FIREAI_ENV", "development")
     if environment not in ("development", "testing", "production"):
-        raise ValueError(f"FIREAI_ENV='{environment}' is invalid. Must be one of: development, testing, production.")
+        raise ValueError(
+            f"FIREAI_ENV='{environment}' is invalid. Must be one of: development, testing, production."
+        )
 
     # Safe default DB path — relative to CWD, always writable in dev
     default_db_path = ":memory:" if environment == "testing" else "./data/fireai.db"
@@ -150,7 +156,9 @@ def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity i
     langfuse_host = _env("LANGFUSE_HOST", "https://cloud.langfuse.com")
     langfuse_explicitly_enabled = _env_bool("LANGFUSE_ENABLED", True)
     # Auto-detect: enabled if both keys are present
-    langfuse_enabled = langfuse_explicitly_enabled and bool(langfuse_public_key) and bool(langfuse_secret_key)
+    langfuse_enabled = (
+        langfuse_explicitly_enabled and bool(langfuse_public_key) and bool(langfuse_secret_key)
+    )
 
     cfg = FireAIConfig(
         database_path=database_path,

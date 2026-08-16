@@ -24,7 +24,6 @@ def test_task1_auto_mesh_generator():
     assert "&VENT" in res["fds_script"]
 
 
-
 def test_task2_acoustic_heatmap_matrix():
     speakers = [{"x": 5.0, "y": 5.0, "z": 3.0, "source_dba": 90.0}]
     res = generate_acoustic_heatmap_matrix(width_m=10.0, depth_m=10.0, speakers=speakers)
@@ -68,10 +67,13 @@ def test_task6_local_code_rag():
     assert len(res["matched_clauses"]) > 0
 
 
-
 def test_task7_marine_classification_reports():
-    dnv = MarineClassificationReportGenerator.generate_dnv_compliance_report("MV Baz", "IMO 9876543")
-    lr = MarineClassificationReportGenerator.generate_lloyds_register_report("SS Spark", "IMO 1234567")
+    dnv = MarineClassificationReportGenerator.generate_dnv_compliance_report(
+        "MV Baz", "IMO 9876543"
+    )
+    lr = MarineClassificationReportGenerator.generate_lloyds_register_report(
+        "SS Spark", "IMO 1234567"
+    )
     assert dnv["society"] == "DNV GL"
     assert dnv["is_approved"] is True
     assert lr["society"] == "Lloyd's Register (LR)"
@@ -81,7 +83,9 @@ def test_task7_marine_classification_reports():
 def test_task8_digital_twin_mqtt_bacnet():
     twin = DigitalTwin(building_id="B-TEST")
     sync = DigitalTwinSync(twin=twin)
-    mqtt_res = sync.handle_mqtt_telemetry("facp/B-TEST/detector/D-999/telemetry", {"detector_id": "D-999", "status": "OK"})
+    mqtt_res = sync.handle_mqtt_telemetry(
+        "facp/B-TEST/detector/D-999/telemetry", {"detector_id": "D-999", "status": "OK"}
+    )
     bacnet_res = sync.handle_bacnet_ip_event("BI-101", 1)
     assert mqtt_res["protocol"] == "MQTT"
     assert bacnet_res["protocol"] == "BACnet/IP"
@@ -90,5 +94,8 @@ def test_task8_digital_twin_mqtt_bacnet():
 def test_task10_civil_defense_pdf():
     class DummyReport:
         building_id = "B-001"
-    path = generate_civil_defense_submittal_pdf(DummyReport(), "/tmp/test_report.txt", language="bilingual")
+
+    path = generate_civil_defense_submittal_pdf(
+        DummyReport(), "/tmp/test_report.txt", language="bilingual"
+    )
     assert path.endswith("_civil_defense.txt") or path.endswith(".txt")

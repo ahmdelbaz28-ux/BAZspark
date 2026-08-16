@@ -14,6 +14,7 @@ Exit codes:
 Usage:
   python3 scripts/pip_audit_gate.py
 """
+
 from __future__ import annotations
 
 import json
@@ -67,13 +68,15 @@ def main() -> int:  # NOSONAR — S3776: audit gate orchestrates multiple valida
                 break
 
         if is_high:
-            high_crit_vulns.append({
-                "id": vid,
-                "package": name,
-                "version": version,
-                "fix": fix,
-                "aliases": aliases,
-            })
+            high_crit_vulns.append(
+                {
+                    "id": vid,
+                    "package": name,
+                    "version": version,
+                    "fix": fix,
+                    "aliases": aliases,
+                }
+            )
 
     print(f"PIP_AUDIT_TOTAL_VULNS={total_vulns}")
 
@@ -81,8 +84,7 @@ def main() -> int:  # NOSONAR — S3776: audit gate orchestrates multiple valida
         print(f"PIP_AUDIT_HIGH_CRITICAL={len(high_crit_vulns)}")
         for v in high_crit_vulns:
             print(
-                f"  {v['package']} {v['version']}: {v['id']} "
-                f"(fix: {', '.join(v['fix']) or 'none'})"
+                f"  {v['package']} {v['version']}: {v['id']} (fix: {', '.join(v['fix']) or 'none'})"
             )
         print(f"FAIL: {len(high_crit_vulns)} HIGH/CRITICAL vulnerabilities detected")
         return 1

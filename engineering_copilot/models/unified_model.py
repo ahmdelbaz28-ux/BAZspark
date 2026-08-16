@@ -6,6 +6,7 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -15,6 +16,7 @@ from uuid import uuid4
 
 class SourceSystem(StrEnum):
     """Enumeration of source systems for entities."""
+
     ETAP = "ETAP"
     AUTOCAD = "AutoCAD"
     REVIT = "Revit"
@@ -23,6 +25,7 @@ class SourceSystem(StrEnum):
 
 class EntityType(StrEnum):
     """Enumeration of entity types."""
+
     PROJECT = "Project"
     BUILDING = "Building"
     LEVEL = "Level"
@@ -48,6 +51,7 @@ class EntityType(StrEnum):
 @dataclass
 class Relationship:
     """Relationship between entities."""
+
     type: str
     entity_id: str
     relationship: str
@@ -56,6 +60,7 @@ class Relationship:
 @dataclass
 class Coordinates:
     """Coordinates for positioning entities."""
+
     x: float
     y: float
     z: float | None = 0.0
@@ -64,6 +69,7 @@ class Coordinates:
 @dataclass
 class BaseEntity:
     """Base class for all entities in the unified model."""
+
     id: str = field(default_factory=lambda: str(uuid4()))
     name: str = ""
     description: str = ""
@@ -89,6 +95,7 @@ class BaseEntity:
 @dataclass
 class Project(BaseEntity):
     """Project entity."""
+
     type: EntityType = EntityType.PROJECT
     project_number: str = ""
     project_phase: str = ""
@@ -101,6 +108,7 @@ class Project(BaseEntity):
 @dataclass
 class Building(BaseEntity):
     """Building entity."""
+
     type: EntityType = EntityType.BUILDING
     building_type: str = ""
     floors: int = 1
@@ -111,6 +119,7 @@ class Building(BaseEntity):
 @dataclass
 class Level(BaseEntity):
     """Level/Floor entity."""
+
     type: EntityType = EntityType.LEVEL
     level_number: int = 0
     elevation: float = 0.0
@@ -120,6 +129,7 @@ class Level(BaseEntity):
 @dataclass
 class Room(BaseEntity):
     """Room entity."""
+
     type: EntityType = EntityType.ROOM
     room_number: str = ""
     room_type: str = ""
@@ -131,6 +141,7 @@ class Room(BaseEntity):
 @dataclass
 class ElectricalRoom(BaseEntity):
     """Electrical room entity."""
+
     type: EntityType = EntityType.ELECTRICAL_ROOM
     room_classification: str = ""
     voltage_level: float = 0.0
@@ -140,6 +151,7 @@ class ElectricalRoom(BaseEntity):
 @dataclass
 class Panel(BaseEntity):
     """Electrical panel entity."""
+
     type: EntityType = EntityType.PANEL
     panel_type: str = ""
     voltage_rating: float = 0.0
@@ -154,6 +166,7 @@ class Panel(BaseEntity):
 @dataclass
 class Switchboard(BaseEntity):
     """Switchboard entity."""
+
     type: EntityType = EntityType.SWITCHBOARD
     voltage_rating: float = 0.0
     current_rating: float = 0.0
@@ -165,6 +178,7 @@ class Switchboard(BaseEntity):
 @dataclass
 class Bus(BaseEntity):
     """Electrical bus entity."""
+
     type: EntityType = EntityType.BUS
     voltage_rating: float = 0.0
     current_rating: float = 0.0
@@ -177,6 +191,7 @@ class Bus(BaseEntity):
 @dataclass
 class Transformer(BaseEntity):
     """Transformer entity."""
+
     type: EntityType = EntityType.TRANSFORMER
     transformer_type: str = ""
     primary_voltage: float = 0.0
@@ -191,6 +206,7 @@ class Transformer(BaseEntity):
 @dataclass
 class Generator(BaseEntity):
     """Generator entity."""
+
     type: EntityType = EntityType.GENERATOR
     generator_type: str = ""
     power_rating: float = 0.0
@@ -203,6 +219,7 @@ class Generator(BaseEntity):
 @dataclass
 class Cable(BaseEntity):
     """Cable entity."""
+
     type: EntityType = EntityType.CABLE
     cable_type: str = ""
     conductor_count: int = 0
@@ -218,6 +235,7 @@ class Cable(BaseEntity):
 @dataclass
 class Breaker(BaseEntity):
     """Circuit breaker entity."""
+
     type: EntityType = EntityType.BREAKER
     breaker_type: str = ""
     voltage_rating: float = 0.0
@@ -231,6 +249,7 @@ class Breaker(BaseEntity):
 @dataclass
 class Load(BaseEntity):
     """Electrical load entity."""
+
     type: EntityType = EntityType.LOAD
     load_type: str = ""
     power_rating: float = 0.0
@@ -243,6 +262,7 @@ class Load(BaseEntity):
 @dataclass
 class Motor(BaseEntity):
     """Motor entity."""
+
     type: EntityType = EntityType.MOTOR
     motor_type: str = ""
     horsepower: float = 0.0
@@ -256,6 +276,7 @@ class Motor(BaseEntity):
 @dataclass
 class Relay(BaseEntity):
     """Protection relay entity."""
+
     type: EntityType = EntityType.RELAY
     relay_type: str = ""
     manufacturer: str = ""
@@ -267,6 +288,7 @@ class Relay(BaseEntity):
 @dataclass
 class ProtectionDevice(BaseEntity):
     """Generic protection device entity."""
+
     type: EntityType = EntityType.PROTECTION_DEVICE
     device_type: str = ""
     voltage_rating: float = 0.0
@@ -278,6 +300,7 @@ class ProtectionDevice(BaseEntity):
 @dataclass
 class Conduit(BaseEntity):
     """Conduit entity."""
+
     type: EntityType = EntityType.CONDUIT
     conduit_type: str = ""
     size: str = ""
@@ -290,6 +313,7 @@ class Conduit(BaseEntity):
 @dataclass
 class Tray(BaseEntity):
     """Cable tray entity."""
+
     type: EntityType = EntityType.TRAY
     tray_type: str = ""
     width: float = 0.0
@@ -302,6 +326,7 @@ class Tray(BaseEntity):
 @dataclass
 class Equipment(BaseEntity):
     """Generic equipment entity."""
+
     type: EntityType = EntityType.EQUIPMENT
     equipment_type: str = ""
     manufacturer: str = ""
@@ -314,6 +339,7 @@ class Equipment(BaseEntity):
 @dataclass
 class Annotation(BaseEntity):
     """Annotation entity."""
+
     type: EntityType = EntityType.ANNOTATION
     annotation_type: str = ""
     text: str = ""
@@ -324,6 +350,7 @@ class Annotation(BaseEntity):
 @dataclass
 class UnifiedEngineeringModel:
     """Container for the unified engineering model."""
+
     entities: list[BaseEntity] = field(default_factory=list)
     project_id: str = ""
     schema_version: str = "1.0.0"

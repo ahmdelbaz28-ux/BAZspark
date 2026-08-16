@@ -24,9 +24,7 @@ class TestV214DwgConverterInfrastructure:
         assert "libredwg" in content.lower(), (
             "requirements-optional.txt must mention libredwg for DWG conversion"
         )
-        assert "dwg2dxf" in content, (
-            "requirements-optional.txt must mention dwg2dxf binary"
-        )
+        assert "dwg2dxf" in content, "requirements-optional.txt must mention dwg2dxf binary"
         assert "ODAFileConverter" in content, (
             "requirements-optional.txt must mention ODAFileConverter"
         )
@@ -77,9 +75,7 @@ class TestV214DwgConverterInfrastructure:
         """The Windows setup script must download LibreDWG from gitlab."""
         script_path = REPO_ROOT / "scripts" / "install_dwg_converter_windows.ps1"
         content = script_path.read_text(encoding="utf-8")
-        assert "gitlab.com/libredwg" in content, (
-            "Must download LibreDWG from gitlab.com/libredwg"
-        )
+        assert "gitlab.com/libredwg" in content, "Must download LibreDWG from gitlab.com/libredwg"
         assert "Invoke-WebRequest" in content, "Must use Invoke-WebRequest to download"
         assert "Expand-Archive" in content, "Must extract the zip"
         assert "PATH" in content, "Must add to PATH"
@@ -96,6 +92,7 @@ class TestV214DwgConverterInfrastructure:
     def test_dwg_converter_supports_3_binaries(self):
         """dwg_converter.py must still support the 3 binaries (V213)."""
         from qomn_fire.parsers.dwg_converter import DwgConverter
+
         assert "dwg2dxf" in DwgConverter._CONVERTER_BINARIES
         assert "ODAFileConverter" in DwgConverter._CONVERTER_BINARIES
         assert "oda_file_converter" in DwgConverter._CONVERTER_BINARIES

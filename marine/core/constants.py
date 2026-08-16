@@ -81,7 +81,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("machinery_a", "empty_space"): "A-0",
     # Machinery to open deck → A-0
     ("machinery_a", "open_deck"): "A-0",
-
     # Cargo to accommodation → A-60
     ("cargo_space", "accommodation"): "A-60",
     # Cargo to escape route → A-60
@@ -100,7 +99,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("cargo_space", "empty_space"): "A-0",
     # Cargo to open deck → A-0
     ("cargo_space", "open_deck"): "A-0",
-
     # Accommodation to escape route → B-15 (passenger ships) or B-0
     ("accommodation", "escape_route"): "B-15",
     # Control station to accommodation → A-30
@@ -119,7 +117,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("control_station", "empty_space"): "A-0",
     # Control station to open deck → A-0
     ("control_station", "open_deck"): "A-0",
-
     # Escape route to service minor → B-15
     ("escape_route", "service_minor"): "B-15",
     # Escape route to service major → A-60
@@ -132,7 +129,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("escape_route", "empty_space"): "A-0",
     # Escape route to open deck → A-0
     ("escape_route", "open_deck"): "A-0",
-
     # Service minor to service major → A-30
     ("service_minor", "service_major"): "A-30",
     # Service minor to machinery other → A-30
@@ -143,7 +139,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("service_minor", "empty_space"): "A-0",
     # Service minor to open deck → A-0
     ("service_minor", "open_deck"): "A-0",
-
     # Service major to machinery other → A-30
     ("service_major", "machinery_other"): "A-30",
     # Service major to tank space → A-60
@@ -152,7 +147,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("service_major", "empty_space"): "A-0",
     # Service major to open deck → A-0
     ("service_major", "open_deck"): "A-0",
-
     # Machinery other to machinery other → A-30
     ("machinery_other", "machinery_other"): "A-30",
     # Machinery other to tank space → A-60
@@ -161,14 +155,12 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("machinery_other", "empty_space"): "A-0",
     # Machinery other to open deck → A-0
     ("machinery_other", "open_deck"): "A-0",
-
     # Tank space to tank space → A-60
     ("tank_space", "tank_space"): "A-60",
     # Tank space to empty space → A-0
     ("tank_space", "empty_space"): "A-0",
     # Tank space to open deck → A-0
     ("tank_space", "open_deck"): "A-0",
-
     # Open deck to anything → A-0 minimum
     ("open_deck", "accommodation"): "A-0",
     ("open_deck", "machinery_a"): "A-0",
@@ -181,7 +173,6 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("open_deck", "tank_space"): "A-0",
     ("open_deck", "empty_space"): "A-0",
     ("open_deck", "open_deck"): "A-0",
-
     # Empty space to anything → A-0 (cofferdams/voids have no rating)
     ("empty_space", "accommodation"): "A-0",
     ("empty_space", "escape_route"): "A-0",
@@ -195,7 +186,7 @@ INSULATION_THICKNESS_MM = {
     "A-0": 0.0,
     "A-15": 25.0,
     "A-30": 40.0,
-    "A-60": 75.0,   # typical ceramic-wool thickness for 60-min rating
+    "A-60": 75.0,  # typical ceramic-wool thickness for 60-min rating
 }
 
 
@@ -204,18 +195,18 @@ INSULATION_THICKNESS_MM = {
 # FSS Code Chapter 9 Table 9.1: Maximum detector spacing per type.
 # Values in m² per detector (ceiling-mounted, max height 12 m).
 DETECTOR_COVERAGE_M2 = {
-    "heat_fixed": 37.0,         # 37 m² per FSS 9.2.3
-    "heat_ror": 37.0,           # Same as fixed-temperature
-    "smoke_ion": 74.0,          # 74 m² — typical for photoelectric
-    "smoke_photo": 74.0,        # 74 m²
-    "smoke_duct": None,         # One per duct (no coverage area)
-    "flame_uv": 250.0,          # UV flame detector coverage depends on height
+    "heat_fixed": 37.0,  # 37 m² per FSS 9.2.3
+    "heat_ror": 37.0,  # Same as fixed-temperature
+    "smoke_ion": 74.0,  # 74 m² — typical for photoelectric
+    "smoke_photo": 74.0,  # 74 m²
+    "smoke_duct": None,  # One per duct (no coverage area)
+    "flame_uv": 250.0,  # UV flame detector coverage depends on height
     "flame_ir": 300.0,
-    "flame_uv_ir": 200.0,       # Combined — more selective, smaller area
-    "co": 50.0,                 # CO sensors in accommodation
-    "multicriteria": 84.0,      # Combined smoke+heat → larger area
-    "linear_heat": None,        # Linear cable — per-run, not per-area
-    "aspirating": 500.0,        # ASD high-sensitivity → larger area
+    "flame_uv_ir": 200.0,  # Combined — more selective, smaller area
+    "co": 50.0,  # CO sensors in accommodation
+    "multicriteria": 84.0,  # Combined smoke+heat → larger area
+    "linear_heat": None,  # Linear cable — per-run, not per-area
+    "aspirating": 500.0,  # ASD high-sensitivity → larger area
 }
 
 # Maximum ceiling height for standard detector spacing (FSS 9.2.2).
@@ -223,13 +214,13 @@ DETECTOR_COVERAGE_M2 = {
 MAX_DETECTOR_CEILING_HEIGHT_M = 12.0
 
 # IEC 60092-502: Detector placement distance from bulkheads (corners).
-MAX_DISTANCE_FROM_BULKHEAD_M = 5.3   # half of spacing radius
-MAX_DETECTOR_SPACING_M = 10.6        # Smoke detector max spacing per FSS 9.2.4
+MAX_DISTANCE_FROM_BULKHEAD_M = 5.3  # half of spacing radius
+MAX_DETECTOR_SPACING_M = 10.6  # Smoke detector max spacing per FSS 9.2.4
 
 # Heat detector activation temperatures (IEC 60092-502 §4.4).
 HEAT_DETECTOR_RATED_TEMPS_C = {
-    "low": 54.0,    # Accommodation, control rooms
-    "medium": 78.0, # Engine rooms, galleys
+    "low": 54.0,  # Accommodation, control rooms
+    "medium": 78.0,  # Engine rooms, galleys
     "high": 107.0,  # Drying rooms, hot machinery spaces
 }
 
@@ -240,7 +231,7 @@ HEAT_DETECTOR_RATED_TEMPS_C = {
 WATER_MIST_DESIGN_DENSITY_MM_PER_MIN = 5.0  # 5 mm/min (engine rooms)
 
 # Minimum discharge time for water mist systems.
-WATER_MIST_MIN_DISCHARGE_TIME_MIN = 30.0    # 30 minutes continuous
+WATER_MIST_MIN_DISCHARGE_TIME_MIN = 30.0  # 30 minutes continuous
 
 # Maximum droplet size (DV0.99) for water mist — <1000 microns.
 WATER_MIST_MAX_DROPLET_MICRONS = 1000.0
@@ -250,11 +241,11 @@ WATER_MIST_MAX_DROPLET_MICRONS = 1000.0
 
 # MSC.1/Circ.1316: Minimum CO2 design concentrations by cargo class.
 CO2_DESIGN_CONCENTRATION_PCT = {
-    "engine_room": 35.0,        # 35% by volume
-    "cargo_hold_general": 30.0, # 30%
-    "cargo_hold_dangerous": 45.0, # 45% for IMDG Class 1/5
-    "pump_room": 45.0,          # 45% (flammable liquids)
-    "paint_store": 40.0,        # 40%
+    "engine_room": 35.0,  # 35% by volume
+    "cargo_hold_general": 30.0,  # 30%
+    "cargo_hold_dangerous": 45.0,  # 45% for IMDG Class 1/5
+    "pump_room": 45.0,  # 45% (flammable liquids)
+    "paint_store": 40.0,  # 40%
 }
 
 # CO2 discharge time — must reach 95% of design concentration within 2 min.
@@ -271,14 +262,14 @@ CO2_SPECIFIC_VOLUME_M3_PER_KG = 0.51  # 1/density
 # ─── Foam Systems ───────────────────────────────────────────────────────────
 
 # Low-expansion foam for cargo tank deck (SOLAS II-2/10.8).
-FOAM_LOW_EXPANSION_RATIO = 12.0   # 12:1
+FOAM_LOW_EXPANSION_RATIO = 12.0  # 12:1
 FOAM_LOW_APPLICATION_RATE_LPM_PER_M2 = 4.0  # 4 L/min/m²
 FOAM_LOW_MIN_DISCHARGE_TIME_MIN = 15.0
 
 # High-expansion foam for engine rooms (SOLAS II-2/10.7).
-FOAM_HIGH_EXPANSION_RATIO = 1000.0   # 1000:1
+FOAM_HIGH_EXPANSION_RATIO = 1000.0  # 1000:1
 FOAM_HIGH_DISCHARGE_RATE_M3_PER_MIN = 1.0  # 1 m³/min per m² of deck
-FOAM_HIGH_MIN_FILL_TIME_MIN = 10.0   # Fill the space in ≤10 min
+FOAM_HIGH_MIN_FILL_TIME_MIN = 10.0  # Fill the space in ≤10 min
 
 # AFFF for helidecks (CAP 437 + ICAO Annex 14).
 AFFF_APPLICATION_RATE_LPM_PER_M2 = 2.5  # 2.5 L/min/m²
@@ -288,13 +279,13 @@ AFFF_DISCHARGE_TIME_MIN = 5.0
 # ─── Sprinkler Systems (SOLAS II-2/8 + FSS Ch. 14) ─────────────────────────
 
 # Sprinkler design density for accommodation spaces.
-SPRINKLER_DESIGN_DENSITY_MM_PER_MIN = 5.0   # 5 mm/min (light hazard)
+SPRINKLER_DESIGN_DENSITY_MM_PER_MIN = 5.0  # 5 mm/min (light hazard)
 
 # Maximum coverage per sprinkler head (accommodation).
 SPRINKLER_MAX_COVERAGE_M2 = 12.0
 
 # Sprinkler activation temperature.
-SPRINKLER_RATED_TEMP_C = 68.0    # 68°C (red bulb)
+SPRINKLER_RATED_TEMP_C = 68.0  # 68°C (red bulb)
 
 
 # ─── Inert Gas System (SOLAS II-2/4.5.5 + FSS Ch. 15) ──────────────────────
@@ -309,9 +300,9 @@ INERT_GAS_CAPACITY_FACTOR = 1.25
 # ─── Ship Electrical (IEC 60092 series) ────────────────────────────────────
 
 # IEC 60092-301: Standard shipboard voltages.
-SHIP_MAIN_VOLTAGE_V = 440.0       # 3-phase AC
+SHIP_MAIN_VOLTAGE_V = 440.0  # 3-phase AC
 SHIP_EMERGENCY_VOLTAGE_V = 230.0  # Single-phase or 3-phase
-SHIP_LOW_VOLTAGE_V = 24.0         # DC for control circuits
+SHIP_LOW_VOLTAGE_V = 24.0  # DC for control circuits
 
 # IEC 60092-502: Insulation monitoring requirements.
 INSULATION_MONITOR_THRESHOLD_KOHM = 100.0  # Alarm at <100 kΩ
@@ -331,8 +322,8 @@ HAZARDOUS_ZONE_DEFINITIONS = {
 
 # ISO 15370: Thermal alarm response temperatures.
 THERMAL_ALARM_RESPONSE_C = {
-    "thermal_a": 70.0,   # ±5°C — for low-ambient areas
-    "thermal_b": 90.0,   # ±5°C — for warmer areas
+    "thermal_a": 70.0,  # ±5°C — for low-ambient areas
+    "thermal_b": 90.0,  # ±5°C — for warmer areas
 }
 
 # Maximum spacing of thermal alarms in escape routes.
@@ -344,10 +335,10 @@ THERMAL_ALARM_MAX_SPACING_M = 10.0
 # NFPA 302-2020 §6.2: Required portable extinguishers by vessel length.
 NFPA302_PORTABLE_EXTINGUISHERS = {
     # (length_feet, min_rating, type)
-    (0, 26): (5, "B:C"),       # <26 ft: 1× 5-B:C
-    (26, 40): (10, "B:C"),     # 26–40 ft: 2× 5-B:C or 1× 10-B:C
-    (40, 65): (20, "B:C"),     # 40–65 ft: 2× 10-B:C or 1× 20-B:C
-    (65, 999): (40, "B:C"),    # >65 ft: 2× 20-B:C or fixed system
+    (0, 26): (5, "B:C"),  # <26 ft: 1× 5-B:C
+    (26, 40): (10, "B:C"),  # 26–40 ft: 2× 5-B:C or 1× 10-B:C
+    (40, 65): (20, "B:C"),  # 40–65 ft: 2× 10-B:C or 1× 20-B:C
+    (65, 999): (40, "B:C"),  # >65 ft: 2× 20-B:C or fixed system
 }
 
 # NFPA 302 §7.4: Fixed fire-extinguishing system required for galley.
@@ -358,7 +349,7 @@ NFPA302_GALLEY_FIXED_AGENT = "dry_chemical"  # or AFFF/CO2
 # ─── Lloyd's Register (LR) Additional Rules ─────────────────────────────────
 
 # LR Rules Part 6: Fire-detection system response time.
-LR_MAX_DETECTOR_RESPONSE_S = 30.0   # Within 30 s of fire start
+LR_MAX_DETECTOR_RESPONSE_S = 30.0  # Within 30 s of fire start
 
 # LR Rules: Maximum number of detectors per addressable loop.
 LR_MAX_DETECTORS_PER_LOOP = 200

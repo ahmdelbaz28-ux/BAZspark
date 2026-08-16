@@ -16,13 +16,13 @@ Endpoints:
     GET  /api/v1/integrations/etap/settings         — Get settings
     DELETE /api/v1/integrations/etap/settings       — Delete settings
 """
+
 import logging
 
 try:
     from typing import Annotated
 except ImportError:
     from typing import Annotated
-
 
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -123,7 +123,9 @@ async def list_etap_projects(
     return [EtapProjectInfo(**p) for p in projects]
 
 
-@router.get("/projects/local", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
+@router.get(
+    "/projects/local", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))]
+)
 async def list_local_projects(
     service: EtapServiceDep,
 ) -> list[dict]:

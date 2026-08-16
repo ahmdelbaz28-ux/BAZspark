@@ -88,7 +88,7 @@ class TokenManager:
 
         if has_rsa_paths:
             # RSA mode (RS256) — for distributed deployments with persistent keys
-            self._signing_mode = 'rsa'
+            self._signing_mode = "rsa"
             if private_key_path and os.path.exists(private_key_path):
                 with open(private_key_path, "rb") as key_file:
                     self.private_key = serialization.load_pem_private_key(
@@ -110,16 +110,18 @@ class TokenManager:
                 self.public_key = self.private_key.public_key()
         else:
             # HMAC mode (HS256) — for single-instance with shared secret
-            self._signing_mode = 'hmac'
+            self._signing_mode = "hmac"
             self._hmac_secret = secret_key.encode("utf-8")
             if len(secret_key) < 32:
                 raise ValueError(
                     f"TokenManager: HMAC secret_key must be at least 32 characters "
                     f"for adequate security (got {len(secret_key)}). Generate one with: "
-                    f"python3 -c \"import secrets; print(secrets.token_urlsafe(48))\""
+                    f'python3 -c "import secrets; print(secrets.token_urlsafe(48))"'
                 )
 
-    def generate_token(self, user_id: str, permissions: list, roles: list, expires_in: int = 3600) -> str:
+    def generate_token(
+        self, user_id: str, permissions: list, roles: list, expires_in: int = 3600
+    ) -> str:
         """
         Generate a new authentication token with expiration
         :param user_id: User identifier
@@ -135,10 +137,10 @@ class TokenManager:
             "exp": int(time.time()) + expires_in,  # Unix timestamp for expiration
             "iat": int(time.time()),  # Issued at time
             "jti": secrets.token_urlsafe(16),  # JWT ID for uniqueness
-            "nbf": int(time.time()) - 10  # Not before (allow 10 sec clock skew)
+            "nbf": int(time.time()) - 10,  # Not before (allow 10 sec clock skew)
         }
 
-        if self._signing_mode == 'rsa':
+        if self._signing_mode == "rsa":
             sign_key = self.private_key
             algorithm = "RS256"
         else:  # hmac
@@ -146,11 +148,7 @@ class TokenManager:
             algorithm = "HS256"
 
         # Create token string using JWT
-        token_str = jwt.encode(
-            token_data,
-            sign_key,
-            algorithm=algorithm
-        )
+        token_str = jwt.encode(token_data, sign_key, algorithm=algorithm)
 
         # Store token with its data
         token_hash = hashlib.sha256(token_str.encode()).hexdigest()
@@ -170,7 +168,7 @@ class TokenManager:
             if token_hash in self.revoked_tokens:
                 return False, None
 
-            if self._signing_mode == 'rsa':
+            if self._signing_mode == "rsa":
                 validate_key = self.public_key
                 algorithms = ["RS256"]
             else:  # hmac
@@ -187,7 +185,7 @@ class TokenManager:
                     "verify_exp": True,  # Verify expiration
                     "verify_iat": True,  # Verify issued at time
                     "verify_nbf": True,  # Verify not before time
-                }
+                },
             )
 
             # Additional check: verify token is still in our active tokens list
@@ -227,7 +225,9 @@ class TokenManager:
 class AuthProvider:
     """Main authentication provider for distributed FACP"""
 
-    def __init__(self, secret_key: str = None, private_key_path: str = None, public_key_path: str = None):
+    def __init__(
+        self, secret_key: str = None, private_key_path: str = None, public_key_path: str = None
+    ):
         """
         Initialize AuthProvider.
 
@@ -251,16 +251,20 @@ class AuthProvider:
         self.users = {}  # user_id -> user_data
         self.distributed_cache = {}  # For sharing auth state across nodes
 
-    def register_user(self, user_id: str, roles: list, permissions: list, node_id: str | None = None):
+    def register_user(
+        self, user_id: str, roles: list, permissions: list, node_id: str | None = None
+    ):
         """Register a new user"""
         self.users[user_id] = {
             "roles": roles,
             "permissions": permissions,
             "created_at": time.time(),
-            "node_id": node_id  # Which node registered this user
+            "node_id": node_id,  # Which node registered this user
         }
 
-    def authenticate_request(self, security_block: dict[str, Any], _source_node: str | None = None) -> tuple[bool, dict[str, Any] | None]:
+    def authenticate_request(
+        self, security_block: dict[str, Any], _source_node: str | None = None
+    ) -> tuple[bool, dict[str, Any] | None]:
         """
         Authenticate a request based on security block
         :param security_block: Security information from request

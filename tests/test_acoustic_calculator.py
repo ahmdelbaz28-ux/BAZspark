@@ -75,11 +75,15 @@ class TestConstants:
 
     def test_max_sound_level_110_dba(self):
         """NFPA 72 §18.4.1.2: maximum 110 dBA."""
-        assert MAX_SOUND_LEVEL_DBA == 110.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            MAX_SOUND_LEVEL_DBA == 110.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_ref_distance_3m(self):
         """Standard speaker reference distance is 3m (10ft)."""
-        assert DEFAULT_REF_DISTANCE_M == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            DEFAULT_REF_DISTANCE_M == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ambient_noise_levels_populated(self):
         assert len(AMBIENT_NOISE_LEVELS) > 0
@@ -104,7 +108,9 @@ class TestSPLResult:
             direct_attenuation_dB=14.95,
             room_gain_dB=0.0,
         )
-        assert r.effective_dba == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            r.effective_dba == 80.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.method == "inverse_square_law"
 
     def test_default_method(self):
@@ -115,17 +121,26 @@ class TestSPLResult:
 class TestAudibilityResult:
     def test_creation_compliant(self):
         r = AudibilityResult(
-            compliant=True, effective_dba=80, required_dba=75,
-            margin_dba=5, mode="public", nfpa_section="§18.4.3",
-            ambient_dba=60, violations=[],
+            compliant=True,
+            effective_dba=80,
+            required_dba=75,
+            margin_dba=5,
+            mode="public",
+            nfpa_section="§18.4.3",
+            ambient_dba=60,
+            violations=[],
         )
         assert r.compliant is True
         assert r.margin_dba == 5
 
     def test_default_violations(self):
         r = AudibilityResult(
-            compliant=False, effective_dba=70, required_dba=75,
-            margin_dba=-5, mode="public", nfpa_section="§18.4.3",
+            compliant=False,
+            effective_dba=70,
+            required_dba=75,
+            margin_dba=-5,
+            mode="public",
+            nfpa_section="§18.4.3",
             ambient_dba=60,
         )
         assert r.violations == []
@@ -134,7 +149,9 @@ class TestAudibilityResult:
 class TestCheckPoint:
     def test_default_z(self):
         cp = CheckPoint(x=5, y=5)
-        assert cp.z == 1.5  # ear height  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            cp.z == 1.5
+        )  # ear height  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_z(self):
         cp = CheckPoint(x=5, y=5, z=0.5)
@@ -144,7 +161,9 @@ class TestCheckPoint:
 class TestSpeaker:
     def test_defaults(self):
         s = Speaker(x=5, y=5)
-        assert s.z == 2.8  # ceiling-mounted  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            s.z == 2.8
+        )  # ceiling-mounted  # NOSONAR — S1244: import retained for re-export / API surface
         assert s.rating_dba == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert s.ref_distance_m == DEFAULT_REF_DISTANCE_M
 
@@ -156,11 +175,15 @@ class TestBarrier:
 
     def test_effective_attenuation_custom_override(self):
         b = Barrier(barrier_type="standard_door", attenuation_dba=50.0)
-        assert b.effective_attenuation_dba == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            b.effective_attenuation_dba == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_unknown_barrier_type_default(self):
         b = Barrier(barrier_type="nonexistent")
-        assert b.effective_attenuation_dba == 15.0  # default  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            b.effective_attenuation_dba == 15.0
+        )  # default  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -197,7 +220,9 @@ class TestCalculateSPL:
     def test_at_reference_distance(self):
         """At ref distance, attenuation = 0 dB (source equals effective)."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=3.0, ref_distance_m=3.0,
+            source_dba=95.0,
+            target_distance_m=3.0,
+            ref_distance_m=3.0,
             include_reverberant_field=False,
         )
         assert result.effective_dba == pytest.approx(95.0, abs=0.01)
@@ -206,7 +231,9 @@ class TestCalculateSPL:
     def test_double_distance_6db(self):
         """Doubling distance = 6 dB attenuation (inverse square law)."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=6.0, ref_distance_m=3.0,
+            source_dba=95.0,
+            target_distance_m=6.0,
+            ref_distance_m=3.0,
             include_reverberant_field=False,
         )
         assert result.direct_attenuation_dB == pytest.approx(6.02, abs=0.1)
@@ -215,7 +242,9 @@ class TestCalculateSPL:
     def test_10x_distance_20db(self):
         """10× distance = 20 dB attenuation."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=30.0, ref_distance_m=3.0,
+            source_dba=95.0,
+            target_distance_m=30.0,
+            ref_distance_m=3.0,
             include_reverberant_field=False,
         )
         assert result.direct_attenuation_dB == pytest.approx(20.0, abs=0.1)
@@ -223,22 +252,32 @@ class TestCalculateSPL:
     def test_zero_distance_returns_source(self):
         """Target distance ≤ 0 returns source level with zero attenuation."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=0.0,
+            source_dba=95.0,
+            target_distance_m=0.0,
         )
-        assert result.effective_dba == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert result.direct_attenuation_dB == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.effective_dba == 95.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.direct_attenuation_dB == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_distance_returns_source(self):
         """Negative target distance is treated like zero."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=-5.0,
+            source_dba=95.0,
+            target_distance_m=-5.0,
         )
-        assert result.effective_dba == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.effective_dba == 95.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_ref_distance(self):
         """Custom ref distance (1m) changes attenuation calculation."""
         result = calculate_spl_at_distance(
-            source_dba=90.0, target_distance_m=10.0, ref_distance_m=1.0,
+            source_dba=90.0,
+            target_distance_m=10.0,
+            ref_distance_m=1.0,
             include_reverberant_field=False,
         )
         expected_atten = 20.0 * math.log10(10.0 / 1.0)
@@ -247,12 +286,18 @@ class TestCalculateSPL:
     def test_reverberant_field_adds_to_direct(self):
         """With room absorption, total SPL should be higher than direct alone."""
         result_direct = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=15.0, ref_distance_m=3.0,
-            room_absorption_m2=50.0, include_reverberant_field=False,
+            source_dba=95.0,
+            target_distance_m=15.0,
+            ref_distance_m=3.0,
+            room_absorption_m2=50.0,
+            include_reverberant_field=False,
         )
         result_with_reverb = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=15.0, ref_distance_m=3.0,
-            room_absorption_m2=50.0, include_reverberant_field=True,
+            source_dba=95.0,
+            target_distance_m=15.0,
+            ref_distance_m=3.0,
+            room_absorption_m2=50.0,
+            include_reverberant_field=True,
         )
         assert result_with_reverb.effective_dba >= result_direct.effective_dba
         assert result_with_reverb.room_gain_dB > 0
@@ -260,18 +305,26 @@ class TestCalculateSPL:
     def test_no_room_absorption_no_reverb(self):
         """No room absorption → no reverberant field gain."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=15.0,
-            room_absorption_m2=None, include_reverberant_field=True,
+            source_dba=95.0,
+            target_distance_m=15.0,
+            room_absorption_m2=None,
+            include_reverberant_field=True,
         )
-        assert result.room_gain_dB == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.room_gain_dB == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_zero_room_absorption_no_reverb(self):
         """Zero room absorption → no reverberant field gain."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=15.0,
-            room_absorption_m2=0.0, include_reverberant_field=True,
+            source_dba=95.0,
+            target_distance_m=15.0,
+            room_absorption_m2=0.0,
+            include_reverberant_field=True,
         )
-        assert result.room_gain_dB == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.room_gain_dB == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_result_type(self):
         result = calculate_spl_at_distance(95.0, 10.0)
@@ -289,7 +342,9 @@ class TestCheckAudibilityCompliance:
     def test_compliant_public_mode(self):
         """Typical office: 95 dBA speaker at 10m, 55 dBA ambient → compliant."""
         result = check_audibility_compliance(
-            source_dba=95.0, target_distance_m=10.0, ambient_dba=55.0,
+            source_dba=95.0,
+            target_distance_m=10.0,
+            ambient_dba=55.0,
             mode="public",
         )
         # Required = 55 + 15 = 70 dBA
@@ -301,7 +356,9 @@ class TestCheckAudibilityCompliance:
     def test_non_compliant_public_mode(self):
         """Weak speaker far away → non-compliant."""
         result = check_audibility_compliance(
-            source_dba=80.0, target_distance_m=30.0, ambient_dba=60.0,
+            source_dba=80.0,
+            target_distance_m=30.0,
+            ambient_dba=60.0,
             mode="public",
         )
         assert result.compliant is False
@@ -310,11 +367,15 @@ class TestCheckAudibilityCompliance:
     def test_private_mode_lower_threshold(self):
         """Private mode requires only 10 dB above ambient."""
         result_pub = check_audibility_compliance(
-            source_dba=85.0, target_distance_m=20.0, ambient_dba=55.0,
+            source_dba=85.0,
+            target_distance_m=20.0,
+            ambient_dba=55.0,
             mode="public",
         )
         result_priv = check_audibility_compliance(
-            source_dba=85.0, target_distance_m=20.0, ambient_dba=55.0,
+            source_dba=85.0,
+            target_distance_m=20.0,
+            ambient_dba=55.0,
             mode="private",
         )
         assert result_priv.required_dba <= result_pub.required_dba
@@ -322,7 +383,9 @@ class TestCheckAudibilityCompliance:
     def test_sleeping_mode_absolute_minimum_75dba(self):
         """Sleeping areas require 75 dBA minimum even if ambient is very low."""
         result = check_audibility_compliance(
-            source_dba=85.0, target_distance_m=10.0, ambient_dba=30.0,
+            source_dba=85.0,
+            target_distance_m=10.0,
+            ambient_dba=30.0,
             mode="sleeping",
         )
         assert result.required_dba >= 75.0
@@ -330,7 +393,9 @@ class TestCheckAudibilityCompliance:
     def test_invalid_mode_defaults_to_public(self):
         """Unknown mode falls back to 'public' (safe default)."""
         result = check_audibility_compliance(
-            source_dba=95.0, target_distance_m=10.0, ambient_dba=55.0,
+            source_dba=95.0,
+            target_distance_m=10.0,
+            ambient_dba=55.0,
             mode="nonexistent_mode",
         )
         assert result.mode == "public"
@@ -338,8 +403,11 @@ class TestCheckAudibilityCompliance:
     def test_excessive_sound_level_violation(self):
         """Sound exceeding 110 dBA generates ACOUSTIC-EXCESSIVE violation."""
         result = check_audibility_compliance(
-            source_dba=130.0, target_distance_m=1.0, ambient_dba=55.0,
-            mode="public", ref_distance_m=3.0,
+            source_dba=130.0,
+            target_distance_m=1.0,
+            ambient_dba=55.0,
+            mode="public",
+            ref_distance_m=3.0,
         )
         # At 1m from 3m ref, atten = negative (closer than ref), so SPL > 130
         # Actually 20*log10(1/3) is negative, so SPL > source_dba
@@ -349,7 +417,9 @@ class TestCheckAudibilityCompliance:
     def test_violation_message_contains_deficit(self):
         """Non-compliant result should report the deficit in dB."""
         result = check_audibility_compliance(
-            source_dba=70.0, target_distance_m=15.0, ambient_dba=60.0,
+            source_dba=70.0,
+            target_distance_m=15.0,
+            ambient_dba=60.0,
             mode="public",
         )
         if not result.compliant:
@@ -372,8 +442,12 @@ class TestCalculateMinSpeakersForRoom:
     def test_small_room_needs_one_speaker(self):
         """Small room with low ambient should need only 1 speaker."""
         result = calculate_min_speakers_for_room(
-            room_length_m=5.0, room_width_m=5.0, room_height_m=3.0,
-            source_dba=95.0, ambient_dba=45.0, mode="public",
+            room_length_m=5.0,
+            room_width_m=5.0,
+            room_height_m=3.0,
+            source_dba=95.0,
+            ambient_dba=45.0,
+            mode="public",
         )
         assert result.speaker_count >= 1
         assert result.coverage_verified is True
@@ -381,36 +455,54 @@ class TestCalculateMinSpeakersForRoom:
     def test_large_room_needs_multiple_speakers(self):
         """Large warehouse with high ambient needs multiple speakers."""
         result = calculate_min_speakers_for_room(
-            room_length_m=50.0, room_width_m=40.0, room_height_m=4.0,
-            source_dba=95.0, ambient_dba=70.0, mode="public",
+            room_length_m=50.0,
+            room_width_m=40.0,
+            room_height_m=4.0,
+            source_dba=95.0,
+            ambient_dba=70.0,
+            mode="public",
         )
         assert result.speaker_count > 1
 
     def test_room_area_calculated(self):
         result = calculate_min_speakers_for_room(
-            room_length_m=10.0, room_width_m=8.0, room_height_m=3.0,
-            source_dba=95.0, ambient_dba=50.0,
+            room_length_m=10.0,
+            room_width_m=8.0,
+            room_height_m=3.0,
+            source_dba=95.0,
+            ambient_dba=50.0,
         )
         assert result.room_area_m2 == pytest.approx(80.0)
 
     def test_mode_propagated(self):
         result = calculate_min_speakers_for_room(
-            room_length_m=10.0, room_width_m=10.0, room_height_m=3.0,
-            source_dba=95.0, ambient_dba=50.0, mode="private",
+            room_length_m=10.0,
+            room_width_m=10.0,
+            room_height_m=3.0,
+            source_dba=95.0,
+            ambient_dba=50.0,
+            mode="private",
         )
         assert result.mode == "private"
 
     def test_custom_room_absorption(self):
         result = calculate_min_speakers_for_room(
-            room_length_m=10.0, room_width_m=10.0, room_height_m=3.0,
-            source_dba=95.0, ambient_dba=55.0,
+            room_length_m=10.0,
+            room_width_m=10.0,
+            room_height_m=3.0,
+            source_dba=95.0,
+            ambient_dba=55.0,
             room_absorption_m2=100.0,
         )
         assert result.coverage_verified is True
 
     def test_result_type(self):
         result = calculate_min_speakers_for_room(
-            10.0, 10.0, 3.0, 95.0, 50.0,
+            10.0,
+            10.0,
+            3.0,
+            95.0,
+            50.0,
         )
         assert isinstance(result, SpeakerPlacementResult)
 
@@ -449,7 +541,9 @@ class TestGetSpeakerCoverageRadius:
     def test_zero_radius_for_very_weak_speaker(self):
         """Extremely weak speaker with high ambient → 0.0 radius."""
         radius = get_speaker_coverage_radius(
-            source_dba=50.0, ambient_dba=90.0, mode="public",
+            source_dba=50.0,
+            ambient_dba=90.0,
+            mode="public",
         )
         assert radius == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
@@ -558,7 +652,9 @@ class TestAcousticSPLCalculator:
             check_points=[CheckPoint(x=1, y=1)],
         )
         # Required = 55 + 15 = 70 for public mode
-        assert result.required_dba == 70.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.required_dba == 70.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_no_speakers_zero_spl(self):
         """No speakers → SPL = 0 → non-compliant."""
@@ -569,7 +665,9 @@ class TestAcousticSPLCalculator:
             speakers=[],
             check_points=[CheckPoint(x=5, y=5)],
         )
-        assert result.worst_point_spl == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.worst_point_spl == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.compliant is False
 
     def test_no_check_points_compliant(self):
@@ -670,7 +768,9 @@ class TestAcousticSPLCalculator:
             speakers=[Speaker(x=5, y=5, rating_dba=95)],
             check_points=[CheckPoint(x=5, y=5)],
         )
-        assert result.required_dba == 90.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.required_dba == 90.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_speaker_at_same_point_as_checkpoint(self):
         """Speaker and check point at same location → very high SPL."""
@@ -696,7 +796,8 @@ class TestEdgeCases:
     def test_very_large_distance(self):
         """Very large distance should still compute (no crash)."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=1000.0,
+            source_dba=95.0,
+            target_distance_m=1000.0,
             include_reverberant_field=False,
         )
         assert result.effective_dba < 95.0
@@ -704,7 +805,8 @@ class TestEdgeCases:
     def test_very_small_positive_distance(self):
         """Very small positive distance → near-source SPL."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=0.01,
+            source_dba=95.0,
+            target_distance_m=0.01,
             include_reverberant_field=False,
         )
         # Should be louder than source (closer than ref distance)
@@ -713,16 +815,22 @@ class TestEdgeCases:
     def test_zero_ambient(self):
         """Zero ambient → required = absolute minimum or 0."""
         result = check_audibility_compliance(
-            source_dba=95.0, target_distance_m=10.0, ambient_dba=0.0,
+            source_dba=95.0,
+            target_distance_m=10.0,
+            ambient_dba=0.0,
             mode="public",
         )
         # public mode: 0 + 15 = 15, absolute_min = 0, so required = 15
-        assert result.required_dba == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.required_dba == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_floating_point_precision(self):
         """Verify no floating-point issues in common scenarios."""
         result = calculate_spl_at_distance(
-            source_dba=95.0, target_distance_m=3.0, ref_distance_m=3.0,
+            source_dba=95.0,
+            target_distance_m=3.0,
+            ref_distance_m=3.0,
             include_reverberant_field=False,
         )
         assert not math.isnan(result.effective_dba)

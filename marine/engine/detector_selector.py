@@ -10,6 +10,7 @@ References:
     [LR]     Lloyd's Register Rules Part 6 §2.4 (detection)
 
 """
+
 from __future__ import annotations
 
 import math
@@ -91,14 +92,11 @@ def select_detector_type(
     elif cat == SpaceCategory.CONTROL_STATION:
         selected = [DetectorType.SMOKE_PHOTOELECTRIC]
 
-    elif cat in (SpaceCategory.OPEN_DECK, SpaceCategory.EMPTY_SPACE,
-                 SpaceCategory.TANK_SPACE):
+    elif cat in (SpaceCategory.OPEN_DECK, SpaceCategory.EMPTY_SPACE, SpaceCategory.TANK_SPACE):
         selected = []
 
     else:
-        result.add_warning(
-            f"No detector selection rule for space category {cat.value}"
-        )
+        result.add_warning(f"No detector selection rule for space category {cat.value}")
 
     result.details["selected_types"] = [t.value for t in selected]
     result.details["count"] = len(selected)
@@ -135,9 +133,7 @@ def calculate_detector_count(
     coverage = DETECTOR_COVERAGE_M2.get(detector_type.value)
     if coverage is None or coverage <= 0:
         result.details["detector_count"] = 1
-        result.details["note"] = (
-            f"Detector type {detector_type.value} is per-run, not per-area."
-        )
+        result.details["note"] = f"Detector type {detector_type.value} is per-run, not per-area."
         return result
 
     base_count = math.ceil(zone.area_m2 / coverage)

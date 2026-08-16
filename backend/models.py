@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field, field_validator
 # Pagination
 # ============================================================================
 
+
 class PaginationParams(BaseModel):
     """Query parameters for paginated list endpoints."""
 
@@ -58,19 +59,18 @@ class PaginatedResponse(BaseModel):
 # Projects
 # ============================================================================
 
+
 class Project(BaseModel):
     """A fire alarm engineering project."""
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(min_length=1, max_length=255)
-    description: str = Field(default="", max_length=5000)  # V113: max_length prevents DoS via unbounded string
+    description: str = Field(
+        default="", max_length=5000
+    )  # V113: max_length prevents DoS via unbounded string
     author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
-    createdAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
-    updatedAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    createdAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+    updatedAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     status: Literal["active", "archived", "draft"] = Field(default="draft")
     deviceCount: int = Field(default=0, ge=0)
     connectionCount: int = Field(default=0, ge=0)
@@ -80,7 +80,9 @@ class CreateProjectInput(BaseModel):
     """Input for creating a new project."""
 
     name: str = Field(min_length=1, max_length=255)
-    description: str = Field(default="", max_length=5000)  # V113: max_length prevents 100MB body DoS
+    description: str = Field(
+        default="", max_length=5000
+    )  # V113: max_length prevents 100MB body DoS
     author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
 
     @field_validator("name", "description", "author")
@@ -105,6 +107,7 @@ class UpdateProjectInput(BaseModel):
 # Devices
 # ============================================================================
 
+
 class Device(BaseModel):
     """A fire alarm device within a project."""
 
@@ -121,12 +124,8 @@ class Device(BaseModel):
     current: float = Field(default=0.0)
     load: float = Field(default=0.0)
     properties: dict = Field(default_factory=dict)
-    createdAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
-    updatedAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    createdAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+    updatedAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @field_validator("voltage", "current", "load")
     @classmethod
@@ -224,6 +223,7 @@ class UpdateDeviceInput(BaseModel):
 # Connections
 # ============================================================================
 
+
 class Connection(BaseModel):
     """A cable connection between two devices."""
 
@@ -234,9 +234,7 @@ class Connection(BaseModel):
     cableSize: str = Field(default="1.5mm²")
     length: float = Field(default=0.0, ge=0)
     type: str = Field(default="power")
-    createdAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    createdAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class CreateConnectionInput(BaseModel):
@@ -259,7 +257,9 @@ class CreateConnectionInput(BaseModel):
         """
         from_id = info.data.get("fromId")
         if from_id and v == from_id:
-            raise ValueError("toId must be different from fromId — self-connections are not allowed")
+            raise ValueError(
+                "toId must be different from fromId — self-connections are not allowed"
+            )
         return v
 
 
@@ -274,6 +274,7 @@ class DeleteConnectionResponse(BaseModel):
 # Reports
 # ============================================================================
 
+
 class Report(BaseModel):
     """An engineering report for a project."""
 
@@ -283,9 +284,7 @@ class Report(BaseModel):
     name: str = Field(default="", max_length=255)
     parameters: dict = Field(default_factory=dict)
     status: Literal["pending", "completed", "failed"] = Field(default="pending")
-    createdAt: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    createdAt: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     completedAt: str | None = Field(default=None)
 
 
@@ -307,11 +306,11 @@ class GenerateReportInput(BaseModel):
         if v is None:
             return v
         import json as _json
+
         serialized = _json.dumps(v)
         if len(serialized) > 10240:
             raise ValueError(
-                f"parameters: JSON size ({len(serialized)} bytes) exceeds "
-                f"maximum (10240 bytes)"
+                f"parameters: JSON size ({len(serialized)} bytes) exceeds maximum (10240 bytes)"
             )
 
         def _get_depth(obj, current=0):
@@ -327,9 +326,7 @@ class GenerateReportInput(BaseModel):
 
         depth = _get_depth(v)
         if depth > 5:
-            raise ValueError(
-                f"parameters: nesting depth ({depth}) exceeds maximum (5)"
-            )
+            raise ValueError(f"parameters: nesting depth ({depth}) exceeds maximum (5)")
         return v
 
 
@@ -337,14 +334,13 @@ class GenerateReportInput(BaseModel):
 # Sync
 # ============================================================================
 
+
 class SyncStatus(BaseModel):
     """Status of project synchronization."""
 
     projectId: str
     status: Literal["syncing", "synced", "error"]
-    lastSync: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    lastSync: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     pendingChanges: int = Field(default=0, ge=0)
     error: str | None = Field(default=None)
 
@@ -353,6 +349,7 @@ class SyncStatus(BaseModel):
 # Health
 # ============================================================================
 
+
 class HealthStatus(BaseModel):
     """Health check response."""
 
@@ -360,9 +357,7 @@ class HealthStatus(BaseModel):
     version: str = Field(default="1.0.0")
     uptime: float = Field(default=0.0, ge=0)
     database: Literal["connected", "disconnected"]
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 # ============================================================================

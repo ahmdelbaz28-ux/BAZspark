@@ -53,6 +53,7 @@ USAGE
     print(result.content)
     print(result.source)  # "zenmux" or "aliyun-maas"
 """
+
 from __future__ import annotations
 
 import logging
@@ -136,25 +137,20 @@ class LLMService:
             model=os.environ.get("ZENMUX_MODEL", _DEFAULT_MODEL),
         )
         # Fallback provider (Alibaba Cloud MaaS — optional)
-        self._fallback_enabled = os.environ.get(
-            "LLM_FALLBACK_ENABLED", ""
-        ).lower() in ("1", "true", "yes", "on")
+        self._fallback_enabled = os.environ.get("LLM_FALLBACK_ENABLED", "").lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
         self._fallback = _ProviderConfig(
             name="aliyun-maas",
             api_key=os.environ.get("LLM_FALLBACK_API_KEY", ""),
-            base_url=os.environ.get(
-                "LLM_FALLBACK_BASE_URL", _FALLBACK_DEFAULT_BASE_URL
-            ),
-            model=os.environ.get(
-                "LLM_FALLBACK_MODEL", _FALLBACK_DEFAULT_MODEL
-            ),
+            base_url=os.environ.get("LLM_FALLBACK_BASE_URL", _FALLBACK_DEFAULT_BASE_URL),
+            model=os.environ.get("LLM_FALLBACK_MODEL", _FALLBACK_DEFAULT_MODEL),
         )
-        self._timeout: float = float(
-            os.environ.get("ZENMUX_REQUEST_TIMEOUT", _DEFAULT_TIMEOUT)
-        )
-        self._max_tokens: int = int(
-            os.environ.get("ZENMUX_MAX_TOKENS", _DEFAULT_MAX_TOKENS)
-        )
+        self._timeout: float = float(os.environ.get("ZENMUX_REQUEST_TIMEOUT", _DEFAULT_TIMEOUT))
+        self._max_tokens: int = int(os.environ.get("ZENMUX_MAX_TOKENS", _DEFAULT_MAX_TOKENS))
         # Cache of clients per provider name
         self._clients: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -164,9 +160,7 @@ class LLMService:
     @property
     def available(self) -> bool:
         """True if at least one provider is configured."""
-        return self._primary.available or (
-            self._fallback_enabled and self._fallback.available
-        )
+        return self._primary.available or (self._fallback_enabled and self._fallback.available)
 
     @property
     def base_url(self) -> str:
@@ -202,8 +196,7 @@ class LLMService:
             from openai import AsyncOpenAI
         except ImportError as exc:
             raise RuntimeError(
-                "The 'openai' package is not installed. "
-                "Install with: pip install openai"
+                "The 'openai' package is not installed. Install with: pip install openai"
             ) from exc
 
         with self._lock:
@@ -256,12 +249,9 @@ class LLMService:
                     raise ValueError("history entries must be objects")
                 role = entry.get("role")
                 content = entry.get("content")
-                if role not in ("user", "assistant") or not isinstance(
-                    content, str
-                ):
+                if role not in ("user", "assistant") or not isinstance(content, str):
                     raise ValueError(
-                        "history entries must have role in "
-                        "{'user','assistant'} and string content"
+                        "history entries must have role in {'user','assistant'} and string content"
                     )
                 messages.append({"role": role, "content": content[:8000]})
 
@@ -310,9 +300,7 @@ class LLMService:
         if not prompt or not prompt.strip():
             raise ValueError("prompt must be non-empty")
         if not self.available:
-            raise RuntimeError(
-                "LLM service not configured. Set ZENMUX_API_KEY to enable."
-            )
+            raise RuntimeError("LLM service not configured. Set ZENMUX_API_KEY to enable.")
 
         messages = self._assemble_messages(system=system, prompt=prompt, history=history)
         use_max_tokens = max_tokens or self._max_tokens
@@ -327,8 +315,7 @@ class LLMService:
             except Exception as exc:
                 primary_error = exc
                 logger.warning(
-                    "Primary LLM provider '%s' failed: %s. "
-                    "Attempting fallback if enabled.",
+                    "Primary LLM provider '%s' failed: %s. Attempting fallback if enabled.",
                     self._primary.name,
                     type(exc).__name__,
                 )
@@ -346,9 +333,7 @@ class LLMService:
                 )
                 # Raise the fallback error (most recent), but log primary too
                 if primary_error:
-                    logger.error(
-                        "Primary provider error was: %s", primary_error
-                    )
+                    logger.error("Primary provider error was: %s", primary_error)
                 raise
 
         # No fallback available, raise primary error
@@ -391,7 +376,7 @@ class LLMService:
                     temperature=temperature,
                     max_tokens=max_tokens,
                 ),
-                timeout=self._timeout
+                timeout=self._timeout,
             )
 
         try:
@@ -400,7 +385,7 @@ class LLMService:
             logger.warning(
                 "LLM chat completion timed out (provider=%s, timeout=%.1fs)",
                 provider.name,
-                self._timeout
+                self._timeout,
             )
             raise
         except Exception:
@@ -411,7 +396,7 @@ class LLMService:
             )
             raise
 
-        if hasattr(completion, 'choices') and completion.choices:
+        if hasattr(completion, "choices") and completion.choices:
             content = completion.choices[0].message.content or ""
             finish_reason = completion.choices[0].finish_reason or "stop"
         else:
@@ -420,21 +405,19 @@ class LLMService:
 
         return LLMResponse(
             content=content,
-            model=completion.model if hasattr(completion, 'model') else use_model,
+            model=completion.model if hasattr(completion, "model") else use_model,
             source=provider.name,
             finish_reason=finish_reason,
-            prompt_tokens=getattr(
-                getattr(completion, 'usage', None), 'prompt_tokens', 0
-            ),
-            completion_tokens=getattr(
-                getattr(completion, 'usage', None), 'completion_tokens', 0
-            ),
-            total_tokens=getattr(
-                getattr(completion, 'usage', None), 'total_tokens', 0
-            ),
+            prompt_tokens=getattr(getattr(completion, "usage", None), "prompt_tokens", 0),
+            completion_tokens=getattr(getattr(completion, "usage", None), "completion_tokens", 0),
+            total_tokens=getattr(getattr(completion, "usage", None), "total_tokens", 0),
             # OpenAI SDK v1+ uses Pydantic v2, so model_dump() is preferred.
             # Fall back to .dict() for older SDK versions, then {} if neither exists.
-            raw=completion.model_dump() if hasattr(completion, "model_dump") else (completion.dict() if hasattr(completion, "dict") else {}),  # NOSONAR — S3358: nested ternary intentional for provider-agnostic response parsing
+            raw=completion.model_dump()
+            if hasattr(completion, "model_dump")
+            else (
+                completion.dict() if hasattr(completion, "dict") else {}
+            ),  # NOSONAR — S3358: nested ternary intentional for provider-agnostic response parsing
         )
 
     async def chat_stream(
@@ -473,9 +456,7 @@ class LLMService:
             return
 
         try:
-            messages = self._assemble_messages(
-                system=system, prompt=prompt, history=history
-            )
+            messages = self._assemble_messages(system=system, prompt=prompt, history=history)
         except ValueError as exc:
             yield {"type": "error", "message": str(exc), "disclaimer": AI_DISCLAIMER}
             return
@@ -542,13 +523,13 @@ class LLMService:
                     stream=True,
                     stream_options={"include_usage": True},
                 ),
-                timeout=self._timeout
+                timeout=self._timeout,
             )
         except TimeoutError:
             logger.warning(
                 "LLM stream creation timed out (provider=%s, timeout=%.1fs)",
                 provider.name,
-                self._timeout
+                self._timeout,
             )
             raise
         except Exception:
@@ -610,7 +591,7 @@ class LLMService:
             logger.warning(
                 "LLM stream timed out during processing (provider=%s, timeout=%.1fs)",
                 provider.name,
-                self._timeout
+                self._timeout,
             )
             yield {
                 "type": "error",
@@ -620,9 +601,7 @@ class LLMService:
             raise
         except Exception as e:
             logger.exception(
-                "LLM stream processing failed (provider=%s): %s",
-                provider.name,
-                str(e)
+                "LLM stream processing failed (provider=%s): %s", provider.name, str(e)
             )
             raise
 
@@ -643,9 +622,7 @@ class LLMService:
             subsystems["memory"] = {
                 "name": "mem0",
                 "initialized": bool(getattr(mem, "is_initialized", False)),
-                "status": (
-                    "ok" if getattr(mem, "is_initialized", False) else "disabled"
-                ),
+                "status": ("ok" if getattr(mem, "is_initialized", False) else "disabled"),
             }
         except Exception as exc:  # pragma: no cover - defensive
             subsystems["memory"] = {"name": "mem0", "status": "error", "detail": str(exc)[:120]}
@@ -664,7 +641,11 @@ class LLMService:
                 "status": "enabled" if llm_healing else "gated_off",
             }
         except Exception as exc:  # pragma: no cover - defensive
-            subsystems["self_healing_tier2"] = {"name": "ollama_llama3", "status": "error", "detail": str(exc)[:120]}
+            subsystems["self_healing_tier2"] = {
+                "name": "ollama_llama3",
+                "status": "error",
+                "detail": str(exc)[:120],
+            }
 
         try:
             langfuse_enabled = os.environ.get("LANGFUSE_ENABLED", "").lower() in (
@@ -675,10 +656,16 @@ class LLMService:
             subsystems["tracing_langfuse"] = {
                 "name": "langfuse",
                 "enabled": bool(langfuse_enabled and os.environ.get("LANGFUSE_PUBLIC_KEY")),
-                "status": "enabled" if (langfuse_enabled and os.environ.get("LANGFUSE_PUBLIC_KEY")) else "disabled",
+                "status": "enabled"
+                if (langfuse_enabled and os.environ.get("LANGFUSE_PUBLIC_KEY"))
+                else "disabled",
             }
         except Exception as exc:  # pragma: no cover - defensive
-            subsystems["tracing_langfuse"] = {"name": "langfuse", "status": "error", "detail": str(exc)[:120]}
+            subsystems["tracing_langfuse"] = {
+                "name": "langfuse",
+                "status": "error",
+                "detail": str(exc)[:120],
+            }
 
         return {
             "available": self.available,

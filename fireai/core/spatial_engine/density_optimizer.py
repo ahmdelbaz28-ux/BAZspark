@@ -176,12 +176,26 @@ class Room:
 
     def __post_init__(self):
         """Validate room dimensions — life-safety data MUST be valid."""
-        if not isinstance(self.width, int | float) or self.width <= 0 or not math.isfinite(self.width):
+        if (
+            not isinstance(self.width, int | float)
+            or self.width <= 0
+            or not math.isfinite(self.width)
+        ):
             raise ValueError(f"Room width must be positive finite, got {self.width}")
-        if not isinstance(self.length, int | float) or self.length <= 0 or not math.isfinite(self.length):
+        if (
+            not isinstance(self.length, int | float)
+            or self.length <= 0
+            or not math.isfinite(self.length)
+        ):
             raise ValueError(f"Room length must be positive finite, got {self.length}")
-        if not isinstance(self.ceiling_height, int | float) or self.ceiling_height <= 0 or not math.isfinite(self.ceiling_height):
-            raise ValueError(f"Room ceiling_height must be positive finite, got {self.ceiling_height}")
+        if (
+            not isinstance(self.ceiling_height, int | float)
+            or self.ceiling_height <= 0
+            or not math.isfinite(self.ceiling_height)
+        ):
+            raise ValueError(
+                f"Room ceiling_height must be positive finite, got {self.ceiling_height}"
+            )
 
 
 @dataclass
@@ -326,7 +340,11 @@ class DensityOptimizer:
             layout.ceiling_height = room.ceiling_height
         return layout
 
-    def _optimize_impl(self, room: Room) -> DetectorLayout:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _optimize_impl(
+        self, room: Room
+    ) -> (
+        DetectorLayout
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # ── CHALLENGE 3: Deterministic strategy ordering ────────────────────
         # Stateless geometric heuristic — same room always gets same order.
         # ALL strategies are still tested; ordering only affects early-exit.
@@ -467,7 +485,11 @@ class DensityOptimizer:
         step = available / (n - 1)
         return n, step
 
-    def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _hex_guarded(
+        self, room: Room, along_x: bool
+    ) -> (
+        DetectorLayout
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         S, wm = self.S_g, self.wm
         Rp = self.R_place  # V7.4: use placement radius for spacing  # NOSONAR - python:S117
@@ -500,7 +522,10 @@ class DensityOptimizer:
             pts = [(b, a) for a, b in pts]
         assert self.R is not None
         return DetectorLayout(
-            room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
+            room=room,
+            detectors=pts,
+            method=f"hexG_{'x' if along_x else 'y'}",
+            coverage_radius=self.R,
         )
 
     def _row_xs_guarded(self, W, wm, S, offset, R):  # NOSONAR - python:S117
@@ -517,7 +542,11 @@ class DensityOptimizer:
 
     # ── B: Hex-Adaptive ──────────────────────────────────────────────────────────
 
-    def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _hex_adaptive(
+        self, room: Room, along_x: bool
+    ) -> (
+        DetectorLayout
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Uses calculated row distribution for NFPA compliance.
 
@@ -564,12 +593,19 @@ class DensityOptimizer:
             pts = [(b, a) for a, b in pts]
         assert self.R is not None
         return DetectorLayout(
-            room=room, detectors=pts, method=f"hexA_{'x' if along_x else 'y'}", coverage_radius=self.R
+            room=room,
+            detectors=pts,
+            method=f"hexA_{'x' if along_x else 'y'}",
+            coverage_radius=self.R,
         )
 
     # ── C: Rect-Best ──────────────────────────────────────────────────────────────
 
-    def _rect_best(self, room: Room) -> DetectorLayout | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _rect_best(
+        self, room: Room
+    ) -> (
+        DetectorLayout | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         W, L = room.width, room.length
         Nx0 = self._min_n(W)  # NOSONAR - python:S117
         Ny0 = self._min_n(L)  # NOSONAR - python:S117
@@ -585,7 +621,9 @@ class DensityOptimizer:
                 ys = self._place(L, Ny)
                 Sx = (xs[-1] - xs[0]) / (Nx - 1) if Nx > 1 else 0.0  # NOSONAR - python:S117
                 Sy = (ys[-1] - ys[0]) / (Ny - 1) if Ny > 1 else 0.0  # NOSONAR - python:S117
-                if math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9:  # V7.4: use R_place
+                if (
+                    math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9
+                ):  # V7.4: use R_place
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None:
             return None
@@ -665,7 +703,9 @@ class DensityOptimizer:
     # OVER-PLACEMENT FIX: Redundancy Elimination
     # ═══════════════════════════════════════════════════════════════════════════
 
-    def _remove_redundant(self, layout: DetectorLayout) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _remove_redundant(
+        self, layout: DetectorLayout
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Remove detectors whose coverage is fully contained in others.
 
@@ -805,7 +845,9 @@ class DensityOptimizer:
     # CHALLENGE 1: Hierarchical Grid Verification (10-20x faster)
     # ═══════════════════════════════════════════════════════════════════════════
 
-    def _verify_fast(self, layout: DetectorLayout) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _verify_fast(
+        self, layout: DetectorLayout
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Hierarchical grid verification with NumPy vectorization.
 
@@ -998,7 +1040,9 @@ class DensityOptimizer:
         covered_area = n_coarse_covered * coarse_step**2 + n_fine_covered * step**2
         total_area = W * L
         # Clip to 100% (can exceed due to grid boundary effects)
-        layout.coverage_pct = min(round(100.0 * covered_area / total_area, 4) if total_area else 0.0, 100.0)
+        layout.coverage_pct = min(
+            round(100.0 * covered_area / total_area, 4) if total_area else 0.0, 100.0
+        )
 
         # proof_valid: ALL cells must be covered
         # NOTE: Uncovered coarse cells are replaced by fine subcells, so we
@@ -1017,7 +1061,7 @@ class DensityOptimizer:
         layout.wall_violations = viol
 
     # ── original pure-Python verify (kept as fallback) ──────────────────────────
-  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     def _verify(self, layout: DetectorLayout) -> None:  # NOSONAR - python:S3776
         """
         Conservative grid verification using same-detector corner check.
@@ -1212,7 +1256,8 @@ class DensityOptimizer:
         layout.nfpa_valid = len(violations) == 0
         layout.violations = violations
         return layout.nfpa_valid
-  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+    # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     def _check_wall_coverage(  # NOSONAR - python:S3776
         self,
         dets: list[tuple[float, float]],
@@ -1278,7 +1323,9 @@ class DensityOptimizer:
         if merged[0][0] > 1e-9:
             violations.append(f"{wall_name} wall uncovered at start: gap [0, {merged[0][0]:.3f}]")
         if merged[-1][1] < wall_length - 1e-9:
-            violations.append(f"{wall_name} wall uncovered at end: gap [{merged[-1][1]:.3f}, {wall_length:.3f}]")
+            violations.append(
+                f"{wall_name} wall uncovered at end: gap [{merged[-1][1]:.3f}, {wall_length:.3f}]"
+            )
 
         # Check for gaps between merged intervals
         for i in range(len(merged) - 1):

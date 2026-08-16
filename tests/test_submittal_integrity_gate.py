@@ -103,14 +103,18 @@ class TestIntegrityCheckResult:
 class TestRecordHash:
     """Tests for SubmittalIntegrityGate.record_hash()."""
 
-    def test_record_hash_returns_hash_record(self, gate: SubmittalIntegrityGate, temp_file: Path) -> None:
+    def test_record_hash_returns_hash_record(
+        self, gate: SubmittalIntegrityGate, temp_file: Path
+    ) -> None:
         """record_hash should return a HashRecord."""
         record = gate.record_hash(str(temp_file), "pre_calculation")
         assert isinstance(record, HashRecord)
         assert record.file_path == str(temp_file)
         assert record.phase == "pre_calculation"
 
-    def test_record_hash_computes_correct_sha256(self, gate: SubmittalIntegrityGate, temp_file: Path) -> None:
+    def test_record_hash_computes_correct_sha256(
+        self, gate: SubmittalIntegrityGate, temp_file: Path
+    ) -> None:
         """record_hash should compute the correct SHA-256."""
         expected = hashlib.sha256(b"test content for hashing").hexdigest()
         record = gate.record_hash(str(temp_file), "pre_calculation")
@@ -168,9 +172,13 @@ class TestVerifyIntegrity:
         with pytest.raises(FileNotFoundError):
             gate.verify_integrity("/nonexistent/file.dxf", "abc123")
 
-    def test_verify_integrity_wrong_hash(self, gate: SubmittalIntegrityGate, temp_file: Path) -> None:
+    def test_verify_integrity_wrong_hash(
+        self, gate: SubmittalIntegrityGate, temp_file: Path
+    ) -> None:
         """verify_integrity with a wrong hash should detect mismatch."""
-        result = gate.verify_integrity(str(temp_file), "0000000000000000000000000000000000000000000000000000000000000000")
+        result = gate.verify_integrity(
+            str(temp_file), "0000000000000000000000000000000000000000000000000000000000000000"
+        )
         if hasattr(result, "value"):
             assert result is not None
         else:

@@ -40,10 +40,11 @@ router = APIRouter(tags=["monitor"])
 # In-memory monitoring state (backed by DB/event bus where available)
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class MonitorState:
     """Singleton holding all monitoring state with thread-safe access."""
 
-    _instance: MonitorState | None =  None
+    _instance: MonitorState | None = None
     _lock = threading.Lock()
 
     def __new__(cls) -> MonitorState:
@@ -179,10 +180,7 @@ class MonitorState:
 
     def get_engines(self) -> list[dict[str, Any]]:
         with self._lock:
-            return [
-                dict(e.items())
-                for e in self._engines.values()
-            ]
+            return [dict(e.items()) for e in self._engines.values()]
 
     def get_engine(self, engine_id: str) -> dict[str, Any] | None:
         with self._lock:
@@ -214,7 +212,9 @@ class MonitorState:
             self._agent_activity.appendleft(activity)
 
     def get_agent_activity(
-        self, limit: int = 50, agent_id: str | None = None,
+        self,
+        limit: int = 50,
+        agent_id: str | None = None,
         activity_type: str | None = None,
     ) -> list[dict[str, Any]]:
         with self._lock:
@@ -233,6 +233,7 @@ class MonitorState:
                 alert["timestamp"] = datetime.now(UTC).isoformat()
             if "alert_id" not in alert:
                 import uuid
+
                 alert["alert_id"] = str(uuid.uuid4())
             self._security_alerts.append(alert)
             # Keep only last 500
@@ -240,8 +241,10 @@ class MonitorState:
                 self._security_alerts = self._security_alerts[-500:]
 
     def get_security_alerts(
-        self, limit: int = 50, severity: str | None = None,
-        resolved: bool | None =  None,
+        self,
+        limit: int = 50,
+        severity: str | None = None,
+        resolved: bool | None = None,
     ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._security_alerts)
@@ -261,7 +264,11 @@ class MonitorState:
         with self._lock:
             return list(self._active_alerts)
 
-    def evaluate_alert_rules(self) -> list[dict[str, Any]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def evaluate_alert_rules(
+        self,
+    ) -> list[
+        dict[str, Any]
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Evaluate all enabled alert rules against current engine state.
 
@@ -292,8 +299,7 @@ class MonitorState:
                         if delta > 60 and eng["status"] != "stopped":
                             triggered = True
                             alert_data["message"] = (
-                                f"Engine '{eng['name']}' heartbeat lost "
-                                f"for {delta:.0f}s"
+                                f"Engine '{eng['name']}' heartbeat lost for {delta:.0f}s"
                             )
                             alert_data["engine_id"] = eid
                             break
@@ -303,9 +309,7 @@ class MonitorState:
                         cpu = eng.get("cpu_percent", 0)
                         if cpu > 80:
                             triggered = True
-                            alert_data["message"] = (
-                                f"Engine '{eng['name']}' CPU at {cpu}%"
-                            )
+                            alert_data["message"] = f"Engine '{eng['name']}' CPU at {cpu}%"
                             alert_data["engine_id"] = eid
                             break
 
@@ -314,15 +318,14 @@ class MonitorState:
                         mem = eng.get("memory_mb", 0)
                         if mem > 500:
                             triggered = True
-                            alert_data["message"] = (
-                                f"Engine '{eng['name']}' memory at {mem}MB"
-                            )
+                            alert_data["message"] = f"Engine '{eng['name']}' memory at {mem}MB"
                             alert_data["engine_id"] = eid
                             break
 
                 elif rule["rule_id"] == "compliance-drop":
                     try:
                         from fireai.validation.compliance_engine import ComplianceEngine
+
                         engine = ComplianceEngine()
                         result = engine.validate_and_report({})
                         if result.get("compliance_percentage", 100) < 90:
@@ -331,15 +334,17 @@ class MonitorState:
                                 f"Overall compliance at {result['compliance_percentage']}%"
                             )
                     except Exception:
-                                                logger.debug("Suppressed Exception in monitor.py", exc_info=True)
+                        logger.debug("Suppressed Exception in monitor.py", exc_info=True)
                 elif rule["rule_id"] == "high-failure-rate":
-                    total = sum(e.get("checks_passed", 0) + e.get("checks_failed", 0)
-                                for e in engines.values())
+                    total = sum(
+                        e.get("checks_passed", 0) + e.get("checks_failed", 0)
+                        for e in engines.values()
+                    )
                     failed = sum(e.get("checks_failed", 0) for e in engines.values())
                     if total > 0 and (failed / total) > 0.2:
                         triggered = True
                         alert_data["message"] = (
-                            f"Failure rate at {failed}/{total} ({failed/total*100:.1f}%)"
+                            f"Failure rate at {failed}/{total} ({failed / total * 100:.1f}%)"
                         )
 
                 if triggered:
@@ -369,6 +374,7 @@ class MonitorState:
             db_connected = True
             try:
                 from backend.database import get_db
+
                 db = get_db()
                 result = db.list_projects(page=1, limit=1)
                 db_connected = result is not None
@@ -437,16 +443,14 @@ class MonitorState:
             lines.append("# TYPE fireai_engine_cpu_percent gauge")
             for eid, eng in self._engines.items():
                 lines.append(
-                    f'fireai_engine_cpu_percent{{engine_id="{eid}"}} '
-                    f'{eng.get("cpu_percent", 0)}'
+                    f'fireai_engine_cpu_percent{{engine_id="{eid}"}} {eng.get("cpu_percent", 0)}'
                 )
 
             lines.append("# HELP fireai_engine_memory_mb Engine memory usage")
             lines.append("# TYPE fireai_engine_memory_mb gauge")
             for eid, eng in self._engines.items():
                 lines.append(
-                    f'fireai_engine_memory_mb{{engine_id="{eid}"}} '
-                    f'{eng.get("memory_mb", 0)}'
+                    f'fireai_engine_memory_mb{{engine_id="{eid}"}} {eng.get("memory_mb", 0)}'
                 )
 
             lines.append("# HELP fireai_engine_checks_passed Total passed checks")
@@ -454,7 +458,7 @@ class MonitorState:
             for eid, eng in self._engines.items():
                 lines.append(
                     f'fireai_engine_checks_passed{{engine_id="{eid}"}} '
-                    f'{eng.get("checks_passed", 0)}'
+                    f"{eng.get('checks_passed', 0)}"
                 )
 
             lines.append("# HELP fireai_engine_checks_failed Total failed checks")
@@ -462,7 +466,7 @@ class MonitorState:
             for eid, eng in self._engines.items():
                 lines.append(
                     f'fireai_engine_checks_failed{{engine_id="{eid}"}} '
-                    f'{eng.get("checks_failed", 0)}'
+                    f"{eng.get('checks_failed', 0)}"
                 )
 
             lines.append("# HELP fireai_security_alerts_total Total security alerts")
@@ -488,6 +492,7 @@ _monitor = MonitorState()
 # Rate limiter for dashboard endpoints
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class DashboardRateLimiter:
     """
     Per-IP rate limiter specifically for dashboard endpoints.
@@ -499,7 +504,9 @@ class DashboardRateLimiter:
     def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
         self._max_requests = max_requests
         self._window_seconds = window_seconds
-        self._clients: defaultdict[str, deque[float]] = defaultdict(lambda: deque(maxlen=max_requests))
+        self._clients: defaultdict[str, deque[float]] = defaultdict(
+            lambda: deque(maxlen=max_requests)
+        )
         self._lock = threading.Lock()
 
     def check(self, client_ip: str) -> bool:
@@ -523,13 +530,19 @@ def _check_rate_limit(request: Request) -> None:
     """Dependency: raise 429 if rate limited."""
     client_ip = request.client.host if request.client else "unknown"
     if not _dashboard_limiter.check(client_ip):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Dashboard endpoints are limited to 120 requests per minute.")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Dashboard endpoints are limited to 120 requests per minute.",
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 # Endpoints
 # ════════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/v1/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+
+@router.get(
+    "/api/v1/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))]
+)
 async def get_health(request: Request):
     """
     GET /api/v1/monitor/health — Aggregated system health status.
@@ -554,7 +567,9 @@ async def get_health(request: Request):
     }
 
 
-@router.get("/api/v1/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))]
+)
 async def get_metrics(request: Request):
     """
     GET /api/v1/monitor/metrics — Prometheus-format metrics.
@@ -570,10 +585,15 @@ async def get_metrics(request: Request):
     )
 
 
-@router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/engine-status",
+    dependencies=[Depends(require_permission(Permission.MONITOR_READ))],
+)
 async def get_engine_status(
     request: Request,
-    engine_id: str | None = Query(None, description="Filter by engine ID"),  # NOSONAR - python:S8410
+    engine_id: str | None = Query(
+        None, description="Filter by engine ID"
+    ),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/engine-status — Per-engine status and health.
@@ -585,7 +605,9 @@ async def get_engine_status(
     if engine_id:
         engine = _monitor.get_engine(engine_id)
         if engine is None:
-            raise HTTPException(status_code=404, detail=f"Engine '{engine_id}' not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail=f"Engine '{engine_id}' not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return {"success": True, "data": engine}
 
     engines = _monitor.get_engines()
@@ -610,12 +632,19 @@ async def get_engine_status(
     }
 
 
-@router.get("/api/v1/monitor/agent-activity", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/agent-activity",
+    dependencies=[Depends(require_permission(Permission.MONITOR_READ))],
+)
 async def get_agent_activity(
     request: Request,
-    limit: int = Query(50, ge=1, le=500, description="Max records to return"),  # NOSONAR - python:S8410
+    limit: int = Query(
+        50, ge=1, le=500, description="Max records to return"
+    ),  # NOSONAR - python:S8410
     agent_id: str | None = Query(None, description="Filter by agent ID"),  # NOSONAR - python:S8410
-    activity_type: str | None = Query(None, description="Filter by activity type"),  # NOSONAR - python:S8410
+    activity_type: str | None = Query(
+        None, description="Filter by activity type"
+    ),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/agent-activity — Agent activity log.
@@ -641,12 +670,21 @@ async def get_agent_activity(
     }
 
 
-@router.get("/api/v1/monitor/security-alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/security-alerts",
+    dependencies=[Depends(require_permission(Permission.MONITOR_READ))],
+)
 async def get_security_alerts(
     request: Request,
-    limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),  # NOSONAR - python:S8410
-    severity: str | None = Query(None, pattern="^(low|medium|high|critical)$"),  # NOSONAR - python:S8410
-    resolved: bool | None =  Query(None, description="Filter by resolved state"),  # NOSONAR - python:S8410
+    limit: int = Query(
+        50, ge=1, le=500, description="Max alerts to return"
+    ),  # NOSONAR - python:S8410
+    severity: str | None = Query(
+        None, pattern="^(low|medium|high|critical)$"
+    ),  # NOSONAR - python:S8410
+    resolved: bool | None = Query(
+        None, description="Filter by resolved state"
+    ),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/security-alerts — Active and historical security alerts.
@@ -659,18 +697,21 @@ async def get_security_alerts(
     # Try to load from security logging system
     try:
         from fireai.core.security_logging import security_audit
+
         events = security_audit.get_events(limit=limit)
         alerts = []
         for event in events:
-            alerts.append({
-                "alert_id": event.get("event_id", ""),
-                "severity": event.get("severity", "medium"),
-                "category": event.get("event_type", "unknown"),
-                "message": event.get("message", ""),
-                "source_ip": event.get("source_ip", ""),
-                "timestamp": event.get("timestamp", ""),
-                "resolved": False,
-            })
+            alerts.append(
+                {
+                    "alert_id": event.get("event_id", ""),
+                    "severity": event.get("severity", "medium"),
+                    "category": event.get("event_type", "unknown"),
+                    "message": event.get("message", ""),
+                    "source_ip": event.get("source_ip", ""),
+                    "timestamp": event.get("timestamp", ""),
+                    "resolved": False,
+                }
+            )
         if alerts:
             return {
                 "success": True,
@@ -696,7 +737,9 @@ async def get_security_alerts(
     }
 
 
-@router.get("/api/v1/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))]
+)
 async def get_alerts(request: Request):
     """
     GET /api/v1/monitor/alerts — Current alert state.
@@ -731,6 +774,7 @@ async def get_alerts(request: Request):
 # Background metric collector (simulated engine metrics)
 # ════════════════════════════════════════════════════════════════════════════
 
+
 async def start_metric_collector(interval_seconds: int = 15) -> None:
     """
     Start background task to update engine metrics.
@@ -745,23 +789,29 @@ async def start_metric_collector(interval_seconds: int = 15) -> None:
             for engine_id in _monitor.get_engines():
                 eng = _monitor.get_engine(engine_id["engine_id"])
                 if eng:
-                    _monitor.update_engine(eng["engine_id"], {
-                        "cpu_percent": round(random.uniform(1.0, 60.0), 1),
-                        "memory_mb": round(random.uniform(10.0, 200.0), 1),
-                    })
+                    _monitor.update_engine(
+                        eng["engine_id"],
+                        {
+                            "cpu_percent": round(random.uniform(1.0, 60.0), 1),
+                            "memory_mb": round(random.uniform(10.0, 200.0), 1),
+                        },
+                    )
         except Exception as e:
             logger.exception("Metric collector error: %s", e)
 
         await asyncio.sleep(interval_seconds)
 
 
-@router.get("/api/v1/monitor/uptime", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get(
+    "/api/v1/monitor/uptime", dependencies=[Depends(require_permission(Permission.MONITOR_READ))]
+)
 async def get_uptime_robot_status(request: Request):
     """
     GET /api/v1/monitor/uptime — Retrieve keep-awake heartbeat and UptimeRobot stats.
     """
     _check_rate_limit(request)
     from backend.services.uptime_service import get_uptime_service
+
     svc = get_uptime_service()
 
     # Query UptimeRobot API for live monitor details
@@ -770,10 +820,6 @@ async def get_uptime_robot_status(request: Request):
 
     return {
         "success": True,
-        "data": {
-            "local_keep_awake": local_status,
-            "external_uptime_robot": uptime_api_res
-        },
-        "timestamp": datetime.now(UTC).isoformat()
+        "data": {"local_keep_awake": local_status, "external_uptime_robot": uptime_api_res},
+        "timestamp": datetime.now(UTC).isoformat(),
     }
-

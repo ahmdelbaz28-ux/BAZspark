@@ -129,11 +129,18 @@ class DetectorReliabilitySimulator:
         t0 = time.perf_counter()
         for _trial in range(self.n_trials):
             if time.perf_counter() - t0 > 10.0:  # 10s hard execution limit cap
-                logger.warning("Monte Carlo simulation capped at 10.0s time limit (completed %d trials)", len(coverage_results))
+                logger.warning(
+                    "Monte Carlo simulation capped at 10.0s time limit (completed %d trials)",
+                    len(coverage_results),
+                )
                 break
 
             # Randomly fail detectors
-            active = [det for det in detectors if self._rng.random() > p_fail and self._rng.random() > p_blind]
+            active = [
+                det
+                for det in detectors
+                if self._rng.random() > p_fail and self._rng.random() > p_blind
+            ]
 
             # Common-cause failure: with probability beta, ALL fail
             if self._rng.random() < fm.common_cause_beta:
@@ -144,7 +151,11 @@ class DetectorReliabilitySimulator:
                 continue
 
             # Coverage check
-            covered = sum(1 for px, py in grid_pts if any((px - dx) ** 2 + (py - dy) ** 2 <= R_sq for dx, dy in active))
+            covered = sum(
+                1
+                for px, py in grid_pts
+                if any((px - dx) ** 2 + (py - dy) ** 2 <= R_sq for dx, dy in active)
+            )
             cov_pct = 100.0 * covered / n_pts if n_pts > 0 else 0.0
             coverage_results.append(cov_pct)
             if cov_pct >= 100.0:
@@ -244,7 +255,9 @@ class MCPipelineAdapter:
 
         warnings = list(getattr(layout, "warnings", []))
 
-        if not mc_result.get("is_reliable", False):  # V111 FIX: Fail-safe — missing reliability flag = UNRELIABLE
+        if not mc_result.get(
+            "is_reliable", False
+        ):  # V111 FIX: Fail-safe — missing reliability flag = UNRELIABLE
             warnings.append(
                 f"MC RELIABILITY WARNING: P(full_coverage)="
                 f"{mc_result['p_full_coverage']:.1%} < {self._threshold:.0%}. "
@@ -255,7 +268,9 @@ class MCPipelineAdapter:
                 "NFPA 72-2022 Section 14."
             )
 
-        if mc_result.get("p_full_coverage", 0.0) < 0.90:  # V112: FAIL-SAFE — missing probability = 0%
+        if (
+            mc_result.get("p_full_coverage", 0.0) < 0.90
+        ):  # V112: FAIL-SAFE — missing probability = 0%
             # Conservative: invalidate proof if MC shows < 90% P(full coverage)
             try:
                 layout.proof_valid = False

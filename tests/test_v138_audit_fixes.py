@@ -43,6 +43,7 @@ class TestDLQReplayTOCTOU:
     def test_replay_invalid_index_returns_false(self):
         """Invalid index should return False."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
         assert service.replay_dead_letter(999) is False
         assert service.replay_dead_letter(-1) is False
@@ -56,10 +57,9 @@ class TestSSRFFailClosed:
         import inspect
 
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         source = inspect.getsource(WebhookDeliveryService._check_ssrf_url)
-        assert "BLOCKING request" in source, (
-            "SSRF check must fail CLOSED (was fail-open in V137)"
-        )
+        assert "BLOCKING request" in source, "SSRF check must fail CLOSED (was fail-open in V137)"
 
 
 class TestConvergedField:
@@ -71,9 +71,12 @@ class TestConvergedField:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
-            pipe_length_m=100.0, pipe_diameter_m=0.05,
-            flow_rate_kg_s=1.0, fluid_type=FluidType.WATER,
+            pipe_length_m=100.0,
+            pipe_diameter_m=0.05,
+            flow_rate_kg_s=1.0,
+            fluid_type=FluidType.WATER,
         )
         assert result.converged is True
 
@@ -83,9 +86,12 @@ class TestConvergedField:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
-            pipe_length_m=10.0, pipe_diameter_m=0.05,
-            flow_rate_kg_s=1.0, fluid_type=FluidType.WATER,
+            pipe_length_m=10.0,
+            pipe_diameter_m=0.05,
+            flow_rate_kg_s=1.0,
+            fluid_type=FluidType.WATER,
         )
         assert "converged" in result.to_dict()
 
@@ -98,6 +104,7 @@ class TestPathValidationBypass:
         import inspect
 
         from backend.routers.v2 import extract_rooms
+
         source = inspect.getsource(extract_rooms)
         assert "relative_to" in source or "_is_within" in source, (
             "Path validation must use proper containment check (not startswith)"
@@ -110,17 +117,20 @@ class TestSizeLimits:
     def test_generative_design_has_upper_bounds(self):
         """GenerativeDesignRequest must have le=1000 for dimensions."""
         from backend.routers.v2 import GenerativeDesignRequest
+
         fields = GenerativeDesignRequest.model_fields
-        assert "le=1000.0" in str(fields["room_width"].metadata) or \
-               any("le" in str(m) for m in fields["room_width"].metadata), \
-               "room_width must have upper bound (le=1000)"
+        assert "le=1000.0" in str(fields["room_width"].metadata) or any(
+            "le" in str(m) for m in fields["room_width"].metadata
+        ), "room_width must have upper bound (le=1000)"
 
     def test_smoke_points_have_max_length(self):
         """SmokeSimulationStateRequest must have max_length for points."""
         from backend.routers.v2 import SmokeSimulationStateRequest
+
         fields = SmokeSimulationStateRequest.model_fields
-        assert any("max_length" in str(m) for m in fields["smoke_density_points"].metadata), \
-               "smoke_density_points must have max_length"
+        assert any("max_length" in str(m) for m in fields["smoke_density_points"].metadata), (
+            "smoke_density_points must have max_length"
+        )
 
 
 class TestPydanticSmokePoints:
@@ -129,6 +139,7 @@ class TestPydanticSmokePoints:
     def test_smoke_point_model_exists(self):
         """SmokeDensityPointRequest should exist as a Pydantic model."""
         from backend.routers.v2 import SmokeDensityPointRequest
+
         # S5727 fix: the import itself is the smoke check. Assert on the type
         # rather than the tautological `is not None` (which SonarCloud flags
         # because it's always True after a successful import).
@@ -139,6 +150,7 @@ class TestPydanticSmokePoints:
         from pydantic import ValidationError
 
         from backend.routers.v2 import SmokeDensityPointRequest
+
         with pytest.raises(ValidationError):
             SmokeDensityPointRequest(x=1.0, y=2.0)  # missing z, density_kg_m3
 
@@ -149,6 +161,7 @@ class TestDeadCodeRemoved:
     def test_dead_constant_removed(self):
         """CSRF_COOKIE_ATTRIBUTES should not exist."""
         from backend import security_csrf
+
         assert not hasattr(security_csrf, "CSRF_COOKIE_ATTRIBUTES"), (
             "CSRF_COOKIE_ATTRIBUTES should be removed (dead code)"
         )
@@ -162,16 +175,17 @@ class TestDoubleCheckedLocking:
         import inspect
 
         from fireai.core.audit_store import _init_database
+
         source = inspect.getsource(_init_database)
         # The _db_initialized = True should be inside the with _init_lock block
         # (indented more than the 'with' statement)
-        lines = source.split('\n')
+        lines = source.split("\n")
         in_lock = False
         init_inside = False
         for line in lines:
-            if 'with _init_lock' in line:
+            if "with _init_lock" in line:
                 in_lock = True
-            if in_lock and '_db_initialized = True' in line:
+            if in_lock and "_db_initialized = True" in line:
                 init_inside = True
                 break
         assert init_inside, "_db_initialized=True must be inside the lock block"
@@ -185,6 +199,7 @@ class TestViolationsRestore:
         import inspect
 
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+
         source = inspect.getsource(DensityOptimizer._remove_redundant)
         assert "old_violations" in source, (
             "_remove_redundant must save/restore violations (V137 F-10)"
@@ -201,6 +216,7 @@ class TestAuditSafeDict:
             SmokeDensityPoint,
             SmokeSimulationState,
         )
+
         state = SmokeSimulationState(
             room_id="R-001",
             smoke_density_points=[
@@ -209,9 +225,7 @@ class TestAuditSafeDict:
             status=SimulationStatus.FAILED,
         )
         d = state.to_audit_safe_dict()
-        assert "smoke_density_points" not in d, (
-            "FAILED state should not persist measurement data"
-        )
+        assert "smoke_density_points" not in d, "FAILED state should not persist measurement data"
         assert "note" in d
 
     def test_validated_state_persists_full_data(self):
@@ -220,6 +234,7 @@ class TestAuditSafeDict:
             SmokeDensityPoint,
             SmokeSimulationState,
         )
+
         state = SmokeSimulationState.create_from_fds(
             room_id="R-001",
             smoke_density_points=[

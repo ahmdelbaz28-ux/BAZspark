@@ -21,6 +21,7 @@ LIE 4: "Code is testable"
   REALITY: The global semaphore cannot be reset. A test that exhausts
   the semaphore (8 stuck lookups) pollutes all subsequent tests.
 """
+
 from __future__ import annotations
 
 import socket
@@ -45,13 +46,12 @@ def test_validator_does_not_hang_on_slow_dns(monkeypatch):
     This test patches getaddrinfo to sleep 30s and asserts the validator
     returns within 2s (either accepts or rejects, but does NOT hang).
     """
+
     def slow_getaddrinfo(host, *args, **kwargs):
         time.sleep(30)
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", slow_getaddrinfo
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", slow_getaddrinfo)
 
     start = time.monotonic()
     # Should return (or raise) within 2 seconds, NOT hang for 30s
@@ -74,15 +74,14 @@ def test_validator_does_not_hang_on_slow_dns(monkeypatch):
 def test_validator_is_pure_no_network_io_for_literal_ip(monkeypatch):
     """A Pydantic validator must NOT perform network I/O. For a literal
     IP, the validator should return immediately without any DNS lookup."""
+
     def fail_if_called(*args, **kwargs):
         raise AssertionError(
             "Validator performed network I/O (getaddrinfo called) for a "
             "literal IP. Validators must be pure."
         )
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called)
 
     # Literal public IP — should pass without any DNS call
     result = validate_host_for_user_input("8.8.8.8")
@@ -92,15 +91,13 @@ def test_validator_is_pure_no_network_io_for_literal_ip(monkeypatch):
 def test_validator_is_pure_no_network_io_for_blocked_hostname(monkeypatch):
     """For a blocked hostname (localhost), the validator should reject
     without any DNS lookup."""
+
     def fail_if_called(*args, **kwargs):
         raise AssertionError(
-            "Validator performed network I/O for a blocked hostname. "
-            "Validators must be pure."
+            "Validator performed network I/O for a blocked hostname. Validators must be pure."
         )
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called)
 
     with pytest.raises(SSRFError):
         validate_host_for_user_input("localhost")
@@ -110,6 +107,7 @@ def test_validator_is_pure_no_network_io_for_hostname(monkeypatch):
     """For a regular hostname, the validator should accept it (format
     check only) WITHOUT performing DNS resolution. DNS resolution is the
     job of the service layer (resolve_to_safe_ip)."""
+
     def fail_if_called(*args, **kwargs):
         raise AssertionError(
             "Validator performed network I/O for a hostname. "
@@ -117,9 +115,7 @@ def test_validator_is_pure_no_network_io_for_hostname(monkeypatch):
             "The validator should be pure (fast, deterministic, no side effects)."
         )
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", fail_if_called)
 
     # Should return the hostname as-is, without DNS lookup
     result = validate_host_for_user_input("example.com")
@@ -140,9 +136,7 @@ def test_validator_is_deterministic(monkeypatch):
             raise socket.gaierror("Transient DNS failure")
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", flaky_getaddrinfo
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", flaky_getaddrinfo)
 
     # Same input must give same output every time
     results = set()
@@ -175,9 +169,7 @@ def test_stuck_dns_on_host_a_does_not_block_host_b(monkeypatch):
         # Legitimate hostname resolves fast
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
 
-    monkeypatch.setattr(
-        "backend.integrations._ssrf_guard.socket.getaddrinfo", evil_getaddrinfo
-    )
+    monkeypatch.setattr("backend.integrations._ssrf_guard.socket.getaddrinfo", evil_getaddrinfo)
 
     # Step 1: launch N concurrent lookups on the attacker's hostname
     # (enough to exhaust the global semaphore)
@@ -251,6 +243,7 @@ def _reset_dns_state_if_possible():
     """Reset DNS state if the function exists; no-op otherwise."""
     try:
         from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
         _reset_dns_state_for_testing()
     except ImportError:
         pass
@@ -258,4 +251,5 @@ def _reset_dns_state_if_possible():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

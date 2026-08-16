@@ -18,7 +18,11 @@ def draw_title_block(doc, title: TitleBlock):
     if ezdxf is None:
         raise ImportError("ezdxf library is required for title block drawing.")
 
-    layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
+    layout = (
+        doc.layout("A1-Fire-Alarm-Plan")
+        if "A1-Fire-Alarm-Plan" in doc.layouts
+        else doc.layouts.new("A1-Fire-Alarm-Plan")
+    )
 
     # V279 SAFETY FIX: Reject drawing generation when pe_stamp is empty or a known
     # placeholder. NFPA 72 submittals MUST bear the seal of a licensed Professional
@@ -27,17 +31,21 @@ def draw_title_block(doc, title: TitleBlock):
     # would constitute forgery of an engineering document. This guard makes the
     # failure loud at drawing time so no deliverable can ship without proper PE
     # sign-off.
-    _PLACEHOLDER_PE_STAMPS = frozenset({
-        "",
-        "N/A",
-        "TBD",
-        "TODO",
-        "PENDING",
-        "LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998",  # legacy hardcoded fake
-        "REPLACE_WITH_REAL_PE_STAMP_BEFORE_DELIVERY",  # explicit placeholder used in demo scripts
-    })
+    _PLACEHOLDER_PE_STAMPS = frozenset(
+        {
+            "",
+            "N/A",
+            "TBD",
+            "TODO",
+            "PENDING",
+            "LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998",  # legacy hardcoded fake
+            "REPLACE_WITH_REAL_PE_STAMP_BEFORE_DELIVERY",  # explicit placeholder used in demo scripts
+        }
+    )
     normalized_pe_stamp = (title.pe_stamp or "").strip()
-    if not normalized_pe_stamp or normalized_pe_stamp.upper() in {s.upper() for s in _PLACEHOLDER_PE_STAMPS}:
+    if not normalized_pe_stamp or normalized_pe_stamp.upper() in {
+        s.upper() for s in _PLACEHOLDER_PE_STAMPS
+    }:
         raise ValueError(
             "PE stamp is required for NFPA 72 submittal drawings. The pe_stamp "
             "field must contain the licensed Professional Engineer's name, license "
@@ -58,12 +66,31 @@ def draw_title_block(doc, title: TitleBlock):
     layout.add_line((600.0, 130.0), (831.0, 130.0), dxfattribs={"color": 7})
     layout.add_line((600.0, 80.0), (831.0, 80.0), dxfattribs={"color": 7})
 
-    layout.add_text(f"PROJECT: {title.project_name}", dxfattribs={"insert": (610.0, 150.0), "height": 3.5, "color": 7})
-    layout.add_text(f"SHEET TITLE: {title.sheet_title}", dxfattribs={"insert": (610.0, 105.0), "height": 3.5, "color": 7})
-    layout.add_text(f"DWG NO: {title.drawing_number}", dxfattribs={"insert": (610.0, 90.0), "height": 3.0, "color": 7})
-    layout.add_text(f"SCALE: {title.scale}  DATE: {title.date}", dxfattribs={"insert": (610.0, 60.0), "height": 2.5, "color": 7})
-    layout.add_text(f"DES: {title.designer}  CHK: {title.checker}", dxfattribs={"insert": (610.0, 45.0), "height": 2.5, "color": 7})
-    layout.add_text(f"PE STAMP: {title.pe_stamp}", dxfattribs={"insert": (610.0, 25.0), "height": 2.5, "color": 7})
+    layout.add_text(
+        f"PROJECT: {title.project_name}",
+        dxfattribs={"insert": (610.0, 150.0), "height": 3.5, "color": 7},
+    )
+    layout.add_text(
+        f"SHEET TITLE: {title.sheet_title}",
+        dxfattribs={"insert": (610.0, 105.0), "height": 3.5, "color": 7},
+    )
+    layout.add_text(
+        f"DWG NO: {title.drawing_number}",
+        dxfattribs={"insert": (610.0, 90.0), "height": 3.0, "color": 7},
+    )
+    layout.add_text(
+        f"SCALE: {title.scale}  DATE: {title.date}",
+        dxfattribs={"insert": (610.0, 60.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"DES: {title.designer}  CHK: {title.checker}",
+        dxfattribs={"insert": (610.0, 45.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"PE STAMP: {title.pe_stamp}",
+        dxfattribs={"insert": (610.0, 25.0), "height": 2.5, "color": 7},
+    )
+
 
 def draw_facp_schedule(doc, rec: PanelRecommendation):
     """
@@ -73,7 +100,11 @@ def draw_facp_schedule(doc, rec: PanelRecommendation):
     if ezdxf is None:
         raise ImportError("ezdxf library is required for FACP schedule drawing.")
 
-    layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
+    layout = (
+        doc.layout("A1-Fire-Alarm-Plan")
+        if "A1-Fire-Alarm-Plan" in doc.layouts
+        else doc.layouts.new("A1-Fire-Alarm-Plan")
+    )
 
     # Placed in left center section (X: 10 -> 250, Y: 320 -> 500)
     layout.add_line((10.0, 320.0), (10.0, 500.0), dxfattribs={"color": 7})
@@ -81,15 +112,38 @@ def draw_facp_schedule(doc, rec: PanelRecommendation):
     layout.add_line((250.0, 500.0), (250.0, 320.0), dxfattribs={"color": 7})
     layout.add_line((250.0, 320.0), (10.0, 320.0), dxfattribs={"color": 7})
 
-    layout.add_text("FACP SELECTION SCHEDULE", dxfattribs={"insert": (15.0, 480.0), "height": 3.5, "color": 7})
+    layout.add_text(
+        "FACP SELECTION SCHEDULE", dxfattribs={"insert": (15.0, 480.0), "height": 3.5, "color": 7}
+    )
     layout.add_line((10.0, 470.0), (250.0, 470.0), dxfattribs={"color": 7})
 
-    layout.add_text(f"RECOMMENDED MODEL : {rec.recommended_model}", dxfattribs={"insert": (15.0, 450.0), "height": 2.5, "color": 7})
-    layout.add_text(f"MANUFACTURER      : {rec.manufacturer}", dxfattribs={"insert": (15.0, 430.0), "height": 2.5, "color": 7})
-    layout.add_text(f"BATTERY CAPACITY   : {rec.battery_size_ah} Ah (NFPA 72 §10.6.7)", dxfattribs={"insert": (15.0, 410.0), "height": 2.5, "color": 7})
-    layout.add_text(f"POINTS UTILIZATION : {rec.capacity_utilization:.2%}", dxfattribs={"insert": (15.0, 390.0), "height": 2.5, "color": 7})
-    layout.add_text(f"NAC UTILIZATION    : {rec.nac_utilization:.2%}", dxfattribs={"insert": (15.0, 370.0), "height": 2.5, "color": 7})
-    layout.add_text(f"UL CODES LISTINGS  : {', '.join(rec.listings)}", dxfattribs={"insert": (15.0, 350.0), "height": 2.5, "color": 7})
+    layout.add_text(
+        f"RECOMMENDED MODEL : {rec.recommended_model}",
+        dxfattribs={"insert": (15.0, 450.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"MANUFACTURER      : {rec.manufacturer}",
+        dxfattribs={"insert": (15.0, 430.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"BATTERY CAPACITY   : {rec.battery_size_ah} Ah (NFPA 72 §10.6.7)",
+        dxfattribs={"insert": (15.0, 410.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"POINTS UTILIZATION : {rec.capacity_utilization:.2%}",
+        dxfattribs={"insert": (15.0, 390.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"NAC UTILIZATION    : {rec.nac_utilization:.2%}",
+        dxfattribs={"insert": (15.0, 370.0), "height": 2.5, "color": 7},
+    )
+    layout.add_text(
+        f"UL CODES LISTINGS  : {', '.join(rec.listings)}",
+        dxfattribs={"insert": (15.0, 350.0), "height": 2.5, "color": 7},
+    )
 
     # Enforce SHA-256 footprint representation inside CAD layouts for document audit trail
-    layout.add_text(f"SIGNATURE HASH     : {rec.signature_hash[:24]}...", dxfattribs={"insert": (15.0, 330.0), "height": 1.8, "color": 7})
+    layout.add_text(
+        f"SIGNATURE HASH     : {rec.signature_hash[:24]}...",
+        dxfattribs={"insert": (15.0, 330.0), "height": 1.8, "color": 7},
+    )

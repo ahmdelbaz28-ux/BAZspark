@@ -22,6 +22,7 @@ from typing import Any
 
 # ─── Ship Classification (SOLAS II-2 / IMO) ─────────────────────────────────
 
+
 class ShipType(StrEnum):
     """
     SOLAS ship-type classification per SOLAS Ch. II-2/2.2.
@@ -34,11 +35,11 @@ class ShipType(StrEnum):
       - SMALL_CRAFT → NFPA 302 (replaces SOLAS for <24m load line craft)
     """
 
-    PASSENGER = "passenger"        # >12 passengers (SOLAS II-2 Part D)
-    CARGO = "cargo"                # General cargo ships (SOLAS II-2 Part C)
-    TANKER = "tanker"              # Oil/chemical/gas carriers (IEC 60092-502)
-    OFFSHORE = "offshore"          # MODU — Mobile Offshore Drilling Units
-    SMALL_CRAFT = "small_craft"    # <24m load line — NFPA 302 applies
+    PASSENGER = "passenger"  # >12 passengers (SOLAS II-2 Part D)
+    CARGO = "cargo"  # General cargo ships (SOLAS II-2 Part C)
+    TANKER = "tanker"  # Oil/chemical/gas carriers (IEC 60092-502)
+    OFFSHORE = "offshore"  # MODU — Mobile Offshore Drilling Units
+    SMALL_CRAFT = "small_craft"  # <24m load line — NFPA 302 applies
 
 
 class ShipService(StrEnum):
@@ -46,19 +47,20 @@ class ShipService(StrEnum):
 
     CONTAINER = "container"
     BULK_CARRIER = "bulk_carrier"
-    RO_RO = "ro_ro"               # Roll-on/roll-off
-    GAS_CARRIER = "gas_carrier"   # LNG/LPG
+    RO_RO = "ro_ro"  # Roll-on/roll-off
+    GAS_CARRIER = "gas_carrier"  # LNG/LPG
     CHEMICAL_TANKER = "chemical_tanker"
     OIL_TANKER = "oil_tanker"
-    FPSO = "fpso"                 # Floating Production Storage Offloading
+    FPSO = "fpso"  # Floating Production Storage Offloading
     PASSENGER_FERRY = "passenger_ferry"
     CRUISE = "cruise"
-    MODU = "modu"                 # Mobile Offshore Drilling Unit
-    WORKBOAT = "workboat"         # <24m, NFPA 302
-    YACHT = "yacht"               # <24m, NFPA 302
+    MODU = "modu"  # Mobile Offshore Drilling Unit
+    WORKBOAT = "workboat"  # <24m, NFPA 302
+    YACHT = "yacht"  # <24m, NFPA 302
 
 
 # ─── Fire Divisions (SOLAS II-2 Reg. 9) ─────────────────────────────────────
+
 
 class FireClass(StrEnum):
     """
@@ -89,8 +91,12 @@ class FireClass(StrEnum):
     def insulation_minutes(self) -> int:
         """Return required insulation time in minutes (0 for A-0, B-0, C)."""
         mapping = {
-            FireClass.A_60: 60, FireClass.A_30: 30, FireClass.A_15: 15,
-            FireClass.A_0: 0, FireClass.B_15: 15, FireClass.B_0: 0,
+            FireClass.A_60: 60,
+            FireClass.A_30: 30,
+            FireClass.A_15: 15,
+            FireClass.A_0: 0,
+            FireClass.B_15: 15,
+            FireClass.B_0: 0,
             FireClass.C: 0,
         }
         return mapping[self]
@@ -104,20 +110,21 @@ class SpaceCategory(StrEnum):
     between adjacent spaces. The categories drive FireClass selection.
     """
 
-    CONTROL_STATION = "control_station"            # Wheelhouse, radio room
-    ESCAPE_ROUTE = "escape_route"                   # Corridors, stairways
-    ACCOMMODATION = "accommodation"                 # Cabins, mess rooms
-    SERVICE_SPACE_MINOR = "service_minor"           # Linen lockers, pantries
-    SERVICE_SPACE_MAJOR = "service_major"           # Galleys, main laundries
-    CARGO_SPACE = "cargo_space"                     # Hold, tank deck
-    MACHINERY_SPACE_A = "machinery_a"               # Contains main propulsion
-    MACHINERY_SPACE_OTHER = "machinery_other"       # Auxiliary machinery
-    TANK_SPACE = "tank_space"                       # Cargo/ballast/fuel tanks
-    EMPTY_SPACE = "empty_space"                     # Cofferdams, voids
+    CONTROL_STATION = "control_station"  # Wheelhouse, radio room
+    ESCAPE_ROUTE = "escape_route"  # Corridors, stairways
+    ACCOMMODATION = "accommodation"  # Cabins, mess rooms
+    SERVICE_SPACE_MINOR = "service_minor"  # Linen lockers, pantries
+    SERVICE_SPACE_MAJOR = "service_major"  # Galleys, main laundries
+    CARGO_SPACE = "cargo_space"  # Hold, tank deck
+    MACHINERY_SPACE_A = "machinery_a"  # Contains main propulsion
+    MACHINERY_SPACE_OTHER = "machinery_other"  # Auxiliary machinery
+    TANK_SPACE = "tank_space"  # Cargo/ballast/fuel tanks
+    EMPTY_SPACE = "empty_space"  # Cofferdams, voids
     OPEN_DECK = "open_deck"
 
 
 # ─── Fire Detection (IEC 60092-502 / FSS Code Ch. 9) ────────────────────────
+
 
 class DetectorType(StrEnum):
     """
@@ -131,30 +138,31 @@ class DetectorType(StrEnum):
       - Multi-criteria   → high-value spaces (combine 2+ sensor types)
     """
 
-    HEAT_FIXED = "heat_fixed"               # Fixed temperature (e.g. 57°C, 78°C)
-    HEAT_RATE_OF_RISE = "heat_ror"          # Rate-of-rise (8.3°C/min per FSS 9.2.1)
-    SMOKE_IONIZATION = "smoke_ion"          # Ionization smoke (legacy)
-    SMOKE_PHOTOELECTRIC = "smoke_photo"     # Photoelectric (modern standard)
-    SMOKE_DUCT = "smoke_duct"               # Duct smoke detection (HVAC)
-    FLAME_UV = "flame_uv"                   # Ultraviolet flame
-    FLAME_IR = "flame_ir"                   # Infrared flame
-    FLAME_UV_IR = "flame_uv_ir"             # Combined UV/IR (hydrocarbon)
-    CO = "co"                               # Carbon monoxide
-    MULTICRITERIA = "multicriteria"         # Combined heat+smoke+CO
-    LINEAR_HEAT = "linear_heat"             # Linear heat detection cable
-    ASPIRATING = "aspirating"               # ASD — high-sensitivity sampling
+    HEAT_FIXED = "heat_fixed"  # Fixed temperature (e.g. 57°C, 78°C)
+    HEAT_RATE_OF_RISE = "heat_ror"  # Rate-of-rise (8.3°C/min per FSS 9.2.1)
+    SMOKE_IONIZATION = "smoke_ion"  # Ionization smoke (legacy)
+    SMOKE_PHOTOELECTRIC = "smoke_photo"  # Photoelectric (modern standard)
+    SMOKE_DUCT = "smoke_duct"  # Duct smoke detection (HVAC)
+    FLAME_UV = "flame_uv"  # Ultraviolet flame
+    FLAME_IR = "flame_ir"  # Infrared flame
+    FLAME_UV_IR = "flame_uv_ir"  # Combined UV/IR (hydrocarbon)
+    CO = "co"  # Carbon monoxide
+    MULTICRITERIA = "multicriteria"  # Combined heat+smoke+CO
+    LINEAR_HEAT = "linear_heat"  # Linear heat detection cable
+    ASPIRATING = "aspirating"  # ASD — high-sensitivity sampling
 
 
 class AlarmLevel(StrEnum):
     """SOLAS II-2/5 alarm action levels."""
 
-    FAULT = "fault"             # Detector fault (open/short circuit)
-    PRE_ALARM = "pre_alarm"     # Early warning (engineer action only)
-    ALARM = "alarm"             # Muster alarm (general evacuation)
-    ACTION = "action"           # Triggers extinguishment (CO2 release, etc.)
+    FAULT = "fault"  # Detector fault (open/short circuit)
+    PRE_ALARM = "pre_alarm"  # Early warning (engineer action only)
+    ALARM = "alarm"  # Muster alarm (general evacuation)
+    ACTION = "action"  # Triggers extinguishment (CO2 release, etc.)
 
 
 # ─── Extinguishing Systems (IMO MSC.1/Circ.1316/1165) ───────────────────────
+
 
 class ExtinguishingSystem(StrEnum):
     """
@@ -193,14 +201,16 @@ class FireHazardClass(StrEnum):
 
 # ─── Thermal Alarms (ISO 15370) ─────────────────────────────────────────────
 
+
 class ThermalAlarmClass(StrEnum):
     """ISO 15370 thermal alarm classes for passenger-ship escape routes."""
 
-    CLASS_A = "thermal_a"   # Responds at 70°C ± 5°C
-    CLASS_B = "thermal_b"   # Responds at 90°C ± 5°C
+    CLASS_A = "thermal_a"  # Responds at 70°C ± 5°C
+    CLASS_B = "thermal_b"  # Responds at 90°C ± 5°C
 
 
 # ─── Core Data Structures ────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class ShipProject:
@@ -214,15 +224,15 @@ class ShipProject:
 
     project_id: str
     ship_name: str
-    imo_number: str | None = None        # 7-digit IMO ship number
+    imo_number: str | None = None  # 7-digit IMO ship number
     ship_type: ShipType = ShipType.CARGO
     service: ShipService = ShipService.BULK_CARRIER
-    length_overall_m: float = 0.0           # LOA in metres
-    gross_tonnage: float = 0.0              # GT
-    passenger_capacity: int = 0             # >12 → SOLAS passenger rules
-    flag_state: str = ""                    # For flag-state requirements
-    classification_society: str = "LR"      # LR, DNV, BV, ABS, etc.
-    build_date: str | None = None        # YYYY-MM-DD (keel-lay date)
+    length_overall_m: float = 0.0  # LOA in metres
+    gross_tonnage: float = 0.0  # GT
+    passenger_capacity: int = 0  # >12 → SOLAS passenger rules
+    flag_state: str = ""  # For flag-state requirements
+    classification_society: str = "LR"  # LR, DNV, BV, ABS, etc.
+    build_date: str | None = None  # YYYY-MM-DD (keel-lay date)
 
     @property
     def is_passenger_ship(self) -> bool:
@@ -252,16 +262,16 @@ class MarineZone:
     zone_id: str
     name: str
     space_category: SpaceCategory
-    deck: str                                # e.g. "A-deck", "engine-room"
-    frame_start: int                         # Ship frame number (forward)
-    frame_end: int                           # Ship frame number (aft)
-    area_m2: float                           # Floor area in m²
-    height_m: float                          # Deck head height
+    deck: str  # e.g. "A-deck", "engine-room"
+    frame_start: int  # Ship frame number (forward)
+    frame_end: int  # Ship frame number (aft)
+    area_m2: float  # Floor area in m²
+    height_m: float  # Deck head height
     required_fire_class: FireClass = FireClass.A_60
     hazard_class: FireHazardClass = FireHazardClass.A
-    ventilation_rate_ach: float = 0.0        # Air changes per hour
+    ventilation_rate_ach: float = 0.0  # Air changes per hour
     has_escape_route: bool = True
-    escape_route_count: int = 1              # SOLAS II-2/13.3.2 escape-route count
+    escape_route_count: int = 1  # SOLAS II-2/13.3.2 escape-route count
     max_distance_to_stairway_m: float | None = None  # SOLAS II-2/13.3.2.1
     shape_polygon: list[tuple[float, float]] | None = None  # Zone footprint (m)
     adjacent_zones: tuple[str, ...] = field(default_factory=tuple)
@@ -274,10 +284,10 @@ class DetectorPlacement:
     detector_id: str
     zone_id: str
     detector_type: DetectorType
-    position_xyz_mm: tuple[float, float, float]   # mm from ship origin
+    position_xyz_mm: tuple[float, float, float]  # mm from ship origin
     coverage_m2: float
-    rated_temp_c: float | None = None           # For HEAT_FIXED
-    sensitivity: str | None = None              # For SMOKE_PHOTO etc.
+    rated_temp_c: float | None = None  # For HEAT_FIXED
+    sensitivity: str | None = None  # For SMOKE_PHOTO etc.
     mounting_height_m: float = 3.0
     standard_reference: str = "IEC 60092-502 §4"
 
@@ -290,10 +300,10 @@ class FireResistanceSpec:
     from_zone: str
     to_zone: str
     required_class: FireClass
-    material: str                                # "steel", "non-combustible"
-    insulation_material: str | None = None    # "ceramic wool", "A-60 board"
+    material: str  # "steel", "non-combustible"
+    insulation_material: str | None = None  # "ceramic wool", "A-60 board"
     insulation_thickness_mm: float = 0.0
-    penetration_protected: bool = True           # Cable/pipe penetrations
+    penetration_protected: bool = True  # Cable/pipe penetrations
     standard_reference: str = "SOLAS II-2/9.2"
 
 
@@ -304,10 +314,10 @@ class ExtinguishingDesign:
     system_type: ExtinguishingSystem
     protected_zone: str
     protected_volume_m3: float
-    agent_quantity_kg: float                     # CO2 mass, water mist L/min
-    design_concentration_pct: float              # % by volume
-    discharge_time_s: float                      # Seconds to reach concentration
-    hold_time_min: float                         # Required soak time
+    agent_quantity_kg: float  # CO2 mass, water mist L/min
+    design_concentration_pct: float  # % by volume
+    discharge_time_s: float  # Seconds to reach concentration
+    hold_time_min: float  # Required soak time
     nozzles: int
     pipe_length_m: float
     standard_reference: str = "IMO MSC.1/Circ.1316"
@@ -318,10 +328,10 @@ class AlarmLogicNode:
     """Node in the alarm logic tree (PLC/DCS programmable logic)."""
 
     node_id: str
-    trigger_detector: str                        # Detector ID
+    trigger_detector: str  # Detector ID
     zone_id: str
     alarm_level: AlarmLevel
-    action_outputs: tuple[str, ...]              # e.g. ("horn_z3", "release_co2")
+    action_outputs: tuple[str, ...]  # e.g. ("horn_z3", "release_co2")
     delay_s: float = 0.0
     interlocks: tuple[str, ...] = field(default_factory=tuple)
     standard_reference: str = "SOLAS II-2/5 + IEC 60092-502"
@@ -336,16 +346,17 @@ class ShipElectricalSpec:
     with mandatory redundancy and UPS per SOLAS II-2/5.1.3.
     """
 
-    main_supply_voltage: float = 440.0           # V AC (IEC 60092-301)
-    emergency_supply_voltage: float = 230.0      # V AC
-    ups_capacity_ah: float = 0.0                 # Battery capacity (Ah)
-    ups_autonomy_min: float = 30.0               # SOLAS: ≥30 min for fire systems
-    insulation_monitoring: bool = True           # IEC 60092-504 mandatory
-    redundancy_level: int = 3                    # SOLAS II-2/5.1.3: 3-level (main+emergency+UPS)
+    main_supply_voltage: float = 440.0  # V AC (IEC 60092-301)
+    emergency_supply_voltage: float = 230.0  # V AC
+    ups_capacity_ah: float = 0.0  # Battery capacity (Ah)
+    ups_autonomy_min: float = 30.0  # SOLAS: ≥30 min for fire systems
+    insulation_monitoring: bool = True  # IEC 60092-504 mandatory
+    redundancy_level: int = 3  # SOLAS II-2/5.1.3: 3-level (main+emergency+UPS)
     standard_reference: str = "IEC 60092-502 + SOLAS II-2/5.1.3"
 
 
 # ─── Validation Result ───────────────────────────────────────────────────────
+
 
 @dataclass
 class ComplianceResult:

@@ -14,7 +14,9 @@ from unittest.mock import Mock
 
 import pytest
 
-pytest.importorskip("pytesseract", reason="pytesseract not installed — OCR integration tests skipped")
+pytest.importorskip(
+    "pytesseract", reason="pytesseract not installed — OCR integration tests skipped"
+)
 
 from backend.services.ocr_service import OCRService
 from backend.services.scan_to_bim import ScanToBIMService
@@ -28,23 +30,25 @@ class TestOCRScanToBIMIntegration:
         # Create mock OCR service that returns predictable results
         mock_ocr = Mock(spec=OCRService)
         mock_ocr.process_file.return_value = {
-            'success': True,
-            'audit_trail': {
-                'timestamp': 1234567890.0,
-                'file_path': '/mock/path/test.pdf',  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                'confidence_score': 85.0,
-                'requires_human_review': True
+            "success": True,
+            "audit_trail": {
+                "timestamp": 1234567890.0,
+                "file_path": "/mock/path/test.pdf",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                "confidence_score": 85.0,
+                "requires_human_review": True,
             },
-            'pages': [{'page_number': 1, 'text': 'ROOM A-101: OFFICE. AREA: 25.0 SQM', 'confidence': 85.0}],
-            'extracted_text': 'ROOM A-101: OFFICE. AREA: 25.0 SQM',
-            'room_areas': [('A-101', 25.0)],
-            'areas_only': [],
-            'statistics': {
-                'total_rooms_found': 1,
-                'total_areas_found': 0,
-                'average_confidence': 85.0,
-                'total_words_extracted': 8
-            }
+            "pages": [
+                {"page_number": 1, "text": "ROOM A-101: OFFICE. AREA: 25.0 SQM", "confidence": 85.0}
+            ],
+            "extracted_text": "ROOM A-101: OFFICE. AREA: 25.0 SQM",
+            "room_areas": [("A-101", 25.0)],
+            "areas_only": [],
+            "statistics": {
+                "total_rooms_found": 1,
+                "total_areas_found": 0,
+                "average_confidence": 85.0,
+                "total_words_extracted": 8,
+            },
         }
 
         # Create ScanToBIM service with mock OCR
@@ -57,22 +61,24 @@ class TestOCRScanToBIMIntegration:
         assert result.success is True
         assert len(result.rooms) >= 1
         assert result.requires_human_review is True  # Should always be True for OCR data
-        assert 'OCR-derived BIM data requires professional review' in str(result.audit_trail)
+        assert "OCR-derived BIM data requires professional review" in str(result.audit_trail)
 
         # Verify room was created properly
         room = result.rooms[0]
         assert room.name == "A-101"  # Should be normalized
         assert room.area == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.room_type in ["OFFICE", "OTHER"]
-        assert room.confidence == 85.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            room.confidence == 85.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ocr_failure_handled_by_scan_to_bim(self):
         """Test that ScanToBIM properly handles OCR failures."""
         # Create mock OCR service that returns failure
         mock_ocr = Mock(spec=OCRService)
         mock_ocr.process_file.return_value = {
-            'success': False,
-            'audit_trail': {'error': 'Mock OCR error'}
+            "success": False,
+            "audit_trail": {"error": "Mock OCR error"},
         }
 
         # Create ScanToBIM service with mock OCR
@@ -91,23 +97,23 @@ class TestOCRScanToBIMIntegration:
         # Create mock OCR service
         mock_ocr = Mock(spec=OCRService)
         mock_ocr.process_file.return_value = {
-            'success': True,
-            'audit_trail': {
-                'timestamp': 1234567890.0,
-                'file_path': '/mock/path/test.pdf',
-                'confidence_score': 85.0,
-                'requires_human_review': True
+            "success": True,
+            "audit_trail": {
+                "timestamp": 1234567890.0,
+                "file_path": "/mock/path/test.pdf",
+                "confidence_score": 85.0,
+                "requires_human_review": True,
             },
-            'pages': [{'page_number': 1, 'text': 'ROOM TEST: AREA: 30.0 SQM', 'confidence': 85.0}],
-            'extracted_text': 'ROOM TEST: AREA: 30.0 SQM',
-            'room_areas': [('TEST', 30.0)],
-            'areas_only': [],
-            'statistics': {
-                'total_rooms_found': 1,
-                'total_areas_found': 0,
-                'average_confidence': 85.0,
-                'total_words_extracted': 6
-            }
+            "pages": [{"page_number": 1, "text": "ROOM TEST: AREA: 30.0 SQM", "confidence": 85.0}],
+            "extracted_text": "ROOM TEST: AREA: 30.0 SQM",
+            "room_areas": [("TEST", 30.0)],
+            "areas_only": [],
+            "statistics": {
+                "total_rooms_found": 1,
+                "total_areas_found": 0,
+                "average_confidence": 85.0,
+                "total_words_extracted": 6,
+            },
         }
 
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
@@ -115,36 +121,42 @@ class TestOCRScanToBIMIntegration:
 
         # Verify audit trail compliance
         audit_trail = result.audit_trail
-        assert 'timestamp' in audit_trail
-        assert 'process_type' in audit_trail
-        assert 'input_file' in audit_trail
-        assert 'ocr_audit' in audit_trail
-        assert 'requires_human_review' in audit_trail
-        assert audit_trail['requires_human_review'] is True
-        assert 'processing_notes' in audit_trail
+        assert "timestamp" in audit_trail
+        assert "process_type" in audit_trail
+        assert "input_file" in audit_trail
+        assert "ocr_audit" in audit_trail
+        assert "requires_human_review" in audit_trail
+        assert audit_trail["requires_human_review"] is True
+        assert "processing_notes" in audit_trail
 
     def test_multi_language_support_integration(self):
         """Test that multi-language support flows through both services."""
         # Create mock OCR with Arabic text
         mock_ocr = Mock(spec=OCRService)
         mock_ocr.process_file.return_value = {
-            'success': True,
-            'audit_trail': {
-                'timestamp': 1234567890.0,
-                'file_path': '/mock/path/test.pdf',
-                'confidence_score': 78.0,
-                'requires_human_review': True
+            "success": True,
+            "audit_trail": {
+                "timestamp": 1234567890.0,
+                "file_path": "/mock/path/test.pdf",
+                "confidence_score": 78.0,
+                "requires_human_review": True,
             },
-            'pages': [{'page_number': 1, 'text': 'غرفة 101: مكتب. المساحة: 22.5 متر مربع', 'confidence': 78.0}],
-            'extracted_text': 'غرفة 101: مكتب. المساحة: 22.5 متر مربع',
-            'room_areas': [('101', 22.5)],  # Arabic room name and area
-            'areas_only': [],
-            'statistics': {
-                'total_rooms_found': 1,
-                'total_areas_found': 0,
-                'average_confidence': 78.0,
-                'total_words_extracted': 7
-            }
+            "pages": [
+                {
+                    "page_number": 1,
+                    "text": "غرفة 101: مكتب. المساحة: 22.5 متر مربع",
+                    "confidence": 78.0,
+                }
+            ],
+            "extracted_text": "غرفة 101: مكتب. المساحة: 22.5 متر مربع",
+            "room_areas": [("101", 22.5)],  # Arabic room name and area
+            "areas_only": [],
+            "statistics": {
+                "total_rooms_found": 1,
+                "total_areas_found": 0,
+                "average_confidence": 78.0,
+                "total_words_extracted": 7,
+            },
         }
 
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
@@ -153,7 +165,7 @@ class TestOCRScanToBIMIntegration:
         # Should process Arabic text successfully
         assert result.success is True
         assert len(result.rooms) >= 1
-        assert result.statistics['total_rooms_identified'] >= 1
+        assert result.statistics["total_rooms_identified"] >= 1
         assert result.requires_human_review is True
 
     def test_security_sanitize_integration(self):
@@ -161,23 +173,29 @@ class TestOCRScanToBIMIntegration:
         # Create mock OCR with potentially malicious text that should be sanitized
         mock_ocr = Mock(spec=OCRService)
         mock_ocr.process_file.return_value = {
-            'success': True,
-            'audit_trail': {
-                'timestamp': 1234567890.0,
-                'file_path': '/mock/path/test.pdf',
-                'confidence_score': 80.0,
-                'requires_human_review': True
+            "success": True,
+            "audit_trail": {
+                "timestamp": 1234567890.0,
+                "file_path": "/mock/path/test.pdf",
+                "confidence_score": 80.0,
+                "requires_human_review": True,
             },
-            'pages': [{'page_number': 1, 'text': 'ROOM SAFE: AREA: 20.0 SQM; DROP TABLE users;', 'confidence': 80.0}],
-            'extracted_text': 'ROOM SAFE: AREA: 20.0 SQM; DROP TABLE users;',  # Contains malicious-looking text
-            'room_areas': [('SAFE', 20.0)],
-            'areas_only': [],
-            'statistics': {
-                'total_rooms_found': 1,
-                'total_areas_found': 0,
-                'average_confidence': 80.0,
-                'total_words_extracted': 8
-            }
+            "pages": [
+                {
+                    "page_number": 1,
+                    "text": "ROOM SAFE: AREA: 20.0 SQM; DROP TABLE users;",
+                    "confidence": 80.0,
+                }
+            ],
+            "extracted_text": "ROOM SAFE: AREA: 20.0 SQM; DROP TABLE users;",  # Contains malicious-looking text
+            "room_areas": [("SAFE", 20.0)],
+            "areas_only": [],
+            "statistics": {
+                "total_rooms_found": 1,
+                "total_areas_found": 0,
+                "average_confidence": 80.0,
+                "total_words_extracted": 8,
+            },
         }
 
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)

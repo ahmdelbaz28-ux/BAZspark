@@ -75,17 +75,19 @@ def place_detectors_grid(  # NOSONAR — S3776: cognitive complexity is inherent
     coverage = DETECTOR_COVERAGE_M2.get(detector_type.value, 74.0)
     if coverage is None or coverage <= 0:
         # Linear/duct: one placement at zone center.
-        cx = origin_xyz_mm[0] + (zone.area_m2 ** 0.5) * 500  # mm
-        cy = origin_xyz_mm[1] + (zone.area_m2 ** 0.5) * 500
-        return [DetectorPlacement(
-            detector_id=f"{zone.zone_id}-D001-{detector_type.value}",
-            zone_id=zone.zone_id,
-            detector_type=detector_type,
-            position_xyz_mm=(cx, cy, origin_xyz_mm[2] + zone.height_m * 1000),
-            coverage_m2=zone.area_m2,
-            mounting_height_m=zone.height_m,
-            standard_reference="IEC 60092-502 §4",
-        )]
+        cx = origin_xyz_mm[0] + (zone.area_m2**0.5) * 500  # mm
+        cy = origin_xyz_mm[1] + (zone.area_m2**0.5) * 500
+        return [
+            DetectorPlacement(
+                detector_id=f"{zone.zone_id}-D001-{detector_type.value}",
+                zone_id=zone.zone_id,
+                detector_type=detector_type,
+                position_xyz_mm=(cx, cy, origin_xyz_mm[2] + zone.height_m * 1000),
+                coverage_m2=zone.area_m2,
+                mounting_height_m=zone.height_m,
+                standard_reference="IEC 60092-502 §4",
+            )
+        ]
 
     # Square-grid spacing = sqrt(coverage).
     spacing_m = min(math.sqrt(coverage), MAX_DETECTOR_SPACING_M)
@@ -122,19 +124,20 @@ def place_detectors_grid(  # NOSONAR — S3776: cognitive complexity is inherent
                     else:
                         rated_temp = HEAT_DETECTOR_RATED_TEMPS_C["low"]
 
-                layer.append(DetectorPlacement(
-                    detector_id=(
-                        f"{zone.zone_id}-D{detector_index:03d}{suffix}-"
-                        f"{detector_type.value}"
-                    ),
-                    zone_id=zone.zone_id,
-                    detector_type=detector_type,
-                    position_xyz_mm=(x_mm, y_mm, z_mm),
-                    coverage_m2=coverage,
-                    rated_temp_c=rated_temp,
-                    mounting_height_m=height_m,
-                    standard_reference=standard_ref,
-                ))
+                layer.append(
+                    DetectorPlacement(
+                        detector_id=(
+                            f"{zone.zone_id}-D{detector_index:03d}{suffix}-{detector_type.value}"
+                        ),
+                        zone_id=zone.zone_id,
+                        detector_type=detector_type,
+                        position_xyz_mm=(x_mm, y_mm, z_mm),
+                        coverage_m2=coverage,
+                        rated_temp_c=rated_temp,
+                        mounting_height_m=height_m,
+                        standard_reference=standard_ref,
+                    )
+                )
                 detector_index += 1
         return layer
 
@@ -157,8 +160,7 @@ def place_detectors_grid(  # NOSONAR — S3776: cognitive complexity is inherent
                 suffix="-S",
                 start_index=base_count + 1,
                 standard_ref=(
-                    "IEC 60092-502 §4 + FSS 9.2.4 + "
-                    "stratification layer (>12 m ceiling)"
+                    "IEC 60092-502 §4 + FSS 9.2.4 + stratification layer (>12 m ceiling)"
                 ),
             )
         )
@@ -209,8 +211,7 @@ def validate_alarm_circuit_redundancy(
         result.details["required_circuits"] = required_circuits
         result.details["actual_circuits"] = actual_circuits
         result.details["note"] = (
-            "Split detectors across 2 independent circuits so single-fault "
-            "does not blind the zone."
+            "Split detectors across 2 independent circuits so single-fault does not blind the zone."
         )
         # If caller provided actual_circuits, validate it.
         if actual_circuits > 0 and actual_circuits < required_circuits:

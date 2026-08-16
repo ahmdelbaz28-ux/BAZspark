@@ -34,18 +34,19 @@ AIR_DENSITY_KG_M3 = 1.225  # at 15°C, 1 atm
 
 # MSHA action levels (30 CFR §75.323)
 MSHA_THRESHOLDS = {
-    "normal": 0.25,        # % — continue operations
-    "notify": 0.5,         # % — notify foreman, increase ventilation
+    "normal": 0.25,  # % — continue operations
+    "notify": 0.5,  # % — notify foreman, increase ventilation
     "evacuate_area": 1.0,  # % — remove personnel from area
-    "deenergize": 1.5,     # % — de-energize electrical equipment
-    "withdraw_all": 2.0,   # % — withdraw all personnel
-    "explosive": 5.0,      # % — explosive atmosphere
+    "deenergize": 1.5,  # % — de-energize electrical equipment
+    "withdraw_all": 2.0,  # % — withdraw all personnel
+    "explosive": 5.0,  # % — explosive atmosphere
 }
 
 
 @dataclass
 class MethaneReading:
     """A single methane concentration reading."""
+
     concentration_pct: float  # % by volume in air
     location: str = ""
     timestamp: str = ""
@@ -55,6 +56,7 @@ class MethaneReading:
 @dataclass
 class MethaneLayeringResult:
     """Result of methane layering analysis."""
+
     roof_concentration_pct: float
     mid_concentration_pct: float
     floor_concentration_pct: float

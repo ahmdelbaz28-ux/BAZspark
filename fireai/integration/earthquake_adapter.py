@@ -71,9 +71,9 @@ DEFAULT_MIN_MAGNITUDE = 4.0
 
 # Magnitude thresholds for inspection priority (USGS / FEMA P-58).
 PRIORITY_MAGNITUDE_THRESHOLDS = {
-    "CRITICAL": 6.0,   # M6.0+ — likely damage at moderate distance
-    "HIGH":     5.0,   # M5.0+ — possible damage if shallow / close
-    "MEDIUM":   4.0,   # M4.0+ — unlikely damage, but verify
+    "CRITICAL": 6.0,  # M6.0+ — likely damage at moderate distance
+    "HIGH": 5.0,  # M5.0+ — possible damage if shallow / close
+    "MEDIUM": 4.0,  # M4.0+ — unlikely damage, but verify
 }
 
 DEFAULT_BASE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
@@ -89,11 +89,12 @@ _NFPA_72_REF = "NFPA 72-2022 §14.4.3.3"
 @dataclass(frozen=True)
 class EarthquakeEvent:
     """One earthquake returned by USGS."""
+
     magnitude: float
     depth_km: float
     place: str
-    time_utc: str           # ISO-8601
-    event_url: str          # USGS detail URL
+    time_utc: str  # ISO-8601
+    event_url: str  # USGS detail URL
     coordinates: tuple[float, float, float]  # (lon, lat, depth)
     tsunami_warning: bool
 
@@ -147,13 +148,11 @@ def _classify_priority(max_mag: float) -> tuple[str, str]:
     if max_mag >= PRIORITY_MAGNITUDE_THRESHOLDS["MEDIUM"]:
         return (
             "MEDIUM",
-            f"M{max_mag:.1f} earthquake detected. Add inspection item "
-            f"to next routine cycle.",
+            f"M{max_mag:.1f} earthquake detected. Add inspection item to next routine cycle.",
         )
     return (
         "LOW",
-        "No M4.0+ earthquakes in lookback window. No post-quake "
-        "inspection advised.",
+        "No M4.0+ earthquakes in lookback window. No post-quake inspection advised.",
     )
 
 
@@ -192,10 +191,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
             cooldown_seconds=cooldown_seconds,
             timeout_seconds=timeout_seconds,
         )
-        self._base_url = (
-            base_url
-            or os.environ.get("USGS_FDSN_URL", DEFAULT_BASE_URL)
-        )
+        self._base_url = base_url or os.environ.get("USGS_FDSN_URL", DEFAULT_BASE_URL)
 
     async def _fetch(  # NOSONAR — S3776: earthquake API fetching requires multi-branch fallback logic
         self,
@@ -232,6 +228,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
         from urllib.parse import urlencode
 
         from backend.integrations._ssrf_guard import validate_url
+
         _request_url = f"{self._base_url}?{urlencode(params)}"
         validate_url(_request_url)
 
@@ -250,18 +247,21 @@ class EarthquakeAdapter(ExternalApiAdapter):
                 mag = props.get("mag")
                 if mag is None:
                     continue
-                events.append(EarthquakeEvent(
-                    magnitude=float(mag),
-                    depth_km=float(coords[2]) if len(coords) > 2 else 0.0,
-                    place=props.get("place", "") or "",
-                    time_utc=datetime.fromtimestamp(
-                        props["time"] / 1000.0, tz=UTC
-                    ).isoformat(),
-                    event_url=props.get("url", "") or "",
-                    coordinates=(float(coords[0]), float(coords[1]),
-                                 float(coords[2]) if len(coords) > 2 else 0.0),
-                    tsunami_warning=bool(props.get("tsunami", 0)),
-                ))
+                events.append(
+                    EarthquakeEvent(
+                        magnitude=float(mag),
+                        depth_km=float(coords[2]) if len(coords) > 2 else 0.0,
+                        place=props.get("place", "") or "",
+                        time_utc=datetime.fromtimestamp(props["time"] / 1000.0, tz=UTC).isoformat(),
+                        event_url=props.get("url", "") or "",
+                        coordinates=(
+                            float(coords[0]),
+                            float(coords[1]),
+                            float(coords[2]) if len(coords) > 2 else 0.0,
+                        ),
+                        tsunami_warning=bool(props.get("tsunami", 0)),
+                    )
+                )
             except (KeyError, ValueError, TypeError) as e:
                 # Skip malformed features — don't fail the whole call
                 logger.debug("Skipping malformed USGS feature: %s", e)

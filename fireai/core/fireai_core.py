@@ -116,7 +116,9 @@ class EnhancedRoomResult:
 
         return CoverageResult(
             is_covered=self.compliant,
-            coverage_percentage=self.placement_proof.coverage_fraction * 100 if self.placement_proof else 0.0,
+            coverage_percentage=self.placement_proof.coverage_fraction * 100
+            if self.placement_proof
+            else 0.0,
         )
 
     @property
@@ -138,7 +140,9 @@ def _resolve_db_path(db_path: str | None = None) -> str:
 
     """
     if db_path:
-        if db_path == ":memory:":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        if (
+            db_path == ":memory:"
+        ):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             return db_path
         return os.path.abspath(db_path)
 
@@ -259,7 +263,9 @@ class FireAISystem:
                 name=room_spec.room_id,
                 width=room_spec.width_m,
                 length=room_spec.depth_m,
-                ceiling_height=room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0,
+                ceiling_height=room_spec.ceiling_spec.height_at_low_point_m
+                if room_spec.ceiling_spec
+                else 3.0,
             )
         except Exception as e:
             logger.exception("Analysis engine failed for room %s: %s", room_spec.room_id, e)
@@ -277,7 +283,9 @@ class FireAISystem:
                 detector_positions = list(analysis.layout.detectors)
 
         # Compute coverage fraction
-        coverage_pct = analysis.coverage if hasattr(analysis, "coverage") and analysis.coverage else 0.0
+        coverage_pct = (
+            analysis.coverage if hasattr(analysis, "coverage") and analysis.coverage else 0.0
+        )
         coverage_fraction = coverage_pct / 100.0 if coverage_pct > 1 else coverage_pct
 
         # Determine compliance
@@ -321,7 +329,9 @@ class FireAISystem:
 
                 mc_adapter = MCPipelineAdapter(n_trials=500)  # Fast default for interactive use
                 # FIX: Use dynamic coverage radius based on room ceiling height
-                ceiling_height = room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0
+                ceiling_height = (
+                    room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0
+                )
                 mc_result = mc_adapter._sim.simulate_room_reliability(
                     detectors=[
                         (d[0], d[1]) if isinstance(d, list | tuple) and len(d) >= 2 else (d.x, d.y)
@@ -377,7 +387,9 @@ class FireAISystem:
             "detector_count": len(result.detector_positions),
             "confidence": result.confidence.value,
             "wall_violations": len(result.wall_violations),
-            "coverage": result.placement_proof.coverage_fraction if result.placement_proof else None,
+            "coverage": result.placement_proof.coverage_fraction
+            if result.placement_proof
+            else None,
             "user_id": user_id,
             "resilience": result.resilience.resilient if result.resilience else None,
         }
@@ -414,9 +426,13 @@ class FireAISystem:
             geometry_hash = f"{room_spec.width_m:.2f}x{room_spec.depth_m:.2f}"
             room_area = room_spec.area_sqm
             occupancy = room_spec.occupancy_type or "office"
-            det_type = room_spec.detector_type.value if room_spec.detector_type else "SMOKE_PHOTOELECTRIC"
+            det_type = (
+                room_spec.detector_type.value if room_spec.detector_type else "SMOKE_PHOTOELECTRIC"
+            )
 
-            coverage_pct_val = (result.placement_proof.coverage_fraction * 100) if result.placement_proof else 0.0
+            coverage_pct_val = (
+                (result.placement_proof.coverage_fraction * 100) if result.placement_proof else 0.0
+            )
             confidence_level = result.confidence.value
 
             try:
@@ -735,7 +751,11 @@ class FireAISystem:
                                     if det_tuples:
                                         # FIX: Use dynamic coverage radius based on ceiling height
                                         ceiling_height = float(room.get("ceiling_height", 3.0))
-                                        coverage = get_smoke_detector_radius_safe(ceiling_height) if ceiling_height > 0 else 6.37
+                                        coverage = (
+                                            get_smoke_detector_radius_safe(ceiling_height)
+                                            if ceiling_height > 0
+                                            else 6.37
+                                        )
                                         sim_result = mc_adapter._sim.simulate_room_reliability(
                                             detectors=det_tuples,
                                             room_width=float(room.get("width", 10.0)),
@@ -801,10 +821,14 @@ class FireAISystem:
             "core_subsystems": {
                 "cable_routing": {
                     "compliant": (
-                        integration_result.cable_result.compliant if integration_result.cable_result else None
+                        integration_result.cable_result.compliant
+                        if integration_result.cable_result
+                        else None
                     ),
                     "circuit_count": (
-                        integration_result.cable_result.circuit_count if integration_result.cable_result else 0
+                        integration_result.cable_result.circuit_count
+                        if integration_result.cable_result
+                        else 0
                     ),
                 },
                 "digital_twin_sync": {

@@ -6,6 +6,7 @@ Event publisher for publishing Revit integration events to the EventBus.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import asyncio
 import logging
 from datetime import UTC, datetime
@@ -69,16 +70,16 @@ class RevitEventPublisher:
             return False
 
         # Add timestamp if not present
-        if 'timestamp' not in payload:
-            payload['timestamp'] = datetime.now(UTC).isoformat()
+        if "timestamp" not in payload:
+            payload["timestamp"] = datetime.now(UTC).isoformat()
 
         # Add event metadata
         event_data = {
-            'event_type': event_type,
-            'payload': payload,
-            'timestamp': payload['timestamp'],
-            'source': 'revit_integration',
-            'priority': EVENT_PRIORITIES.get(event_enum, 0)
+            "event_type": event_type,
+            "payload": payload,
+            "timestamp": payload["timestamp"],
+            "source": "revit_integration",
+            "priority": EVENT_PRIORITIES.get(event_enum, 0),
         }
 
         try:
@@ -135,20 +136,22 @@ class RevitEventPublisher:
 
     async def _handle_element_imported(self, payload: dict[str, Any]) -> None:
         """Handle element imported event."""
-        element_id = payload.get('element_id', 'unknown')
-        category = payload.get('category', 'unknown')
-        target_model = payload.get('target_model', 'unknown')
+        element_id = payload.get("element_id", "unknown")
+        category = payload.get("category", "unknown")
+        target_model = payload.get("target_model", "unknown")
 
-        self.logger.info(f"Element imported: {element_id} (Category: {category}, Model: {target_model})")
+        self.logger.info(
+            f"Element imported: {element_id} (Category: {category}, Model: {target_model})"
+        )
 
         # In a real implementation, this might trigger additional processing
         # based on the element type and target model
 
     async def _handle_topology_changed(self, payload: dict[str, Any]) -> None:
         """Handle topology changed event."""
-        element_id = payload.get('element_id', 'unknown')
-        model_type = payload.get('model_type', 'unknown')
-        change_type = payload.get('change_type', 'unknown')
+        element_id = payload.get("element_id", "unknown")
+        model_type = payload.get("model_type", "unknown")
+        change_type = payload.get("change_type", "unknown")
 
         self.logger.info(f"Topology changed: {element_id} ({change_type}) in {model_type}")
 
@@ -158,9 +161,9 @@ class RevitEventPublisher:
 
     async def _handle_electrical_asset_synced(self, payload: dict[str, Any]) -> None:
         """Handle electrical asset synced event."""
-        element_id = payload.get('element_id', 'unknown')
-        asset_type = payload.get('asset_type', 'unknown')
-        name = payload.get('name', 'unnamed')
+        element_id = payload.get("element_id", "unknown")
+        asset_type = payload.get("asset_type", "unknown")
+        name = payload.get("name", "unnamed")
 
         self.logger.info(f"Electrical asset synced: {name} ({asset_type}) - ID: {element_id}")
 
@@ -169,9 +172,9 @@ class RevitEventPublisher:
 
     async def _handle_sync_completed(self, payload: dict[str, Any]) -> None:
         """Handle sync completed event."""
-        successful = payload.get('successful_elements', 0)
-        failed = payload.get('failed_elements', 0)
-        total = payload.get('total_elements', 0)
+        successful = payload.get("successful_elements", 0)
+        failed = payload.get("failed_elements", 0)
+        total = payload.get("total_elements", 0)
 
         self.logger.info(f"Sync completed: {successful} successful, {failed} failed, {total} total")
 
@@ -222,9 +225,12 @@ class RevitEventPublisher:
     async def get_event_stats(self) -> dict[str, int]:
         """Get statistics about published events."""
         return {
-            'published_count': len(self.published_events),
-            'failed_count': len(self.failed_events),
-            'success_rate': len(self.published_events) / (len(self.published_events) + len(self.failed_events)) if (len(self.published_events) + len(self.failed_events)) > 0 else 0
+            "published_count": len(self.published_events),
+            "failed_count": len(self.failed_events),
+            "success_rate": len(self.published_events)
+            / (len(self.published_events) + len(self.failed_events))
+            if (len(self.published_events) + len(self.failed_events)) > 0
+            else 0,
         }
 
     async def flush_events(self) -> None:
@@ -263,7 +269,7 @@ class MockEventBus:
             await self.event_queue.put(event_data)
 
             # Notify subscribers if any
-            event_type = event_data['event_type']
+            event_type = event_data["event_type"]
             if event_type in self.subscribers:
                 for handler in self.subscribers[event_type]:
                     try:

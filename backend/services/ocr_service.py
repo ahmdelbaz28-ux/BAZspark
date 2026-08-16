@@ -56,32 +56,67 @@ OCR_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB max file size
 
 # Patterns for room names and area values
 ROOM_NAME_PATTERNS = [
-    re.compile(r'(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+(?:-[A-Z0-9]+)*)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'([A-Z][A-Z0-9]*\s*[A-Z0-9]*)\s+(?:ROOM|RM)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'(?:space|espacio|مساحة)\s*[:\-\s]*([A-Z0-9\s\-]+)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'([A-Z0-9\s\-]{2,20})\s*(?:OFFICE|BEDROOM|KITCHEN|BATHROOM|WC)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+(?:-[A-Z0-9]+)*)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"([A-Z][A-Z0-9]*\s*[A-Z0-9]*)\s+(?:ROOM|RM)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"(?:space|espacio|مساحة)\s*[:\-\s]*([A-Z0-9\s\-]+)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"([A-Z0-9\s\-]{2,20})\s*(?:OFFICE|BEDROOM|KITCHEN|BATHROOM|WC)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     # Arabic room names
-    re.compile(r'(?:غرفة|مكتب|مطبخ|حمام)\s*[:\-\s]*([^\s\d]{2,10}\d*)', re.UNICODE | re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"(?:غرفة|مكتب|مطبخ|حمام)\s*[:\-\s]*([^\s\d]{2,10}\d*)", re.UNICODE | re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
 ]
 
 AREA_VALUE_PATTERNS = [
-    re.compile(r'(\d+\.?\d*)\s*(?:SQM|m²|m2|square meter|sq\.?m)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — acceptable in this context  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — acceptable in this context
-    re.compile(r'(\d+\.?\d*)\s*(?:METERS?\s*SQUARED|M²)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'AREA\s*[:\-\s]*(\d+\.?\d*)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"(\d+\.?\d*)\s*(?:SQM|m²|m2|square meter|sq\.?m)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — acceptable in this context  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — acceptable in this context
+    re.compile(
+        r"(\d+\.?\d*)\s*(?:METERS?\s*SQUARED|M²)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"AREA\s*[:\-\s]*(\d+\.?\d*)", re.IGNORECASE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     # Arabic area patterns
-    re.compile(r'المساحة\s*[:\-\s]*(\d+\.?\d*)', re.UNICODE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'(\d+\.?\d*)\s*(?:متر\s*مربع|م²)', re.UNICODE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"المساحة\s*[:\-\s]*(\d+\.?\d*)", re.UNICODE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"(\d+\.?\d*)\s*(?:متر\s*مربع|م²)", re.UNICODE
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
 ]
 
 # Pattern for sanitizing potentially malicious content from OCR
 MALICIOUS_PATTERNS = [
-    re.compile(r'\b(eval|exec|import|__import__|getattr|setattr|globals|locals|compile|open|write)\b', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'[;&|><`$]', re.IGNORECASE),  # Shell metacharacters  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'<script', re.IGNORECASE),  # Potential HTML/JS injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'\.\./', re.IGNORECASE),  # Path traversal  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'union\s+select', re.IGNORECASE),  # SQL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'\b(drop|alter|truncate)\s+(table|database|schema)\b', re.IGNORECASE),  # SQL DDL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
-    re.compile(r'\b(delete|insert|update)\s+(from|into|set)\b', re.IGNORECASE),  # SQL DML injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"\b(eval|exec|import|__import__|getattr|setattr|globals|locals|compile|open|write)\b",
+        re.IGNORECASE,
+    ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"[;&|><`$]", re.IGNORECASE
+    ),  # Shell metacharacters  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"<script", re.IGNORECASE
+    ),  # Potential HTML/JS injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"\.\./", re.IGNORECASE
+    ),  # Path traversal  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"union\s+select", re.IGNORECASE
+    ),  # SQL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"\b(drop|alter|truncate)\s+(table|database|schema)\b", re.IGNORECASE
+    ),  # SQL DDL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(
+        r"\b(delete|insert|update)\s+(from|into|set)\b", re.IGNORECASE
+    ),  # SQL DML injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
 ]
 
 
@@ -129,14 +164,18 @@ class OCRService:
         """
         # Apply sanitization patterns
         for pattern in MALICIOUS_PATTERNS:
-            text = pattern.sub('', text)
+            text = pattern.sub("", text)
 
         # Remove excessive whitespace and normalize
-        text = ' '.join(text.split())
+        text = " ".join(text.split())
 
         return text
 
-    def _extract_room_names(self, text: str) -> list[tuple[str, float]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_room_names(
+        self, text: str
+    ) -> list[
+        tuple[str, float]
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract room names and associated area values from text.
 
@@ -211,15 +250,14 @@ class OCRService:
             Dictionary with OCR results including text and confidence scores
         """
         # Convert image to RGB if it's in palette mode
-        if image.mode == 'P':
-            image = image.convert('RGB')
-        elif image.mode == 'RGBA':
-            image = image.convert('RGB')  # NOSONAR — S1871: branches intentionally separate
+        if image.mode == "P":
+            image = image.convert("RGB")
+        elif image.mode == "RGBA":
+            image = image.convert("RGB")  # NOSONAR — S1871: branches intentionally separate
 
         if pytesseract is None:
             raise RuntimeError(
-                "pytesseract is required but not installed. "
-                "Please run `pip install pytesseract`."
+                "pytesseract is required but not installed. Please run `pip install pytesseract`."
             )
 
         # Perform OCR with data including confidence scores
@@ -227,7 +265,7 @@ class OCRService:
             image,
             lang=lang,
             output_type=pytesseract.Output.DICT,
-            config='--psm 6'  # Assume single uniform block of text
+            config="--psm 6",  # Assume single uniform block of text
         )
 
         # Filter out empty text and low confidence results
@@ -235,23 +273,23 @@ class OCRService:
         total_confidence = 0
         valid_boxes = 0
 
-        for i in range(len(data['text'])):
-            text_val = data['text'][i].strip()
-            conf = int(data['conf'][i])
+        for i in range(len(data["text"])):
+            text_val = data["text"][i].strip()
+            conf = int(data["conf"][i])
 
             if text_val and conf >= OCR_MIN_CONFIDENCE:
                 filtered_text.append(text_val)
                 total_confidence += conf
                 valid_boxes += 1
 
-        extracted_text = ' '.join(filtered_text)
+        extracted_text = " ".join(filtered_text)
         avg_confidence = total_confidence / valid_boxes if valid_boxes > 0 else 0
 
         return {
-            'text': extracted_text,
-            'confidence': avg_confidence,
-            'word_count': len(filtered_text),
-            'raw_data': data
+            "text": extracted_text,
+            "confidence": avg_confidence,
+            "word_count": len(filtered_text),
+            "raw_data": data,
         }
 
     def process_file(self, file_path: str | Path, lang: str = "eng+ara") -> dict[str, Any]:
@@ -274,12 +312,16 @@ class OCRService:
 
         file_size = file_path.stat().st_size
         if file_size > OCR_MAX_FILE_SIZE:
-            raise ValueError(f"File too large ({file_size} bytes), max allowed: {OCR_MAX_FILE_SIZE}")
+            raise ValueError(
+                f"File too large ({file_size} bytes), max allowed: {OCR_MAX_FILE_SIZE}"
+            )
 
         # Validate file type
         file_ext = file_path.suffix.lower()
-        if file_ext not in ['.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
-            raise ValueError(f"Unsupported file type: {file_ext}. Supported: .pdf, .png, .jpg, .jpeg, .tiff, .bmp")
+        if file_ext not in [".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"]:
+            raise ValueError(
+                f"Unsupported file type: {file_ext}. Supported: .pdf, .png, .jpg, .jpeg, .tiff, .bmp"
+            )
 
         self.logger.info(f"Processing OCR for file: {file_path}, size: {file_size} bytes")
 
@@ -288,11 +330,10 @@ class OCRService:
         total_word_count = 0
 
         try:
-            if file_ext == '.pdf':
+            if file_ext == ".pdf":
                 if convert_from_path is None:
                     raise RuntimeError(
-                        "pdf2image is required for PDF OCR. "
-                        "Please run `pip install pdf2image`."
+                        "pdf2image is required for PDF OCR. Please run `pip install pdf2image`."
                     )
                 # Convert PDF to images
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -300,32 +341,36 @@ class OCRService:
                         str(file_path),
                         dpi=200,  # Good balance between quality and performance
                         output_folder=temp_dir,
-                        fmt='png',
-                        thread_count=2
+                        fmt="png",
+                        thread_count=2,
                     )
 
                     for i, page_img in enumerate(pages):
                         page_result = self._ocr_image(page_img, lang=lang)
-                        extracted_pages.append({
-                            'page_number': i + 1,
-                            'text': page_result['text'],
-                            'confidence': page_result['confidence'],
-                            'word_count': page_result['word_count']
-                        })
-                        total_confidence += page_result['confidence']
-                        total_word_count += page_result['word_count']
+                        extracted_pages.append(
+                            {
+                                "page_number": i + 1,
+                                "text": page_result["text"],
+                                "confidence": page_result["confidence"],
+                                "word_count": page_result["word_count"],
+                            }
+                        )
+                        total_confidence += page_result["confidence"]
+                        total_word_count += page_result["word_count"]
             else:
                 # Process single image
                 image = Image.open(file_path)
                 result = self._ocr_image(image, lang=lang)
-                extracted_pages.append({
-                    'page_number': 1,
-                    'text': result['text'],
-                    'confidence': result['confidence'],
-                    'word_count': result['word_count']
-                })
-                total_confidence = result['confidence']
-                total_word_count = result['word_count']
+                extracted_pages.append(
+                    {
+                        "page_number": 1,
+                        "text": result["text"],
+                        "confidence": result["confidence"],
+                        "word_count": result["word_count"],
+                    }
+                )
+                total_confidence = result["confidence"]
+                total_word_count = result["word_count"]
 
         except Exception:  # NOSONAR - python:S1481
             # traceback automatically — no need to interpolate {e}.
@@ -333,7 +378,7 @@ class OCRService:
             raise
 
         # Combine all extracted text
-        combined_text = ' '.join([page['text'] for page in extracted_pages])
+        combined_text = " ".join([page["text"] for page in extracted_pages])
 
         # Sanitize the extracted text
         sanitized_text = self._sanitize_extracted_text(combined_text)
@@ -347,30 +392,30 @@ class OCRService:
 
         # Prepare audit trail information (NFPA 72-2022 §10.6)
         audit_info = {
-            'timestamp': __import__('time').time(),
-            'file_path': str(file_path.absolute()),
-            'file_size': file_size,
-            'ocr_service_version': '1.0.0',
-            'languages_used': lang,
-            'requires_human_review': True,  # OCR results always require review
-            'confidence_score': round(avg_confidence, 2),
-            'total_word_count': total_word_count,
-            'page_count': len(extracted_pages)
+            "timestamp": __import__("time").time(),
+            "file_path": str(file_path.absolute()),
+            "file_size": file_size,
+            "ocr_service_version": "1.0.0",
+            "languages_used": lang,
+            "requires_human_review": True,  # OCR results always require review
+            "confidence_score": round(avg_confidence, 2),
+            "total_word_count": total_word_count,
+            "page_count": len(extracted_pages),
         }
 
         result = {
-            'success': True,
-            'audit_trail': audit_info,
-            'pages': extracted_pages,
-            'extracted_text': sanitized_text,
-            'room_areas': room_areas,
-            'areas_only': standalone_areas,
-            'statistics': {
-                'total_rooms_found': len(room_areas),
-                'total_areas_found': len(standalone_areas),
-                'average_confidence': round(avg_confidence, 2),
-                'total_words_extracted': total_word_count
-            }
+            "success": True,
+            "audit_trail": audit_info,
+            "pages": extracted_pages,
+            "extracted_text": sanitized_text,
+            "room_areas": room_areas,
+            "areas_only": standalone_areas,
+            "statistics": {
+                "total_rooms_found": len(room_areas),
+                "total_areas_found": len(standalone_areas),
+                "average_confidence": round(avg_confidence, 2),
+                "total_words_extracted": total_word_count,
+            },
         }
 
         self.logger.info(
@@ -388,7 +433,7 @@ try:
     ocr_service = OCRService()
 except Exception as e:
     import logging
+
     logging.getLogger("backend.services.ocr_service").warning(
-        f"Failed to initialize global ocr_service: {e}. "
-        "OCR features will be unavailable."
+        f"Failed to initialize global ocr_service: {e}. OCR features will be unavailable."
     )

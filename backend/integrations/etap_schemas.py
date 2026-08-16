@@ -3,6 +3,7 @@
 """
 backend/integrations/etap_schemas.py — Pydantic schemas for ETAP integration.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -24,7 +25,12 @@ class EtapConnectionSettings(BaseModel):
     host: str = Field(..., min_length=1, max_length=255, description="ETAP server hostname or IP")
     port: int = Field(..., ge=1, le=65535, description="ETAP server port")
     username: str = Field(..., min_length=1, max_length=255, description="ETAP username")
-    password: str = Field(..., min_length=1, max_length=255, description="ETAP password (plaintext in transit, encrypted at rest)")
+    password: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="ETAP password (plaintext in transit, encrypted at rest)",
+    )
     timeout_seconds: int = Field(30, ge=5, le=300, description="Connection timeout in seconds")
 
     @field_validator("host")
@@ -77,7 +83,9 @@ class EtapImportRequest(BaseModel):
     etap_project_id: str = Field(..., description="ETAP project ID")
     import_loads: bool = Field(True, description="Import load data")
     import_sources: bool = Field(True, description="Import source data")
-    conflict_resolution: str = Field("skip", pattern="^(skip|overwrite|merge)$", description="How to handle conflicts")
+    conflict_resolution: str = Field(
+        "skip", pattern="^(skip|overwrite|merge)$", description="How to handle conflicts"
+    )
 
 
 class EtapSyncLog(BaseModel):

@@ -16,6 +16,7 @@ guards: if someone reverts the fix, the tests will FAIL.
 
 If any test FAILS, the fix has been reverted — re-apply immediately.
 """
+
 from __future__ import annotations
 
 import ast
@@ -32,8 +33,17 @@ WS_TRANSPORT_PY = REPO_ROOT / "facp_distributed" / "transport" / "websocket_tran
 
 
 def _iter_python_files(root: Path):
-    skip_dirs = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
-                 "node_modules", ".git", ".venv", "venv", "site-packages"}
+    skip_dirs = {
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "node_modules",
+        ".git",
+        ".venv",
+        "venv",
+        "site-packages",
+    }
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip_dirs]
         for fname in filenames:
@@ -45,8 +55,7 @@ def _imports_any(ast_root: ast.AST, *targets: str) -> bool:
     for node in ast.walk(ast_root):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if any(alias.name == t or alias.name.startswith(t + ".")
-                       for t in targets):
+                if any(alias.name == t or alias.name.startswith(t + ".") for t in targets):
                     return True
         elif isinstance(node, ast.ImportFrom):
             mod = node.module or ""
@@ -174,8 +183,11 @@ def test_websocket_transport_class_not_referenced_outside_facp_distributed():
             continue
         if py.resolve() == WS_TRANSPORT_PY.resolve():
             continue
-        if py.name == "__init__.py" and py.parent.name == "transport" \
-           and "facp_distributed" in parts:
+        if (
+            py.name == "__init__.py"
+            and py.parent.name == "transport"
+            and "facp_distributed" in parts
+        ):
             continue
         try:
             content = py.read_text(encoding="utf-8")
@@ -207,7 +219,8 @@ def test_auth_token_set_still_correctly_rejects_wrong_token():
         pytest.skip(f"facp_distributed not importable: {e}")
 
     transport = WebSocketTransport(
-        host="127.0.0.1", port=0,
+        host="127.0.0.1",
+        port=0,
         auth_token="expected-secret-token",
     )
 
@@ -228,9 +241,11 @@ def test_auth_token_set_still_correctly_rejects_wrong_token():
         async def send(self, data):
             self.sent.append(data)
 
-    mock_ws = FakeWebSocket([
-        '{"method": "auth", "token": "WRONG-TOKEN", "id": "test-1"}',
-    ])
+    mock_ws = FakeWebSocket(
+        [
+            '{"method": "auth", "token": "WRONG-TOKEN", "id": "test-1"}',
+        ]
+    )
 
     async def run():
         await transport._handle_client_message(mock_ws, "/")
@@ -238,6 +253,7 @@ def test_auth_token_set_still_correctly_rejects_wrong_token():
     asyncio.run(run())
 
     import json
+
     assert mock_ws.sent, "Server sent no messages"
     first_response = json.loads(mock_ws.sent[0])
     err = first_response.get("error", {})
@@ -261,7 +277,8 @@ def test_auth_token_set_correctly_accepts_right_token():
         pytest.skip(f"facp_distributed not importable: {e}")
 
     transport = WebSocketTransport(
-        host="127.0.0.1", port=0,
+        host="127.0.0.1",
+        port=0,
         auth_token="correct-secret-token",
     )
 
@@ -282,9 +299,11 @@ def test_auth_token_set_correctly_accepts_right_token():
         async def send(self, data):
             self.sent.append(data)
 
-    mock_ws = FakeWebSocket([
-        '{"method": "auth", "token": "correct-secret-token", "id": "test-1"}',
-    ])
+    mock_ws = FakeWebSocket(
+        [
+            '{"method": "auth", "token": "correct-secret-token", "id": "test-1"}',
+        ]
+    )
 
     async def run():
         await transport._handle_client_message(mock_ws, "/")
@@ -292,6 +311,7 @@ def test_auth_token_set_correctly_accepts_right_token():
     asyncio.run(run())
 
     import json
+
     assert mock_ws.sent, "Server sent no messages"
     first_response = json.loads(mock_ws.sent[0])
     status = first_response.get("status", "")

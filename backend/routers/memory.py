@@ -94,7 +94,9 @@ router = APIRouter(
     prefix="/memory",
     tags=["memory"],
     responses={
-        404: {"description": "Memory not found"},  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        404: {
+            "description": "Memory not found"
+        },  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         500: {"description": "Internal server error"},
     },
 )
@@ -113,7 +115,12 @@ MEMORY_DISCLAIMER = (
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/status", summary="Get memory service status", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
+
+@router.get(
+    "/status",
+    summary="Get memory service status",
+    dependencies=[Depends(require_permission(Permission.HEALTH_READ))],
+)
 async def get_status():
     """
     Get the current status of the memory service.
@@ -130,7 +137,11 @@ async def get_status():
     }
 
 
-@router.post("/add", summary="Add a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
+@router.post(
+    "/add",
+    summary="Add a memory",
+    dependencies=[Depends(require_permission(Permission.USER_MANAGE))],
+)
 @limiter.limit("30/minute")
 async def add_memory(request: Request, body: MemoryAddRequest):
     """
@@ -154,9 +165,7 @@ async def add_memory(request: Request, body: MemoryAddRequest):
     principal = _require_principal(request)
 
     # F3: server-side scoping — client-supplied user_id is ignored.
-    body.user_id = _enforce_principal_scope(
-        principal, body.user_id, logger_name="add_memory"
-    )
+    body.user_id = _enforce_principal_scope(principal, body.user_id, logger_name="add_memory")
     if not body.agent_id:
         body.agent_id = "fireai"
 
@@ -165,7 +174,11 @@ async def add_memory(request: Request, body: MemoryAddRequest):
     return result
 
 
-@router.post("/search", summary="Search memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+@router.post(
+    "/search",
+    summary="Search memories",
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
 @limiter.limit("30/minute")
 async def search_memories(request: Request, body: MemorySearchRequest):
     """
@@ -187,20 +200,24 @@ async def search_memories(request: Request, body: MemorySearchRequest):
 
     # F3: force the search scope to the caller's principal — a client can
     # never query another credential's memories.
-    body.user_id = _enforce_principal_scope(
-        principal, body.user_id, logger_name="search_memories"
-    )
+    body.user_id = _enforce_principal_scope(principal, body.user_id, logger_name="search_memories")
 
     response = service.search_memories(body)
     return response.model_dump()
 
 
-@router.get("/all", summary="Get all memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+@router.get(
+    "/all",
+    summary="Get all memories",
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
 async def get_all_memories(
     request: Request,
-    user_id: str | None =  Query(None, description="Filter by user/engineer"),  # NOSONAR - python:S8410
-    agent_id: str | None =  Query(None, description="Filter by agent"),  # NOSONAR - python:S8410
-    run_id: str | None =  Query(None, description="Filter by project/run"),  # NOSONAR - python:S8410
+    user_id: str | None = Query(
+        None, description="Filter by user/engineer"
+    ),  # NOSONAR - python:S8410
+    agent_id: str | None = Query(None, description="Filter by agent"),  # NOSONAR - python:S8410
+    run_id: str | None = Query(None, description="Filter by project/run"),  # NOSONAR - python:S8410
 ):
     """
     Get all memories for a given scope.
@@ -222,9 +239,7 @@ async def get_all_memories(
 
     # F3: the user scope is always the caller's principal — a client cannot
     # list another credential's memories by passing a foreign user_id.
-    effective_user_id = _enforce_principal_scope(
-        principal, user_id, logger_name="get_all_memories"
-    )
+    effective_user_id = _enforce_principal_scope(principal, user_id, logger_name="get_all_memories")
 
     result = service.get_all_memories(
         user_id=effective_user_id,
@@ -235,7 +250,11 @@ async def get_all_memories(
     return result
 
 
-@router.delete("/{memory_id}", summary="Delete a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
+@router.delete(
+    "/{memory_id}",
+    summary="Delete a memory",
+    dependencies=[Depends(require_permission(Permission.USER_MANAGE))],
+)
 @limiter.limit("30/minute")
 async def delete_memory(request: Request, memory_id: str):
     """
@@ -251,12 +270,18 @@ async def delete_memory(request: Request, memory_id: str):
     service = get_memory_service()
     result = service.delete_memory(memory_id=memory_id)
     if not result.get("success"):
-        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail=_sanitize_error(result.get("error", "Memory not found"))
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result
 
 
-@router.get("/{memory_id}/history", summary="Get memory history", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+@router.get(
+    "/{memory_id}/history",
+    summary="Get memory history",
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
 async def get_memory_history(memory_id: str):
     """
     Get the full history of a memory (all changes over time).
@@ -273,6 +298,8 @@ async def get_memory_history(memory_id: str):
     service = get_memory_service()
     result = service.get_memory_history(memory_id=memory_id)
     if not result.get("success"):
-        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail=_sanitize_error(result.get("error", "Memory not found"))
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result

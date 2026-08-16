@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ImprovementFeedback:
     feedback_id: str = ""
-    component: str = ""  # "spacing_factor", "margin", "threshold", "density", "routing", "verification"
+    component: str = (
+        ""  # "spacing_factor", "margin", "threshold", "density", "routing", "verification"
+    )
     metric: str = ""  # "coverage_pct", "compliance_rate", "false_positive_rate", "execution_time", "detector_count"
     actual_value: float = 0.0
     expected_value: float = 0.0
@@ -196,7 +198,13 @@ class SelfImprovementEngine:
                 ),
             )
             self.conn.commit()
-        logger.info("Ingested feedback %s (%s/%s, severity=%s)", fid, feedback.component, feedback.metric, feedback.severity)
+        logger.info(
+            "Ingested feedback %s (%s/%s, severity=%s)",
+            fid,
+            feedback.component,
+            feedback.metric,
+            feedback.severity,
+        )
 
         gap = feedback.expected_value - feedback.actual_value
         if feedback.severity in ("high", "critical") and gap > 0.05:
@@ -259,7 +267,11 @@ class SelfImprovementEngine:
         requires_approval: bool = False,
     ) -> str:
         rid = str(uuid.uuid4())
-        change_pct = ((new_value - previous_value) / max(abs(previous_value), 1e-9)) * 100.0 if previous_value != 0 else 0.0
+        change_pct = (
+            ((new_value - previous_value) / max(abs(previous_value), 1e-9)) * 100.0
+            if previous_value != 0
+            else 0.0
+        )
         with self._lock:
             cursor = self.conn.cursor()
             cursor.execute(
@@ -298,7 +310,9 @@ class SelfImprovementEngine:
                 logger.warning("F-02: approve_improvement — record %s not found", record_id)
                 return False
             if not row["requires_approval"]:
-                logger.info("F-02: record %s does not require approval (already auto-applied)", record_id)
+                logger.info(
+                    "F-02: record %s does not require approval (already auto-applied)", record_id
+                )
                 return False
             # Replace pending_approval_ prefix with approved_ in action_taken
             old_action = row["action_taken"]
@@ -403,12 +417,18 @@ class SelfImprovementEngine:
             best_row = cursor.fetchone()
             if best_row:
                 # F-02: Clamp historically-optimized parameters to NFPA 72 bounds
-                sp = max(_NFPA72_PARAM_BOUNDS["spacing_factor"][0],
-                         min(_NFPA72_PARAM_BOUNDS["spacing_factor"][1], best_row["spacing_factor"]))
-                ma = max(_NFPA72_PARAM_BOUNDS["margin"][0],
-                         min(_NFPA72_PARAM_BOUNDS["margin"][1], best_row["margin"]))
-                th = max(_NFPA72_PARAM_BOUNDS["threshold"][0],
-                         min(_NFPA72_PARAM_BOUNDS["threshold"][1], best_row["threshold"]))
+                sp = max(
+                    _NFPA72_PARAM_BOUNDS["spacing_factor"][0],
+                    min(_NFPA72_PARAM_BOUNDS["spacing_factor"][1], best_row["spacing_factor"]),
+                )
+                ma = max(
+                    _NFPA72_PARAM_BOUNDS["margin"][0],
+                    min(_NFPA72_PARAM_BOUNDS["margin"][1], best_row["margin"]),
+                )
+                th = max(
+                    _NFPA72_PARAM_BOUNDS["threshold"][0],
+                    min(_NFPA72_PARAM_BOUNDS["threshold"][1], best_row["threshold"]),
+                )
                 return ParameterSuggestion(
                     spacing_factor=sp,
                     margin=ma,
@@ -424,7 +444,9 @@ class SelfImprovementEngine:
                 GROUP BY component
             """)
             gap_rows = cursor.fetchall()
-            gaps: dict[str, float] = {r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows}
+            gaps: dict[str, float] = {
+                r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows
+            }
 
         suggestions: dict[str, list[tuple[float, float]]] = {
             "spacing_factor": [],
@@ -454,12 +476,17 @@ class SelfImprovementEngine:
                         )
 
         # F-02: Clamp grid-search result to NFPA 72 bounds before persisting
-        best.spacing_factor = max(_NFPA72_PARAM_BOUNDS["spacing_factor"][0],
-                                  min(_NFPA72_PARAM_BOUNDS["spacing_factor"][1], best.spacing_factor))
-        best.margin = max(_NFPA72_PARAM_BOUNDS["margin"][0],
-                          min(_NFPA72_PARAM_BOUNDS["margin"][1], best.margin))
-        best.threshold = max(_NFPA72_PARAM_BOUNDS["threshold"][0],
-                             min(_NFPA72_PARAM_BOUNDS["threshold"][1], best.threshold))
+        best.spacing_factor = max(
+            _NFPA72_PARAM_BOUNDS["spacing_factor"][0],
+            min(_NFPA72_PARAM_BOUNDS["spacing_factor"][1], best.spacing_factor),
+        )
+        best.margin = max(
+            _NFPA72_PARAM_BOUNDS["margin"][0], min(_NFPA72_PARAM_BOUNDS["margin"][1], best.margin)
+        )
+        best.threshold = max(
+            _NFPA72_PARAM_BOUNDS["threshold"][0],
+            min(_NFPA72_PARAM_BOUNDS["threshold"][1], best.threshold),
+        )
 
         with self._lock:
             cursor = self.conn.cursor()
@@ -481,7 +508,9 @@ class SelfImprovementEngine:
 
         return best
 
-    def _evaluate_param(self, _design: Any, param: str, _value: float, gaps: dict[str, float]) -> float:  # NOSONAR — S1172: parameter retained for API stability
+    def _evaluate_param(
+        self, _design: Any, param: str, _value: float, gaps: dict[str, float]
+    ) -> float:  # NOSONAR — S1172: parameter retained for API stability
         gap = abs(gaps.get(param, 0))
         if gap < 0.01:
             return 0.5

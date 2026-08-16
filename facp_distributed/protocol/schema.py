@@ -1,5 +1,6 @@
 # NOSONAR
 """FACP Distributed Protocol Schema Definitions"""
+
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -16,15 +17,21 @@ class FACPDistributedSchema:
         return {
             "type": "object",
             "properties": {
-                "protocol": {"type": "string", "const": "FACP/1.1"},  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                "protocol": {
+                    "type": "string",
+                    "const": "FACP/1.1",
+                },  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 "type": {"type": "string", "const": "request"},
                 "id": {"type": "string"},
                 "timestamp": {"type": "string", "format": "date-time"},
-                "source": {"type": "string", "enum": ["l1", "l2", "l3", "client", "orchestrator", "engine"]},
+                "source": {
+                    "type": "string",
+                    "enum": ["l1", "l2", "l3", "client", "orchestrator", "engine"],
+                },
                 "target": {"type": "string", "enum": ["orchestrator", "engine", "client"]},
                 "execution_state": {
                     "type": "string",
-                    "enum": ["RECEIVED", "VALIDATED", "ROUTED", "EXECUTING", "COMPLETED", "FAILED"]
+                    "enum": ["RECEIVED", "VALIDATED", "ROUTED", "EXECUTING", "COMPLETED", "FAILED"],
                 },
                 "method": {"type": "string"},
                 "params": {
@@ -32,29 +39,44 @@ class FACPDistributedSchema:
                     "properties": {
                         "task": {"type": "string"},
                         "payload": {"type": "object"},
-                        "context": {"type": "object"}
+                        "context": {"type": "object"},
                     },
-                    "required": ["task"]
+                    "required": ["task"],
                 },
                 "security": {
                     "type": "object",
                     "properties": {
                         "auth_token": {"type": ["string", "null"]},
                         "permissions": {"type": "array", "items": {"type": "string"}},
-                        "risk_level": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
-                        "idempotency_key": {"type": ["string", "null"]}
-                    }
+                        "risk_level": {
+                            "type": "string",
+                            "enum": ["low", "medium", "high", "critical"],
+                        },
+                        "idempotency_key": {"type": ["string", "null"]},
+                    },
                 },
                 "constraints": {
                     "type": "object",
                     "properties": {
                         "timeout_ms": {"type": "integer", "minimum": 1},
                         "max_memory_mb": {"type": "number", "minimum": 0.1},
-                        "max_recursion_depth": {"type": "integer", "minimum": 1}
-                    }
-                }
+                        "max_recursion_depth": {"type": "integer", "minimum": 1},
+                    },
+                },
             },
-            "required": ["protocol", "type", "id", "timestamp", "source", "target", "execution_state", "method", "params", "security", "constraints"]
+            "required": [
+                "protocol",
+                "type",
+                "id",
+                "timestamp",
+                "source",
+                "target",
+                "execution_state",
+                "method",
+                "params",
+                "security",
+                "constraints",
+            ],
         }
 
     # Enhanced Response schema for distributed system
@@ -70,11 +92,8 @@ class FACPDistributedSchema:
                 "result": {"type": "object"},
                 "error": {
                     "type": "object",
-                    "properties": {
-                        "code": {"type": "string"},
-                        "message": {"type": "string"}
-                    },
-                    "required": ["code", "message"]
+                    "properties": {"code": {"type": "string"}, "message": {"type": "string"}},
+                    "required": ["code", "message"],
                 },
                 "trace": {
                     "type": "object",
@@ -82,11 +101,11 @@ class FACPDistributedSchema:
                         "execution_path": {"type": "array", "items": {"type": "string"}},
                         "latency_ms": {"type": "number"},
                         "node_id": {"type": "string"},
-                        "engine_version": {"type": "string"}
-                    }
-                }
+                        "engine_version": {"type": "string"},
+                    },
+                },
             },
-            "required": ["protocol", "type", "id", "status", "trace"]
+            "required": ["protocol", "type", "id", "status", "trace"],
         }
 
 
@@ -101,7 +120,7 @@ class FACPDistributedSerializationHelper:
         target: str = "engine",
         execution_state: str = "RECEIVED",
         security: dict[str, Any] | None = None,
-        constraints: dict[str, Any] | None = None
+        constraints: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Create a distributed FACP request message"""
         return {
@@ -116,11 +135,8 @@ class FACPDistributedSerializationHelper:
             "method": method,
             "params": params,
             "security": security or {},
-            "constraints": constraints or {
-                "timeout_ms": 8000,
-                "max_memory_mb": 512,
-                "max_recursion_depth": 5
-            }
+            "constraints": constraints
+            or {"timeout_ms": 8000, "max_memory_mb": 512, "max_recursion_depth": 5},
         }
 
     @staticmethod
@@ -129,7 +145,7 @@ class FACPDistributedSerializationHelper:
         status: str,
         result: dict[str, Any] | None = None,
         error: dict[str, str] | None = None,
-        trace: dict[str, Any] | None = None
+        trace: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Create a distributed FACP response message"""
         response = {
@@ -138,7 +154,7 @@ class FACPDistributedSerializationHelper:
             "id": req_id,
             "status": status,
             "result": result or {},
-            "trace": trace or {}
+            "trace": trace or {},
         }
         if error:
             response["error"] = error

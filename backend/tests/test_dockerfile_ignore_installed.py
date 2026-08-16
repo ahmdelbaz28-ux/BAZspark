@@ -191,12 +191,11 @@ def test_pip_ignore_installed_forces_packaging_into_prefix() -> None:
                 timeout=180,
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-            pytest.skip(f"pip install unavailable in this env ({exc!r}) — static guards still enforced")
+            pytest.skip(
+                f"pip install unavailable in this env ({exc!r}) — static guards still enforced"
+            )
 
-        found = any(
-            child.name == "packaging" and child.is_dir()
-            for child in prefix.rglob("*")
-        )
+        found = any(child.name == "packaging" and child.is_dir() for child in prefix.rglob("*"))
         assert found, (
             "`--ignore-installed` must physically install packaging under the "
             "--prefix target even when it is already present in the invoking env."

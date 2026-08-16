@@ -62,7 +62,7 @@ class ApsService:
                 "success": True,
                 "access_token": "mocked_aps_access_token_1234567890",
                 "expires_in": 3599,
-                "simulation_mode": True
+                "simulation_mode": True,
             }
 
         url = "https://developer.api.autodesk.com/authentication/v2/token"
@@ -71,11 +71,11 @@ class ApsService:
 
         headers = {
             "Content-type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {auth_base64}"
+            "Authorization": f"Basic {auth_base64}",
         }
         data = {
             "grant_type": "client_credentials",
-            "scope": "bucket:create bucket:read data:read data:write code:all"
+            "scope": "bucket:create bucket:read data:read data:write code:all",
         }
 
         try:
@@ -87,9 +87,11 @@ class ApsService:
                         "success": True,
                         "access_token": payload.get("access_token"),
                         "expires_in": payload.get("expires_in"),
-                        "simulation_mode": False
+                        "simulation_mode": False,
                     }
-                logger.error("APS OAuth authentication failed: HTTP %s, %s", res.status_code, res.text)
+                logger.error(
+                    "APS OAuth authentication failed: HTTP %s, %s", res.status_code, res.text
+                )
                 return {"success": False, "error": f"HTTP {res.status_code}: {res.text}"}
         except Exception as e:
             logger.exception("APS OAuth exception: %s", e)
@@ -103,13 +105,10 @@ class ApsService:
             return {"success": True, "bucketKey": bucket_key, "simulation_mode": True}
 
         url = "https://developer.api.autodesk.com/oss/v2/buckets"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {token}", "Content-type": "application/json"}
         payload = {
             "bucketKey": bucket_key,
-            "policyKey": "transient"  # Cache for 24 hours
+            "policyKey": "transient",  # Cache for 24 hours
         }
 
         try:
@@ -122,7 +121,9 @@ class ApsService:
             logger.exception("APS create bucket error: %s", e)
             return {"success": False, "error": str(e)}
 
-    def upload_file(self, bucket_key: str, object_key: str, file_path: str, token: str) -> dict[str, Any]:
+    def upload_file(
+        self, bucket_key: str, object_key: str, file_path: str, token: str
+    ) -> dict[str, Any]:
         """
         Upload local file to Autodesk OSS.
         """
@@ -132,14 +133,11 @@ class ApsService:
                 "success": True,
                 "objectId": mock_urn,
                 "objectKey": object_key,
-                "simulation_mode": True
+                "simulation_mode": True,
             }
 
         url = f"https://developer.api.autodesk.com/oss/v2/buckets/{bucket_key}/objects/{object_key}"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-type": "application/octet-stream"
-        }
+        headers = {"Authorization": f"Bearer {token}", "Content-type": "application/octet-stream"}
 
         try:
             with open(file_path, "rb") as f:
@@ -153,14 +151,16 @@ class ApsService:
                         "success": True,
                         "objectId": payload.get("objectId"),
                         "objectKey": payload.get("objectKey"),
-                        "simulation_mode": False
+                        "simulation_mode": False,
                     }
                 return {"success": False, "error": f"HTTP {res.status_code}: {res.text}"}
         except Exception as e:
             logger.exception("APS upload file error: %s", e)
             return {"success": False, "error": str(e)}
 
-    def execute_work_item(self, activity_id: str, input_urn: str, output_urn: str, params: dict[str, Any], token: str) -> dict[str, Any]:
+    def execute_work_item(
+        self, activity_id: str, input_urn: str, output_urn: str, params: dict[str, Any], token: str
+    ) -> dict[str, Any]:
         """
         Trigger Design Automation WorkItem.
         """
@@ -169,10 +169,7 @@ class ApsService:
             return {"success": True, "work_item_id": mock_work_item_id, "simulation_mode": True}
 
         url = "https://developer.api.autodesk.com/da/us-east/v2/workitems"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {token}", "Content-type": "application/json"}
 
         # Structure parameters mapping inputs and outputs for DA engine
         payload = {
@@ -180,21 +177,15 @@ class ApsService:
             "arguments": {
                 "inputFile": {
                     "url": f"https://developer.api.autodesk.com/oss/v2/buckets/bazspark_inputs/objects/{input_urn.rsplit('/', maxsplit=1)[-1]}",
-                    "headers": {
-                        "Authorization": f"Bearer {token}"
-                    }
+                    "headers": {"Authorization": f"Bearer {token}"},
                 },
-                "parameters": {
-                    "url": "data:application/json," + httpx.utils.urlencode(params)
-                },
+                "parameters": {"url": "data:application/json," + httpx.utils.urlencode(params)},
                 "outputFile": {
                     "url": f"https://developer.api.autodesk.com/oss/v2/buckets/bazspark_outputs/objects/{output_urn.rsplit('/', maxsplit=1)[-1]}",
                     "verb": "put",
-                    "headers": {
-                        "Authorization": f"Bearer {token}"
-                    }
-                }
-            }
+                    "headers": {"Authorization": f"Bearer {token}"},
+                },
+            },
         }
 
         try:
@@ -218,12 +209,12 @@ class ApsService:
                 "success": True,
                 "status": "success",
                 "progress": "100%",
-                "simulation_mode": True
+                "simulation_mode": True,
             }
 
         # NOSONAR — S7044: work_item_id is validated before reaching this point (UUID format check below)
         # Validate the work_item_id to prevent path traversal
-        if not re.match(r'^[a-zA-Z0-9\-_]+$', str(work_item_id)):
+        if not re.match(r"^[a-zA-Z0-9\-_]+$", str(work_item_id)):
             logger.warning("Invalid work_item_id format rejected: %s", str(work_item_id)[:20])
             return {"success": False, "error": "Invalid work item ID format"}
 
@@ -237,10 +228,12 @@ class ApsService:
                     payload = res.json()
                     return {
                         "success": True,
-                        "status": payload.get("status", "pending"),  # pending, success, failedLimitExceeded, etc.
+                        "status": payload.get(
+                            "status", "pending"
+                        ),  # pending, success, failedLimitExceeded, etc.
                         "progress": payload.get("progress", "0%"),
                         "reportUrl": payload.get("reportUrl", ""),
-                        "simulation_mode": False
+                        "simulation_mode": False,
                     }
                 return {"success": False, "error": f"HTTP {res.status_code}: {res.text}"}
         except Exception as e:

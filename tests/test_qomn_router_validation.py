@@ -110,8 +110,7 @@ class TestHistoricFalseAcceptsRejected:
         """
         # Sanity: confirm the kernel really does NOT have these
         assert bad_awg not in NEC_TABLE8_RESISTANCE_OHM_PER_KM, (
-            f"Test premise wrong: kernel actually supports {bad_awg}; "
-            "this test should be removed."
+            f"Test premise wrong: kernel actually supports {bad_awg}; this test should be removed."
         )
         with pytest.raises(ValidationError) as exc_info:
             VoltageDropRequest(current_a=1.0, length_m=100.0, awg_gauge=bad_awg)
@@ -169,6 +168,7 @@ class TestRouterKernelContract:
         actually returns a valid voltage drop computation.
         """
         from fireai.core.qomn_kernel import compute_voltage_drop
+
         for awg in sorted(_NEC_TABLE8_VALID_AWG):
             r = VoltageDropRequest(current_a=1.0, length_m=100.0, awg_gauge=awg)
             result = compute_voltage_drop(1.0, 100.0, r.awg_gauge)

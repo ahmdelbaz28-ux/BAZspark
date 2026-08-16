@@ -45,8 +45,12 @@ from fireai.core.revit_exporter import (
 
 def _make_waypoint(x=0.0, y=0.0, z=0.0, is_bend=False) -> RouteWaypoint:
     return RouteWaypoint(
-        x=x, y=y, z=z,
-        grid_ix=0, grid_iy=0, grid_iz=0,
+        x=x,
+        y=y,
+        z=z,
+        grid_ix=0,
+        grid_iy=0,
+        grid_iz=0,
         is_bend=is_bend,
     )
 
@@ -77,16 +81,13 @@ def _make_route(
 
     total_length = 0.0
     for i in range(1, len(waypoints)):
-        dx = waypoints[i].x - waypoints[i-1].x
-        dy = waypoints[i].y - waypoints[i-1].y
-        dz = waypoints[i].z - waypoints[i-1].z
-        total_length += math.sqrt(dx*dx + dy*dy + dz*dz)
+        dx = waypoints[i].x - waypoints[i - 1].x
+        dy = waypoints[i].y - waypoints[i - 1].y
+        dz = waypoints[i].z - waypoints[i - 1].z
+        total_length += math.sqrt(dx * dx + dy * dy + dz * dz)
 
     num_elev = 0
-    decision_log = (
-        (("Route R-001 computed", "NEC 760.24"),)
-        if with_waypoints else ()
-    )
+    decision_log = (("Route R-001 computed", "NEC 760.24"),) if with_waypoints else ()
 
     return CableRoute(
         route_id=route_id,
@@ -152,18 +153,30 @@ class TestScheduleRow:
 
     def test_frozen(self):
         row = ScheduleRow(
-            device_id="R-001", from_location="", to_location="",
-            length_m=10.0, cable_type="AWG 14", voltage_drop_v=1.5,
-            voltage_drop_pct=6.25, num_bends=0, is_compliant=True,
+            device_id="R-001",
+            from_location="",
+            to_location="",
+            length_m=10.0,
+            cable_type="AWG 14",
+            voltage_drop_v=1.5,
+            voltage_drop_pct=6.25,
+            num_bends=0,
+            is_compliant=True,
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
             row.device_id = "changed"
 
     def test_default_code_reference(self):
         row = ScheduleRow(
-            device_id="R-001", from_location="", to_location="",
-            length_m=10.0, cable_type="AWG 14", voltage_drop_v=1.5,
-            voltage_drop_pct=6.25, num_bends=0, is_compliant=True,
+            device_id="R-001",
+            from_location="",
+            to_location="",
+            length_m=10.0,
+            cable_type="AWG 14",
+            voltage_drop_v=1.5,
+            voltage_drop_pct=6.25,
+            num_bends=0,
+            is_compliant=True,
         )
         assert "NFPA 72" in row.code_reference
         assert "NEC 760.24" in row.code_reference
@@ -185,8 +198,12 @@ class TestIFCElement:
 
     def test_frozen(self):
         elem = IFCElement(
-            global_id="abc", ifc_class="IfcPipeSegment", name="test",
-            description="", start_point=(0, 0, 0), end_point=(1, 0, 0),
+            global_id="abc",
+            ifc_class="IfcPipeSegment",
+            name="test",
+            description="",
+            start_point=(0, 0, 0),
+            end_point=(1, 0, 0),
             length_m=1.0,
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
@@ -194,16 +211,24 @@ class TestIFCElement:
 
     def test_default_workset(self):
         elem = IFCElement(
-            global_id="abc", ifc_class="IfcPipeSegment", name="test",
-            description="", start_point=(0, 0, 0), end_point=(1, 0, 0),
+            global_id="abc",
+            ifc_class="IfcPipeSegment",
+            name="test",
+            description="",
+            start_point=(0, 0, 0),
+            end_point=(1, 0, 0),
             length_m=1.0,
         )
         assert elem.workset == FA_WORKSET
 
     def test_default_route_id(self):
         elem = IFCElement(
-            global_id="abc", ifc_class="IfcPipeSegment", name="test",
-            description="", start_point=(0, 0, 0), end_point=(1, 0, 0),
+            global_id="abc",
+            ifc_class="IfcPipeSegment",
+            name="test",
+            description="",
+            start_point=(0, 0, 0),
+            end_point=(1, 0, 0),
             length_m=1.0,
         )
         assert elem.route_id == ""
@@ -227,9 +252,14 @@ class TestReportSummary:
 
     def test_frozen(self):
         summary = ReportSummary(
-            project_name="Test", total_routes=5, total_cable_length_m=150.0,
-            total_bends=12, max_circuit_length_m=50.0, max_voltage_drop_v=2.4,
-            max_voltage_drop_pct=10.0, compliance_status="ALL COMPLIANT",
+            project_name="Test",
+            total_routes=5,
+            total_cable_length_m=150.0,
+            total_bends=12,
+            max_circuit_length_m=50.0,
+            max_voltage_drop_v=2.4,
+            max_voltage_drop_pct=10.0,
+            compliance_status="ALL COMPLIANT",
             constraint_violations=0,
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
@@ -237,9 +267,14 @@ class TestReportSummary:
 
     def test_default_code_references(self):
         summary = ReportSummary(
-            project_name="Test", total_routes=5, total_cable_length_m=150.0,
-            total_bends=12, max_circuit_length_m=50.0, max_voltage_drop_v=2.4,
-            max_voltage_drop_pct=10.0, compliance_status="ALL COMPLIANT",
+            project_name="Test",
+            total_routes=5,
+            total_cable_length_m=150.0,
+            total_bends=12,
+            max_circuit_length_m=50.0,
+            max_voltage_drop_v=2.4,
+            max_voltage_drop_pct=10.0,
+            compliance_status="ALL COMPLIANT",
             constraint_violations=0,
         )
         assert "NFPA 72 §10.6.4" in summary.code_references
@@ -247,9 +282,14 @@ class TestReportSummary:
 
     def test_default_computation_hash(self):
         summary = ReportSummary(
-            project_name="Test", total_routes=5, total_cable_length_m=150.0,
-            total_bends=12, max_circuit_length_m=50.0, max_voltage_drop_v=2.4,
-            max_voltage_drop_pct=10.0, compliance_status="ALL COMPLIANT",
+            project_name="Test",
+            total_routes=5,
+            total_cable_length_m=150.0,
+            total_bends=12,
+            max_circuit_length_m=50.0,
+            max_voltage_drop_v=2.4,
+            max_voltage_drop_pct=10.0,
+            compliance_status="ALL COMPLIANT",
             constraint_violations=0,
         )
         assert summary.computation_hash == ""
@@ -305,7 +345,10 @@ class TestScheduleGeneration:
         route = _make_route(num_bends=2)
         schedule = _make_schedule(routes=[route])
         rows = exporter.generate_schedule(schedule)
-        assert "bend limit" in rows[0].code_reference.lower() or "NEC Chapter 9" in rows[0].code_reference
+        assert (
+            "bend limit" in rows[0].code_reference.lower()
+            or "NEC Chapter 9" in rows[0].code_reference
+        )
 
     def test_schedule_to_csv(self):
         exporter = RevitExporter()

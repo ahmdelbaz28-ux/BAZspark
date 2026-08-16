@@ -47,13 +47,7 @@ from fireai.core.websocket_manager import ConnectionManager
 def test_cad_parser_bounds_and_sanitization():
     """Verify that DWG/DXF parser rejects infinite coordinates and out-of-bounds entities."""
     parser = StreamingDXFParser()
-    chunk_with_nan = [
-        "0", "LINE",
-        "10", "NaN",
-        "20", "10.5",
-        "11", "20.0",
-        "21", "30.0"
-    ]
+    chunk_with_nan = ["0", "LINE", "10", "NaN", "20", "10.5", "11", "20.0", "21", "30.0"]
     segments = parser._parse_dxf_chunk(chunk_with_nan)
     assert len(segments) == 0  # NaN coordinate segment rejected
 
@@ -150,6 +144,7 @@ def test_meeza_billing_router(monkeypatch):
 
     # Reset Meeza config cache so env var changes take effect
     from backend.services import meeza_payment_service as meeza_svc
+
     meeza_svc._CONFIG = None
     app.include_router(billing_router, prefix="/api/v1")
     test_key = "test_meeza_api_key"
@@ -159,22 +154,28 @@ def test_meeza_billing_router(monkeypatch):
     client = TestClient(app, headers={"X-API-Key": test_key})
 
     # 1. Create order
-    order_res = client.post("/api/v1/billing/orders", json={
-        "amount_cents": 49900,
-        "currency": "EGP",
-        "description": "Professional Plan Subscription",
-        "metadata": {"customer_email": "engineer@example.com"},
-        "expires_in_seconds": 1800,
-    })
+    order_res = client.post(
+        "/api/v1/billing/orders",
+        json={
+            "amount_cents": 49900,
+            "currency": "EGP",
+            "description": "Professional Plan Subscription",
+            "metadata": {"customer_email": "engineer@example.com"},
+            "expires_in_seconds": 1800,
+        },
+    )
     assert order_res.status_code == 201
     order_data = order_res.json()
     order_id = order_data["id"]
     assert order_data["status"] == "pending"
 
     # 2. Initiate checkout
-    checkout_res = client.post(f"/api/v1/billing/orders/{order_id}/checkout", json={
-        "billing_data": {"email": "engineer@example.com"},
-    })
+    checkout_res = client.post(
+        f"/api/v1/billing/orders/{order_id}/checkout",
+        json={
+            "billing_data": {"email": "engineer@example.com"},
+        },
+    )
     assert checkout_res.status_code == 200
     checkout_data = checkout_res.json()
     assert checkout_data["order_id"] == order_id
@@ -190,13 +191,14 @@ def test_meeza_billing_router(monkeypatch):
     }
     secret = webhook_secret
     import json
+
     raw_body = json.dumps(webhook_payload).encode("utf-8")
     sig = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
 
     wh_res = client.post(
         "/api/v1/billing/webhooks/meeza",
         content=raw_body,
-        headers={"Content-Type": "application/json", "X-Meeza-Signature": sig}
+        headers={"Content-Type": "application/json", "X-Meeza-Signature": sig},
     )
     assert wh_res.status_code == 200
     assert wh_res.json()["status"] == "processed"

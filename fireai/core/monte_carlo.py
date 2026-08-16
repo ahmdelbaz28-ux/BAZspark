@@ -100,7 +100,9 @@ def _run_resilience_check_fast(
 
     for _ in range(iterations):
         # Randomly remove one detector
-        idx = np.random.randint(0, n_detectors)  # NOSONAR — S6711: consecutive raise kept for clarity
+        idx = np.random.randint(
+            0, n_detectors
+        )  # NOSONAR — S6711: consecutive raise kept for clarity
         remaining = np.delete(pos_array, idx, axis=0)
 
         if len(remaining) == 0:
@@ -108,7 +110,9 @@ def _run_resilience_check_fast(
             break
 
         # Calculate coverage
-        circles_remaining = np.array([Point(x, y).buffer(radius, quad_segs=12) for x, y in remaining])
+        circles_remaining = np.array(
+            [Point(x, y).buffer(radius, quad_segs=12) for x, y in remaining]
+        )
         coverage = unary_union(circles_remaining)
         covered_area = poly.intersection(coverage).area
         coverage_fraction = covered_area / total_area

@@ -7,10 +7,12 @@ import builtins
 
 _original_zip = builtins.zip
 
+
 def _zip_compatible(*args, **kwargs):
     # Discard the 'strict' argument if present (Python 3.8 ignores it)
-    kwargs.pop('strict', None)
+    kwargs.pop("strict", None)
     return _original_zip(*args, **kwargs)
+
 
 builtins.zip = _zip_compatible
 
@@ -140,8 +142,7 @@ def __getattr__(name):  # NOSONAR — S3776: lazy import dispatch must handle ma
                 return {"Engine": Engine, "Placement": Placement, "Safety": Safety}[name]
             except ImportError as e:
                 raise ImportError(
-                    f"Cannot import '{name}' from fireai.facade. "
-                    f"Original error: {e}"
+                    f"Cannot import '{name}' from fireai.facade. Original error: {e}"
                 ) from e
 
         if name == "EnterpriseOrchestrator":
@@ -175,12 +176,14 @@ def __getattr__(name):  # NOSONAR — S3776: lazy import dispatch must handle ma
 
             if name in ("FireAISystem", "EnhancedRoomResult"):
                 return (
-                    locals().get(name) or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[name]
+                    locals().get(name)
+                    or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[
+                        name
+                    ]
                 )
         except ImportError as e:
             raise ImportError(
-                f"Cannot import '{name}' from fireai.core.fireai_core. "
-                f"Original error: {e}"
+                f"Cannot import '{name}' from fireai.core.fireai_core. Original error: {e}"
             ) from e
         raise AttributeError(f"module 'fireai' has no attribute '{name}'")
     raise AttributeError(f"module 'fireai' has no attribute '{name}'")

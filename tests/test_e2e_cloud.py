@@ -34,6 +34,7 @@ import pytest
 # Helper: Load .env
 # ---------------------------------------------------------------------------
 
+
 def load_env():
     """Load .env file if it exists."""
     env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -70,6 +71,7 @@ _USE_MOCKS = not (_HAS_NEO4J and _HAS_QDRANT and _HAS_MODAL)
 # ---------------------------------------------------------------------------
 # Mock fixtures for local/CI mode (when cloud credentials are missing)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_neo4j_service():
@@ -113,6 +115,7 @@ def mock_qdrant_service():
         instance.store.return_value = "mock-uuid-1234567890"
 
         from collections import namedtuple
+
         MockSearchResult = namedtuple("MockSearchResult", ["content", "score"])
         SearchResults = namedtuple("SearchResults", ["total", "results"])
 
@@ -154,6 +157,7 @@ class TestNeo4jAuraE2E:
         """Connect to REAL Neo4j Aura Cloud or mock and verify health."""
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             service = TopologyGraphService()
         else:
             service = mock_neo4j_service
@@ -177,6 +181,7 @@ class TestNeo4jAuraE2E:
 
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             service = TopologyGraphService()
         else:
             service = mock_neo4j_service
@@ -203,6 +208,7 @@ class TestNeo4jAuraE2E:
 
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             service = TopologyGraphService()
         else:
             service = mock_neo4j_service
@@ -213,17 +219,24 @@ class TestNeo4jAuraE2E:
         service.add_element(NetworkElement("E2E-BUS-002", ElementType.BUS, "E2E Bus 2"))
         service.add_element(NetworkElement("E2E-LOAD-001", ElementType.LOAD, "E2E Load"))
 
-        assert service.add_connection(NetworkConnection(
-            "E2E-BRK-001", "E2E-BUS-002", RelationshipType.FEEDS
-        )) is True
-        assert service.add_connection(NetworkConnection(
-            "E2E-BUS-002", "E2E-LOAD-001", RelationshipType.FEEDS
-        )) is True
+        assert (
+            service.add_connection(
+                NetworkConnection("E2E-BRK-001", "E2E-BUS-002", RelationshipType.FEEDS)
+            )
+            is True
+        )
+        assert (
+            service.add_connection(
+                NetworkConnection("E2E-BUS-002", "E2E-LOAD-001", RelationshipType.FEEDS)
+            )
+            is True
+        )
 
     def test_neo4j_impact_analysis_real(self, mock_neo4j_service):
         """Run REAL impact analysis on Neo4j Aura Cloud or mock."""
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             service = TopologyGraphService()
         else:
             service = mock_neo4j_service
@@ -233,10 +246,12 @@ class TestNeo4jAuraE2E:
         result = service.analyze_breaker_impact("E2E-BRK-001")
 
         assert result.breaker_id == "E2E-BRK-001"
-        assert "E2E-BUS-002" in result.affected_buses, \
+        assert "E2E-BUS-002" in result.affected_buses, (
             f"BUS-002 should be affected. Got: {result.affected_buses}"
-        assert "E2E-LOAD-001" in result.affected_loads, \
+        )
+        assert "E2E-LOAD-001" in result.affected_loads, (
             f"LOAD-001 should be affected. Got: {result.affected_loads}"
+        )
         assert result.analysis_ms > 0, "Should take >0ms"
         assert result.path_count > 0, "Should find at least 1 path"
 
@@ -244,6 +259,7 @@ class TestNeo4jAuraE2E:
         """Verify Neo4j health check returns real node/edge counts or mock."""
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             service = TopologyGraphService()
         else:
             service = mock_neo4j_service
@@ -268,6 +284,7 @@ class TestQdrantCloudE2E:
         """Connect to REAL Qdrant Cloud or mock and verify health."""
         if _HAS_QDRANT:
             from fireai.infrastructure.vector_memory_service import VectorMemoryService
+
             service = VectorMemoryService()
         else:
             service = mock_qdrant_service
@@ -287,6 +304,7 @@ class TestQdrantCloudE2E:
 
         if _HAS_QDRANT:
             from fireai.infrastructure.vector_memory_service import VectorMemoryService
+
             service = VectorMemoryService()
         else:
             service = mock_qdrant_service
@@ -309,6 +327,7 @@ class TestQdrantCloudE2E:
 
         if _HAS_QDRANT:
             from fireai.infrastructure.vector_memory_service import VectorMemoryService
+
             service = VectorMemoryService()
         else:
             service = mock_qdrant_service
@@ -334,6 +353,7 @@ class TestQdrantCloudE2E:
 
         if _HAS_QDRANT:
             from fireai.infrastructure.vector_memory_service import VectorMemoryService
+
             service = VectorMemoryService()
         else:
             service = mock_qdrant_service
@@ -350,8 +370,9 @@ class TestQdrantCloudE2E:
         r1 = service.search("E2E conversation memory test", MemoryType.CONVERSATION, limit=5)
         r2 = service.search("E2E study result memory test", MemoryType.STUDY_RESULT, limit=5)
 
-        assert r1.total > 0 or r2.total > 0, \
+        assert r1.total > 0 or r2.total > 0, (
             "At least one collection should return results for exact match"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -366,6 +387,7 @@ class TestGraphRAGE2E:
         """Initialize GraphRAG with REAL or mock Neo4j + Modal API."""
         if _HAS_MODAL and _HAS_NEO4J:
             from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+
             engine = GraphRAGEngine()
         else:
             engine = mock_graphrag_engine
@@ -381,19 +403,22 @@ class TestGraphRAGE2E:
         """Verify GraphRAG auto-selected GLM-5.1-FP8 (not gpt-4o)."""
         if _HAS_MODAL and _HAS_NEO4J:
             from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+
             engine = GraphRAGEngine()
         else:
             engine = mock_graphrag_engine
 
         if os.environ.get("MODAL_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
-            assert "GLM" in engine._llm_model or "glm" in engine._llm_model, \
+            assert "GLM" in engine._llm_model or "glm" in engine._llm_model, (
                 f"Should use GLM model when Modal key is set. Got: {engine._llm_model}"
+            )
         assert engine._openai_key, "Should have an API key set"
 
     def test_graphrag_ask_real(self, mock_graphrag_engine):
         """Ask GraphRAG a question against REAL or mock Neo4j + Modal."""
         if _HAS_MODAL and _HAS_NEO4J:
             from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+
             engine = GraphRAGEngine()
             engine._initialize()
         else:
@@ -403,13 +428,15 @@ class TestGraphRAGE2E:
         assert isinstance(answer, str), "Answer should be a string"
         assert len(answer) > 0, "Answer should not be empty"
         # Should NOT be the fallback message
-        assert "not available" not in answer.lower(), \
+        assert "not available" not in answer.lower(), (
             f"Should get a real answer, not fallback. Got: {answer[:100]}"
+        )
 
     def test_graphrag_provider_detected(self, mock_graphrag_engine):
         """Verify GraphRAG detected the correct provider (Modal or OpenAI)."""
         if _HAS_MODAL and _HAS_NEO4J:
             from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+
             engine = GraphRAGEngine()
         else:
             engine = mock_graphrag_engine
@@ -417,9 +444,9 @@ class TestGraphRAGE2E:
         assert engine._openai_key, "Should have API key detected"
 
         if os.environ.get("MODAL_API_KEY"):
-            assert "modal" in engine._openai_base_url.lower() or \
-                   "us-west-2" in engine._openai_base_url, \
-                f"Should detect Modal base_url. Got: {engine._openai_base_url}"
+            assert (
+                "modal" in engine._openai_base_url.lower() or "us-west-2" in engine._openai_base_url
+            ), f"Should detect Modal base_url. Got: {engine._openai_base_url}"
 
 
 # ---------------------------------------------------------------------------
@@ -430,11 +457,14 @@ class TestGraphRAGE2E:
 class TestFullStackE2E:
     """E2E test that uses all 3 cloud services together."""
 
-    def test_all_cloud_services_connected(self, mock_neo4j_service, mock_qdrant_service, mock_graphrag_engine):
+    def test_all_cloud_services_connected(
+        self, mock_neo4j_service, mock_qdrant_service, mock_graphrag_engine
+    ):
         """Verify ALL cloud services are simultaneously connected."""
         # Neo4j
         if _HAS_NEO4J:
             from fireai.infrastructure.topology_graph_service import TopologyGraphService
+
             neo4j = TopologyGraphService()
         else:
             neo4j = mock_neo4j_service
@@ -444,6 +474,7 @@ class TestFullStackE2E:
         # Qdrant
         if _HAS_QDRANT:
             from fireai.infrastructure.vector_memory_service import VectorMemoryService
+
             qdrant = VectorMemoryService()
         else:
             qdrant = mock_qdrant_service
@@ -453,15 +484,20 @@ class TestFullStackE2E:
         # GraphRAG
         if _HAS_MODAL and _HAS_NEO4J:
             from fireai.infrastructure.graphrag_engine import GraphRAGEngine
+
             graphrag = GraphRAGEngine()
         else:
             graphrag = mock_graphrag_engine
         graphrag._initialize()
-        assert graphrag.health_check()["neo4j_connected"] is True, "GraphRAG Neo4j should be connected"
+        assert graphrag.health_check()["neo4j_connected"] is True, (
+            "GraphRAG Neo4j should be connected"
+        )
 
     def test_v2_api_topology_endpoint_e2e(self):
         """V2 API /api/v2/topology/health should report status."""
-        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
+        os.environ["FIREAI_API_KEY"] = (
+            "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
+        )
         from fastapi.testclient import TestClient
 
         from backend.app import app
@@ -474,15 +510,18 @@ class TestFullStackE2E:
         data = r.json()
         # When .env is loaded with real Neo4j, topology should report healthy
         if _HAS_NEO4J:
-            assert data.get("healthy") is True, \
+            assert data.get("healthy") is True, (
                 f"Topology health should be True with real Neo4j. Got: {data}"
+            )
         else:
             # With mock, the endpoint still returns a valid response
             assert "healthy" in data, "Should return health status"
 
     def test_v2_api_memory_endpoint_e2e(self):
         """V2 API /api/v2/memory/health should report status."""
-        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
+        os.environ["FIREAI_API_KEY"] = (
+            "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
+        )
         from fastapi.testclient import TestClient
 
         from backend.app import app
@@ -494,8 +533,9 @@ class TestFullStackE2E:
         assert r.status_code == 200
         data = r.json()
         if _HAS_QDRANT:
-            assert data.get("healthy") is True, \
+            assert data.get("healthy") is True, (
                 f"Memory health should be True with real Qdrant. Got: {data}"
+            )
         else:
             # With mock, the endpoint still returns a valid response
             assert "healthy" in data, "Should return health status"

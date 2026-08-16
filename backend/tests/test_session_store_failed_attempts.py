@@ -5,6 +5,7 @@ Verifies that failed-attempt counters can be cleared for ONE bucket (IP or
 per-credential) without touching other buckets — the property the auth login
 path relies on since C-07 replaced the global clear_all_failed_attempts().
 """
+
 from __future__ import annotations
 
 import pytest

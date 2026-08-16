@@ -62,9 +62,7 @@ def _hard_names() -> set[str]:
 
 def test_legacy_cors_allowed_origins_alone_satisfies_hard_check(monkeypatch):
     """Only the legacy alias set → no CORS HARD issue, assert_environment passes."""
-    monkeypatch.setenv(
-        "CORS_ALLOWED_ORIGINS", "https://ahmdelbaz28-bazspark.hf.space"
-    )
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "https://ahmdelbaz28-bazspark.hf.space")
     assert "CORS_ORIGINS" not in _hard_names()
     ev.assert_environment()  # must not raise
 
@@ -88,6 +86,7 @@ def test_new_var_takes_precedence(monkeypatch):
 
 
 # ─── P0-4: new security/HMAC/webhook HARD vars ──────────────────────────────
+
 
 def test_p0_4_security_vars_missing_are_hard(monkeypatch):
     """Each newly-added security var is a HARD launch blocker when unset."""

@@ -36,13 +36,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/connections", tags=["connections-v2"])
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]], dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
+@router.get(
+    "",
+    response_model=ApiResponse[PaginatedData[ConnectionResponse]],
+    dependencies=[Depends(require_permission(Permission.CONNECTION_READ))],
+)
 async def list_connections(
-    project_id: str | None =  Query(None, description="Filter by project ID"),  # NOSONAR - python:S8410
-    element_id: str | None =  Query(None, description="Filter by element ID"),  # NOSONAR - python:S8410
-    relationship_type: str | None =  Query(None, description="Filter by relationship type"),  # NOSONAR - python:S8410
+    project_id: str | None = Query(
+        None, description="Filter by project ID"
+    ),  # NOSONAR - python:S8410
+    element_id: str | None = Query(
+        None, description="Filter by element ID"
+    ),  # NOSONAR - python:S8410
+    relationship_type: str | None = Query(
+        None, description="Filter by relationship type"
+    ),  # NOSONAR - python:S8410
     page: int = Query(1, ge=1, description="Page number"),  # NOSONAR - python:S8410
-    page_size: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
+    page_size: int = Query(
+        20, ge=1, le=100, description="Items per page"
+    ),  # NOSONAR - python:S8410
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):
     """List connections (relationships) with optional filtering and pagination."""
@@ -56,7 +68,6 @@ async def list_connections(
         )
         total_pages = ConnectionService.calculate_pagination(total, page_size)
 
-
         return ApiResponse(
             success=True,
             data=PaginatedData(
@@ -69,10 +80,17 @@ async def list_connections(
         )
     except Exception as e:
         logger.exception("list_connections failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
 
-@router.post("", response_model=ApiResponse[ConnectionResponse], status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
+@router.post(
+    "",
+    response_model=ApiResponse[ConnectionResponse],
+    status_code=201,
+    dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))],
+)
 @limiter.limit("30/minute")
 async def create_connection(
     request: Request,
@@ -86,13 +104,21 @@ async def create_connection(
     except ValueError as e:
         # Never expose str(e) from ValueError to the client.
         logger.warning("Connection creation ValueError: %s", e)
-        raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail="Invalid connection data. Please check the input parameters."
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as e:
         logger.exception("create_connection failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.put("/{connection_id}", response_model=ApiResponse[ConnectionResponse], dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+@router.put(
+    "/{connection_id}",
+    response_model=ApiResponse[ConnectionResponse],
+    dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))],
+)
 @limiter.limit("30/minute")
 async def update_connection(
     request: Request,
@@ -117,7 +143,11 @@ async def update_connection(
         raise HTTPException(status_code=500, detail="Internal server error")  # noqa: S8415
 
 
-@router.delete("/{connection_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
+@router.delete(
+    "/{connection_id}",
+    response_model=ApiResponse[None],
+    dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))],
+)
 @limiter.limit("30/minute")
 async def delete_connection(
     request: Request,
@@ -129,10 +159,14 @@ async def delete_connection(
         success = db.delete_connection(connection_id)
         if not success:
             # FIX #28: Do not expose connection_id in error message
-            raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail="Connection not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, message="Connection deleted successfully")
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("delete_connection failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability

@@ -64,17 +64,17 @@ class TestNFPA72ComplianceChecker:
     def test_dead_air_space_detector(self):
         checker = NFPA72ComplianceChecker()
         checker.add_detector(
-            "D1", "R1", "smoke",
-            x=5.0, y=5.0,
+            "D1",
+            "R1",
+            "smoke",
+            x=5.0,
+            y=5.0,
             distance_to_wall_m=0.05,  # Less than 0.1m
         )
         report = checker.evaluate()
 
         assert not report.is_safe
-        assert any(
-            "dead air" in v["message"].lower()
-            for v in report.violations
-        )
+        assert any("dead air" in v["message"].lower() for v in report.violations)
 
     def test_duct_detector_missing(self):
         checker = NFPA72ComplianceChecker()
@@ -89,10 +89,7 @@ class TestNFPA72ComplianceChecker:
         report = checker.evaluate()
 
         # No duct detector violation should exist
-        duct_violations = [
-            v for v in report.violations
-            if v["rule_id"] == "NFPA72-006"
-        ]
+        duct_violations = [v for v in report.violations if v["rule_id"] == "NFPA72-006"]
         assert len(duct_violations) == 0
 
     def test_elevator_missing_detectors(self):
@@ -101,10 +98,7 @@ class TestNFPA72ComplianceChecker:
         report = checker.evaluate()
 
         assert not report.is_safe
-        assert any(
-            v["rule_id"] == "NFPA72-007"
-            for v in report.violations
-        )
+        assert any(v["rule_id"] == "NFPA72-007" for v in report.violations)
 
     def test_elevator_with_all_detectors(self):
         checker = NFPA72ComplianceChecker()
@@ -112,10 +106,7 @@ class TestNFPA72ComplianceChecker:
         report = checker.evaluate()
 
         # No elevator violation should exist
-        elevator_violations = [
-            v for v in report.violations
-            if v["rule_id"] == "NFPA72-007"
-        ]
+        elevator_violations = [v for v in report.violations if v["rule_id"] == "NFPA72-007"]
         assert len(elevator_violations) == 0
 
     def test_multi_room_analysis(self):
@@ -167,7 +158,9 @@ class TestDataConversion:
         )
         assert len(facts) == 1
         assert facts[0].fact_type == "room"
-        assert facts[0].properties["ceiling_height_m"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            facts[0].properties["ceiling_height_m"] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_detector_to_fact(self):
         fact = detector_to_fact(
@@ -179,7 +172,9 @@ class TestDataConversion:
             distance_to_wall_m=2.0,
         )
         assert fact.fact_type == "detector"
-        assert fact.properties["distance_to_wall_m"] == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            fact.properties["distance_to_wall_m"] == 2.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_hvac_to_fact(self):
         fact = hvac_to_fact(
@@ -207,14 +202,16 @@ class TestComplianceReport:
     def test_report_from_engine(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "R1",
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "R1",
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         engine.evaluate()
 
         report = results_to_report(engine)

@@ -3,6 +3,7 @@ marine/tests/test_marine_lr_nfpa302.py — Tests for LR Rules and NFPA 302.
 
 Covers the previously untested marine.lr_rules and marine.nfpa302 modules.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -21,23 +22,29 @@ from marine.nfpa302 import (
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def small_craft() -> ShipProject:
     return ShipProject(
-        project_id="SC-001", ship_name="Test Yacht",
-        ship_type=ShipType.SMALL_CRAFT, length_overall_m=18.0,
+        project_id="SC-001",
+        ship_name="Test Yacht",
+        ship_type=ShipType.SMALL_CRAFT,
+        length_overall_m=18.0,
     )
 
 
 @pytest.fixture
 def large_craft() -> ShipProject:
     return ShipProject(
-        project_id="SC-002", ship_name="Test Workboat",
-        ship_type=ShipType.CARGO, length_overall_m=45.0,
+        project_id="SC-002",
+        ship_name="Test Workboat",
+        ship_type=ShipType.CARGO,
+        length_overall_m=45.0,
     )
 
 
 # ─── LR Rules Tests ─────────────────────────────────────────────────────────
+
 
 class TestLRDetectorResponseTime:
     def test_compliant_response_time(self):
@@ -80,6 +87,7 @@ class TestLRFireMainRedundancy:
 
 
 # ─── NFPA 302 Tests ─────────────────────────────────────────────────────────
+
 
 class TestNFPA302PortableExtinguishers:
     def test_small_craft_below_26ft(self):
@@ -134,7 +142,9 @@ class TestNFPA302Scope:
 
     def test_small_cargo_by_length(self):
         ship = ShipProject(
-            project_id="SC-003", ship_name="Small Cargo",
-            ship_type=ShipType.CARGO, length_overall_m=20.0,
+            project_id="SC-003",
+            ship_name="Small Cargo",
+            ship_type=ShipType.CARGO,
+            length_overall_m=20.0,
         )
         assert is_in_scope(ship) is True

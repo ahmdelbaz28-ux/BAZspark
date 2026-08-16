@@ -38,33 +38,40 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # BIM parameter names: alphanumeric, underscores, hyphens, dots, spaces
-_BIM_PARAM_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.\s]+$')
+_BIM_PARAM_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\.\s]+$")
 
 # Room names: alphanumeric, spaces, hyphens, parentheses, dots, apostrophes
-_ROOM_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\s\.\'()\/\\,&:;]+$')
+_ROOM_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\s\.\'()\/\\,&:;]+$")
 
 # Numeric parameter values: digits, decimal point, negative sign, scientific notation
-_NUMERIC_PATTERN = re.compile(r'^-?\d+\.?\d*([eE][+-]?\d+)?$')  # NOSONAR — S8786: assert kept for test clarity
+_NUMERIC_PATTERN = re.compile(
+    r"^-?\d+\.?\d*([eE][+-]?\d+)?$"
+)  # NOSONAR — S8786: assert kept for test clarity
 
 # File paths: alphanumeric, slashes, dots, hyphens, underscores
-_SAFE_PATH_PATTERN = re.compile(r'^[a-zA-Z0-9_\-./\\]+$')
+_SAFE_PATH_PATTERN = re.compile(r"^[a-zA-Z0-9_\-./\\]+$")
 
 # Dangerous patterns that indicate injection attempts
 _INJECTION_PATTERNS = [
-    re.compile(r';.*\b(import|os|sys|subprocess|eval|exec|open|write)\b', re.IGNORECASE),
-    re.compile(r'(__import__|getattr|setattr|delattr|globals|locals)\s*\(', re.IGNORECASE),
-    re.compile(r'<\s*script', re.IGNORECASE),  # XSS
-    re.compile(r'javascript:', re.IGNORECASE),  # XSS
-    re.compile(r'\.\.[/\\]'),  # Path traversal
-    re.compile(r'(\bDROP\b|\bDELETE\b|\bINSERT\b|\bUPDATE\b|\bALTER\b)\s', re.IGNORECASE),  # SQL
-    re.compile(r'(\'|\")\s*(OR|AND)\s+.*[=<>]', re.IGNORECASE),  # SQL injection  # NOSONAR — S6035: shell call acceptable in test  # NOSONAR — S8786: assert kept for test clarity
-    re.compile(r'\b(UNION\s+SELECT|SELECT\s+.+\s+FROM)\b', re.IGNORECASE),  # SQL injection  # NOSONAR — S8786: assert kept for test clarity
+    re.compile(r";.*\b(import|os|sys|subprocess|eval|exec|open|write)\b", re.IGNORECASE),
+    re.compile(r"(__import__|getattr|setattr|delattr|globals|locals)\s*\(", re.IGNORECASE),
+    re.compile(r"<\s*script", re.IGNORECASE),  # XSS
+    re.compile(r"javascript:", re.IGNORECASE),  # XSS
+    re.compile(r"\.\.[/\\]"),  # Path traversal
+    re.compile(r"(\bDROP\b|\bDELETE\b|\bINSERT\b|\bUPDATE\b|\bALTER\b)\s", re.IGNORECASE),  # SQL
+    re.compile(
+        r"(\'|\")\s*(OR|AND)\s+.*[=<>]", re.IGNORECASE
+    ),  # SQL injection  # NOSONAR — S6035: shell call acceptable in test  # NOSONAR — S8786: assert kept for test clarity
+    re.compile(
+        r"\b(UNION\s+SELECT|SELECT\s+.+\s+FROM)\b", re.IGNORECASE
+    ),  # SQL injection  # NOSONAR — S8786: assert kept for test clarity
 ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SANITIZATION FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def sanitize_bim_parameter(param_value: str) -> str:
     """
@@ -97,9 +104,7 @@ def sanitize_bim_parameter(param_value: str) -> str:
 
     """
     if not isinstance(param_value, str):
-        raise ValueError(
-            f"Input parameter must be a string, got {type(param_value).__name__}."
-        )
+        raise ValueError(f"Input parameter must be a string, got {type(param_value).__name__}.")
 
     # Check for injection patterns FIRST (before sanitizing)
     for pattern in _INJECTION_PATTERNS:
@@ -117,7 +122,7 @@ def sanitize_bim_parameter(param_value: str) -> str:
             )
 
     # Whitelist: alphanumeric, spaces, safe design punctuation
-    sanitized = re.sub(r'[^a-zA-Z0-9_\-\s\.\(\)/\\,:;\'\"]', '', param_value)
+    sanitized = re.sub(r"[^a-zA-Z0-9_\-\s\.\(\)/\\,:;\'\"]", "", param_value)
 
     if sanitized != param_value:
         logger.warning(
@@ -150,9 +155,7 @@ def sanitize_room_name(room_name: str) -> str:
 
     """
     if not isinstance(room_name, str):
-        raise ValueError(
-            f"Room name must be a string, got {type(room_name).__name__}."
-        )
+        raise ValueError(f"Room name must be a string, got {type(room_name).__name__}.")
 
     # Check for injection patterns
     for pattern in _INJECTION_PATTERNS:
@@ -161,18 +164,13 @@ def sanitize_room_name(room_name: str) -> str:
                 f"[SECURITY ALERT]: Injection pattern in room name: '{room_name}'. "
                 "This may be an attempt to inject malicious code via BIM data."
             )
-            raise ValueError(
-                "Potential injection in room name. Input REJECTED for safety."
-            )
+            raise ValueError("Potential injection in room name. Input REJECTED for safety.")
 
     # Whitelist room name characters
-    sanitized = re.sub(r'[^a-zA-Z0-9_\-\s\.\'()\/\\,&:;]', '', room_name)
+    sanitized = re.sub(r"[^a-zA-Z0-9_\-\s\.\'()\/\\,&:;]", "", room_name)
 
     if sanitized != room_name:
-        logger.warning(
-            f"[SANITIZATION]: Room name sanitized. "
-            f"'{room_name}' → '{sanitized}'"
-        )
+        logger.warning(f"[SANITIZATION]: Room name sanitized. '{room_name}' → '{sanitized}'")
 
     return sanitized.strip()
 
@@ -196,12 +194,10 @@ def sanitize_file_path(file_path: str) -> str:
 
     """
     if not isinstance(file_path, str):
-        raise ValueError(
-            f"File path must be a string, got {type(file_path).__name__}."
-        )
+        raise ValueError(f"File path must be a string, got {type(file_path).__name__}.")
 
     # Check for path traversal
-    if '..' in file_path:
+    if ".." in file_path:
         logger.critical(
             f"[SECURITY ALERT]: Path traversal detected: '{file_path}'. "
             "This may be an attempt to access files outside the project directory."
@@ -212,13 +208,10 @@ def sanitize_file_path(file_path: str) -> str:
         )
 
     # Whitelist path characters
-    sanitized = re.sub(r'[^a-zA-Z0-9_\-./\\]', '', file_path)
+    sanitized = re.sub(r"[^a-zA-Z0-9_\-./\\]", "", file_path)
 
     if sanitized != file_path:
-        logger.warning(
-            f"[SANITIZATION]: File path sanitized. "
-            f"'{file_path}' → '{sanitized}'"
-        )
+        logger.warning(f"[SANITIZATION]: File path sanitized. '{file_path}' → '{sanitized}'")
 
     return sanitized
 
@@ -274,9 +267,7 @@ def validate_numeric_parameter(
     try:
         num_value = float(value)
     except (ValueError, OverflowError) as e:
-        raise ValueError(
-            f"{param_name}='{value}' cannot be converted to a number: {e}"
-        )
+        raise ValueError(f"{param_name}='{value}' cannot be converted to a number: {e}")
 
     if not math.isfinite(num_value):
         raise ValueError(

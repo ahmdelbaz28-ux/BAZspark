@@ -31,13 +31,19 @@ import fireai.core.elevator_shunt_trip as _est_mod
 def _disable_provenance():
     """Force the fallback dict path by setting provenance objects to None."""
     originals = {}
-    for attr in ("DecisionProvenance", "RuleApplied", "Violation",
-                "ConfidenceScore", "ConfidenceLevel"):
+    for attr in (
+        "DecisionProvenance",
+        "RuleApplied",
+        "Violation",
+        "ConfidenceScore",
+        "ConfidenceLevel",
+    ):
         originals[attr] = getattr(_est_mod, attr, None)
         setattr(_est_mod, attr, None)
     yield
     for attr, val in originals.items():
         setattr(_est_mod, attr, val)
+
 
 from fireai.core.elevator_shunt_trip import (
     DEFAULT_HD_RTI,

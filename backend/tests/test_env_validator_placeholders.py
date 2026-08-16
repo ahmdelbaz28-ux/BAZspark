@@ -10,6 +10,7 @@ from the old .env.example templates is supplied as a secret:
 
 These must be treated as placeholders even though they are non-empty strings.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -54,10 +55,10 @@ def _hard_for(name: str) -> set[str]:
 @pytest.mark.parametrize(
     ("var", "value"),
     [
-        ("FIREAI_API_KEY", "dev-fireai-key-local"),                       # C-02
-        ("FIREAI_SESSION_SECRET", "dev-session-secret-please-replace"),   # C-03
-        ("QOMN_AUDIT_SECRET_KEY", "change-me-please"),                    # C-04
-        ("FIREAI_API_KEY", "test-api-key-for-testing-only"),              # L-18
+        ("FIREAI_API_KEY", "dev-fireai-key-local"),  # C-02
+        ("FIREAI_SESSION_SECRET", "dev-session-secret-please-replace"),  # C-03
+        ("QOMN_AUDIT_SECRET_KEY", "change-me-please"),  # C-04
+        ("FIREAI_API_KEY", "test-api-key-for-testing-only"),  # L-18
     ],
 )
 def test_legacy_placeholder_values_are_hard(monkeypatch, var, value):

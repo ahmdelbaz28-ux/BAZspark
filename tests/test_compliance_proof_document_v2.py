@@ -260,9 +260,17 @@ class TestComplianceProofDocumentInit:
 class TestAddRoomResult:
     """Adding room results via add_room_result()."""
 
-    def _make_room_and_layout(self, name="R1", width=10.0, length=10.0, ceiling=3.0,
-                              coverage_pct=99.9, proof_valid=True, nfpa_valid=True,
-                              detectors=None):
+    def _make_room_and_layout(
+        self,
+        name="R1",
+        width=10.0,
+        length=10.0,
+        ceiling=3.0,
+        coverage_pct=99.9,
+        proof_valid=True,
+        nfpa_valid=True,
+        detectors=None,
+    ):
         room = Room(name, width, length, ceiling)
         layout = DetectorLayout(
             room=room,
@@ -511,7 +519,10 @@ class TestRoomSummaryTable:
     def test_table_header(self):
         doc = ComplianceProofDocument()
         summary = doc._room_summary_table()
-        assert "| # | Room | Dimensions (m) | Ceiling H | Detectors | Coverage | Proof | NFPA | Consensus |" in summary
+        assert (
+            "| # | Room | Dimensions (m) | Ceiling H | Detectors | Coverage | Proof | NFPA | Consensus |"
+            in summary
+        )
 
     def test_room_appears_in_table(self):
         doc = ComplianceProofDocument()
@@ -627,7 +638,10 @@ class TestRoomSummaryTable:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], proof_valid=True, nfpa_valid=True,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            proof_valid=True,
+            nfpa_valid=True,
         )
         doc.add_room_result(room, layout)
         summary = doc._room_summary_table()
@@ -637,7 +651,10 @@ class TestRoomSummaryTable:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], proof_valid=False, nfpa_valid=True,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            proof_valid=False,
+            nfpa_valid=True,
         )
         doc.add_room_result(room, layout)
         summary = doc._room_summary_table()
@@ -647,7 +664,10 @@ class TestRoomSummaryTable:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], proof_valid=True, nfpa_valid=False,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            proof_valid=True,
+            nfpa_valid=False,
         )
         doc.add_room_result(room, layout)
         summary = doc._room_summary_table()
@@ -755,7 +775,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 5.0, 6.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(2.5, 3.0)], coverage_radius=DETECTOR_RADIUS,
+            room=room,
+            detectors=[(2.5, 3.0)],
+            coverage_radius=DETECTOR_RADIUS,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -807,7 +829,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], proof_valid=True,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            proof_valid=True,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -817,7 +841,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], proof_valid=False,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            proof_valid=False,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -827,7 +853,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], nfpa_valid=True,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            nfpa_valid=True,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -837,7 +865,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], nfpa_valid=False,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            nfpa_valid=False,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -847,7 +877,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], wall_violations=2,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            wall_violations=2,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -857,7 +889,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], fallback_used=False,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            fallback_used=False,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -867,7 +901,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], fallback_used=True,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            fallback_used=True,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -900,7 +936,8 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[],
+            room=room,
+            detectors=[],
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -970,7 +1007,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 3.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], coverage_radius=DETECTOR_RADIUS,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            coverage_radius=DETECTOR_RADIUS,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -980,7 +1019,9 @@ class TestDetailedRoomResults:
         doc = ComplianceProofDocument()
         room = Room("R1", 10.0, 10.0, 5.0)
         layout = DetectorLayout(
-            room=room, detectors=[(5.0, 5.0)], coverage_radius=4.0,
+            room=room,
+            detectors=[(5.0, 5.0)],
+            coverage_radius=4.0,
         )
         doc.add_room_result(room, layout)
         detail = doc._detailed_room_results()
@@ -1033,7 +1074,10 @@ class TestConsensusSummary:
     def test_section_title(self):
         doc = ComplianceProofDocument()
         summary = doc._consensus_summary()
-        assert "## 4. Consensus Summary" in summary or "## 4. Consensus Verification Summary" in summary
+        assert (
+            "## 4. Consensus Summary" in summary
+            or "## 4. Consensus Verification Summary" in summary
+        )
 
     def test_empty_rooms_shows_no_rooms(self):
         doc = ComplianceProofDocument()
@@ -1101,21 +1145,30 @@ class TestConsensusSummary:
         room1 = Room("Good", 10.0, 10.0, 3.0)
         layout1 = DetectorLayout(room=room1, detectors=[(5.0, 5.0)])
         consensus1 = ConsensusResult(
-            confidence=ConfidenceLevel.VERIFIED, is_safe=True, n_pass=3, n_total=3,
+            confidence=ConfidenceLevel.VERIFIED,
+            is_safe=True,
+            n_pass=3,
+            n_total=3,
         )
         doc.add_room_result(room1, layout1, consensus=consensus1)
         # WARNING room
         room2 = Room("Warn", 10.0, 10.0, 3.0)
         layout2 = DetectorLayout(room=room2, detectors=[(5.0, 5.0)])
         consensus2 = ConsensusResult(
-            confidence=ConfidenceLevel.WARNING, is_safe=False, n_pass=2, n_total=3,
+            confidence=ConfidenceLevel.WARNING,
+            is_safe=False,
+            n_pass=2,
+            n_total=3,
         )
         doc.add_room_result(room2, layout2, consensus=consensus2)
         # FAIL room
         room3 = Room("Bad", 10.0, 10.0, 3.0)
         layout3 = DetectorLayout(room=room3, detectors=[(5.0, 5.0)])
         consensus3 = ConsensusResult(
-            confidence=ConfidenceLevel.FAIL, is_safe=False, n_pass=0, n_total=3,
+            confidence=ConfidenceLevel.FAIL,
+            is_safe=False,
+            n_pass=0,
+            n_total=3,
         )
         doc.add_room_result(room3, layout3, consensus=consensus3)
         # No consensus

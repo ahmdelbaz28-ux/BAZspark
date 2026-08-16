@@ -77,7 +77,7 @@ def extract_imports(file_path: Path, package_prefix: str) -> list[str]:
     imports = []
 
     # Match: from package.module import ...
-    pattern = rf'from\s+{package_prefix}\.(\w+)\s+import'
+    pattern = rf"from\s+{package_prefix}\.(\w+)\s+import"
     for match in re.finditer(pattern, content):
         module = match.group(1)
         if module not in imports:
@@ -92,7 +92,9 @@ def build_dependency_map(root: Path) -> dict:
     deps = defaultdict(set)
 
     for py_file in core_dir.glob("*.py"):
-        if py_file.name.startswith("_") or py_file.name.startswith("test_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+        if py_file.name.startswith("_") or py_file.name.startswith(
+            "test_"
+        ):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             continue
 
         module_name = py_file.stem
@@ -104,7 +106,11 @@ def build_dependency_map(root: Path) -> dict:
     return dict(deps)
 
 
-def detect_circular_imports(deps: dict) -> list[list[str]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def detect_circular_imports(
+    deps: dict,
+) -> list[
+    list[str]
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Detect circular import chains (excluding self-loops from lazy imports)."""
     circular = []
 
@@ -155,13 +161,15 @@ def check_layer_violations(deps: dict) -> list[dict]:
 
             # Layer N can only import from Layer N or lower
             if imp_layer > module_layer and imp_layer > 0:
-                violations.append({
-                    "module": module,
-                    "imports": imp,
-                    "module_layer": module_layer,
-                    "imports_layer": imp_layer,
-                    "violation": f"Layer {module_layer} imports Layer {imp_layer}",
-                })
+                violations.append(
+                    {
+                        "module": module,
+                        "imports": imp,
+                        "module_layer": module_layer,
+                        "imports_layer": imp_layer,
+                        "violation": f"Layer {module_layer} imports Layer {imp_layer}",
+                    }
+                )
 
     return violations
 
@@ -178,7 +186,7 @@ def generate_markdown(deps: dict, circular: list, violations: list) -> str:
 
     md = f"""# FireAI — Module Dependency Index
 
-**Generated:** {subprocess.check_output(['date', '+%Y-%m-%d']).decode().strip()}
+**Generated:** {subprocess.check_output(["date", "+%Y-%m-%d"]).decode().strip()}
 **Purpose:** Map module dependencies to prevent circular imports
 
 ---
@@ -282,4 +290,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

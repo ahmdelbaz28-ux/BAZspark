@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ADDIN_DIR = REPO_ROOT / "revit_addin" / "BazSparkRevitBridge"
 
+
 def test_revit_addin_structure():
     """Verify that the C# Revit Add-in bridge project files are present and match specifications."""
     assert ADDIN_DIR.exists()
@@ -48,20 +49,19 @@ def test_revit_addin_structure():
     assert "BazSparkRevitBridge.dll" in manifest_content
     assert "FullClassName" in manifest_content
 
+
 def test_local_agent_named_pipe_routing():
     """Verify the local agent routes commands via Named Pipe dispatcher when available."""
     from scripts.local_agent import RevitNamedPipeDispatcher, _dispatch_revit
-
 
     # Force available=True
     with patch.object(RevitNamedPipeDispatcher, "available", True):
         # Mock the send method to verify it is called
         mock_send = MagicMock(return_value={"success": True, "data": {"id": 123}})
         with patch.object(RevitNamedPipeDispatcher, "send", new=mock_send):
-            res = _dispatch_revit("create_wall", {"start_point": [0,0], "end_point": [10,10]})
+            res = _dispatch_revit("create_wall", {"start_point": [0, 0], "end_point": [10, 10]})
 
             assert res == {"success": True, "data": {"id": 123}}
             mock_send.assert_called_once_with(
-                "create_wall",
-                {"start_point": [0,0], "end_point": [10,10]}
+                "create_wall", {"start_point": [0, 0], "end_point": [10, 10]}
             )

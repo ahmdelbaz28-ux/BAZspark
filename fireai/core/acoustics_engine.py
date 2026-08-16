@@ -164,6 +164,7 @@ def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
     cleaned = "".join(ch for ch in str(value) if ch.isprintable())
     return cleaned[:max_len]
 
+
 #: Typical ceiling absorption coefficient for industrial spaces at
 #: ultrasonic frequencies.  Concrete/steel deck ≈ 0.03-0.05.
 #: Source: Beranek & Ver (1992), ISO 9613-2:1996 §7.

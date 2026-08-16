@@ -64,13 +64,15 @@ class TestV123BackwardCompatibility:
         outside.write_bytes(b"x")
         try:
             adapter = DDCAdapter()
-            with pytest.raises((ValueError, DDCNotAvailableError)) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            with (
+                pytest.raises((ValueError, DDCNotAvailableError)) as exc_info
+            ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 adapter.convert(str(outside))
             # If we got a ValueError, it MUST be the security one
             if isinstance(exc_info.value, ValueError):
-                assert "SECURITY" in str(exc_info.value) or \
-                       "outside allowed" in str(exc_info.value), \
-                       f"Unexpected ValueError: {exc_info.value}"
+                assert "SECURITY" in str(exc_info.value) or "outside allowed" in str(
+                    exc_info.value
+                ), f"Unexpected ValueError: {exc_info.value}"
         finally:
             try:
                 outside.unlink()
@@ -91,7 +93,9 @@ class TestV123BackwardCompatibility:
         """Missing file → FileNotFoundError (benign, preserved from pre-V123)."""
         adapter = DDCAdapter()
         with pytest.raises(FileNotFoundError):
-            adapter.convert("/tmp/v123_does_not_exist_zzz.rvt")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            adapter.convert(
+                "/tmp/v123_does_not_exist_zzz.rvt"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -108,7 +112,9 @@ class TestV123NewDefenses:
         r"""Path with \\x00 → ValueError (V123: previously not checked)."""
         adapter = DDCAdapter()
         with pytest.raises(ValueError, match="null byte"):
-            adapter.convert("/tmp/foo\x00.rvt")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            adapter.convert(
+                "/tmp/foo\x00.rvt"
+            )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_leading_dash_rejected(self):
         """Path starting with '-' → ValueError (argument-injection guard)."""
@@ -135,9 +141,7 @@ class TestV123SingleSourceOfTruth:
 
     def test_ddc_adapter_imports_shared_helper(self):
         """ddc_adapter MUST import from parsers._path_security."""
-        src = (Path(_PROJECT_ROOT) / "parsers" / "ddc_adapter.py").read_text(
-            encoding="utf-8"
-        )
+        src = (Path(_PROJECT_ROOT) / "parsers" / "ddc_adapter.py").read_text(encoding="utf-8")
         assert "from parsers._path_security import" in src, (
             "V123 regression: ddc_adapter.py no longer imports the shared "
             "_path_security helper. Single source of truth (Rule #23) violated."
@@ -152,9 +156,7 @@ class TestV123SingleSourceOfTruth:
         reappears, this test fails — guarding against re-introduction
         of duplicate validation logic.
         """
-        src = (Path(_PROJECT_ROOT) / "parsers" / "ddc_adapter.py").read_text(
-            encoding="utf-8"
-        )
+        src = (Path(_PROJECT_ROOT) / "parsers" / "ddc_adapter.py").read_text(encoding="utf-8")
         # The old inline loop iterated over `_allowed_bases`. If that
         # variable name appears in convert() again, we have drift.
         # We do a precise check: the local variable name in the inline
@@ -201,9 +203,12 @@ class TestV123EndToEnd:
             except ValueError as e:
                 # If we get ValueError, it MUST NOT be a validation error
                 msg = str(e)
-                assert "SECURITY" not in msg and "extension" not in msg \
-                       and "null byte" not in msg and "flag" not in msg, \
-                       f"Validation false-positive on valid path: {msg}"
+                assert (
+                    "SECURITY" not in msg
+                    and "extension" not in msg
+                    and "null byte" not in msg
+                    and "flag" not in msg
+                ), f"Validation false-positive on valid path: {msg}"
             except Exception:
                 # Any other error type is OK (DDC missing, etc.)
                 pass

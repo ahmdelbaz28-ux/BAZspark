@@ -19,6 +19,7 @@ The LLM is **advisory only**. It never overrides deterministic NFPA 72
 calculations. All responses include a ``source`` field and a ``disclaimer``
 reminding the engineer that AI output must be verified against the published code.
 """
+
 import json
 import logging
 from collections.abc import AsyncGenerator
@@ -49,24 +50,24 @@ _ERR_REQUEST_FAILED = "LLM request failed"
 
 # Standard OpenAPI response specs for documented HTTP errors (SonarCloud S8415).
 _RES_502 = {
-        502: {
-                "description": "LLM provider returned an error",
-                "content": {
-                        "application/json": {
-                                "example": {"detail": {"error": "LLM_REQUEST_FAILED"}},
-                        }
-                },
+    502: {
+        "description": "LLM provider returned an error",
+        "content": {
+            "application/json": {
+                "example": {"detail": {"error": "LLM_REQUEST_FAILED"}},
+            }
         },
+    },
 }
 _RES_503 = {
-        503: {
-                "description": "LLM service is not configured (ZENMUX_API_KEY missing)",
-                "content": {
-                        "application/json": {
-                                "example": {"detail": {"error": "LLM_SERVICE_UNAVAILABLE"}},
-                        }
-                },
+    503: {
+        "description": "LLM service is not configured (ZENMUX_API_KEY missing)",
+        "content": {
+            "application/json": {
+                "example": {"detail": {"error": "LLM_SERVICE_UNAVAILABLE"}},
+            }
         },
+    },
 }
 
 
@@ -74,355 +75,346 @@ _RES_503 = {
 
 
 class ChatMessage(BaseModel):
-        """A single conversation turn for the bounded history window (F5b)."""
+    """A single conversation turn for the bounded history window (F5b)."""
 
-        role: Literal["user", "assistant"] = Field(
-                ...,
-                description="Message role. Only user/assistant are accepted.",
-        )
-        content: str = Field(
-                ...,
-                min_length=1,
-                max_length=8000,
-                description="Message text.",
-        )
+    role: Literal["user", "assistant"] = Field(
+        ...,
+        description="Message role. Only user/assistant are accepted.",
+    )
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=8000,
+        description="Message text.",
+    )
 
 
 class ChatRequest(BaseModel):
-        """Request body for POST /llm/chat."""
+    """Request body for POST /llm/chat."""
 
-        prompt: str = Field(
-                ...,
-                min_length=1,
-                max_length=8000,
-                description="The user's question or instruction to the LLM.",
-        )
-        role: Literal["engineer_assistant", "code_explainer", "narrative_writer"] = Field(
-                "engineer_assistant",
-                description=(
-                        "Server-owned persona (whitelist). Free-text system prompts "
-                        "are not accepted; the server resolves the persona text."
-                ),
-        )
-        history: list[ChatMessage] | None = Field(
-                None,
-                max_length=20,
-                description=(
-                        "Bounded conversation history (max 20 turns). Sent oldest "
-                        "to newest; the latest user turn should be omitted (it is "
-                        "sent separately as prompt)."
-                ),
-        )
-        model: str | None =  Field(
-                None,
-                description="Override the default model (e.g. 'z-ai/glm-4.7-flash-free').",
-        )
-        temperature: float = Field(
-                0.1,
-                ge=0.0,
-                le=2.0,
-                description="Sampling temperature. Low values = more deterministic.",
-        )
-        max_tokens: int | None =  Field(
-                None,
-                ge=1,
-                le=8000,
-                description="Max tokens to generate. Defaults to ZENMUX_MAX_TOKENS.",
-        )
+    prompt: str = Field(
+        ...,
+        min_length=1,
+        max_length=8000,
+        description="The user's question or instruction to the LLM.",
+    )
+    role: Literal["engineer_assistant", "code_explainer", "narrative_writer"] = Field(
+        "engineer_assistant",
+        description=(
+            "Server-owned persona (whitelist). Free-text system prompts "
+            "are not accepted; the server resolves the persona text."
+        ),
+    )
+    history: list[ChatMessage] | None = Field(
+        None,
+        max_length=20,
+        description=(
+            "Bounded conversation history (max 20 turns). Sent oldest "
+            "to newest; the latest user turn should be omitted (it is "
+            "sent separately as prompt)."
+        ),
+    )
+    model: str | None = Field(
+        None,
+        description="Override the default model (e.g. 'z-ai/glm-4.7-flash-free').",
+    )
+    temperature: float = Field(
+        0.1,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature. Low values = more deterministic.",
+    )
+    max_tokens: int | None = Field(
+        None,
+        ge=1,
+        le=8000,
+        description="Max tokens to generate. Defaults to ZENMUX_MAX_TOKENS.",
+    )
 
 
 class ExplainRequest(BaseModel):
-        """Request body for POST /llm/explain — explain a calculation result."""
+    """Request body for POST /llm/explain — explain a calculation result."""
 
-        calculation_type: str = Field(
-                ...,
-                max_length=100,
-                description="e.g. 'smoke_spacing', 'voltage_drop', 'battery_sizing'",
-        )
-        calculation_result: dict[str, Any] = Field(
-                ...,
-                description="The JSON result returned by the qomn/analyze endpoint.",
-        )
-        question: str = Field(
-                "Explain this result and its NFPA 72 / NEC basis.",
-                max_length=2000,
-                description="What to ask the LLM about the result.",
-        )
+    calculation_type: str = Field(
+        ...,
+        max_length=100,
+        description="e.g. 'smoke_spacing', 'voltage_drop', 'battery_sizing'",
+    )
+    calculation_result: dict[str, Any] = Field(
+        ...,
+        description="The JSON result returned by the qomn/analyze endpoint.",
+    )
+    question: str = Field(
+        "Explain this result and its NFPA 72 / NEC basis.",
+        max_length=2000,
+        description="What to ask the LLM about the result.",
+    )
 
 
 class ComplianceNarrativeRequest(BaseModel):
-        """Request body for POST /llm/compliance-narrative."""
+    """Request body for POST /llm/compliance-narrative."""
 
-        project_name: str = Field(..., max_length=200)
-        building_description: str = Field(..., max_length=2000)
-        calculations_summary: dict[str, Any] = Field(
-                ...,
-                description="Summary of key calculations (spacing, voltage, battery, FACP).",
-        )
-        audience: str = Field(
-                "AHJ",
-                max_length=50,
-                description="Target audience: 'AHJ', 'client', 'internal'.",
-        )
+    project_name: str = Field(..., max_length=200)
+    building_description: str = Field(..., max_length=2000)
+    calculations_summary: dict[str, Any] = Field(
+        ...,
+        description="Summary of key calculations (spacing, voltage, battery, FACP).",
+    )
+    audience: str = Field(
+        "AHJ",
+        max_length=50,
+        description="Target audience: 'AHJ', 'client', 'internal'.",
+    )
 
 
 class LLMResponseModel(BaseModel):
-        """Standard response wrapper for LLM endpoints."""
+    """Standard response wrapper for LLM endpoints."""
 
-        content: str
-        model: str
-        source: str = "zenmux"
-        finish_reason: str = "stop"
-        prompt_tokens: int = 0
-        completion_tokens: int = 0
-        total_tokens: int = 0
-        disclaimer: str = _AI_DISCLAIMER
+    content: str
+    model: str
+    source: str = "zenmux"
+    finish_reason: str = "stop"
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    disclaimer: str = _AI_DISCLAIMER
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 
 @router.post(
-        "/chat",
-        dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
-        responses={**_RES_502, **_RES_503},
+    "/chat",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+    responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("30/minute")
 async def llm_chat(request: Request, req: ChatRequest) -> dict[str, Any]:
-        """Send a chat completion request to the LLM.
+    """Send a chat completion request to the LLM.
 
-        The LLM acts as an engineering assistant. It can answer NFPA 72 / NEC
-        code questions, explain calculation results, and draft compliance text.
+    The LLM acts as an engineering assistant. It can answer NFPA 72 / NEC
+    code questions, explain calculation results, and draft compliance text.
 
-        **Advisory only** — all output must be verified by a licensed engineer.
-        """
-        svc = get_llm_service()
-        if not svc.available:
-                raise HTTPException(  # noqa: S8415 — documented in route responses={503}
-                        status_code=503,
-                        detail={
-                                "error": "LLM_SERVICE_UNAVAILABLE",
-                                "message": _ERR_NOT_CONFIGURED,
-                        },
-                )
-        try:
-                # F5a: persona is server-owned — resolve the whitelisted role to
-                # the fixed persona text. The client can no longer inject a
-                # free-text system prompt via /llm/chat.
-                system_msg = PERSONAE[req.role]
-                history = (
-                        [m.model_dump() for m in req.history]
-                        if req.history
-                        else None
-                )
-                result: LLMResponse = await svc.chat(
-                        req.prompt,
-                        system=system_msg,
-                        model=req.model,
-                        temperature=req.temperature,
-                        max_tokens=req.max_tokens,
-                        history=history,
-                )
-        except Exception:
-                logger.exception("LLM chat failed")
-                raise HTTPException(  # noqa: S8415 — documented in route responses={502}
-                        status_code=502,
-                        detail={
-                                "error": "LLM_REQUEST_FAILED",
-                                "message": _ERR_REQUEST_FAILED,
-                        },
-                ) from None
+    **Advisory only** — all output must be verified by a licensed engineer.
+    """
+    svc = get_llm_service()
+    if not svc.available:
+        raise HTTPException(  # noqa: S8415 — documented in route responses={503}
+            status_code=503,
+            detail={
+                "error": "LLM_SERVICE_UNAVAILABLE",
+                "message": _ERR_NOT_CONFIGURED,
+            },
+        )
+    try:
+        # F5a: persona is server-owned — resolve the whitelisted role to
+        # the fixed persona text. The client can no longer inject a
+        # free-text system prompt via /llm/chat.
+        system_msg = PERSONAE[req.role]
+        history = [m.model_dump() for m in req.history] if req.history else None
+        result: LLMResponse = await svc.chat(
+            req.prompt,
+            system=system_msg,
+            model=req.model,
+            temperature=req.temperature,
+            max_tokens=req.max_tokens,
+            history=history,
+        )
+    except Exception:
+        logger.exception("LLM chat failed")
+        raise HTTPException(  # noqa: S8415 — documented in route responses={502}
+            status_code=502,
+            detail={
+                "error": "LLM_REQUEST_FAILED",
+                "message": _ERR_REQUEST_FAILED,
+            },
+        ) from None
 
-        return {
-                "success": True,
-                "data": _build_response_data(result, req.prompt),
-        }
+    return {
+        "success": True,
+        "data": _build_response_data(result, req.prompt),
+    }
 
 
 @router.post(
-        "/explain",
-        dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
-        responses={**_RES_502, **_RES_503},
+    "/explain",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+    responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("30/minute")
 async def llm_explain(request: Request, req: ExplainRequest) -> dict[str, Any]:
-        """Explain a calculation result in plain language.
+    """Explain a calculation result in plain language.
 
-        Takes a calculation result (e.g. from ``/api/v1/qomn/smoke-spacing``) and
-        asks the LLM to explain its meaning and the NFPA 72 / NEC basis.
-        """
-        svc = get_llm_service()
-        if not svc.available:
-                raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
+    Takes a calculation result (e.g. from ``/api/v1/qomn/smoke-spacing``) and
+    asks the LLM to explain its meaning and the NFPA 72 / NEC basis.
+    """
+    svc = get_llm_service()
+    if not svc.available:
+        raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
 
-        import json
+    import json
 
-        system_msg = (
-                "You are a licensed fire-protection engineer explaining NFPA 72 and NEC "
-                "calculation results to a colleague. Be precise, cite the relevant code "
-                "section, and flag any non-compliance. Do NOT invent code sections."
-        )
-        prompt = (
-                f"Calculation type: {req.calculation_type}\n\n"
-                f"Result JSON:\n{json.dumps(req.calculation_result, indent=2)}\n\n"
-                f"Question: {req.question}"
-        )
-        try:
-                result = await svc.chat(prompt, system=system_msg, temperature=0.1)
-        except Exception:
-                logger.exception("LLM explain failed")
-                raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
+    system_msg = (
+        "You are a licensed fire-protection engineer explaining NFPA 72 and NEC "
+        "calculation results to a colleague. Be precise, cite the relevant code "
+        "section, and flag any non-compliance. Do NOT invent code sections."
+    )
+    prompt = (
+        f"Calculation type: {req.calculation_type}\n\n"
+        f"Result JSON:\n{json.dumps(req.calculation_result, indent=2)}\n\n"
+        f"Question: {req.question}"
+    )
+    try:
+        result = await svc.chat(prompt, system=system_msg, temperature=0.1)
+    except Exception:
+        logger.exception("LLM explain failed")
+        raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
 
-        return {"success": True, "data": _build_response_data(result)}
+    return {"success": True, "data": _build_response_data(result)}
 
 
 @router.post(
-        "/compliance-narrative",
-        dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
-        responses={**_RES_502, **_RES_503},
+    "/compliance-narrative",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+    responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("20/minute")
 async def llm_compliance_narrative(
-        request: Request, req: ComplianceNarrativeRequest
+    request: Request, req: ComplianceNarrativeRequest
 ) -> dict[str, Any]:
-        """Draft a compliance narrative for a submittal package.
+    """Draft a compliance narrative for a submittal package.
 
-        Generates a narrative paragraph summarizing the fire-alarm design's
-        compliance with NFPA 72, suitable for inclusion in an AHJ submittal.
-        """
-        svc = get_llm_service()
-        if not svc.available:
-                raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
+    Generates a narrative paragraph summarizing the fire-alarm design's
+    compliance with NFPA 72, suitable for inclusion in an AHJ submittal.
+    """
+    svc = get_llm_service()
+    if not svc.available:
+        raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
 
-        import json
+    import json
 
-        system_msg = (
-                "You are a fire-protection engineer drafting a compliance narrative for "
-                f"a submittal to the {req.audience}. Use formal technical language, cite "
-                "NFPA 72-2022 sections precisely, and do NOT invent requirements. If a "
-                "calculation result is missing, note it as 'to be verified'."
-        )
-        prompt = (
-                f"Project: {req.project_name}\n\n"
-                f"Building: {req.building_description}\n\n"
-                f"Calculations summary:\n{json.dumps(req.calculations_summary, indent=2)}\n\n"
-                f"Draft a compliance narrative (2-3 paragraphs) for the {req.audience}."
-        )
-        try:
-                result = await svc.chat(
-                        prompt, system=system_msg, temperature=0.2, max_tokens=1500
-                )
-        except Exception:
-                logger.exception("LLM compliance narrative failed")
-                raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
+    system_msg = (
+        "You are a fire-protection engineer drafting a compliance narrative for "
+        f"a submittal to the {req.audience}. Use formal technical language, cite "
+        "NFPA 72-2022 sections precisely, and do NOT invent requirements. If a "
+        "calculation result is missing, note it as 'to be verified'."
+    )
+    prompt = (
+        f"Project: {req.project_name}\n\n"
+        f"Building: {req.building_description}\n\n"
+        f"Calculations summary:\n{json.dumps(req.calculations_summary, indent=2)}\n\n"
+        f"Draft a compliance narrative (2-3 paragraphs) for the {req.audience}."
+    )
+    try:
+        result = await svc.chat(prompt, system=system_msg, temperature=0.2, max_tokens=1500)
+    except Exception:
+        logger.exception("LLM compliance narrative failed")
+        raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
 
-        return {"success": True, "data": _build_response_data(result)}
+    return {"success": True, "data": _build_response_data(result)}
 
 
 @router.get(
-        "/health",
-        dependencies=[Depends(require_permission(Permission.HEALTH_READ))],
+    "/health",
+    dependencies=[Depends(require_permission(Permission.HEALTH_READ))],
 )
 @limiter.limit("60/minute")
 async def llm_health(request: Request) -> dict[str, Any]:
-        """Return the LLM service configuration status (never raises)."""
-        svc = get_llm_service()
-        status = await svc.health()
-        return {"success": True, "data": status}
+    """Return the LLM service configuration status (never raises)."""
+    svc = get_llm_service()
+    status = await svc.health()
+    return {"success": True, "data": status}
 
 
 @router.get(
-        "/models",
-        dependencies=[Depends(require_permission(Permission.CALCULATION_READ))],
-        responses={**_RES_502, **_RES_503},
+    "/models",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_READ))],
+    responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("60/minute")
 async def llm_models(request: Request) -> dict[str, Any]:
-        """list models available on the configured LLM provider (passthrough)."""
-        svc = get_llm_service()
-        if not svc.available:
-                raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
-        try:
-                client = svc._get_client()  # noqa: SLF001 — internal access acceptable in router
-                models_page = await client.models.list()
-                models = []
-                for m in models_page.data:
-                        models.append({"id": m.id, "owned_by": getattr(m, "owned_by", "")})
-                return {"success": True, "data": {"models": models, "count": len(models)}}
-        except Exception:
-                logger.exception("LLM models list failed")
-                raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
+    """list models available on the configured LLM provider (passthrough)."""
+    svc = get_llm_service()
+    if not svc.available:
+        raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
+    try:
+        client = svc._get_client()  # noqa: SLF001 — internal access acceptable in router
+        models_page = await client.models.list()
+        models = []
+        for m in models_page.data:
+            models.append({"id": m.id, "owned_by": getattr(m, "owned_by", "")})
+        return {"success": True, "data": {"models": models, "count": len(models)}}
+    except Exception:
+        logger.exception("LLM models list failed")
+        raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
 
 
 @router.post(
-        "/chat/stream",
-        dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
-        responses={**_RES_502, **_RES_503},
+    "/chat/stream",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+    responses={**_RES_502, **_RES_503},
 )
 @limiter.limit("30/minute")
-async def llm_chat_stream(
-        request: Request, req: ChatRequest
-) -> StreamingResponse:
-        """Stream a chat completion token-by-token via Server-Sent Events.
+async def llm_chat_stream(request: Request, req: ChatRequest) -> StreamingResponse:
+    """Stream a chat completion token-by-token via Server-Sent Events.
 
-        Returns ``text/event-stream`` with SSE events:
-          - ``data: {"type":"chunk","content":"..."}`` — partial token
-          - ``data: {"type":"done","content":"full text","model":"...","source":"...","usage":{...}}``
-          - ``data: {"type":"error","message":"..."}``
+    Returns ``text/event-stream`` with SSE events:
+      - ``data: {"type":"chunk","content":"..."}`` — partial token
+      - ``data: {"type":"done","content":"full text","model":"...","source":"...","usage":{...}}``
+      - ``data: {"type":"error","message":"..."}``
 
-        The frontend should parse SSE ``data:`` lines and update the UI
-        incrementally for a real-time typing experience.
-        """
-        svc = get_llm_service()
-        if not svc.available:
-                raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
+    The frontend should parse SSE ``data:`` lines and update the UI
+    incrementally for a real-time typing experience.
+    """
+    svc = get_llm_service()
+    if not svc.available:
+        raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
 
-        async def event_generator() -> AsyncGenerator[str, None]:
-                try:
-                        # F5a/F5b: server-owned persona + bounded history window.
-                        system_msg = PERSONAE[req.role]
-                        history = (
-                                [m.model_dump() for m in req.history]
-                                if req.history
-                                else None
-                        )
-                        async for event in svc.chat_stream(
-                                req.prompt,
-                                system=system_msg,
-                                model=req.model,
-                                temperature=req.temperature,
-                                max_tokens=req.max_tokens,
-                                history=history,
-                        ):
-                                yield f"data: {json.dumps(event)}\n\n"
-                except Exception:
-                        logger.exception("LLM stream failed")
-                        yield f"data: {json.dumps({'type': 'error', 'message': _ERR_REQUEST_FAILED, 'disclaimer': _AI_DISCLAIMER})}\n\n"
+    async def event_generator() -> AsyncGenerator[str, None]:
+        try:
+            # F5a/F5b: server-owned persona + bounded history window.
+            system_msg = PERSONAE[req.role]
+            history = [m.model_dump() for m in req.history] if req.history else None
+            async for event in svc.chat_stream(
+                req.prompt,
+                system=system_msg,
+                model=req.model,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                history=history,
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception:
+            logger.exception("LLM stream failed")
+            yield f"data: {json.dumps({'type': 'error', 'message': _ERR_REQUEST_FAILED, 'disclaimer': _AI_DISCLAIMER})}\n\n"
 
-        return StreamingResponse(
-                event_generator(),
-                media_type="text/event-stream",
-                headers={
-                        "Cache-Control": "no-cache",
-                        "Connection": "keep-alive",
-                        "X-Accel-Buffering": "no",  # Disable Nginx buffering for real-time
-                },
-        )
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable Nginx buffering for real-time
+        },
+    )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
 def _build_response_data(result: LLMResponse, prompt: str = "") -> dict[str, Any]:
-        """Build the standard response data dict from an LLMResponse with NeMo Guardrails validation."""
-        from fireai.infrastructure.nemo_guardrails_service import default_guardrails_service
-        _is_safe, _violations, validated_content = default_guardrails_service.validate_llm_response(prompt, result.content)
-        return LLMResponseModel(
-                content=validated_content,
-                model=result.model,
-                source=result.source,
-                finish_reason=result.finish_reason,
-                prompt_tokens=result.prompt_tokens,
-                completion_tokens=result.completion_tokens,
-                total_tokens=result.total_tokens,
-        ).model_dump()
+    """Build the standard response data dict from an LLMResponse with NeMo Guardrails validation."""
+    from fireai.infrastructure.nemo_guardrails_service import default_guardrails_service
+
+    _is_safe, _violations, validated_content = default_guardrails_service.validate_llm_response(
+        prompt, result.content
+    )
+    return LLMResponseModel(
+        content=validated_content,
+        model=result.model,
+        source=result.source,
+        finish_reason=result.finish_reason,
+        prompt_tokens=result.prompt_tokens,
+        completion_tokens=result.completion_tokens,
+        total_tokens=result.total_tokens,
+    ).model_dump()

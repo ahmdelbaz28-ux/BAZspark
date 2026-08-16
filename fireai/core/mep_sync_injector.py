@@ -280,7 +280,11 @@ class MEPSyncResult:
 # ============================================================================
 
 
-def validate_mep_elements(elements: list[MEPElement]) -> list[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+def validate_mep_elements(
+    elements: list[MEPElement],
+) -> list[
+    str
+]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate MEP elements before synchronisation.
 
@@ -308,7 +312,9 @@ def validate_mep_elements(elements: list[MEPElement]) -> list[str]:  # NOSONAR �
 
         # 1b. NaN / Inf check on capacity
         if not math.isfinite(elem.capacity_cfm):
-            errors.append(f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} is NaN or Inf")
+            errors.append(
+                f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} is NaN or Inf"
+            )
 
         # 2. Duplicate ID check
         if elem.element_id in seen_ids:

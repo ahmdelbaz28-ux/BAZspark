@@ -1,4 +1,5 @@
 """Integration tests for authentication, RBAC, and API versioning."""
+
 import os
 import tempfile
 
@@ -24,6 +25,7 @@ def client(monkeypatch):
     monkeypatch.setenv("FIREAI_API_KEYS_SECRET_FILE", os.path.join(_tmp_dir, "api_keys.secret"))
     # Force api_keys module to re-initialize with new env vars
     import backend.api_keys as ak
+
     ak._SERVER_SECRET = b""
     ak._VALIDATED_KEY_CACHE.clear()
     ak._ensure_default_admin_key()
@@ -35,6 +37,7 @@ def client(monkeypatch):
         CorrelationIdMiddleware,
         SecurityHeadersMiddleware,
     )
+
     _app.add_middleware(SecurityHeadersMiddleware)
     _app.add_middleware(CorrelationIdMiddleware)
     _app.add_middleware(ApiKeyMiddleware)
@@ -51,9 +54,11 @@ def client(monkeypatch):
         return response
 
     from backend.routers import health as health_router
+
     _app.include_router(health_router.router, prefix="/api", tags=["Health"])
     _app.include_router(health_router.router, prefix="/api/v1", tags=["Health-v1"])
     from backend.routers import projects as projects_router
+
     _app.include_router(projects_router.router, prefix="/api/v1", tags=["Projects"])
     return TestClient(_app)
 

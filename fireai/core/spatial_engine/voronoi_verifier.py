@@ -144,7 +144,9 @@ class VoronoiVerifier:
                 cx, cy = region.centroid.x, region.centroid.y
                 gen_idx = min(
                     range(len(det_list)),
-                    key=lambda i: math.hypot(cx - det_list[i][0], cy - det_list[i][1]),  # NOSONAR — acceptable in this context
+                    key=lambda i: math.hypot(
+                        cx - det_list[i][0], cy - det_list[i][1]
+                    ),  # NOSONAR — acceptable in this context
                 )
                 gx, gy = det_list[gen_idx]
 
@@ -154,7 +156,9 @@ class VoronoiVerifier:
                 # is on the boundary
 
                 # Check boundary vertices
-                boundary_coords = list(region.boundary.coords) if hasattr(region.boundary, "coords") else []
+                boundary_coords = (
+                    list(region.boundary.coords) if hasattr(region.boundary, "coords") else []
+                )
                 for bx, by in boundary_coords:
                     # Only consider points inside the room
                     if 0 <= bx <= width and 0 <= by <= length:

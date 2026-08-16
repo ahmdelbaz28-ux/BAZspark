@@ -4,6 +4,7 @@ marine/output/commissioning_checklist.py — Shipboard commissioning checklist.
 Generates a structured checklist for commissioning marine fire-detection,
 alarm, and extinguishing systems after installation on board.
 """
+
 from __future__ import annotations
 
 from marine.core.types import DetectorType, ExtinguishingSystem
@@ -62,20 +63,24 @@ def generate_commissioning_checklist(
     checklist = list(COMMISSIONING_ITEMS)
     if detector_types:
         for dt in detector_types:
-            checklist.append({
-                "id": f"C-DET-{dt.value.upper()}",
-                "category": "Detection",
-                "item": f"Commission and calibrate {dt.value} detectors.",
-                "acceptance_criteria": "Factory calibration certificate on file.",
-            })
+            checklist.append(
+                {
+                    "id": f"C-DET-{dt.value.upper()}",
+                    "category": "Detection",
+                    "item": f"Commission and calibrate {dt.value} detectors.",
+                    "acceptance_criteria": "Factory calibration certificate on file.",
+                }
+            )
     if extinguishing_systems:
         for sys in extinguishing_systems:
-            checklist.append({
-                "id": f"C-EXT-{sys.value.upper()}",
-                "category": "Extinguishing",
-                "item": f"Commission {sys.value} system and verify discharge simulation.",
-                "acceptance_criteria": "System discharges within design time with no leaks.",
-            })
+            checklist.append(
+                {
+                    "id": f"C-EXT-{sys.value.upper()}",
+                    "category": "Extinguishing",
+                    "item": f"Commission {sys.value} system and verify discharge simulation.",
+                    "acceptance_criteria": "System discharges within design time with no leaks.",
+                }
+            )
     return checklist
 
 

@@ -39,11 +39,12 @@ class RevitJSONParser:
     def _load_json(self) -> dict:
         """Load JSON file."""
         from parsers._path_security import validate_file_size, validate_input_path
-        safe_path = validate_input_path(self.json_path, parser_name='revit_json')
+
+        safe_path = validate_input_path(self.json_path, parser_name="revit_json")
         validate_file_size(
             safe_path,
             max_size_bytes=200 * 1024 * 1024,
-            parser_name='revit_json',
+            parser_name="revit_json",
         )
         with open(self.json_path) as f:
             return json.load(f)
@@ -56,31 +57,31 @@ class RevitJSONParser:
         except Exception:
             return None
 
-        info = self.data.get('project_info', {})
+        info = self.data.get("project_info", {})
 
         return RevitProject(
-            name=info.get('name', 'Unknown'),
-            version=info.get('version', 'Unknown'),
-            units=info.get('units', 'metric'),
-            levels=self.data.get('levels', []),
-            categories=self.data.get('categories', []),
-            families=self.data.get('families', {}),
-            parameters=self.data.get('parameters', {}),
+            name=info.get("name", "Unknown"),
+            version=info.get("version", "Unknown"),
+            units=info.get("units", "metric"),
+            levels=self.data.get("levels", []),
+            categories=self.data.get("categories", []),
+            families=self.data.get("families", {}),
+            parameters=self.data.get("parameters", {}),
         )
 
     def get_level_count(self) -> int:
         """Get number of levels."""
         if self.data:
-            return len(self.data.get('levels', []))
+            return len(self.data.get("levels", []))
         return 0
 
     def get_fire_alarm_families(self) -> list[str]:
         """Get fire alarm device families."""
         if self.data:
-            families = self.data.get('families', {})
+            families = self.data.get("families", {})
             fa_families = []
             for device_type, variants in families.items():
-                if device_type in ['SmokeDetector', 'HeatDetector', 'PullStation', 'HornStrobe']:
+                if device_type in ["SmokeDetector", "HeatDetector", "PullStation", "HornStrobe"]:
                     fa_families.extend(variants)
             return fa_families
         return []
@@ -88,7 +89,7 @@ class RevitJSONParser:
     def get_parameters(self) -> dict:
         """Get project parameters."""
         if self.data:
-            return self.data.get('parameters', {})
+            return self.data.get("parameters", {})
         return {}
 
 

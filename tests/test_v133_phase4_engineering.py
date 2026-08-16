@@ -29,6 +29,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
+
         result = calculate_beam_obstruction(
             room_id="R-001",
             room_polygon=simple_room,
@@ -45,6 +46,7 @@ class TestBeamObstruction:
             Beam,
             calculate_beam_obstruction,
         )
+
         # 3m ceiling → threshold = 0.3m. Beam depth 0.2m < 0.3m → no subdivision.
         beam = Beam(
             id="B1",
@@ -68,6 +70,7 @@ class TestBeamObstruction:
             Beam,
             calculate_beam_obstruction,
         )
+
         # 3m ceiling → threshold = 0.3m. Beam depth 0.5m > 0.3m → subdivide.
         beam = Beam(
             id="B1",
@@ -91,6 +94,7 @@ class TestBeamObstruction:
             Beam,
             calculate_beam_obstruction,
         )
+
         beams = [
             Beam(id="B1", start=(0, 2), end=(10, 2), depth_m=0.5),
             Beam(id="B2", start=(0, 4), end=(10, 4), depth_m=0.5),
@@ -109,7 +113,10 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_beam_obstruction(
                 room_id="R-001",
                 room_polygon=simple_room,
@@ -121,6 +128,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
+
         with pytest.raises(ValueError, match="positive finite"):
             calculate_beam_obstruction(
                 room_id="R-001",
@@ -134,6 +142,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
+
         with pytest.raises(ValueError, match="at least 3 points"):
             calculate_beam_obstruction(
                 room_id="R-001",
@@ -147,7 +156,10 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
         )
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Beam(
                 id="B1",
                 start=(float("nan"), 4),
@@ -159,6 +171,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
         )
+
         with pytest.raises(ValueError, match="positive finite"):
             Beam(
                 id="B1",
@@ -173,6 +186,7 @@ class TestBeamObstruction:
             Beam,
             calculate_beam_obstruction,
         )
+
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=0.3)
         # Ceiling 2.0m < 2.4m minimum → no subdivision
         result = calculate_beam_obstruction(
@@ -189,6 +203,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
+
         result = calculate_beam_obstruction(
             room_id="R-001",
             room_polygon=simple_room,
@@ -210,6 +225,7 @@ class TestBIMUnitDetection:
     def test_unit_system_scale_factors(self):
         """Verify scale-to-metres factors are correct (NIST)."""
         from fireai.bridges.bim_unit_detector import UnitSystem
+
         assert UnitSystem.METRES.scale_to_metres == pytest.approx(1.0)
         assert UnitSystem.CENTIMETRES.scale_to_metres == pytest.approx(0.01)
         assert UnitSystem.MILLIMETRES.scale_to_metres == pytest.approx(0.001)
@@ -219,6 +235,7 @@ class TestBIMUnitDetection:
     def test_detect_nonexistent_file(self):
         """Non-existent file should return default (metres)."""
         from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
+
         result = detect_bim_unit("/nonexistent/file.ifc")
         assert result.unit == UnitSystem.UNKNOWN
         assert result.scale_to_metres == pytest.approx(1.0)
@@ -305,10 +322,11 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,  # 50mm
-            flow_rate_kg_s=1.0,    # 1 kg/s
+            flow_rate_kg_s=1.0,  # 1 kg/s
             fluid_type=FluidType.WATER,
         )
         assert result.head_loss_m > 0
@@ -323,6 +341,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,
@@ -339,7 +358,10 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_darcy_weisbach_friction_loss(
                 pipe_length_m=float("nan"),
                 pipe_diameter_m=0.05,
@@ -352,6 +374,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         with pytest.raises(ValueError):
             calculate_darcy_weisbach_friction_loss(
                 pipe_length_m=100.0,
@@ -366,6 +389,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=50.0,
             pipe_diameter_m=0.025,
@@ -373,7 +397,11 @@ class TestDarcyWeisbach:
             fluid_type=FluidType.CO2_LIQUID,
         )
         assert result.fluid_type == "co2_liquid"
-        assert "NFPA 12" in result.nfpa_reference or "NFPA 2001" in result.nfpa_reference or "Darcy-Weisbach" in result.nfpa_reference
+        assert (
+            "NFPA 12" in result.nfpa_reference
+            or "NFPA 2001" in result.nfpa_reference
+            or "Darcy-Weisbach" in result.nfpa_reference
+        )
 
     def test_clean_agent_supported(self):
         """FM-200 (clean agent) should be supported (NFPA 2001)."""
@@ -381,6 +409,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=30.0,
             pipe_diameter_m=0.020,
@@ -395,6 +424,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         # Very low flow → laminar
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,
@@ -413,6 +443,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,
             pipe_diameter_m=0.05,
@@ -426,6 +457,7 @@ class TestDarcyWeisbach:
     def test_compare_with_hazen_williams(self):
         """Comparison function should return both results."""
         from fireai.core.darcy_weisbach_solver import compare_with_hazen_williams
+
         result = compare_with_hazen_williams(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,
@@ -438,6 +470,7 @@ class TestDarcyWeisbach:
     def test_fluid_properties_database_complete(self):
         """All fluid types should have properties defined."""
         from fireai.core.darcy_weisbach_solver import FLUID_PROPERTIES, FluidType
+
         for fluid in FluidType:
             if fluid == FluidType.CUSTOM:
                 continue  # Custom requires user input
@@ -452,6 +485,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.05,

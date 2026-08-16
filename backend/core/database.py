@@ -71,11 +71,9 @@ class UniversalDataModel:
 
     def _get_connection(self):
         """Get thread-local database connection."""
-        if not hasattr(self._local, 'conn'):
+        if not hasattr(self._local, "conn"):
             self._local.conn = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False,
-                detect_types=sqlite3.PARSE_DECLTYPES
+                self.db_path, check_same_thread=False, detect_types=sqlite3.PARSE_DECLTYPES
             )
             self._local.conn.row_factory = sqlite3.Row
 
@@ -161,23 +159,32 @@ class UniversalDataModel:
         finally:
             conn.isolation_level = old_isolation
 
-    def add_element(self, element_id: str, name: str = None, type: str = None,
-                    properties: dict[str, Any] = None, geometry: dict[str, Any] = None) -> bool:
+    def add_element(
+        self,
+        element_id: str,
+        name: str = None,
+        type: str = None,
+        properties: dict[str, Any] = None,
+        geometry: dict[str, Any] = None,
+    ) -> bool:
         """Add a new element to the database."""
         with self._lock:
             conn = self._get_connection()
 
             try:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO elements (element_id, name, type, properties, geometry)
                     VALUES (?, ?, ?, ?, ?)
-                """, (
-                    element_id,
-                    name,
-                    type,
-                    json.dumps(properties) if properties else None,
-                    json.dumps(geometry) if geometry else None
-                ))
+                """,
+                    (
+                        element_id,
+                        name,
+                        type,
+                        json.dumps(properties) if properties else None,
+                        json.dumps(geometry) if geometry else None,
+                    ),
+                )
 
                 conn.commit()
                 return True
@@ -188,19 +195,22 @@ class UniversalDataModel:
     def get_element(self, element_id: str) -> dict[str, Any] | None:
         """Retrieve an element by ID."""
         conn = self._get_connection()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             SELECT element_id, name, type, properties, geometry, created_at, updated_at
             FROM elements WHERE element_id = ?
-        """, (element_id,))
+        """,
+            (element_id,),
+        )
 
         row = cursor.fetchone()
         if row:
             row_dict = dict(row)
             # Parse JSON fields
-            if row_dict['properties']:
-                row_dict['properties'] = json.loads(row_dict['properties'])
-            if row_dict['geometry']:
-                row_dict['geometry'] = json.loads(row_dict['geometry'])
+            if row_dict["properties"]:
+                row_dict["properties"] = json.loads(row_dict["properties"])
+            if row_dict["geometry"]:
+                row_dict["geometry"] = json.loads(row_dict["geometry"])
             return row_dict
         return None
 
@@ -210,25 +220,28 @@ class UniversalDataModel:
             conn = self._get_connection()
 
             # Build dynamic update query
-            allowed_fields = {'name', 'type', 'properties', 'geometry'}
+            allowed_fields = {"name", "type", "properties", "geometry"}
             update_fields = {k: v for k, v in updates.items() if k in allowed_fields}
 
             if not update_fields:
                 return False
 
             # Convert JSON fields if necessary
-            if 'properties' in update_fields and isinstance(update_fields['properties'], dict):
-                update_fields['properties'] = json.dumps(update_fields['properties'])
-            if 'geometry' in update_fields and isinstance(update_fields['geometry'], dict):
-                update_fields['geometry'] = json.dumps(update_fields['geometry'])
+            if "properties" in update_fields and isinstance(update_fields["properties"], dict):
+                update_fields["properties"] = json.dumps(update_fields["properties"])
+            if "geometry" in update_fields and isinstance(update_fields["geometry"], dict):
+                update_fields["geometry"] = json.dumps(update_fields["geometry"])
 
             set_clause = ", ".join([f"{field} = ?" for field in update_fields])
             values = list(update_fields.values()) + [element_id]
 
-            cursor = conn.execute(f"""
+            cursor = conn.execute(
+                f"""
                 UPDATE elements SET {set_clause}, updated_at = CURRENT_TIMESTAMP
                 WHERE element_id = ?
-            """, values)
+            """,
+                values,
+            )
 
             conn.commit()
             return cursor.rowcount > 0
@@ -239,44 +252,61 @@ class UniversalDataModel:
             conn = self._get_connection()
 
             # Delete relationships first (due to foreign key constraints)
-            conn.execute("""
+            conn.execute(
+                """
                 DELETE FROM relationships
                 WHERE source_element_id = ? OR target_element_id = ?
-            """, (element_id, element_id))
+            """,
+                (element_id, element_id),
+            )
 
             # Delete semantic properties
-            conn.execute("""
+            conn.execute(
+                """
                 DELETE FROM semantic_properties
                 WHERE element_id = ?
-            """, (element_id,))
+            """,
+                (element_id,),
+            )
 
             # Delete the element
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 DELETE FROM elements WHERE element_id = ?
-            """, (element_id,))
+            """,
+                (element_id,),
+            )
 
             conn.commit()
             return cursor.rowcount > 0
 
-    def add_relationship(self, relationship_id: str, source_element_id: str,
-                        target_element_id: str, relationship_type: str,
-                        properties: dict[str, Any] = None) -> bool:
+    def add_relationship(
+        self,
+        relationship_id: str,
+        source_element_id: str,
+        target_element_id: str,
+        relationship_type: str,
+        properties: dict[str, Any] = None,
+    ) -> bool:
         """Add a relationship between two elements."""
         with self._lock:
             conn = self._get_connection()
 
             try:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO relationships
                     (relationship_id, source_element_id, target_element_id, relationship_type, properties)
                     VALUES (?, ?, ?, ?, ?)
-                """, (
-                    relationship_id,
-                    source_element_id,
-                    target_element_id,
-                    relationship_type,
-                    json.dumps(properties) if properties else None
-                ))
+                """,
+                    (
+                        relationship_id,
+                        source_element_id,
+                        target_element_id,
+                        relationship_type,
+                        json.dumps(properties) if properties else None,
+                    ),
+                )
 
                 conn.commit()
                 return True
@@ -284,30 +314,38 @@ class UniversalDataModel:
                 # Relationship ID already exists
                 return False
 
-    def get_relationships(self, element_id: str, relationship_type: str = None) -> list[dict[str, Any]]:
+    def get_relationships(
+        self, element_id: str, relationship_type: str = None
+    ) -> list[dict[str, Any]]:
         """Get relationships for an element."""
         conn = self._get_connection()
 
         if relationship_type:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT * FROM relationships
                 WHERE source_element_id = ? AND relationship_type = ?
                 UNION
                 SELECT * FROM relationships
                 WHERE target_element_id = ? AND relationship_type = ?
-            """, (element_id, relationship_type, element_id, relationship_type))
+            """,
+                (element_id, relationship_type, element_id, relationship_type),
+            )
         else:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT * FROM relationships
                 WHERE source_element_id = ? OR target_element_id = ?
-            """, (element_id, element_id))
+            """,
+                (element_id, element_id),
+            )
 
         rows = cursor.fetchall()
         results = []
         for row in rows:
             row_dict = dict(row)
-            if row_dict['properties']:
-                row_dict['properties'] = json.loads(row_dict['properties'])
+            if row_dict["properties"]:
+                row_dict["properties"] = json.loads(row_dict["properties"])
             results.append(row_dict)
 
         return results
@@ -315,31 +353,36 @@ class UniversalDataModel:
     def get_elements_by_type(self, element_type: str) -> list[dict[str, Any]]:
         """Get all elements of a specific type."""
         conn = self._get_connection()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             SELECT element_id, name, type, properties, geometry, created_at, updated_at
             FROM elements WHERE type = ?
-        """, (element_type,))
+        """,
+            (element_type,),
+        )
 
         rows = cursor.fetchall()
         results = []
         for row in rows:
             row_dict = dict(row)
-            if row_dict['properties']:
-                row_dict['properties'] = json.loads(row_dict['properties'])
-            if row_dict['geometry']:
-                row_dict['geometry'] = json.loads(row_dict['geometry'])
+            if row_dict["properties"]:
+                row_dict["properties"] = json.loads(row_dict["properties"])
+            if row_dict["geometry"]:
+                row_dict["geometry"] = json.loads(row_dict["geometry"])
             results.append(row_dict)
 
         return results
 
-    def add_semantic_property(self, element_id: str, property_key: str,
-                             property_value: Any, property_type: str = None) -> bool:
+    def add_semantic_property(
+        self, element_id: str, property_key: str, property_value: Any, property_type: str = None
+    ) -> bool:
         """Add a semantic property to an element."""
         with self._lock:
             conn = self._get_connection()
 
             try:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO semantic_properties
                     (element_id, property_key, property_value, property_type)
                     VALUES (?, ?, ?, ?)
@@ -347,12 +390,14 @@ class UniversalDataModel:
                         property_value = excluded.property_value,
                         property_type = excluded.property_type,
                         updated_at = CURRENT_TIMESTAMP
-                """, (
-                    element_id,
-                    property_key,
-                    json.dumps(property_value) if property_value is not None else None,
-                    property_type
-                ))
+                """,
+                    (
+                        element_id,
+                        property_key,
+                        json.dumps(property_value) if property_value is not None else None,
+                        property_type,
+                    ),
+                )
 
                 conn.commit()
                 return True
@@ -362,21 +407,24 @@ class UniversalDataModel:
     def get_semantic_properties(self, element_id: str) -> dict[str, Any]:
         """Get all semantic properties for an element."""
         conn = self._get_connection()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             SELECT property_key, property_value, property_type
             FROM semantic_properties
             WHERE element_id = ?
-        """, (element_id,))
+        """,
+            (element_id,),
+        )
 
         properties = {}
         for row in cursor.fetchall():
-            value = row['property_value']
+            value = row["property_value"]
             if value is not None:
                 try:
                     value = json.loads(value)
                 except (json.JSONDecodeError, TypeError):
                     pass  # Keep as string if not valid JSON
-            properties[row['property_key']] = value
+            properties[row["property_key"]] = value
 
         return properties
 
@@ -386,7 +434,7 @@ class UniversalDataModel:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
-        if hasattr(self._local, 'conn'):
+        if hasattr(self._local, "conn"):
             self._local.conn.close()
 
 

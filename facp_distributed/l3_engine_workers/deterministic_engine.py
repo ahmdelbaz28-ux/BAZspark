@@ -1,5 +1,6 @@
 # NOSONAR
 """Deterministic Engine for L3 in Distributed FACP System"""
+
 import math
 import time
 from decimal import Decimal, getcontext
@@ -20,27 +21,27 @@ class DeterministicEngine:
             "structural": StructuralCalculator(),
             "thermal": ThermalCalculator(),
             "fluid": FluidCalculator(),
-            "fire_safety": FireSafetyCalculator()
+            "fire_safety": FireSafetyCalculator(),
         }
         self.validation_modules = {
             "nfpa": NFPAValidator(),
             "iec": IECValidator(),
             "egyptian": EgyptianValidator(),
             "saudi": SaudiValidator(),
-            "general": GeneralValidator()
+            "general": GeneralValidator(),
         }
         self.transformation_modules = {
             "dwg_bim": DWGToBIMTransformer(),
             "bim_dwg": BIMToDWGTransformer(),
             "format": FormatTransformer(),
-            "unit": UnitTransformer()
+            "unit": UnitTransformer(),
         }
         self.execution_stats = {
             "total_calculations": 0,
             "total_validations": 0,
             "total_transformations": 0,
             "successful_executions": 0,
-            "failed_executions": 0
+            "failed_executions": 0,
         }
         self.deterministic_mode = True
 
@@ -75,7 +76,7 @@ class DeterministicEngine:
                 "calculation_type": calc_type,
                 "execution_time_ms": execution_time,
                 "success": success,
-                "deterministic": True
+                "deterministic": True,
             }
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
@@ -84,7 +85,7 @@ class DeterministicEngine:
                 "calculation_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
-                "deterministic": True
+                "deterministic": True,
             }
 
     def execute_validation(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -118,7 +119,7 @@ class DeterministicEngine:
                 "validation_type": validation_type,
                 "execution_time_ms": execution_time,
                 "success": success,
-                "deterministic": True
+                "deterministic": True,
             }
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
@@ -127,7 +128,7 @@ class DeterministicEngine:
                 "validation_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
-                "deterministic": True
+                "deterministic": True,
             }
 
     def execute_transformation(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -161,7 +162,7 @@ class DeterministicEngine:
                 "transform_type": transform_type,
                 "execution_time_ms": execution_time,
                 "success": success,
-                "deterministic": True
+                "deterministic": True,
             }
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
@@ -170,7 +171,7 @@ class DeterministicEngine:
                 "transform_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
-                "deterministic": True
+                "deterministic": True,
             }
 
     def _get_calculation_module_name(self, calc_type: str) -> str:
@@ -211,7 +212,9 @@ class DeterministicEngine:
             return "unit"
         return "format"
 
-    def _generic_calculation(self, params: dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _generic_calculation(
+        self, params: dict[str, Any]
+    ) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Perform a generic calculation"""
         operation = params.get("operation", "add")
         operands = params.get("operands", [])
@@ -227,7 +230,7 @@ class DeterministicEngine:
             if divisor != 0:
                 result = Decimal(str(operands[0])) / divisor
             else:
-                result = float('inf')
+                result = float("inf")
         elif operation == "subtract" and len(operands) >= 2:
             result = operands[0]
             for op in operands[1:]:
@@ -289,7 +292,7 @@ class DeterministicEngine:
             "total_validations": 0,
             "total_transformations": 0,
             "successful_executions": 0,
-            "failed_executions": 0
+            "failed_executions": 0,
         }
 
     def ensure_deterministic_result(self, result: Any, input_hash: str) -> Any:
@@ -330,7 +333,7 @@ class ElectricalCalculator:
 
         # Calculate voltage drop
         if system_type == "three_phase":
-            voltage_drop = Decimal('1.732') * current * length * resistance
+            voltage_drop = Decimal("1.732") * current * length * resistance
         else:
             voltage_drop = 2 * current * length * resistance
 
@@ -339,7 +342,7 @@ class ElectricalCalculator:
         if supply_voltage != 0:
             voltage_drop_percentage = (voltage_drop / supply_voltage) * 100
         else:
-            voltage_drop_percentage = Decimal('0')
+            voltage_drop_percentage = Decimal("0")
 
         return {
             "voltage_drop_volts": float(voltage_drop),
@@ -347,7 +350,7 @@ class ElectricalCalculator:
             "acceptable": float(voltage_drop_percentage) <= 3,  # Standard 3% limit
             "supply_voltage": float(supply_voltage),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_cable_sizing(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -355,7 +358,9 @@ class ElectricalCalculator:
         current = Decimal(str(params.get("current", 0)))
         material = params.get("material", "copper")  # copper or aluminum
         ambient_temp = params.get("ambient_temperature", 30)  # degrees Celsius
-        _ = params.get("installation_method", "conduit")  # conduit, tray, buried  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
+        _ = params.get(
+            "installation_method", "conduit"
+        )  # conduit, tray, buried  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
 
         # Base ampacity values (simplified)
         base_ampacities = {
@@ -366,7 +371,7 @@ class ElectricalCalculator:
                 "6mm2": 40,
                 "10mm2": 50,
                 "16mm2": 68,
-                "25mm2": 95
+                "25mm2": 95,
             },
             "aluminum": {
                 "1.5mm2": 12,
@@ -375,8 +380,8 @@ class ElectricalCalculator:
                 "6mm2": 32,
                 "10mm2": 40,
                 "16mm2": 55,
-                "25mm2": 75
-            }
+                "25mm2": 75,
+            },
         }
 
         # Temperature correction factor (simplified)
@@ -402,7 +407,7 @@ class ElectricalCalculator:
             "ambient_temperature": ambient_temp,
             "temperature_correction": float(temp_correction),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_load(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -419,9 +424,11 @@ class ElectricalCalculator:
         system_type = params.get("system_type", "three_phase")
 
         if system_type == "single_phase":
-            full_load_current = (diversified_load * 1000) / (Decimal('230') * power_factor)
+            full_load_current = (diversified_load * 1000) / (Decimal("230") * power_factor)
         else:
-            full_load_current = (diversified_load * 1000) / (Decimal('1.732') * voltage * power_factor)
+            full_load_current = (diversified_load * 1000) / (
+                Decimal("1.732") * voltage * power_factor
+            )
 
         return {
             "connected_load_kw": float(connected_load),
@@ -431,7 +438,7 @@ class ElectricalCalculator:
             "power_factor": float(power_factor),
             "estimated_full_load_current_a": float(full_load_current),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_short_circuit(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -442,9 +449,9 @@ class ElectricalCalculator:
 
         total_impedance = source_impedance + fault_impedance
         if total_impedance != 0:
-            short_circuit_current = source_voltage / (Decimal('1.732') * total_impedance)  # 3-phase
+            short_circuit_current = source_voltage / (Decimal("1.732") * total_impedance)  # 3-phase
         else:
-            short_circuit_current = Decimal('inf')
+            short_circuit_current = Decimal("inf")
 
         return {
             "source_voltage_v": float(source_voltage),
@@ -453,7 +460,7 @@ class ElectricalCalculator:
             "total_impedance_ohms": float(total_impedance),
             "short_circuit_current_a": float(short_circuit_current),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
 
@@ -481,7 +488,7 @@ class StructuralCalculator:
         moment_of_inertia = Decimal(str(params.get("moment_of_inertia", 1e-5)))  # m^4
 
         # Simply supported beam with central point load: δ = PL³/48EI
-        deflection = (load * (length ** 3)) / (Decimal('48') * elastic_modulus * moment_of_inertia)
+        deflection = (load * (length**3)) / (Decimal("48") * elastic_modulus * moment_of_inertia)
 
         return {
             "load_n": float(load),
@@ -491,7 +498,7 @@ class StructuralCalculator:
             "deflection_m": float(deflection),
             "deflection_mm": float(deflection * 1000),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_column_buckling(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -499,13 +506,15 @@ class StructuralCalculator:
         elastic_modulus = Decimal(str(params.get("elastic_modulus", 200e9)))  # Pa
         moment_of_inertia = Decimal(str(params.get("moment_of_inertia", 1e-5)))  # m^4
         unsupported_length = Decimal(str(params.get("unsupported_length", 3)))  # m
-        end_condition_factor = Decimal(str(params.get("end_condition_factor", 1.0)))  # 1.0 for pinned-pinned
+        end_condition_factor = Decimal(
+            str(params.get("end_condition_factor", 1.0))
+        )  # 1.0 for pinned-pinned
 
         # Euler's formula: P_cr = π²EI/(KL)²
-        numerator = math.pi ** 2 * float(elastic_modulus) * float(moment_of_inertia)
+        numerator = math.pi**2 * float(elastic_modulus) * float(moment_of_inertia)
         denominator = (float(end_condition_factor) * float(unsupported_length)) ** 2
 
-        critical_load = numerator / denominator if denominator != 0 else float('inf')
+        critical_load = numerator / denominator if denominator != 0 else float("inf")
 
         return {
             "elastic_modulus_pa": float(elastic_modulus),
@@ -515,7 +524,7 @@ class StructuralCalculator:
             "critical_buckling_load_n": critical_load,
             "critical_buckling_load_kn": critical_load / 1000,
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_load_bearing(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -531,7 +540,7 @@ class StructuralCalculator:
             "load_capacity_n": float(load_capacity),
             "load_capacity_kn": float(load_capacity / 1000),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
 
@@ -553,7 +562,9 @@ class ThermalCalculator:
 
     def _calculate_heat_transfer(self, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate heat transfer through conduction"""
-        thermal_conductivity = Decimal(str(params.get("thermal_conductivity", 400)))  # W/(m·K) for copper
+        thermal_conductivity = Decimal(
+            str(params.get("thermal_conductivity", 400))
+        )  # W/(m·K) for copper
         area = Decimal(str(params.get("area", 1)))  # m²
         thickness = Decimal(str(params.get("thickness", 0.01)))  # m
         temp_difference = Decimal(str(params.get("temp_difference", 50)))  # K
@@ -569,7 +580,7 @@ class ThermalCalculator:
             "heat_transfer_rate_w": float(heat_transfer_rate),
             "heat_transfer_rate_kw": float(heat_transfer_rate / 1000),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_temperature_rise(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -592,13 +603,15 @@ class ThermalCalculator:
             "temperature_rise_k": float(temp_rise),
             "temperature_rise_c": float(temp_rise),  # Same magnitude for Δ
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_thermal_resistance(self, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate thermal resistance"""
         thickness = Decimal(str(params.get("thickness", 0.01)))  # m
-        thermal_conductivity = Decimal(str(params.get("thermal_conductivity", 0.04)))  # W/(m·K) for insulation
+        thermal_conductivity = Decimal(
+            str(params.get("thermal_conductivity", 0.04))
+        )  # W/(m·K) for insulation
         area = Decimal(str(params.get("area", 1)))  # m²
 
         # Thermal resistance: R = x/(kA)
@@ -611,7 +624,7 @@ class ThermalCalculator:
             "thermal_resistance_k_per_w": float(thermal_resistance),
             "thermal_resistance_c_per_w": float(thermal_resistance),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
 
@@ -649,7 +662,7 @@ class FluidCalculator:
             "flow_rate_m3_per_s": flow_rate,
             "flow_rate_l_per_min": flow_rate * 1000 * 60,
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_pressure_drop(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -661,7 +674,7 @@ class FluidCalculator:
         velocity = Decimal(str(params.get("velocity", 1)))  # m/s
 
         # Pressure drop: ΔP = f(L/D)(ρv²/2)
-        pressure_drop = (friction_factor * (length/diameter) * density * (velocity**2)) / 2
+        pressure_drop = (friction_factor * (length / diameter) * density * (velocity**2)) / 2
 
         return {
             "friction_factor": float(friction_factor),
@@ -672,7 +685,7 @@ class FluidCalculator:
             "pressure_drop_pa": float(pressure_drop),
             "pressure_drop_kpa": float(pressure_drop / 1000),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_velocity(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -686,7 +699,7 @@ class FluidCalculator:
         if area != 0:
             velocity = float(flow_rate) / area
         else:
-            velocity = float('inf')
+            velocity = float("inf")
 
         return {
             "flow_rate_m3_per_s": float(flow_rate),
@@ -694,7 +707,7 @@ class FluidCalculator:
             "cross_sectional_area_m2": area,
             "velocity_m_per_s": velocity,
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
 
@@ -721,7 +734,9 @@ class FireSafetyCalculator:
         safety_factor = Decimal(str(params.get("safety_factor", 1.2)))
 
         # Required extraction rate: V x n / 3600 (to convert to m³/s)
-        required_rate = (compartment_volume * required_air_changes * safety_factor) / Decimal('3600')
+        required_rate = (compartment_volume * required_air_changes * safety_factor) / Decimal(
+            "3600"
+        )
 
         return {
             "compartment_volume_m3": float(compartment_volume),
@@ -730,7 +745,7 @@ class FireSafetyCalculator:
             "required_extraction_rate_m3_per_s": float(required_rate),
             "required_extraction_rate_m3_per_hr": float(required_rate * 3600),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_escape_time(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -752,7 +767,7 @@ class FireSafetyCalculator:
             "required_travel_time_s": float(travel_time),
             "available_safe_egress_time_s": float(available_time),
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
     def _calculate_fire_resistance(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -776,7 +791,7 @@ class FireSafetyCalculator:
             "estimated_fire_resistance_minutes": fire_resistance,
             "estimated_fire_resistance_hours": fire_resistance / 60,
             "calculated_at": time.time(),
-            "deterministic": True
+            "deterministic": True,
         }
 
 
@@ -784,13 +799,12 @@ class FireSafetyCalculator:
 # Validator placeholder classes (to be replaced with full implementations)
 # ---------------------------------------------------------------------------
 
+
 class _BaseValidator:
     """Base class for code-standard validators."""
 
     def validate(self, params: dict[str, Any]) -> dict[str, Any]:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} validator is not yet implemented"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} validator is not yet implemented")
 
 
 class NFPAValidator(_BaseValidator):
@@ -817,13 +831,12 @@ class GeneralValidator(_BaseValidator):
 # Transformer placeholder classes (to be replaced with full implementations)
 # ---------------------------------------------------------------------------
 
+
 class _BaseTransformer:
     """Base class for format / unit transformers."""
 
     def transform(self, params: dict[str, Any]) -> dict[str, Any]:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} transformer is not yet implemented"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} transformer is not yet implemented")
 
 
 class DWGToBIMTransformer(_BaseTransformer):

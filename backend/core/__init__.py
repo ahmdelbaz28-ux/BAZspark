@@ -11,4 +11,3 @@ submodules (e.g. ``backend.core.redis_client``) can still be imported directly.
 """
 
 # No code – the top‑level ``core`` package will be imported from the project root.
-

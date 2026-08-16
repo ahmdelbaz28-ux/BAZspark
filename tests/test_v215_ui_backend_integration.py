@@ -69,8 +69,9 @@ class TestV215MiningEndpoints:
             standards = data.get("standards", [])
             codes = [s.get("code", "") for s in standards]
             # Should mention at least NFPA 120 or MSHA
-            assert any("NFPA" in c or "MSHA" in c or "IEC" in c for c in codes), \
+            assert any("NFPA" in c or "MSHA" in c or "IEC" in c for c in codes), (
                 f"Expected mining standards in {codes}"
+            )
 
     def test_methane_check_endpoint_exists(self, client, admin_headers):
         """POST /api/v1/mining/methane-check — endpoint must be reachable."""
@@ -147,8 +148,7 @@ class TestV215ApiKeysEndpoints:
         """GET /api/v1/admin/keys — must be the registered path (NOT /api-keys)."""
         resp = client.get("/api/v1/admin/keys", headers=admin_headers)
         # 200 = success, 401/403 = auth issue (acceptable — endpoint exists)
-        assert resp.status_code != 404, \
-            "/api/v1/admin/keys not registered — frontend will 404"
+        assert resp.status_code != 404, "/api/v1/admin/keys not registered — frontend will 404"
         if resp.status_code == 200:
             data = resp.json()
             assert "keys" in data or isinstance(data, list)
@@ -166,8 +166,9 @@ class TestV215ApiKeysEndpoints:
         assert resp.status_code == 200
         paths = resp.json().get("paths", {})
         wrong_paths = [p for p in paths if "/api-keys" in p and "/admin/" not in p]
-        assert len(wrong_paths) == 0, \
+        assert len(wrong_paths) == 0, (
             f"Wrong /api-keys path is registered — should be /admin/keys: {wrong_paths}"
+        )
 
     def test_create_key_endpoint_exists(self, client, admin_headers):
         """POST /api/v1/admin/keys — must accept key creation."""
@@ -260,8 +261,9 @@ class TestV215SelfHealingEndpoints:
             data = resp.json()
             # Should include at least one of these top-level keys
             expected_keys = {"circuit_breaker", "lru_cache", "audit_logger", "llm_breaker"}
-            assert any(k in data for k in expected_keys), \
+            assert any(k in data for k in expected_keys), (
                 f"Health response missing expected keys: {data.keys()}"
+            )
 
     def test_audit_endpoint_exists(self, client, admin_headers):
         """GET /api/v1/self-healing/audit — recent audit log entries."""
@@ -299,28 +301,31 @@ class TestV215RouterRegistration:
 
         # Mining endpoints
         mining_paths = [p for p in paths if p.startswith("/api/v1/mining/")]
-        assert len(mining_paths) >= 5, \
+        assert len(mining_paths) >= 5, (
             f"Mining router not fully registered — only {mining_paths} found"
+        )
 
         # API keys endpoints (CRITICAL: must be /admin/keys, not /api-keys)
         admin_keys_paths = [p for p in paths if p.startswith("/api/v1/admin/keys")]
-        assert len(admin_keys_paths) >= 3, \
+        assert len(admin_keys_paths) >= 3, (
             f"API keys router not registered at /admin/keys — found {admin_keys_paths}"
+        )
 
         # Verify old wrong path is NOT registered
         wrong_paths = [p for p in paths if "/api-keys" in p and "/admin/" not in p]
-        assert len(wrong_paths) == 0, \
+        assert len(wrong_paths) == 0, (
             f"Wrong /api-keys path is registered — should be /admin/keys: {wrong_paths}"
+        )
 
         # Exports endpoint
         export_paths = [p for p in paths if "/api/v1/exports" in p]
-        assert len(export_paths) >= 1, \
-            f"Exports router not registered — found {export_paths}"
+        assert len(export_paths) >= 1, f"Exports router not registered — found {export_paths}"
 
         # Self-healing endpoints
         sh_paths = [p for p in paths if p.startswith("/api/v1/self-healing/")]
-        assert len(sh_paths) >= 3, \
+        assert len(sh_paths) >= 3, (
             f"Self-healing router not fully registered — only {sh_paths} found"
+        )
 
 
 # ===========================================================================
@@ -337,24 +342,34 @@ class TestV215FrontendBackendPathMatch:
         """ApiKeysPage.tsx must call /api/v1/admin/keys (NOT /api-keys)."""
         api_keys_page_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "frontend", "src", "pages", "ApiKeysPage.tsx",
+            "..",
+            "frontend",
+            "src",
+            "pages",
+            "ApiKeysPage.tsx",
         )
         if not os.path.exists(api_keys_page_path):
             pytest.skip("ApiKeysPage.tsx not found — frontend not built")
         with open(api_keys_page_path) as f:
             content = f.read()
         # Correct path must appear
-        assert "/api/v1/admin/keys" in content, \
+        assert "/api/v1/admin/keys" in content, (
             "ApiKeysPage.tsx must call /api/v1/admin/keys (V215 fix)"
+        )
         # Old wrong path must NOT appear
-        assert "/api/v1/api-keys" not in content, \
+        assert "/api/v1/api-keys" not in content, (
             "ApiKeysPage.tsx still uses wrong path /api/v1/api-keys — revert V215 fix?"
+        )
 
     def test_mining_api_uses_correct_path(self):
         """miningApi.ts must call /api/v1/mining/* paths."""
         mining_api_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "frontend", "src", "services", "miningApi.ts",
+            "..",
+            "frontend",
+            "src",
+            "services",
+            "miningApi.ts",
         )
         if not os.path.exists(mining_api_path):
             pytest.skip("miningApi.ts not found")
@@ -366,33 +381,46 @@ class TestV215FrontendBackendPathMatch:
         """selfHealingApi.ts must call /api/v1/self-healing/* paths."""
         sh_api_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "frontend", "src", "services", "selfHealingApi.ts",
+            "..",
+            "frontend",
+            "src",
+            "services",
+            "selfHealingApi.ts",
         )
         if not os.path.exists(sh_api_path):
             pytest.skip("selfHealingApi.ts not found")
         with open(sh_api_path) as f:
             content = f.read()
-        assert "/self-healing/" in content, \
-            "selfHealingApi.ts must call /self-healing/* paths"
+        assert "/self-healing/" in content, "selfHealingApi.ts must call /self-healing/* paths"
 
     def test_exports_page_uses_correct_path(self):
         """ExportsPage.tsx must call /api/v1/exports + /api/v1/projects/.../export/*."""
         exports_page_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "frontend", "src", "pages", "ExportsPage.tsx",
+            "..",
+            "frontend",
+            "src",
+            "pages",
+            "ExportsPage.tsx",
         )
         if not os.path.exists(exports_page_path):
             pytest.skip("ExportsPage.tsx not found")
         with open(exports_page_path) as f:
             content = f.read()
-        assert "/api/v1/exports" in content or "/export/" in content, \
+        assert "/api/v1/exports" in content or "/export/" in content, (
             "ExportsPage.tsx must call export endpoints"
+        )
 
     def test_sidebar_includes_all_four_pages(self):
         """Sidebar.tsx must include nav entries for all 4 V214 pages."""
         sidebar_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "frontend", "src", "components", "layout", "Sidebar.tsx",
+            "..",
+            "frontend",
+            "src",
+            "components",
+            "layout",
+            "Sidebar.tsx",
         )
         if not os.path.exists(sidebar_path):
             pytest.skip("Sidebar.tsx not found")
@@ -400,5 +428,4 @@ class TestV215FrontendBackendPathMatch:
             content = f.read()
         # All 4 pages must have nav entries
         for path in ["/mining", "/api-keys", "/exports", "/self-healing"]:
-            assert path in content, \
-                f"Sidebar.tsx must include nav entry for {path} (V215 fix)"
+            assert path in content, f"Sidebar.tsx must include nav entry for {path} (V215 fix)"

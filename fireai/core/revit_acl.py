@@ -88,7 +88,12 @@ class ImportReport:
         return any(e.severity == "WARNING" for e in self.errors)
 
     def add_error(
-        self, element_id: str, field_name: str, raw_value: Any, message: str, severity: str = "WARNING"
+        self,
+        element_id: str,
+        field_name: str,
+        raw_value: Any,
+        message: str,
+        severity: str = "WARNING",
     ) -> None:
         self.errors.append(
             ImportError(
@@ -209,7 +214,9 @@ class RevitSubstanceDTO(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def sanitize_revit_data(cls, data: Any) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def sanitize_revit_data(
+        cls, data: Any
+    ) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         if not isinstance(data, dict):
             return data
 
@@ -253,7 +260,11 @@ class RevitSubstanceDTO(BaseModel):
 
         return data
 
-    def to_domain(self, report: ImportReport | None = None) -> SubstanceProperties | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def to_domain(
+        self, report: ImportReport | None = None
+    ) -> (
+        SubstanceProperties | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Convert this flexible DTO to a strict SubstanceProperties model.
         Returns None if conversion fails (logged to report).
@@ -320,7 +331,9 @@ class RevitObstructionDTO(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def sanitize(cls, data: Any) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def sanitize(
+        cls, data: Any
+    ) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         if not isinstance(data, dict):
             return data
 
@@ -336,7 +349,9 @@ class RevitObstructionDTO(BaseModel):
             if len(verts) > 0 and isinstance(verts[0], int | float):
                 # Flat list -> convert to [[x,y,z], [x,y,z], ...]
                 if len(verts) % 3 == 0:
-                    data["vertices"] = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+                    data["vertices"] = [
+                        [verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)
+                    ]
 
         # Safely convert transparency values
         for key in ("transparency_uv", "transparency_vis", "transparency_ir1", "transparency_ir3"):
@@ -404,7 +419,9 @@ class RevitDetectorDTO(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def sanitize(cls, data: Any) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def sanitize(
+        cls, data: Any
+    ) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         if not isinstance(data, dict):
             return data
 
@@ -442,7 +459,9 @@ class RevitDetectorDTO(BaseModel):
             return FlameDetectorSpec(
                 detector_id=self.detector_id or self.element_id,
                 position=self.position[:3] if len(self.position) >= 3 else [0.0, 0.0, 3.0],
-                orientation_vector=self.orientation[:3] if len(self.orientation) >= 3 else [0.0, 0.0, -1.0],
+                orientation_vector=self.orientation[:3]
+                if len(self.orientation) >= 3
+                else [0.0, 0.0, -1.0],
                 rated_range_m=float(self.rated_range_m),
                 aoc_deg=float(self.aoc_deg),
                 spectral_bands=[WavelengthBand(b) for b in self.spectral_bands],

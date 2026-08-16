@@ -45,12 +45,12 @@ def setup_supabase_postgres():
 
     supabase_url = prompt_user(
         "Enter your Supabase Project URL (e.g., postgresql://postgres:[YOUR-PASSWORD]@aws-0-us-west-1.pooler.supabase.com:5432/postgres)",
-        ""
+        "",
     )
 
     return {
         "DATABASE_URL": supabase_url,
-        "DIGITAL_TWIN_DB_PATH": "./db/digital_twin.db"  # Fallback
+        "DIGITAL_TWIN_DB_PATH": "./db/digital_twin.db",  # Fallback
     }
 
 
@@ -59,31 +59,32 @@ def setup_qdrant():
     print("\n🔧 Setting up Qdrant Vector Database...")
     print("Visit https://cloud.qdrant.io to create a free account if you haven't already.")
 
-    use_cloud = prompt_user("Use Qdrant Cloud? (y/n)", "n").lower().startswith('y')
+    use_cloud = prompt_user("Use Qdrant Cloud? (y/n)", "n").lower().startswith("y")
 
     if use_cloud:
-        qdrant_url = prompt_user("Enter your Qdrant Cluster URL (e.g., https://your-cluster-url.gcp.qdrant.tech:6333)")
+        qdrant_url = prompt_user(
+            "Enter your Qdrant Cluster URL (e.g., https://your-cluster-url.gcp.qdrant.tech:6333)"
+        )
         qdrant_api_key = prompt_user("Enter your Qdrant API Key", "", hide_input=True)
-        return {
-            "QDRANT_URL": qdrant_url,
-            "QDRANT_API_KEY": qdrant_api_key
-        }
+        return {"QDRANT_URL": qdrant_url, "QDRANT_API_KEY": qdrant_api_key}
     else:
         return {
             "QDRANT_HOST": prompt_user("Enter Qdrant Host", "localhost"),
             "QDRANT_PORT": prompt_user("Enter Qdrant Port", "6333"),
-            "QDRANT_API_KEY": prompt_user("Enter Qdrant API Key (optional)", "")
+            "QDRANT_API_KEY": prompt_user("Enter Qdrant API Key (optional)", ""),
         }
 
 
 def setup_neo4j():
     """Setup Neo4j graph database configuration."""
     print("\n🔧 Setting up Neo4j Graph Database...")
-    print("Visit https://neo4j.com/cloud/platform/aura-graph-database/ to create a free AuraDB account if you haven't already.")
+    print(
+        "Visit https://neo4j.com/cloud/platform/aura-graph-database/ to create a free AuraDB account if you haven't already."
+    )
 
     neo4j_uri = prompt_user(
         "Enter your Neo4j URI (e.g., bolt://localhost:7687 or bolt+s://your-instance.databases.neo4j.io:7687)",
-        "bolt://localhost:7687"
+        "bolt://localhost:7687",
     )
     neo4j_username = prompt_user("Enter Neo4j Username", "neo4j")
     neo4j_password = prompt_user("Enter Neo4j Password", "", hide_input=True)
@@ -93,7 +94,7 @@ def setup_neo4j():
         "NEO4J_URI": neo4j_uri,
         "NEO4J_USERNAME": neo4j_username,
         "NEO4J_PASSWORD": neo4j_password,
-        "NEO4J_DATABASE": neo4j_database
+        "NEO4J_DATABASE": neo4j_database,
     }
 
 
@@ -102,19 +103,19 @@ def setup_redis():
     print("\n🔧 Setting up Redis Database...")
     print("Visit https://upstash.com to create a free Redis account if you haven't already.")
 
-    use_upstash = prompt_user("Use Upstash Redis? (y/n)", "n").lower().startswith('y')
+    use_upstash = prompt_user("Use Upstash Redis? (y/n)", "n").lower().startswith("y")
 
     if use_upstash:
-        redis_url = prompt_user("Enter your Upstash Redis URL (e.g., redis://your-redis-url.upstash.io:37463)")
-        return {
-            "REDIS_URL": redis_url
-        }
+        redis_url = prompt_user(
+            "Enter your Upstash Redis URL (e.g., redis://your-redis-url.upstash.io:37463)"
+        )
+        return {"REDIS_URL": redis_url}
     else:
         return {
             "REDIS_HOST": prompt_user("Enter Redis Host", "localhost"),
             "REDIS_PORT": prompt_user("Enter Redis Port", "6379"),
             "REDIS_PASSWORD": prompt_user("Enter Redis Password (optional)", ""),
-            "REDIS_DB": prompt_user("Enter Redis Database Number", "0")
+            "REDIS_DB": prompt_user("Enter Redis Database Number", "0"),
         }
 
 
@@ -133,7 +134,9 @@ def generate_env_file(configs: dict):
     # Add other necessary environment variables
     env_content.append("")
     env_content.append("# Application Configuration")
-    env_content.append("# Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'")
+    env_content.append(
+        "# Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )
     env_content.append("FIREAI_API_KEY=")
     env_content.append("FIREAI_ENV=development")
 
@@ -157,7 +160,7 @@ def main():
     print("- Redis (Cache/database)")
 
     confirm = prompt_user("\nWould you like to proceed with the setup? (y/n)", "y")
-    if not confirm.lower().startswith('y'):
+    if not confirm.lower().startswith("y"):
         print("Setup cancelled.")
         return
 
@@ -179,7 +182,7 @@ def main():
             print(f"  {key}=***HIDDEN***")
 
     confirm_save = prompt_user("\nSave these configurations to .env file? (y/n)", "y")
-    if confirm_save.lower().startswith('y'):
+    if confirm_save.lower().startswith("y"):
         generate_env_file(configs)
         print("\n🎉 Database setup complete!")
         print("\nNext steps:")

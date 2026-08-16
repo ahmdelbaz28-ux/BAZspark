@@ -42,6 +42,7 @@ METHANE_DILUTION_M3_S_PER_TON_DAY = 0.06
 @dataclass
 class VentilationResult:
     """Result of ventilation calculation."""
+
     airflow_m3_s: float
     pressure_drop_pa: float
     resistance_n_s2_m8: float
@@ -83,7 +84,7 @@ class VentilationCalculator:
         if airflow_m3_s < 0:
             raise ValueError("Airflow must be >= 0")
         density_ratio = air_density_kg_m3 / STANDARD_AIR_DENSITY_KG_M3
-        return resistance * (airflow_m3_s ** 2) * density_ratio
+        return resistance * (airflow_m3_s**2) * density_ratio
 
     @staticmethod
     def airway_resistance(
@@ -116,7 +117,7 @@ class VentilationCalculator:
             raise ValueError("Area must be > 0")
         if length_m < 0 or perimeter_m < 0:
             raise ValueError("Length and perimeter must be >= 0")
-        return (friction_factor * length_m * perimeter_m) / (area_m2 ** 3)
+        return (friction_factor * length_m * perimeter_m) / (area_m2**3)
 
     @staticmethod
     def air_velocity(airflow_m3_s: float, area_m2: float) -> float:

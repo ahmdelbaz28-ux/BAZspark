@@ -6,6 +6,7 @@ Autodesk Platform Services integration components.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from .auth_service import APSAuthService
 from .data_exchange import APSDataExchange
 
@@ -13,7 +14,7 @@ from .data_exchange import APSDataExchange
 # from .model_derivative import APSModelDerivative
 
 __all__ = [
-    'APSAuthService',
-    'APSDataExchange',
+    "APSAuthService",
+    "APSDataExchange",
     # 'APSModelDerivative'
 ]

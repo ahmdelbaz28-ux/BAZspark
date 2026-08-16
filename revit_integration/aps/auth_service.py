@@ -6,6 +6,7 @@ Authentication service for Autodesk Platform Services.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ except ImportError:
 @dataclass
 class APSToken:
     """Represents an APS access token."""
+
     access_token: str
     refresh_token: str | None
     expires_in: int
@@ -58,17 +60,15 @@ class APSAuthService:
             APSToken: Authentication token or None if failed
         """
         if scopes is None:
-            scopes = ['data:read', 'data:write', 'data:create', 'bucket:read', 'bucket:create']
+            scopes = ["data:read", "data:write", "data:create", "bucket:read", "bucket:create"]
 
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded'
-        }
+        headers = {"Content-type": "application/x-www-form-urlencoded"}
 
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'client_credentials',
-            'scope': ' '.join(scopes)
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "client_credentials",
+            "scope": " ".join(scopes),
         }
 
         try:
@@ -80,12 +80,12 @@ class APSAuthService:
                     if response.status == 200:
                         token_data = await response.json()
                         self._access_token = APSToken(
-                            access_token=token_data['access_token'],
+                            access_token=token_data["access_token"],
                             refresh_token=None,
-                            expires_in=token_data['expires_in'],
-                            token_type=token_data['token_type'],
-                            scope=token_data['scope'],
-                            issued_at=datetime.now(UTC)
+                            expires_in=token_data["expires_in"],
+                            token_type=token_data["token_type"],
+                            scope=token_data["scope"],
+                            issued_at=datetime.now(UTC),
                         )
                         self.logger.info("Successfully authenticated with 2-legged OAuth")
                         return self._access_token
@@ -109,7 +109,9 @@ class APSAuthService:
             return token.access_token if token else None
 
         # Check if token is expired
-        expiry_time = self._access_token.issued_at + timedelta(seconds=self._access_token.expires_in)
+        expiry_time = self._access_token.issued_at + timedelta(
+            seconds=self._access_token.expires_in
+        )
         if datetime.now(UTC) >= expiry_time:
             # Token expired, need to refresh or re-authenticate
             if self._access_token.refresh_token:
@@ -133,15 +135,13 @@ class APSAuthService:
         Returns:
             APSToken: New access token or None if failed
         """
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded'
-        }
+        headers = {"Content-type": "application/x-www-form-urlencoded"}
 
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': refresh_token
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
 
         try:
@@ -153,12 +153,12 @@ class APSAuthService:
                     if response.status == 200:
                         token_data = await response.json()
                         self._access_token = APSToken(
-                            access_token=token_data['access_token'],
-                            refresh_token=token_data.get('refresh_token'),  # May not be provided
-                            expires_in=token_data['expires_in'],
-                            token_type=token_data['token_type'],
-                            scope=token_data['scope'],
-                            issued_at=datetime.now(UTC)
+                            access_token=token_data["access_token"],
+                            refresh_token=token_data.get("refresh_token"),  # May not be provided
+                            expires_in=token_data["expires_in"],
+                            token_type=token_data["token_type"],
+                            scope=token_data["scope"],
+                            issued_at=datetime.now(UTC),
                         )
                         self.logger.info("Successfully refreshed access token")
                         return self._access_token
@@ -178,14 +178,9 @@ class APSAuthService:
         """
         token = asyncio.run(self.get_access_token()) if self._access_token else None
         if token:
-            return {
-                'Authorization': f'Bearer {token}',
-                'Content-type': 'application/json'
-            }
+            return {"Authorization": f"Bearer {token}", "Content-type": "application/json"}
         else:
-            return {
-                'Content-type': 'application/json'
-            }
+            return {"Content-type": "application/json"}
 
 
 class APSConfig:
@@ -199,16 +194,17 @@ class APSConfig:
         self.client_secret = ""
         self.bucket_key = ""
         self.region = "US"
-        self.scopes = ['data:read', 'data:write', 'data:create', 'bucket:read', 'bucket:create']
+        self.scopes = ["data:read", "data:write", "data:create", "bucket:read", "bucket:create"]
         self.logger = logging.getLogger(__name__)
 
     def load_from_env(self):
         """Load configuration from environment variables."""
         import os
-        self.client_id = os.getenv('APS_CLIENT_ID', '')
-        self.client_secret = os.getenv('APS_CLIENT_SECRET', '')
-        self.bucket_key = os.getenv('APS_BUCKET_KEY', '')
-        self.region = os.getenv('APS_REGION', 'US')
+
+        self.client_id = os.getenv("APS_CLIENT_ID", "")
+        self.client_secret = os.getenv("APS_CLIENT_SECRET", "")
+        self.bucket_key = os.getenv("APS_BUCKET_KEY", "")
+        self.region = os.getenv("APS_REGION", "US")
 
         if not all([self.client_id, self.client_secret]):
             self.logger.warning("APS credentials not found in environment variables")

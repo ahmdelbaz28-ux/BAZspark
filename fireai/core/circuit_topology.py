@@ -247,7 +247,9 @@ class CircuitTopology:
 
         # If no isolators, all devices are in one segment
         if not isolator_indices:
-            non_isolator_count = sum(1 for d in self.devices if "isolator" not in d.device_type.lower())
+            non_isolator_count = sum(
+                1 for d in self.devices if "isolator" not in d.device_type.lower()
+            )
             return [non_isolator_count]
 
         counts = []
@@ -293,7 +295,11 @@ class CircuitTopology:
 
     # ─── Validation ────────────────────────────────────────────────────────
 
-    def validate(self) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def validate(
+        self,
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validate this circuit topology against NFPA 72 requirements.
 
@@ -333,7 +339,10 @@ class CircuitTopology:
                     )
 
             # Warning: SLC with many devices but no isolators
-            if len(self.devices) > MAX_DEVICES_BETWEEN_ISOLATORS and not self.get_isolator_indices():
+            if (
+                len(self.devices) > MAX_DEVICES_BETWEEN_ISOLATORS
+                and not self.get_isolator_indices()
+            ):
                 warnings.append(
                     {
                         "type": "no_isolators_on_large_slc",
@@ -356,7 +365,9 @@ class CircuitTopology:
                         "type": "class_a_missing_return_path",
                         "return_length_m": self.return_length_m,
                         "nfpa_section": "NFPA 72 §12.2.2",
-                        "message": ("Class A circuit requires a return path with positive length per NFPA 72 §12.2.2"),
+                        "message": (
+                            "Class A circuit requires a return path with positive length per NFPA 72 §12.2.2"
+                        ),
                     }
                 )
 
@@ -402,7 +413,9 @@ class CircuitTopology:
                         "coordinate": "position_x",
                         "value": dev.position_x,
                         "nfpa_section": "DATA_INTEGRITY",
-                        "message": (f"Device '{dev.device_id}' has non-finite position_x={dev.position_x}"),
+                        "message": (
+                            f"Device '{dev.device_id}' has non-finite position_x={dev.position_x}"
+                        ),
                     }
                 )
             if not math.isfinite(dev.position_y):
@@ -413,7 +426,9 @@ class CircuitTopology:
                         "coordinate": "position_y",
                         "value": dev.position_y,
                         "nfpa_section": "DATA_INTEGRITY",
-                        "message": (f"Device '{dev.device_id}' has non-finite position_y={dev.position_y}"),
+                        "message": (
+                            f"Device '{dev.device_id}' has non-finite position_y={dev.position_y}"
+                        ),
                     }
                 )
             if not math.isfinite(dev.position_z):
@@ -424,7 +439,9 @@ class CircuitTopology:
                         "coordinate": "position_z",
                         "value": dev.position_z,
                         "nfpa_section": "DATA_INTEGRITY",
-                        "message": (f"Device '{dev.device_id}' has non-finite position_z={dev.position_z}"),
+                        "message": (
+                            f"Device '{dev.device_id}' has non-finite position_z={dev.position_z}"
+                        ),
                     }
                 )
 
@@ -435,7 +452,9 @@ class CircuitTopology:
                     "type": "invalid_cable_length",
                     "cable_length_m": self.cable_length_m,
                     "nfpa_section": "DATA_INTEGRITY",
-                    "message": (f"cable_length_m must be non-negative finite, got {self.cable_length_m}"),
+                    "message": (
+                        f"cable_length_m must be non-negative finite, got {self.cable_length_m}"
+                    ),
                 }
             )
 
@@ -447,7 +466,9 @@ class CircuitTopology:
                     "type": "invalid_return_length",
                     "return_length_m": self.return_length_m,
                     "nfpa_section": "DATA_INTEGRITY",
-                    "message": (f"return_length_m must be non-negative finite, got {self.return_length_m}"),
+                    "message": (
+                        f"return_length_m must be non-negative finite, got {self.return_length_m}"
+                    ),
                 }
             )
 
@@ -479,7 +500,9 @@ class CircuitTopology:
                             "device_id": dev.device_id,
                             "current_a": dev.current_a,
                             "nfpa_section": "NFPA 72 §10.6.4",
-                            "message": (f"NAC device '{dev.device_id}' has invalid current_a={dev.current_a}"),
+                            "message": (
+                                f"NAC device '{dev.device_id}' has invalid current_a={dev.current_a}"
+                            ),
                         }
                     )
 

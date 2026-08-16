@@ -261,16 +261,24 @@ class TestBatterySizing:
     def test_voice_requires_larger_battery(self):
         """Voice evacuation (15min alarm) requires more battery than non-voice (5min)."""
         req_no_voice = ProjectRequirements(
-            device_count=100, nac_circuit_count=4,
-            building_size_m2=5000.0, building_floors=3,
-            requires_network=True, requires_voice=False,
-            requires_releasing=False, jurisdiction="US",
+            device_count=100,
+            nac_circuit_count=4,
+            building_size_m2=5000.0,
+            building_floors=3,
+            requires_network=True,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="US",
         )
         req_voice = ProjectRequirements(
-            device_count=100, nac_circuit_count=4,
-            building_size_m2=5000.0, building_floors=3,
-            requires_network=True, requires_voice=True,
-            requires_releasing=False, jurisdiction="US",
+            device_count=100,
+            nac_circuit_count=4,
+            building_size_m2=5000.0,
+            building_floors=3,
+            requires_network=True,
+            requires_voice=True,
+            requires_releasing=False,
+            jurisdiction="US",
         )
         rec_no_voice = SelectionEngine.select_panel(req_no_voice)
         rec_voice = SelectionEngine.select_panel(req_voice)
@@ -293,6 +301,7 @@ class TestBatterySizing:
     def test_battery_standalone_fallback(self):
         """Standalone battery sizing (without fireai.core module) must still work."""
         from facp_system.panel_database import MASTER_PANEL_DATABASE
+
         panel = MASTER_PANEL_DATABASE[0]
         battery_ah, details = SelectionEngine.compute_battery_ah(
             device_count=50,
@@ -308,12 +317,18 @@ class TestBatterySizing:
         """Lower temperature requires larger battery (temperature derating)."""
         panel = MASTER_PANEL_DATABASE[0]
         ah_20c, _ = SelectionEngine.compute_battery_ah(
-            device_count=50, nac_circuit_count=2,
-            panel=panel, requires_voice=False, min_temperature_c=20.0,
+            device_count=50,
+            nac_circuit_count=2,
+            panel=panel,
+            requires_voice=False,
+            min_temperature_c=20.0,
         )
         ah_0c, _ = SelectionEngine.compute_battery_ah(
-            device_count=50, nac_circuit_count=2,
-            panel=panel, requires_voice=False, min_temperature_c=0.0,
+            device_count=50,
+            nac_circuit_count=2,
+            panel=panel,
+            requires_voice=False,
+            min_temperature_c=0.0,
         )
         assert ah_0c > ah_20c
 
@@ -380,16 +395,24 @@ class TestSelectionEdgeCases:
     def test_preferred_manufacturer_bonus(self):
         """Preferred manufacturer should get scoring bonus."""
         req_no_pref = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
-            requires_releasing=False, jurisdiction="US",
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="US",
         )
         req_pref_notifier = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
-            requires_releasing=False, jurisdiction="US",
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="US",
             preferred_manufacturer="NOTIFIER",
         )
         SelectionEngine.select_panel(req_no_pref)
@@ -432,10 +455,14 @@ class TestComplianceVerifier:
     def test_missing_ul_listing_violation(self):
         """Panel without UL listing must trigger a violation."""
         req = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
-            requires_releasing=False, jurisdiction="US",
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="US",
         )
         rec = SelectionEngine.select_panel(req)
         # Manually create a recommendation without UL
@@ -459,10 +486,14 @@ class TestComplianceVerifier:
     def test_fdny_listing_violation(self):
         """FDNY project with non-FDNY panel must trigger violation."""
         req = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
-            requires_releasing=False, jurisdiction="FDNY",
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="FDNY",
         )
         rec = SelectionEngine.select_panel(req)
         # FDNY req should always select FDNY-listed panel
@@ -493,9 +524,12 @@ class TestComplianceVerifier:
     def test_releasing_violation(self):
         """V54 FIX F4: Releasing service with non-releasing panel must trigger violation."""
         req = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
             requires_releasing=True,  # Requires releasing
             jurisdiction="US",
         )
@@ -511,10 +545,14 @@ class TestComplianceVerifier:
     def test_battery_derating_method_warning(self):
         """Flat 1.2x battery method should trigger a warning."""
         req = ProjectRequirements(
-            device_count=30, nac_circuit_count=2,
-            building_size_m2=1500.0, building_floors=2,
-            requires_network=False, requires_voice=False,
-            requires_releasing=False, jurisdiction="US",
+            device_count=30,
+            nac_circuit_count=2,
+            building_size_m2=1500.0,
+            building_floors=2,
+            requires_network=False,
+            requires_voice=False,
+            requires_releasing=False,
+            jurisdiction="US",
         )
         rec = SelectionEngine.select_panel(req)
         # Create a bad recommendation with flat 1.2x method
@@ -644,10 +682,14 @@ class TestFullPipeline:
         """Every supported jurisdiction must produce a compliant selection."""
         for jurisdiction in ["US", "Canada", "FDNY"]:
             req = ProjectRequirements(
-                device_count=30, nac_circuit_count=2,
-                building_size_m2=1500.0, building_floors=2,
-                requires_network=False, requires_voice=False,
-                requires_releasing=False, jurisdiction=jurisdiction,
+                device_count=30,
+                nac_circuit_count=2,
+                building_size_m2=1500.0,
+                building_floors=2,
+                requires_network=False,
+                requires_voice=False,
+                requires_releasing=False,
+                jurisdiction=jurisdiction,
             )
             rec = SelectionEngine.select_panel(req)
             ComplianceVerifier.verify_national_code_rules(req, rec)

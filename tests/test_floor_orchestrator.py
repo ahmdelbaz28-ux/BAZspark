@@ -126,7 +126,9 @@ class TestRoomResult:
         assert r.detector_count == 0
         assert r.detector_positions == []
         assert r.coverage_pct == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert r.worst_case_distance_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            r.worst_case_distance_m == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.solve_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.warnings == []
         assert r.errors == []
@@ -139,7 +141,9 @@ class TestRoomResult:
         assert r.radius_m == 6.37  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.spacing_m == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.detector_count == 2
-        assert r.coverage_pct == 99.9  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            r.coverage_pct == 99.9
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_mutable_lists(self):
         """RoomResult has mutable lists for warnings/errors/audit_notes."""

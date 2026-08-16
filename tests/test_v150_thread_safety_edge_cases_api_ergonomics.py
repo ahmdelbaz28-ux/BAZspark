@@ -277,10 +277,15 @@ class TestLRUCacheStatsThreadSafety:
 
         # Pre-populate
         for i in range(100):
-            cache.put(f"key-{i}", CacheEntry(
-                key=f"key-{i}", result=i, content_hash="h",
-                computed_at=time.time(),
-            ))
+            cache.put(
+                f"key-{i}",
+                CacheEntry(
+                    key=f"key-{i}",
+                    result=i,
+                    content_hash="h",
+                    computed_at=time.time(),
+                ),
+            )
 
         stop = threading.Event()
 
@@ -310,10 +315,15 @@ class TestLRUCacheStatsThreadSafety:
         """V150 FIX: snapshot() returns a consistent copy of all entries."""
         cache = _LRUCache(maxsize=100)
         for i in range(50):
-            cache.put(f"key-{i}", CacheEntry(
-                key=f"key-{i}", result=i, content_hash="h",
-                computed_at=time.time(),
-            ))
+            cache.put(
+                f"key-{i}",
+                CacheEntry(
+                    key=f"key-{i}",
+                    result=i,
+                    content_hash="h",
+                    computed_at=time.time(),
+                ),
+            )
 
         snap = cache.snapshot()
         assert len(snap) == 50
@@ -342,23 +352,33 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
 
     def test_nan_x_rejected(self):
         """NaN x-coordinate must be rejected — it would corrupt distance calcs."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("nan"), y=0, z=0)
 
     def test_nan_y_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=0, y=float("nan"), z=0)
 
     def test_nan_z_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=0, y=0, z=float("nan"))
 
     def test_inf_x_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("inf"), y=0, z=0)
 
     def test_neg_inf_x_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("-inf"), y=0, z=0)
 
     def test_non_numeric_x_rejected(self):
@@ -383,24 +403,24 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
 
     def test_zero_coverage_radius_rejected(self):
         with pytest.raises(ValueError, match="coverage_radius must be positive"):
-            self.twin.register_detector(
-                "R-01", "D-001", x=0, y=0, z=0, coverage_radius=0.0
-            )
+            self.twin.register_detector("R-01", "D-001", x=0, y=0, z=0, coverage_radius=0.0)
 
     def test_negative_coverage_radius_rejected(self):
         with pytest.raises(ValueError, match="coverage_radius must be positive"):
-            self.twin.register_detector(
-                "R-01", "D-001", x=0, y=0, z=0, coverage_radius=-5.0
-            )
+            self.twin.register_detector("R-01", "D-001", x=0, y=0, z=0, coverage_radius=-5.0)
 
     def test_nan_coverage_radius_rejected(self):
-        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="coverage_radius must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector(
                 "R-01", "D-001", x=0, y=0, z=0, coverage_radius=float("nan")
             )
 
     def test_inf_coverage_radius_rejected(self):
-        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="coverage_radius must be finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector(
                 "R-01", "D-001", x=0, y=0, z=0, coverage_radius=float("inf")
             )
@@ -412,17 +432,25 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
     def test_valid_registration_still_works(self):
         """Sanity: valid inputs must still succeed (no false rejections)."""
         det = self.twin.register_detector(
-            "R-01", "D-001", x=3.0, y=2.5, z=3.0,
+            "R-01",
+            "D-001",
+            x=3.0,
+            y=2.5,
+            z=3.0,
             detector_type="smoke",
             coverage_radius=6.37,
         )
         assert det.detector_id == "D-001"
-        assert det.coverage_radius == 6.37  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            det.coverage_radius == 6.37
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_failed_validation_leaves_twin_clean(self):
         """A failed registration must not leave partial state behind."""
         # Try to register with NaN — must fail
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("nan"), y=0, z=0)
 
         # Twin must still be empty
@@ -436,13 +464,18 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
     def test_known_detector_types_accepted(self):
         """All known detector types must be accepted without error."""
         known_types = [
-            "smoke", "heat", "flame", "gas", "duct_smoke",
-            "carbon_monoxide", "combination", "aspirating", "beam",
+            "smoke",
+            "heat",
+            "flame",
+            "gas",
+            "duct_smoke",
+            "carbon_monoxide",
+            "combination",
+            "aspirating",
+            "beam",
         ]
         for i, dt in enumerate(known_types):
-            det = self.twin.register_detector(
-                f"R-{i}", f"D-{i}", x=0, y=0, z=0, detector_type=dt
-            )
+            det = self.twin.register_detector(f"R-{i}", f"D-{i}", x=0, y=0, z=0, detector_type=dt)
             assert det.detector_type == dt
 
 
@@ -461,15 +494,12 @@ class TestUpdateDetectorStatusForceRequiresReason:
 
     def setup_method(self):
         self.twin = DigitalTwin(building_id="TEST-BLDG-V150")
-        self.twin.register_detector("R-01", "D-001", x=0, y=0, z=0,
-                                     status=DetectorStatus.OK)
+        self.twin.register_detector("R-01", "D-001", x=0, y=0, z=0, status=DetectorStatus.OK)
 
     def test_force_without_reason_rejected(self):
         """force=True with empty reason must raise ValueError."""
         with pytest.raises(ValueError, match="force=True requires a non-empty force_reason"):
-            self.twin.update_detector_status(
-                "D-001", DetectorStatus.PLANNED, force=True
-            )
+            self.twin.update_detector_status("D-001", DetectorStatus.PLANNED, force=True)
 
     def test_force_with_whitespace_reason_rejected(self):
         with pytest.raises(ValueError, match="force=True requires a non-empty force_reason"):
@@ -480,7 +510,8 @@ class TestUpdateDetectorStatusForceRequiresReason:
     def test_force_with_valid_reason_succeeds(self):
         """force=True with a real reason must succeed and record the reason."""
         det = self.twin.update_detector_status(
-            "D-001", DetectorStatus.PLANNED,
+            "D-001",
+            DetectorStatus.PLANNED,
             force=True,
             force_reason="Reversed accidental OK after install cancellation",
         )
@@ -488,9 +519,7 @@ class TestUpdateDetectorStatusForceRequiresReason:
 
     def test_force_false_without_reason_still_works(self):
         """force=False must not require a reason (backward compat)."""
-        det = self.twin.update_detector_status(
-            "D-001", DetectorStatus.FAULT
-        )
+        det = self.twin.update_detector_status("D-001", DetectorStatus.FAULT)
         assert det.status == DetectorStatus.FAULT
 
     def test_force_reason_recorded_in_audit_event(self):
@@ -499,7 +528,8 @@ class TestUpdateDetectorStatusForceRequiresReason:
         self.twin._bus.subscribe(Events.TWIN_SYNC, events_received.append)
 
         self.twin.update_detector_status(
-            "D-001", DetectorStatus.DECOMMISSIONED,
+            "D-001",
+            DetectorStatus.DECOMMISSIONED,
             force=True,
             force_reason="Detector destroyed in fire — permanently removed",
         )
@@ -742,8 +772,11 @@ class TestV150Integration:
                 for i in range(20):
                     det_id = f"T{thread_id}-D{i}"
                     twin.register_detector(
-                        f"R-{thread_id}", det_id,
-                        x=float(i), y=float(thread_id), z=3.0,
+                        f"R-{thread_id}",
+                        det_id,
+                        x=float(i),
+                        y=float(thread_id),
+                        z=3.0,
                     )
                     # Legal transition: PLANNED → OK
                     twin.update_detector_status(det_id, DetectorStatus.OK)
@@ -762,15 +795,15 @@ class TestV150Integration:
     def test_force_bypass_auditable(self):
         """A forced status change must be fully auditable."""
         twin = DigitalTwin(building_id="TEST-V150-AUDIT")
-        twin.register_detector("R-01", "D-001", x=0, y=0, z=0,
-                               status=DetectorStatus.DECOMMISSIONED)
+        twin.register_detector("R-01", "D-001", x=0, y=0, z=0, status=DetectorStatus.DECOMMISSIONED)
 
         # DECOMMISSIONED → OK is illegal, but force allows it with a reason
         events_received = []
         twin._bus.subscribe(Events.TWIN_SYNC, events_received.append)
 
         det = twin.update_detector_status(
-            "D-001", DetectorStatus.OK,
+            "D-001",
+            DetectorStatus.OK,
             force=True,
             force_reason="Recommissioned after maintenance certification",
             verified_by="PE-Smith",

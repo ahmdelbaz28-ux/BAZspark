@@ -40,6 +40,7 @@ from qomn_conduit import (
 # Test 1: Deterministic run ID — same path → same run_id
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestDeterministicRunID:
     """place_fittings must produce identical run_ids for identical inputs."""
 
@@ -65,11 +66,15 @@ class TestDeterministicRunID:
         """Different paths → different auto-generated run_ids."""
         path1 = RoutePath(
             waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0)),
-            total_length_m=5.0, bend_count=0, elevation_change_m=0.0,
+            total_length_m=5.0,
+            bend_count=0,
+            elevation_change_m=0.0,
         )
         path2 = RoutePath(
             waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(10.0, 0.0, 3.0)),
-            total_length_m=10.0, bend_count=0, elevation_change_m=0.0,
+            total_length_m=10.0,
+            bend_count=0,
+            elevation_change_m=0.0,
         )
         r1 = place_fittings(path1, ConduitType.EMT, TradeSize.HALF_INCH)
         r2 = place_fittings(path2, ConduitType.EMT, TradeSize.HALF_INCH)
@@ -81,7 +86,9 @@ class TestDeterministicRunID:
         """Auto-generated run_id must start with 'RUN-'."""
         path = RoutePath(
             waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0)),
-            total_length_m=5.0, bend_count=0, elevation_change_m=0.0,
+            total_length_m=5.0,
+            bend_count=0,
+            elevation_change_m=0.0,
         )
         result = place_fittings(path, ConduitType.EMT, TradeSize.HALF_INCH)
         assert result.is_ok()
@@ -90,9 +97,10 @@ class TestDeterministicRunID:
     def test_sha256_deterministic_across_independent_calls(self):
         """SHA-256 must be identical across completely independent pipeline runs."""
         path = RoutePath(
-            waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0),
-                       Point3D(5.0, 5.0, 3.0)),
-            total_length_m=10.0, bend_count=1, elevation_change_m=0.0,
+            waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0), Point3D(5.0, 5.0, 3.0)),
+            total_length_m=10.0,
+            bend_count=1,
+            elevation_change_m=0.0,
         )
         run1 = place_fittings(path, ConduitType.EMT, TradeSize.HALF_INCH)
         run2 = place_fittings(path, ConduitType.EMT, TradeSize.HALF_INCH)
@@ -107,34 +115,55 @@ class TestDeterministicRunID:
 # Test 2: Complete coupling catalog — all conduit types × all trade sizes
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCompleteCouplingCatalog:
     """Every conduit type must have a COUPLING for every trade size."""
 
-    @pytest.mark.parametrize("ct", [
-        ConduitType.EMT, ConduitType.UPVC_SCH40,
-        ConduitType.UPVC_SCH80, ConduitType.RGD,
-    ])
-    @pytest.mark.parametrize("ts", [
-        TradeSize.HALF_INCH, TradeSize.THREE_QUARTER,
-        TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,
-        TradeSize.ONE_HALF, TradeSize.TWO_INCH,
-    ])
+    @pytest.mark.parametrize(
+        "ct",
+        [
+            ConduitType.EMT,
+            ConduitType.UPVC_SCH40,
+            ConduitType.UPVC_SCH80,
+            ConduitType.RGD,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.HALF_INCH,
+            TradeSize.THREE_QUARTER,
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_QUARTER,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO_INCH,
+        ],
+    )
     def test_coupling_exists_for_all_combinations(self, ct, ts):
         """Every (conduit_type, trade_size) must have a COUPLING."""
         result = get_fitting(ct, ts, FittingType.COUPLING)
-        assert result.is_ok(), (
-            f"Missing COUPLING for {ct.value} {ts.value}"
-        )
+        assert result.is_ok(), f"Missing COUPLING for {ct.value} {ts.value}"
 
-    @pytest.mark.parametrize("ct", [
-        ConduitType.EMT, ConduitType.UPVC_SCH40,
-        ConduitType.UPVC_SCH80, ConduitType.RGD,
-    ])
-    @pytest.mark.parametrize("ts", [
-        TradeSize.HALF_INCH, TradeSize.THREE_QUARTER,
-        TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,
-        TradeSize.ONE_HALF, TradeSize.TWO_INCH,
-    ])
+    @pytest.mark.parametrize(
+        "ct",
+        [
+            ConduitType.EMT,
+            ConduitType.UPVC_SCH40,
+            ConduitType.UPVC_SCH80,
+            ConduitType.RGD,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.HALF_INCH,
+            TradeSize.THREE_QUARTER,
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_QUARTER,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO_INCH,
+        ],
+    )
     def test_coupling_has_valid_catalog_number(self, ct, ts):
         """Coupling catalog numbers must NOT be placeholders like 'EC-000'."""
         result = get_fitting(ct, ts, FittingType.COUPLING)
@@ -145,14 +174,24 @@ class TestCompleteCouplingCatalog:
         # Must have at least 5 chars (e.g. EC-050)
         assert len(cn) >= 5, f"Catalog number too short: {cn}"
 
-    @pytest.mark.parametrize("ct", [
-        ConduitType.EMT, ConduitType.UPVC_SCH40,
-        ConduitType.UPVC_SCH80, ConduitType.RGD,
-    ])
-    @pytest.mark.parametrize("ts", [
-        TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,
-        TradeSize.ONE_HALF, TradeSize.TWO_INCH,
-    ])
+    @pytest.mark.parametrize(
+        "ct",
+        [
+            ConduitType.EMT,
+            ConduitType.UPVC_SCH40,
+            ConduitType.UPVC_SCH80,
+            ConduitType.RGD,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_QUARTER,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO_INCH,
+        ],
+    )
     def test_large_size_couplings_have_correct_od(self, ct, ts):
         """Couplings for larger sizes must have correct OD from NEC Table 4."""
         result = get_fitting(ct, ts, FittingType.COUPLING)
@@ -160,14 +199,15 @@ class TestCompleteCouplingCatalog:
         # OD must match the corresponding elbow OD
         elbow_result = get_fitting(ct, ts, FittingType.ELBOW_90)
         assert elbow_result.is_ok()
-        assert result.value.od_in == pytest.approx(
-            elbow_result.value.od_in, abs=0.001
-        ), f"OD mismatch between coupling and elbow for {ct.value} {ts.value}"
+        assert result.value.od_in == pytest.approx(elbow_result.value.od_in, abs=0.001), (
+            f"OD mismatch between coupling and elbow for {ct.value} {ts.value}"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 3: FillResult always returned — even when non-compliant
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestFillResultAlwaysReturned:
     """
@@ -179,7 +219,8 @@ class TestFillResultAlwaysReturned:
     def test_violation_returns_fill_result(self):
         """Non-compliant fill returns ok(FillResult) with is_compliant=False."""
         result = calculate_fill(
-            ConduitType.EMT, TradeSize.HALF_INCH,
+            ConduitType.EMT,
+            TradeSize.HALF_INCH,
             cable_diameters=[0.111] * 20,
         )
         assert result.is_ok()
@@ -191,7 +232,8 @@ class TestFillResultAlwaysReturned:
     def test_violation_fill_result_has_recommended_size(self):
         """Non-compliant FillResult must include recommended_size."""
         result = calculate_fill(
-            ConduitType.EMT, TradeSize.HALF_INCH,
+            ConduitType.EMT,
+            TradeSize.HALF_INCH,
             cable_diameters=[0.111] * 20,
         )
         assert result.is_ok()
@@ -201,7 +243,8 @@ class TestFillResultAlwaysReturned:
     def test_compliant_fill_result_has_no_recommended_size(self):
         """Compliant FillResult must have recommended_size=None."""
         result = calculate_fill(
-            ConduitType.EMT, TradeSize.HALF_INCH,
+            ConduitType.EMT,
+            TradeSize.HALF_INCH,
             cable_diameters=[0.111, 0.111, 0.111],
         )
         assert result.is_ok()
@@ -221,7 +264,9 @@ class TestFillResultAlwaysReturned:
         result = calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, [d])
         assert result.is_ok()
         assert result.value.is_compliant is True
-        assert result.value.max_allowed_pct == 53.0  # 1 conductor  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.value.max_allowed_pct == 53.0
+        )  # 1 conductor  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_fill_just_above_limit(self):
         """Fill just above the limit → is_compliant=False."""
@@ -242,6 +287,7 @@ class TestFillResultAlwaysReturned:
 # Test 4: Catalog completeness audit
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCatalogAudit:
     """Audit catalog for completeness and consistency."""
 
@@ -251,20 +297,32 @@ class TestCatalogAudit:
 
     def test_all_coupling_od_matches_elbow_od(self):
         """For every (conduit_type, trade_size), coupling OD must match elbow OD."""
-        for ct in [ConduitType.EMT, ConduitType.UPVC_SCH40, ConduitType.UPVC_SCH80, ConduitType.RGD]:
-            for ts in [TradeSize.HALF_INCH, TradeSize.THREE_QUARTER, TradeSize.ONE_INCH,
-                        TradeSize.ONE_QUARTER, TradeSize.ONE_HALF, TradeSize.TWO_INCH]:
+        for ct in [
+            ConduitType.EMT,
+            ConduitType.UPVC_SCH40,
+            ConduitType.UPVC_SCH80,
+            ConduitType.RGD,
+        ]:
+            for ts in [
+                TradeSize.HALF_INCH,
+                TradeSize.THREE_QUARTER,
+                TradeSize.ONE_INCH,
+                TradeSize.ONE_QUARTER,
+                TradeSize.ONE_HALF,
+                TradeSize.TWO_INCH,
+            ]:
                 elbow = get_fitting(ct, ts, FittingType.ELBOW_90)
                 coupling = get_fitting(ct, ts, FittingType.COUPLING)
                 if elbow.is_ok() and coupling.is_ok():
-                    assert elbow.value.od_in == pytest.approx(
-                        coupling.value.od_in, abs=0.001
-                    ), f"OD mismatch: {ct.value} {ts.value}"
+                    assert elbow.value.od_in == pytest.approx(coupling.value.od_in, abs=0.001), (
+                        f"OD mismatch: {ct.value} {ts.value}"
+                    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 5: BoundingBox edge cases
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestBoundingBoxEdgeCases:
     """BoundingBox validation and edge cases."""
@@ -272,9 +330,7 @@ class TestBoundingBoxEdgeCases:
     def test_zero_volume_box_allowed(self):
         """A zero-volume box (min == max) should be allowed."""
         box = BoundingBox(
-            x_min=1.0, y_min=1.0, z_min=1.0,
-            x_max=1.0, y_max=1.0, z_max=1.0,
-            label="point_obstacle"
+            x_min=1.0, y_min=1.0, z_min=1.0, x_max=1.0, y_max=1.0, z_max=1.0, label="point_obstacle"
         )
         assert box.contains(Point3D(1.0, 1.0, 1.0))
 
@@ -282,9 +338,7 @@ class TestBoundingBoxEdgeCases:
         """Box with min > max must be rejected."""
         with pytest.raises(ValueError):
             BoundingBox(
-                x_min=5.0, y_min=0.0, z_min=0.0,
-                x_max=1.0, y_max=1.0, z_max=1.0,
-                label="bad_box"
+                x_min=5.0, y_min=0.0, z_min=0.0, x_max=1.0, y_max=1.0, z_max=1.0, label="bad_box"
             )
 
     def test_electrical_clearance_larger(self):
@@ -298,18 +352,26 @@ class TestBoundingBoxEdgeCases:
 # Test 6: Fitting engine with larger trade sizes
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestFittingEngineLargerSizes:
     r"""Fitting engine must work correctly with larger trade sizes (1\"-2\")."""
 
-    @pytest.mark.parametrize("ts", [
-        TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,
-        TradeSize.ONE_HALF, TradeSize.TWO_INCH,
-    ])
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_QUARTER,
+            TradeSize.ONE_HALF,
+            TradeSize.TWO_INCH,
+        ],
+    )
     def test_long_run_with_larger_sizes(self, ts):
         """Long run with larger trade sizes → couplings placed correctly."""
         path = RoutePath(
             waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(10.0, 0.0, 3.0)),
-            total_length_m=10.0, bend_count=0, elevation_change_m=0.0,
+            total_length_m=10.0,
+            bend_count=0,
+            elevation_change_m=0.0,
         )
         result = place_fittings(path, ConduitType.EMT, ts)
         assert result.is_ok()
@@ -319,19 +381,22 @@ class TestFittingEngineLargerSizes:
         assert len(couplings) >= 2
         # All couplings must have valid catalog numbers (not EC-000)
         for c in couplings:
-            assert c.catalog_number != "EC-000", (
-                f"Fake catalog number EC-000 for {ts.value}"
-            )
+            assert c.catalog_number != "EC-000", f"Fake catalog number EC-000 for {ts.value}"
 
-    @pytest.mark.parametrize("ts", [
-        TradeSize.ONE_INCH, TradeSize.ONE_HALF,
-    ])
+    @pytest.mark.parametrize(
+        "ts",
+        [
+            TradeSize.ONE_INCH,
+            TradeSize.ONE_HALF,
+        ],
+    )
     def test_l_shaped_run_with_rgd(self, ts):
         """L-shaped run with RGD conduit → elbow with R-prefix catalog number."""
         path = RoutePath(
-            waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0),
-                       Point3D(5.0, 5.0, 3.0)),
-            total_length_m=10.0, bend_count=1, elevation_change_m=0.0,
+            waypoints=(Point3D(0.0, 0.0, 3.0), Point3D(5.0, 0.0, 3.0), Point3D(5.0, 5.0, 3.0)),
+            total_length_m=10.0,
+            bend_count=1,
+            elevation_change_m=0.0,
         )
         result = place_fittings(path, ConduitType.RGD, ts)
         assert result.is_ok()
@@ -343,6 +408,7 @@ class TestFittingEngineLargerSizes:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 7: Full pipeline determinism with router
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestFullPipelineDeterminism:
     """End-to-end determinism: route → fittings → output."""

@@ -66,7 +66,13 @@ class RoutingLog:
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
-        return {"task_id": self.task_id, "selected_tool": self.selected_tool, "scores": self.scores, "context": self.context, "timestamp": self.timestamp}
+        return {
+            "task_id": self.task_id,
+            "selected_tool": self.selected_tool,
+            "scores": self.scores,
+            "context": self.context,
+            "timestamp": self.timestamp,
+        }
 
 
 # ── ToolSelector ─────────────────────────────────────────────────────────────
@@ -170,7 +176,12 @@ class ToolSelector:
             )
             self.conn.commit()
 
-        logger.info("Selected tool '%s' for task '%s' (score=%.4f)", best_tool, task.description, scored[0][1])
+        logger.info(
+            "Selected tool '%s' for task '%s' (score=%.4f)",
+            best_tool,
+            task.description,
+            scored[0][1],
+        )
         return best_tool
 
     def score_tools(self, task: Task, context: Context) -> list[tuple[str, float]]:
@@ -206,7 +217,11 @@ class ToolSelector:
                 (name,),
             )
             hist_row = cursor.fetchone()
-            accuracy = float(hist_row["avg_success"]) if hist_row and hist_row["avg_success"] is not None else 0.5
+            accuracy = (
+                float(hist_row["avg_success"])
+                if hist_row and hist_row["avg_success"] is not None
+                else 0.5
+            )
 
             cursor.execute(
                 """
@@ -217,7 +232,9 @@ class ToolSelector:
                 (name,),
             )
             perf_row = cursor.fetchone()
-            avg_time = perf_row["avg_time"] if perf_row and perf_row["avg_time"] is not None else 100.0
+            avg_time = (
+                perf_row["avg_time"] if perf_row and perf_row["avg_time"] is not None else 100.0
+            )
 
         performance = max(0.0, 1.0 - avg_time / 10000.0)  # normalize: 10s = 0
 
@@ -227,7 +244,12 @@ class ToolSelector:
         custom_score = max(0.0, min(1.0, custom_score))
 
         scores = [directness, accuracy, performance, availability]
-        weights = [self.DIRECTNESS_WEIGHT, self.ACCURACY_WEIGHT, self.PERFORMANCE_WEIGHT, self.AVAILABILITY_WEIGHT]
+        weights = [
+            self.DIRECTNESS_WEIGHT,
+            self.ACCURACY_WEIGHT,
+            self.PERFORMANCE_WEIGHT,
+            self.AVAILABILITY_WEIGHT,
+        ]
 
         weighted = sum(s * w for s, w in zip(scores, weights, strict=False))
         blended = 0.7 * weighted + 0.3 * custom_score
@@ -260,7 +282,12 @@ class ToolSelector:
                 ),
             )
             self.conn.commit()
-        logger.info("Recorded result for tool '%s': success=%s (%.0fms)", tool_name, success, execution_time_ms)
+        logger.info(
+            "Recorded result for tool '%s': success=%s (%.0fms)",
+            tool_name,
+            success,
+            execution_time_ms,
+        )
 
     def get_tool_summary(self) -> dict[str, dict[str, Any]]:
         summary: dict[str, dict[str, Any]] = {}
@@ -281,8 +308,12 @@ class ToolSelector:
             summary[name] = {
                 "capabilities": sorted(info["capabilities"]),
                 "runs": row["runs"] if row else 0,
-                "success_rate": round(float(row["success_rate"]), 4) if row and row["success_rate"] is not None else 0.0,
-                "avg_execution_time_ms": round(float(row["avg_time"]), 2) if row and row["avg_time"] is not None else 0.0,
+                "success_rate": round(float(row["success_rate"]), 4)
+                if row and row["success_rate"] is not None
+                else 0.0,
+                "avg_execution_time_ms": round(float(row["avg_time"]), 2)
+                if row and row["avg_time"] is not None
+                else 0.0,
             }
         return summary
 

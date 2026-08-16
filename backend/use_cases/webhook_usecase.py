@@ -18,7 +18,7 @@ class WebhookUseCase:
             "target_url": url,
             "events": events,
             "status": "ACTIVE",
-            "created_at": "2026-07-30T00:00:00Z"
+            "created_at": "2026-07-30T00:00:00Z",
         }
         self._subscriptions[sub_id] = subscription
         return {"success": True, "subscription": subscription}

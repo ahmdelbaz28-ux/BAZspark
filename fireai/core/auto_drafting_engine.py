@@ -148,18 +148,46 @@ BLOCK_DEFINITIONS: dict[str, dict[str, Any]] = {
 
 # CAD Layer definitions
 CAD_LAYERS: dict[str, dict[str, Any]] = {
-    "FA-DEVICES": {"color": 3, "linetype": "Continuous", "description": "Fire alarm device symbols"},
-    "FA-WIRING-CLASSA": {"color": 1, "linetype": "Continuous", "description": "Class A wiring (outgoing)"},
+    "FA-DEVICES": {
+        "color": 3,
+        "linetype": "Continuous",
+        "description": "Fire alarm device symbols",
+    },
+    "FA-WIRING-CLASSA": {
+        "color": 1,
+        "linetype": "Continuous",
+        "description": "Class A wiring (outgoing)",
+    },
     "FA-WIRING-CLASSB": {"color": 5, "linetype": "Continuous", "description": "Class B wiring"},
-    "FA-NAC": {"color": 4, "linetype": "Continuous", "description": "Notification appliance circuits"},
+    "FA-NAC": {
+        "color": 4,
+        "linetype": "Continuous",
+        "description": "Notification appliance circuits",
+    },
     "FA-ZONES": {"color": 6, "linetype": "DASHED", "description": "Fire zone boundaries"},
     "FA-ISOLATORS": {"color": 2, "linetype": "Continuous", "description": "Fault isolator symbols"},
-    "FA-LABELS": {"color": 7, "linetype": "Continuous", "description": "Device labels and annotations"},
+    "FA-LABELS": {
+        "color": 7,
+        "linetype": "Continuous",
+        "description": "Device labels and annotations",
+    },
     "FA-LEGEND": {"color": 7, "linetype": "Continuous", "description": "Drawing legend"},
-    "FA-TITLEBLOCK": {"color": 7, "linetype": "Continuous", "description": "Title block and border"},
+    "FA-TITLEBLOCK": {
+        "color": 7,
+        "linetype": "Continuous",
+        "description": "Title block and border",
+    },
     "FA-FIRESTOP": {"color": 1, "linetype": "PHANTOM", "description": "Firestopping callouts"},
-    "FA-PLENUM": {"color": 4, "linetype": "DASHED", "description": "Plenum zones / collision areas"},
-    "FA-SURVIVABILITY": {"color": 6, "linetype": "PHANTOM", "description": "Survivability route constraints"},
+    "FA-PLENUM": {
+        "color": 4,
+        "linetype": "DASHED",
+        "description": "Plenum zones / collision areas",
+    },
+    "FA-SURVIVABILITY": {
+        "color": 6,
+        "linetype": "PHANTOM",
+        "description": "Survivability route constraints",
+    },
     "WALLS": {"color": 9, "linetype": "Continuous", "description": "Wall outlines (reference)"},
 }
 
@@ -329,7 +357,9 @@ class _AStarRouter:
                     neighbor = (current[0] + dx, current[1] + dy)
 
                     # Bounds check
-                    if not (0 <= neighbor[0] < self._grid_width and 0 <= neighbor[1] < self._grid_height):
+                    if not (
+                        0 <= neighbor[0] < self._grid_width and 0 <= neighbor[1] < self._grid_height
+                    ):
                         continue
 
                     # Wall check — NEVER route through walls
@@ -872,7 +902,9 @@ class AutoDraftingEngine:
         if constraint.must_avoid_plenum and plenum_zones:
             for zone in plenum_zones:
                 z_min_x, z_min_y, z_max_x, z_max_y = zone.bounds
-                in_plenum = any(z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y for px, py in path)
+                in_plenum = any(
+                    z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y for px, py in path
+                )
                 if in_plenum and not constraint.in_rated_enclosure:
                     warnings.append(
                         f"Route '{constraint.route_id}': Path passes through plenum "
@@ -932,7 +964,9 @@ class AutoDraftingEngine:
                 firestopping_callouts=(),
                 class_a_routes=0,
                 warnings=(),
-                errors=("ezdxf >= 1.1.0 is required for DXF generation. Install with: pip install ezdxf>=1.1.0",),
+                errors=(
+                    "ezdxf >= 1.1.0 is required for DXF generation. Install with: pip install ezdxf>=1.1.0",
+                ),
             )
 
         warnings: list[str] = []
@@ -961,7 +995,9 @@ class AutoDraftingEngine:
                         dxfattribs={"layer": "FA-DEVICES"},
                     )
                 except Exception:
-                    warnings.append(f"Could not place device '{device.device_id}' (block '{block_name}')")
+                    warnings.append(
+                        f"Could not place device '{device.device_id}' (block '{block_name}')"
+                    )
 
                 # Add label
                 label_text = f"{device.device_id}"
@@ -1105,7 +1141,9 @@ class AutoDraftingEngine:
                 dxfattribs={"height": size * 0.6, "color": 7},
             ).set_placement((0, -size * 0.3))
 
-    def _draw_title_block(self, msp: Any, _doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
+    def _draw_title_block(
+        self, msp: Any, _doc: Any
+    ) -> None:  # NOSONAR — S1172: parameter retained for API stability
         """Draw title block with project information."""
         # Title block border
         tb_x, tb_y = 0, -5
@@ -1141,7 +1179,9 @@ class AutoDraftingEngine:
             dxfattribs={"layer": "FA-TITLEBLOCK", "height": 0.25},
         ).set_placement((tb_x + 15, tb_y + 1.5))
 
-    def _draw_legend(self, msp: Any, _doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
+    def _draw_legend(
+        self, msp: Any, _doc: Any
+    ) -> None:  # NOSONAR — S1172: parameter retained for API stability
         """Draw legend showing all device symbols."""
         legend_x, legend_y = 35, 0
 

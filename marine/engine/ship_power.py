@@ -12,6 +12,7 @@ References:
     [IEC504] IEC 60092-504 — Ships carrying dangerous goods
 
 """
+
 from __future__ import annotations
 
 from marine.core.constants import (
@@ -54,8 +55,9 @@ def design_fire_system_power(
 
     """
     total_load_w = detection_load_w + alarm_load_w + extinguish_load_w
-    ups_capacity_ah = (total_load_w * FIRE_SYSTEM_UPS_MIN_AUTONOMY_MIN) / \
-        (60.0 * SHIP_LOW_VOLTAGE_V) * 1.25
+    ups_capacity_ah = (
+        (total_load_w * FIRE_SYSTEM_UPS_MIN_AUTONOMY_MIN) / (60.0 * SHIP_LOW_VOLTAGE_V) * 1.25
+    )
 
     return ShipElectricalSpec(
         main_supply_voltage=SHIP_MAIN_VOLTAGE_V,

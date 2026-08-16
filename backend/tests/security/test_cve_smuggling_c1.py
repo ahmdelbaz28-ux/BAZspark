@@ -18,6 +18,7 @@ Per pip-audit (run 2026-07-28):
   pyjwt 2.9.0             -> 7 unique CVEs (latest fix: 2.13.0)
   python-multipart 0.0.20 -> 6 unique CVEs (latest fix: 0.0.31)
 """
+
 import re
 import sys
 from pathlib import Path
@@ -43,9 +44,9 @@ def _extract_min_version(text: str, package: str) -> str | None:
     # Capture the FIRST version specifier found.
     pattern = (
         rf"(?:^|\W){re.escape(package)}"
-        rf"(?:\[[^\]]+\])?"        # optional extras like [crypto]
-        rf"(?:>=(?P<min_ver>[0-9]+(?:\.[0-9]+)*)"   # >= min version
-        rf"|==(?P<eq_ver>[0-9]+(?:\.[0-9]+)*))"     # OR == strict pin
+        rf"(?:\[[^\]]+\])?"  # optional extras like [crypto]
+        rf"(?:>=(?P<min_ver>[0-9]+(?:\.[0-9]+)*)"  # >= min version
+        rf"|==(?P<eq_ver>[0-9]+(?:\.[0-9]+)*))"  # OR == strict pin
     )
     for line in text.splitlines():
         m = re.search(pattern, line)
@@ -59,7 +60,6 @@ _extract_version = _extract_min_version
 
 
 def _version_tuple(v: str) -> tuple[int, ...]:
-
     return tuple(int(p) for p in v.split("."))
 
 
@@ -136,7 +136,8 @@ def test_no_false_python_38_justification():
     # If requires-python is >=3.12, no line should mention "Python 3.8" as a downgrade reason
     if 'requires-python = ">=3.12"' in text:
         offending_lines = [
-            line for line in text.splitlines()
+            line
+            for line in text.splitlines()
             if "Python 3.8" in line and ("compat" in line.lower() or "disabled" in line.lower())
         ]
         assert not offending_lines, (
@@ -150,4 +151,5 @@ def test_no_false_python_38_justification():
 if __name__ == "__main__":
     # Run as standalone to see which tests fail
     import pytest
+
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

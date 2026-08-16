@@ -282,7 +282,9 @@ class DDCAdapter:
 
         # For Windows with converter_dir, add converter_dir to allowed paths
         if self._platform == "windows" and self._converter_dir:
-            _allowed_paths = list(_allowed_paths) + [str(Path(self._converter_dir).resolve() / _binary_name)]
+            _allowed_paths = list(_allowed_paths) + [
+                str(Path(self._converter_dir).resolve() / _binary_name)
+            ]
 
         if _allowed_paths:
             _binary_in_allowed = False
@@ -333,7 +335,7 @@ class DDCAdapter:
             _safe_cwd = _SAFE_CWD_BASE / f"fireai_ddc_cwd_{os.getpid()}"
             _safe_cwd.mkdir(parents=True, exist_ok=True)
 
-            logger.info("DDC convert: %s → %s", ' '.join(cmd), output_dir)
+            logger.info("DDC convert: %s → %s", " ".join(cmd), output_dir)
 
             result = subprocess.run(  # noqa: S603 — command from class constant, not user input  # NOSONAR — S7632: test function documented via class name / module path
                 cmd,
@@ -349,7 +351,9 @@ class DDCAdapter:
                 return DDCConversionResult(
                     success=False,
                     source_file=str(input_path),
-                    errors=[f"DDC converter failed (exit {result.returncode}): {result.stderr[:500]}"],
+                    errors=[
+                        f"DDC converter failed (exit {result.returncode}): {result.stderr[:500]}"
+                    ],
                     duration_s=duration,
                 )
 
@@ -401,7 +405,11 @@ class DDCAdapter:
                 errors=[f"{type(e).__name__}: {e}"],
             )
 
-    def _extract_rooms_from_xlsx(self, xlsx_path: str) -> list[dict[str, Any]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_rooms_from_xlsx(
+        self, xlsx_path: str
+    ) -> list[
+        dict[str, Any]
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract room/space data from DDC-generated XLSX.
 

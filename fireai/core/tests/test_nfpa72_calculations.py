@@ -7,6 +7,7 @@ Tests all public functions in fireai.core.nfpa72_calculations against
 NFPA 72 (2022 Edition) requirements.  Every calculation must be traceable
 to a specific NFPA 72 section.
 """
+
 import math
 
 import pytest
@@ -51,6 +52,7 @@ from fireai.core.nfpa72_models import (
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _flat_ceiling(height: float = 3.0) -> CeilingSpec:
     return CeilingSpec(height_at_low_point_m=height)
 
@@ -78,12 +80,15 @@ def _heat_spec() -> HeatDetectorSpec:
 # 1. get_heat_detector_placement_params
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestGetHeatDetectorPlacementParams:
     """NFPA 72 §17.6.2.1 — heat detector placement parameters."""
 
     def test_standard_height_returns_base_spacing(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=3.0)
-        assert result["max_detector_spacing_m"] == 6.1  # 20 ft  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["max_detector_spacing_m"] == 6.1
+        )  # 20 ft  # NOSONAR — S1244: import retained for re-export / API surface
         assert result["coverage_type"] == "square_grid"
 
     def test_high_ceiling_reduces_spacing(self) -> None:
@@ -93,16 +98,21 @@ class TestGetHeatDetectorPlacementParams:
 
     def test_none_spec_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="HeatDetectorSpec is required"):
-            get_heat_detector_placement_params(None, ceiling_height_m=3.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            get_heat_detector_placement_params(
+                None, ceiling_height_m=3.0
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_very_high_ceiling_uses_fallback(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=15.0)
-        assert result["max_detector_spacing_m"] == 3.50  # fallback  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["max_detector_spacing_m"] == 3.50
+        )  # fallback  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. calculate_smoke_detector_radius
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateSmokeDetectorRadius:
     """NFPA 72 §17.6.3.1 — smoke detector coverage radius."""
@@ -133,6 +143,7 @@ class TestCalculateSmokeDetectorRadius:
 # 3. calculate_smoke_detector_spacing
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateSmokeDetectorSpacing:
     """NFPA 72 §17.6.3.1 — number of smoke detectors per room axis."""
 
@@ -157,6 +168,7 @@ class TestCalculateSmokeDetectorSpacing:
 # 4. calculate_heat_detector_coverage_chebyshev
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateHeatDetectorCoverageChebyshev:
     """NFPA 72 Table 17.6.3.5.1 — heat detector Chebyshev (square) coverage."""
 
@@ -173,7 +185,9 @@ class TestCalculateHeatDetectorCoverageChebyshev:
 
     def test_boundary_coverage(self) -> None:
         # Exactly at half-spacing boundary (3.05m from detector at origin)
-        assert calculate_heat_detector_coverage_chebyshev(0.0, 0.0, 3.05, 0.0, spacing_m=6.1) is True
+        assert (
+            calculate_heat_detector_coverage_chebyshev(0.0, 0.0, 3.05, 0.0, spacing_m=6.1) is True
+        )
 
     def test_custom_spacing(self) -> None:
         # Smaller spacing → smaller coverage area
@@ -184,6 +198,7 @@ class TestCalculateHeatDetectorCoverageChebyshev:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. calculate_heat_detector_spacing_rectangular
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateHeatDetectorSpacingRectangular:
     """NFPA 72 §17.6.3.5 — rectangular heat detector grid."""
@@ -212,6 +227,7 @@ class TestCalculateHeatDetectorSpacingRectangular:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. generate_heat_detector_positions
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestGenerateHeatDetectorPositions:
     """V79 FIX — count-based placement to avoid skipped boundary detectors."""
@@ -258,6 +274,7 @@ class TestGenerateHeatDetectorPositions:
 # 7. is_point_covered_by_heat_detectors
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestIsPointCoveredByHeatDetectors:
     """Combined Chebyshev coverage check across multiple detectors."""
 
@@ -280,6 +297,7 @@ class TestIsPointCoveredByHeatDetectors:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 8. calculate_ridge_zone_boundary
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateRidgeZoneBoundary:
     """NFPA 72 §17.6.3.4 — ridge zone for sloped ceilings."""
@@ -310,6 +328,7 @@ class TestCalculateRidgeZoneBoundary:
 # 9. is_in_ridge_zone
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestIsInRidgeZone:
     """Check if a point falls within the ridge zone."""
 
@@ -330,6 +349,7 @@ class TestIsInRidgeZone:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 10. requires_ridge_zone_detector
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRequiresRidgeZoneDetector:
     """NFPA 72 §17.6.3.4 — ridge zone detector requirement."""
@@ -362,6 +382,7 @@ class TestRequiresRidgeZoneDetector:
 # 11. calculate_detector_requirements
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateDetectorRequirements:
     """Combined detector requirements calculation."""
 
@@ -387,6 +408,7 @@ class TestCalculateDetectorRequirements:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 12. calculate_max_spacing / calculate_coverage_radius / calculate_max_wall_distance
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMaxSpacing:
     """NFPA 72 §17.6.3 — spacing, radius, and wall distance calculations."""
@@ -421,12 +443,14 @@ class TestMaxSpacing:
 # 13. estimate_detector_count_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestEstimateDetectorCountPolygon:
     """Estimate detector count for arbitrary polygon shapes."""
 
     def test_valid_polygon(self) -> None:
         try:
             from shapely.geometry import Polygon
+
             poly = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
             count = estimate_detector_count_polygon(poly, 3.0, "smoke")
             assert count >= 1
@@ -441,6 +465,7 @@ class TestEstimateDetectorCountPolygon:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 14. minimum_detector_count_rectangular
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMinimumDetectorCountRectangular:
     """Fix #10 — uses height-adjusted spacing, NOT max_coverage × 2."""
@@ -464,6 +489,7 @@ class TestMinimumDetectorCountRectangular:
 # 15. calculate_coverage_radius_from_height
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateCoverageRadiusFromHeight:
     """NFPA 72-2022 Table 17.6.3.1.1 — height-adjusted coverage specs."""
 
@@ -484,18 +510,24 @@ class TestCalculateCoverageRadiusFromHeight:
 
     def test_none_height_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="must be a float"):
-            calculate_coverage_radius_from_height(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            calculate_coverage_radius_from_height(
+                None
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_negative_height_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="must be positive"):
             calculate_coverage_radius_from_height(-1.0)
 
     def test_nan_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite number"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float("nan"))
 
     def test_inf_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite number"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float("inf"))
 
     def test_high_ceiling_produces_warning(self) -> None:
@@ -510,11 +542,15 @@ class TestCalculateCoverageRadiusFromHeight:
 
     def test_exactly_12_2m(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "smoke")
-        assert spec.spacing_max == 9.10  # Flat per §17.7.3.2.3  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.spacing_max == 9.10
+        )  # Flat per §17.7.3.2.3  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exactly_12_2m_heat(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "heat")
-        assert spec.spacing_max == 3.70  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            spec.spacing_max == 3.70
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_wall_distance_is_half_spacing(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
@@ -522,13 +558,14 @@ class TestCalculateCoverageRadiusFromHeight:
 
     def test_area_formula(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
-        expected_area = math.pi * spec.radius ** 2
+        expected_area = math.pi * spec.radius**2
         assert abs(spec.area - expected_area) < 0.1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 16. get_ceiling_height_warnings
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestGetCeilingHeightWarnings:
     """Non-throwing ceiling height validation."""
@@ -562,19 +599,24 @@ class TestGetCeilingHeightWarnings:
 # 17. beam_pocket_correction_factor
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestBeamPocketCorrectionFactor:
     """NFPA 72 §17.6.3.6 — beam pocket spacing reduction."""
 
     def test_shallow_beam_no_reduction(self) -> None:
         factor = beam_pocket_correction_factor(0.2, 3.0)
-        assert factor == 1.0  # 0.2/3.0 = 6.7% < 10%  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            factor == 1.0
+        )  # 0.2/3.0 = 6.7% < 10%  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_deep_beam_reduces_spacing(self) -> None:
         factor = beam_pocket_correction_factor(0.5, 3.0)
         assert factor < 1.0  # 0.5/3.0 = 16.7% > 10%
 
     def test_nan_beam_depth_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             beam_pocket_correction_factor(float("nan"), 3.0)
 
     def test_negative_beam_depth_raises(self) -> None:
@@ -586,7 +628,9 @@ class TestBeamPocketCorrectionFactor:
             beam_pocket_correction_factor(0.3, 0.0)
 
     def test_nan_ceiling_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             beam_pocket_correction_factor(0.3, float("nan"))
 
     def test_minimum_factor_is_0_25(self) -> None:
@@ -598,6 +642,7 @@ class TestBeamPocketCorrectionFactor:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 18. calculate_corridor_spacing
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateCorridorSpacing:
     """NFPA 72 §17.6.3.3 — corridor detector spacing."""
@@ -613,17 +658,22 @@ class TestCalculateCorridorSpacing:
         assert spacing > 0
 
     def test_nan_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, float("nan"))
 
     def test_negative_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="positive"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, -1.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 19. calculate_duct_detector_positions
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateDuctDetectorPositions:
     """NFPA 72 §17.7.5.4.2 — HVAC duct detector positions."""
@@ -658,6 +708,7 @@ class TestCalculateDuctDetectorPositions:
 # 20. check_voltage_drop
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCheckVoltageDrop:
     """NFPA 72 §10.14 — voltage drop verification."""
 
@@ -680,7 +731,9 @@ class TestCheckVoltageDrop:
         assert abs(result["drop_v"] - expected_drop) < 0.01
 
     def test_nan_input_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             check_voltage_drop(float("nan"), 0.5, 0.01, 100.0)
 
     def test_negative_supply_voltage_raises(self) -> None:
@@ -705,6 +758,7 @@ class TestCheckVoltageDrop:
 # 21. required_battery_capacity_ah
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestRequiredBatteryCapacityAh:
     """NFPA 72 §10.6.7.2.1 — battery capacity calculation."""
 
@@ -725,7 +779,9 @@ class TestRequiredBatteryCapacityAh:
             required_battery_capacity_ah(0.5, 1.0, safety_factor=0.8)
 
     def test_nan_input_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             required_battery_capacity_ah(float("nan"), 1.0)
 
     def test_negative_standby_current_raises(self) -> None:
@@ -742,6 +798,7 @@ class TestRequiredBatteryCapacityAh:
 # 22. calculate_inrush_current
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateInrushCurrent:
     """NFPA 72 §10.14.1 — inrush current for NAC devices."""
 
@@ -754,7 +811,9 @@ class TestCalculateInrushCurrent:
     def test_unknown_device_uses_defaults(self) -> None:
         result = calculate_inrush_current("unknown_device", 5)
         assert result["steady_total_a"] == pytest.approx(1.25, abs=0.01)
-        assert result["inrush_factor"] == 2.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result["inrush_factor"] == 2.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_single_device(self) -> None:
         result = calculate_inrush_current("horn", 1)
@@ -765,36 +824,33 @@ class TestCalculateInrushCurrent:
 # 23. calculate_nac_loading
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateNACLoading:
     """NFPA 72 §18.5 — NAC circuit loading calculation."""
 
     def test_within_limit(self) -> None:
-        result = calculate_nac_loading([
-            {"device_type": "strobe_15cd", "quantity": 5}
-        ])
+        result = calculate_nac_loading([{"device_type": "strobe_15cd", "quantity": 5}])
         assert result["within_panel_limit"] is True
         assert result["warnings"] == []
 
     def test_overloaded_circuit(self) -> None:
-        result = calculate_nac_loading([
-            {"device_type": "strobe_75cd", "quantity": 10}
-        ])
+        result = calculate_nac_loading([{"device_type": "strobe_75cd", "quantity": 10}])
         # 10 × 0.45A = 4.5A > 3A limit
         assert result["within_panel_limit"] is False
         assert len(result["warnings"]) >= 1
 
     def test_mixed_devices(self) -> None:
-        result = calculate_nac_loading([
-            {"device_type": "strobe_15cd", "quantity": 5},
-            {"device_type": "horn", "quantity": 5},
-        ])
+        result = calculate_nac_loading(
+            [
+                {"device_type": "strobe_15cd", "quantity": 5},
+                {"device_type": "horn", "quantity": 5},
+            ]
+        )
         assert result["steady_total_a"] > 0
         assert len(result["device_details"]) == 2
 
     def test_high_inrush_warning(self) -> None:
-        result = calculate_nac_loading([
-            {"device_type": "strobe_60cd", "quantity": 10}
-        ])
+        result = calculate_nac_loading([{"device_type": "strobe_60cd", "quantity": 10}])
         # inrush = 10 × 0.88 = 8.8A > 3.0 × 1.5 = 4.5A
         assert any("inrush" in w.lower() for w in result["warnings"])
 
@@ -802,6 +858,7 @@ class TestCalculateNACLoading:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 24. auto_select_awg
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAutoSelectAWG:
     """NEC Art. 760 + NFPA 72 §10.14 — automatic wire gauge selection."""

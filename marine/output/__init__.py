@@ -1,4 +1,5 @@
 """marine/output — Design deliverables: BOM, FAT procedures, commissioning checklist."""
+
 from marine.output.bom_generator import (
     BOMItem,
     generate_bom_from_detectors,

@@ -26,6 +26,7 @@ NON-VACUOUSNESS:
   injected violations are documented in the test bodies and verified by
   /home/z/my-project/scripts/verify_l1_l2_l3_post_fix_nonvacuous.py.
 """
+
 from __future__ import annotations
 
 import re
@@ -107,8 +108,8 @@ def test_l1_isSecure_check_uses_exact_hostname_match():
     #     url.hostname === "[::1]"
     #   );
     # So we look for both `new URL(WS_BASE_URL)` AND `.hostname ===` separately.
-    new_url_pattern = re.compile(r'new\s+URL\s*\(\s*WS_BASE_URL\s*\)')
-    hostname_eq_pattern = re.compile(r'\.hostname\s*===')
+    new_url_pattern = re.compile(r"new\s+URL\s*\(\s*WS_BASE_URL\s*\)")
+    hostname_eq_pattern = re.compile(r"\.hostname\s*===")
     assert new_url_pattern.search(source), (
         "The isSecure check no longer uses `new URL(WS_BASE_URL)` to parse "
         "the URL. The L-1 fix may have been reverted to the old substring "
@@ -125,7 +126,7 @@ def test_l1_isSecure_check_uses_exact_hostname_match():
     # The loopback set must include localhost AND 127.0.0.1 AND [::1] or ::1.
     # Find the isSecure IIFE block.
     issecure_block_pattern = re.compile(
-        r'isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{(.*?)\}\)\s*\(\s*\)\s*;',
+        r"isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{(.*?)\}\)\s*\(\s*\)\s*;",
         re.MULTILINE | re.DOTALL,
     )
     m = issecure_block_pattern.search(source)
@@ -169,7 +170,7 @@ def test_l1_old_substring_includes_localhost_is_REMOVED():
 
     # Locate the isSecure IIFE block.
     issecure_block_pattern = re.compile(
-        r'isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{(.*?)\}\)\s*\(\s*\)\s*;',
+        r"isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{(.*?)\}\)\s*\(\s*\)\s*;",
         re.MULTILINE | re.DOTALL,
     )
     m = issecure_block_pattern.search(source)
@@ -210,8 +211,8 @@ def test_l1_isSecure_check_gates_api_key_send():
     # The IIFE can contain internal semicolons, so we match up to the
     # closing `();` of the IIFE, then look for the if-block.
     issecure_block_pattern = re.compile(
-        r'isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{.*?\}\)\s*\(\s*\)\s*;'
-        r'\s*\n\s*if\s*\(\s*isSecure\s*\)\s*\{[^}]*?'
+        r"isSecure\s*=\s*\(\s*\(\s*\)\s*=>\s*\{.*?\}\)\s*\(\s*\)\s*;"
+        r"\s*\n\s*if\s*\(\s*isSecure\s*\)\s*\{[^}]*?"
         r'action:\s*["\']auth["\'][^}]*?apiKey',
         re.MULTILINE | re.DOTALL,
     )
@@ -244,8 +245,9 @@ def test_l1_file_is_in_production_source_tree():
         "may no longer apply and should be reworded."
     )
 
-    assert "/test/" not in path_str and "/__tests__/" not in path_str \
-        and "/mock/" not in path_str, (
+    assert (
+        "/test/" not in path_str and "/__tests__/" not in path_str and "/mock/" not in path_str
+    ), (
         "dataService.ts is under a test/ or mock/ directory — it is no "
         "longer production code. Update the L-1 claim."
     )
@@ -281,8 +283,12 @@ def test_l1_claim_text_reflects_resolved_state():
     if low_section_start == -1:
         pytest.skip("LOW ISSUES section not found in worklog")
     after_low = worklog_text[low_section_start:]
-    end_markers = ["RETRACTED FALSE CLAIMS", "NUMERICAL ERRORS",
-                   "FALSE ACCUSATION PATTERNS", "POSITIVES VERIFIED"]
+    end_markers = [
+        "RETRACTED FALSE CLAIMS",
+        "NUMERICAL ERRORS",
+        "FALSE ACCUSATION PATTERNS",
+        "POSITIVES VERIFIED",
+    ]
     end_idx = len(after_low)
     for marker in end_markers:
         idx = after_low.find(marker)
@@ -293,7 +299,7 @@ def test_l1_claim_text_reflects_resolved_state():
     low_normalized = re.sub(r"\s+", " ", low_section)
 
     # Extract the L-1 entry specifically (from "L-1:" up to "L-2:" or end).
-    l1_match = re.search(r'L-1:.*?(?=\s*L-2:|$)', low_normalized, re.DOTALL)
+    l1_match = re.search(r"L-1:.*?(?=\s*L-2:|$)", low_normalized, re.DOTALL)
     assert l1_match, (
         "L-1 entry missing from LOW ISSUES section. The LOW ISSUES "
         "section should contain entries L-1, L-2, L-3."
@@ -302,7 +308,7 @@ def test_l1_claim_text_reflects_resolved_state():
 
     # The L-1 entry must mention RESOLVED (or TIGHTENED) and "exact hostname"
     # and reference the old "substring" mechanism.
-    assert ("RESOLVED" in l1_entry or "TIGHTENED" in l1_entry), (
+    assert "RESOLVED" in l1_entry or "TIGHTENED" in l1_entry, (
         "L-1 entry in LOW ISSUES does not mention RESOLVED or TIGHTENED. "
         "The L-1 fix has been applied — update the worklog to reflect "
         "the RESOLVED state."
@@ -480,7 +486,7 @@ def test_l1_fix_rejects_bypass_urls_simulation():
         "ws://127.0.0.1:8000/ws",
         "ws://[::1]:8000/ws",
         "wss://localhost:8000/ws",  # wss always allowed
-        "wss://example.com/ws",     # wss always allowed
+        "wss://example.com/ws",  # wss always allowed
     ]
     for url in legit_urls:
         assert _python_simulated_is_secure(url), (
@@ -505,10 +511,10 @@ def test_l1_fix_fails_closed_on_malformed_urls_simulation():
     breaking dev workflows"), this test FAILS.
     """
     malformed_urls = [
-        "",                          # empty string
-        "not-a-url",                 # bare string
-        "://no-scheme",              # no scheme
-        "ws://",                     # scheme only, no host
+        "",  # empty string
+        "not-a-url",  # bare string
+        "://no-scheme",  # no scheme
+        "ws://",  # scheme only, no host
     ]
     for url in malformed_urls:
         assert not _python_simulated_is_secure(url), (

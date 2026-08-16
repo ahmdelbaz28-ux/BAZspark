@@ -28,6 +28,7 @@ from backend.config import config
 # Optional imports with graceful degradation
 try:
     import redis
+
     HAS_REDIS = True
 except ImportError:
     HAS_REDIS = False
@@ -36,6 +37,7 @@ except ImportError:
 try:
     from qdrant_client import QdrantClient
     from qdrant_client.http import models
+
     HAS_QDRANT = True
 except ImportError:
     HAS_QDRANT = False
@@ -44,6 +46,7 @@ except ImportError:
 
 try:
     from neo4j import GraphDatabase
+
     HAS_NEO4J = True
 except ImportError:
     HAS_NEO4J = False
@@ -116,9 +119,7 @@ class MultiDatabaseService:
                 return
             if config.REDIS_URL:
                 self._redis_client = redis.from_url(  # type: ignore[union-attr]
-                    config.REDIS_URL,
-                    decode_responses=True,
-                    password=config.REDIS_PASSWORD
+                    config.REDIS_URL, decode_responses=True, password=config.REDIS_PASSWORD
                 )
             else:
                 self._redis_client = redis.Redis(  # type: ignore[union-attr]
@@ -126,7 +127,7 @@ class MultiDatabaseService:
                     port=config.REDIS_PORT,
                     db=config.REDIS_DB,
                     password=config.REDIS_PASSWORD,
-                    decode_responses=True
+                    decode_responses=True,
                 )
 
             # Test connection
@@ -149,15 +150,11 @@ class MultiDatabaseService:
         try:
             if config.QDRANT_URL:
                 self._qdrant_client = QdrantClient(
-                    url=config.QDRANT_URL,
-                    api_key=config.QDRANT_API_KEY,
-                    prefer_grpc=True
+                    url=config.QDRANT_URL, api_key=config.QDRANT_API_KEY, prefer_grpc=True
                 )
             else:
                 self._qdrant_client = QdrantClient(
-                    host=config.QDRANT_HOST,
-                    port=config.QDRANT_PORT,
-                    api_key=config.QDRANT_API_KEY
+                    host=config.QDRANT_HOST, port=config.QDRANT_PORT, api_key=config.QDRANT_API_KEY
                 )
 
             # Test connection
@@ -179,8 +176,7 @@ class MultiDatabaseService:
 
         try:
             self._neo4j_driver = GraphDatabase.driver(
-                config.NEO4J_URI,
-                auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD)
+                config.NEO4J_URI, auth=(config.NEO4J_USERNAME, config.NEO4J_PASSWORD)
             )
 
             # Test connection
@@ -195,7 +191,9 @@ class MultiDatabaseService:
     def _setup_postgres(self):
         """Initialize PostgreSQL connection pool."""
         if not HAS_POSTGRES:
-            logger.warning("PostgreSQL adapter not installed. Install with: pip install psycopg2-binary")
+            logger.warning(
+                "PostgreSQL adapter not installed. Install with: pip install psycopg2-binary"
+            )
             return
 
         try:
@@ -267,9 +265,7 @@ class MultiDatabaseService:
             return []
         try:
             results = self._qdrant_client.search(
-                collection_name=collection_name,
-                query_vector=query_vector,
-                limit=limit
+                collection_name=collection_name, query_vector=query_vector, limit=limit
             )
             return results
         except Exception:
@@ -293,7 +289,9 @@ class MultiDatabaseService:
         finally:
             session.close()
 
-    def neo4j_execute_query(self, query: str, parameters: dict = None, database: str | None = None) -> list:
+    def neo4j_execute_query(
+        self, query: str, parameters: dict = None, database: str | None = None
+    ) -> list:
         """Execute a Cypher READ-ONLY query against Neo4j.
 
         H-09: Defense-in-depth — only whitelisted read patterns are allowed.
@@ -348,9 +346,37 @@ class MultiDatabaseService:
 
         q = query.strip().upper()
         # Reject any write or DDL operation
-        blocked = ("INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP",
-                   "TRUNCATE", "GRANT", "REVOKE", "CALL", "WITH")
-        if any(q.startswith(w) for w in blocked) or (";" in q and any(w in q.upper() for w in ("INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE", "GRANT", "REVOKE", "CALL"))):
+        blocked = (
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "CREATE",
+            "ALTER",
+            "DROP",
+            "TRUNCATE",
+            "GRANT",
+            "REVOKE",
+            "CALL",
+            "WITH",
+        )
+        if any(q.startswith(w) for w in blocked) or (
+            ";" in q
+            and any(
+                w in q.upper()
+                for w in (
+                    "INSERT",
+                    "UPDATE",
+                    "DELETE",
+                    "CREATE",
+                    "ALTER",
+                    "DROP",
+                    "TRUNCATE",
+                    "GRANT",
+                    "REVOKE",
+                    "CALL",
+                )
+            )
+        ):
             logger.warning(
                 "postgres_execute: rejected write/DDL operation (query: %s...)",
                 query[:50] if query else "<empty>",
@@ -404,6 +430,7 @@ class MultiDatabaseService:
             return False
         try:
             import json
+
             payload = json.dumps(element_data, default=str)
             return self.redis_set(self._bim_redis_key(element_id, tenant_id), payload, ex=86400)
         except Exception:
@@ -420,6 +447,7 @@ class MultiDatabaseService:
             return None
         try:
             import json
+
             payload = self.redis_get(self._bim_redis_key(element_id, tenant_id))
             if payload is None:
                 return None
@@ -428,7 +456,9 @@ class MultiDatabaseService:
             logger.exception("get_cached_bim_element failed")
             return None
 
-    def store_element_embeddings(self, element_id: str, embeddings: list, tenant_id: str = "") -> bool:
+    def store_element_embeddings(
+        self, element_id: str, embeddings: list, tenant_id: str = ""
+    ) -> bool:
         """Store element embeddings in Qdrant for similarity search.
 
         When tenant_id is provided, it is stored in the point payload and
@@ -450,7 +480,9 @@ class MultiDatabaseService:
             logger.exception("store_element_embeddings failed")
             return False
 
-    def find_similar_elements(self, query_embedding: list, limit: int = 5, tenant_id: str = "") -> list:
+    def find_similar_elements(
+        self, query_embedding: list, limit: int = 5, tenant_id: str = ""
+    ) -> list:
         """Find similar BIM elements using Qdrant vector search.
 
         When tenant_id is provided, results are filtered to only include
@@ -463,6 +495,7 @@ class MultiDatabaseService:
             return []
         try:
             from qdrant_client.http import models as qdrant_models
+
             search_kwargs: dict[str, Any] = {
                 "collection_name": self.BIM_QDRANT_COLLECTION,
                 "query_vector": query_embedding,
@@ -482,7 +515,11 @@ class MultiDatabaseService:
             normalized = []
             for r in results:
                 # Qdrant returns ScoredPoint objects — extract fields defensively.
-                payload = getattr(r, "payload", None) or (r.get("payload") if isinstance(r, dict) else {}) or {}
+                payload = (
+                    getattr(r, "payload", None)
+                    or (r.get("payload") if isinstance(r, dict) else {})
+                    or {}
+                )
                 score = getattr(r, "score", None) if not isinstance(r, dict) else r.get("score")
                 element_id = payload.get("element_id", "")
                 normalized.append({"element_id": element_id, "score": score, "payload": payload})
@@ -507,8 +544,11 @@ class MultiDatabaseService:
             return False
         # to prevent Cypher injection. Allow only [A-Z_]+ after uppercasing.
         import re
+
         if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
-            logger.error("create_element_relationships: invalid relationship_type %r", relationship_type)
+            logger.error(
+                "create_element_relationships: invalid relationship_type %r", relationship_type
+            )
             return False
         rel_type = relationship_type.upper()
         try:
@@ -527,7 +567,9 @@ class MultiDatabaseService:
             logger.exception("create_element_relationships failed")
             return False
 
-    def neo4j_find_related_elements(self, element_id: str, relationship_type: str = "CONNECTED_TO") -> list:
+    def neo4j_find_related_elements(
+        self, element_id: str, relationship_type: str = "CONNECTED_TO"
+    ) -> list:
         """Find elements related to a specific element in Neo4j.
 
         Traverses outgoing relationships of the given type from the source
@@ -539,8 +581,11 @@ class MultiDatabaseService:
             logger.warning("neo4j_find_related_elements: Neo4j not available")
             return []
         import re
+
         if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
-            logger.error("neo4j_find_related_elements: invalid relationship_type %r", relationship_type)
+            logger.error(
+                "neo4j_find_related_elements: invalid relationship_type %r", relationship_type
+            )
             return []
         rel_type = relationship_type.upper()
         try:
@@ -550,8 +595,10 @@ class MultiDatabaseService:
             )
             with self.neo4j_session() as session:
                 result = session.run(query, {"element_id": element_id})
-                return [{"element_id": record["element_id"], "relationship_type": rel_type}
-                        for record in result]
+                return [
+                    {"element_id": record["element_id"], "relationship_type": rel_type}
+                    for record in result
+                ]
         except Exception:
             logger.exception("neo4j_find_related_elements failed")
             return []
@@ -655,7 +702,10 @@ class SagaTransaction:
 
     def rollback(self) -> None:
         """Execute all registered compensating actions in reverse order."""
-        logger.warning("Executing Saga rollback across secondary databases (%d steps)...", len(self._compensations))
+        logger.warning(
+            "Executing Saga rollback across secondary databases (%d steps)...",
+            len(self._compensations),
+        )
         for comp in reversed(self._compensations):
             try:
                 comp()

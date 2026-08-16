@@ -42,9 +42,11 @@ _MIN_TEXT_LENGTH = 50
 
 # ─── Data Classes ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class OCRWord:
     """A single word detected by OCR with bounding box."""
+
     value: str
     confidence: float
     geometry: list[list[float]]  # [[x1,y1], [x2,y2]] normalized 0-1
@@ -53,6 +55,7 @@ class OCRWord:
 @dataclass
 class OCRLine:
     """A line of text detected by OCR."""
+
     words: list[OCRWord]
     geometry: list[list[float]]
 
@@ -60,6 +63,7 @@ class OCRLine:
 @dataclass
 class OCRBlock:
     """A text block detected by OCR."""
+
     lines: list[OCRLine]
     geometry: list[list[float]]
 
@@ -67,6 +71,7 @@ class OCRBlock:
 @dataclass
 class OCRPageResult:
     """OCR result for a single page."""
+
     page_idx: int
     dimensions: tuple[int, int]  # (width, height) in pixels
     blocks: list[OCRBlock]
@@ -76,16 +81,14 @@ class OCRPageResult:
     def full_text(self) -> str:
         """Concatenate all words into a single text string."""
         return " ".join(
-            word.value
-            for block in self.blocks
-            for line in block.lines
-            for word in line.words
+            word.value for block in self.blocks for line in block.lines for word in line.words
         )
 
 
 @dataclass
 class SegmentBox:
     """A layout segment detected by YOLO."""
+
     segment_type: str  # "text", "title", "table", "figure", "list", "caption", etc.
     bbox: tuple[float, float, float, float]  # (left, top, width, height) in pixels
     confidence: float
@@ -94,6 +97,7 @@ class SegmentBox:
 @dataclass
 class SegmentationResult:
     """YOLO layout segmentation result for a single page."""
+
     page_idx: int
     image_size: tuple[int, int]  # (height, width)
     segments: list[SegmentBox]
@@ -102,6 +106,7 @@ class SegmentationResult:
 @dataclass
 class DocumentIntelligenceResult:
     """Combined OCR + segmentation result."""
+
     success: bool
     ocr_pages: list[OCRPageResult] = field(default_factory=list)
     segmentation_pages: list[SegmentationResult] = field(default_factory=list)
@@ -111,17 +116,17 @@ class DocumentIntelligenceResult:
     @property
     def full_text(self) -> str:
         """All text from all pages."""
-        return "\n---PAGE BREAK---\n".join(
-            page.full_text for page in self.ocr_pages
-        )
+        return "\n---PAGE BREAK---\n".join(page.full_text for page in self.ocr_pages)
 
 
 # ─── Service Availability Check ──────────────────────────────────────────────
+
 
 def is_doctr_available() -> bool:
     """Check if DocTR OCR service is running."""
     try:
         import requests
+
         r = requests.get(f"{DOCTR_URL}/", timeout=5)
         return r.status_code == 200
     except Exception:
@@ -132,6 +137,7 @@ def is_yolo_available() -> bool:
     """Check if YOLO segmentation service is running."""
     try:
         import requests
+
         r = requests.get(f"{YOLO_URL}/", timeout=5)
         return r.status_code == 200
     except Exception:
@@ -140,7 +146,12 @@ def is_yolo_available() -> bool:
 
 # ─── DocTR OCR Integration ───────────────────────────────────────────────────
 
-def ocr_image(image_bytes: bytes) -> list[OCRPageResult] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+def ocr_image(
+    image_bytes: bytes,
+) -> (
+    list[OCRPageResult] | None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Send image bytes to DocTR OCR service and get structured text back.
 
@@ -175,27 +186,35 @@ def ocr_image(image_bytes: bytes) -> list[OCRPageResult] | None:  # NOSONAR — 
                 for line_data in block_data.get("lines", []):
                     words = []
                     for word_data in line_data.get("words", []):
-                        words.append(OCRWord(
-                            value=word_data.get("value", ""),
-                            confidence=word_data.get("confidence", 0.0),
-                            geometry=word_data.get("geometry", [[0, 0], [1, 1]]),
-                        ))
-                    lines.append(OCRLine(
-                        words=words,
-                        geometry=line_data.get("geometry", [[0, 0], [1, 1]]),
-                    ))
-                blocks.append(OCRBlock(
-                    lines=lines,
-                    geometry=block_data.get("geometry", [[0, 0], [1, 1]]),
-                ))
+                        words.append(
+                            OCRWord(
+                                value=word_data.get("value", ""),
+                                confidence=word_data.get("confidence", 0.0),
+                                geometry=word_data.get("geometry", [[0, 0], [1, 1]]),
+                            )
+                        )
+                    lines.append(
+                        OCRLine(
+                            words=words,
+                            geometry=line_data.get("geometry", [[0, 0], [1, 1]]),
+                        )
+                    )
+                blocks.append(
+                    OCRBlock(
+                        lines=lines,
+                        geometry=block_data.get("geometry", [[0, 0], [1, 1]]),
+                    )
+                )
 
             dims = page_data.get("page_content", {}).get("dimensions", [0, 0])
-            results.append(OCRPageResult(
-                page_idx=page_data.get("page_content", {}).get("page_idx", 0),
-                dimensions=(dims[0] if len(dims) > 0 else 0, dims[1] if len(dims) > 1 else 0),
-                blocks=blocks,
-                processing_time=page_data.get("processing_time", 0.0),
-            ))
+            results.append(
+                OCRPageResult(
+                    page_idx=page_data.get("page_content", {}).get("page_idx", 0),
+                    dimensions=(dims[0] if len(dims) > 0 else 0, dims[1] if len(dims) > 1 else 0),
+                    blocks=blocks,
+                    processing_time=page_data.get("processing_time", 0.0),
+                )
+            )
 
         logger.info("DocTR OCR: extracted %d pages", len(results))
         return results
@@ -207,7 +226,12 @@ def ocr_image(image_bytes: bytes) -> list[OCRPageResult] | None:  # NOSONAR — 
 
 # ─── YOLO Segmentation Integration ──────────────────────────────────────────
 
-def segment_image(image_bytes: bytes) -> list[SegmentationResult] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+
+def segment_image(
+    image_bytes: bytes,
+) -> (
+    list[SegmentationResult] | None
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Send image bytes to YOLO segmentation service and get layout segments.
 
@@ -230,7 +254,9 @@ def segment_image(image_bytes: bytes) -> list[SegmentationResult] | None:  # NOS
             timeout=_REQUEST_TIMEOUT,
         )
         if response.status_code != 200:
-            logger.error("YOLO segmentation returned %s: %s", response.status_code, response.text[:200])
+            logger.error(
+                "YOLO segmentation returned %s: %s", response.status_code, response.text[:200]
+            )
             return None
 
         data = response.json()
@@ -246,23 +272,35 @@ def segment_image(image_bytes: bytes) -> list[SegmentationResult] | None:  # NOS
             for i, box in enumerate(boxes_output):
                 seg_type = classes[i] if i < len(classes) else "unknown"
                 confidence = scores[i] if i < len(scores) else 0.0
-                segments.append(SegmentBox(
-                    segment_type=str(seg_type),
-                    bbox=(box.get("left", 0), box.get("top", 0),
-                          box.get("width", 0), box.get("height", 0)),
-                    confidence=float(confidence),
-                ))
+                segments.append(
+                    SegmentBox(
+                        segment_type=str(seg_type),
+                        bbox=(
+                            box.get("left", 0),
+                            box.get("top", 0),
+                            box.get("width", 0),
+                            box.get("height", 0),
+                        ),
+                        confidence=float(confidence),
+                    )
+                )
 
-            results.append(SegmentationResult(
-                page_idx=page_idx,
-                image_size=(image_size[0] if len(image_size) > 0 else 0,
-                           image_size[1] if len(image_size) > 1 else 0),
-                segments=segments,
-            ))
+            results.append(
+                SegmentationResult(
+                    page_idx=page_idx,
+                    image_size=(
+                        image_size[0] if len(image_size) > 0 else 0,
+                        image_size[1] if len(image_size) > 1 else 0,
+                    ),
+                    segments=segments,
+                )
+            )
 
-        logger.info("YOLO segmentation: %d pages, %d total segments",
-                     len(results),
-                     sum(len(r.segments) for r in results))
+        logger.info(
+            "YOLO segmentation: %d pages, %d total segments",
+            len(results),
+            sum(len(r.segments) for r in results),
+        )
         return results
 
     except Exception as e:
@@ -271,6 +309,7 @@ def segment_image(image_bytes: bytes) -> list[SegmentationResult] | None:  # NOS
 
 
 # ─── Combined Document Intelligence ──────────────────────────────────────────
+
 
 def analyze_document(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     page_images: list[bytes],
@@ -336,6 +375,7 @@ def analyze_document(  # NOSONAR — S3776: cognitive complexity is inherent to 
 
 # ─── Helper: Render PDF page to image ────────────────────────────────────────
 
+
 def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -> bytes | None:
     """
     Render a PDF page as a PNG image for OCR/segmentation.
@@ -350,6 +390,7 @@ def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -
     """
     try:
         import fitz  # PyMuPDF
+
         doc = fitz.open(pdf_path)
         if page_num >= len(doc):
             logger.error("Page %d out of range (PDF has %d pages)", page_num, len(doc))
@@ -362,8 +403,13 @@ def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -
         image_bytes = pix.tobytes("png")
         doc.close()
 
-        logger.info("Rendered PDF page %d to %dx%d PNG (%d bytes)",
-                     page_num, pix.width, pix.height, len(image_bytes))
+        logger.info(
+            "Rendered PDF page %d to %dx%d PNG (%d bytes)",
+            page_num,
+            pix.width,
+            pix.height,
+            len(image_bytes),
+        )
         return image_bytes
 
     except ImportError:
@@ -387,6 +433,7 @@ def render_all_pdf_pages(pdf_path: str, dpi: int = 200) -> list[bytes]:
     """
     try:
         import fitz
+
         doc = fitz.open(pdf_path)
         page_count = len(doc)
         images = []

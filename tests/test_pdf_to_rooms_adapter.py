@@ -28,6 +28,7 @@ from fireai.core.contracts import DetectorType, Room
 
 # ── select_safe_detector_type — REAL caller shape (dict) ──────────────────────
 
+
 class TestSelectSafeDetectorTypeDictShape:
     """The workflow passes dicts {name, occupancy_type, area_sqm} — test that shape."""
 
@@ -88,9 +89,7 @@ class TestSelectSafeDetectorTypeDictShape:
         assert detector is DetectorType.SMOKE
 
     def test_missing_area_key_does_not_crash(self):
-        detector = select_safe_detector_type(
-            {"name": "Office", "occupancy_type": "business"}
-        )
+        detector = select_safe_detector_type({"name": "Office", "occupancy_type": "business"})
         assert detector is DetectorType.SMOKE
 
     def test_caller_uses_dot_name_not_dict_key(self):
@@ -103,6 +102,7 @@ class TestSelectSafeDetectorTypeDictShape:
 
 
 # ── select_safe_detector_type — canonical Room shape ──────────────────────────
+
 
 class TestSelectSafeDetectorTypeCanonicalRoom:
     def test_canonical_room_kitchen_returns_heat(self):
@@ -123,6 +123,7 @@ class TestSelectSafeDetectorTypeCanonicalRoom:
 
 # ── Contract violations ───────────────────────────────────────────────────────
 
+
 class TestSelectSafeDetectorTypeContractViolations:
     def test_bare_string_raises_type_error_not_attribute_error(self):
         # The old bug: calling with (room_name, occupancy_type) as positional
@@ -138,6 +139,7 @@ class TestSelectSafeDetectorTypeContractViolations:
 
 
 # ── extract_rooms_from_walls — canonical Room output ─────────────────────────
+
 
 class TestExtractRoomsFromWalls:
     def test_empty_walls_returns_no_rooms_and_status(self):

@@ -129,9 +129,11 @@ class FloorResult:
         # An attacker could inject "../../etc/crontab" as project_name
         # to write arbitrary files, or overwrite previous audit trails
         # to cover up compliance failures.
-        safe_name = re.sub(r'[^A-Za-z0-9_\-]', '_', self.project_name)
+        safe_name = re.sub(r"[^A-Za-z0-9_\-]", "_", self.project_name)
         if safe_name != self.project_name:
-            logger.warning("project_name sanitized for path safety: '%s' -> '%s'", self.project_name, safe_name)
+            logger.warning(
+                "project_name sanitized for path safety: '%s' -> '%s'", self.project_name, safe_name
+            )
 
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
         filename = f"{output_dir}/audit_{safe_name}_{timestamp}.json"
@@ -140,7 +142,9 @@ class FloorResult:
         resolved_path = Path(filename).resolve()
         resolved_dir = Path(output_dir).resolve()
         if not str(resolved_path).startswith(str(resolved_dir)):
-            logger.critical("Path traversal blocked: '%s' resolves outside '%s'", filename, output_dir)
+            logger.critical(
+                "Path traversal blocked: '%s' resolves outside '%s'", filename, output_dir
+            )
             filename = f"{output_dir}/audit_SANITIZED_{timestamp}.json"
 
         audit_data = {
@@ -198,7 +202,9 @@ class FloorOrchestrator:
         self.grid_res = grid_res
         self.audit_trail = audit_trail
 
-    def process(self, room_specs: list[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
+    def process(
+        self, room_specs: list[RoomSpec], project_name: str = "", source_dxf: str = ""
+    ) -> FloorResult:
         logger.info("Processing: %s (%s rooms)", project_name, len(room_specs))  # NOSONAR
 
         result = FloorResult(
@@ -229,7 +235,11 @@ class FloorOrchestrator:
 
         return result
 
-    def _process_one_room(self, spec: RoomSpec) -> RoomResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _process_one_room(
+        self, spec: RoomSpec
+    ) -> (
+        RoomResult
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         start = time.monotonic()
         result = RoomResult(room_id=spec.name, status="FAIL")
 
@@ -267,13 +277,17 @@ class FloorOrchestrator:
                 return RoomResult(
                     room_id=spec.name,
                     status="ERROR",
-                    errors=[f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."],
+                    errors=[
+                        f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."
+                    ],
                 )
                 # does not exist — would raise AttributeError, crashing entire building
                 # analysis when any room has missing ceiling spec. The result is already
                 # an ERROR RoomResult and will be returned to process() for logging.
             ceiling_h = spec.ceiling_spec.height_at_low_point_m
-            room_data = Room(name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h)
+            room_data = Room(
+                name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h
+            )
             # CRITICAL FIX: Use height-adjusted coverage radius per NFPA 72
             # Table 17.6.3.1.1. Previously, DensityOptimizer always used R=6.37m
             # (S=9.1m at h≤3.0m) regardless of ceiling height, which overestimates
@@ -286,10 +300,14 @@ class FloorOrchestrator:
                     calculate_coverage_radius_from_height,
                 )
             det_type = (
-                spec.detector_type.value if hasattr(spec.detector_type, "value") else str(spec.detector_type or "SMOKE")
+                spec.detector_type.value
+                if hasattr(spec.detector_type, "value")
+                else str(spec.detector_type or "SMOKE")
             )
             try:
-                cov_spec = calculate_coverage_radius_from_height(ceiling_h, cast(Literal["smoke", "heat"], det_type))
+                cov_spec = calculate_coverage_radius_from_height(
+                    ceiling_h, cast(Literal["smoke", "heat"], det_type)
+                )
                 height_radius = cov_spec.radius
                 height_spacing = cov_spec.spacing_max
             except Exception as e:
@@ -358,7 +376,9 @@ class FloorOrchestrator:
                 try:
                     from .spatial_engine.constraint_solver import ConstraintSolver
 
-                    area_solver = ConstraintSolver(room_polygon=spec.polygon, device_radius=optimizer.R)
+                    area_solver = ConstraintSolver(
+                        room_polygon=spec.polygon, device_radius=optimizer.R
+                    )
                     adaptive_result = area_solver.find_optimal_placement(max_devices=50)
                     if adaptive_result.coverage_percent >= 99.9:
                         result.status = "PASS"
@@ -382,7 +402,9 @@ class FloorOrchestrator:
                             f"(need 99.9%). Manual design required."
                         )
                 except Exception as adapt_err:
-                    result.errors.append(f"Adaptive re-solve error: {adapt_err}. Manual design required.")
+                    result.errors.append(
+                        f"Adaptive re-solve error: {adapt_err}. Manual design required."
+                    )
 
         except (NFPAComplianceError, InvalidInputError, ValueError) as e:  # NOSONAR - python:S5713
             # Logic errors → convert to ERROR result

@@ -41,7 +41,6 @@ from fireai.core.qomn_integration_engine import (
 
 
 class TestQomnCableHatchIntegration(unittest.TestCase):
-
     def setUp(self):
         self.grid_map = GridMap3D(step_size=0.5)
 
@@ -61,11 +60,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         end = Point3D(8.0, 0.0, 0.0)
 
         run_data = integrator.place_cable_with_hatch(
-            run_id="RUN_01",
-            start=start,
-            end=end,
-            conduit=ConduitType.EMT,
-            hatch_scale=0.5
+            run_id="RUN_01", start=start, end=end, conduit=ConduitType.EMT, hatch_scale=0.5
         )
 
         self.assertEqual(run_data["RunId"], "RUN_01")
@@ -82,25 +77,17 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         integrator = CableHatchIntegrator(self.grid_map)
 
         # Smoke detector coverage zone covers y-axis area
-        integrator.add_smoke_detector(
-            "SMOKE_CENTER", Point3D(5.0, 1.0, 0.0), radius=4.0
-        )
+        integrator.add_smoke_detector("SMOKE_CENTER", Point3D(5.0, 1.0, 0.0), radius=4.0)
 
         # Route passes directly from x=0 to x=10 along y=0
         start = Point3D(0.0, 0.0, 0.0)
         end = Point3D(10.0, 0.0, 0.0)
 
         run_data = integrator.place_cable_with_hatch(
-            run_id="RUN_CONFL",
-            start=start,
-            end=end,
-            conduit=ConduitType.EMT,
-            hatch_scale=0.5
+            run_id="RUN_CONFL", start=start, end=end, conduit=ConduitType.EMT, hatch_scale=0.5
         )
 
-        self.assertTrue(
-            any("intersects smoke detector zone" in w for w in run_data["Warnings"])
-        )
+        self.assertTrue(any("intersects smoke detector zone" in w for w in run_data["Warnings"]))
 
     def test_nec_violation_bend_limit(self):
         """
@@ -117,9 +104,9 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         # Part A: Directly verify bend calculation on known over-bent paths
         # 6 turns x 90° = 540° total (exceeds NEC 360° limit)
         serpentine_path = [
-            Point3D(0.0, 0.0, 0.0),   # Start
-            Point3D(5.0, 0.0, 0.0),   # Go east
-            Point3D(5.0, 5.0, 0.0),   # Turn 1: east→north (90°)
+            Point3D(0.0, 0.0, 0.0),  # Start
+            Point3D(5.0, 0.0, 0.0),  # Go east
+            Point3D(5.0, 5.0, 0.0),  # Turn 1: east→north (90°)
             Point3D(10.0, 5.0, 0.0),  # Turn 2: north→east (180°)
             Point3D(10.0, 0.0, 0.0),  # Turn 3: east→south (270°)
             Point3D(15.0, 0.0, 0.0),  # Turn 4: south→east (360°)
@@ -127,23 +114,22 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
             Point3D(20.0, 5.0, 0.0),  # Turn 6: north→east (540° > 360!)
         ]
         total_bends = CableRouter.calculate_total_bends_degrees(serpentine_path)
-        self.assertGreater(total_bends, 360.0,
-                           f"Serpentine path must exceed 360°, got {total_bends}°")
-        self.assertEqual(total_bends, 540.0,
-                         f"6 x 90° turns = 540°, got {total_bends}°")
+        self.assertGreater(
+            total_bends, 360.0, f"Serpentine path must exceed 360°, got {total_bends}°"
+        )
+        self.assertEqual(total_bends, 540.0, f"6 x 90° turns = 540°, got {total_bends}°")
 
         # Part B: Verify 4-turn path (360° exactly) is at the NEC limit
         path_at_limit = [
             Point3D(0.0, 0.0, 0.0),
-            Point3D(5.0, 0.0, 0.0),   # east
-            Point3D(5.0, 5.0, 0.0),   # 90°
+            Point3D(5.0, 0.0, 0.0),  # east
+            Point3D(5.0, 5.0, 0.0),  # 90°
             Point3D(10.0, 5.0, 0.0),  # 180°
             Point3D(10.0, 0.0, 0.0),  # 270°
             Point3D(15.0, 0.0, 0.0),  # 360° (at limit)
         ]
         bends_at_limit = CableRouter.calculate_total_bends_degrees(path_at_limit)
-        self.assertEqual(bends_at_limit, 360.0,
-                         f"4 x 90° turns = 360°, got {bends_at_limit}°")
+        self.assertEqual(bends_at_limit, 360.0, f"4 x 90° turns = 360°, got {bends_at_limit}°")
 
         # Part C: Verify CableRouter.route() raises NECViolationError
         # We create a very constrained 2D-only corridor (single z-layer)
@@ -179,13 +165,15 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
 
         integrator = CableHatchIntegrator(grid)
 
-        with pytest.raises(NECViolationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            NECViolationError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.place_cable_with_hatch(
                 run_id="RUN_NEC_FAIL",
                 start=Point3D(0.0, 0.0, 0.0),
                 end=Point3D(22.0, 0.0, 0.0),
                 conduit=ConduitType.RMC,
-                hatch_scale=0.1
+                hatch_scale=0.1,
             )
 
     def test_hatch_scale_validation(self):
@@ -195,18 +183,22 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         Expected: Throw HatchPlacementError
         """
         integrator = CableHatchIntegrator(self.grid_map)
-        with pytest.raises(HatchPlacementError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            HatchPlacementError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.place_cable_with_hatch(
                 run_id="RUN_SCALE_FAIL",
                 start=Point3D(0.0, 0.0, 0.0),
                 end=Point3D(2.0, 0.0, 0.0),
                 conduit=ConduitType.EMT,
-                hatch_scale=0.0005
+                hatch_scale=0.0005,
             )
 
     @pytest.mark.timeout(600)
     @pytest.mark.slow
-    def test_determinism_under_stress(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def test_determinism_under_stress(
+        self,
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         TEST 5: Stress & Determinism Validation
         Input: Complex model containing multiple devices and conduits,
@@ -220,19 +212,17 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         for i in range(5):
             for j in range(5):
                 integrator_1.add_smoke_detector(
-                    f"SM_ID_{i}_{j}",
-                    Point3D(i*10.0, j*10.0, 0.0),
-                    radius=4.5
+                    f"SM_ID_{i}_{j}", Point3D(i * 10.0, j * 10.0, 0.0), radius=4.5
                 )
 
         for r in range(20):
             try:
                 integrator_1.place_cable_with_hatch(
                     run_id=f"CABLE_RUN_{r}",
-                    start=Point3D(0.0, r*2.0, 0.0),
-                    end=Point3D(40.0, r*2.0, 0.0),
+                    start=Point3D(0.0, r * 2.0, 0.0),
+                    end=Point3D(40.0, r * 2.0, 0.0),
                     conduit=ConduitType.EMT,
-                    hatch_scale=0.1
+                    hatch_scale=0.1,
                 )
             except CableRoutingError:
                 pass  # Ignore paths blocked in grid
@@ -247,27 +237,24 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
             for i in range(5):
                 for j in range(5):
                     integrator_loop.add_smoke_detector(
-                        f"SM_ID_{i}_{j}",
-                        Point3D(i*10.0, j*10.0, 0.0),
-                        radius=4.5
+                        f"SM_ID_{i}_{j}", Point3D(i * 10.0, j * 10.0, 0.0), radius=4.5
                     )
 
             for r in range(20):
                 try:
                     integrator_loop.place_cable_with_hatch(
                         run_id=f"CABLE_RUN_{r}",
-                        start=Point3D(0.0, r*2.0, 0.0),
-                        end=Point3D(40.0, r*2.0, 0.0),
+                        start=Point3D(0.0, r * 2.0, 0.0),
+                        end=Point3D(40.0, r * 2.0, 0.0),
                         conduit=ConduitType.EMT,
-                        hatch_scale=0.1
+                        hatch_scale=0.1,
                     )
                 except CableRoutingError:
                     pass
 
             hash_loop = compute_engine_signature(integrator_loop)
             self.assertEqual(
-                hash_signature_1, hash_loop,
-                f"Non-deterministic execution detected on loop {cycle}"
+                hash_signature_1, hash_loop, f"Non-deterministic execution detected on loop {cycle}"
             )
 
     def test_point3d_immutability_and_precision(self):
@@ -290,7 +277,9 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
     def test_negative_radius_rejected(self):
         """Negative smoke detector radius must be rejected."""
         integrator = CableHatchIntegrator(self.grid_map)
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.add_smoke_detector("BAD", Point3D(0, 0, 0), radius=-1.0)
 
     def test_zero_step_size_rejected(self):
@@ -300,30 +289,34 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
 
     def test_negative_hatch_width_rejected(self):
         """Negative corridor width must be rejected."""
-        with pytest.raises(HatchPlacementError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            HatchPlacementError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_conduit_corridors(
                 [Point3D(0, 0, 0), Point3D(5, 0, 0)], width=-0.1
             )
 
     def test_negative_detector_boundary_radius_rejected(self):
         """Negative boundary radius must be rejected."""
-        with pytest.raises(HatchPlacementError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            HatchPlacementEngine.generate_smoke_detector_boundary(
-                Point3D(0, 0, 0), radius=-1.0
-            )
+        with pytest.raises(
+            HatchPlacementError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), radius=-1.0)
 
     def test_blocked_start_raises_error(self):
         """Routing from a blocked start point must raise CableRoutingError."""
         grid = GridMap3D(step_size=1.0)
         grid.add_obstacle(Point3D(0.0, 0.0, 0.0))
         integrator = CableHatchIntegrator(grid)
-        with pytest.raises(CableRoutingError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            CableRoutingError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.place_cable_with_hatch(
                 run_id="BLOCKED",
                 start=Point3D(0.0, 0.0, 0.0),
                 end=Point3D(5.0, 0.0, 0.0),
                 conduit=ConduitType.EMT,
-                hatch_scale=0.5
+                hatch_scale=0.5,
             )
 
     def test_export_revit_json_structure(self):
@@ -335,7 +328,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
             start=Point3D(0, 0, 0),
             end=Point3D(8, 0, 0),
             conduit=ConduitType.EMT,
-            hatch_scale=0.5
+            hatch_scale=0.5,
         )
 
         json_str = integrator.export_revit_json()
@@ -359,7 +352,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
             start=Point3D(0, 0, 0),
             end=Point3D(8, 0, 0),
             conduit=ConduitType.EMT,
-            hatch_scale=0.5
+            hatch_scale=0.5,
         )
 
         sig1 = compute_engine_signature(integrator)
@@ -379,10 +372,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
 
     def test_bend_calculation_two_90s(self):
         """Two 90-degree turns must produce 180.0 degrees."""
-        path = [
-            Point3D(0, 0, 0), Point3D(5, 0, 0),
-            Point3D(5, 5, 0), Point3D(0, 5, 0)
-        ]
+        path = [Point3D(0, 0, 0), Point3D(5, 0, 0), Point3D(5, 5, 0), Point3D(0, 5, 0)]
         self.assertEqual(CableRouter.calculate_total_bends_degrees(path), 180.0)
 
     def test_conduit_type_bend_multipliers(self):
@@ -392,5 +382,5 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         self.assertEqual(ConduitType.FMC.min_bend_radius_multiplier, 3.0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

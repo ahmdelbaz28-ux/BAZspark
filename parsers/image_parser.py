@@ -29,6 +29,7 @@ def _lazy_import_cv2():
         try:
             import cv2 as _cv2
             import numpy as _np
+
             cv2 = _cv2
             np = _np
         except ImportError as e:
@@ -77,7 +78,18 @@ class ImageParseResult:
 ROOM_KEYWORDS = {
     "office": ["office", "مكتب", "مكتبه", "Administration"],
     "bedroom": ["bedroom", "bed room", "bedroom", "Sleeping", "bed", "غرفه نوم"],
-    "bathroom": ["bath", "toilet", "restroom", "bathroom", "WR", "bath room", "bathroom", "bath room", "حمام", "toilet"],
+    "bathroom": [
+        "bath",
+        "toilet",
+        "restroom",
+        "bathroom",
+        "WR",
+        "bath room",
+        "bathroom",
+        "bath room",
+        "حمام",
+        "toilet",
+    ],
     "kitchen": ["kitchen", "kitch", "pantry", " kitchen", "مطبخ", "مطبخ"],
     "living_room": ["living", "lounge", "living room", "salon", "salon", "غرفة معيشة", "صالة"],
     "hall": ["hall", "corridor", "entrance", "lobby", "lobby", "ممر", "ردهة", "corridor"],
@@ -105,10 +117,21 @@ class ImageParser(ParserBase):
     Parses floor plans from images.
     """
 
-    allowed_extensions = {'.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.webp'}
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".webp"}
     max_file_size_bytes = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))
 
-    SUPPORTED_FORMATS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif', '.webp', '.heic', '.heif']
+    SUPPORTED_FORMATS = [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".bmp",
+        ".tiff",
+        ".tif",
+        ".gif",
+        ".webp",
+        ".heic",
+        ".heif",
+    ]
 
     MIN_ROOM_SIZE = 20
     MAX_ROOM_SIZE = 100000
@@ -125,7 +148,9 @@ class ImageParser(ParserBase):
         except FileNotFoundError as e:
             return ImageParseResult(source_file=image_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
-            return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
+            return ImageParseResult(
+                source_file=image_path, success=False, errors=[f"SECURITY: {e}"]
+            )
 
         image_path = str(safe_path)
         result = ImageParseResult(source_file=image_path, success=False)
@@ -169,9 +194,10 @@ class ImageParser(ParserBase):
 
     def _load_image(self, path: str):
         _lazy_import_cv2()
-        if path.lower().endswith(('.heic', '.heif')):
+        if path.lower().endswith((".heic", ".heif")):
             try:
                 import pillow_heif
+
                 heif_file = pillow_heif.open_heif(path)
                 img = np.array(heif_file.to_pillow())
                 return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -203,18 +229,20 @@ class ImageParser(ParserBase):
                             x = left + width / 2
                             y = top + height / 2
                             area_px = width * height
-                            area_m2 = area_px * (self.scale_factor ** 2)
-                            rooms.append(ImageRoom(
-                                name=f"YOLO_{segment.segment_type}_{len(rooms)+1}",
-                                x=int(x),
-                                y=int(y),
-                                width=int(width),
-                                height=int(height),
-                                width_m=width * self.scale_factor,
-                                height_m=height * self.scale_factor,
-                                floor_area=area_m2,
-                                room_type=segment.segment_type,
-                            ))
+                            area_m2 = area_px * (self.scale_factor**2)
+                            rooms.append(
+                                ImageRoom(
+                                    name=f"YOLO_{segment.segment_type}_{len(rooms) + 1}",
+                                    x=int(x),
+                                    y=int(y),
+                                    width=int(width),
+                                    height=int(height),
+                                    width_m=width * self.scale_factor,
+                                    height_m=height * self.scale_factor,
+                                    floor_area=area_m2,
+                                    room_type=segment.segment_type,
+                                )
+                            )
             return rooms
 
         except Exception as e:
@@ -258,8 +286,12 @@ class ImageParser(ParserBase):
 
         return ImageRoom(
             name=room_name or f"Room_{x}_{y}",
-            x=x, y=y, width=w, height=h,
-            width_m=width_m, height_m=height_m,
+            x=x,
+            y=y,
+            width=w,
+            height=h,
+            width_m=width_m,
+            height_m=height_m,
             floor_area=width_m * height_m,
             room_type=room_type,
         )
@@ -268,7 +300,8 @@ class ImageParser(ParserBase):
         try:
             _lazy_import_cv2()
             import pytesseract
-            os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr'
+
+            os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr"
 
             margin = 10
             x1 = max(0, x - margin)
@@ -284,12 +317,11 @@ class ImageParser(ParserBase):
                 roi_gray = roi
 
             text = pytesseract.image_to_string(
-                roi_gray,
-                config='--tessdata-dir /usr/share/tesseract-ocr/5/tessdata'
+                roi_gray, config="--tessdata-dir /usr/share/tesseract-ocr/5/tessdata"
             )
 
             text = text.strip()
-            text = re.sub(r'[^\w\s]', '', text)
+            text = re.sub(r"[^\w\s]", "", text)
 
             return text[:50]
 

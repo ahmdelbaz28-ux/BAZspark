@@ -6,11 +6,13 @@ AutoCAD integration connector using .NET API.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 try:
     import os
     import sys
 
     import clr
+
     HAS_CLR = True
 except ImportError:
     # CLR not available (running outside AutoCAD)
@@ -80,23 +82,23 @@ class AutoCADConnector:
 
         # Entity type mapping from unified model to AutoCAD
         self.entity_type_mapping = {
-            'Panel': 'ACAD_PANEL',
-            'Transformer': 'ACAD_TRANSFORMER',
-            'Bus': 'ACAD_BUS',
-            'Cable': 'ACAD_CABLE',
-            'Breaker': 'ACAD_BREAKER',
-            'Equipment': 'ACAD_EQUIPMENT'
+            "Panel": "ACAD_PANEL",
+            "Transformer": "ACAD_TRANSFORMER",
+            "Bus": "ACAD_BUS",
+            "Cable": "ACAD_CABLE",
+            "Breaker": "ACAD_BREAKER",
+            "Equipment": "ACAD_EQUIPMENT",
         }
 
         # Layer configuration
         self.layer_config = {
-            'panels': 'E-PANEL',
-            'transformers': 'E-XFMER',
-            'buses': 'E-BUS',
-            'cables': 'E-CABLE',
-            'breakers': 'E-SWITCH',
-            'equipment': 'E-EQUIP',
-            'annotations': 'E-ANNOT'
+            "panels": "E-PANEL",
+            "transformers": "E-XFMER",
+            "buses": "E-BUS",
+            "cables": "E-CABLE",
+            "breakers": "E-SWITCH",
+            "equipment": "E-EQUIP",
+            "annotations": "E-ANNOT",
         }
 
     def connect(self) -> bool:
@@ -220,12 +222,7 @@ class AutoCADConnector:
         try:
             # In a real implementation, this would read the drawing
             # For now, we'll return a mock structure
-            drawing_data = {
-                "entities": [],
-                "layers": [],
-                "blocks": [],
-                "properties": {}
-            }
+            drawing_data = {"entities": [], "layers": [], "blocks": [], "properties": {}}
 
             self.logger.info("Read drawing data successfully")
             return drawing_data
@@ -303,9 +300,15 @@ class AutoCADConnector:
             self.logger.error(f"Error creating block {block_name}: {e}")
             raise
 
-    def insert_block(self, block_name: str, coordinates: Coordinates,
-                    _rotation: float = 0.0, _scale_x: float = 1.0,
-                    _scale_y: float = 1.0, _scale_z: float = 1.0) -> str:
+    def insert_block(
+        self,
+        block_name: str,
+        coordinates: Coordinates,
+        _rotation: float = 0.0,
+        _scale_x: float = 1.0,
+        _scale_y: float = 1.0,
+        _scale_z: float = 1.0,
+    ) -> str:
         """
         Insert a block instance into the drawing.
 
@@ -407,8 +410,14 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing circle: {e}")
             raise
 
-    def draw_text(self, text: str, coordinates: Coordinates, _height: float = 0.2,
-                 _rotation: float = 0.0, _layer: str = "0") -> str:
+    def draw_text(
+        self,
+        text: str,
+        coordinates: Coordinates,
+        _height: float = 0.2,
+        _rotation: float = 0.0,
+        _layer: str = "0",
+    ) -> str:
         """
         Draw text in AutoCAD.
 
@@ -450,11 +459,7 @@ class AutoCADConnector:
 
         try:
             # In a real implementation, this would read the entity's geometry
-            geometry = {
-                "type": "unknown",
-                "coordinates": [],
-                "properties": {}
-            }
+            geometry = {"type": "unknown", "coordinates": [], "properties": {}}
             self.logger.info(f"Read geometry for entity: {entity_id}")
             return geometry
 
@@ -477,12 +482,7 @@ class AutoCADConnector:
 
         try:
             # In a real implementation, this would read the entity's attributes
-            attributes = {
-                "layer": "0",
-                "color": 7,
-                "linetype": "Continuous",
-                "lineweight": -3
-            }
+            attributes = {"layer": "0", "color": 7, "linetype": "Continuous", "lineweight": -3}
             self.logger.info(f"Read attributes for entity: {entity_id}")
             return attributes
 
@@ -559,7 +559,7 @@ class AutoCADConnector:
                 voltage_rating=480.0,
                 current_rating=400.0,
                 feeder_count=5,
-                source_system=SourceSystem.AUTOCAD
+                source_system=SourceSystem.AUTOCAD,
             ),
             Transformer(
                 id="transformer_1",
@@ -569,8 +569,8 @@ class AutoCADConnector:
                 primary_voltage=13800.0,
                 secondary_voltage=480.0,
                 power_rating=1000.0,
-                source_system=SourceSystem.AUTOCAD
-            )
+                source_system=SourceSystem.AUTOCAD,
+            ),
         ]
 
         for entity in sample_entities:
@@ -593,7 +593,7 @@ class AutoCADConnector:
             "operations": [],
             "entities_created": 0,
             "layers_created": [],
-            "blocks_used": []
+            "blocks_used": [],
         }
 
         # In a real implementation, this would convert unified entities
@@ -608,8 +608,8 @@ class AutoCADConnector:
                     "attributes": {
                         "NAME": entity.name,
                         "VOLTAGE": entity.voltage_rating,
-                        "CURRENT": entity.current_rating
-                    }
+                        "CURRENT": entity.current_rating,
+                    },
                 }
                 drawing_commands["operations"].append(command)
                 drawing_commands["entities_created"] += 1
@@ -624,13 +624,15 @@ class AutoCADConnector:
                         "NAME": entity.name,
                         "PRIMARY_VOLTAGE": entity.primary_voltage,
                         "SECONDARY_VOLTAGE": entity.secondary_voltage,
-                        "POWER_RATING": entity.power_rating
-                    }
+                        "POWER_RATING": entity.power_rating,
+                    },
                 }
                 drawing_commands["operations"].append(command)
                 drawing_commands["entities_created"] += 1
 
-        self.logger.info(f"Converted unified model to {len(drawing_commands['operations'])} drawing operations")
+        self.logger.info(
+            f"Converted unified model to {len(drawing_commands['operations'])} drawing operations"
+        )
         return drawing_commands
 
     def batch_operation(self, operations: list[dict[str, Any]]) -> dict[str, Any]:
@@ -646,12 +648,7 @@ class AutoCADConnector:
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
-        results = {
-            "successful": 0,
-            "failed": 0,
-            "errors": [],
-            "results": []
-        }
+        results = {"successful": 0, "failed": 0, "errors": [], "results": []}
 
         try:
             for op in operations:
@@ -662,17 +659,21 @@ class AutoCADConnector:
                         entity_id = self.draw_line(
                             Coordinates(op["start"]["x"], op["start"]["y"]),
                             Coordinates(op["end"]["x"], op["end"]["y"]),
-                            op.get("layer", "0")
+                            op.get("layer", "0"),
                         )
-                        results["results"].append({"operation": op_type, "id": entity_id, "status": "success"})
+                        results["results"].append(
+                            {"operation": op_type, "id": entity_id, "status": "success"}
+                        )
                         results["successful"] += 1
                     elif op_type == "create_circle":
                         entity_id = self.draw_circle(
                             Coordinates(op["center"]["x"], op["center"]["y"]),
                             op["radius"],
-                            op.get("layer", "0")
+                            op.get("layer", "0"),
                         )
-                        results["results"].append({"operation": op_type, "id": entity_id, "status": "success"})
+                        results["results"].append(
+                            {"operation": op_type, "id": entity_id, "status": "success"}
+                        )
                         results["successful"] += 1
                     elif op_type == "create_text":
                         entity_id = self.draw_text(
@@ -680,9 +681,11 @@ class AutoCADConnector:
                             Coordinates(op["position"]["x"], op["position"]["y"]),
                             op.get("height", 0.2),
                             op.get("rotation", 0.0),
-                            op.get("layer", "0")
+                            op.get("layer", "0"),
                         )
-                        results["results"].append({"operation": op_type, "id": entity_id, "status": "success"})
+                        results["results"].append(
+                            {"operation": op_type, "id": entity_id, "status": "success"}
+                        )
                         results["successful"] += 1
                     else:
                         results["errors"].append(f"Unknown operation type: {op_type}")
@@ -692,7 +695,9 @@ class AutoCADConnector:
                     results["errors"].append(f"Error in operation {op_type}: {str(e)}")
                     results["failed"] += 1
 
-            self.logger.info(f"Batch operation completed: {results['successful']} successful, {results['failed']} failed")
+            self.logger.info(
+                f"Batch operation completed: {results['successful']} successful, {results['failed']} failed"
+            )
             return results
 
         except Exception as e:  # NOSONAR

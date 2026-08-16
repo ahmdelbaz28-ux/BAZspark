@@ -31,18 +31,24 @@ class TestSSRFPrevention:
     def test_webhook_subscription_is_frozen(self):
         """WebhookSubscription must be immutable (frozen=True)."""
         from fireai.infrastructure.webhook_service import WebhookSubscription
+
         sub = WebhookSubscription(
             id="sub-1",
             url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         # Attempting to mutate should raise FrozenInstanceError
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             sub.url = "http://evil.com"  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
 
     def test_ssrf_check_blocks_localhost(self):
         """_check_ssrf_url should block localhost."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
         # localhost resolves to 127.0.0.1 (loopback)
         error = service._check_ssrf_url("http://localhost/hook")
@@ -53,23 +59,32 @@ class TestSSRFPrevention:
     def test_ssrf_check_blocks_private_ip(self):
         """_check_ssrf_url should block private IP ranges."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
         # Direct IP URL — 10.0.0.1 is private
-        error = service._check_ssrf_url("http://10.0.0.1/hook")  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
+        error = service._check_ssrf_url(
+            "http://10.0.0.1/hook"
+        )  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
         assert error is not None
         assert "internal" in error.lower() or "private" in error.lower()
 
     def test_ssrf_check_blocks_metadata_endpoint(self):
         """_check_ssrf_url should block cloud metadata endpoint."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
-        error = service._check_ssrf_url("http://169.254.169.254/latest/meta-data/")  # NOSONAR - python:S1313
+        error = service._check_ssrf_url(
+            "http://169.254.169.254/latest/meta-data/"
+        )  # NOSONAR - python:S1313
         assert error is not None
-        assert "metadata" in error.lower() or "internal" in error.lower() or "private" in error.lower()
+        assert (
+            "metadata" in error.lower() or "internal" in error.lower() or "private" in error.lower()
+        )
 
     def test_ssrf_check_blocks_loopback(self):
         """_check_ssrf_url should block 127.x.x.x."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
         error = service._check_ssrf_url("http://127.0.0.1/hook")
         assert error is not None
@@ -77,9 +92,12 @@ class TestSSRFPrevention:
     def test_ssrf_check_allows_public_ip(self):
         """_check_ssrf_url should allow public IPs."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
+
         service = WebhookDeliveryService(allow_http=True)
         # 8.8.8.8 is Google DNS (public)
-        error = service._check_ssrf_url("http://8.8.8.8/hook")  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
+        error = service._check_ssrf_url(
+            "http://8.8.8.8/hook"
+        )  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
         assert error is None  # Public IP → no error
 
     def test_no_redirect_following_in_delivery(self):
@@ -88,11 +106,14 @@ class TestSSRFPrevention:
             WebhookDeliveryService,
             WebhookSubscription,
         )
+
         service = WebhookDeliveryService(allow_http=True, max_retries=1)
         sub = WebhookSubscription(
             id="sub-test",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
         service.publish_event(
@@ -128,6 +149,7 @@ class TestGLBConsistency:
             ARSceneNode,
             ARSnapshot,
         )
+
         exporter = ARMetadataExporter()
         snapshot = ARSnapshot(
             building_id="B-TEST",
@@ -139,8 +161,9 @@ class TestGLBConsistency:
 
         import json
         import struct
+
         json_length = struct.unpack("<I", glb[12:16])[0]
-        json_bytes = glb[20:20 + json_length]
+        json_bytes = glb[20 : 20 + json_length]
         gltf = json.loads(json_bytes)
 
         buffers = gltf.get("buffers", [])
@@ -170,14 +193,16 @@ class TestGLBConsistency:
             ARMetadataExporter,
             ARSnapshot,
         )
+
         exporter = ARMetadataExporter()
         snapshot = ARSnapshot(building_id="B-TEST")
         glb = exporter.export_glb(snapshot)
 
         import json
         import struct
+
         json_length = struct.unpack("<I", glb[12:16])[0]
-        gltf = json.loads(glb[20:20 + json_length])
+        gltf = json.loads(glb[20 : 20 + json_length])
         assert len(gltf.get("accessors", [])) > 0, "Accessors should have real entries (V139)"
 
 
@@ -239,9 +264,15 @@ class TestARExporterFieldNames:
 
         detector_node = next(n for n in snapshot.nodes if n.node_type == "detector")
         # x should be 0.0 (NaN fallback), y and z should be correct
-        assert detector_node.position[0] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert detector_node.position[1] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert detector_node.position[2] == 2.8  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            detector_node.position[0] == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            detector_node.position[1] == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            detector_node.position[2] == 2.8
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_metadata_dict_read_for_behind_wall(self):
         """is_behind_wall should be read from metadata dict."""
@@ -279,6 +310,7 @@ class TestSmitheryEnqueueTransparency:
     def test_proposed_action_has_enqueue_status_field(self):
         """ProposedAction must have enqueue_status field."""
         from fireai.mcp_server.smithery_mcp_integration import ProposedAction
+
         action = ProposedAction(
             id="test-1",
             action_type="create",
@@ -291,6 +323,7 @@ class TestSmitheryEnqueueTransparency:
     def test_proposed_action_initial_enqueue_status_is_pending(self):
         """Initial enqueue_status should be 'pending'."""
         from fireai.mcp_server.smithery_mcp_integration import ProposedAction
+
         action = ProposedAction(
             id="test-1",
             action_type="create",
@@ -302,6 +335,7 @@ class TestSmitheryEnqueueTransparency:
     def test_propose_create_sets_enqueue_status(self):
         """propose_create_detector should set enqueue_status (not leave pending)."""
         from fireai.mcp_server.smithery_mcp_integration import SmitheryMCPClient
+
         client = SmitheryMCPClient()
         action = client.propose_create_detector(
             room_id="R-001",
@@ -316,6 +350,7 @@ class TestSmitheryEnqueueTransparency:
     def test_to_dict_includes_enqueue_status(self):
         """to_dict must include enqueue_status for API transparency."""
         from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
+
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,
@@ -333,6 +368,7 @@ class TestSmitheryEnqueueTransparency:
     def test_dropped_proposal_is_not_enqueued(self):
         """If enqueue fails, is_enqueued must be False."""
         from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
+
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,
@@ -344,6 +380,7 @@ class TestSmitheryEnqueueTransparency:
     def test_enqueued_proposal_is_enqueued(self):
         """If enqueue succeeds, is_enqueued must be True."""
         from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
+
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,
@@ -367,6 +404,7 @@ class TestBeamMixedOrientation:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         beams = [
             # Horizontal beam (significant)
@@ -392,6 +430,7 @@ class TestBeamMixedOrientation:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         beams = [
             Beam(id="B1", start=(0, 0), end=(10, 8), depth_m=0.5),
@@ -413,6 +452,7 @@ class TestBeamMixedOrientation:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         beams = [
             Beam(id="B1", start=(0, 2), end=(10, 2), depth_m=0.5),
@@ -433,6 +473,7 @@ class TestBeamMixedOrientation:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         beams = [
             Beam(id="B1", start=(3, 0), end=(3, 8), depth_m=0.5),

@@ -98,7 +98,9 @@ class TestAcousticCoverageDetail:
         assert detail.sensor_id == "UGLD-1"
         assert detail.triggered is True
         assert detail.snr_db == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert detail.distance_meters == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            detail.distance_meters == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_frozen(self):
         detail = AcousticCoverageDetail(
@@ -109,7 +111,9 @@ class TestAcousticCoverageDetail:
             has_los=True,
             distance_meters=15.0,
         )
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             detail.sensor_id = "UGLD-2"
 
     def test_negative_snr(self):
@@ -134,7 +138,9 @@ class TestAcousticCoverageDetail:
             has_los=True,
             distance_meters=15.0,
         )
-        assert detail.total_insertion_loss_db == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            detail.total_insertion_loss_db == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -163,7 +169,9 @@ class TestHybridPointResult:
             z=3.0,
             survivability_class=SurvivabilityClass.OPTICAL_ONLY,
         )
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             pr.x = 99.0
 
     def test_default_optical_count(self):
@@ -205,7 +213,9 @@ class TestHybridPointResult:
             best_acoustic_detail=detail,
         )
         assert pr.best_acoustic_detail is not None
-        assert pr.best_acoustic_detail.snr_db == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pr.best_acoustic_detail.snr_db == 25.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -229,7 +239,9 @@ class TestHybridSurvivabilityMap:
             redundant_hybrid_count=100,
             hybrid_coverage_fraction=1.0,
         )
-        assert m.redundant_hybrid_pct == 100.00  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            m.redundant_hybrid_pct == 100.00
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_redundant_hybrid_pct_partial(self):
         """V60 FIX: Partial coverage — no rounding to 100%."""
@@ -261,7 +273,9 @@ class TestHybridSurvivabilityMap:
             blind_spot_count=0,
             any_coverage_fraction=1.0,
         )
-        assert m.any_coverage_pct == 100.00  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            m.any_coverage_pct == 100.00
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_any_coverage_pct_partial(self):
         m = HybridSurvivabilityMap(
@@ -278,7 +292,9 @@ class TestHybridSurvivabilityMap:
             blind_spot_count=0,
             blind_spot_fraction=0.0,
         )
-        assert m.blind_spot_pct == 0.00  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            m.blind_spot_pct == 0.00
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_blind_spot_pct_small(self):
         """V60 FIX (P3-3): Tiny blind spot must NOT round to 0.00."""
@@ -342,15 +358,21 @@ class TestHybridSurvivabilityMap:
 
     def test_frozen(self):
         m = HybridSurvivabilityMap(total_points=100)
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             m.total_points = 200
 
     def test_negative_total_points_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             HybridSurvivabilityMap(total_points=-1)
 
     def test_coverage_fraction_bounds(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(
+            Exception
+        ):  # NOSONAR — S5958: parameter name documents intent at call site
             HybridSurvivabilityMap(
                 total_points=100,
                 hybrid_coverage_fraction=1.5,
@@ -369,10 +391,18 @@ class TestHybridSurvivabilityMap:
 class TestHybridSurvivabilityEngineInit:
     def test_default_init(self):
         engine = HybridSurvivabilityEngine()
-        assert engine._leak_spl == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._freq_hz == 40_000.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._temp_c == 40.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._rh_pct == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._leak_spl == 100.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._freq_hz == 40_000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._temp_c == 40.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._rh_pct == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_init(self):
         engine = HybridSurvivabilityEngine(
@@ -381,10 +411,18 @@ class TestHybridSurvivabilityEngineInit:
             temp_c=25.0,
             relative_humidity_pct=80.0,
         )
-        assert engine._leak_spl == 110.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._freq_hz == 25_000.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._temp_c == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert engine._rh_pct == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._leak_spl == 110.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._freq_hz == 25_000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._temp_c == 25.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            engine._rh_pct == 80.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -464,8 +502,15 @@ class TestHybridSurvivabilityEngineClassification:
             points.append(pt)
         return points
 
-    def _make_ray_result(self, triggered=True, snr_db=25.0, margin_db=5.0,
-                         has_los=True, insertion_loss=0.0, distance=15.0):
+    def _make_ray_result(
+        self,
+        triggered=True,
+        snr_db=25.0,
+        margin_db=5.0,
+        has_los=True,
+        insertion_loss=0.0,
+        distance=15.0,
+    ):
         trigger = MagicMock()
         trigger.triggered = triggered
         trigger.snr_db = snr_db
@@ -506,7 +551,9 @@ class TestHybridSurvivabilityEngineClassification:
         sensor_positions = {"UGLD-1": (0.0, 0.0, 3.0)}
 
         with patch("fireai.core.hybrid_survivability.trace_acoustic_ray") as mock_trace:
-            mock_trace.return_value = self._make_ray_result(triggered=False, snr_db=-5.0, margin_db=-15.0)
+            mock_trace.return_value = self._make_ray_result(
+                triggered=False, snr_db=-5.0, margin_db=-15.0
+            )
             result = engine.analyse(optical, grid, [sensor], sensor_positions)
 
         assert result.optical_only_count == n
@@ -542,7 +589,9 @@ class TestHybridSurvivabilityEngineClassification:
         sensor_positions = {"UGLD-1": (0.0, 0.0, 3.0)}
 
         with patch("fireai.core.hybrid_survivability.trace_acoustic_ray") as mock_trace:
-            mock_trace.return_value = self._make_ray_result(triggered=False, snr_db=-10.0, margin_db=-20.0)
+            mock_trace.return_value = self._make_ray_result(
+                triggered=False, snr_db=-10.0, margin_db=-20.0
+            )
             result = engine.analyse(optical, grid, [sensor], sensor_positions)
 
         assert result.blind_spot_count == n
@@ -567,7 +616,7 @@ class TestHybridSurvivabilityEngineClassification:
         # Point 0: optical only, Point 1: acoustic only, Point 2: both, Point 3: neither
         optical = self._make_optical_result(
             n,
-            redundancy_map={0: 1, 2: 1}  # Points 0, 2 have optical
+            redundancy_map={0: 1, 2: 1},  # Points 0, 2 have optical
         )
         grid = self._make_grid(n)
         sensor = MagicMock()
@@ -576,9 +625,13 @@ class TestHybridSurvivabilityEngineClassification:
 
         def mock_trace_side_effect(leak_point, sensor_point, obstacles, sensor, **kwargs):
             lp = leak_point
-            if lp[0] == 0.0:  # Point 0: optical yes, acoustic no  # NOSONAR — S1244: import retained for re-export / API surface
+            if (
+                lp[0] == 0.0
+            ):  # Point 0: optical yes, acoustic no  # NOSONAR — S1244: import retained for re-export / API surface
                 return self._make_ray_result(triggered=False, snr_db=-5.0)
-            if lp[0] == pytest.approx(1.0) or lp[0] == pytest.approx(2.0):  # Point 1: optical no, acoustic yes
+            if lp[0] == pytest.approx(1.0) or lp[0] == pytest.approx(
+                2.0
+            ):  # Point 1: optical no, acoustic yes
                 return self._make_ray_result(triggered=True)
             # Point 3: neither
             return self._make_ray_result(triggered=False, snr_db=-10.0)
@@ -587,10 +640,10 @@ class TestHybridSurvivabilityEngineClassification:
             mock_trace.side_effect = mock_trace_side_effect
             result = engine.analyse(optical, grid, [sensor], sensor_positions)
 
-        assert result.optical_only_count == 1   # Point 0
-        assert result.acoustic_only_count == 1   # Point 1
+        assert result.optical_only_count == 1  # Point 0
+        assert result.acoustic_only_count == 1  # Point 1
         assert result.redundant_hybrid_count == 1  # Point 2
-        assert result.blind_spot_count == 1       # Point 3
+        assert result.blind_spot_count == 1  # Point 3
 
     def test_blind_spot_warning_generated(self):
         """BLIND_SPOT points must generate a warning per NFPA 72 §17.8.3.4."""
@@ -616,7 +669,7 @@ class TestHybridSurvivabilityEngineClassification:
         # Only 2 out of 10 points have redundant hybrid
         optical = self._make_optical_result(
             n,
-            redundancy_map=dict.fromkeys(range(n), 1)  # All have optical
+            redundancy_map=dict.fromkeys(range(n), 1),  # All have optical
         )
         grid = self._make_grid(n)
         sensor = MagicMock()
@@ -668,7 +721,9 @@ class TestHybridSurvivabilityEngineClassification:
         # Point should have acoustic detail from the BEST sensor (UGLD-2, snr=30)
         pr = result.point_results[0]
         assert pr.best_acoustic_detail is not None
-        assert pr.best_acoustic_detail.snr_db == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            pr.best_acoustic_detail.snr_db == 30.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_acoustic_detail_stored_only_if_triggered(self):
         """Acoustic detail is stored only if the sensor triggered."""
@@ -697,18 +752,27 @@ class TestHybridSurvivabilityEngineClassification:
 class TestExportHeatmapJson:
     def test_export_creates_file(self, tmp_path):
         engine = HybridSurvivabilityEngine()
-        hmap = HybridSurvivabilityMap(total_points=2, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
-                optical_detector_count=1,
-            ),
-            1: HybridPointResult(
-                point_index=1, x=4.0, y=5.0, z=3.0,
-                survivability_class=SurvivabilityClass.BLIND_SPOT,
-                optical_detector_count=0,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=2,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
+                    optical_detector_count=1,
+                ),
+                1: HybridPointResult(
+                    point_index=1,
+                    x=4.0,
+                    y=5.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.BLIND_SPOT,
+                    optical_detector_count=0,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         result = engine.export_heatmap_json(hmap, output_path)
         assert result == output_path
@@ -716,13 +780,19 @@ class TestExportHeatmapJson:
 
     def test_export_valid_json(self, tmp_path):
         engine = HybridSurvivabilityEngine()
-        hmap = HybridSurvivabilityMap(total_points=1, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.OPTICAL_ONLY,
-                optical_detector_count=2,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=1,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.OPTICAL_ONLY,
+                    optical_detector_count=2,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         engine.export_heatmap_json(hmap, output_path)
         with open(output_path) as f:
@@ -735,24 +805,39 @@ class TestExportHeatmapJson:
     def test_export_color_map(self, tmp_path):
         """Each survivability class must have a specific color."""
         engine = HybridSurvivabilityEngine()
-        hmap = HybridSurvivabilityMap(total_points=4, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
-            ),
-            1: HybridPointResult(
-                point_index=1, x=4.0, y=5.0, z=3.0,
-                survivability_class=SurvivabilityClass.OPTICAL_ONLY,
-            ),
-            2: HybridPointResult(
-                point_index=2, x=7.0, y=8.0, z=3.0,
-                survivability_class=SurvivabilityClass.ACOUSTIC_ONLY,
-            ),
-            3: HybridPointResult(
-                point_index=3, x=10.0, y=11.0, z=3.0,
-                survivability_class=SurvivabilityClass.BLIND_SPOT,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=4,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
+                ),
+                1: HybridPointResult(
+                    point_index=1,
+                    x=4.0,
+                    y=5.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.OPTICAL_ONLY,
+                ),
+                2: HybridPointResult(
+                    point_index=2,
+                    x=7.0,
+                    y=8.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.ACOUSTIC_ONLY,
+                ),
+                3: HybridPointResult(
+                    point_index=3,
+                    x=10.0,
+                    y=11.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.BLIND_SPOT,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         engine.export_heatmap_json(hmap, output_path)
         with open(output_path) as f:
@@ -767,12 +852,18 @@ class TestExportHeatmapJson:
     def test_export_standards_references(self, tmp_path):
         """Export must include NFPA 72 and ISA-TR references."""
         engine = HybridSurvivabilityEngine()
-        hmap = HybridSurvivabilityMap(total_points=1, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=1,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         engine.export_heatmap_json(hmap, output_path)
         with open(output_path) as f:
@@ -793,29 +884,43 @@ class TestExportHeatmapJson:
             has_los=True,
             distance_meters=12.0,
         )
-        hmap = HybridSurvivabilityMap(total_points=1, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
-                best_acoustic_detail=detail,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=1,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.REDUNDANT_HYBRID,
+                    best_acoustic_detail=detail,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         engine.export_heatmap_json(hmap, output_path)
         with open(output_path) as f:
             data = json.load(f)
 
-        assert data["points"][0]["acoustic_snr_db"] == 28.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            data["points"][0]["acoustic_snr_db"] == 28.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_export_no_acoustic_snr(self, tmp_path):
         """Points without acoustic detail must have null SNR."""
         engine = HybridSurvivabilityEngine()
-        hmap = HybridSurvivabilityMap(total_points=1, point_results={
-            0: HybridPointResult(
-                point_index=0, x=1.0, y=2.0, z=3.0,
-                survivability_class=SurvivabilityClass.OPTICAL_ONLY,
-            ),
-        })
+        hmap = HybridSurvivabilityMap(
+            total_points=1,
+            point_results={
+                0: HybridPointResult(
+                    point_index=0,
+                    x=1.0,
+                    y=2.0,
+                    z=3.0,
+                    survivability_class=SurvivabilityClass.OPTICAL_ONLY,
+                ),
+            },
+        )
         output_path = str(tmp_path / "heatmap.json")
         engine.export_heatmap_json(hmap, output_path)
         with open(output_path) as f:

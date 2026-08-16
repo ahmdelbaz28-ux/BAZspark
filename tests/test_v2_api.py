@@ -137,10 +137,18 @@ class TestBIMProviderEndpoints:
 
 class TestIFC43Endpoints:
     def test_map_detector_returns_ifc4x3(self, client, auth_headers):
-        r = client.post("/api/v2/ifc43/map-detector", json={
-            "device_id": "SM-01", "type": "smoke",
-            "x": 5.0, "y": 3.0, "z": 2.8, "room_id": "R-001",
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ifc43/map-detector",
+            json={
+                "device_id": "SM-01",
+                "type": "smoke",
+                "x": 5.0,
+                "y": 3.0,
+                "z": 2.8,
+                "room_id": "R-001",
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["ifc_type"] == "IfcFireAlarmInstance"
@@ -149,19 +157,35 @@ class TestIFC43Endpoints:
         assert len(data["global_id"]) == 22
 
     def test_map_detector_heat_type(self, client, auth_headers):
-        r = client.post("/api/v2/ifc43/map-detector", json={
-            "device_id": "HT-01", "type": "heat",
-            "x": 1.0, "y": 2.0, "z": 3.0, "room_id": "R-002",
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ifc43/map-detector",
+            json={
+                "device_id": "HT-01",
+                "type": "heat",
+                "x": 1.0,
+                "y": 2.0,
+                "z": 3.0,
+                "room_id": "R-002",
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["predefined_type"] == "HEAT_DETECTOR"
 
     def test_map_detector_includes_property_sets(self, client, auth_headers):
-        r = client.post("/api/v2/ifc43/map-detector", json={
-            "device_id": "SM-02", "type": "smoke",
-            "x": 0, "y": 0, "z": 0, "room_id": "R-003",
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ifc43/map-detector",
+            json={
+                "device_id": "SM-02",
+                "type": "smoke",
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "room_id": "R-003",
+            },
+            headers=auth_headers,
+        )
         data = r.json()
         assert "property_sets" in data
         # Should have audit + safety + design property sets
@@ -177,15 +201,25 @@ class TestIFC43Endpoints:
 
 class TestGenerativeDesignEndpoint:
     def test_generate_returns_3_variants(self, client, auth_headers):
-        r = client.post("/api/v2/generative/design", json={
-            "room_width": 10.0, "room_length": 8.0, "room_height": 3.0,
-            "room_name": "TestOffice", "occupancy_type": "office",
-            "detector_type": "smoke", "use_multiprocessing": False,
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/generative/design",
+            json={
+                "room_width": 10.0,
+                "room_length": 8.0,
+                "room_height": 3.0,
+                "room_name": "TestOffice",
+                "occupancy_type": "office",
+                "detector_type": "smoke",
+                "use_multiprocessing": False,
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["recommended_variant"] in (
-            "cost_minimized", "standard_compliant", "safety_maximized"
+            "cost_minimized",
+            "standard_compliant",
+            "safety_maximized",
         )
         assert len(data["variants"]) == 3
         assert "cost_minimized" in data["variants"]
@@ -193,20 +227,31 @@ class TestGenerativeDesignEndpoint:
         assert "safety_maximized" in data["variants"]
 
     def test_generate_includes_run_id(self, client, auth_headers):
-        r = client.post("/api/v2/generative/design", json={
-            "room_width": 5.0, "room_length": 5.0, "room_height": 3.0,
-            "use_multiprocessing": False,
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/generative/design",
+            json={
+                "room_width": 5.0,
+                "room_length": 5.0,
+                "room_height": 3.0,
+                "use_multiprocessing": False,
+            },
+            headers=auth_headers,
+        )
         data = r.json()
         assert "run_id" in data
         assert len(data["run_id"]) > 0
 
     def test_generate_invalid_room_returns_422(self, client, auth_headers):
         """Negative width should be rejected."""
-        r = client.post("/api/v2/generative/design", json={
-            "room_width": -5.0, "room_length": 5.0,
-            "use_multiprocessing": False,
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/generative/design",
+            json={
+                "room_width": -5.0,
+                "room_length": 5.0,
+                "use_multiprocessing": False,
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 422
 
 
@@ -217,13 +262,22 @@ class TestGenerativeDesignEndpoint:
 
 class TestARExportEndpoint:
     def test_export_both_formats(self, client, auth_headers):
-        r = client.post("/api/v2/ar/export", json={
-            "building_id": "B-TEST", "format": "both",
-            "nodes": [
-                {"id": "SM-01", "name": "Detector 1", "node_type": "detector",
-                 "position": [5.0, 3.0, 2.8]},
-            ],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ar/export",
+            json={
+                "building_id": "B-TEST",
+                "format": "both",
+                "nodes": [
+                    {
+                        "id": "SM-01",
+                        "name": "Detector 1",
+                        "node_type": "detector",
+                        "position": [5.0, 3.0, 2.8],
+                    },
+                ],
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert "glb" in data["formats"]
@@ -232,22 +286,33 @@ class TestARExportEndpoint:
         assert data["formats"]["usdz"]["size_bytes"] > 0
 
     def test_export_glb_only(self, client, auth_headers):
-        r = client.post("/api/v2/ar/export", json={
-            "building_id": "B-TEST", "format": "glb",
-            "nodes": [],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ar/export",
+            json={
+                "building_id": "B-TEST",
+                "format": "glb",
+                "nodes": [],
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert "glb" in data["formats"]
         assert "usdz" not in data["formats"]
 
     def test_export_returns_base64_content(self, client, auth_headers):
-        r = client.post("/api/v2/ar/export", json={
-            "building_id": "B-TEST", "format": "usdz",
-            "nodes": [],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/ar/export",
+            json={
+                "building_id": "B-TEST",
+                "format": "usdz",
+                "nodes": [],
+            },
+            headers=auth_headers,
+        )
         data = r.json()
         import base64
+
         usdz_bytes = base64.b64decode(data["formats"]["usdz"]["content_base64"])
         # USDZ starts with PK (zip magic)
         assert usdz_bytes[:2] == b"PK"
@@ -260,11 +325,15 @@ class TestARExportEndpoint:
 
 class TestWebhookEndpoints:
     def test_subscribe_creates_subscription(self, client, auth_headers):
-        r = client.post("/api/v2/webhooks/subscribe", json={
-            "url": "https://example.com/webhook",
-            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            "event_types": ["DESIGN_COMPLETED"],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/webhooks/subscribe",
+            json={
+                "url": "https://example.com/webhook",
+                "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                "event_types": ["DESIGN_COMPLETED"],
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert "subscription_id" in data
@@ -272,20 +341,28 @@ class TestWebhookEndpoints:
         assert "DESIGN_COMPLETED" in data["event_types"]
 
     def test_subscribe_rejects_short_secret(self, client, auth_headers):
-        r = client.post("/api/v2/webhooks/subscribe", json={
-            "url": "https://example.com/hook",
-            "secret": "short",
-            "event_types": [],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/webhooks/subscribe",
+            json={
+                "url": "https://example.com/hook",
+                "secret": "short",
+                "event_types": [],
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 422  # Pydantic validation error
 
     def test_list_subscriptions(self, client, auth_headers):
         # First subscribe
-        client.post("/api/v2/webhooks/subscribe", json={
-            "url": "https://example.com/hook2",
-            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            "event_types": [],
-        }, headers=auth_headers)
+        client.post(
+            "/api/v2/webhooks/subscribe",
+            json={
+                "url": "https://example.com/hook2",
+                "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                "event_types": [],
+            },
+            headers=auth_headers,
+        )
         # Then list
         r = client.get("/api/v2/webhooks/subscriptions", headers=auth_headers)
         assert r.status_code == 200
@@ -294,11 +371,15 @@ class TestWebhookEndpoints:
 
     def test_unsubscribe(self, client, auth_headers):
         # First subscribe
-        r = client.post("/api/v2/webhooks/subscribe", json={
-            "url": "https://example.com/hook3",
-            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            "event_types": [],
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/webhooks/subscribe",
+            json={
+                "url": "https://example.com/hook3",
+                "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                "event_types": [],
+            },
+            headers=auth_headers,
+        )
         sub_id = r.json()["subscription_id"]
 
         # Then unsubscribe
@@ -307,11 +388,15 @@ class TestWebhookEndpoints:
         assert r.json()["removed"] is True
 
     def test_publish_event(self, client, auth_headers):
-        r = client.post("/api/v2/webhooks/publish", json={
-            "event_type": "DESIGN_COMPLETED",
-            "source": "test",
-            "data": {"room_id": "R-001"},
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/webhooks/publish",
+            json={
+                "event_type": "DESIGN_COMPLETED",
+                "source": "test",
+                "data": {"room_id": "R-001"},
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert "event_id" in data
@@ -325,9 +410,13 @@ class TestWebhookEndpoints:
 
 class TestSmokeSimulationEndpoint:
     def test_create_placeholder_state(self, client, auth_headers):
-        r = client.post("/api/v2/smoke-simulation/state", json={
-            "room_id": "R-001",
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/smoke-simulation/state",
+            json={
+                "room_id": "R-001",
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "placeholder"
@@ -336,14 +425,18 @@ class TestSmokeSimulationEndpoint:
 
     def test_create_validated_state_with_fds(self, client, auth_headers):
         """V137 F-6: FDS run ID must match format 'fds-YYYY-NNN'."""
-        r = client.post("/api/v2/smoke-simulation/state", json={
-            "room_id": "R-002",
-            "smoke_density_points": [
-                {"x": 5.0, "y": 3.0, "z": 1.7, "density_kg_m3": 0.025},
-            ],
-            "visibility_at_height": {"1.7": 8.5},
-            "fds_run_id": "fds-2026-001",  # V137 F-6: valid format
-        }, headers=auth_headers)
+        r = client.post(
+            "/api/v2/smoke-simulation/state",
+            json={
+                "room_id": "R-002",
+                "smoke_density_points": [
+                    {"x": 5.0, "y": 3.0, "z": 1.7, "density_kg_m3": 0.025},
+                ],
+                "visibility_at_height": {"1.7": 8.5},
+                "fds_run_id": "fds-2026-001",  # V137 F-6: valid format
+            },
+            headers=auth_headers,
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "validated"

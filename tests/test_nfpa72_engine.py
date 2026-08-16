@@ -57,8 +57,12 @@ class TestSpacingResult:
             formula="S=9.10m",
             table_row_used="≤3.0m",
         )
-        assert sr.max_spacing_m == 9.10  # NOSONAR — S1244: import retained for re-export / API surface
-        assert sr.coverage_radius_m == 6.37  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            sr.max_spacing_m == 9.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            sr.coverage_radius_m == 6.37
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert sr.nfpa_section == "NFPA 72 §17.6.3.1"
         assert sr.formula == "S=9.10m"
         assert sr.table_row_used == "≤3.0m"
@@ -96,8 +100,12 @@ class TestBatteryResult:
             formula="Ah = ...",
             nfpa_section="NFPA 72 §10.6.7",
         )
-        assert br.required_ah == 12.5  # NOSONAR — S1244: import retained for re-export / API surface
-        assert br.installed_ah == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            br.required_ah == 12.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            br.installed_ah == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert br.is_adequate is True
         assert br.formula == "Ah = ..."
         assert br.nfpa_section == "NFPA 72 §10.6.7"
@@ -123,9 +131,15 @@ class TestVoltageDropResult:
             is_compliant=True,
             formula="V_drop = I × 2 × R × L",
         )
-        assert vr.voltage_drop_v == 1.8  # NOSONAR — S1244: import retained for re-export / API surface
-        assert vr.voltage_drop_pct == 7.5  # NOSONAR — S1244: import retained for re-export / API surface
-        assert vr.max_length_m == 300.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            vr.voltage_drop_v == 1.8
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            vr.voltage_drop_pct == 7.5
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            vr.max_length_m == 300.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert vr.is_compliant is True
         assert vr.formula == "V_drop = I × 2 × R × L"
 
@@ -152,7 +166,9 @@ class TestGetDetectorSpacing:
     def test_smoke_at_3m(self):
         """At exactly 3.0 m, smoke detector uses the first row (≤3.0m)."""
         result = get_detector_spacing(3.0, "smoke")
-        assert result.max_spacing_m == 9.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.max_spacing_m == 9.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
         assert result.nfpa_section == "NFPA 72 §17.6.3.1"
         assert result.table_row_used == "≤3.0m"
@@ -207,7 +223,9 @@ class TestGetDetectorSpacing:
     def test_heat_at_3m(self):
         """Heat detector at 3.0m — first row of heat table."""
         result = get_detector_spacing(3.0, "heat")
-        assert result.max_spacing_m == 6.10  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.max_spacing_m == 6.10
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.coverage_radius_m == round(0.7 * 6.10, 4)
 
     def test_heat_at_4m(self):
@@ -224,7 +242,9 @@ class TestGetDetectorSpacing:
     def test_heat_at_15m_exceeds_table(self):
         """Heat detector at 15m — exceeds heat table, conservative default."""
         result = get_detector_spacing(15.0, "heat")
-        assert result.max_spacing_m == 3.00  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.max_spacing_m == 3.00
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert "conservative" in result.table_row_used.lower()
 
     def test_case_insensitive_detector_type(self):
@@ -254,17 +274,23 @@ class TestGetDetectorSpacing:
 
     def test_nan_ceiling_height(self):
         """V96 FIX: NaN ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="ceiling_height_m"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("nan"), "smoke")
 
     def test_inf_ceiling_height(self):
         """V96 FIX: Infinity ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="ceiling_height_m"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("inf"), "smoke")
 
     def test_negative_inf_ceiling_height(self):
         """V96 FIX: Negative infinity ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="ceiling_height_m"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("-inf"), "smoke")
 
     # --- NFPA section reference ---
@@ -298,7 +324,7 @@ class TestEstimateDetectorCount:
         result = estimate_detector_count(50.0, 3.0, "smoke")
         spacing = get_detector_spacing(3.0, "smoke")
         radius = spacing.coverage_radius_m
-        coverage = math.pi * radius ** 2
+        coverage = math.pi * radius**2
         expected = max(1, math.ceil(50.0 / coverage))
         assert result["min_detector_count"] == expected
 
@@ -307,7 +333,7 @@ class TestEstimateDetectorCount:
         result = estimate_detector_count(500.0, 3.0, "smoke")
         spacing = get_detector_spacing(3.0, "smoke")
         radius = spacing.coverage_radius_m
-        coverage = math.pi * radius ** 2
+        coverage = math.pi * radius**2
         expected = max(1, math.ceil(500.0 / coverage))
         assert result["min_detector_count"] == expected
         assert result["min_detector_count"] > 1
@@ -335,7 +361,7 @@ class TestEstimateDetectorCount:
         result = estimate_detector_count(100.0, 3.0, "smoke")
         spacing = get_detector_spacing(3.0, "smoke")
         radius = spacing.coverage_radius_m
-        expected_area = round(math.pi * radius ** 2, 4)
+        expected_area = round(math.pi * radius**2, 4)
         assert result["area_per_detector_m2"] == expected_area
 
     def test_returns_spacing_info(self):
@@ -479,7 +505,9 @@ class TestCalculateBattery:
 
     def test_derating_factor_value(self):
         """Derating factor should be 0.85 (15% derating for lead-acid)."""
-        assert _BATTERY_DERATING_FACTOR == 0.85  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _BATTERY_DERATING_FACTOR == 0.85
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     # --- Standard battery size selection ---
 
@@ -492,8 +520,9 @@ class TestCalculateBattery:
         # Check that installed_ah is either in the standard sizes list
         # or is a multiple of 10 (the fallback)
         is_standard = result.installed_ah in _STANDARD_BATTERY_SIZES
-        is_rounded_10 = (result.installed_ah % 10 == 0 and
-                         result.installed_ah > _STANDARD_BATTERY_SIZES[-1])
+        is_rounded_10 = (
+            result.installed_ah % 10 == 0 and result.installed_ah > _STANDARD_BATTERY_SIZES[-1]
+        )
         assert is_standard or is_rounded_10
 
     def test_installed_ah_gte_required(self):
@@ -556,27 +585,37 @@ class TestCalculateBattery:
 
     def test_nan_standby_raises(self):
         """NaN standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("nan"), 1.0)
 
     def test_nan_alarm_raises(self):
         """NaN alarm current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(1.0, float("nan"))
 
     def test_inf_standby_raises(self):
         """Inf standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("inf"), 1.0)
 
     def test_inf_alarm_raises(self):
         """Inf alarm current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(1.0, float("inf"))
 
     def test_negative_inf_standby_raises(self):
         """Negative Inf standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("-inf"), 1.0)
 
     # --- Custom standby/alarm durations ---
@@ -704,11 +743,15 @@ class TestCalculateVoltageDrop:
 
         # Just inside the boundary: should be compliant
         # V97 FIX: Use 20°C to match r_per_km used in boundary calculation
-        result_inside = calculate_voltage_drop(current, max_length_m - 1.0, gauge, ambient_temperature_c=20.0)
+        result_inside = calculate_voltage_drop(
+            current, max_length_m - 1.0, gauge, ambient_temperature_c=20.0
+        )
         assert result_inside.is_compliant is True
 
         # Well over max length: non-compliant
-        result_over = calculate_voltage_drop(current, max_length_m + 10.0, gauge, ambient_temperature_c=20.0)
+        result_over = calculate_voltage_drop(
+            current, max_length_m + 10.0, gauge, ambient_temperature_c=20.0
+        )
         assert result_over.is_compliant is False
 
     # --- Max length calculation ---
@@ -784,8 +827,12 @@ class TestCalculateVoltageDrop:
     def test_zero_current(self):
         """Zero current should give zero voltage drop, compliant."""
         result = calculate_voltage_drop(0.0, 100.0, "14")
-        assert result.voltage_drop_v == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        assert result.voltage_drop_pct == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.voltage_drop_v == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.voltage_drop_pct == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
 
     # --- Invalid inputs ---
@@ -802,22 +849,30 @@ class TestCalculateVoltageDrop:
 
     def test_nan_current_raises(self):
         """NaN current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("nan"), 100.0, "14")
 
     def test_inf_current_raises(self):
         """Inf current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("inf"), 100.0, "14")
 
     def test_nan_length_raises(self):
         """NaN length must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("nan"), "14")
 
     def test_inf_length_raises(self):
         """Inf length must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="non-negative finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("inf"), "14")
 
     # --- Custom parameters ---
@@ -844,7 +899,9 @@ class TestCalculateVoltageDrop:
     def test_zero_length(self):
         """Zero circuit length should give zero voltage drop."""
         result = calculate_voltage_drop(1.0, 0.0, "14")
-        assert result.voltage_drop_v == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.voltage_drop_v == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
 
     # --- Formula string ---
@@ -887,11 +944,13 @@ class TestVerifyFaultIsolatorPlacement:
         devices.append({"device_id": "ISO-1", "device_type": "isolator"})
         # 30 devices between isolators — within limit
         for i in range(30):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-                "zone_id": "Z1",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                    "zone_id": "Z1",
+                }
+            )
         # Isolator at end
         devices.append({"device_id": "ISO-2", "device_type": "isolator"})
 
@@ -906,10 +965,12 @@ class TestVerifyFaultIsolatorPlacement:
         devices = []
         devices.append({"device_id": "ISO-1", "device_type": "isolator"})
         for i in range(32):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
         devices.append({"device_id": "ISO-2", "device_type": "isolator"})
 
         result = verify_fault_isolator_placement(devices)
@@ -923,10 +984,12 @@ class TestVerifyFaultIsolatorPlacement:
         devices = []
         devices.append({"device_id": "ISO-1", "device_type": "isolator"})
         for i in range(33):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
         devices.append({"device_id": "ISO-2", "device_type": "isolator"})
 
         result = verify_fault_isolator_placement(devices)
@@ -941,10 +1004,12 @@ class TestVerifyFaultIsolatorPlacement:
         devices = []
         devices.append({"device_id": "ISO-1", "device_type": "isolator"})
         for i in range(50):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
         devices.append({"device_id": "ISO-2", "device_type": "isolator"})
 
         result = verify_fault_isolator_placement(devices)
@@ -956,28 +1021,29 @@ class TestVerifyFaultIsolatorPlacement:
         """Circuit with devices but no isolators — end-of-circuit violation."""
         devices = []
         for i in range(40):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
 
         result = verify_fault_isolator_placement(devices)
         assert result["compliant"] is False
         assert result["isolator_count"] == 0
         # End-of-circuit segment has 40 devices > 32
-        assert any(
-            v["type"] == "too_many_devices_end_of_circuit"
-            for v in result["violations"]
-        )
+        assert any(v["type"] == "too_many_devices_end_of_circuit" for v in result["violations"])
 
     def test_few_devices_no_isolators_compliant(self):
         """Few devices with no isolators might still be compliant."""
         devices = []
         for i in range(10):
-            devices.append({
-                "device_id": f"DET-{i}",
-                "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
 
         result = verify_fault_isolator_placement(devices)
         # 10 ≤ 32, so no violation
@@ -1007,33 +1073,51 @@ class TestVerifyFaultIsolatorPlacement:
         """Multiple circuits, each compliant."""
         devices = []
         # Circuit A
-        devices.append({
-            "device_id": "ISO-A1", "device_type": "isolator",
-            "circuit_id": "SLC-A",
-        })
-        for i in range(20):
-            devices.append({
-                "device_id": f"DET-A{i}", "device_type": "detector",
+        devices.append(
+            {
+                "device_id": "ISO-A1",
+                "device_type": "isolator",
                 "circuit_id": "SLC-A",
-            })
-        devices.append({
-            "device_id": "ISO-A2", "device_type": "isolator",
-            "circuit_id": "SLC-A",
-        })
+            }
+        )
+        for i in range(20):
+            devices.append(
+                {
+                    "device_id": f"DET-A{i}",
+                    "device_type": "detector",
+                    "circuit_id": "SLC-A",
+                }
+            )
+        devices.append(
+            {
+                "device_id": "ISO-A2",
+                "device_type": "isolator",
+                "circuit_id": "SLC-A",
+            }
+        )
         # Circuit B
-        devices.append({
-            "device_id": "ISO-B1", "device_type": "isolator",
-            "circuit_id": "SLC-B",
-        })
-        for i in range(15):
-            devices.append({
-                "device_id": f"DET-B{i}", "device_type": "detector",
+        devices.append(
+            {
+                "device_id": "ISO-B1",
+                "device_type": "isolator",
                 "circuit_id": "SLC-B",
-            })
-        devices.append({
-            "device_id": "ISO-B2", "device_type": "isolator",
-            "circuit_id": "SLC-B",
-        })
+            }
+        )
+        for i in range(15):
+            devices.append(
+                {
+                    "device_id": f"DET-B{i}",
+                    "device_type": "detector",
+                    "circuit_id": "SLC-B",
+                }
+            )
+        devices.append(
+            {
+                "device_id": "ISO-B2",
+                "device_type": "isolator",
+                "circuit_id": "SLC-B",
+            }
+        )
 
         result = verify_fault_isolator_placement(devices)
         assert result["compliant"] is True
@@ -1043,25 +1127,37 @@ class TestVerifyFaultIsolatorPlacement:
         """Multiple circuits, one has too many devices."""
         devices = []
         # Circuit A — compliant
-        devices.append({
-            "device_id": "ISO-A1", "device_type": "isolator",
-            "circuit_id": "SLC-A",
-        })
-        for i in range(10):
-            devices.append({
-                "device_id": f"DET-A{i}", "device_type": "detector",
+        devices.append(
+            {
+                "device_id": "ISO-A1",
+                "device_type": "isolator",
                 "circuit_id": "SLC-A",
-            })
-        devices.append({
-            "device_id": "ISO-A2", "device_type": "isolator",
-            "circuit_id": "SLC-A",
-        })
+            }
+        )
+        for i in range(10):
+            devices.append(
+                {
+                    "device_id": f"DET-A{i}",
+                    "device_type": "detector",
+                    "circuit_id": "SLC-A",
+                }
+            )
+        devices.append(
+            {
+                "device_id": "ISO-A2",
+                "device_type": "isolator",
+                "circuit_id": "SLC-A",
+            }
+        )
         # Circuit B — violation: 40 devices, no isolator
         for i in range(40):
-            devices.append({
-                "device_id": f"DET-B{i}", "device_type": "detector",
-                "circuit_id": "SLC-B",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-B{i}",
+                    "device_type": "detector",
+                    "circuit_id": "SLC-B",
+                }
+            )
 
         result = verify_fault_isolator_placement(devices)
         assert result["compliant"] is False
@@ -1078,9 +1174,12 @@ class TestVerifyFaultIsolatorPlacement:
         """Violations should reference NFPA 72 §12.3.1."""
         devices = []
         for i in range(40):
-            devices.append({
-                "device_id": f"DET-{i}", "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
         result = verify_fault_isolator_placement(devices)
         for v in result["violations"]:
             assert "12.3.1" in v["nfpa_section"]
@@ -1108,16 +1207,16 @@ class TestVerifyFaultIsolatorPlacement:
         ]
         # 33 devices after last isolator
         for i in range(33):
-            devices.append({
-                "device_id": f"DET-{i}", "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
 
         result = verify_fault_isolator_placement(devices)
         assert result["compliant"] is False
-        assert any(
-            v["type"] == "too_many_devices_end_of_circuit"
-            for v in result["violations"]
-        )
+        assert any(v["type"] == "too_many_devices_end_of_circuit" for v in result["violations"])
 
     def test_end_of_circuit_segment_exactly_32_compliant(self):
         """32 devices after last isolator — should be compliant."""
@@ -1125,9 +1224,12 @@ class TestVerifyFaultIsolatorPlacement:
             {"device_id": "ISO-1", "device_type": "isolator"},
         ]
         for i in range(32):
-            devices.append({
-                "device_id": f"DET-{i}", "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
 
         result = verify_fault_isolator_placement(devices)
         assert result["compliant"] is True
@@ -1147,9 +1249,12 @@ class TestVerifyFaultIsolatorPlacement:
         """Non-compliant result should show violation count."""
         devices = []
         for i in range(40):
-            devices.append({
-                "device_id": f"DET-{i}", "device_type": "detector",
-            })
+            devices.append(
+                {
+                    "device_id": f"DET-{i}",
+                    "device_type": "detector",
+                }
+            )
         result = verify_fault_isolator_placement(devices)
         assert "violation" in result["message"].lower()
 
@@ -1229,11 +1334,15 @@ class TestCrossCutting:
 
     def test_system_voltage_24(self):
         """System voltage should be 24V (standard fire alarm)."""
-        assert _SYSTEM_VOLTAGE == 24.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _SYSTEM_VOLTAGE == 24.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_voltage_drop_10_pct(self):
         """Max voltage drop should be 10% per NFPA 72 §10.6.4."""
-        assert _MAX_VOLTAGE_DROP_PCT == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _MAX_VOLTAGE_DROP_PCT == 10.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_awg_resistance_table_completeness(self):
         """AWG resistance table should have entries for common gauges."""

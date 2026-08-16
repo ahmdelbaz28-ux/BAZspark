@@ -121,10 +121,10 @@ class SimulationStatus(StrEnum):
     """Status of smoke simulation data."""
 
     PLACEHOLDER = "placeholder"  # No real simulation run yet
-    PENDING = "pending"          # FDS simulation queued/running
-    VALIDATED = "validated"      # FDS results received and integrated
-    FAILED = "failed"            # FDS simulation failed
-    EXPIRED = "expired"          # Validated data is stale (past TTL)
+    PENDING = "pending"  # FDS simulation queued/running
+    VALIDATED = "validated"  # FDS results received and integrated
+    FAILED = "failed"  # FDS simulation failed
+    EXPIRED = "expired"  # Validated data is stale (past TTL)
 
 
 # ---------------------------------------------------------------------------
@@ -161,13 +161,9 @@ class SmokeDensityPoint:
                     f"SmokeDensityPoint coordinate must be finite: ({self.x}, {self.y}, {self.z})"
                 )
         if not math.isfinite(self.density_kg_m3):
-            raise ValueError(
-                f"Smoke density must be finite: {self.density_kg_m3}"
-            )
+            raise ValueError(f"Smoke density must be finite: {self.density_kg_m3}")
         if self.density_kg_m3 < 0:
-            raise ValueError(
-                f"Smoke density cannot be negative: {self.density_kg_m3}"
-            )
+            raise ValueError(f"Smoke density cannot be negative: {self.density_kg_m3}")
 
     @property
     def is_tenability_threshold_exceeded(self) -> bool:
@@ -282,17 +278,13 @@ class FDSIntegrationConfig:
     def __post_init__(self) -> None:
         """Validate config."""
         if self.mesh_resolution_m <= 0 or not math.isfinite(self.mesh_resolution_m):
-            raise ValueError(
-                f"mesh_resolution_m must be positive finite: {self.mesh_resolution_m}"
-            )
+            raise ValueError(f"mesh_resolution_m must be positive finite: {self.mesh_resolution_m}")
         if self.simulation_duration_s <= 0:
             raise ValueError(
                 f"simulation_duration_s must be positive: {self.simulation_duration_s}"
             )
         if not (0.0 <= self.soot_yield <= 1.0):
-            raise ValueError(
-                f"soot_yield must be in [0, 1]: {self.soot_yield}"
-            )
+            raise ValueError(f"soot_yield must be in [0, 1]: {self.soot_yield}")
 
 
 # ---------------------------------------------------------------------------
@@ -391,7 +383,9 @@ class SmokeSimulationState:
         # Mark all points as FDS-sourced
         fds_points = [
             SmokeDensityPoint(
-                x=p.x, y=p.y, z=p.z,
+                x=p.x,
+                y=p.y,
+                z=p.z,
                 density_kg_m3=p.density_kg_m3,
                 timestamp_s=timestamp_s,
                 source=SOURCE_FDS,
@@ -440,7 +434,9 @@ class SmokeSimulationState:
         """
         self.smoke_density_points = [
             SmokeDensityPoint(
-                x=p.x, y=p.y, z=p.z,
+                x=p.x,
+                y=p.y,
+                z=p.z,
                 density_kg_m3=p.density_kg_m3,
                 timestamp_s=timestamp_s,
                 source=SOURCE_FDS,
@@ -460,7 +456,9 @@ class SmokeSimulationState:
 
         logger.info(
             "SmokeSimulationState updated with FDS results: room=%s fds_run=%s points=%d",
-            self.room_id, fds_run_id, len(self.smoke_density_points),
+            self.room_id,
+            fds_run_id,
+            len(self.smoke_density_points),
         )
 
     def mark_pending(self, fds_run_id: str) -> None:
@@ -499,10 +497,7 @@ class SmokeSimulationState:
     @property
     def avg_smoke_density_at_eye_level(self) -> float | None:
         """Average smoke density at eye level (1.5-2.0m height)."""
-        eye_level_points = [
-            p for p in self.smoke_density_points
-            if 1.5 <= p.z <= 2.0
-        ]
+        eye_level_points = [p for p in self.smoke_density_points if 1.5 <= p.z <= 2.0]
         if not eye_level_points:
             return None
         return sum(p.density_kg_m3 for p in eye_level_points) / len(eye_level_points)
@@ -524,7 +519,9 @@ class SmokeSimulationState:
             return True
 
         # Check visibility
-        return bool(self.visibility_gradient and self.visibility_gradient.is_tenability_threshold_exceeded)
+        return bool(
+            self.visibility_gradient and self.visibility_gradient.is_tenability_threshold_exceeded
+        )
 
     # ------------------------------------------------------------------
     # Serialization
@@ -540,7 +537,9 @@ class SmokeSimulationState:
             "validation_warning": self.validation_warning,
             "smoke_density_points": [
                 {
-                    "x": p.x, "y": p.y, "z": p.z,
+                    "x": p.x,
+                    "y": p.y,
+                    "z": p.z,
                     "density_kg_m3": p.density_kg_m3,
                     "timestamp_s": p.timestamp_s,
                     "source": p.source,
@@ -559,7 +558,8 @@ class SmokeSimulationState:
                     "timestamp_s": self.visibility_gradient.timestamp_s,
                     "source": self.visibility_gradient.source,
                 }
-                if self.visibility_gradient else None
+                if self.visibility_gradient
+                else None
             ),
             "max_smoke_density": self.max_smoke_density,
             "avg_smoke_density_at_eye_level": self.avg_smoke_density_at_eye_level,
@@ -572,7 +572,8 @@ class SmokeSimulationState:
                     "simulation_duration_s": self.fds_config.simulation_duration_s,
                     "soot_yield": self.fds_config.soot_yield,
                 }
-                if self.fds_config else None
+                if self.fds_config
+                else None
             ),
             "last_updated": self.last_updated,
             "nfpa_reference": "NFPA 72-2022 §B.2 (Performance-Based Design)",
@@ -600,7 +601,7 @@ class SmokeSimulationState:
                 "status": self.status.value,
                 "placeholder": self.is_placeholder,
                 "note": f"Status '{self.status.value}' data not persisted per SAFETY-R2 "
-                        f"(only VALIDATED states are audit-safe)",
+                f"(only VALIDATED states are audit-safe)",
             }
 
         # Validated data can be fully persisted
@@ -669,7 +670,7 @@ class AutoMeshBoundaryGenerator:
                 y1, y2 = w.get("y1", 0.0), w.get("y2", 0.0)
                 z1, z2 = w.get("z1", 0.0), w.get("z2", height_m)
                 lines.append(
-                    f"&OBST XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, COLOR='GRAY' /  ! Wall_{idx+1}"
+                    f"&OBST XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, COLOR='GRAY' /  ! Wall_{idx + 1}"
                 )
 
         # Add doors / vents
@@ -679,13 +680,15 @@ class AutoMeshBoundaryGenerator:
                 y1, y2 = d.get("y1", 0.0), d.get("y2", 0.0)
                 z1, z2 = d.get("z1", 0.0), d.get("z2", 2.1)
                 lines.append(
-                    f"&VENT XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, SURF_ID='OPEN' / ! V_{idx+1}"
+                    f"&VENT XB={x1:.2f},{x2:.2f},{y1:.2f},{y2:.2f},{z1:.2f},{z2:.2f}, SURF_ID='OPEN' / ! V_{idx + 1}"
                 )
 
         # Devices for smoke/temp sampling
-        lines.append(f"&DEVC ID='THCP_EYE', QUANTITY='TEMPERATURE', XYZ={width_m/2.0:.2f},{depth_m/2.0:.2f},1.7 /")
         lines.append(
-            f"&DEVC ID='SOOT_EYE', QUANTITY='MASS FRACTION', SPEC_ID='SOOT', XYZ={width_m/2:.1f},{depth_m/2:.1f},1.7 /"
+            f"&DEVC ID='THCP_EYE', QUANTITY='TEMPERATURE', XYZ={width_m / 2.0:.2f},{depth_m / 2.0:.2f},1.7 /"
+        )
+        lines.append(
+            f"&DEVC ID='SOOT_EYE', QUANTITY='MASS FRACTION', SPEC_ID='SOOT', XYZ={width_m / 2:.1f},{depth_m / 2:.1f},1.7 /"
         )
         lines.append("&TAIL /")
 
@@ -701,9 +704,12 @@ class AutoMeshBoundaryGenerator:
                 "cell_size_m": (round(cell_x, 4), round(cell_y, 4), round(cell_z, 4)),
             },
             "bounding_box": {
-                "x_min": 0.0, "x_max": width_m,
-                "y_min": 0.0, "y_max": depth_m,
-                "z_min": 0.0, "z_max": height_m,
+                "x_min": 0.0,
+                "x_max": width_m,
+                "y_min": 0.0,
+                "y_max": depth_m,
+                "z_min": 0.0,
+                "z_max": height_m,
             },
             "fds_script": fds_content,
         }

@@ -14,6 +14,7 @@ This module provides:
 Usage:
     from backend.schema_base import CamelModel, _to_camel, validate_json_size
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # ============================================================================
 # CamelCase serialization
 # ============================================================================
+
 
 def _to_camel(field_name: str) -> str:
     """Convert snake_case to camelCase for API serialization."""
@@ -50,6 +52,7 @@ class CamelModel(BaseModel):
 # JSON size/depth validation
 # ============================================================================
 
+
 def _validate_json_size_and_depth(
     value: Any,
     field_name: str,
@@ -72,8 +75,7 @@ def _validate_json_size_and_depth(
 
     if len(serialized) > max_bytes:
         raise ValueError(
-            f"{field_name}: JSON size ({len(serialized)} bytes) exceeds "
-            f"maximum ({max_bytes} bytes)"
+            f"{field_name}: JSON size ({len(serialized)} bytes) exceeds maximum ({max_bytes} bytes)"
         )
 
     def _get_depth(obj: Any, current: int = 0) -> int:
@@ -89,9 +91,7 @@ def _validate_json_size_and_depth(
 
     depth = _get_depth(value)
     if depth > max_depth:
-        raise ValueError(
-            f"{field_name}: nesting depth ({depth}) exceeds maximum ({max_depth})"
-        )
+        raise ValueError(f"{field_name}: nesting depth ({depth}) exceeds maximum ({max_depth})")
 
     return value
 
@@ -99,6 +99,7 @@ def _validate_json_size_and_depth(
 # ============================================================================
 # Common field factories
 # ============================================================================
+
 
 def common_name_field() -> Any:
     """Standard name field with null-byte sanitization."""

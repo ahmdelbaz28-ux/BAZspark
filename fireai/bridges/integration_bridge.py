@@ -257,7 +257,9 @@ class AcousticConfig:
                 f"meaningless and violates NFPA 72 §18.4.1.2"
             )
         if self.ambient_noise_dba is not None and self.ambient_noise_dba < 0:
-            raise ValueError(f"AcousticConfig.ambient_noise_dba={self.ambient_noise_dba} must be non-negative")
+            raise ValueError(
+                f"AcousticConfig.ambient_noise_dba={self.ambient_noise_dba} must be non-negative"
+            )
 
 
 @dataclass
@@ -283,7 +285,9 @@ class CableRoutingResult:
 
     routes: list[Any] = field(default_factory=list)
     all_routes_valid: bool = False  # V112: FAIL-SAFE — routes not valid until verified
-    all_voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — voltage drop not compliant until verified
+    all_voltage_drop_compliant: bool = (
+        False  # V112: FAIL-SAFE — voltage drop not compliant until verified
+    )
     total_cable_length_m: float = 0.0
     circuit_count: int = 0
     violations: list[str] = field(default_factory=list)
@@ -333,7 +337,9 @@ class IntegrationConfig:
     acoustic_config: AcousticConfig | None = None
     nfpa_year: int = 2022
 
-    def __post_init__(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def __post_init__(
+        self,
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validate integration configuration.
 
@@ -379,7 +385,9 @@ class IntegrationConfig:
                 )
             for j, vertex in enumerate(polygon):
                 if len(vertex) != 2:
-                    raise ValueError(f"obstacle_polygons[{i}][{j}]={vertex} must be a 2-tuple (x, y).")
+                    raise ValueError(
+                        f"obstacle_polygons[{i}][{j}]={vertex} must be a 2-tuple (x, y)."
+                    )
                 for k, coord in enumerate(vertex):
                     if not math.isfinite(coord):
                         raise ValueError(
@@ -691,7 +699,11 @@ class IntegrationBridge:
     # Subsystem 1: Cable Routing
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_cable_routing(self) -> CableRoutingResult | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _run_cable_routing(
+        self,
+    ) -> (
+        CableRoutingResult | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Run cable routing for the building.
 
@@ -714,7 +726,9 @@ class IntegrationBridge:
 
         """
         if not _HAS_CABLE_ROUTING:
-            logger.info("%s skipped — subsystem unavailable.", self._SUB_CABLE)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            logger.info(
+                "%s skipped — subsystem unavailable.", self._SUB_CABLE
+            )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             return None
 
         config = self._config
@@ -869,7 +883,11 @@ class IntegrationBridge:
     # Subsystem 2: Digital Twin Sync
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_twin_sync(self) -> Any | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _run_twin_sync(
+        self,
+    ) -> (
+        Any | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Sync the current design to the digital twin.
 
@@ -957,7 +975,11 @@ class IntegrationBridge:
     # Subsystem 3: Acoustics
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_acoustics(self) -> Any | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _run_acoustics(
+        self,
+    ) -> (
+        Any | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Check acoustic coverage for the building.
 
@@ -1119,10 +1141,11 @@ class IntegrationBridge:
                 from fireai.core.acoustic_calculator import (  # type: ignore[attr-defined]
                     AcousticCoverageResult,  # type: ignore[attr-defined,import-untyped]
                 )
+
                 worst_result = AcousticCoverageResult(
                     room_id="BUILDING_WIDE",
                     compliant=False,
-                    margin_dba=float('-inf'),
+                    margin_dba=float("-inf"),
                 )
             except Exception:
                 worst_result = None

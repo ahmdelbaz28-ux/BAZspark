@@ -30,7 +30,6 @@ class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all ORM models."""
 
 
-
 class Project(Base):
     """A fire alarm engineering project."""
 
@@ -56,7 +55,9 @@ class Project(Base):
     )
 
     # Relationships
-    devices = relationship("Device", back_populates="project", cascade="all, delete-orphan")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    devices = relationship(
+        "Device", back_populates="project", cascade="all, delete-orphan"
+    )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     connections = relationship("Connection", back_populates="project", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="project", cascade="all, delete-orphan")
 
@@ -67,7 +68,9 @@ class Device(Base):
     __tablename__ = "devices"
 
     id = Column(String, primary_key=True)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+    project_id = Column(
+        String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     type = Column(String, nullable=False)
     name = Column(String, nullable=False)
     category = Column(String, nullable=False)
@@ -209,9 +212,7 @@ class ETAPIntegration(Base):
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("idx_etap_integrations_project", "project_id"),
-    )
+    __table_args__ = (Index("idx_etap_integrations_project", "project_id"),)
 
 
 class ETAPSyncLog(Base):
@@ -261,6 +262,7 @@ class AuditLog(Base):
 # Added for Meeza (ميزة) payment gateway integration. See
 # backend/services/meeza_payment_service.py for runtime CRUD (raw SQL) and
 # backend/routers/billing.py for the FastAPI endpoints.
+
 
 class Order(Base):
     """A billing order. Created by the caller, paid via a Meeza transaction."""
@@ -344,9 +346,7 @@ class PaymentEvent(Base):
     __tablename__ = "payment_events"
 
     id = Column(String, primary_key=True)
-    transaction_id = Column(
-        String, ForeignKey("payment_transactions.id", ondelete="SET NULL")
-    )
+    transaction_id = Column(String, ForeignKey("payment_transactions.id", ondelete="SET NULL"))
     order_id = Column(String, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     event_type = Column(String, nullable=False)
     psp_name = Column(String, nullable=False)

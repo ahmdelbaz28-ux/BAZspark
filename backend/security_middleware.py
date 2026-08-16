@@ -105,7 +105,9 @@ _STATIC_SECURITY_HEADERS: dict[str, str] = {
 _HSTS_HEADER = "max-age=31536000; includeSubDomains"
 
 
-def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+def _should_emit_hsts(
+    _scope: Scope,
+) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Decide whether to emit HSTS on this response.
 
@@ -116,6 +118,7 @@ def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter re
     localhost, so dev access via http://localhost is unaffected.
     """
     return True
+
 
 # CSP is built by backend.csp.build_csp() — a single source of truth.
 # Production: no unsafe-inline or unsafe-eval for scripts.
@@ -138,6 +141,7 @@ def _build_csp(_scope: Scope) -> str:  # NOSONAR — S1172: parameter retained f
       - development: permissive CSP (Vite HMR, localhost connect-src)
     """
     from backend.csp import build_csp
+
     return build_csp()
 
 
@@ -191,8 +195,7 @@ class SecurityHeadersMiddleware:
         csp_value = _build_csp(scope)
 
         extra_headers: list[tuple[bytes, bytes]] = [
-            (k.encode("latin-1"), v.encode("latin-1"))
-            for k, v in _STATIC_SECURITY_HEADERS.items()
+            (k.encode("latin-1"), v.encode("latin-1")) for k, v in _STATIC_SECURITY_HEADERS.items()
         ]
         extra_headers.append((b"content-security-policy", csp_value.encode("latin-1")))
 
@@ -201,9 +204,7 @@ class SecurityHeadersMiddleware:
         # or direct https scheme). Emitting on plain HTTP can lock users
         # out of dev/test environments via browser HSTS caching.
         if _should_emit_hsts(scope):  # NOSONAR — pythonbugs:S2589: condition intentional
-            extra_headers.append(
-                (b"strict-transport-security", _HSTS_HEADER.encode("latin-1"))
-            )
+            extra_headers.append((b"strict-transport-security", _HSTS_HEADER.encode("latin-1")))
 
         # Pre-computed set of header names we're adding, for O(1) dedup check.
         # If an upstream handler already set one of our headers, we DO NOT
@@ -249,49 +250,51 @@ class SecurityHeadersMiddleware:
 # ASGI scope['path'] is already URL-decoded and normalized (no /../, no //),
 # but trailing slashes are preserved. We normalize by stripping trailing
 # slash (except for root).
-_PUBLIC_PATHS_EXACT = frozenset({
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/api/v1/health",
-    "/api/v2/health",
-    "/api/health",
-    "/api/health/statistics",
-    "/api/reports/statistics",
-    "/health",
-    # M-3: Auth endpoints must be public (login validates credentials itself)
-    "/api/v1/auth/login",
-    "/api/v1/auth/logout",
-    "/api/v1/auth/session/login",
-    # These are HTML/JS/CSS bundles with NO secrets; all sensitive data flows
-    # through /api/* which still requires X-API-Key. Without these, the HF
-    # Space root URL returns 401 and users see JSON instead of the app.
-    "/",
-    "/index.html",
-    "/favicon.ico",
-    "/manifest.json",
-    "/robots.txt",
-    # V207 FIX: Frontend public static assets referenced from index.html.
-    # Without these, browsers get 401 on /critical.css, /favicon.svg, etc.
-    # These are inert static files (CSS, icons, PWA manifest) with no secrets.
-    "/critical.css",
-    "/favicon.svg",
-    "/favicon-16.png",
-    "/favicon-32.png",
-    "/favicon-180.png",
-    "/apple-touch-icon.png",
-    "/site.webmanifest",
-    "/_headers",       # Cloudflare/Vercel headers config (public)
-    "/_redirects",     # Cloudflare/Vercel redirects config (public)
-    # FDS Webhook: receives callbacks from Modal cloud worker.
-    # Auth is handled internally via HMAC secret (not API key).
-    "/api/v2/fds/webhook",
-    # Meeza PSP webhook — auth handled internally via
-    # MEEZA_WEBHOOK_HMAC_SECRET (mimir pattern FDS). The PSP cannot
-    # send an X-API-Key; without this entry the middleware 401s
-    # BEFORE the HMAC check runs, breaking the payment callback.
-    "/api/v1/billing/webhooks/meeza",
-})
+_PUBLIC_PATHS_EXACT = frozenset(
+    {
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/api/v1/health",
+        "/api/v2/health",
+        "/api/health",
+        "/api/health/statistics",
+        "/api/reports/statistics",
+        "/health",
+        # M-3: Auth endpoints must be public (login validates credentials itself)
+        "/api/v1/auth/login",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/session/login",
+        # These are HTML/JS/CSS bundles with NO secrets; all sensitive data flows
+        # through /api/* which still requires X-API-Key. Without these, the HF
+        # Space root URL returns 401 and users see JSON instead of the app.
+        "/",
+        "/index.html",
+        "/favicon.ico",
+        "/manifest.json",
+        "/robots.txt",
+        # V207 FIX: Frontend public static assets referenced from index.html.
+        # Without these, browsers get 401 on /critical.css, /favicon.svg, etc.
+        # These are inert static files (CSS, icons, PWA manifest) with no secrets.
+        "/critical.css",
+        "/favicon.svg",
+        "/favicon-16.png",
+        "/favicon-32.png",
+        "/favicon-180.png",
+        "/apple-touch-icon.png",
+        "/site.webmanifest",
+        "/_headers",  # Cloudflare/Vercel headers config (public)
+        "/_redirects",  # Cloudflare/Vercel redirects config (public)
+        # FDS Webhook: receives callbacks from Modal cloud worker.
+        # Auth is handled internally via HMAC secret (not API key).
+        "/api/v2/fds/webhook",
+        # Meeza PSP webhook — auth handled internally via
+        # MEEZA_WEBHOOK_HMAC_SECRET (mimir pattern FDS). The PSP cannot
+        # send an X-API-Key; without this entry the middleware 401s
+        # BEFORE the HMAC check runs, breaking the payment callback.
+        "/api/v1/billing/webhooks/meeza",
+    }
+)
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)
 # Used ONLY for documented sub-paths, NOT for security bypass.
@@ -416,6 +419,7 @@ class ApiKeyMiddleware:
                     # Import get_session_principal lazily to avoid circular import
                     # if backend.routers.auth ever imports from this module in future.
                     from backend.routers.auth import get_session_principal
+
                     principal_tuple = get_session_principal(cookie_token)
                     if principal_tuple is not None:
                         role_from_cookie, principal_from_cookie = principal_tuple
@@ -489,14 +493,14 @@ class ApiKeyMiddleware:
         headers.append((b"content-security-policy", csp_value.encode("latin-1")))
         # Add HSTS (always emit per _should_emit_hsts policy)
         if _should_emit_hsts(scope):
-            headers.append(
-                (b"strict-transport-security", _HSTS_HEADER.encode("latin-1"))
-            )
-        await send({
-            "type": "http.response.start",
-            "status": 401,
-            "headers": headers,
-        })
+            headers.append((b"strict-transport-security", _HSTS_HEADER.encode("latin-1")))
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 401,
+                "headers": headers,
+            }
+        )
         await send({"type": "http.response.body", "body": body})
 
 

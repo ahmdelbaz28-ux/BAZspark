@@ -216,7 +216,11 @@ class BuildingEngine:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, floors: dict[str, list]) -> BuildingReport:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def analyse(
+        self, floors: dict[str, list]
+    ) -> (
+        BuildingReport
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Analyse all floors in the building and return a BuildingReport.
 
@@ -312,7 +316,9 @@ class BuildingEngine:
         report.analysis_time_s = round(time.time() - t0, 3)
 
         if report.unsafe_floors:
-            report.building_warnings.append(f"UNSAFE floors (do NOT submit): {report.unsafe_floors}")
+            report.building_warnings.append(
+                f"UNSAFE floors (do NOT submit): {report.unsafe_floors}"
+            )
         if report.non_compliant_floors:
             report.building_warnings.append(f"Non-compliant floors: {report.non_compliant_floors}")
 
@@ -357,14 +363,20 @@ class BuildingEngine:
                 report.zone_reports[floor_report.floor_id] = zone_report
                 # Add zone info to building warnings for visibility
                 if zone_report.warnings:
-                    report.building_warnings.extend(f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings)
+                    report.building_warnings.extend(
+                        f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings
+                    )
 
         learner = ProjectLearner(building_id=self.building_id)
         for floor_report in report.floor_reports:
             for s in floor_report.room_summaries:
                 if s.refused or s.detector_count == 0:
                     continue
-                eff = s.detector_count / s.theoretical_lower_bound if s.theoretical_lower_bound > 0 else 1.0
+                eff = (
+                    s.detector_count / s.theoretical_lower_bound
+                    if s.theoretical_lower_bound > 0
+                    else 1.0
+                )
                 learner.record(
                     name=s.name,
                     width=s.width,
@@ -462,7 +474,9 @@ if __name__ == "__main__":
     for floor_id, zr in report.zone_reports.items():
         print(f"\n  Floor {floor_id} — {zr.total_zones} zones:")
         for z in zr.zones:
-            print(f"    Zone {z.zone_id}: rooms={z.rooms} area={z.total_area_sqm:.0f}sqm det={z.total_detectors}")
+            print(
+                f"    Zone {z.zone_id}: rooms={z.rooms} area={z.total_area_sqm:.0f}sqm det={z.total_detectors}"
+            )
 
     for fr in report.floor_reports:
         print(

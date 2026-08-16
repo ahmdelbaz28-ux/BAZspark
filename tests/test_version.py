@@ -3,6 +3,7 @@ test_version.py — Tests for fireai/version.py.
 
 Verifies version constants, header generation, and consistency checks.
 """
+
 from __future__ import annotations
 
 import platform

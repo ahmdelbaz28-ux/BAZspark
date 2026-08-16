@@ -103,4 +103,6 @@ def test_fds_webhook_invalid_secret(monkeypatch):
 
     response = client.post("/api/v2/fds/webhook", json=webhook_payload)
     # Public endpoint — middleware passes it; handler returns 400 for bad secret
-    assert response.status_code == 400, f"Expected 400 for bad secret, got: {response.status_code} — {response.text}"
+    assert response.status_code == 400, (
+        f"Expected 400 for bad secret, got: {response.status_code} — {response.text}"
+    )

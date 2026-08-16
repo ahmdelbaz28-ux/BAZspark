@@ -7,6 +7,7 @@ Defines standardized contracts between Revit and ETAP systems.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,6 +19,7 @@ class RevitElementDTO(BaseModel):
     Data Transfer Object for Revit elements.
     Represents individual elements from Revit models.
     """
+
     id: str = Field(..., description="Unique identifier for the element")
     name: str = Field(..., description="Display name of the element")
     category: str = Field(..., description="Revit category of the element")
@@ -28,8 +30,12 @@ class RevitElementDTO(BaseModel):
     geometry: dict[str, Any] | None = Field(None, description="Geometric representation")
     level: str | None = Field(None, description="Building level/phase")
     workset: str | None = Field(None, description="Workset assignment")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Last update timestamp")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Creation timestamp"
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Last update timestamp"
+    )
 
 
 class ElectricalAssetDTO(BaseModel):
@@ -37,6 +43,7 @@ class ElectricalAssetDTO(BaseModel):
     Data Transfer Object for electrical assets extracted from Revit.
     Maps Revit electrical elements to ETAP electrical model.
     """
+
     element_id: str = Field(..., description="Original Revit element ID")
     asset_type: str = Field(..., description="type of electrical asset")
     name: str = Field(..., description="Asset name")
@@ -48,8 +55,12 @@ class ElectricalAssetDTO(BaseModel):
     capacity: float | None = Field(None, description="Capacity rating")
     connections: list[str] = Field(default_factory=list, description="Connected element IDs")
     location_coordinates: dict[str, float] | None = Field(None, description="GIS coordinates")
-    electrical_parameters: dict[str, Any] = Field(default_factory=dict, description="Electrical parameters")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Creation timestamp")
+    electrical_parameters: dict[str, Any] = Field(
+        default_factory=dict, description="Electrical parameters"
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Creation timestamp"
+    )
 
 
 class SyncStatusDTO(BaseModel):
@@ -57,6 +68,7 @@ class SyncStatusDTO(BaseModel):
     Data Transfer Object for synchronization status.
     Tracks the progress and outcome of sync operations.
     """
+
     sync_id: str = Field(..., description="Unique sync operation ID")
     project_id: str = Field(..., description="Associated project ID")
     status: str = Field(..., description="Current sync status")
@@ -65,7 +77,9 @@ class SyncStatusDTO(BaseModel):
     processed_elements: int = Field(0, description="Elements processed")
     successful_elements: int = Field(0, description="Successfully synced elements")
     failed_elements: int = Field(0, description="Failed elements count")
-    start_time: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Sync start time")
+    start_time: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Sync start time"
+    )
     end_time: datetime | None = Field(None, description="Sync completion time")
     error_details: dict[str, str] | None = Field(None, description="Error details if any")
     message: str | None = Field(None, description="Status message")
@@ -76,6 +90,7 @@ class ModelMetadataDTO(BaseModel):
     Data Transfer Object for Revit model metadata.
     Contains information about the model structure and properties.
     """
+
     model_id: str = Field(..., description="Unique model identifier")
     project_name: str = Field(..., description="Project name from Revit")
     project_number: str | None = Field(None, description="Project number")
@@ -98,6 +113,7 @@ class RevitProjectDTO(BaseModel):
     Data Transfer Object for Revit project management.
     Manages project lifecycle within the ETAP integration.
     """
+
     project_id: str = Field(..., description="Unique project identifier")
     project_name: str = Field(..., description="Project name")
     revit_file_path: str | None = Field(None, description="Path to Revit file")
@@ -109,8 +125,12 @@ class RevitProjectDTO(BaseModel):
     status: str = Field("active", description="Project status")
     owner: str | None = Field(None, description="Project owner")
     permissions: dict[str, bool] = Field(default_factory=dict, description="User permissions")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Project creation time")
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Project update time")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Project creation time"
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Project update time"
+    )
 
 
 class RevitSyncLogDTO(BaseModel):
@@ -118,6 +138,7 @@ class RevitSyncLogDTO(BaseModel):
     Data Transfer Object for Revit synchronization logs.
     Records all sync operations for audit and troubleshooting.
     """
+
     log_id: str = Field(..., description="Unique log entry identifier")
     sync_id: str = Field(..., description="Associated sync operation ID")
     project_id: str = Field(..., description="Associated project ID")
@@ -125,7 +146,9 @@ class RevitSyncLogDTO(BaseModel):
     element_id: str | None = Field(None, description="Affected element ID")
     status: str = Field(..., description="Operation status")
     message: str = Field(..., description="Log message")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Log timestamp")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), description="Log timestamp"
+    )
     duration_ms: int | None = Field(None, description="Operation duration in milliseconds")
     user_id: str | None = Field(None, description="User who initiated sync")
     client_ip: str | None = Field(None, description="Client IP address")

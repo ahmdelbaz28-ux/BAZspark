@@ -23,6 +23,7 @@ logger = logging.getLogger("fireai.dwg_parser")
 
 class DWGConversionError(Exception):
     """Raised when DWG -> DXF conversion fails."""
+
     pass
 
 
@@ -43,7 +44,7 @@ class DWGParser(ParserBase):
     Parses DWG files via LibreDWG conversion.
     """
 
-    allowed_extensions = {'.dwg', '.dxf'}
+    allowed_extensions = {".dwg", ".dxf"}
     max_file_size_bytes = int(os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", 100 * 1024 * 1024))
 
     DXF_OUT_CMD = "dxf-out"
@@ -64,9 +65,7 @@ class DWGParser(ParserBase):
 
         for converter_cmd in self._available_converters:
             try:
-                result = subprocess.run(
-                    [converter_cmd, "--help"], capture_output=True, timeout=5
-                )
+                result = subprocess.run([converter_cmd, "--help"], capture_output=True, timeout=5)
                 if result.returncode == 0:
                     self._tool_available = True
                     self._active_converter = converter_cmd
@@ -88,7 +87,9 @@ class DWGParser(ParserBase):
             return False
 
     @staticmethod
-    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:  # NOSONAR — S3776: geometric polygon assembly is inherently complex
+    def _assemble_closed_polygons(
+        lines: list, tolerance: float = 0.01
+    ) -> list:  # NOSONAR — S3776: geometric polygon assembly is inherently complex
         if not lines:
             return []
 
@@ -187,7 +188,9 @@ class DWGParser(ParserBase):
 
         return closed_polygons
 
-    def extract_rooms_from_chaos(self, doc) -> list:  # NOSONAR — S3776: multi-format room extraction is unavoidably complex
+    def extract_rooms_from_chaos(
+        self, doc
+    ) -> list:  # NOSONAR — S3776: multi-format room extraction is unavoidably complex
         from core.models import Geometry, Point3D, UniversalElement
 
         rooms: list = []
@@ -196,7 +199,9 @@ class DWGParser(ParserBase):
         try:
             modelspace = doc.modelspace()
         except Exception:
-            logger.warning("extract_rooms_from_chaos: doc.modelspace() failed — returning empty list")
+            logger.warning(
+                "extract_rooms_from_chaos: doc.modelspace() failed — returning empty list"
+            )
             return rooms
 
         for entity in modelspace:
@@ -224,7 +229,10 @@ class DWGParser(ParserBase):
                     logger.warning(
                         "extract_rooms_from_chaos: LINE with NaN/Inf coords "
                         "(%.4g,%.4g)->(%.4g,%.4g) — poisoned entity dropped",
-                        sx, sy, ex, ey,
+                        sx,
+                        sy,
+                        ex,
+                        ey,
                     )
                     continue
 
@@ -249,7 +257,9 @@ class DWGParser(ParserBase):
                             continue
 
                         if not (self._is_valid_coordinate(vx) and self._is_valid_coordinate(vy)):
-                            logger.warning("extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped")
+                            logger.warning(
+                                "extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped"
+                            )
                             vertices = []
                             break
                         vertices.append((vx, vy))
@@ -262,7 +272,9 @@ class DWGParser(ParserBase):
                         rooms.append(room)
 
                 except Exception as exc:
-                    logger.warning("extract_rooms_from_chaos: POLYLINE parse error: %s — skipped", exc)
+                    logger.warning(
+                        "extract_rooms_from_chaos: POLYLINE parse error: %s — skipped", exc
+                    )
                     continue
 
         if valid_lines:
@@ -299,7 +311,9 @@ class DWGParser(ParserBase):
             return self._parse_dxf_directly(dwg_path, start)
 
         if not self._check_tool():
-            result.errors.append("LibreDWG not installed. Install with: sudo apt install libredwg-tools")
+            result.errors.append(
+                "LibreDWG not installed. Install with: sudo apt install libredwg-tools"
+            )
             return result
 
         try:
@@ -327,6 +341,7 @@ class DWGParser(ParserBase):
 
         try:
             import ezdxf
+
             doc = ezdxf.readfile(dxf_path)
             rooms = self.extract_rooms_from_chaos(doc)
             result.room_count = len(rooms)
@@ -342,10 +357,13 @@ class DWGParser(ParserBase):
         safe_path = self.validate_input(dwg_path)
 
         import ezdxf
+
         doc = ezdxf.readfile(str(safe_path))
         return self.extract_rooms_from_chaos(doc)
 
-    def _convert_to_dxf(self, dwg_path: str) -> str:  # NOSONAR — S3776: safety-critical conversion path with unavoidable branching
+    def _convert_to_dxf(
+        self, dwg_path: str
+    ) -> str:  # NOSONAR — S3776: safety-critical conversion path with unavoidable branching
         try:
             safe_path = validate_input_path(
                 dwg_path,
@@ -357,6 +375,7 @@ class DWGParser(ParserBase):
 
         if not self._tool_available:
             from unittest.mock import Mock
+
             if isinstance(subprocess.run, Mock):
                 self._tool_available = True
                 self._active_converter = "dxf-out"
@@ -380,14 +399,7 @@ class DWGParser(ParserBase):
                 temp_dir = tempfile.mkdtemp()
                 input_dir = os.path.dirname(dwg_path)
                 output_dir = temp_dir
-                cmd = [
-                    self._active_converter,
-                    input_dir,
-                    output_dir,
-                    "ACAD2018",
-                    "DXF",
-                    "0"
-                ]
+                cmd = [self._active_converter, input_dir, output_dir, "ACAD2018", "DXF", "0"]
 
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
@@ -397,6 +409,7 @@ class DWGParser(ParserBase):
                     )
 
                 import glob
+
                 dxf_files = glob.glob(os.path.join(output_dir, "*.dxf"))
                 if not dxf_files:
                     raise DWGConversionError(
@@ -404,6 +417,7 @@ class DWGParser(ParserBase):
                     )
 
                 import shutil
+
                 shutil.move(dxf_files[0], dxf_path)
                 return dxf_path
             else:

@@ -18,8 +18,8 @@ from Autodesk.Revit.DB import Transaction, Workset
 
 doc = __revit__.ActiveUIDocument.Document
 
-workset_name = 'Point Clouds'
+workset_name = "Point Clouds"
 t = Transaction(doc)
-t.Start('Create Workset')
+t.Start("Create Workset")
 Workset.Create(doc, workset_name)
 t.Commit()

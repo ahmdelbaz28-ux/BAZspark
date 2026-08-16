@@ -34,7 +34,9 @@ class ApsProcessRequest(BaseModel):
     bucket_key: str = Field(default="bazspark_bucket", description="Autodesk OSS bucket key")
     object_key: str = Field(..., description="File name/object key inside the bucket")
     activity_id: str = Field(..., description="Autodesk Design Automation Activity ID")
-    params: dict[str, Any] = Field(default_factory=dict, description="Command line parameter overrides")
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="Command line parameter overrides"
+    )
 
 
 @router.post("/process", dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))])
@@ -50,7 +52,7 @@ async def process_file_in_cloud(
     if not token_res.get("success"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"APS Authentication failed: {token_res.get('error')}"
+            detail=f"APS Authentication failed: {token_res.get('error')}",
         )
     token = token_res["access_token"]
 
@@ -59,7 +61,7 @@ async def process_file_in_cloud(
     if not bucket_res.get("success"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create bucket: {bucket_res.get('error')}"
+            detail=f"Failed to create bucket: {bucket_res.get('error')}",
         )
 
     # 3. Create and dispatch the cloud WorkItem
@@ -71,12 +73,12 @@ async def process_file_in_cloud(
         input_urn=input_urn,
         output_urn=output_urn,
         params=body.params,
-        token=token
+        token=token,
     )
     if not work_res.get("success"):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"WorkItem submission failed: {work_res.get('error')}"
+            detail=f"WorkItem submission failed: {work_res.get('error')}",
         )
 
     return {
@@ -84,11 +86,14 @@ async def process_file_in_cloud(
         "work_item_id": work_res["work_item_id"],
         "input_urn": input_urn,
         "output_urn": output_urn,
-        "simulation_mode": work_res.get("simulation_mode", False)
+        "simulation_mode": work_res.get("simulation_mode", False),
     }
 
 
-@router.get("/status/{work_item_id}", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
+@router.get(
+    "/status/{work_item_id}",
+    dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))],
+)
 async def get_work_item_status(
     work_item_id: str,
     service: ApsServiceDep,
@@ -99,15 +104,13 @@ async def get_work_item_status(
     token_res = service.get_token()
     if not token_res.get("success"):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="APS Authentication failed"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="APS Authentication failed"
         )
 
     status_res = service.poll_work_item(work_item_id, token_res["access_token"])
     if not status_res.get("success"):
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=status_res.get("error")
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=status_res.get("error")
         )
 
     return status_res

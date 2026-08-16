@@ -2,6 +2,7 @@
 Redis client module for backend services.
 Provides Redis connection and utility functions.
 """
+
 from typing import Any
 
 import redis.asyncio as redis
@@ -21,7 +22,7 @@ async def get_redis_client() -> redis.Redis:  # noqa: S7503 — async for redis.
         port=Config.REDIS_PORT,
         password=Config.REDIS_PASSWORD,
         decode_responses=False,  # Keep as bytes for consistency
-        health_check_interval=30
+        health_check_interval=30,
     )
     return redis_client
 

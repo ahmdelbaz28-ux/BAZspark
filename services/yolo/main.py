@@ -45,6 +45,7 @@ def download_model():
         filename="doclayout_yolo_docstructbench_imgsz1024.pt",
     )
     from doclayout_yolo import YOLOv10
+
     m = YOLOv10(filepath)
     logger.info("YOLO model loaded successfully")
     return m
@@ -65,6 +66,7 @@ app = FastAPI(lifespan=lifespan, title="FireAI YOLO Segmentation Service")
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────
+
 
 class BoundingBox(BaseModel):
     x1: float
@@ -114,6 +116,7 @@ def map_yolo_class(cls_idx: int) -> str:
 
 # ─── Processing ──────────────────────────────────────────────────────────────
 
+
 async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     image_data_list: list[bytes],
     conf: float = None,
@@ -127,7 +130,9 @@ async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inh
     temp_files = []
     for image_data in image_data_list:
         temp_file = f"temp_{uuid.uuid4()}.jpg"
-        with open(temp_file, "wb") as f:  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+        with (
+            open(temp_file, "wb") as f
+        ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
             f.write(image_data)
         temp_files.append(temp_file)
 
@@ -149,29 +154,38 @@ async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inh
                 scores_list = []
 
                 for i in range(len(boxes)):
-                    bbox_output.append(BoundingBoxOutput(
-                        left=float(boxes[i][0]),
-                        top=float(boxes[i][1]),
-                        width=float(boxes[i][2] - boxes[i][0]),
-                        height=float(boxes[i][3] - boxes[i][1]),
-                    ))
+                    bbox_output.append(
+                        BoundingBoxOutput(
+                            left=float(boxes[i][0]),
+                            top=float(boxes[i][1]),
+                            width=float(boxes[i][2] - boxes[i][0]),
+                            height=float(boxes[i][3] - boxes[i][1]),
+                        )
+                    )
                     classes_str.append(map_yolo_class(int(cls[i])))
                     scores_list.append(float(conf_scores[i]))
 
-                results.append(FinalPrediction(
-                    instances=InstanceOutput(
-                        boxes=bbox_output,
-                        scores=scores_list,
-                        classes=classes_str,
-                        image_size=list(img_shape),
+                results.append(
+                    FinalPrediction(
+                        instances=InstanceOutput(
+                            boxes=bbox_output,
+                            scores=scores_list,
+                            classes=classes_str,
+                            image_size=list(img_shape),
+                        )
                     )
-                ))
+                )
             else:
-                results.append(FinalPrediction(
-                    instances=InstanceOutput(
-                        boxes=[], scores=[], classes=[], image_size=list(img_shape),
+                results.append(
+                    FinalPrediction(
+                        instances=InstanceOutput(
+                            boxes=[],
+                            scores=[],
+                            classes=[],
+                            image_size=list(img_shape),
+                        )
                     )
-                ))
+                )
 
         return results
 
@@ -186,6 +200,7 @@ async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inh
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
+
 
 @app.post("/batch")
 async def batch_segment(files: list[UploadFile] = File(...)):  # NOSONAR - python:S8410
@@ -211,6 +226,7 @@ async def health():
 
 if __name__ == "__main__":
     import os
+
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app, host=host, port=port)

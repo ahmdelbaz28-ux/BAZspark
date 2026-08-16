@@ -82,9 +82,7 @@ async def get_role_permission_matrix(_role: SystemConfigRole) -> dict[str, Any]:
         role_perms = get_role_permissions(role)
         perm_strings = sorted({p.value for p in role_perms})
         roles_list.append({"role": role.value, "permissions": perm_strings})
-        matrix[role.value] = {
-            perm.value: has_permission(role, perm) for perm in Permission
-        }
+        matrix[role.value] = {perm.value: has_permission(role, perm) for perm in Permission}
 
     all_permissions = sorted({p.value for p in Permission})
 

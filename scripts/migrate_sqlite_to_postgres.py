@@ -53,7 +53,7 @@ def migrate():
         "reports",
         "sync_status",
         "sync_operations",
-        "audit_log"
+        "audit_log",
     ]
 
     # We will copy table by table
@@ -96,6 +96,7 @@ def migrate():
 
     conn_sq.close()
     print("Migration completed successfully!")
+
 
 if __name__ == "__main__":
     migrate()

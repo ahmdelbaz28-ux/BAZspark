@@ -68,13 +68,12 @@ _MIN_SECRET_LENGTH = 43
 _MAX_SECRET_LENGTH = 256
 
 # Secrets are URL-safe base64. Valid chars: A-Z, a-z, 0-9, -, _
-_SECRET_CHARSET = set(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-)
+_SECRET_CHARSET = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 
 
 class SecretInfo(NamedTuple):
     """Information about a loaded secret (for logging — NEVER includes the value)."""
+
     source: str  # "env", "file", "generated"
     length: int
     is_primary: bool
@@ -127,7 +126,12 @@ def validate_secret(secret: str, source: str = "unknown") -> None:
 
     # Check for obvious weak patterns (BEFORE entropy check — placeholders
     # often have low entropy, but we want the more specific error message)
-    if secret == "changeme" or "changeme" in secret or secret == "secret" or secret.startswith("your_"):
+    if (
+        secret == "changeme"
+        or "changeme" in secret
+        or secret == "secret"
+        or secret.startswith("your_")
+    ):
         raise ValueError(
             f"Session secret from '{source}' appears to be a placeholder. "
             f"Generate a real one with: python3 -m backend.session_secret generate"
@@ -164,9 +168,7 @@ def _read_secret_from_file(filepath: str) -> str:
             f"Ensure the application user has read access."
         ) from None
     except OSError as e:
-        raise ValueError(
-            f"Error reading session secret file {filepath}: {e}"
-        ) from None
+        raise ValueError(f"Error reading session secret file {filepath}: {e}") from None
 
 
 def _load_single_secret(env_var: str, file_env_var: str, source_label: str) -> str | None:
@@ -194,7 +196,6 @@ def _load_single_secret(env_var: str, file_env_var: str, source_label: str) -> s
             return secret
 
     return None
-
 
 
 class SessionSecretManager:
@@ -308,6 +309,7 @@ class SessionSecretManager:
     def sign(self, data: str) -> str:
         """Sign data with the primary secret using HMAC-SHA256."""
         import hashlib
+
         return hmac.new(
             self.primary.encode("utf-8"),
             data.encode("utf-8"),
@@ -411,7 +413,9 @@ def main() -> None:
         info = mgr.get_info()
         print("Session Secret Manager Status:")
         print(f"  Primary:  source={info['primary']['source']}, length={info['primary']['length']}")
-        print(f"  Previous: source={info['previous']['source']}, length={info['previous']['length']}")
+        print(
+            f"  Previous: source={info['previous']['source']}, length={info['previous']['length']}"
+        )
         print(f"  Rotation in progress: {info['rotation_in_progress']}")
     else:
         print("Usage:")

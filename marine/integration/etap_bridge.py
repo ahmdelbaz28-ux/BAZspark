@@ -3,6 +3,7 @@ marine/integration/etap_bridge.py — ETAP Power System Integration.
 Exports ship electrical model (fire-system loads + UPS + redundancy) to ETAP
 .ort project format (CSV-based intermediate) for power-system analysis.
 """
+
 from __future__ import annotations
 
 import csv
@@ -12,8 +13,10 @@ from marine.core.types import ShipElectricalSpec, ShipProject
 
 
 def export_etap_loads_csv(
-    ship: ShipProject, spec: ShipElectricalSpec,
-    detection_load_w: float = 500.0, alarm_load_w: float = 1000.0,
+    ship: ShipProject,
+    spec: ShipElectricalSpec,
+    detection_load_w: float = 500.0,
+    alarm_load_w: float = 1000.0,
     extinguish_load_w: float = 2000.0,
     ups_power_kw: float = 2.5,
 ) -> str:
@@ -42,9 +45,29 @@ def export_etap_loads_csv(
     output = io.StringIO()
     w = csv.writer(output)
     w.writerow(["Bus", "Load_Name", "Type", "kW", "pf", "Category"])
-    w.writerow(["FIRE-MDB", "Detection_System", "Static", f"{detection_load_w/1000:.3f}", "0.9", "Essential"])
-    w.writerow(["FIRE-MDB", "Alarm_Devices", "Static", f"{alarm_load_w/1000:.3f}", "0.9", "Essential"])
-    w.writerow(["FIRE-MDB", "Extinguishing_Control", "Static", f"{extinguish_load_w/1000:.3f}", "0.85", "Essential"])
+    w.writerow(
+        [
+            "FIRE-MDB",
+            "Detection_System",
+            "Static",
+            f"{detection_load_w / 1000:.3f}",
+            "0.9",
+            "Essential",
+        ]
+    )
+    w.writerow(
+        ["FIRE-MDB", "Alarm_Devices", "Static", f"{alarm_load_w / 1000:.3f}", "0.9", "Essential"]
+    )
+    w.writerow(
+        [
+            "FIRE-MDB",
+            "Extinguishing_Control",
+            "Static",
+            f"{extinguish_load_w / 1000:.3f}",
+            "0.85",
+            "Essential",
+        ]
+    )
     # UPS rated power (kW) — this is the inverter's real-power output, not
     # the battery's energy capacity (Ah × V = Wh).
     w.writerow(["FIRE-UPS", "UPS_Inverter", "Static", f"{ups_power_kw:.2f}", "0.95", "Backup"])
@@ -56,8 +79,10 @@ def export_etap_sources_csv(spec: ShipElectricalSpec) -> str:
     output = io.StringIO()
     w = csv.writer(output)
     w.writerow(["Source", "Type", "kV", "kVA", "X_R"])
-    w.writerow(["MAIN-SWB", "Generator", f"{spec.main_supply_voltage/1000:.2f}", "500", "8.0"])
-    w.writerow(["EMER-SWB", "Emergency_Gen", f"{spec.emergency_supply_voltage/1000:.2f}", "100", "6.0"])
+    w.writerow(["MAIN-SWB", "Generator", f"{spec.main_supply_voltage / 1000:.2f}", "500", "8.0"])
+    w.writerow(
+        ["EMER-SWB", "Emergency_Gen", f"{spec.emergency_supply_voltage / 1000:.2f}", "100", "6.0"]
+    )
     return output.getvalue()
 
 

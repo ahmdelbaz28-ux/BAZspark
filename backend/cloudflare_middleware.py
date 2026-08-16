@@ -95,9 +95,7 @@ def _env_list(name: str, default: Iterable[str] = ()) -> frozenset[str]:
     raw = os.getenv(name, "")
     if not raw.strip():
         return frozenset(default)
-    return frozenset(
-        item.strip().upper() for item in raw.split(",") if item.strip()
-    )
+    return frozenset(item.strip().upper() for item in raw.split(",") if item.strip())
 
 
 class CloudflareConfig:
@@ -112,15 +110,12 @@ class CloudflareConfig:
 
     def __init__(self) -> None:
         self.enabled: bool = _env_bool("CF_ENABLED", default=False)
-        self.require_origin_token: str = os.getenv(
-            "CF_REQUIRE_ORIGIN_TOKEN", ""
-        ).strip()
-        self.blocked_countries: frozenset[str] = _env_list(
-            "CF_BLOCKED_COUNTRIES"
+        self.require_origin_token: str = os.getenv("CF_REQUIRE_ORIGIN_TOKEN", "").strip()
+        self.blocked_countries: frozenset[str] = _env_list("CF_BLOCKED_COUNTRIES")
+        self.production_mode: bool = os.getenv("FIREAI_ENV", "production").lower() in (
+            "production",
+            "prod",
         )
-        self.production_mode: bool = os.getenv(
-            "FIREAI_ENV", "production"
-        ).lower() in ("production", "prod")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -159,17 +154,14 @@ class CloudflareIntegrationMiddleware:
         self.config = CloudflareConfig()
         if self.config.enabled:
             logger.info(
-                "CloudflareIntegrationMiddleware enabled "
-                "(blocked_countries=%d, require_token=%s)",
+                "CloudflareIntegrationMiddleware enabled (blocked_countries=%d, require_token=%s)",
                 len(self.config.blocked_countries),
                 bool(self.config.require_origin_token),
             )
         else:
             logger.debug("CloudflareIntegrationMiddleware disabled (CF_ENABLED=false)")
 
-    async def __call__(
-        self, scope: Scope, receive: Receive, send: Send
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or not self.config.enabled:
             await self.app(scope, receive, send)
             return
@@ -232,9 +224,7 @@ class CloudflareIntegrationMiddleware:
         )
         return True
 
-    async def _check_geo_block(
-        self, scope: Scope, send: Send, path: str, cf_ip: str
-    ) -> bool:
+    async def _check_geo_block(self, scope: Scope, send: Send, path: str, cf_ip: str) -> bool:
         """Return False (and send 403) if the request is from a blocked country."""
         if not self.config.blocked_countries:
             return True
@@ -246,9 +236,7 @@ class CloudflareIntegrationMiddleware:
                 path,
                 cf_ip or "unknown",
             )
-            await self._send_forbidden(
-                send, f"Access from {country} is not permitted"
-            )
+            await self._send_forbidden(send, f"Access from {country} is not permitted")
             return False
         return True
 

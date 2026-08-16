@@ -81,10 +81,13 @@ class TestMCPProtocolConformance:
     """Verify the server conforms to MCP / JSON-RPC 2.0 spec."""
 
     def test_initialize_returns_protocol_version(self, server):
-        line = _jsonrpc("initialize", {
-            "capabilities": {},
-            "clientInfo": {"name": "claude-desktop", "version": "0.7.0"},
-        })
+        line = _jsonrpc(
+            "initialize",
+            {
+                "capabilities": {},
+                "clientInfo": {"name": "claude-desktop", "version": "0.7.0"},
+            },
+        )
         resp = server._handle_jsonrpc_line(line)
         assert resp is not None
         assert resp["jsonrpc"] == "2.0"
@@ -142,13 +145,18 @@ class TestToolsCallDispatch:
 
     def test_tools_call_does_not_raise_attribute_error(self, server):
         """The V141.2 bug: tools/call → AttributeError on process_request."""
-        line = _jsonrpc("tools/call", {
-            "name": "calculate_coverage",
-            "arguments": {
-                "room_length": 10, "room_width": 10,
-                "ceiling_height": 3, "detector_type": "smoke",
+        line = _jsonrpc(
+            "tools/call",
+            {
+                "name": "calculate_coverage",
+                "arguments": {
+                    "room_length": 10,
+                    "room_width": 10,
+                    "ceiling_height": 3,
+                    "detector_type": "smoke",
+                },
             },
-        })
+        )
         resp = server._handle_jsonrpc_line(line)
         assert resp is not None
         # MUST NOT contain AttributeError in error data
@@ -158,13 +166,18 @@ class TestToolsCallDispatch:
 
     def test_tools_call_returns_mcp_envelope(self, server):
         """tools/call must return the MCP content envelope, not raw result."""
-        line = _jsonrpc("tools/call", {
-            "name": "calculate_coverage",
-            "arguments": {
-                "room_length": 10, "room_width": 10,
-                "ceiling_height": 3, "detector_type": "smoke",
+        line = _jsonrpc(
+            "tools/call",
+            {
+                "name": "calculate_coverage",
+                "arguments": {
+                    "room_length": 10,
+                    "room_width": 10,
+                    "ceiling_height": 3,
+                    "detector_type": "smoke",
+                },
             },
-        })
+        )
         resp = server._handle_jsonrpc_line(line)
         assert "result" in resp
         result = resp["result"]
@@ -180,10 +193,13 @@ class TestToolsCallDispatch:
 
     def test_tools_call_unknown_tool_returns_error_envelope(self, server):
         """Unknown tool name → handler rejects, but envelope is still valid."""
-        line = _jsonrpc("tools/call", {
-            "name": "nonexistent_tool",
-            "arguments": {},
-        })
+        line = _jsonrpc(
+            "tools/call",
+            {
+                "name": "nonexistent_tool",
+                "arguments": {},
+            },
+        )
         resp = server._handle_jsonrpc_line(line)
         # The MCP envelope is returned even on handler rejection
         assert "result" in resp
@@ -228,8 +244,10 @@ class TestErrorHandling:
 
     def test_internal_error_returns_minus_32603(self, server, monkeypatch):
         """Handler exception → internal error (-32603), not a crash."""
+
         def boom(_params):
             raise RuntimeError("simulated handler crash")
+
         monkeypatch.setattr(server, "_handle_initialize", boom)
         line = _jsonrpc("initialize")
         resp = server._handle_jsonrpc_line(line)
@@ -340,6 +358,7 @@ class TestProcessRequestInProcess:
     def test_process_request_unknown_tool_returns_failure(self, server):
         """process_request() with unknown tool → success=False."""
         from fireai.mcp_server.sanitized_handler import MCPRequest
+
         req = MCPRequest(
             request_id="test-1",
             tool_name="nonexistent",

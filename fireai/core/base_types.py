@@ -24,8 +24,7 @@ class Result[T, E]:
 
         if value is not None and error is not None:
             raise ValueError(
-                f"Result cannot hold both value and error. "
-                f"Got value={value!r} and error={error!r}."
+                f"Result cannot hold both value and error. Got value={value!r} and error={error!r}."
             )
         if value is None and error is None and ok is None:
             raise ValueError(
@@ -73,9 +72,7 @@ class Result[T, E]:
                 "Always check is_ok() before accessing .value."
             )
         if self._value is None:
-            raise AttributeError(
-                "Attempted to access .value on a success Result with None value."
-            )
+            raise AttributeError("Attempted to access .value on a success Result with None value.")
         return self._value
 
     @property
@@ -86,9 +83,7 @@ class Result[T, E]:
                 "Always check is_err() before accessing .error."
             )
         if self._error is None:
-            raise AttributeError(
-                "Attempted to access .error on a failure Result with None error."
-            )
+            raise AttributeError("Attempted to access .error on a failure Result with None error.")
         return self._error
 
     def unwrap(self) -> T:
@@ -161,9 +156,7 @@ class Point3D:
 
     def distance_to(self, other: Point3D) -> float:
         return math.sqrt(
-            (self.x - other.x) ** 2
-            + (self.y - other.y) ** 2
-            + (self.z - other.z) ** 2
+            (self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2
         )
 
     def manhattan_to(self, other: Point3D) -> float:

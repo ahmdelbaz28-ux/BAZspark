@@ -67,34 +67,41 @@ class FACPSelectionError(BaseEngineeringError):
 
 class FileValidationError(BaseEngineeringError):
     """File does not meet structural requirements (existence, size, permissions)."""
+
     pass
 
 
 class FormatError(BaseEngineeringError):
     """File format cannot be identified — magic bytes don't match any known specification."""
+
     pass
 
 
 class VersionError(BaseEngineeringError):
     """File version is unsupported or incompatible with the parser."""
+
     pass
 
 
 class CorruptionError(BaseEngineeringError):
     """File is structurally corrupted — missing mandatory sections or markers."""
+
     pass
 
 
 class ConversionError(BaseEngineeringError):
     """DWG->DXF or RVT->IFC conversion failed — external tool error."""
+
     pass
 
 
 class GeometryError(BaseEngineeringError):
     """Building geometry is physically impossible (zero-area rooms, unclosed boundaries)."""
+
     pass
 
 
 class UnitError(BaseEngineeringError):
     """File uses wrong unit system (mm/inches instead of meters) — coordinates exceed limits."""
+
     pass

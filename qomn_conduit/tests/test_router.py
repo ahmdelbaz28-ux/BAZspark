@@ -22,6 +22,7 @@ from qomn_conduit.errors import RoutingError
 # Test 1: Determinism — same input produces identical output
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestRouterDeterminism:
     """Router must be deterministic: same input → same output, always."""
 
@@ -34,7 +35,9 @@ class TestRouterDeterminism:
         assert result1.is_ok()
         assert result2.is_ok()
         assert result1.value.waypoints == result2.value.waypoints
-        assert result1.value.total_length_m == pytest.approx(result2.value.total_length_m, abs=0.001)
+        assert result1.value.total_length_m == pytest.approx(
+            result2.value.total_length_m, abs=0.001
+        )
 
     def test_determinism_three_runs(self):
         """Running the same route 3 times produces identical results."""
@@ -51,6 +54,7 @@ class TestRouterDeterminism:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 2: Path around obstacles
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestRouterObstacles:
     """Router must find valid paths around obstacles."""
@@ -69,9 +73,7 @@ class TestRouterObstacles:
         end = Point3D(10.0, 0.0, 3.0)
         # Wall blocking the straight path
         wall = BoundingBox(
-            x_min=4.0, y_min=-1.0, z_min=2.0,
-            x_max=5.0, y_max=1.0, z_max=4.0,
-            label="wall"
+            x_min=4.0, y_min=-1.0, z_min=2.0, x_max=5.0, y_max=1.0, z_max=4.0, label="wall"
         )
         result = orthogonal_astar(start, end, obstacles=[wall], grid_resolution=0.5)
         assert result.is_ok()
@@ -85,9 +87,13 @@ class TestRouterObstacles:
         end = Point3D(10.0, 0.0, 3.0)
         # Wall spanning entire Y range with clearance
         wall = BoundingBox(
-            x_min=4.0, y_min=-10.0, z_min=0.0,
-            x_max=6.0, y_max=10.0, z_max=6.0,
-            label="impenetrable_wall"
+            x_min=4.0,
+            y_min=-10.0,
+            z_min=0.0,
+            x_max=6.0,
+            y_max=10.0,
+            z_max=6.0,
+            label="impenetrable_wall",
         )
         result = orthogonal_astar(start, end, obstacles=[wall], grid_resolution=0.5)
         # May or may not find a path depending on search boundaries
@@ -100,23 +106,24 @@ class TestRouterObstacles:
 # Test 3: Physics errors for invalid inputs
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestRouterPhysicsErrors:
     """Invalid coordinates must return PhysicsError."""
 
     def test_nan_start_coordinate(self):
         """NaN start coordinate → PhysicsError."""
         # Point3D rejects NaN in __post_init__ before router sees it
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
-            Point3D(0.0, 0.0, float('nan'))
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+            Point3D(0.0, 0.0, float("nan"))
 
     def test_start_inside_obstacle(self):
         """Start inside obstacle → RoutingError."""
         start = Point3D(4.5, 0.0, 3.0)
         end = Point3D(10.0, 0.0, 3.0)
         wall = BoundingBox(
-            x_min=4.0, y_min=-1.0, z_min=2.0,
-            x_max=5.0, y_max=1.0, z_max=4.0,
-            label="wall"
+            x_min=4.0, y_min=-1.0, z_min=2.0, x_max=5.0, y_max=1.0, z_max=4.0, label="wall"
         )
         result = orthogonal_astar(start, end, obstacles=[wall], grid_resolution=0.5)
         assert result.is_err()
@@ -126,9 +133,7 @@ class TestRouterPhysicsErrors:
         start = Point3D(0.0, 0.0, 3.0)
         end = Point3D(4.5, 0.0, 3.0)
         wall = BoundingBox(
-            x_min=4.0, y_min=-1.0, z_min=2.0,
-            x_max=5.0, y_max=1.0, z_max=4.0,
-            label="wall"
+            x_min=4.0, y_min=-1.0, z_min=2.0, x_max=5.0, y_max=1.0, z_max=4.0, label="wall"
         )
         result = orthogonal_astar(start, end, obstacles=[wall], grid_resolution=0.5)
         assert result.is_err()
@@ -137,6 +142,7 @@ class TestRouterPhysicsErrors:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 4: Path properties
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestRouterPathProperties:
     """Verify RoutePath output properties."""
@@ -179,6 +185,7 @@ class TestRouterPathProperties:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 5: Manhattan heuristic is admissible
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestHeuristicAdmissibility:
     """Manhattan distance must never overestimate actual path length."""

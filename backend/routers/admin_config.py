@@ -127,17 +127,19 @@ class SecretRotationRequest(BaseModel):
 # secret names may be rotated. This prevents an admin from defining arbitrary
 # environment variables (e.g. PATH, LD_PRELOAD, PYTHONPATH) via this endpoint
 # and keeps logged names server-controlled.
-_ROTATABLE_SECRETS = frozenset({
-    "FIREAI_API_KEY",
-    "FIREAI_SESSION_SECRET",
-    "FIREAI_VISION_KEY_ENCRYPTION_KEY",
-    "DATABASE_URL",
-    "QOMN_AUDIT_SECRET_KEY",
-    "REDIS_URL",
-    "APS_CLIENT_SECRET",
-    "HF_TOKEN",
-    "OPENAI_API_KEY",
-})
+_ROTATABLE_SECRETS = frozenset(
+    {
+        "FIREAI_API_KEY",
+        "FIREAI_SESSION_SECRET",
+        "FIREAI_VISION_KEY_ENCRYPTION_KEY",
+        "DATABASE_URL",
+        "QOMN_AUDIT_SECRET_KEY",
+        "REDIS_URL",
+        "APS_CLIENT_SECRET",
+        "HF_TOKEN",
+        "OPENAI_API_KEY",
+    }
+)
 
 # The FIREAI_TEST_* namespace is additionally permitted: it is dedicated to
 # tests (tests/test_admin_config_v270.py) and no application code reads env
@@ -152,10 +154,7 @@ _SAFE_SECRET_VALUE_RE = re.compile(r"^[\x20-\x7e]{32,4096}$")
 
 def _validate_rotatable_secret_name(key_name: str) -> str:
     """Return the validated secret name or raise 400 for non-allowlisted names."""
-    if (
-        key_name not in _ROTATABLE_SECRETS
-        and not key_name.startswith(_TEST_SECRET_PREFIX)
-    ):
+    if key_name not in _ROTATABLE_SECRETS and not key_name.startswith(_TEST_SECRET_PREFIX):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Secret name '{key_name}' is not in the rotatable allowlist.",
@@ -171,10 +170,7 @@ def _set_rotated_secret(key_name: str, new_secret: str) -> None:
     attacker-controlled. This is the single choke point for in-process
     secret updates.
     """
-    if (
-        key_name not in _ROTATABLE_SECRETS
-        and not key_name.startswith(_TEST_SECRET_PREFIX)
-    ):
+    if key_name not in _ROTATABLE_SECRETS and not key_name.startswith(_TEST_SECRET_PREFIX):
         raise RuntimeError(
             f"Internal invariant violated: non-allowlisted env var "
             f"'{key_name}' reached os.environ assignment."
@@ -308,7 +304,12 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
 }
 
 # Variables that, if present in the env, indicate "configured" (boolean-like).
-_BOOLEAN_LIKE = {"AUTO_SAVE_REPORTS", "SESSION_COOKIE_SECURE", "AKAMAI_ENABLED", "AKAMAI_RATE_LIMIT_HEADER"}
+_BOOLEAN_LIKE = {
+    "AUTO_SAVE_REPORTS",
+    "SESSION_COOKIE_SECURE",
+    "AKAMAI_ENABLED",
+    "AKAMAI_RATE_LIMIT_HEADER",
+}
 
 
 def _resolve_env_var_value(var: str, value: str | None) -> Any:
@@ -342,10 +343,7 @@ def _resolve_env_var_value(var: str, value: str | None) -> Any:
     # Secrets (C-06): anything that looks like a key/secret/token/password is
     # never returned in full — only a masked preview (or None when unset).
     # LANGFUSE_PUBLIC_KEY is intentionally public and handled above.
-    if (
-        re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var)
-        and var != "LANGFUSE_PUBLIC_KEY"
-    ):
+    if re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var) and var != "LANGFUSE_PUBLIC_KEY":
         if not value:
             return None
         return f"{value[:4]}***"

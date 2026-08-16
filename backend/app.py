@@ -57,14 +57,17 @@ from backend.rbac import Permission
 # This must be done BEFORE importing any routers to prevent ForwardRef issues.
 def _rebuild_pydantic_models():
     from backend.models import GenerateReportInput
+
     GenerateReportInput.model_rebuild()
     try:
         from backend.routers.exports import ExportDataInput
+
         ExportDataInput.model_rebuild()
     except ImportError:
         pass
     try:
         from backend.routers.analyze import BatteryRequest, RoomAnalyzeRequest, VoltageRequest
+
         for m in (BatteryRequest, VoltageRequest, RoomAnalyzeRequest):
             m.model_rebuild()
     except ImportError:
@@ -77,8 +80,14 @@ def _rebuild_pydantic_models():
             SmokeSpacingRequest,
             VoltageDropRequest,
         )
-        for m in (SmokeSpacingRequest, HeatSpacingRequest, VoltageDropRequest,
-                  DuctDetectorRequest, RoomRequest):
+
+        for m in (
+            SmokeSpacingRequest,
+            HeatSpacingRequest,
+            VoltageDropRequest,
+            DuctDetectorRequest,
+            RoomRequest,
+        ):
             m.model_rebuild()
     except ImportError:
         pass
@@ -100,15 +109,28 @@ def _rebuild_pydantic_models():
             WebhookPublishRequest,
             WebhookSubscribeRequest,
         )
-        for m in (IFC43MapDetectorRequest, GenerativeDesignRequest, ARExportRequest,
-                  WebhookSubscribeRequest, WebhookPublishRequest,
-                  TopologyAddElementRequest, TopologyAddConnectionRequest, TopologyImpactRequest,
-                  VectorMemoryStoreRequest, VectorMemorySearchRequest,
-                  GraphRAGAddKnowledgeRequest, GraphRAGAskRequest, GraphRAGSearchRequest,
-                  BIMExtractRoomsRequest, SmokeSimulationStateRequest):
+
+        for m in (
+            IFC43MapDetectorRequest,
+            GenerativeDesignRequest,
+            ARExportRequest,
+            WebhookSubscribeRequest,
+            WebhookPublishRequest,
+            TopologyAddElementRequest,
+            TopologyAddConnectionRequest,
+            TopologyImpactRequest,
+            VectorMemoryStoreRequest,
+            VectorMemorySearchRequest,
+            GraphRAGAddKnowledgeRequest,
+            GraphRAGAskRequest,
+            GraphRAGSearchRequest,
+            BIMExtractRoomsRequest,
+            SmokeSimulationStateRequest,
+        ):
             m.model_rebuild()
     except ImportError:
         pass
+
 
 _rebuild_pydantic_models()
 
@@ -206,6 +228,7 @@ async def lifespan(app: FastAPI):
     # This is the ROOT-CAUSE fix for the silent auth-router failure that
     # allowed the app to start in a broken state.
     import os as _os
+
     _secret = _os.environ.get("FIREAI_SESSION_SECRET", "")
     if not _secret:
         raise RuntimeError(
@@ -221,7 +244,7 @@ async def lifespan(app: FastAPI):
             f"Minimum is 43 chars (256 bits of entropy). "
             f"Current value appears to be a placeholder or truncated. "
             f"Generate a strong one with: "
-            f"python3 -c \"import secrets; print(secrets.token_urlsafe(64))\" "
+            f'python3 -c "import secrets; print(secrets.token_urlsafe(64))" '
             f"and set it as FIREAI_SESSION_SECRET."
         )
 
@@ -236,6 +259,7 @@ async def lifespan(app: FastAPI):
     # on a live deployment (degraded mode — still logged loudly).
     try:
         from backend.env_validator import assert_environment
+
         assert_environment()
     except RuntimeError as _env_err:
         # Re-raise so the lifespan/startup fails LOUDLY — never silently
@@ -246,6 +270,7 @@ async def lifespan(app: FastAPI):
     # HOTFIX C-2: Mark core modules as loaded so health check reports "ok".
     try:
         from backend.routers.health import set_core_modules_loaded
+
         set_core_modules_loaded(True)
         logger.info("Core modules marked as loaded for health check")
     except ImportError as exc:
@@ -256,6 +281,7 @@ async def lifespan(app: FastAPI):
     # accepted. Now we call it and log warnings for any issues.
     try:
         from backend.config import Config
+
         issues = Config.validate_config()
         if issues:
             for issue in issues:
@@ -272,6 +298,7 @@ async def lifespan(app: FastAPI):
     # silently dropped the heartbeat. Call it directly instead.
     try:
         from backend.services.uptime_service import get_uptime_service
+
         get_uptime_service().start_heartbeat_loop()
         logger.info("UptimeRobot keep-awake heartbeat loop initiated")
     except Exception as exc:
@@ -305,6 +332,7 @@ async def lifespan(app: FastAPI):
     # Stop the UptimeRobot Keep-Awake Heartbeat Loop
     try:
         from backend.services.uptime_service import get_uptime_service
+
         # `stop_heartbeat_loop()` uses `asyncio.wait({task})` internally, which
         # does NOT propagate CancelledError from the cancelled child task.
         # Therefore we no longer need to catch `CancelledError` here — that
@@ -326,6 +354,7 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.warning("Session cleanup task shutdown error: %s", exc)
     logger.info("Shutting down CAD/BIM Integration Platform...")
+
 
 # Create FastAPI app with lifespan
 # In production, the entire API surface (including internal RBAC permission
@@ -374,7 +403,7 @@ All endpoints require API key authentication via `X-API-Key` header.
     lifespan=lifespan,
     docs_url=_docs_url,
     redoc_url=_redoc_url,
-    openapi_url=_openapi_url
+    openapi_url=_openapi_url,
 )
 
 # Add rate limiter state
@@ -393,6 +422,7 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
     Correlation ID for auditing.
     """
     import uuid
+
     correlation_id = (
         getattr(request.state, "correlation_id", None)
         or request.headers.get("X-Correlation-ID")
@@ -444,16 +474,16 @@ if _env_mode in ("production", "prod"):
         )
     ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
     if "*" in ALLOWED_ORIGINS:
-        raise RuntimeError(
-            "CORS_ORIGINS='*' is forbidden in production. List explicit origins."
-        )
+        raise RuntimeError("CORS_ORIGINS='*' is forbidden in production. List explicit origins.")
 else:
     # Development / testing — safe defaults (localhost only).
     # Support both CORS_ORIGINS and CORS_ALLOWED_ORIGINS for backward compatibility
     _cors_raw = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ALLOWED_ORIGINS")
     ALLOWED_ORIGINS = [
         o.strip()
-        for o in (_cors_raw or "http://localhost:3000,http://localhost:5173,http://localhost:8000").split(",")
+        for o in (
+            _cors_raw or "http://localhost:3000,http://localhost:5173,http://localhost:8000"
+        ).split(",")
         if o.strip()
     ]
 
@@ -499,18 +529,26 @@ app.add_middleware(
     # Engineering Copilot Bearer tokens), X-Request-ID, X-CSRF-Token
     # (for double-submit cookie pattern), and Accept for content negotiation.
     allow_headers=[
-        "X-API-Key", "Content-Type", "X-Correlation-ID",
-        "Authorization", "X-Request-ID", "X-CSRF-Token", "Accept",
+        "X-API-Key",
+        "Content-Type",
+        "X-Correlation-ID",
+        "Authorization",
+        "X-Request-ID",
+        "X-CSRF-Token",
+        "Accept",
     ],
 )
 
 # Include our CAD/BIM integration routers
 # FIX #35: Removed redundant prefix from app.include_router since each
 # router already defines its own prefix (e.g., prefix="/autocad").
-app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+app.include_router(
+    autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"]
+)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(cad.router, prefix="/api/v1", tags=["CAD-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
+
 
 # ── STRESS-TEST FIX #8: Register ALL backend routers ───────────────────────
 # Previously only autocad/revit/digital_twin/marine/monitor/health were
@@ -539,6 +577,7 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
 
     try:
         import importlib
+
         mod = importlib.import_module(f"backend.routers.{module_name}")
         if hasattr(mod, "router"):
             app.include_router(mod.router, prefix=prefix, tags=[tag or module_name.title()])
@@ -548,14 +587,17 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
             logger.debug("Registered project_router from: %s", module_name)
         if hasattr(mod, "ws_router"):
             app.include_router(mod.ws_router, tags=[tag or module_name.title()])
-            logger.debug("Registered ws_router from: %s (no prefix — preserves /ws root path)", module_name)
+            logger.debug(
+                "Registered ws_router from: %s (no prefix — preserves /ws root path)", module_name
+            )
     except ImportError as e:
         # Optional dependency missing — log as ERROR with clear message.
         logger.error(
             "Optional dependency for router '%s' is missing: %s. "
             "Router will not be available. Install the required dependency. "
             "This is a hard requirement in production — see requirements.txt.",
-            module_name, e,
+            module_name,
+            e,
             exc_info=True,
         )
         # Critical routers must never be skipped.
@@ -567,9 +609,11 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         logger.exception(
             "Router '%s' registration failed with unexpected error: %s. "
             "This is a launch blocker — fix the underlying issue.",
-            module_name, e,
+            module_name,
+            e,
         )
         raise
+
 
 # Register the missing routers. Order matters for route precedence, but
 # FastAPI raises on conflict, so duplicates are caught at startup.
@@ -594,26 +638,27 @@ for _router_name in (
     "llm",  # V207: AI Copilot (Zenmux OpenAI-compatible LLM service)
     "auth",  # M-3: session-based auth with HttpOnly cookies
     "agent_ws",  # P0-3 FIX: Local Agent WebSocket router — /agent/ws was
-                 # never registered (only its helpers were imported by
-                 # revit.py), so every agent connection got 404 in prod.
+    # never registered (only its helpers were imported by
+    # revit.py), so every agent connection got 404 in prod.
     "settings",  # V151: Vision API Keys (AES-256-GCM encrypted) — /api/v1/settings/keys/openai
     # V270 FIX (systematic-debugging): closes 7 confirmed broken frontend
     # API calls identified by the BAZspark UI Coverage Audit. These routers
     # were missing entirely, causing 404s on feature-flags, env-config,
     # secret-rotation, admin-token rotation, and rbac/permissions.
     "admin_config",  # V270: /api/v1/feature-flags, /env-config, /settings/secret-rotation/rotate, /settings/admin-token/rotate
-    "rbac_admin",    # V270: /api/v1/admin/rbac/permissions
+    "rbac_admin",  # V270: /api/v1/admin/rbac/permissions
     # V270 FIX (audit "5 orphan services"): exposes previously-orphan OCR,
     # Scan-to-BIM, and Speckle services under /api/v1/experimental/*. Audit
     # was mistaken about Uptime and Region services — both already wired
     # through monitor.py and environment.py respectively.
     "experimental_services",  # V270: /api/v1/experimental/{features,ocr,scan-to-bim,speckle}
-    "billing",       # Meeza Payment Gateway (شبكة ميزة) — /api/v1/billing/meeza/*
+    "billing",  # Meeza Payment Gateway (شبكة ميزة) — /api/v1/billing/meeza/*
 ):
     _safe_include_router(_router_name)
 
 try:
     from backend.routers import multi_db as _multi_db_module
+
     app.include_router(_multi_db_module.router, prefix="/api/v1", tags=["multi-db"])
 except ImportError as e:
     logger.warning("Router 'multi_db' skipped (optional dependency missing): %s", e)
@@ -646,6 +691,7 @@ app.include_router(self_healing_router_module.router, prefix="/api/v1", tags=["S
 # Uses /revit-integration prefix to avoid conflicts with main revit.py.
 try:
     from backend.routers import revit_api as revit_api_module
+
     app.include_router(revit_api_module.router, prefix="/api/v1", tags=["Revit Integration API"])
 except ImportError as e:
     logger.warning("Router 'revit_api' skipped (optional dependency missing): %s", e)
@@ -657,7 +703,10 @@ except ImportError as e:
 # The EngineeringCopilotPage.tsx was calling these endpoints but they always failed.
 try:
     from backend.routers import engineering_copilot as engineering_copilot_module
-    app.include_router(engineering_copilot_module.router, prefix="/api/v1", tags=["Engineering Copilot"])
+
+    app.include_router(
+        engineering_copilot_module.router, prefix="/api/v1", tags=["Engineering Copilot"]
+    )
 except ImportError as e:
     logger.warning("Router 'engineering_copilot' skipped (optional dependency missing): %s", e)
 
@@ -682,6 +731,7 @@ app.include_router(monitor_router_module.router, tags=["Monitor"])
 # alias — both required by backend/tests/test_routers.py.
 app.include_router(health_router_module.router, prefix="/api", tags=["Health"])
 
+
 # ── V132 (MISSION TASK 3.1): API v2 with Deprecation Headers ─────────────
 # Per RFC 7234: v1 endpoints receive Deprecation + Sunset + Link headers
 # pointing to their v2 successors. This enables smooth migration to the
@@ -692,6 +742,7 @@ def _register_v2_router() -> None:
     """Mount the v2 router with all new cloud-native endpoints."""
     try:
         from backend.routers.v2 import router as v2_router
+
         app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
         logger.info("V2 API router mounted at /api/v2/")
     except ImportError as e:
@@ -703,6 +754,7 @@ def _register_v2_router() -> None:
     # (fds_webhook.router has prefix="/fds", so we add "/api/v2" here)
     try:
         from backend.routers.fds_webhook import router as fds_router
+
         app.include_router(fds_router, prefix="/api/v2", tags=["FDS Simulation Queue"])
         logger.info("FDS Simulation Queue router mounted at /api/v2/fds")
     except ImportError as e:
@@ -713,12 +765,14 @@ def _register_v2_router() -> None:
     # APS Cloud Design Automation router
     try:
         from backend.routers.aps import router as aps_router
+
         app.include_router(aps_router)
         logger.info("APS Cloud Design Automation router mounted at /api/v2/aps")
     except ImportError as e:
         logger.warning("APS router skipped (optional dependency missing): %s", e)
     except Exception as e:
         logger.warning("APS router registration failed: %s", e)
+
 
 _register_v2_router()
 
@@ -735,6 +789,7 @@ _register_v2_router()
 #   POST /orders/{order_id}/simulate-webhook  — sandbox-only test endpoint
 try:
     from backend.routers.billing import router as billing_router
+
     app.include_router(billing_router, prefix="/api/v1", tags=["Billing & Meeza Payments"])
     logger.info("Billing & Meeza payment router mounted at /api/v1/billing")
 except ImportError as e:
@@ -758,11 +813,13 @@ except Exception as e:
 def _register_csrf_middleware() -> None:
     """Register CSRF middleware if not explicitly disabled."""
     import os
+
     if os.environ.get("FIREAI_CSRF_DISABLED", "").lower() in ("1", "true", "yes"):
         logger.info("CSRF middleware DISABLED via FIREAI_CSRF_DISABLED env var")
         return
     try:
         from backend.security_csrf import CSRFMiddleware
+
         # Pure ASGI middleware — wraps the app
         app.add_middleware(CSRFMiddleware)
         logger.info("CSRF middleware registered (Double Submit Cookie pattern)")
@@ -771,8 +828,10 @@ def _register_csrf_middleware() -> None:
     except Exception as e:
         logger.warning("CSRF middleware registration failed: %s", e)
 
+
 # (V254 put the call before the definition → NameError. Fixed in V255.)
 _register_csrf_middleware()
+
 
 # Deprecation middleware: add Deprecation/Sunset/Link headers to v1 responses.
 # Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
@@ -812,6 +871,7 @@ async def add_deprecation_headers(request: Request, call_next):
 # /api/v2/health is kept as a separate v2-only endpoint.
 app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-v1"])
 
+
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
 async def health_check_legacy_alias() -> dict[str, Any]:
@@ -821,23 +881,32 @@ async def health_check_legacy_alias() -> dict[str, Any]:
     Returns the same database-aware response as /api/health.
     """
     from backend.routers.health import health_check
+
     return await health_check()
+
 
 @app.get("/api/v2/health", tags=["Health-v2"])
 async def health_check_v2() -> dict[str, object]:
     """Health check endpoint for API v2 — includes real DB connectivity check."""
     from backend.routers.health import health_check
+
     base_health = await health_check()
     return {
         **base_health,
         "api_version": "v2",
         "features": [
-            "rate_limiting", "enhanced_caching", "streaming",
-            "generative_design", "bim_provider_abstraction",
-            "ifc43_mapping", "ar_metadata_export",
-            "webhook_delivery", "smoke_simulation_state",
+            "rate_limiting",
+            "enhanced_caching",
+            "streaming",
+            "generative_design",
+            "bim_provider_abstraction",
+            "ifc43_mapping",
+            "ar_metadata_export",
+            "webhook_delivery",
+            "smoke_simulation_state",
         ],
     }
+
 
 # ── Error handlers ──────────────────────────────────────────────────────────
 # NOTE (audit P0-3 fix): The duplicate @app.exception_handler(Exception) that
@@ -862,6 +931,7 @@ async def database_health(
 # ═══════════════════════════════════════════════════════════════════════════
 # CACHE MANAGEMENT ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 # Previously these were public — an anonymous attacker could clear the cache
 # (denial-of-service via cache invalidation) or read cache statistics
@@ -919,6 +989,7 @@ async def cache_stats(
 if __name__ == "__main__":
     # Production deployments must use a reverse proxy (nginx, traefik, AWS ALB)
     import uvicorn
+
     uvicorn.run(
         "backend.app:app",
         host="127.0.0.1",  # V129: loopback only
@@ -970,11 +1041,15 @@ if _FRONTEND_DIST and _Path(_FRONTEND_DIST).is_dir():
 
     # SPA fallback: any non-/api route returns index.html so React Router can handle it
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def _spa_fallback(full_path: str):  # NOSONAR — S1172: full_path used to exclude /api routes
+    async def _spa_fallback(
+        full_path: str,
+    ):  # NOSONAR — S1172: full_path used to exclude /api routes
         # Never intercept API routes — those are handled by routers above
         if full_path.startswith("api/"):
             return _JSONResponse(status_code=404, content={"detail": "Not Found", "success": False})
         # Serve index.html for all other paths (client-side routing)
         if _FRONTEND_INDEX.is_file():
             return _FileResponse(str(_FRONTEND_INDEX))
-        return _JSONResponse(status_code=404, content={"detail": "Frontend not built", "success": False})
+        return _JSONResponse(
+            status_code=404, content={"detail": "Frontend not built", "success": False}
+        )

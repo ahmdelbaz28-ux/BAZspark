@@ -71,7 +71,9 @@ class TestParameterOptimizerInit:
     def test_custom_coverage_radius(self):
         """Custom coverage radius should be stored."""
         opt = ParameterOptimizer(coverage_radius=5.0)
-        assert opt.coverage_radius == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            opt.coverage_radius == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,11 +94,17 @@ class TestParamConfig:
             pareto_score=50.0,
             per_room=[],
         )
-        assert config.verify_step == 0.20  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            config.verify_step == 0.20
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert config.total_time_ms == 100
-        assert config.avg_count == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            config.avg_count == 5.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert config.all_valid is True
-        assert config.pareto_score == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            config.pareto_score == 50.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert config.per_room == []
 
     def test_pareto_score_inf_for_invalid(self):
@@ -183,7 +191,9 @@ class TestOptimise:
         """Single step should work."""
         result = optimizer.optimise(small_benchmark, steps=[0.20])
         assert len(result.all_configs) == 1
-        assert result.all_configs[0].verify_step == 0.20  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.all_configs[0].verify_step == 0.20
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_best_config_is_valid_or_first(self, optimizer, small_benchmark):
         """Best config should be valid if any valid config exists."""
@@ -230,6 +240,7 @@ class TestOptimise:
     def test_verify_step_restored_after_optimise(self, optimizer, small_benchmark):
         """VERIFY_STEP must be restored to original value after optimise()."""
         import fireai.core.spatial_engine.density_optimizer as _dm
+
         original = _dm.VERIFY_STEP
         optimizer.optimise(small_benchmark, steps=[0.15, 0.25])
         assert original == _dm.VERIFY_STEP

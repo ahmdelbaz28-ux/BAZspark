@@ -70,7 +70,9 @@ class ProofCertificate:
     proof_method: str = "delta_conservative_grid"
     grid_step_m: float = 0.20  # δ = cell size
     delta_margin_m: float = 0.0  # δ√2/2
-    effective_radius_m: float = 0.0  # R_eff = R − δ√2/2 (effective radius used in grid verification)
+    effective_radius_m: float = (
+        0.0  # R_eff = R − δ√2/2 (effective radius used in grid verification)
+    )
     max_spacing_m: float = 0.0  # S (detector spacing)
     wall_min_m: float = 0.10  # Minimum wall distance
 
@@ -310,6 +312,8 @@ class ProofCertificateGenerator:
         if coverage_lower_bound < 99.9:
             cert.warnings.append(f"Coverage lower bound {coverage_lower_bound:.1f}% < 99.9%")
         if ceiling_height > 9.1:
-            cert.warnings.append(f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7")
+            cert.warnings.append(
+                f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7"
+            )
 
         return cert

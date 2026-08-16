@@ -13,6 +13,7 @@ Features:
 Usage:
     from backend.cache import cache_get, cache_set, cache_delete, cache_stats
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ _cache_reaper_lock = threading.Lock()
 
 
 # ── Internal helpers (MUST be called with _cache_lock held) ────────────────
+
 
 def _evict_expired_locked() -> int:
     """Remove all expired entries. MUST be called with _cache_lock held."""
@@ -95,6 +97,7 @@ def _ensure_cache_reaper_started() -> None:
 
 # ── Public API ─────────────────────────────────────────────────────────────
 
+
 def get_cache() -> OrderedDict[str, dict]:
     """Get cache instance. Returns in-memory dict if Redis unavailable."""
     return _cache
@@ -132,7 +135,8 @@ async def cache_set(key: str, value: object, expire: int = 300) -> None:  # NOSO
         if raw_size > _CACHE_MAX_VALUE_SIZE:
             logger.warning(
                 "Cache value too large before coercion (%d bytes raw, max %d) -- rejecting",
-                raw_size, _CACHE_MAX_VALUE_SIZE,
+                raw_size,
+                _CACHE_MAX_VALUE_SIZE,
             )
             return
         # Coerce to str for cache storage (cache stores str per signature)
@@ -140,7 +144,8 @@ async def cache_set(key: str, value: object, expire: int = 300) -> None:  # NOSO
     if len(value) > _CACHE_MAX_VALUE_SIZE:
         logger.warning(
             "Cache value too large (%d bytes, max %d) — rejecting",
-            len(value), _CACHE_MAX_VALUE_SIZE,
+            len(value),
+            _CACHE_MAX_VALUE_SIZE,
         )
         return
 
@@ -178,10 +183,7 @@ async def cache_stats() -> dict[str, Any]:  # noqa: S7503 — async for API cons
         _evict_expired_locked()
         total = len(_cache)
         # Estimate memory: sum of sys.getsizeof for each entry
-        mem_estimate = sum(
-            sys.getsizeof(k) + sys.getsizeof(v)
-            for k, v in _cache.items()
-        )
+        mem_estimate = sum(sys.getsizeof(k) + sys.getsizeof(v) for k, v in _cache.items())
         # Top 10 keys by remaining TTL
         now = time.time()
         top_keys = sorted(

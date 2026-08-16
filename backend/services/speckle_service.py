@@ -24,6 +24,7 @@ try:
     from specklepy.api.client import SpeckleClient
     from specklepy.objects import Base
     from specklepy.transports.server import ServerTransport
+
     HAS_SPECKLE = True
 except ImportError:
     HAS_SPECKLE = False
@@ -53,7 +54,9 @@ class SpeckleService:
         self._last_stream_id: str | None = None
         self._last_commit_id: str | None = None
 
-    def push_to_speckle(self, stream_id: str, server_url: str, token: str, elements: list[dict[str, Any]]) -> dict[str, Any]:
+    def push_to_speckle(
+        self, stream_id: str, server_url: str, token: str, elements: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Push a list of element dictionaries to a Speckle stream.
         """
@@ -66,6 +69,7 @@ class SpeckleService:
             from urllib.parse import urlsplit
 
             from backend.integrations._ssrf_guard import validate_host_for_user_input
+
             parts = urlsplit(server_url)
             if parts.hostname:
                 validate_host_for_user_input(parts.hostname)
@@ -94,7 +98,7 @@ class SpeckleService:
                 object_id=obj_id,
                 branch_name="main",
                 message=f"BAZspark: Python Backend sync - {len(elements)} elements",
-                source_application="PythonBackend"
+                source_application="PythonBackend",
             )
 
             self._last_stream_id = stream_id
@@ -116,9 +120,9 @@ class SpeckleService:
                 "success": True,
                 "elements": [
                     {"id": "1", "type": "Wall", "x": 0.0, "y": 0.0},
-                    {"id": "2", "type": "Wall", "x": 5000.0, "y": 0.0}
+                    {"id": "2", "type": "Wall", "x": 5000.0, "y": 0.0},
                 ],
-                "simulation_mode": True
+                "simulation_mode": True,
             }
 
         try:

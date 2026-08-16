@@ -50,7 +50,9 @@ class TestZoneConstraints:
             separate_occupancy_types=False,
             prefer_adjacent=False,
         )
-        assert c.max_area_sqm == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            c.max_area_sqm == 1000.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert c.max_detectors_per_zone == 50
         assert c.max_rooms_per_zone == 10
         assert c.separate_occupancy_types is False
@@ -75,7 +77,9 @@ class TestFireZone:
         z = FireZone(zone_id="Z-01")
         assert z.zone_id == "Z-01"
         assert z.rooms == []
-        assert z.total_area_sqm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            z.total_area_sqm == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert z.total_detectors == 0
         assert z.occupancy_types == set()
         assert z.floor_id == ""
@@ -92,7 +96,9 @@ class TestFireZone:
             zone_type="supervisory",
         )
         assert len(z.rooms) == 2
-        assert z.total_area_sqm == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            z.total_area_sqm == 150.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert z.zone_type == "supervisory"
 
 
@@ -106,7 +112,9 @@ class TestZoneReport:
         assert r.floor_id == "GF"
         assert r.zones == []
         assert r.total_zones == 0
-        assert r.total_area_sqm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            r.total_area_sqm == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.total_detectors == 0
         assert r.warnings == []
         assert r.unzoned_rooms == []
@@ -138,56 +146,72 @@ class TestFireZoneEngineEmpty:
 class TestFireZoneEngineBasicClustering:
     def test_single_room(self):
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones == 1
         assert "R1" in report.zones[0].rooms
 
     def test_two_same_occupancy_rooms(self):
         """Same occupancy → same zone (if constraints allow)."""
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones >= 1
 
     def test_different_occupancy_separate_zones(self):
         """separate_occupancy_types=True: different occupancy → different zones."""
         engine = FireZoneEngine(constraints=ZoneConstraints(separate_occupancy_types=True))
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
+            ],
+        )
         assert report.total_zones >= 2
 
     def test_no_occupancy_separation(self):
         """separate_occupancy_types=False: all rooms can be in same zone."""
-        engine = FireZoneEngine(
-            constraints=ZoneConstraints(separate_occupancy_types=False)
+        engine = FireZoneEngine(constraints=ZoneConstraints(separate_occupancy_types=False))
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
+            ],
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
-        ])
         # Should allow all in one zone if constraints permit
         assert report.total_zones >= 1
 
     def test_room_area_aggregated(self):
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
+            ],
+        )
         assert report.total_area_sqm == pytest.approx(130.0, abs=0.1)
 
     def test_detector_count_aggregated(self):
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
+            ],
+        )
         assert report.total_detectors == 5
 
 
@@ -202,10 +226,13 @@ class TestFireZoneEngineConstraintSplitting:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_area_sqm=100.0, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 60.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 60.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 60.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 60.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones >= 2
 
     def test_detector_constraint_split(self):
@@ -213,10 +240,13 @@ class TestFireZoneEngineConstraintSplitting:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_detectors_per_zone=3, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones >= 2
 
     def test_room_count_constraint_split(self):
@@ -224,11 +254,14 @@ class TestFireZoneEngineConstraintSplitting:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_rooms_per_zone=2, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 1, "occupancy": "office"},
-            {"id": "R2", "area": 50.0, "detectors": 1, "occupancy": "office"},
-            {"id": "R3", "area": 50.0, "detectors": 1, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 1, "occupancy": "office"},
+                {"id": "R2", "area": 50.0, "detectors": 1, "occupancy": "office"},
+                {"id": "R3", "area": 50.0, "detectors": 1, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones >= 2
 
     def test_no_area_limit_no_split(self):
@@ -236,9 +269,12 @@ class TestFireZoneEngineConstraintSplitting:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_area_sqm=0, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 1000.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 1000.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         assert report.total_zones == 1
 
 
@@ -254,10 +290,14 @@ class TestFireZoneEngineAdjacency:
             constraints=ZoneConstraints(separate_occupancy_types=False, prefer_adjacent=True)
         )
         adjacency = {"R1": {"R2"}, "R2": {"R1"}}
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ], adjacency=adjacency)
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+            adjacency=adjacency,
+        )
         # Both rooms should be in the same zone
         assert report.total_zones >= 1
 
@@ -267,11 +307,15 @@ class TestFireZoneEngineAdjacency:
             constraints=ZoneConstraints(separate_occupancy_types=False, prefer_adjacent=True)
         )
         adjacency = {"R1": set(), "R2": set(), "R3": set()}
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R3", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ], adjacency=adjacency)
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R3", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+            adjacency=adjacency,
+        )
         # With no adjacency connections, each room is its own cluster
         assert report.total_zones >= 3
 
@@ -281,11 +325,15 @@ class TestFireZoneEngineAdjacency:
             constraints=ZoneConstraints(separate_occupancy_types=False, prefer_adjacent=True)
         )
         adjacency = {"R1": {"R2"}, "R2": {"R1", "R3"}, "R3": {"R2"}}
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 30.0, "detectors": 1, "occupancy": "office"},
-            {"id": "R2", "area": 30.0, "detectors": 1, "occupancy": "office"},
-            {"id": "R3", "area": 30.0, "detectors": 1, "occupancy": "office"},
-        ], adjacency=adjacency)
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 30.0, "detectors": 1, "occupancy": "office"},
+                {"id": "R2", "area": 30.0, "detectors": 1, "occupancy": "office"},
+                {"id": "R3", "area": 30.0, "detectors": 1, "occupancy": "office"},
+            ],
+            adjacency=adjacency,
+        )
         assert report.total_zones >= 1
 
 
@@ -297,9 +345,12 @@ class TestFireZoneEngineAdjacency:
 class TestFireZoneEngineZoneIDs:
     def test_zone_id_format_with_floor(self):
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         zone_id = report.zones[0].zone_id
         assert "GF" in zone_id
         assert "Z" in zone_id
@@ -308,10 +359,13 @@ class TestFireZoneEngineZoneIDs:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_detectors_per_zone=1, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 1, "occupancy": "office"},
-            {"id": "R2", "area": 50.0, "detectors": 1, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 1, "occupancy": "office"},
+                {"id": "R2", "area": 50.0, "detectors": 1, "occupancy": "office"},
+            ],
+        )
         assert len(report.zones) >= 2
         zone_ids = [z.zone_id for z in report.zones]
         # IDs should be unique
@@ -329,11 +383,16 @@ class TestFireZoneEngineWarnings:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_area_sqm=50.0, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 80.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 80.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         # Large room that can't be split → area exceeds limit
-        area_warnings = [w for w in report.warnings if "area" in w.lower() and "exceeds" in w.lower()]
+        area_warnings = [
+            w for w in report.warnings if "area" in w.lower() and "exceeds" in w.lower()
+        ]
         assert len(area_warnings) >= 1
 
     def test_detector_exceeds_warning(self):
@@ -341,10 +400,15 @@ class TestFireZoneEngineWarnings:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_detectors_per_zone=2, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 5, "occupancy": "office"},
-        ])
-        det_warnings = [w for w in report.warnings if "detector" in w.lower() and "limit" in w.lower()]
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 5, "occupancy": "office"},
+            ],
+        )
+        det_warnings = [
+            w for w in report.warnings if "detector" in w.lower() and "limit" in w.lower()
+        ]
         assert len(det_warnings) >= 1
 
     def test_slc_loop_capacity_warning(self):
@@ -352,10 +416,13 @@ class TestFireZoneEngineWarnings:
         engine = FireZoneEngine(
             constraints=ZoneConstraints(max_slc_devices_per_loop=5, separate_occupancy_types=False)
         )
-        report = engine.cluster_floor("GF", [
-            {"id": f"R{i}", "area": 50.0, "detectors": 2, "occupancy": "office"}
-            for i in range(3)
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": f"R{i}", "area": 50.0, "detectors": 2, "occupancy": "office"}
+                for i in range(3)
+            ],
+        )
         slc_warnings = [w for w in report.warnings if "SLC" in w or "FLOOR_DETECTOR_COUNT" in w]
         assert len(slc_warnings) >= 1
 
@@ -368,10 +435,13 @@ class TestFireZoneEngineWarnings:
 class TestBuildZoneMap:
     def test_zone_map_from_report(self):
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 80.0, "detectors": 3, "occupancy": "office"},
+            ],
+        )
         zone_map = engine.build_zone_map(report)
         assert "R1" in zone_map
         assert "R2" in zone_map
@@ -379,13 +449,14 @@ class TestBuildZoneMap:
         assert zone_map["R1"] == zone_map["R2"]
 
     def test_zone_map_multiple_zones(self):
-        engine = FireZoneEngine(
-            constraints=ZoneConstraints(separate_occupancy_types=True)
+        engine = FireZoneEngine(constraints=ZoneConstraints(separate_occupancy_types=True))
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+                {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
+            ],
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-            {"id": "R2", "area": 60.0, "detectors": 3, "occupancy": "industrial"},
-        ])
         zone_map = engine.build_zone_map(report)
         assert len(zone_map) == 2
         # Different occupancy → different zones
@@ -401,36 +472,46 @@ class TestFireZoneEngineRoomNormalization:
     def test_room_id_key(self):
         """Rooms can use 'id' or 'room_id' key."""
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"room_id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"room_id": "R1", "area": 50.0, "detectors": 2, "occupancy": "office"},
+            ],
+        )
         assert len(report.zones) >= 1
         assert "R1" in report.zones[0].rooms
 
     def test_detector_count_key(self):
         """Rooms can use 'detectors' or 'detector_count' key."""
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detector_count": 2, "occupancy": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detector_count": 2, "occupancy": "office"},
+            ],
+        )
         assert report.total_detectors == 2
 
     def test_occupancy_room_type_key(self):
         """Rooms can use 'occupancy' or 'room_type' key."""
         engine = FireZoneEngine()
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2, "room_type": "office"},
-        ])
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2, "room_type": "office"},
+            ],
+        )
         assert report.total_zones >= 1
 
     def test_default_occupancy(self):
         """Missing occupancy defaults to 'standard'."""
-        engine = FireZoneEngine(
-            constraints=ZoneConstraints(separate_occupancy_types=False)
+        engine = FireZoneEngine(constraints=ZoneConstraints(separate_occupancy_types=False))
+        report = engine.cluster_floor(
+            "GF",
+            [
+                {"id": "R1", "area": 50.0, "detectors": 2},
+            ],
         )
-        report = engine.cluster_floor("GF", [
-            {"id": "R1", "area": 50.0, "detectors": 2},
-        ])
         assert report.total_zones >= 1
 
 
@@ -452,7 +533,9 @@ class TestFireZoneEngineIntegration:
         rooms = []
         for i in range(5):
             rooms.append({"id": f"office_{i}", "area": 50.0, "detectors": 2, "occupancy": "office"})
-            rooms.append({"id": f"industrial_{i}", "area": 80.0, "detectors": 3, "occupancy": "industrial"})
+            rooms.append(
+                {"id": f"industrial_{i}", "area": 80.0, "detectors": 3, "occupancy": "industrial"}
+            )
         report = engine.cluster_floor("GF", rooms)
         assert report.total_zones >= 2  # At least one per occupancy type
         assert report.total_area_sqm == pytest.approx(5 * 50 + 5 * 80, abs=0.1)

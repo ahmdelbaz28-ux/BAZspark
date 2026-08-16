@@ -4,6 +4,7 @@ Ensures each test starts with clean DNS cache/lock state, so tests don't
 pollute each other. Also isolates backend.app (but NOT backend.integrations)
 from sys.modules to prevent cross-test pollution of the FastAPI app cache.
 """
+
 import sys
 
 import pytest
@@ -18,6 +19,7 @@ def _reset_ssrf_dns_state():
     DNS lookups (breaking test isolation).
     """
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
+
     _reset_dns_state_for_testing()
     yield
     # Clean up after test too, in case the test populated the cache
@@ -40,9 +42,7 @@ def _reset_ssrf_dns_state():
 # FIREAI_API_KEY at import time via config, which is the root cause of the
 # auth test pollution. Evicting just backend.app forces a re-import of the
 # app (which re-reads env vars) without breaking any submodule's type hints.
-_EVICT_PATTERNS = (
-    "backend.app",
-)
+_EVICT_PATTERNS = ("backend.app",)
 
 
 @pytest.fixture(autouse=True)

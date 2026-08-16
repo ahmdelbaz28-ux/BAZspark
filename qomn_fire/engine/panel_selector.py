@@ -25,26 +25,28 @@ from fireai.core.panel_selection import (
 from qomn_fire.core.errors import FACPSelectionError, Result
 
 
-class PanelRecommendation(_PanelRec):
-    ...
+class PanelRecommendation(_PanelRec): ...
 
 
-class ProjectRequirements(_ProjReq):
-    ...
+class ProjectRequirements(_ProjReq): ...
 
 
 class SelectionEngine(_SelectionEngine):
     @classmethod
-    def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
+    def select_panel(
+        cls, req: ProjectRequirements
+    ) -> Result[PanelRecommendation, FACPSelectionError]:
         try:
             rec = super().select_panel(req)
             return Result(value=rec)
         except ValueError as e:
-            return Result(error=FACPSelectionError(
-                message=str(e),
-                code_ref="UL 864 / NFPA 72",
-                remedy="Reduce required device loads or transition to a multi-node networked panel architecture."
-            ))
+            return Result(
+                error=FACPSelectionError(
+                    message=str(e),
+                    code_ref="UL 864 / NFPA 72",
+                    remedy="Reduce required device loads or transition to a multi-node networked panel architecture.",
+                )
+            )
 
     @classmethod
     def compute_battery_ah(

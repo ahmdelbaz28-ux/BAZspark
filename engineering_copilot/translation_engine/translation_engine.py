@@ -6,6 +6,7 @@ Translation engine for converting between ETAP, AutoCAD, Revit, and Unified Engi
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 import logging
 from typing import Any
 
@@ -45,20 +46,17 @@ class TranslationEngine:
             ("ETAP", "Breaker"): ("Breaker", "create_breaker"),
             ("ETAP", "Load"): ("Load", "create_load"),
             ("ETAP", "Generator"): ("Generator", "create_generator"),
-
             # AutoCAD to Unified
             ("AutoCAD", "Block"): ("Equipment", "create_block"),
             ("AutoCAD", "Line"): ("Cable", "create_line"),
             ("AutoCAD", "Circle"): ("Bus", "create_circle"),
             ("AutoCAD", "Text"): ("Annotation", "create_annotation"),
-
             # Revit to Unified
             ("Revit", "Panel"): ("Panel", "place_panel"),
             ("Revit", "Transformer"): ("Transformer", "place_transformer"),
             ("Revit", "CableTray"): ("Cable", "place_cable_tray"),
             ("Revit", "Conduit"): ("Cable", "place_conduit"),
             ("Revit", "ElectricalEquipment"): ("Equipment", "place_equipment"),
-
             # Unified to ETAP
             ("Unified", "Panel"): ("ETAP", "create_switch"),
             ("Unified", "Transformer"): ("ETAP", "create_transformer"),
@@ -67,14 +65,12 @@ class TranslationEngine:
             ("Unified", "Breaker"): ("ETAP", "create_breaker"),
             ("Unified", "Load"): ("ETAP", "create_load"),
             ("Unified", "Generator"): ("ETAP", "create_generator"),
-
             # Unified to AutoCAD
             ("Unified", "Panel"): ("AutoCAD", "insert_panel_block"),
             ("Unified", "Transformer"): ("AutoCAD", "insert_transformer_block"),
             ("Unified", "Bus"): ("AutoCAD", "draw_bus_duct"),
             ("Unified", "Cable"): ("AutoCAD", "draw_cable_polyline"),
             ("Unified", "Equipment"): ("AutoCAD", "insert_equipment_block"),
-
             # Unified to Revit
             ("Unified", "Panel"): ("Revit", "place_panel_family"),
             ("Unified", "Transformer"): ("Revit", "place_transformer_family"),
@@ -87,28 +83,12 @@ class TranslationEngine:
             "Transformer": {
                 "ETAP": "XFMR_SYM",
                 "AutoCAD": "TRANSFORMER_BLK",
-                "Revit": "Transformer Family"
+                "Revit": "Transformer Family",
             },
-            "Panel": {
-                "ETAP": "SWITCH_SYM",
-                "AutoCAD": "PANEL_BLK",
-                "Revit": "Panel Family"
-            },
-            "Bus": {
-                "ETAP": "BUS_SYM",
-                "AutoCAD": "BUS_DUCT_PLINE",
-                "Revit": "Busway Family"
-            },
-            "Cable": {
-                "ETAP": "CABLE_SYM",
-                "AutoCAD": "CABLE_PLINE",
-                "Revit": "Cable Tray Family"
-            },
-            "Breaker": {
-                "ETAP": "CB_SYM",
-                "AutoCAD": "BREAKER_BLK",
-                "Revit": "Breaker Family"
-            }
+            "Panel": {"ETAP": "SWITCH_SYM", "AutoCAD": "PANEL_BLK", "Revit": "Panel Family"},
+            "Bus": {"ETAP": "BUS_SYM", "AutoCAD": "BUS_DUCT_PLINE", "Revit": "Busway Family"},
+            "Cable": {"ETAP": "CABLE_SYM", "AutoCAD": "CABLE_PLINE", "Revit": "Cable Tray Family"},
+            "Breaker": {"ETAP": "CB_SYM", "AutoCAD": "BREAKER_BLK", "Revit": "Breaker Family"},
         }
 
     def etap_to_unified(self, etap_data: dict[str, Any]) -> UnifiedEngineeringModel:
@@ -132,7 +112,7 @@ class TranslationEngine:
                 voltage_rating=bus_data.get("voltage", 0.0),
                 current_rating=bus_data.get("rated_current", 0.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)  # Would come from SLD coordinates
+                coordinates=Coordinates(0.0, 0.0),  # Would come from SLD coordinates
             )
             unified_model.add_entity(bus)
 
@@ -146,7 +126,7 @@ class TranslationEngine:
                 secondary_voltage=xfmer_data.get("secondary_voltage", 0.0),
                 power_rating=xfmer_data.get("power_rating", 0.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(transformer)
 
@@ -160,7 +140,7 @@ class TranslationEngine:
                 current_rating=panel_data.get("current_rating", 0.0),
                 feeder_count=panel_data.get("feeder_count", 0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(panel)
 
@@ -174,7 +154,7 @@ class TranslationEngine:
                 conductor_size=cable_data.get("conductor_size", ""),
                 length=cable_data.get("length", 0.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(cable)
 
@@ -188,7 +168,7 @@ class TranslationEngine:
                 current_rating=brkr_data.get("current_rating", 0.0),
                 interrupting_rating=brkr_data.get("interrupting_rating", 0.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(breaker)
 
@@ -201,7 +181,7 @@ class TranslationEngine:
                 power_rating=load_data.get("power_rating", 0.0),
                 power_factor=load_data.get("power_factor", 1.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(load)
 
@@ -214,11 +194,13 @@ class TranslationEngine:
                 power_rating=gen_data.get("power_rating", 0.0),
                 voltage_rating=gen_data.get("voltage_rating", 0.0),
                 source_system=SourceSystem.ETAP,
-                coordinates=Coordinates(0.0, 0.0)
+                coordinates=Coordinates(0.0, 0.0),
             )
             unified_model.add_entity(generator)
 
-        self.logger.info(f"Converted ETAP data to unified model with {len(unified_model.entities)} entities")
+        self.logger.info(
+            f"Converted ETAP data to unified model with {len(unified_model.entities)} entities"
+        )
         return unified_model
 
     def autocad_to_unified(self, autocad_data: dict[str, Any]) -> UnifiedEngineeringModel:
@@ -246,10 +228,7 @@ class TranslationEngine:
                     current_rating=block_ref.get("current_rating", 400.0),
                     feeder_count=block_ref.get("feeder_count", 0),
                     source_system=SourceSystem.AUTOCAD,
-                    coordinates=Coordinates(
-                        block_ref.get("x", 0.0),
-                        block_ref.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(block_ref.get("x", 0.0), block_ref.get("y", 0.0)),
                 )
                 unified_model.add_entity(panel)
 
@@ -262,10 +241,7 @@ class TranslationEngine:
                     secondary_voltage=block_ref.get("secondary_voltage", 480.0),
                     power_rating=block_ref.get("power_rating", 1000.0),
                     source_system=SourceSystem.AUTOCAD,
-                    coordinates=Coordinates(
-                        block_ref.get("x", 0.0),
-                        block_ref.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(block_ref.get("x", 0.0), block_ref.get("y", 0.0)),
                 )
                 unified_model.add_entity(transformer)
 
@@ -276,10 +252,7 @@ class TranslationEngine:
                     description=f"AutoCAD equipment block: {block_ref['name']}",
                     equipment_type="General Equipment",
                     source_system=SourceSystem.AUTOCAD,
-                    coordinates=Coordinates(
-                        block_ref.get("x", 0.0),
-                        block_ref.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(block_ref.get("x", 0.0), block_ref.get("y", 0.0)),
                 )
                 unified_model.add_entity(equipment)
 
@@ -293,7 +266,7 @@ class TranslationEngine:
                 conductor_size=polyline.get("conductor_size", "AWG"),
                 length=polyline.get("length", 0.0),
                 source_system=SourceSystem.AUTOCAD,
-                coordinates=Coordinates(0.0, 0.0)  # Would be calculated from polyline
+                coordinates=Coordinates(0.0, 0.0),  # Would be calculated from polyline
             )
             unified_model.add_entity(cable)
 
@@ -306,14 +279,13 @@ class TranslationEngine:
                 voltage_rating=circle.get("voltage_rating", 480.0),
                 current_rating=circle.get("current_rating", 1000.0),
                 source_system=SourceSystem.AUTOCAD,
-                coordinates=Coordinates(
-                    circle.get("center_x", 0.0),
-                    circle.get("center_y", 0.0)
-                )
+                coordinates=Coordinates(circle.get("center_x", 0.0), circle.get("center_y", 0.0)),
             )
             unified_model.add_entity(bus)
 
-        self.logger.info(f"Converted AutoCAD data to unified model with {len(unified_model.entities)} entities")
+        self.logger.info(
+            f"Converted AutoCAD data to unified model with {len(unified_model.entities)} entities"
+        )
         return unified_model
 
     def revit_to_unified(self, revit_data: dict[str, Any]) -> UnifiedEngineeringModel:
@@ -342,10 +314,7 @@ class TranslationEngine:
                     current_rating=element.get("current_rating", 400.0),
                     feeder_count=element.get("feeder_count", 0),
                     source_system=SourceSystem.REVIT,
-                    coordinates=Coordinates(
-                        element.get("x", 0.0),
-                        element.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(element.get("x", 0.0), element.get("y", 0.0)),
                 )
                 unified_model.add_entity(panel)
 
@@ -358,10 +327,7 @@ class TranslationEngine:
                     secondary_voltage=element.get("secondary_voltage", 480.0),
                     power_rating=element.get("power_rating", 1000.0),
                     source_system=SourceSystem.REVIT,
-                    coordinates=Coordinates(
-                        element.get("x", 0.0),
-                        element.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(element.get("x", 0.0), element.get("y", 0.0)),
                 )
                 unified_model.add_entity(transformer)
 
@@ -374,10 +340,7 @@ class TranslationEngine:
                     conductor_size=element.get("conductor_size", "AWG"),
                     length=element.get("length", 0.0),
                     source_system=SourceSystem.REVIT,
-                    coordinates=Coordinates(
-                        element.get("x", 0.0),
-                        element.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(element.get("x", 0.0), element.get("y", 0.0)),
                 )
                 unified_model.add_entity(cable)
 
@@ -388,17 +351,18 @@ class TranslationEngine:
                     description=f"Revit equipment: {element['name']}",
                     equipment_type=element.get("category", "General Equipment"),
                     source_system=SourceSystem.REVIT,
-                    coordinates=Coordinates(
-                        element.get("x", 0.0),
-                        element.get("y", 0.0)
-                    )
+                    coordinates=Coordinates(element.get("x", 0.0), element.get("y", 0.0)),
                 )
                 unified_model.add_entity(equipment)
 
-        self.logger.info(f"Converted Revit data to unified model with {len(unified_model.entities)} entities")
+        self.logger.info(
+            f"Converted Revit data to unified model with {len(unified_model.entities)} entities"
+        )
         return unified_model
 
-    def unified_to_etap(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: ETAP conversion must translate all engineering entities
+    def unified_to_etap(
+        self, unified_model: UnifiedEngineeringModel
+    ) -> dict[str, Any]:  # NOSONAR:S3776: ETAP conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to ETAP operations.
 
@@ -417,74 +381,108 @@ class TranslationEngine:
             "create_loads": [],
             "create_generators": [],
             "update_parameters": [],
-            "run_studies": []
+            "run_studies": [],
         }
 
         for entity in unified_model.entities:
             if isinstance(entity, Bus):
-                etap_operations["create_buses"].append({
-                    "name": entity.name,
-                    "voltage": entity.voltage_rating,
-                    "rated_current": entity.current_rating,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_buses"].append(
+                    {
+                        "name": entity.name,
+                        "voltage": entity.voltage_rating,
+                        "rated_current": entity.current_rating,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Transformer):
-                etap_operations["create_transformers"].append({
-                    "name": entity.name,
-                    "primary_voltage": entity.primary_voltage,
-                    "secondary_voltage": entity.secondary_voltage,
-                    "power_rating": entity.power_rating,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_transformers"].append(
+                    {
+                        "name": entity.name,
+                        "primary_voltage": entity.primary_voltage,
+                        "secondary_voltage": entity.secondary_voltage,
+                        "power_rating": entity.power_rating,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Panel):
-                etap_operations["create_panels"].append({
-                    "name": entity.name,
-                    "voltage_rating": entity.voltage_rating,
-                    "current_rating": entity.current_rating,
-                    "feeder_count": entity.feeder_count,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_panels"].append(
+                    {
+                        "name": entity.name,
+                        "voltage_rating": entity.voltage_rating,
+                        "current_rating": entity.current_rating,
+                        "feeder_count": entity.feeder_count,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Cable):
-                etap_operations["create_cables"].append({
-                    "name": entity.name,
-                    "voltage_rating": entity.voltage_rating,
-                    "conductor_size": entity.conductor_size,
-                    "length": entity.length,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_cables"].append(
+                    {
+                        "name": entity.name,
+                        "voltage_rating": entity.voltage_rating,
+                        "conductor_size": entity.conductor_size,
+                        "length": entity.length,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Breaker):
-                etap_operations["create_breakers"].append({
-                    "name": entity.name,
-                    "voltage_rating": entity.voltage_rating,
-                    "current_rating": entity.current_rating,
-                    "interrupting_rating": entity.interrupting_rating,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_breakers"].append(
+                    {
+                        "name": entity.name,
+                        "voltage_rating": entity.voltage_rating,
+                        "current_rating": entity.current_rating,
+                        "interrupting_rating": entity.interrupting_rating,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Load):
-                etap_operations["create_loads"].append({
-                    "name": entity.name,
-                    "power_rating": entity.power_rating,
-                    "power_factor": entity.power_factor,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_loads"].append(
+                    {
+                        "name": entity.name,
+                        "power_rating": entity.power_rating,
+                        "power_factor": entity.power_factor,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
             elif isinstance(entity, Generator):
-                etap_operations["create_generators"].append({
-                    "name": entity.name,
-                    "power_rating": entity.power_rating,
-                    "voltage_rating": entity.voltage_rating,
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]
-                })
+                etap_operations["create_generators"].append(
+                    {
+                        "name": entity.name,
+                        "power_rating": entity.power_rating,
+                        "voltage_rating": entity.voltage_rating,
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                    }
+                )
 
-        self.logger.info(f"Converted unified model to {sum(len(v) for v in etap_operations.values())} ETAP operations")
+        self.logger.info(
+            f"Converted unified model to {sum(len(v) for v in etap_operations.values())} ETAP operations"
+        )
         return etap_operations
 
-    def unified_to_autocad(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: AutoCAD conversion must translate all engineering entities
+    def unified_to_autocad(
+        self, unified_model: UnifiedEngineeringModel
+    ) -> dict[
+        str, Any
+    ]:  # NOSONAR:S3776: AutoCAD conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to AutoCAD operations.
 
@@ -502,72 +500,95 @@ class TranslationEngine:
             "draw_arcs": [],
             "draw_text": [],
             "create_layers": [],
-            "set_properties": []
+            "set_properties": [],
         }
 
         for entity in unified_model.entities:
             if isinstance(entity, Panel):
-                autocad_operations["insert_blocks"].append({
-                    "block_name": self.symbol_mapping["Panel"]["AutoCAD"],
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "rotation": 0.0,
-                    "scale": 1.0,
-                    "attributes": {
-                        "NAME": entity.name,
-                        "VOLTAGE": entity.voltage_rating,
-                        "CURRENT": entity.current_rating,
-                        "FEEDERS": entity.feeder_count
+                autocad_operations["insert_blocks"].append(
+                    {
+                        "block_name": self.symbol_mapping["Panel"]["AutoCAD"],
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "rotation": 0.0,
+                        "scale": 1.0,
+                        "attributes": {
+                            "NAME": entity.name,
+                            "VOLTAGE": entity.voltage_rating,
+                            "CURRENT": entity.current_rating,
+                            "FEEDERS": entity.feeder_count,
+                        },
                     }
-                })
+                )
 
             elif isinstance(entity, Transformer):
-                autocad_operations["insert_blocks"].append({
-                    "block_name": self.symbol_mapping["Transformer"]["AutoCAD"],
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "rotation": 0.0,
-                    "scale": 1.0,
-                    "attributes": {
-                        "NAME": entity.name,
-                        "PRIMARY_VOLTAGE": entity.primary_voltage,
-                        "SECONDARY_VOLTAGE": entity.secondary_voltage,
-                        "POWER_RATING": entity.power_rating
+                autocad_operations["insert_blocks"].append(
+                    {
+                        "block_name": self.symbol_mapping["Transformer"]["AutoCAD"],
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "rotation": 0.0,
+                        "scale": 1.0,
+                        "attributes": {
+                            "NAME": entity.name,
+                            "PRIMARY_VOLTAGE": entity.primary_voltage,
+                            "SECONDARY_VOLTAGE": entity.secondary_voltage,
+                            "POWER_RATING": entity.power_rating,
+                        },
                     }
-                })
+                )
 
             elif isinstance(entity, Bus):
-                autocad_operations["draw_circles"].append({
-                    "center": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "radius": 1.0,
-                    "layer": "E-BUS"
-                })
+                autocad_operations["draw_circles"].append(
+                    {
+                        "center": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "radius": 1.0,
+                        "layer": "E-BUS",
+                    }
+                )
 
             elif isinstance(entity, Cable):
                 # Create a polyline representing the cable
-                autocad_operations["draw_polylines"].append({
-                    "points": [
-                        [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                        [entity.coordinates.x + entity.length/10, entity.coordinates.y] if entity.coordinates else [0.0, 0.0]  # Simplified
-                    ],
-                    "layer": "E-CABLE",
-                    "width": 0.1
-                })
+                autocad_operations["draw_polylines"].append(
+                    {
+                        "points": [
+                            [entity.coordinates.x, entity.coordinates.y]
+                            if entity.coordinates
+                            else [0.0, 0.0],
+                            [entity.coordinates.x + entity.length / 10, entity.coordinates.y]
+                            if entity.coordinates
+                            else [0.0, 0.0],  # Simplified
+                        ],
+                        "layer": "E-CABLE",
+                        "width": 0.1,
+                    }
+                )
 
             elif isinstance(entity, Equipment):
-                autocad_operations["insert_blocks"].append({
-                    "block_name": "EQUIPMENT_GENERIC",
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "rotation": 0.0,
-                    "scale": 1.0,
-                    "attributes": {
-                        "NAME": entity.name,
-                        "TYPE": entity.equipment_type
+                autocad_operations["insert_blocks"].append(
+                    {
+                        "block_name": "EQUIPMENT_GENERIC",
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "rotation": 0.0,
+                        "scale": 1.0,
+                        "attributes": {"NAME": entity.name, "TYPE": entity.equipment_type},
                     }
-                })
+                )
 
-        self.logger.info(f"Converted unified model to {sum(len(v) for v in autocad_operations.values())} AutoCAD operations")
+        self.logger.info(
+            f"Converted unified model to {sum(len(v) for v in autocad_operations.values())} AutoCAD operations"
+        )
         return autocad_operations
 
-    def unified_to_revit(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:  # NOSONAR:S3776: Revit conversion must translate all engineering entities
+    def unified_to_revit(
+        self, unified_model: UnifiedEngineeringModel
+    ) -> dict[str, Any]:  # NOSONAR:S3776: Revit conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to Revit operations.
 
@@ -582,57 +603,75 @@ class TranslationEngine:
             "create_groups": [],
             "set_parameters": [],
             "create_views": [],
-            "update_sheets": []
+            "update_sheets": [],
         }
 
         for entity in unified_model.entities:
             if isinstance(entity, Panel):
-                revit_operations["place_families"].append({
-                    "family_name": self.symbol_mapping["Panel"]["Revit"],
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "parameters": {
-                        "Panel Name": entity.name,
-                        "Voltage Rating": entity.voltage_rating,
-                        "Current Rating": entity.current_rating,
-                        "Feeder Count": entity.feeder_count
+                revit_operations["place_families"].append(
+                    {
+                        "family_name": self.symbol_mapping["Panel"]["Revit"],
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "parameters": {
+                            "Panel Name": entity.name,
+                            "Voltage Rating": entity.voltage_rating,
+                            "Current Rating": entity.current_rating,
+                            "Feeder Count": entity.feeder_count,
+                        },
                     }
-                })
+                )
 
             elif isinstance(entity, Transformer):
-                revit_operations["place_families"].append({
-                    "family_name": self.symbol_mapping["Transformer"]["Revit"],
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "parameters": {
-                        "Transformer Name": entity.name,
-                        "Primary Voltage": entity.primary_voltage,
-                        "Secondary Voltage": entity.secondary_voltage,
-                        "Power Rating": entity.power_rating
+                revit_operations["place_families"].append(
+                    {
+                        "family_name": self.symbol_mapping["Transformer"]["Revit"],
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "parameters": {
+                            "Transformer Name": entity.name,
+                            "Primary Voltage": entity.primary_voltage,
+                            "Secondary Voltage": entity.secondary_voltage,
+                            "Power Rating": entity.power_rating,
+                        },
                     }
-                })
+                )
 
             elif isinstance(entity, Cable):
-                revit_operations["place_families"].append({
-                    "family_name": self.symbol_mapping["Cable"]["Revit"],
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "parameters": {
-                        "Cable Name": entity.name,
-                        "Voltage Rating": entity.voltage_rating,
-                        "Conductor Size": entity.conductor_size,
-                        "Length": entity.length
+                revit_operations["place_families"].append(
+                    {
+                        "family_name": self.symbol_mapping["Cable"]["Revit"],
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "parameters": {
+                            "Cable Name": entity.name,
+                            "Voltage Rating": entity.voltage_rating,
+                            "Conductor Size": entity.conductor_size,
+                            "Length": entity.length,
+                        },
                     }
-                })
+                )
 
             elif isinstance(entity, Equipment):
-                revit_operations["place_families"].append({
-                    "family_name": "Generic Model",  # Default family
-                    "coordinates": [entity.coordinates.x, entity.coordinates.y] if entity.coordinates else [0.0, 0.0],
-                    "parameters": {
-                        "Equipment Name": entity.name,
-                        "Equipment type": entity.equipment_type
+                revit_operations["place_families"].append(
+                    {
+                        "family_name": "Generic Model",  # Default family
+                        "coordinates": [entity.coordinates.x, entity.coordinates.y]
+                        if entity.coordinates
+                        else [0.0, 0.0],
+                        "parameters": {
+                            "Equipment Name": entity.name,
+                            "Equipment type": entity.equipment_type,
+                        },
                     }
-                })
+                )
 
-        self.logger.info(f"Converted unified model to {len(revit_operations['place_families'])} Revit operations")
+        self.logger.info(
+            f"Converted unified model to {len(revit_operations['place_families'])} Revit operations"
+        )
         return revit_operations
 
     def translate(self, source_data: Any, source_system: str, target_system: str) -> Any:
@@ -675,7 +714,9 @@ class TranslationEngine:
         else:
             return unified_model
 
-    def sync_models(self, source_model: UnifiedEngineeringModel, target_model: UnifiedEngineeringModel) -> dict[str, Any]:
+    def sync_models(
+        self, source_model: UnifiedEngineeringModel, target_model: UnifiedEngineeringModel
+    ) -> dict[str, Any]:
         """
         Synchronize differences between two unified models.
 
@@ -686,13 +727,7 @@ class TranslationEngine:
         Returns:
             dict: Sync results
         """
-        sync_results = {
-            "added": 0,
-            "updated": 0,
-            "removed": 0,
-            "conflicts": [],
-            "summary": ""
-        }
+        sync_results = {"added": 0, "updated": 0, "removed": 0, "conflicts": [], "summary": ""}
 
         # Create lookup dictionaries for both models
         source_entities = {entity.id: entity for entity in source_model.entities}
@@ -710,13 +745,20 @@ class TranslationEngine:
                 target_entity = target_entities[entity_id]
 
                 # Check if entities are different (simplified comparison)
-                if (source_entity.name != target_entity.name or
-                    source_entity.description != target_entity.description or
-                    (source_entity.coordinates and target_entity.coordinates and
-                     source_entity.coordinates.x != target_entity.coordinates.x) or
-                    (source_entity.coordinates and target_entity.coordinates and
-                     source_entity.coordinates.y != target_entity.coordinates.y)):
-
+                if (
+                    source_entity.name != target_entity.name
+                    or source_entity.description != target_entity.description
+                    or (
+                        source_entity.coordinates
+                        and target_entity.coordinates
+                        and source_entity.coordinates.x != target_entity.coordinates.x
+                    )
+                    or (
+                        source_entity.coordinates
+                        and target_entity.coordinates
+                        and source_entity.coordinates.y != target_entity.coordinates.y
+                    )
+                ):
                     # Update the target entity
                     target_model.update_entity(source_entity)
                     sync_results["updated"] += 1
@@ -727,7 +769,9 @@ class TranslationEngine:
                 target_model.remove_entity(entity_id)
                 sync_results["removed"] += 1
 
-        sync_results["summary"] = f"Sync completed: {sync_results['added']} added, {sync_results['updated']} updated, {sync_results['removed']} removed"
+        sync_results["summary"] = (
+            f"Sync completed: {sync_results['added']} added, {sync_results['updated']} updated, {sync_results['removed']} removed"
+        )
         self.logger.info(sync_results["summary"])
 
         return sync_results

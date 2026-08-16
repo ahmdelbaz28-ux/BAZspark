@@ -60,8 +60,10 @@ RATE_LIMIT_MAX_ATTEMPTS = 10
 # Audit log file
 AUDIT_LOG_FILE = os.getenv(
     "BAZSPARK_ADMIN_AUDIT_LOG",
-    os.path.join(os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json").rsplit("/", 1)[0] or ".",
-                 "admin_audit.log"),
+    os.path.join(
+        os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json").rsplit("/", 1)[0] or ".",
+        "admin_audit.log",
+    ),
 )
 
 # In-memory rate limit counter (per IP)
@@ -134,7 +136,9 @@ def _audit_log(
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception as e:
-        logging.exception("Failed to write audit log: %s", e)  # NOSONAR:S8572: logging.exception is appropriate here
+        logging.exception(
+            "Failed to write audit log: %s", e
+        )  # NOSONAR:S8572: logging.exception is appropriate here
 
 
 def _sanitize_log_detail(detail: str) -> str:
@@ -146,9 +150,16 @@ def _sanitize_log_detail(detail: str) -> str:
     import re
 
     # Remove anything that looks like API keys, tokens, passwords, etc.
-    sanitized = re.sub(r'[A-Z0-9]{32,}', '[REDACTED_LONG_TOKEN]', detail, flags=re.IGNORECASE)
-    sanitized = re.sub(r'(api[_-]?key|token|password|secret|auth)[\s:=]+[^\s,;.!]+', r'\1: [REDACTED]', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'bearer\s+[a-zA-Z0-9._~+/]+=*', 'Bearer [REDACTED]', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r"[A-Z0-9]{32,}", "[REDACTED_LONG_TOKEN]", detail, flags=re.IGNORECASE)
+    sanitized = re.sub(
+        r"(api[_-]?key|token|password|secret|auth)[\s:=]+[^\s,;.!]+",
+        r"\1: [REDACTED]",
+        sanitized,
+        flags=re.IGNORECASE,
+    )
+    sanitized = re.sub(
+        r"bearer\s+[a-zA-Z0-9._~+/]+=*", "Bearer [REDACTED]", sanitized, flags=re.IGNORECASE
+    )
 
     return sanitized
 
@@ -248,6 +259,7 @@ def generate_master_token() -> str:
       4. Save the token securely (it cannot be retrieved from env)
     """
     import secrets as _secrets
+
     return f"master_{_secrets.token_urlsafe(48)}"
 
 

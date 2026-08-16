@@ -299,7 +299,10 @@ async def process_scan_to_bim(
         payload: dict[str, Any] = {
             "service": "scan-to-bim",
             "filename": file.filename,
-            "rooms": [r.__dict__ if hasattr(r, "__dict__") else r for r in (getattr(result, "rooms", []) or [])],
+            "rooms": [
+                r.__dict__ if hasattr(r, "__dict__") else r
+                for r in (getattr(result, "rooms", []) or [])
+            ],
             "summary": {
                 "total_rooms": getattr(result, "total_rooms", 0),
                 "valid_rooms": getattr(result, "valid_rooms", 0),

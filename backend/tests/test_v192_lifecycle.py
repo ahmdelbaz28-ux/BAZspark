@@ -14,6 +14,7 @@ and exact response shapes. No (201, 400, 500) ambiguity.
 Per agent.md Rule 12: "Wrong code in this system is catastrophic — it
 threatens human life. There is zero tolerance for error."
 """
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -21,6 +22,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(scope="module")
 def client():
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -118,9 +120,7 @@ class TestV192ElementLifecycle:
         data = get_resp.json()["data"]
         # The is_deleted field should be true
         is_deleted = data.get("is_deleted") or data.get("isDeleted")
-        assert is_deleted is True, (
-            f"Soft-deleted element should have is_deleted=true: {data}"
-        )
+        assert is_deleted is True, f"Soft-deleted element should have is_deleted=true: {data}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -154,11 +154,14 @@ class TestV192ConnectionLifecycle:
     def test_list_connections_returns_200(self, client):
         """GET /api/connections must return 200 with items."""
         from_id, to_id = self._create_pair(client)
-        client.post("/api/connections", json={
-            "from_element_id": from_id,
-            "to_element_id": to_id,
-            "relationship_type": "contains",
-        })
+        client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "contains",
+            },
+        )
         resp = client.get("/api/connections")
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -168,13 +171,17 @@ class TestV192ConnectionLifecycle:
     def test_delete_connection_returns_200(self, client):
         """DELETE /api/connections/{id} must return 200 for existing connection."""
         from_id, to_id = self._create_pair(client)
-        create_resp = client.post("/api/connections", json={
-            "from_element_id": from_id,
-            "to_element_id": to_id,
-            "relationship_type": "supports",
-        })
-        conn_id = create_resp.json()["data"].get("connection_id") or \
-                  create_resp.json()["data"].get("connectionId")
+        create_resp = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "supports",
+            },
+        )
+        conn_id = create_resp.json()["data"].get("connection_id") or create_resp.json()["data"].get(
+            "connectionId"
+        )
 
         resp = client.delete(f"/api/connections/{conn_id}")
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -195,7 +202,9 @@ class TestV192ConnectionLifecycle:
         data = resp.json()["data"]
         metadata = data.get("metadata") or {}
         assert "cableSize" in metadata, f"camelCase key 'cableSize' was corrupted: {metadata}"
-        assert "installerName" in metadata, f"camelCase key 'installerName' was corrupted: {metadata}"
+        assert "installerName" in metadata, (
+            f"camelCase key 'installerName' was corrupted: {metadata}"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

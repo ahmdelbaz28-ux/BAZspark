@@ -175,12 +175,16 @@ class TestCircuitTopology:
 
     def test_reject_nan_coordinate(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", float("nan"), 0, 3))
 
     def test_reject_inf_coordinate(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="non-finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", float("inf"), 0, 3))
 
     def test_remove_device(self):
@@ -222,12 +226,20 @@ class TestCircuitTopology:
         assert counts == [2, 1]
 
     def test_total_cable_length_class_b(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=100.0, return_length_m=50.0)
-        assert c.total_cable_length_m() == 100.0  # Class B ignores return  # NOSONAR — S1244: import retained for re-export / API surface
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=100.0, return_length_m=50.0
+        )
+        assert (
+            c.total_cable_length_m() == 100.0
+        )  # Class B ignores return  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_total_cable_length_class_a(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=100.0, return_length_m=105.0)
-        assert c.total_cable_length_m() == 205.0  # Both paths  # NOSONAR — S1244: import retained for re-export / API surface
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=100.0, return_length_m=105.0
+        )
+        assert (
+            c.total_cable_length_m() == 205.0
+        )  # Both paths  # NOSONAR — S1244: import retained for re-export / API surface
 
     # ── Validation ──────────────────────────────────────────────────────────
 
@@ -258,20 +270,26 @@ class TestCircuitTopology:
 
     def test_validate_class_a_missing_return_path(self):
         """NFPA 72 §12.2.2: Class A must have return path."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=0.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=0.0
+        )
         c.devices.append(CircuitDevice("D1", "detector", 10, 0, 3))
         result = c.validate()
         assert result["compliant"] is False
         assert any(v["type"] == "class_a_missing_return_path" for v in result["violations"])
 
     def test_validate_class_a_with_return_path_compliant(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=55.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=55.0
+        )
         c.devices.append(CircuitDevice("D1", "detector", 10, 0, 3))
         result = c.validate()
         assert result["compliant"] is True
 
     def test_validate_class_b_warns_if_return_length_set(self):
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=50.0, return_length_m=10.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=50.0, return_length_m=10.0
+        )
         result = c.validate()
         assert any(w["type"] == "class_b_has_return_length" for w in result["warnings"])
 
@@ -312,11 +330,15 @@ class TestCableRoutingEngineInit:
             CableRoutingEngine(ps_voltage=-24.0)
 
     def test_nan_voltage_raises(self):
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CableRoutingEngine(ps_voltage=float("nan"))
 
     def test_inf_max_drop_raises(self):
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CableRoutingEngine(max_voltage_drop_pct=float("inf"))
 
 
@@ -352,11 +374,15 @@ class TestCableRoutingEngine3DDistance:
         assert d == pytest.approx(5.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CableRoutingEngine.calculate_3d_distance((float("nan"), 0, 0), (1, 0, 0))
 
     def test_inf_rejected(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             CableRoutingEngine.calculate_3d_distance((0, 0, 0), (float("inf"), 0, 0))
 
 
@@ -367,7 +393,9 @@ class TestCableRoutingEngine3DDistance:
 
 class TestCableRoutingEngineValidation:
     def test_nan_cable_length_raises(self, engine):
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=float("nan"))
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=float("nan")
+        )
         c.devices.append(CircuitDevice("D1", "detector", 10, 0, 3, 0.015))
         with pytest.raises(ValueError, match="non-negative finite"):
             engine.route_circuit(c)
@@ -393,7 +421,9 @@ class TestCableRoutingEngineValidation:
 
     def test_class_a_no_return_path_raises(self, engine):
         """NFPA 72 §12.2.2: Class A circuit must have return path."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=0.0)
+        c = CircuitTopology(
+            "C1", CircuitClass.CLASS_A, CircuitType.SLC, cable_length_m=50.0, return_length_m=0.0
+        )
         c.devices.append(CircuitDevice("D1", "detector", 10, 0, 3, 0.015))
         with pytest.raises(ValueError, match="return_length_m"):
             engine.route_circuit(c)
@@ -414,7 +444,13 @@ class TestVoltageDrop:
     def test_voltage_drop_formula_includes_return_factor(self, engine):
         """V_drop = I × 2 × R/km × L_km — must include ×2 factor."""
         # Single device, known current, known gauge, known distance
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=100.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=100.0,
+        )
         # Place device exactly 100m away in X (Z=0 for clean Euclidean)
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
@@ -430,7 +466,13 @@ class TestVoltageDrop:
 
     def test_voltage_drop_percentage_calculation(self, engine):
         """Drop % = (V_drop / V_system) × 100."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=100.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=100.0,
+        )
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14, ps_voltage=24.0)
         expected_pct = (result.total_voltage_drop_v / 24.0) * 100.0
@@ -438,7 +480,13 @@ class TestVoltageDrop:
 
     def test_end_of_line_voltage(self, engine):
         """V_EOL = V_supply - V_drop."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=100.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=100.0,
+        )
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14, ps_voltage=24.0)
         expected_eol = 24.0 - result.total_voltage_drop_v
@@ -453,7 +501,13 @@ class TestVoltageDrop:
     def test_non_compliant_very_long_circuit(self):
         """Extremely long NAC must fail compliance (500m, high current, AWG18)."""
         engine = CableRoutingEngine()
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=500.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=500.0,
+        )
         # 1A, 500m, AWG18: V_drop = 1.0 × 2 × 21.4 × 0.5 = 21.4V → 89% > 10%
         c.add_device(CircuitDevice("HS1", "horn_strobe", 500.0, 0.0, 0.0, 1.0))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_18)
@@ -463,7 +517,13 @@ class TestVoltageDrop:
 
     def test_zero_current_zero_drop(self, engine):
         """Circuit with no current draw must have zero voltage drop."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, panel_position=(0, 0, 0), cable_length_m=100.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0, 0, 0),
+            cable_length_m=100.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 50.0, 0.0, 0.0, current_a=0.0))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
         assert result.total_voltage_drop_v == pytest.approx(0.0, abs=1e-9)
@@ -471,7 +531,13 @@ class TestVoltageDrop:
 
     def test_cumulative_drop_across_segments(self, engine):
         """Voltage drop must accumulate across all segments."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=200.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=200.0,
+        )
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         c.add_device(CircuitDevice("HS2", "horn_strobe", 200.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
@@ -483,7 +549,13 @@ class TestVoltageDrop:
 
     def test_nfpa_section_referenced_in_formula(self, engine):
         """Every segment formula must reference NFPA 72 §10.6.4."""
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, panel_position=(0, 0, 0), cable_length_m=50.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0, 0, 0),
+            cable_length_m=50.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 25.0, 0.0, 3.0, 0.015))
         result = engine.route_circuit(c)
         for seg in result.segments:
@@ -499,7 +571,13 @@ class TestAutoGaugeSelection:
     def test_short_circuit_selects_awg18(self):
         """Short, low-current circuit should use AWG 18 (minimum, cheapest)."""
         engine = CableRoutingEngine()
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, panel_position=(0, 0, 0), cable_length_m=10.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0, 0, 0),
+            cable_length_m=10.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 0.0, 0.010))
         result = engine.route_circuit(c)
         assert result.wire_gauge == WireGauge.AWG_18
@@ -509,7 +587,13 @@ class TestAutoGaugeSelection:
     def test_auto_gauge_always_compliant_or_reports_violation(self):
         """Auto gauge must either find a compliant gauge or report a violation."""
         engine = CableRoutingEngine()
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=300.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=300.0,
+        )
         c.add_device(CircuitDevice("HS1", "horn_strobe", 300.0, 0.0, 0.0, 0.500))
         result = engine.route_circuit(c)
         # Either it's compliant or it has violations — never silently wrong
@@ -519,7 +603,13 @@ class TestAutoGaugeSelection:
     def test_specified_gauge_overrides_auto(self):
         """When wire_gauge is specified, the engine must use it exactly."""
         engine = CableRoutingEngine()
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, panel_position=(0, 0, 0), cable_length_m=10.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0, 0, 0),
+            cable_length_m=10.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 10.0, 0.0, 0.0, 0.015))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_12)
         assert result.wire_gauge == WireGauge.AWG_12
@@ -527,7 +617,13 @@ class TestAutoGaugeSelection:
     def test_no_compliant_gauge_reports_violation(self):
         """If no AWG 12-18 gauge is compliant, engine must report violation."""
         engine = CableRoutingEngine()
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.NAC, panel_position=(0, 0, 0), cable_length_m=600.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.NAC,
+            panel_position=(0, 0, 0),
+            cable_length_m=600.0,
+        )
         # 2A at 600m — even AWG 12 will fail
         c.add_device(CircuitDevice("HS1", "horn_strobe", 600.0, 0.0, 0.0, 2.0))
         result = engine.route_circuit(c)
@@ -557,7 +653,9 @@ class TestClassACircuit:
         c.add_device(CircuitDevice("D2", "detector", 50.0, 0.0, 3.0, 0.015))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
         assert result.is_compliant is True
-        assert result.total_return_length_m == 55.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_return_length_m == 55.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_a_no_return_raises_value_error(self):
         """NFPA 72 §12.2.2 violation raises ValueError (not just a warning)."""
@@ -661,7 +759,13 @@ class TestObstacleDetection:
             fire_rating_hours=2.0,
         )
         engine = CableRoutingEngine(obstacles=[wall])
-        c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, panel_position=(0, 0, 2), cable_length_m=20.0)
+        c = CircuitTopology(
+            "C1",
+            CircuitClass.CLASS_B,
+            CircuitType.SLC,
+            panel_position=(0, 0, 2),
+            cable_length_m=20.0,
+        )
         c.add_device(CircuitDevice("D1", "detector", 20.0, 5.0, 2.0, 0.015))
         result = engine.route_circuit(c)
         firestop_warnings = [w for w in result.warnings if "firestopping" in w]
@@ -817,7 +921,9 @@ class TestIntegrationScenarios:
             )
 
         result = engine.route_circuit(circuit)
-        assert result.total_return_length_m == 92.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_return_length_m == 92.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         # Should be compliant with auto-selected gauge
         if result.is_compliant:
             assert result.total_voltage_drop_pct <= MAX_VOLTAGE_DROP_PCT
@@ -841,7 +947,9 @@ class TestIntegrationScenarios:
 
     def test_circuit_id_preserved(self, engine):
         """RouteResult must preserve the circuit_id from the input CircuitTopology."""
-        c = CircuitTopology("MY-CIRCUIT-42", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=10.0)
+        c = CircuitTopology(
+            "MY-CIRCUIT-42", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=10.0
+        )
         c.add_device(CircuitDevice("D1", "detector", 10, 0, 3, 0.015))
         result = engine.route_circuit(c)
         assert result.circuit_id == "MY-CIRCUIT-42"

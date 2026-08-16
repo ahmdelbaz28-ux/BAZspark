@@ -75,17 +75,19 @@ class DxfParser:
                 parser_name="DXFParser",
             )
         except FileNotFoundError as e:
-            return Result(error=GeometryError(
-                message=str(e),
-                code_ref="OS File IO",
-                remedy="Verify file path and existence."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=str(e), code_ref="OS File IO", remedy="Verify file path and existence."
+                )
+            )
         except UnsafePathError as e:
-            return Result(error=GeometryError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .dxf extension."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .dxf extension.",
+                )
+            )
 
         try:
             validate_file_size(
@@ -94,11 +96,13 @@ class DxfParser:
                 parser_name="DXFParser",
             )
         except UnsafePathError as e:
-            return Result(error=GeometryError(
-                message=f"SECURITY: {e}",
-                code_ref="Parser Security Gate",
-                remedy="File exceeds size limit; split or reduce geometry complexity."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=f"SECURITY: {e}",
+                    code_ref="Parser Security Gate",
+                    remedy="File exceeds size limit; split or reduce geometry complexity.",
+                )
+            )
 
         # Use the RESOLVED (canonical) path for all subsequent operations.
         # This prevents TOCTOU between validation and ezdxf call.
@@ -107,6 +111,7 @@ class DxfParser:
         # ── Try ezdxf first (production path) ──
         try:
             import ezdxf
+
             doc = ezdxf.readfile(filepath)
             msp = doc.modelspace()
 
@@ -120,38 +125,46 @@ class DxfParser:
             # Extract closed LWPOLYLINE boundaries representing rooms
             for idx, lwpoly in enumerate(msp.query("LWPOLYLINE")):
                 if lwpoly.closed:
-                    pts = tuple([Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format='xy')])  # NOSONAR - python:S7496
+                    pts = tuple(
+                        [Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format="xy")]
+                    )  # NOSONAR - python:S7496
                     if len(pts) >= 3:
                         area = DxfParser._calculate_polygon_area(pts)
-                        rooms.append(Room(
-                            id=f"DXF_ROOM_{idx:03d}",
-                            name=f"Room {idx}",
-                            boundary=pts,
-                            area_m2=area,  # BUG-4 FIX: Calculated, not hardcoded
-                            height_m=building_height  # BUG-DP2 FIX: Extracted from DXF or raises
-                        ))
+                        rooms.append(
+                            Room(
+                                id=f"DXF_ROOM_{idx:03d}",
+                                name=f"Room {idx}",
+                                boundary=pts,
+                                area_m2=area,  # BUG-4 FIX: Calculated, not hardcoded
+                                height_m=building_height,  # BUG-DP2 FIX: Extracted from DXF or raises
+                            )
+                        )
 
             # Extract LINE structures representing wall paths
             for idx, line in enumerate(msp.query("LINE")):
-                walls.append(Wall(
-                    id=f"DXF_WALL_{idx:03d}",
-                    start=Point3D(line.dxf.start[0], line.dxf.start[1], 0.0),
-                    end=Point3D(line.dxf.end[0], line.dxf.end[1], 0.0),
-                    height_m=building_height,  # BUG-DP2 FIX: Use extracted height
-                    thickness_m=0.20
-                ))
+                walls.append(
+                    Wall(
+                        id=f"DXF_WALL_{idx:03d}",
+                        start=Point3D(line.dxf.start[0], line.dxf.start[1], 0.0),
+                        end=Point3D(line.dxf.end[0], line.dxf.end[1], 0.0),
+                        height_m=building_height,  # BUG-DP2 FIX: Use extracted height
+                        thickness_m=0.20,
+                    )
+                )
 
         except ImportError:
             # ezdxf not available — fall back to text-based DXF parsing
             DxfParser._parse_dxf_text(filepath, walls, rooms)
         except ValueError as ve:
             # BUG-DP2: Height extraction failed — return error, don't guess
-            return Result(error=GeometryError(
-                message=str(ve),
-                code_ref="DXF Height Extraction",
-                remedy="Room height could not be determined from the DXF file. "
-                       "Specify height manually via the API parameter."
-            ))
+            return Result(
+                error=GeometryError(
+                    message=str(ve),
+                    code_ref="DXF Height Extraction",
+                    remedy="Room height could not be determined from the DXF file. "
+                    "Specify height manually via the API parameter.",
+                )
+            )
         except Exception as e:
             # BUG-DP1 FIX: Log the ezdxf error instead of silently swallowing it.
             # The original code had bare `except Exception: pass` which meant that
@@ -160,7 +173,8 @@ class DxfParser:
             logger.warning(
                 "ezdxf failed to parse DXF file '%s': %s. "
                 "Falling back to text-based parsing. The file may be corrupted.",
-                filepath, e
+                filepath,
+                e,
             )
             DxfParser._parse_dxf_text(filepath, walls, rooms)
 
@@ -176,15 +190,17 @@ class DxfParser:
                 Point3D(0.0, 0.0, 0.0),
                 Point3D(10.0, 0.0, 0.0),
                 Point3D(10.0, 10.0, 0.0),
-                Point3D(0.0, 10.0, 0.0)
+                Point3D(0.0, 10.0, 0.0),
             )
-            rooms.append(Room(
-                id="DXF_ROOM_FALLBACK",
-                name="Fallback Room (DXF parsing found no rooms)",
-                boundary=fallback_boundary,
-                area_m2=DxfParser._calculate_polygon_area(fallback_boundary),
-                height_m=fallback_height  # BUG-DP2 FIX: No hardcoded default
-            ))
+            rooms.append(
+                Room(
+                    id="DXF_ROOM_FALLBACK",
+                    name="Fallback Room (DXF parsing found no rooms)",
+                    boundary=fallback_boundary,
+                    area_m2=DxfParser._calculate_polygon_area(fallback_boundary),
+                    height_m=fallback_height,  # BUG-DP2 FIX: No hardcoded default
+                )
+            )
             has_fallback = True
 
         # BUG-39 FIX: Detect actual DXF version from $ACADVER header
@@ -200,7 +216,7 @@ class DxfParser:
             walls=tuple(walls),
             rooms=tuple(rooms),
             openings=tuple(openings),
-            has_fallback_geometry=has_fallback
+            has_fallback_geometry=has_fallback,
         )
         return Result(value=b)
 
@@ -244,13 +260,15 @@ class DxfParser:
                     area = DxfParser._calculate_polygon_area(tuple(pts))
                     # BUG-DP2 FIX: Try to extract height from DXF text metadata
                     room_height = DxfParser._extract_height_from_text(filepath)
-                    rooms.append(Room(
-                        id=f"DXF_ROOM_TXT_{len(rooms):03d}",
-                        name=f"Room {len(rooms)}",
-                        boundary=tuple(pts),
-                        area_m2=area,
-                        height_m=room_height  # BUG-DP2 FIX: No hardcoded default
-                    ))
+                    rooms.append(
+                        Room(
+                            id=f"DXF_ROOM_TXT_{len(rooms):03d}",
+                            name=f"Room {len(rooms)}",
+                            boundary=tuple(pts),
+                            area_m2=area,
+                            height_m=room_height,  # BUG-DP2 FIX: No hardcoded default
+                        )
+                    )
 
             elif etype == "LINE":
                 # Extract start/end points
@@ -259,18 +277,24 @@ class DxfParser:
                     sy = float(entity.get("20", "0"))
                     ex = float(entity.get("11", "0"))
                     ey = float(entity.get("21", "0"))
-                    walls.append(Wall(
-                        id=f"DXF_WALL_TXT_{len(walls):03d}",
-                        start=Point3D(sx, sy, 0.0),
-                        end=Point3D(ex, ey, 0.0),
-                        height_m=3.0,
-                        thickness_m=0.20
-                    ))
+                    walls.append(
+                        Wall(
+                            id=f"DXF_WALL_TXT_{len(walls):03d}",
+                            start=Point3D(sx, sy, 0.0),
+                            end=Point3D(ex, ey, 0.0),
+                            height_m=3.0,
+                            thickness_m=0.20,
+                        )
+                    )
                 except (ValueError, TypeError):
                     pass
 
     @staticmethod
-    def _dxf_group_pairs(lines: list[str]) -> list[dict]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _dxf_group_pairs(
+        lines: list[str],
+    ) -> list[
+        dict
+    ]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Parse DXF text into group code/value pair dictionaries.
 
@@ -392,7 +416,11 @@ class DxfParser:
         return abs(area) / 2.0
 
     @staticmethod
-    def _extract_height_from_dxf(doc, filepath: str) -> float:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_height_from_dxf(
+        doc, filepath: str
+    ) -> (
+        float
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         BUG-DP2 FIX: Attempt to extract building/room height from DXF metadata.
 
@@ -408,17 +436,17 @@ class DxfParser:
         """
         # Strategy 1: Check HEADER for EXTMIN/EXTMAX Z values
         try:
-            extmin_z = doc.header.get('$EXTMIN', (0, 0, 0))
-            extmax_z = doc.header.get('$EXTMAX', (0, 0, 0))
-            if hasattr(extmin_z, '__getitem__') and len(extmin_z) > 2:
+            extmin_z = doc.header.get("$EXTMIN", (0, 0, 0))
+            extmax_z = doc.header.get("$EXTMAX", (0, 0, 0))
+            if hasattr(extmin_z, "__getitem__") and len(extmin_z) > 2:
                 min_z = float(extmin_z[2])
-            elif hasattr(extmin_z, 'z'):
+            elif hasattr(extmin_z, "z"):
                 min_z = float(extmin_z.z)
             else:
                 min_z = 0.0
-            if hasattr(extmax_z, '__getitem__') and len(extmax_z) > 2:
+            if hasattr(extmax_z, "__getitem__") and len(extmax_z) > 2:
                 max_z = float(extmax_z[2])
-            elif hasattr(extmax_z, 'z'):
+            elif hasattr(extmax_z, "z"):
                 max_z = float(extmax_z.z)
             else:
                 max_z = 0.0
@@ -432,12 +460,12 @@ class DxfParser:
         # Strategy 2: Check for 3D entities (3DFACE) with Z coordinates
         try:
             msp = doc.modelspace()
-            for face in msp.query('3DFACE'):
+            for face in msp.query("3DFACE"):
                 z_vals = []
-                for attr in ('dxf.vtx0', 'dxf.vtx1', 'dxf.vtx2', 'dxf.vtx3'):
+                for attr in ("dxf.vtx0", "dxf.vtx1", "dxf.vtx2", "dxf.vtx3"):
                     try:
-                        vtx = face.get_dxf_attrib(attr.rsplit('.', 1)[-1])
-                        if hasattr(vtx, '__getitem__') and len(vtx) > 2:
+                        vtx = face.get_dxf_attrib(attr.rsplit(".", 1)[-1])
+                        if hasattr(vtx, "__getitem__") and len(vtx) > 2:
                             z_vals.append(float(vtx[2]))
                     except Exception:
                         pass
@@ -454,17 +482,20 @@ class DxfParser:
         try:
             msp = doc.modelspace()
             z_values = []
-            for line in msp.query('LINE'):
-                sz = getattr(line.dxf, 'start', None)
-                ez = getattr(line.dxf, 'end', None)
+            for line in msp.query("LINE"):
+                sz = getattr(line.dxf, "start", None)
+                ez = getattr(line.dxf, "end", None)
                 if sz and ez:
                     s_z = sz[2] if len(sz) > 2 else 0.0
                     e_z = ez[2] if len(ez) > 2 else 0.0
-                    if abs(s_z) > 1e-12 or abs(e_z) > 1e-12:  # S1244: float equality check replaced with tolerance
+                    if (
+                        abs(s_z) > 1e-12 or abs(e_z) > 1e-12
+                    ):  # S1244: float equality check replaced with tolerance
                         z_values.append(abs(e_z - s_z))
             if z_values:
                 # The most common non-zero Z difference is likely the floor height
                 from collections import Counter
+
                 common_heights = Counter(round(v, 2) for v in z_values if v > 0.5)
                 if common_heights:
                     h = common_heights.most_common(1)[0][0]
@@ -484,7 +515,11 @@ class DxfParser:
         )
 
     @staticmethod
-    def _extract_height_from_text(filepath: str) -> float:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_height_from_text(
+        filepath: str,
+    ) -> (
+        float
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         BUG-DP2 FIX: Attempt to extract height from DXF text-based metadata.
 
@@ -557,6 +592,7 @@ class DxfParser:
 
         if z_diffs:
             from collections import Counter
+
             common = Counter(z_diffs).most_common(1)[0][0]
             logger.info("Extracted height from DXF text LINE Z coordinates: %.2f m", common)
             return common
@@ -592,7 +628,9 @@ class DxfParser:
             with open(filepath, encoding="utf-8", errors="ignore") as f:
                 # Read first 2000 chars — $ACADVER is in HEADER section near start
                 header = f.read(2000)
-            ver_match = re.search(r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header)  # NOSONAR — S8786: assert kept for test clarity
+            ver_match = re.search(
+                r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header
+            )  # NOSONAR — S8786: assert kept for test clarity
             if ver_match:
                 acadver = ver_match.group(1)
                 return version_map.get(acadver, f"DXF {acadver}")

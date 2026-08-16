@@ -54,6 +54,7 @@ class TestScoringFormula:
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
         )
+
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
 
         # Two scenarios: same coverage, different cost
@@ -84,6 +85,7 @@ class TestScoringFormula:
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
         )
+
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
         score = agent._compute_score(
             coverage_pct=float("nan"),
@@ -152,12 +154,14 @@ class TestIfcFileProviderCapabilities:
             BIMProviderCapability,
             IfcFileProvider,
         )
+
         p = IfcFileProvider()
         assert BIMProviderCapability.DEVICE_WRITE not in p.capabilities
 
     def test_write_devices_raises_not_implemented(self):
         """write_devices must raise NotImplementedError (not return 0)."""
         from fireai.bridges.bim_provider import IfcFileProvider
+
         p = IfcFileProvider()
         with pytest.raises(NotImplementedError, match="not yet implemented"):
             p.write_devices([{"device_id": "TEST"}])
@@ -184,7 +188,9 @@ class TestAsyncWebhookDelivery:
         sub = WebhookSubscription(
             id="sub-slow",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
 
@@ -211,6 +217,7 @@ class TestDeadLetterReplay:
     def test_dead_letter_entry_has_payload_field(self):
         """DeadLetterEntry must have payload field for replay."""
         from fireai.infrastructure.webhook_service import DeadLetterEntry
+
         entry = DeadLetterEntry(
             subscription_id="sub-1",
             event_id="evt-1",
@@ -229,6 +236,7 @@ class TestDeadLetterReplay:
         from fireai.infrastructure.webhook_service import (
             WebhookDeliveryService,
         )
+
         service = WebhookDeliveryService(allow_http=True)
         assert service.replay_dead_letter(999) is False
         assert service.replay_dead_letter(-1) is False
@@ -249,8 +257,10 @@ class TestCSRFDevAllowHttp:
         import importlib
 
         import backend.security_csrf
+
         importlib.reload(backend.security_csrf)
         from backend.security_csrf import _DEV_ALLOW_HTTP_COOKIES
+
         assert _DEV_ALLOW_HTTP_COOKIES is False
 
     def test_dev_allow_http_true_when_env_set(self, monkeypatch):
@@ -259,8 +269,10 @@ class TestCSRFDevAllowHttp:
         import importlib
 
         import backend.security_csrf
+
         importlib.reload(backend.security_csrf)
         from backend.security_csrf import _DEV_ALLOW_HTTP_COOKIES
+
         assert _DEV_ALLOW_HTTP_COOKIES is True
 
 
@@ -275,6 +287,7 @@ class TestCSRFHostPrefix:
     def test_cookie_name_has_host_prefix(self):
         """CSRF_COOKIE_NAME should start with __Host-."""
         from backend.security_csrf import CSRF_COOKIE_NAME
+
         assert CSRF_COOKIE_NAME.startswith("__Host-"), (
             f"Cookie name '{CSRF_COOKIE_NAME}' must start with __Host- "
             "to prevent subdomain cookie injection"
@@ -295,6 +308,7 @@ class TestDarcyWeisbachNaNGuard:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         # Extreme flow rate → very high Re
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -314,6 +328,7 @@ class TestDarcyWeisbachNaNGuard:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
+
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,
             pipe_diameter_m=0.05,
@@ -337,6 +352,7 @@ class TestBeamPocketRectangular:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]  # Perfect rectangle
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=0.5)
         result = calculate_beam_obstruction(
@@ -364,6 +380,7 @@ class TestBeamPocketCeilingHeight:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=0.5)
         result = calculate_beam_obstruction(
@@ -384,6 +401,7 @@ class TestBeamPocketCeilingHeight:
             Beam,
             calculate_beam_obstruction,
         )
+
         room = [(0, 0), (10, 0), (10, 8), (0, 8)]
         # Beam deeper than ceiling (unusual but possible edge case)
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=4.0)

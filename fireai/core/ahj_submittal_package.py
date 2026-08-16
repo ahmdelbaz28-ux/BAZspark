@@ -452,6 +452,7 @@ class AHJSubmittalGenerator:
         if not results:
             # Default fallback calculation demo using voltage_drop module
             from fireai.core.voltage_drop import calculate_voltage_drop
+
             demo_calc = calculate_voltage_drop(
                 current_a=1.5,
                 one_way_length_m=100.0,
@@ -485,6 +486,7 @@ class AHJSubmittalGenerator:
         if result is None:
             # Default fallback calculation demo using battery_aging_derating module
             from fireai.core.battery_aging_derating import BatterySpec, size_battery
+
             b_calc = size_battery(
                 standby_load_amps=0.45,
                 alarm_load_amps=2.5,
@@ -528,7 +530,11 @@ class AHJSubmittalGenerator:
         if hasattr(result, "cable_requirements"):
             lines.append("\nCable Requirements:")
             for req in result.cable_requirements:
-                enclosure = f" in {req.enclosure_rating_hr:.0f}hr rated enclosure" if req.in_rated_enclosure else ""
+                enclosure = (
+                    f" in {req.enclosure_rating_hr:.0f}hr rated enclosure"
+                    if req.in_rated_enclosure
+                    else ""
+                )
                 lines.append(f"  • {req.route_type}: {req.cable_type.value} cable{enclosure}")
         return "\n".join(lines)
 

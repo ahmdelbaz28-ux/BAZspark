@@ -45,6 +45,7 @@ def isolate_billing_db(monkeypatch, tmp_path):
 
     # Force re-evaluation of cached config + schema state
     from backend.services import meeza_payment_service as svc
+
     svc.reset_for_tests()
 
     yield
@@ -54,8 +55,10 @@ def isolate_billing_db(monkeypatch, tmp_path):
 
 # ── Service: order CRUD ──────────────────────────────────────────────────────
 
+
 def test_create_order_happy_path():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(
         user_principal="user-1",
         amount_cents=50000,
@@ -70,6 +73,7 @@ def test_create_order_happy_path():
 
 def test_create_order_rejects_non_positive_amount():
     from backend.services import meeza_payment_service as svc
+
     with pytest.raises(ValueError, match="amount_cents"):
         svc.create_order(user_principal="u", amount_cents=0)
     with pytest.raises(ValueError, match="amount_cents"):
@@ -78,23 +82,26 @@ def test_create_order_rejects_non_positive_amount():
 
 def test_create_order_rejects_empty_principal():
     from backend.services import meeza_payment_service as svc
+
     with pytest.raises(ValueError, match="user_principal"):
         svc.create_order(user_principal="", amount_cents=100)
 
 
 def test_create_order_rejects_oversize_description():
     from backend.services import meeza_payment_service as svc
+
     with pytest.raises(ValueError, match="description"):
         svc.create_order(user_principal="u", amount_cents=100, description="x" * 501)
 
 
 def test_list_orders_filters_by_principal():
     from backend.services import meeza_payment_service as svc
+
     svc.create_order(user_principal="alice", amount_cents=100)
-    svc.create_order(user_principal="bob",   amount_cents=200)
+    svc.create_order(user_principal="bob", amount_cents=200)
     svc.create_order(user_principal="alice", amount_cents=300)
     alice_orders = svc.list_orders("alice")
-    bob_orders   = svc.list_orders("bob")
+    bob_orders = svc.list_orders("bob")
     assert len(alice_orders) == 2
     assert len(bob_orders) == 1
     assert all(o["user_principal"] == "alice" for o in alice_orders)
@@ -104,6 +111,7 @@ def test_get_order_idor_protection():
     """get_order(order_id, user_principal=X) returns None when the order
     belongs to a different user — defence against IDOR."""
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="alice", amount_cents=100)
     # Bob cannot read Alice's order
     assert svc.get_order(order["id"], user_principal="bob") is None
@@ -113,8 +121,10 @@ def test_get_order_idor_protection():
 
 # ── Service: checkout ────────────────────────────────────────────────────────
 
+
 def test_checkout_sandbox_returns_synthetic_url():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=1000)
     chk = svc.initiate_checkout(order["id"], "u")
     assert chk["method"] == "sandbox"
@@ -127,6 +137,7 @@ def test_checkout_rejects_already_paid_order():
     """Critical: cannot checkout an order that has already been paid —
     prevents double-charging if the frontend retries."""
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=1000)
     svc.simulate_webhook(order["id"], svc.TxnStatus.SUCCESS)
     with pytest.raises(ValueError, match="not pending"):
@@ -135,6 +146,7 @@ def test_checkout_rejects_already_paid_order():
 
 def test_checkout_rejects_other_users_order():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="alice", amount_cents=1000)
     with pytest.raises(ValueError, match="not found for principal"):
         svc.initiate_checkout(order["id"], "bob")
@@ -142,10 +154,14 @@ def test_checkout_rejects_other_users_order():
 
 # ── Service: HMAC verification ───────────────────────────────────────────────
 
+
 def test_hmac_verify_valid_signature():
     from backend.services import meeza_payment_service as svc
+
     secret = "test-secret-do-not-use-in-prod"
-    payload = b'{"obj":{"id":1,"order":{"merchant_order_id":"x"},"amount_cents":100,"success":true}}'
+    payload = (
+        b'{"obj":{"id":1,"order":{"merchant_order_id":"x"},"amount_cents":100,"success":true}}'
+    )
     sig = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
     assert svc.verify_webhook_signature(payload, f"sha256={sig}") is True
     # Also tolerate bare hex header
@@ -154,6 +170,7 @@ def test_hmac_verify_valid_signature():
 
 def test_hmac_verify_rejects_tampered_payload():
     from backend.services import meeza_payment_service as svc
+
     secret = "test-secret-do-not-use-in-prod"
     payload = b'{"obj":{"amount_cents":100}}'
     sig = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
@@ -163,6 +180,7 @@ def test_hmac_verify_rejects_tampered_payload():
 
 def test_hmac_verify_rejects_wrong_secret():
     from backend.services import meeza_payment_service as svc
+
     payload = b'{"x":1}'
     sig = hmac.new(b"wrong-secret", payload, hashlib.sha256).hexdigest()
     assert svc.verify_webhook_signature(payload, sig) is False
@@ -170,19 +188,23 @@ def test_hmac_verify_rejects_wrong_secret():
 
 def test_hmac_verify_rejects_empty_signature():
     from backend.services import meeza_payment_service as svc
+
     assert svc.verify_webhook_signature(b'{"x":1}', "") is False
 
 
 def test_hmac_verify_rejects_empty_secret():
     from backend.services import meeza_payment_service as svc
+
     # Bypass env-cached config by passing secret explicitly as empty
     assert svc.verify_webhook_signature(b'{"x":1}', "deadbeef", secret="") is False
 
 
 # ── Service: webhook handling ────────────────────────────────────────────────
 
+
 def test_webhook_success_marks_order_paid():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
     res = svc.simulate_webhook(order["id"], svc.TxnStatus.SUCCESS)
@@ -195,6 +217,7 @@ def test_webhook_success_marks_order_paid():
 
 def test_webhook_failed_marks_order_failed():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
     res = svc.simulate_webhook(order["id"], svc.TxnStatus.FAILED)
@@ -204,6 +227,7 @@ def test_webhook_failed_marks_order_failed():
 
 def test_webhook_expired_marks_order_expired():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
     res = svc.simulate_webhook(order["id"], svc.TxnStatus.EXPIRED)
@@ -212,6 +236,7 @@ def test_webhook_expired_marks_order_expired():
 
 def test_webhook_cancelled_marks_order_cancelled():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
     res = svc.simulate_webhook(order["id"], svc.TxnStatus.CANCELLED)
@@ -222,6 +247,7 @@ def test_webhook_idempotent_duplicate_does_not_double_fulfill():
     """CRITICAL: two SUCCESS webhooks for the same order must not double-
     fulfill. The first processes; the second returns status='duplicate'."""
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
 
@@ -242,6 +268,7 @@ def test_webhook_atomic_cancel_after_success_does_not_flip_order():
     been marked PAID. The atomic UPDATE WHERE status='pending' clause must
     prevent the cancellation from overwriting the paid state."""
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
 
@@ -255,8 +282,13 @@ def test_webhook_atomic_cancel_after_success_does_not_flip_order():
 
 def test_webhook_rejects_invalid_signature():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
-    raw = b'{"obj":{"order":{"merchant_order_id":"' + order["id"].encode() + b'"},"amount_cents":5000,"success":true}}'
+    raw = (
+        b'{"obj":{"order":{"merchant_order_id":"'
+        + order["id"].encode()
+        + b'"},"amount_cents":5000,"success":true}}'
+    )
     res = svc.handle_meeza_webhook(raw, "deadbeef-invalid-signature")
     assert res["status"] == "rejected"
     assert res["http_status"] == 401
@@ -264,6 +296,7 @@ def test_webhook_rejects_invalid_signature():
 
 def test_webhook_rejects_malformed_json():
     from backend.services import meeza_payment_service as svc
+
     secret = "test-secret-do-not-use-in-prod"
     raw = b"not valid json {{{"
     sig = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
@@ -274,6 +307,7 @@ def test_webhook_rejects_malformed_json():
 
 def test_webhook_rejects_missing_order_id():
     from backend.services import meeza_payment_service as svc
+
     secret = "test-secret-do-not-use-in-prod"
     payload = {"obj": {"amount_cents": 100, "success": True}}  # no order.merchant_order_id
     raw = json.dumps(payload).encode()
@@ -287,6 +321,7 @@ def test_webhook_rejects_missing_order_id():
 def test_webhook_audit_events_recorded():
     """Every processed webhook creates an audit row in payment_events."""
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=5000)
     svc.initiate_checkout(order["id"], "u")
     svc.simulate_webhook(order["id"], svc.TxnStatus.SUCCESS)
@@ -298,8 +333,10 @@ def test_webhook_audit_events_recorded():
 
 # ── Service: idempotency key derivation ──────────────────────────────────────
 
+
 def test_idempotency_key_deterministic():
     from backend.services import meeza_payment_service as svc
+
     k1 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "SUCCESS", 5000)
     k2 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "SUCCESS", 5000)
     assert k1 == k2
@@ -307,13 +344,15 @@ def test_idempotency_key_deterministic():
 
 def test_idempotency_key_changes_on_status():
     from backend.services import meeza_payment_service as svc
+
     k1 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "SUCCESS", 5000)
-    k2 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "FAILED",  5000)
+    k2 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "FAILED", 5000)
     assert k1 != k2  # different status → different event → different key
 
 
 def test_idempotency_key_changes_on_amount():
     from backend.services import meeza_payment_service as svc
+
     k1 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "SUCCESS", 5000)
     k2 = svc.derive_idempotency_key("paymob", "order-1", "txn-1", "SUCCESS", 5001)
     assert k1 != k2  # partial-capture follow-up must not collide
@@ -321,8 +360,10 @@ def test_idempotency_key_changes_on_amount():
 
 # ── Service: configuration ───────────────────────────────────────────────────
 
+
 def test_config_from_env_sandbox_default():
     from backend.services.meeza_payment_service import MeezaConfig
+
     cfg = MeezaConfig.from_env()
     assert cfg.psp_name.value == "sandbox"
     assert cfg.hmac_algorithm == "sha256"
@@ -331,6 +372,7 @@ def test_config_from_env_sandbox_default():
 
 def test_config_invalid_provider_falls_back_to_sandbox(monkeypatch):
     from backend.services.meeza_payment_service import MeezaConfig
+
     monkeypatch.setenv("MEEZA_PSP_PROVIDER", "invalid-provider")
     cfg = MeezaConfig.from_env()
     assert cfg.psp_name.value == "sandbox"
@@ -338,8 +380,10 @@ def test_config_invalid_provider_falls_back_to_sandbox(monkeypatch):
 
 # ── Service: transaction listing ─────────────────────────────────────────────
 
+
 def test_list_transactions_for_order():
     from backend.services import meeza_payment_service as svc
+
     order = svc.create_order(user_principal="u", amount_cents=1000)
     svc.initiate_checkout(order["id"], "u")
     txns = svc.list_transactions_for_order(order["id"])
@@ -349,6 +393,7 @@ def test_list_transactions_for_order():
 
 
 # ── Router-level tests (FastAPI TestClient) ──────────────────────────────────
+
 
 @pytest.fixture
 def fastapi_client(isolate_billing_db):
@@ -373,14 +418,18 @@ def fastapi_client(isolate_billing_db):
         return await call_next(request)
 
     from fastapi.testclient import TestClient
+
     return TestClient(app)
 
 
 def test_router_create_order(fastapi_client):
-    res = fastapi_client.post("/api/v1/billing/orders", json={
-        "amount_cents": 50000,
-        "description": "Pro plan",
-    })
+    res = fastapi_client.post(
+        "/api/v1/billing/orders",
+        json={
+            "amount_cents": 50000,
+            "description": "Pro plan",
+        },
+    )
     assert res.status_code == 201, res.text
     data = res.json()
     assert data["status"] == "pending"

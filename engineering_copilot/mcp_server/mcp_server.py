@@ -6,6 +6,7 @@ MCP (Microservice Control Protocol) Server for Engineering Copilot operations.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,7 +30,11 @@ async def verify_copilot_api_key(
     Verify API key for Engineering Copilot MCP Server (FC-001 defense).
     Checks X-API-Key header or Bearer token using constant-time secrets.compare_digest.
     """
-    raw_keys = os.getenv("COPILOT_API_KEYS", "") or os.getenv("FIREAI_API_KEY", "") or os.getenv("BAZ_API_KEY", "")
+    raw_keys = (
+        os.getenv("COPILOT_API_KEYS", "")
+        or os.getenv("FIREAI_API_KEY", "")
+        or os.getenv("BAZ_API_KEY", "")
+    )
     valid_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
     provided_key = None
@@ -44,7 +49,9 @@ async def verify_copilot_api_key(
         valid_keys = [os.getenv("DEV_COPILOT_API_KEY", "dev-copilot-key-secret")]
 
     if not provided_key:
-        raise HTTPException(status_code=401, detail="API key required (X-API-Key header or Bearer token)")
+        raise HTTPException(
+            status_code=401, detail="API key required (X-API-Key header or Bearer token)"
+        )
 
     if not any(secrets.compare_digest(provided_key, key) for key in valid_keys):
         raise HTTPException(status_code=401, detail="Invalid API key")
@@ -63,7 +70,7 @@ class MCPServer:
         self.app = FastAPI(
             title="ETAP-AI-WORK Engineering Copilot MCP Server",
             description="Microservice Control Protocol Server for Engineering Operations",
-            version="1.0.0"
+            version="1.0.0",
         )
 
         # Initialize AI Copilot
@@ -96,7 +103,6 @@ class MCPServer:
         self.app.post("/run_engineering_checks", dependencies=auth_dep)(self.run_engineering_checks)
         self.app.post("/process_request", dependencies=auth_dep)(self.process_request)
         self.app.post("/convert_simready", dependencies=auth_dep)(self.convert_simready)
-
 
     # Request models
     class DrawingRequest(BaseModel):
@@ -135,7 +141,7 @@ class MCPServer:
                 "drawing_id": drawing_id,
                 "name": request.name,
                 "created_at": datetime.now().isoformat(),
-                "message": f"Drawing '{request.name}' created successfully"
+                "message": f"Drawing '{request.name}' created successfully",
             }
 
             self._log_operation("create_drawing", request.dict(), operation_result)
@@ -155,7 +161,7 @@ class MCPServer:
                 "success": True,
                 "drawing_name": request.name,
                 "updated_at": datetime.now().isoformat(),
-                "message": f"Drawing '{request.name}' updated successfully"
+                "message": f"Drawing '{request.name}' updated successfully",
             }
 
             self._log_operation("update_drawing", request.dict(), operation_result)
@@ -175,13 +181,13 @@ class MCPServer:
                 "entities": [],
                 "layers": [],
                 "properties": {},
-                "read_at": datetime.now().isoformat()
+                "read_at": datetime.now().isoformat(),
             }
 
             operation_result = {
                 "success": True,
                 "drawing_data": drawing_data,
-                "message": "Drawing read successfully"
+                "message": "Drawing read successfully",
             }
 
             self._log_operation("read_drawing", {}, operation_result)
@@ -208,9 +214,9 @@ class MCPServer:
                 coordinates=Coordinates(
                     request.coordinates["x"],
                     request.coordinates["y"],
-                    request.coordinates.get("z", 0.0)
+                    request.coordinates.get("z", 0.0),
                 ),
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
 
             operation_result = {
@@ -219,7 +225,7 @@ class MCPServer:
                 "entity_type": "Panel",
                 "name": request.name,
                 "created_at": datetime.now().isoformat(),
-                "message": f"Panel '{request.name}' created successfully"
+                "message": f"Panel '{request.name}' created successfully",
             }
 
             self._log_operation("create_panel", request.dict(), operation_result)
@@ -250,9 +256,9 @@ class MCPServer:
                 coordinates=Coordinates(
                     request.coordinates["x"],
                     request.coordinates["y"],
-                    request.coordinates.get("z", 0.0)
+                    request.coordinates.get("z", 0.0),
                 ),
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
 
             operation_result = {
@@ -261,7 +267,7 @@ class MCPServer:
                 "entity_type": "Transformer",
                 "name": request.name,
                 "created_at": datetime.now().isoformat(),
-                "message": f"Transformer '{request.name}' created successfully"
+                "message": f"Transformer '{request.name}' created successfully",
             }
 
             self._log_operation("create_transformer", request.dict(), operation_result)
@@ -287,9 +293,9 @@ class MCPServer:
                 coordinates=Coordinates(
                     request.coordinates["x"],
                     request.coordinates["y"],
-                    request.coordinates.get("z", 0.0)
+                    request.coordinates.get("z", 0.0),
                 ),
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
 
             operation_result = {
@@ -298,7 +304,7 @@ class MCPServer:
                 "entity_type": "Bus",
                 "name": request.name,
                 "created_at": datetime.now().isoformat(),
-                "message": f"Bus '{request.name}' created successfully"
+                "message": f"Bus '{request.name}' created successfully",
             }
 
             self._log_operation("create_bus", request.dict(), operation_result)
@@ -325,9 +331,9 @@ class MCPServer:
                 coordinates=Coordinates(
                     request.coordinates["x"],
                     request.coordinates["y"],
-                    request.coordinates.get("z", 0.0)
+                    request.coordinates.get("z", 0.0),
                 ),
-                source_system=SourceSystem.UNIFIED
+                source_system=SourceSystem.UNIFIED,
             )
 
             operation_result = {
@@ -336,7 +342,7 @@ class MCPServer:
                 "entity_type": "Cable",
                 "name": request.name,
                 "created_at": datetime.now().isoformat(),
-                "message": f"Cable '{request.name}' created successfully"
+                "message": f"Cable '{request.name}' created successfully",
             }
 
             self._log_operation("create_cable", request.dict(), operation_result)
@@ -356,13 +362,13 @@ class MCPServer:
                 "diagram_id": f"sld_{request.name}_{int(datetime.now().timestamp())}",
                 "components": [],
                 "connections": [],
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.now().isoformat(),
             }
 
             operation_result = {
                 "success": True,
                 "sld_data": sld_data,
-                "message": f"SLD for '{request.name}' generated successfully"
+                "message": f"SLD for '{request.name}' generated successfully",
             }
 
             self._log_operation("generate_sld", request.dict(), operation_result)
@@ -383,7 +389,7 @@ class MCPServer:
                 "target_system": "ETAP",
                 "entities_synced": 0,
                 "synced_at": datetime.now().isoformat(),
-                "status": "completed"
+                "status": "completed",
             }
 
             self._log_operation("sync_etap", request.dict(), sync_result)
@@ -404,7 +410,7 @@ class MCPServer:
                 "target_system": "Revit",
                 "entities_synced": 0,
                 "synced_at": datetime.now().isoformat(),
-                "status": "completed"
+                "status": "completed",
             }
 
             self._log_operation("sync_revit", request.dict(), sync_result)
@@ -425,7 +431,7 @@ class MCPServer:
                 "target_system": "AutoCAD",
                 "entities_synced": 0,
                 "synced_at": datetime.now().isoformat(),
-                "status": "completed"
+                "status": "completed",
             }
 
             self._log_operation("sync_autocad", request.dict(), sync_result)
@@ -445,7 +451,7 @@ class MCPServer:
                 "success": True,
                 "filename": f"{request.name}.dwg",
                 "exported_at": datetime.now().isoformat(),
-                "message": f"Exported '{request.name}' to DWG successfully"
+                "message": f"Exported '{request.name}' to DWG successfully",
             }
 
             self._log_operation("export_dwg", request.dict(), export_result)
@@ -465,7 +471,7 @@ class MCPServer:
                 "success": True,
                 "filename": f"{request.name}.json",
                 "exported_at": datetime.now().isoformat(),
-                "message": f"Exported '{request.name}' to JSON successfully"
+                "message": f"Exported '{request.name}' to JSON successfully",
             }
 
             self._log_operation("export_json", request.dict(), export_result)
@@ -488,7 +494,7 @@ class MCPServer:
                 "warnings": [],
                 "info": [],
                 "validated_at": datetime.now().isoformat(),
-                "message": "Design validation completed successfully"
+                "message": "Design validation completed successfully",
             }
 
             self._log_operation("validate_design", request.dict(), validation_result)
@@ -511,7 +517,7 @@ class MCPServer:
                 "warnings": 0,
                 "details": [],
                 "checked_at": datetime.now().isoformat(),
-                "message": "Engineering checks completed"
+                "message": "Engineering checks completed",
             }
 
             self._log_operation("run_engineering_checks", request.dict(), checks_result)
@@ -527,10 +533,7 @@ class MCPServer:
             self.logger.info(f"Processing engineering request: {request.request}")
 
             # Use the AI Copilot to process the request
-            result = self.ai_copilot.process_request(
-                request.request,
-                request.target_systems
-            )
+            result = self.ai_copilot.process_request(request.request, request.target_systems)
 
             operation_result = {
                 "success": True,
@@ -538,7 +541,7 @@ class MCPServer:
                 "target_systems": request.target_systems,
                 "result": result,
                 "processed_at": datetime.now().isoformat(),
-                "message": "Engineering request processed successfully"
+                "message": "Engineering request processed successfully",
             }
 
             self._log_operation("process_request", request.dict(), operation_result)
@@ -580,7 +583,6 @@ class MCPServer:
             self.logger.error(f"Error converting asset to SimReady: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-
     def _log_operation(self, operation: str, input_data: dict[str, Any], result: dict[str, Any]):
         """Log an operation to the history."""
         log_entry = {
@@ -588,7 +590,7 @@ class MCPServer:
             "input": input_data,
             "result": result,
             "timestamp": datetime.now().isoformat(),
-            "success": result.get("success", True)
+            "success": result.get("success", True),
         }
         self.operation_history.append(log_entry)
 
@@ -617,9 +619,5 @@ def get_mcp_app():
 # For standalone execution
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "mcp_server:app",
-        host="127.0.0.1",
-        port=8001,
-        reload=True
-    )
+
+    uvicorn.run("mcp_server:app", host="127.0.0.1", port=8001, reload=True)

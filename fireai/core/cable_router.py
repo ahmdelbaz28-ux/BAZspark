@@ -161,7 +161,9 @@ class CableRoute:
             # route_id/start/end/length/bends — two routes with different
             # paths but same endpoints would produce the SAME hash.
             # Also use float.hex() for IEEE-754 bit-exact formatting.
-            wp_coords = "|".join(f"({wp.x:.6f},{wp.y:.6f},{wp.z:.6f},{int(wp.is_bend)})" for wp in self.waypoints)
+            wp_coords = "|".join(
+                f"({wp.x:.6f},{wp.y:.6f},{wp.z:.6f},{int(wp.is_bend)})" for wp in self.waypoints
+            )
             raw = (
                 f"{self.route_id}|{self.start}|{self.end}|"
                 f"{self.total_length_m:.6f}|{self.straight_length_m:.6f}|"
@@ -328,7 +330,9 @@ class CableRouter:
         self._electrical_cells: set[tuple[int, int, int]] = set()
         self._precompute_electrical_zones()
 
-    def _precompute_electrical_zones(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _precompute_electrical_zones(
+        self,
+    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Identify cells near electrical conduits.
 
@@ -523,7 +527,9 @@ class CableRouter:
         for label, cell in [("start", start_grid), ("end", end_grid)]:
             ix, iy, iz = cell
             if ix < 0 or ix >= nx or iy < 0 or iy >= ny or iz < 0 or iz >= nz:
-                raise ValueError(f"{label} point {cell} is outside grid bounds {self._model.grid_size}")
+                raise ValueError(
+                    f"{label} point {cell} is outside grid bounds {self._model.grid_size}"
+                )
 
         # Check start/end cells are not blocked
         start_state = get_cell_state(self._model, *start)
@@ -534,7 +540,9 @@ class CableRouter:
                 f"Start point {start} maps to BLOCKED cell — cable cannot originate inside a wall/obstacle"
             )
         if end_state == CellState.BLOCKED:
-            raise ValueError(f"End point {end} maps to BLOCKED cell — cable cannot terminate inside a wall/obstacle")
+            raise ValueError(
+                f"End point {end} maps to BLOCKED cell — cable cannot terminate inside a wall/obstacle"
+            )
 
         # ── A* Pathfinding ───────────────────────────────────────────────
         path, decision_log = self._astar(start_grid, end_grid)
@@ -586,8 +594,7 @@ class CableRouter:
                 r_at_20c = wg_found.resistance_ohm_per_km_at_20c
             else:
                 raise ContractViolation(
-                    f"Unknown wire gauge: {wire_gauge!r}. "
-                    f"Supported: {WireGauge.VALID_GAUGES}.",
+                    f"Unknown wire gauge: {wire_gauge!r}. Supported: {WireGauge.VALID_GAUGES}.",
                     field="wire_gauge",
                     value=wire_gauge,
                 )
@@ -627,7 +634,10 @@ class CableRouter:
         for wp in waypoints:
             if wp.is_bend:
                 decision_log.append(
-                    (f"Bend at ({wp.x:.2f}, {wp.y:.2f}, {wp.z:.2f})", "NEC Chapter 9 — max 4 quarter bends per run")
+                    (
+                        f"Bend at ({wp.x:.2f}, {wp.y:.2f}, {wp.z:.2f})",
+                        "NEC Chapter 9 — max 4 quarter bends per run",
+                    )
                 )
 
         # penalty-inflated). The penalty-inflated length is for A* cost
@@ -673,7 +683,9 @@ class CableRouter:
 
         """
         decision_log: list[tuple[str, str]] = []
-        decision_log.append((f"A* search: {start} → {goal}", "Orthogonal 6-dir, Manhattan heuristic"))
+        decision_log.append(
+            (f"A* search: {start} → {goal}", "Orthogonal 6-dir, Manhattan heuristic")
+        )
 
         # Early exit: start == goal
         if start == goal:
@@ -702,7 +714,9 @@ class CableRouter:
         g_costs[start] = 0.0
 
         # Safety limit: max iterations to prevent infinite loops
-        max_iterations = self._model.grid_size[0] * self._model.grid_size[1] * self._model.grid_size[2]
+        max_iterations = (
+            self._model.grid_size[0] * self._model.grid_size[1] * self._model.grid_size[2]
+        )
         iterations = 0
 
         while open_set and iterations < max_iterations:
@@ -714,7 +728,9 @@ class CableRouter:
             # Goal check
             if current.cell == goal:
                 path = self._reconstruct_path(current)
-                decision_log.append((f"Path found: {len(path)} cells, {iterations} iterations", "A* optimal path"))
+                decision_log.append(
+                    (f"Path found: {len(path)} cells, {iterations} iterations", "A* optimal path")
+                )
                 return path, decision_log
 
             # Skip if already processed with better cost
@@ -774,7 +790,9 @@ class CableRouter:
                 g_costs[nx_cell] = new_g
 
                 # Heuristic
-                h = self._constraint_engine.manhattan_heuristic(nx_cell, goal, self._model.grid_resolution)
+                h = self._constraint_engine.manhattan_heuristic(
+                    nx_cell, goal, self._model.grid_resolution
+                )
 
                 neighbor = _AStarNode(
                     cell=nx_cell,
@@ -788,7 +806,9 @@ class CableRouter:
                 heapq.heappush(open_set, neighbor)
 
         # No path found
-        decision_log.append((f"No path found after {iterations} iterations", "A* exhausted search space"))
+        decision_log.append(
+            (f"No path found after {iterations} iterations", "A* exhausted search space")
+        )
         return None, decision_log
 
     def _get_grid_cell(self, cell: tuple[int, int, int]) -> CellState:

@@ -1,5 +1,6 @@
 # NOSONAR
 """Agent Registry for L2 Orchestrator in Distributed FACP System"""
+
 import threading
 import time
 import uuid
@@ -38,7 +39,7 @@ class AgentRegistry:
                 "created_at": time.time(),
                 "last_seen": time.time(),
                 "status": "active",
-                "utilization": 0
+                "utilization": 0,
             }
 
             # Update indices
@@ -65,7 +66,9 @@ class AgentRegistry:
 
             self.last_updated = time.time()
 
-    def unregister_agent(self, agent_id: str):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def unregister_agent(
+        self, agent_id: str
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Unregister an agent from the registry"""
         with self.lock:
             if agent_id in self.agents:
@@ -92,7 +95,11 @@ class AgentRegistry:
 
                 self.last_updated = time.time()
 
-    def find_agent_for_method(self, method: str) -> dict[str, Any] | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def find_agent_for_method(
+        self, method: str
+    ) -> (
+        dict[str, Any] | None
+    ):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Find an appropriate agent for a specific method"""
         with self.lock:
             # First, look for exact match
@@ -108,7 +115,7 @@ class AgentRegistry:
 
             # Then look for wildcard matches
             for capability, agent_ids in self.capability_index.items():
-                if capability.endswith('.*') and method.startswith(capability[:-2]):
+                if capability.endswith(".*") and method.startswith(capability[:-2]):
                     for agent_id in agent_ids:
                         agent_info = self.agents.get(agent_id)
                         if agent_info and agent_info["status"] == "active":
@@ -117,7 +124,9 @@ class AgentRegistry:
             # If no local agent found, check cluster agents
             for agent_id, agent_info in self.cluster_agents.items():
                 capabilities = agent_info.get("capabilities", [])
-                if method in capabilities or any(cap.endswith('.*') and method.startswith(cap[:-2]) for cap in capabilities):
+                if method in capabilities or any(
+                    cap.endswith(".*") and method.startswith(cap[:-2]) for cap in capabilities
+                ):
                     if agent_info.get("status") == "active":
                         return agent_info
 
@@ -136,7 +145,10 @@ class AgentRegistry:
 
             # Also include cluster agents with this capability
             for agent_id, agent_info in self.cluster_agents.items():
-                if capability in agent_info.get("capabilities", []) and agent_info.get("status") == "active":
+                if (
+                    capability in agent_info.get("capabilities", [])
+                    and agent_info.get("status") == "active"
+                ):
                     agents.append(agent_info)
 
             return agents
@@ -228,7 +240,9 @@ class AgentRegistry:
         """Get registry status information"""
         with self.lock:
             local_active_agents = len([a for a in self.agents.values() if a["status"] == "active"])
-            cluster_active_agents = len([a for a in self.cluster_agents.values() if a.get("status") == "active"])
+            cluster_active_agents = len(
+                [a for a in self.cluster_agents.values() if a.get("status") == "active"]
+            )
 
             return {
                 "total_local_agents": len(self.agents),
@@ -238,7 +252,7 @@ class AgentRegistry:
                 "total_agents": len(self.agents) + len(self.cluster_agents),
                 "capability_types": list(self.capability_index.keys()),
                 "agent_types": list(self.agent_types.keys()),
-                "last_updated": self.last_updated
+                "last_updated": self.last_updated,
             }
 
     def get_registered_agent_types(self) -> list[str]:
@@ -303,13 +317,15 @@ class DistributedAgentRegistry(AgentRegistry):
 
         # Notify cluster if callback is available
         if self.cluster_sync_callback:
-            self.cluster_sync_callback({
-                "action": "agent_registered",
-                "agent_id": agent_id,
-                "agent_info": agent_info,
-                "node_id": self.node_id,
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "agent_registered",
+                    "agent_id": agent_id,
+                    "agent_info": agent_info,
+                    "node_id": self.node_id,
+                    "timestamp": time.time(),
+                }
+            )
 
     def unregister_agent(self, agent_id: str):
         """Unregister an agent and notify cluster"""
@@ -318,12 +334,14 @@ class DistributedAgentRegistry(AgentRegistry):
 
         # Notify cluster if callback is available
         if self.cluster_sync_callback and agent_info:
-            self.cluster_sync_callback({
-                "action": "agent_unregistered",
-                "agent_id": agent_id,
-                "node_id": self.node_id,
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "agent_unregistered",
+                    "agent_id": agent_id,
+                    "node_id": self.node_id,
+                    "timestamp": time.time(),
+                }
+            )
 
     def update_agent_status(self, agent_id: str, status: str):
         """Update agent status and notify cluster"""
@@ -331,13 +349,15 @@ class DistributedAgentRegistry(AgentRegistry):
 
         # Notify cluster if callback is available
         if self.cluster_sync_callback:
-            self.cluster_sync_callback({
-                "action": "agent_status_updated",
-                "agent_id": agent_id,
-                "status": status,
-                "node_id": self.node_id,
-                "timestamp": time.time()
-            })
+            self.cluster_sync_callback(
+                {
+                    "action": "agent_status_updated",
+                    "agent_id": agent_id,
+                    "status": status,
+                    "node_id": self.node_id,
+                    "timestamp": time.time(),
+                }
+            )
 
     def sync_with_cluster(self, cluster_agents: dict[str, Any]):
         """Override to handle cluster synchronization with additional logic"""

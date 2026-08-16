@@ -26,6 +26,7 @@ from qomn_conduit import (
 # Helper: create a simple ConduitRun for testing
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _make_simple_run() -> ConduitRun:
     """Create a simple ConduitRun with one elbow for output testing."""
     path = RoutePath(
@@ -46,6 +47,7 @@ def _make_simple_run() -> ConduitRun:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: Revit JSON has all required parameters
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestRevitOutput:
     """Revit JSON output must contain all required fields."""
@@ -86,6 +88,7 @@ class TestRevitOutput:
 # Test 2: AutoCAD entities have correct layer names
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestAutoCADOutput:
     """AutoCAD DXF entity output must have correct layer names and formats."""
 
@@ -121,6 +124,7 @@ class TestAutoCADOutput:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 3: Schedules sum to correct totals
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestScheduleOutput:
     """Schedule output must have correct totals and quantities."""
@@ -160,6 +164,7 @@ class TestScheduleOutput:
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 4: Output is deterministic (same input → same output hash)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestOutputDeterminism:
     """Same ConduitRun must always produce the same output."""

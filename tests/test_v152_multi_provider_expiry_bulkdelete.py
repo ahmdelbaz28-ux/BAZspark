@@ -28,9 +28,11 @@ if str(_PROJECT_ROOT) not in sys.path:
 @pytest.fixture(autouse=True)
 def _isolated_master_key(monkeypatch):
     import secrets as _secrets
+
     fresh_key = _secrets.token_bytes(32).hex()
     monkeypatch.setenv("FIREAI_VISION_KEY_ENCRYPTION_KEY", fresh_key)
     import backend.vision_key_store as vks
+
     monkeypatch.setattr(vks, "_MASTER_KEY", None)
     yield
     monkeypatch.setattr(vks, "_MASTER_KEY", None)
@@ -40,6 +42,7 @@ def _isolated_master_key(monkeypatch):
 def temp_db(monkeypatch, tmp_path):
     db_path = str(tmp_path / "test_v152.db")
     import backend.database as dbmod
+
     monkeypatch.setattr(dbmod, "_db", None)
     monkeypatch.setattr(dbmod, "_DB_PATH", db_path)
     monkeypatch.setenv("DIGITAL_TWIN_DB_PATH", db_path)
@@ -55,12 +58,14 @@ def admin_client(temp_db, monkeypatch):
     from fastapi.testclient import TestClient
 
     from backend.app import app
+
     monkeypatch.setenv("FIREAI_API_KEY", "test-api-key-for-testing-only")
     # Disable CSRF in tests (no browser to set the cookie)
     monkeypatch.setenv("FIREAI_CSRF_DISABLED", "1")
     # Disable rate limiting: slowapi Limiter has an `enabled` attribute.
     # Setting it to False makes all @limiter.limit decorators skip enforcement.
     import backend.limiter as limiter_mod
+
     monkeypatch.setattr(limiter_mod.limiter, "enabled", False)
     with TestClient(
         app,
@@ -76,7 +81,9 @@ def admin_client(temp_db, monkeypatch):
 class TestMultiProvider:
     """Test that POST/GET/DELETE work for all supported providers."""
 
-    @pytest.mark.parametrize("provider", ["openai", "anthropic", "gemini", "azure", "openrouter", "opencode"])
+    @pytest.mark.parametrize(
+        "provider", ["openai", "anthropic", "gemini", "azure", "openrouter", "opencode"]
+    )
     def test_post_key_for_each_provider(self, admin_client, provider):
         """POST a key for each supported provider — must succeed."""
         base_urls = {
@@ -107,12 +114,20 @@ class TestMultiProvider:
         # Add an openai key
         admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-openai-isolation-test-1234567890", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-openai-isolation-test-1234567890",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         # Add an anthropic key
         admin_client.post(
             "/api/v1/settings/keys/anthropic",
-            json={"api_key": "sk-ant-isolation-test-1234567890abcd", "base_url": "https://api.anthropic.com/v1", "model_name": "claude-3-5-sonnet-20241022"},
+            json={
+                "api_key": "sk-ant-isolation-test-1234567890abcd",
+                "base_url": "https://api.anthropic.com/v1",
+                "model_name": "claude-3-5-sonnet-20241022",
+            },
         )
         # GET anthropic keys — must only return the anthropic key
         resp = admin_client.get("/api/v1/settings/keys/anthropic")
@@ -125,7 +140,11 @@ class TestMultiProvider:
         """POST to an unsupported provider must return 400."""
         resp = admin_client.post(
             "/api/v1/settings/keys/unsupported_provider",
-            json={"api_key": "sk-unsupported-test-1234567890", "base_url": "https://example.com", "model_name": "test"},
+            json={
+                "api_key": "sk-unsupported-test-1234567890",
+                "base_url": "https://example.com",
+                "model_name": "test",
+            },
         )
         assert resp.status_code == 400
 
@@ -145,7 +164,11 @@ class TestMultiProvider:
         """The /openai path (V151) must still work alongside /{provider} (V152)."""
         resp = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-backward-compat-test-1234567890", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-backward-compat-test-1234567890",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         assert resp.status_code == 201
         # GET via /openai
@@ -240,7 +263,11 @@ class TestBulkDelete:
         for i in range(3):
             admin_client.post(
                 "/api/v1/settings/keys/openai",
-                json={"api_key": f"sk-bulk-delete-test-{i}-1234567890", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+                json={
+                    "api_key": f"sk-bulk-delete-test-{i}-1234567890",
+                    "base_url": "https://api.openai.com/v1",
+                    "model_name": "gpt-4o",
+                },
             )
         # Verify keys exist (including inactive)
         resp = admin_client.get("/api/v1/settings/keys/openai?include_inactive=true")
@@ -262,11 +289,19 @@ class TestBulkDelete:
         # Add 2 keys
         r1 = admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-bulk-specific-1-1234567890ab", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-bulk-specific-1-1234567890ab",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-bulk-specific-2-1234567890cd", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-bulk-specific-2-1234567890cd",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         id1 = r1.json()["id"]
         # Delete only id1
@@ -286,11 +321,19 @@ class TestBulkDelete:
         # Add openai + anthropic keys
         admin_client.post(
             "/api/v1/settings/keys/openai",
-            json={"api_key": "sk-iso-openai-1234567890abcd", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
+            json={
+                "api_key": "sk-iso-openai-1234567890abcd",
+                "base_url": "https://api.openai.com/v1",
+                "model_name": "gpt-4o",
+            },
         )
         admin_client.post(
             "/api/v1/settings/keys/anthropic",
-            json={"api_key": "sk-iso-anthropic-1234567890abcd", "base_url": "https://api.anthropic.com/v1", "model_name": "claude-3-5-sonnet-20241022"},
+            json={
+                "api_key": "sk-iso-anthropic-1234567890abcd",
+                "base_url": "https://api.anthropic.com/v1",
+                "model_name": "claude-3-5-sonnet-20241022",
+            },
         )
         # Bulk-delete openai only
         admin_client.post(

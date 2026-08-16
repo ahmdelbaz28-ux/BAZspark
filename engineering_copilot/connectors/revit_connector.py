@@ -6,11 +6,13 @@ Revit integration connector using Revit API.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 try:
     import os
     import sys
 
     import clr
+
     HAS_CLR = True
 except ImportError:
     # CLR not available (running outside Revit)
@@ -60,6 +62,8 @@ _NOT_CONNECTED_MSG = "Not connected to Revit"
 
 class NotConnectedError(ConnectionError):
     """Raised when an operation is attempted without an active connection."""
+
+
 _ELECTRICAL_PANEL = "Electrical Equipment: Panel"
 _ELECTRICAL_TRANSFORMER = "Electrical Equipment: Transformer"
 
@@ -79,21 +83,31 @@ class RevitConnector:
 
         # Category mapping from unified model to Revit
         self.category_mapping = {
-            'Panel': BuiltInCategory.OST_ElectricalEquipment if BuiltInCategory else 'OST_ElectricalEquipment',
-            'Transformer': BuiltInCategory.OST_ElectricalEquipment if BuiltInCategory else 'OST_ElectricalEquipment',
-            'Bus': BuiltInCategory.OST_ElectricalCircuits if BuiltInCategory else 'OST_ElectricalCircuits',  # Simplified mapping
-            'Cable': BuiltInCategory.OST_CableTray if BuiltInCategory else 'OST_CableTray',
-            'Breaker': BuiltInCategory.OST_ElectricalEquipment if BuiltInCategory else 'OST_ElectricalEquipment',
-            'Equipment': BuiltInCategory.OST_ElectricalEquipment if BuiltInCategory else 'OST_ElectricalEquipment',
-            'Room': BuiltInCategory.OST_Rooms if BuiltInCategory else 'OST_Rooms'
+            "Panel": BuiltInCategory.OST_ElectricalEquipment
+            if BuiltInCategory
+            else "OST_ElectricalEquipment",
+            "Transformer": BuiltInCategory.OST_ElectricalEquipment
+            if BuiltInCategory
+            else "OST_ElectricalEquipment",
+            "Bus": BuiltInCategory.OST_ElectricalCircuits
+            if BuiltInCategory
+            else "OST_ElectricalCircuits",  # Simplified mapping
+            "Cable": BuiltInCategory.OST_CableTray if BuiltInCategory else "OST_CableTray",
+            "Breaker": BuiltInCategory.OST_ElectricalEquipment
+            if BuiltInCategory
+            else "OST_ElectricalEquipment",
+            "Equipment": BuiltInCategory.OST_ElectricalEquipment
+            if BuiltInCategory
+            else "OST_ElectricalEquipment",
+            "Room": BuiltInCategory.OST_Rooms if BuiltInCategory else "OST_Rooms",
         }
 
         # Family type mapping
         self.family_mapping = {
-            'Panel': _ELECTRICAL_PANEL,
-            'Transformer': _ELECTRICAL_TRANSFORMER,
-            'Breaker': 'Electrical Equipment: Breaker',
-            'Cable': 'Cable Tray'
+            "Panel": _ELECTRICAL_PANEL,
+            "Transformer": _ELECTRICAL_TRANSFORMER,
+            "Breaker": "Electrical Equipment: Breaker",
+            "Cable": "Cable Tray",
         }
 
     def connect(self, _revit_app_path: str = None) -> bool:
@@ -147,13 +161,7 @@ class RevitConnector:
         try:
             # In a real implementation, this would read the Revit document
             # For now, we'll return a mock structure
-            bim_data = {
-                "elements": [],
-                "levels": [],
-                "rooms": [],
-                "families": [],
-                "parameters": {}
-            }
+            bim_data = {"elements": [], "levels": [], "rooms": [], "families": [], "parameters": {}}
 
             self.logger.info("Read BIM model data successfully")
             return bim_data
@@ -162,8 +170,9 @@ class RevitConnector:
             self.logger.error(f"Error reading BIM model: {e}")
             raise
 
-    def create_element(self, element_type: str, coordinates: Coordinates,
-                      parameters: dict[str, Any] = None) -> str:
+    def create_element(
+        self, element_type: str, coordinates: Coordinates, parameters: dict[str, Any] = None
+    ) -> str:
         """
         Create a new element in Revit.
 
@@ -181,7 +190,9 @@ class RevitConnector:
         try:
             # In a real implementation, this would create an element in the Revit document
             element_id = f"revit_elem_{element_type}_{int(datetime.now().timestamp())}"
-            self.logger.info(f"Created {element_type} element at ({coordinates.x}, {coordinates.y})")
+            self.logger.info(
+                f"Created {element_type} element at ({coordinates.x}, {coordinates.y})"
+            )
             return element_id
 
         except Exception as e:
@@ -225,7 +236,7 @@ class RevitConnector:
             families = [
                 {"name": _ELECTRICAL_PANEL, "category": "Electrical Equipment"},
                 {"name": _ELECTRICAL_TRANSFORMER, "category": "Electrical Equipment"},
-                {"name": "Cable Tray", "category": "Cable Trays"}
+                {"name": "Cable Tray", "category": "Cable Trays"},
             ]
             self.logger.info(f"Read {len(families)} families from Revit")
             return families
@@ -234,8 +245,9 @@ class RevitConnector:
             self.logger.error(f"Error reading families: {e}")
             raise
 
-    def place_family_instance(self, family_name: str, coordinates: Coordinates,
-                            parameters: dict[str, Any] = None) -> str:
+    def place_family_instance(
+        self, family_name: str, coordinates: Coordinates, parameters: dict[str, Any] = None
+    ) -> str:
         """
         Place a family instance in the Revit model.
 
@@ -297,10 +309,7 @@ class RevitConnector:
 
         try:
             # In a real implementation, this would read parameters from the element
-            parameters = {
-                "param1": "value1",
-                "param2": "value2"
-            }
+            parameters = {"param1": "value1", "param2": "value2"}
             self.logger.info(f"Read parameters for element: {element_id}")
             return parameters
 
@@ -345,7 +354,7 @@ class RevitConnector:
             # In a real implementation, this would read levels from the document
             levels = [
                 {"id": "level_1", "name": "Level 1", "elevation": 0.0},
-                {"id": "level_2", "name": "Level 2", "elevation": 10.0}
+                {"id": "level_2", "name": "Level 2", "elevation": 10.0},
             ]
             self.logger.info(f"Read {len(levels)} levels from Revit")
             return levels
@@ -368,7 +377,7 @@ class RevitConnector:
             # In a real implementation, this would read rooms from the document
             rooms = [
                 {"id": "room_1", "name": "Room 101", "number": "101", "area": 200.0},
-                {"id": "room_2", "name": "Room 102", "number": "102", "area": 150.0}
+                {"id": "room_2", "name": "Room 102", "number": "102", "area": 150.0},
             ]
             self.logger.info(f"Read {len(rooms)} rooms from Revit")
             return rooms
@@ -389,11 +398,7 @@ class RevitConnector:
 
         try:
             # In a real implementation, this would read MEP systems from the document
-            mep_data = {
-                "electrical_systems": [],
-                "mechanical_systems": [],
-                "plumbing_systems": []
-            }
+            mep_data = {"electrical_systems": [], "mechanical_systems": [], "plumbing_systems": []}
             self.logger.info("Read MEP data from Revit")
             return mep_data
 
@@ -415,7 +420,7 @@ class RevitConnector:
             # In a real implementation, this would read electrical systems
             systems = [
                 {"id": "sys_1", "name": "Power System 1", "type": "Power"},
-                {"id": "sys_2", "name": "Lighting System 1", "type": "Lighting"}
+                {"id": "sys_2", "name": "Lighting System 1", "type": "Lighting"},
             ]
             self.logger.info(f"Read {len(systems)} electrical systems from Revit")
             return systems
@@ -439,11 +444,7 @@ class RevitConnector:
 
         try:
             # In a real implementation, this would generate Revit sheets/reports
-            documentation = {
-                "sheets": [],
-                "reports": [],
-                "schedules": []
-            }
+            documentation = {"sheets": [], "reports": [], "schedules": []}
             self.logger.info(f"Generated documentation for {len(element_ids)} elements")
             return documentation
 
@@ -470,7 +471,7 @@ class RevitConnector:
                 "updated": 0,
                 "deleted": 0,
                 "errors": [],
-                "synced_elements": []
+                "synced_elements": [],
             }
 
             # In a real implementation, this would sync elements between Revit and unified model
@@ -479,18 +480,16 @@ class RevitConnector:
                 if entity.source_system != SourceSystem.REVIT:
                     # Create or update Revit element based on unified entity
                     element_id = self.create_element(
-                        entity.type.value,
-                        entity.coordinates,
-                        entity.metadata
+                        entity.type.value, entity.coordinates, entity.metadata
                     )
                     sync_results["created"] += 1
-                    sync_results["synced_elements"].append({
-                        "unified_id": entity.id,
-                        "revit_id": element_id,
-                        "action": "created"
-                    })
+                    sync_results["synced_elements"].append(
+                        {"unified_id": entity.id, "revit_id": element_id, "action": "created"}
+                    )
 
-            self.logger.info(f"Bidirectional sync completed: {sync_results['created']} created, {sync_results['updated']} updated")
+            self.logger.info(
+                f"Bidirectional sync completed: {sync_results['created']} created, {sync_results['updated']} updated"
+            )
             return sync_results
 
         except Exception as e:
@@ -523,7 +522,7 @@ class RevitConnector:
                 voltage_rating=480.0,
                 current_rating=400.0,
                 feeder_count=5,
-                source_system=SourceSystem.REVIT
+                source_system=SourceSystem.REVIT,
             ),
             Transformer(
                 id="transformer_1",
@@ -533,7 +532,7 @@ class RevitConnector:
                 primary_voltage=13800.0,
                 secondary_voltage=480.0,
                 power_rating=1000.0,
-                source_system=SourceSystem.REVIT
+                source_system=SourceSystem.REVIT,
             ),
             Room(
                 id="room_1",
@@ -542,8 +541,8 @@ class RevitConnector:
                 coordinates=Coordinates(12.0, 12.0),
                 room_number="EL1",
                 area=400.0,
-                source_system=SourceSystem.REVIT
-            )
+                source_system=SourceSystem.REVIT,
+            ),
         ]
 
         for entity in sample_entities:
@@ -566,7 +565,7 @@ class RevitConnector:
             "operations": [],
             "elements_created": 0,
             "families_used": [],
-            "parameters_set": 0
+            "parameters_set": 0,
         }
 
         # In a real implementation, this would convert unified entities
@@ -582,8 +581,8 @@ class RevitConnector:
                         "Panel Name": entity.name,
                         "Voltage Rating": entity.voltage_rating,
                         "Current Rating": entity.current_rating,
-                        "Feeder Count": entity.feeder_count
-                    }
+                        "Feeder Count": entity.feeder_count,
+                    },
                 }
                 revit_operations["operations"].append(operation)
                 revit_operations["elements_created"] += 1
@@ -599,12 +598,14 @@ class RevitConnector:
                         "Transformer Name": entity.name,
                         "Primary Voltage": entity.primary_voltage,
                         "Secondary Voltage": entity.secondary_voltage,
-                        "Power Rating": entity.power_rating
-                    }
+                        "Power Rating": entity.power_rating,
+                    },
                 }
                 revit_operations["operations"].append(operation)
                 revit_operations["elements_created"] += 1
                 revit_operations["families_used"].append(_ELECTRICAL_TRANSFORMER)
 
-        self.logger.info(f"Converted unified model to {len(revit_operations['operations'])} Revit operations")
+        self.logger.info(
+            f"Converted unified model to {len(revit_operations['operations'])} Revit operations"
+        )
         return revit_operations

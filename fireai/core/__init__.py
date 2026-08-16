@@ -48,6 +48,7 @@ def _import_error_context_cm(module_name: str):
             f"Original error: {e}"
         ) from e
 
+
 __version__ = "1.0.0"
 
 # Core analysers

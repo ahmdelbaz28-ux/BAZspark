@@ -20,6 +20,7 @@ These tests verify the FIX is in place. They serve as regression
 guards: if someone reverts to clearing only specific keys, the tests
 will FAIL.
 """
+
 from __future__ import annotations
 
 import re
@@ -78,7 +79,9 @@ def test_logout_clears_all_app_set_localStorage_keys():
 
     # Step 2: Read the logout function from AuthContext.tsx
     auth_source = AUTH_CONTEXT_TSX.read_text(encoding="utf-8")
-    logout_pattern = r"const\s+logout\s*=\s*useCallback\s*\(\s*async\s*\(\s*\)\s*=>\s*\{(.+?)\},\s*\[\]\s*\)"
+    logout_pattern = (
+        r"const\s+logout\s*=\s*useCallback\s*\(\s*async\s*\(\s*\)\s*=>\s*\{(.+?)\},\s*\[\]\s*\)"
+    )
     m = re.search(logout_pattern, auth_source, re.DOTALL)
     assert m, "Could not find logout function in AuthContext.tsx"
     logout_body = m.group(1)
@@ -137,13 +140,9 @@ def test_m6_claim_text_exists_in_worklog():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 
     worklog_text = WORKLOG.read_text(encoding="utf-8")
-    expected_substring = (
-        "M-6: AuthContext.tsx logout clears only specific localStorage keys"
-    )
+    expected_substring = "M-6: AuthContext.tsx logout clears only specific localStorage keys"
 
-    assert expected_substring in worklog_text, (
-        "M-6 claim text removed from worklog.md."
-    )
+    assert expected_substring in worklog_text, "M-6 claim text removed from worklog.md."
 
 
 if __name__ == "__main__":

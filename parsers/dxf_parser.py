@@ -57,7 +57,7 @@ class DXFParseResult:
 class DXFParser(ParserBase):
     """CRITICAL: Never trust DXF geometry. Always validate."""
 
-    allowed_extensions = {'.dxf'}
+    allowed_extensions = {".dxf"}
 
     MIN_ROOM_AREA_M2: float = 2.0
     MAX_ROOM_AREA_M2: float = 50_000.0
@@ -88,7 +88,9 @@ class DXFParser(ParserBase):
             logger.warning("DXF corrupt — attempting recovery")
             doc, auditor = recover.readfile(safe_path)
             if auditor.has_errors:
-                raise RuntimeError(f"DXF '{safe_path}' unrecoverable. Errors: {len(auditor.errors)}")
+                raise RuntimeError(
+                    f"DXF '{safe_path}' unrecoverable. Errors: {len(auditor.errors)}"
+                )
 
         units = self._detect_units(doc)
 
@@ -116,7 +118,12 @@ class DXFParser(ParserBase):
                 skipped += 1
                 continue
             if area > self.max_area:
-                logger.warning("%s: area %sm² > max %sm² — SKIPPED (possible unit error)", rid, poly.area, self.max_area)
+                logger.warning(
+                    "%s: area %sm² > max %sm² — SKIPPED (possible unit error)",
+                    rid,
+                    poly.area,
+                    self.max_area,
+                )
                 skipped += 1
                 continue
 
@@ -157,7 +164,9 @@ class DXFParser(ParserBase):
             "CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
 
-    def _detect_unit_heuristic(self, doc) -> int | None:  # NOSONAR — S3776: DXF unit detection requires multiple heuristic passes
+    def _detect_unit_heuristic(
+        self, doc
+    ) -> int | None:  # NOSONAR — S3776: DXF unit detection requires multiple heuristic passes
         from shapely.geometry import LineString
         from shapely.ops import polygonize, unary_union
         from shapely.validation import make_valid
@@ -216,7 +225,9 @@ class DXFParser(ParserBase):
         logger.error("No valid unit scale found")
         return None
 
-    def _extract_lines(self, msp, scale: float) -> list:  # NOSONAR — S3776: DXF entity extraction requires type-specific branching
+    def _extract_lines(
+        self, msp, scale: float
+    ) -> list:  # NOSONAR — S3776: DXF entity extraction requires type-specific branching
         from shapely.geometry import LineString
 
         lines = []
@@ -224,8 +235,19 @@ class DXFParser(ParserBase):
             if ent.dxftype() == "LINE":
                 sx, sy = ent.dxf.start.x * scale, ent.dxf.start.y * scale
                 ex, ey = ent.dxf.end.x * scale, ent.dxf.end.y * scale
-                if not (math.isfinite(sx) and math.isfinite(sy) and math.isfinite(ex) and math.isfinite(ey)):
-                    logger.warning("Skipping LINE with non-finite coordinates: start=(%s,%s) end=(%s,%s)", sx, sy, ex, ey)
+                if not (
+                    math.isfinite(sx)
+                    and math.isfinite(sy)
+                    and math.isfinite(ex)
+                    and math.isfinite(ey)
+                ):
+                    logger.warning(
+                        "Skipping LINE with non-finite coordinates: start=(%s,%s) end=(%s,%s)",
+                        sx,
+                        sy,
+                        ex,
+                        ey,
+                    )
                     continue
                 s, e = (sx, sy), (ex, ey)
                 if s != e:
@@ -234,11 +256,14 @@ class DXFParser(ParserBase):
                 try:
                     raw_pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
                     if not all(math.isfinite(x) and math.isfinite(y) for x, y in raw_pts):
-                        bad_count = sum(1 for x, y in raw_pts if not (math.isfinite(x) and math.isfinite(y)))
+                        bad_count = sum(
+                            1 for x, y in raw_pts if not (math.isfinite(x) and math.isfinite(y))
+                        )
                         logger.warning(
                             "Polyline had %d non-finite vertices out of %d total. "
                             "Geometry would be corrupted by filtering — skipping this entity.",
-                            bad_count, len(raw_pts),
+                            bad_count,
+                            len(raw_pts),
                         )
                         continue
                     pts = raw_pts

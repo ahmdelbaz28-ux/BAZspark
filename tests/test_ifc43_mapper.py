@@ -48,8 +48,19 @@ class TestConstants:
 
     def test_type_mapping_covers_all_major_types(self):
         """At minimum, smoke/heat/flame/duct/beam/aspirating must be mapped."""
-        required = ["smoke", "heat", "flame", "duct", "beam", "aspirating",
-                    "horn", "strobe", "speaker", "sprinkler", "facp"]
+        required = [
+            "smoke",
+            "heat",
+            "flame",
+            "duct",
+            "beam",
+            "aspirating",
+            "horn",
+            "strobe",
+            "speaker",
+            "sprinkler",
+            "facp",
+        ]
         for t in required:
             assert t in FIREAI_TO_IFC43_MAP, f"Missing mapping for: {t}"
 
@@ -59,8 +70,12 @@ class TestConstants:
 
     def test_property_set_names_follow_ifc_convention(self):
         """Property set names must start with 'Pset_' per IFC convention."""
-        for pset in (PSET_FIREALARM_COMMON, PSET_FIREAI_DESIGN,
-                     PSET_FIREAI_AUDIT, PSET_FIREAI_SAFETY):
+        for pset in (
+            PSET_FIREALARM_COMMON,
+            PSET_FIREAI_DESIGN,
+            PSET_FIREAI_AUDIT,
+            PSET_FIREAI_SAFETY,
+        ):
             assert pset.startswith("Pset_"), f"Pset name must start with 'Pset_': {pset}"
 
 
@@ -81,7 +96,9 @@ class TestIFC43Mapper:
         return {
             "device_id": "SM-01",
             "type": "smoke",
-            "x": 5.0, "y": 3.0, "z": 2.8,
+            "x": 5.0,
+            "y": 3.0,
+            "z": 2.8,
             "room_id": "ROOM-001",
             "coverage_radius_m": 6.37,
             "spacing_m": 9.1,
@@ -124,9 +141,7 @@ class TestIFC43Mapper:
         r2 = mapper.map_detector(sample_detector)
         assert r1.global_id == r2.global_id, "GlobalId must be deterministic"
 
-    def test_map_detector_different_inputs_produce_different_ids(
-        self, mapper, sample_detector
-    ):
+    def test_map_detector_different_inputs_produce_different_ids(self, mapper, sample_detector):
         """Different device_ids must produce different GlobalIds."""
         d2 = {**sample_detector, "device_id": "SM-02"}
         r1 = mapper.map_detector(sample_detector)
@@ -188,11 +203,13 @@ class TestIFC43Mapper:
 
     def test_map_building_returns_ifc_building(self, mapper):
         """map_building must return IfcBuilding."""
-        result = mapper.map_building({
-            "building_id": "B-001",
-            "name": "Test Building",
-            "num_storeys": 3,
-        })
+        result = mapper.map_building(
+            {
+                "building_id": "B-001",
+                "name": "Test Building",
+                "num_storeys": 3,
+            }
+        )
         assert result.ifc_type == "IfcBuilding"
         assert result.name == "Test Building"
 
@@ -209,14 +226,16 @@ class TestIFC43Mapper:
 
     def test_map_project_returns_complete_structure(self, mapper, sample_room, sample_detector):
         """map_project must return building + rooms + detectors + stats."""
-        result = mapper.map_project({
-            "building": {"building_id": "B-001", "name": "Test", "num_storeys": 1},
-            "rooms": [sample_room],
-            "detectors": [
-                sample_detector,
-                {**sample_detector, "type": "heat", "device_id": "HT-01"},
-            ],
-        })
+        result = mapper.map_project(
+            {
+                "building": {"building_id": "B-001", "name": "Test", "num_storeys": 1},
+                "rooms": [sample_room],
+                "detectors": [
+                    sample_detector,
+                    {**sample_detector, "type": "heat", "device_id": "HT-01"},
+                ],
+            }
+        )
         assert "header" in result
         assert "building" in result
         assert "rooms" in result

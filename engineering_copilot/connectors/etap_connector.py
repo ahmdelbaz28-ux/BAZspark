@@ -6,11 +6,13 @@ ETAP integration connector for electrical engineering analysis.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
+
 try:
     import os
     import sys
 
     import clr
+
     HAS_CLR = True
 except ImportError:
     # CLR not available (running outside ETAP)
@@ -64,23 +66,23 @@ class ETAPConnector:
 
         # ETAP element type mapping
         self.element_type_mapping = {
-            'Bus': 'BUS',
-            'Transformer': 'XFMER',
-            'Cable': 'CABLE',
-            'Breaker': 'BRKR',
-            'Panel': 'SWITCH',
-            'Load': 'LOAD',
-            'Generator': 'GEN'
+            "Bus": "BUS",
+            "Transformer": "XFMER",
+            "Cable": "CABLE",
+            "Breaker": "BRKR",
+            "Panel": "SWITCH",
+            "Load": "LOAD",
+            "Generator": "GEN",
         }
 
         # ETAP study types
         self.study_types = [
-            'LoadFlow',
-            'ShortCircuit',
-            'ProtectiveDeviceCoordination',
-            'ArcFlash',
-            'TransientStability',
-            'HarmonicAnalysis'
+            "LoadFlow",
+            "ShortCircuit",
+            "ProtectiveDeviceCoordination",
+            "ArcFlash",
+            "TransientStability",
+            "HarmonicAnalysis",
         ]
 
     def connect(self, project_path: str = None) -> bool:
@@ -145,7 +147,7 @@ class ETAPConnector:
                 "loads": [],
                 "generators": [],
                 "studies": {},
-                "single_line_diagrams": []
+                "single_line_diagrams": [],
             }
 
             self.logger.info("Read ETAP project data successfully")
@@ -169,7 +171,7 @@ class ETAPConnector:
             # In a real implementation, this would read SLDs from ETAP
             sl_ds = [
                 {"id": "sld_1", "name": "Main SLD", "file_path": "main_sld.etd"},
-                {"id": "sld_2", "name": "Distribution SLD", "file_path": "dist_sld.etd"}
+                {"id": "sld_2", "name": "Distribution SLD", "file_path": "dist_sld.etd"},
             ]
             self.logger.info(f"Read {len(sl_ds)} single line diagrams from ETAP")
             return sl_ds
@@ -192,7 +194,12 @@ class ETAPConnector:
             # In a real implementation, this would read buses from ETAP
             buses = [
                 {"id": "bus_1", "name": "Main Bus", "voltage": 13800.0, "rated_current": 2000.0},
-                {"id": "bus_2", "name": "Distribution Bus", "voltage": 480.0, "rated_current": 4000.0}
+                {
+                    "id": "bus_2",
+                    "name": "Distribution Bus",
+                    "voltage": 480.0,
+                    "rated_current": 4000.0,
+                },
             ]
             self.logger.info(f"Read {len(buses)} buses from ETAP")
             return buses
@@ -214,8 +221,20 @@ class ETAPConnector:
         try:
             # In a real implementation, this would read transformers from ETAP
             transformers = [
-                {"id": "xfmer_1", "name": "Main Transformer", "primary_voltage": 13800.0, "secondary_voltage": 480.0, "power_rating": 1000.0},
-                {"id": "xfmer_2", "name": "Distribution Transformer", "primary_voltage": 480.0, "secondary_voltage": 208.0, "power_rating": 500.0}
+                {
+                    "id": "xfmer_1",
+                    "name": "Main Transformer",
+                    "primary_voltage": 13800.0,
+                    "secondary_voltage": 480.0,
+                    "power_rating": 1000.0,
+                },
+                {
+                    "id": "xfmer_2",
+                    "name": "Distribution Transformer",
+                    "primary_voltage": 480.0,
+                    "secondary_voltage": 208.0,
+                    "power_rating": 500.0,
+                },
             ]
             self.logger.info(f"Read {len(transformers)} transformers from ETAP")
             return transformers
@@ -237,8 +256,20 @@ class ETAPConnector:
         try:
             # In a real implementation, this would read cables from ETAP
             cables = [
-                {"id": "cable_1", "name": "Main Feeder", "voltage_rating": 600.0, "conductor_size": "500kcmil", "length": 100.0},
-                {"id": "cable_2", "name": "Distribution Feeder", "voltage_rating": 600.0, "conductor_size": "3/0 AWG", "length": 50.0}
+                {
+                    "id": "cable_1",
+                    "name": "Main Feeder",
+                    "voltage_rating": 600.0,
+                    "conductor_size": "500kcmil",
+                    "length": 100.0,
+                },
+                {
+                    "id": "cable_2",
+                    "name": "Distribution Feeder",
+                    "voltage_rating": 600.0,
+                    "conductor_size": "3/0 AWG",
+                    "length": 50.0,
+                },
             ]
             self.logger.info(f"Read {len(cables)} cables from ETAP")
             return cables
@@ -260,8 +291,20 @@ class ETAPConnector:
         try:
             # In a real implementation, this would read panels from ETAP
             panels = [
-                {"id": "panel_1", "name": "MDB", "voltage_rating": 480.0, "current_rating": 400.0, "feeder_count": 5},
-                {"id": "panel_2", "name": "Distribution Panel", "voltage_rating": 480.0, "current_rating": 200.0, "feeder_count": 3}
+                {
+                    "id": "panel_1",
+                    "name": "MDB",
+                    "voltage_rating": 480.0,
+                    "current_rating": 400.0,
+                    "feeder_count": 5,
+                },
+                {
+                    "id": "panel_2",
+                    "name": "Distribution Panel",
+                    "voltage_rating": 480.0,
+                    "current_rating": 200.0,
+                    "feeder_count": 3,
+                },
             ]
             self.logger.info(f"Read {len(panels)} panels from ETAP")
             return panels
@@ -283,8 +326,20 @@ class ETAPConnector:
         try:
             # In a real implementation, this would read breakers from ETAP
             breakers = [
-                {"id": "brkr_1", "name": "Main Breaker", "voltage_rating": 480.0, "current_rating": 400.0, "interrupting_rating": 65.0},
-                {"id": "brkr_2", "name": "Feeder Breaker", "voltage_rating": 480.0, "current_rating": 100.0, "interrupting_rating": 10.0}
+                {
+                    "id": "brkr_1",
+                    "name": "Main Breaker",
+                    "voltage_rating": 480.0,
+                    "current_rating": 400.0,
+                    "interrupting_rating": 65.0,
+                },
+                {
+                    "id": "brkr_2",
+                    "name": "Feeder Breaker",
+                    "voltage_rating": 480.0,
+                    "current_rating": 100.0,
+                    "interrupting_rating": 10.0,
+                },
             ]
             self.logger.info(f"Read {len(breakers)} breakers from ETAP")
             return breakers
@@ -307,7 +362,12 @@ class ETAPConnector:
             # In a real implementation, this would read loads from ETAP
             loads = [
                 {"id": "load_1", "name": "Office Load", "power_rating": 100.0, "power_factor": 0.9},
-                {"id": "load_2", "name": "Mechanical Load", "power_rating": 250.0, "power_factor": 0.85}
+                {
+                    "id": "load_2",
+                    "name": "Mechanical Load",
+                    "power_rating": 250.0,
+                    "power_factor": 0.85,
+                },
             ]
             self.logger.info(f"Read {len(loads)} loads from ETAP")
             return loads
@@ -329,8 +389,18 @@ class ETAPConnector:
         try:
             # In a real implementation, this would read generators from ETAP
             generators = [
-                {"id": "gen_1", "name": "Emergency Generator", "power_rating": 500.0, "voltage_rating": 480.0},
-                {"id": "gen_2", "name": "Standby Generator", "power_rating": 1000.0, "voltage_rating": 480.0}
+                {
+                    "id": "gen_1",
+                    "name": "Emergency Generator",
+                    "power_rating": 500.0,
+                    "voltage_rating": 480.0,
+                },
+                {
+                    "id": "gen_2",
+                    "name": "Standby Generator",
+                    "power_rating": 1000.0,
+                    "voltage_rating": 480.0,
+                },
             ]
             self.logger.info(f"Read {len(generators)} generators from ETAP")
             return generators
@@ -354,7 +424,7 @@ class ETAPConnector:
             studies = {
                 "protective_device_coordination": {"status": "complete", "results": []},
                 "arc_flash": {"status": "complete", "results": []},
-                "selectivity": {"status": "complete", "results": []}
+                "selectivity": {"status": "complete", "results": []},
             }
             self.logger.info("Read protection studies from ETAP")
             return studies
@@ -380,7 +450,7 @@ class ETAPConnector:
                 "momentary": 0.0,
                 "peak": 0.0,
                 "ground_fault": 0.0,
-                "locations": []
+                "locations": [],
             }
             self.logger.info("Read short circuit results from ETAP")
             return results
@@ -405,7 +475,7 @@ class ETAPConnector:
                 "voltage_profile": [],
                 "power_flows": [],
                 "losses": {"total": 0.0, "by_element": {}},
-                "convergence": True
+                "convergence": True,
             }
             self.logger.info("Read load flow results from ETAP")
             return results
@@ -437,7 +507,7 @@ class ETAPConnector:
                 "start_time": datetime.now().isoformat(),
                 "end_time": datetime.now().isoformat(),
                 "results": {},
-                "messages": []
+                "messages": [],
             }
             self.logger.info(f"Ran {study_type} study in ETAP")
             return results
@@ -470,7 +540,7 @@ class ETAPConnector:
                 description="Main electrical bus",
                 voltage_rating=13800.0,
                 current_rating=2000.0,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Transformer(
                 id="xfmer_1",
@@ -479,7 +549,7 @@ class ETAPConnector:
                 primary_voltage=13800.0,
                 secondary_voltage=480.0,
                 power_rating=1000.0,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Panel(
                 id="panel_1",
@@ -488,7 +558,7 @@ class ETAPConnector:
                 voltage_rating=480.0,
                 current_rating=400.0,
                 feeder_count=5,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Cable(
                 id="cable_1",
@@ -497,7 +567,7 @@ class ETAPConnector:
                 voltage_rating=600.0,
                 conductor_size="500kcmil",
                 length=100.0,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Breaker(
                 id="brkr_1",
@@ -506,7 +576,7 @@ class ETAPConnector:
                 voltage_rating=480.0,
                 current_rating=400.0,
                 interrupting_rating=65.0,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Load(
                 id="load_1",
@@ -514,7 +584,7 @@ class ETAPConnector:
                 description="Office lighting and power loads",
                 power_rating=100.0,
                 power_factor=0.9,
-                source_system=SourceSystem.ETAP
+                source_system=SourceSystem.ETAP,
             ),
             Generator(
                 id="gen_1",
@@ -522,14 +592,16 @@ class ETAPConnector:
                 description="Emergency backup generator",
                 power_rating=500.0,
                 voltage_rating=480.0,
-                source_system=SourceSystem.ETAP
-            )
+                source_system=SourceSystem.ETAP,
+            ),
         ]
 
         for entity in sample_entities:
             model.add_entity(entity)
 
-        self.logger.info(f"Converted ETAP data to unified model with {len(model.entities)} entities")
+        self.logger.info(
+            f"Converted ETAP data to unified model with {len(model.entities)} entities"
+        )
         return model
 
     def convert_from_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
@@ -546,7 +618,7 @@ class ETAPConnector:
             "operations": [],
             "elements_created": 0,
             "studies_updated": 0,
-            "parameters_set": 0
+            "parameters_set": 0,
         }
 
         # In a real implementation, this would convert unified entities
@@ -559,8 +631,8 @@ class ETAPConnector:
                     "name": entity.name,
                     "parameters": {
                         "VoltageRating": entity.voltage_rating,
-                        "RatedCurrent": entity.current_rating
-                    }
+                        "RatedCurrent": entity.current_rating,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -573,8 +645,8 @@ class ETAPConnector:
                     "parameters": {
                         "PrimaryVoltage": entity.primary_voltage,
                         "SecondaryVoltage": entity.secondary_voltage,
-                        "PowerRating": entity.power_rating
-                    }
+                        "PowerRating": entity.power_rating,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -587,8 +659,8 @@ class ETAPConnector:
                     "parameters": {
                         "VoltageRating": entity.voltage_rating,
                         "CurrentRating": entity.current_rating,
-                        "FeederCount": entity.feeder_count
-                    }
+                        "FeederCount": entity.feeder_count,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -601,8 +673,8 @@ class ETAPConnector:
                     "parameters": {
                         "VoltageRating": entity.voltage_rating,
                         "ConductorSize": entity.conductor_size,
-                        "Length": entity.length
-                    }
+                        "Length": entity.length,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -615,8 +687,8 @@ class ETAPConnector:
                     "parameters": {
                         "VoltageRating": entity.voltage_rating,
                         "CurrentRating": entity.current_rating,
-                        "InterruptingRating": entity.interrupting_rating
-                    }
+                        "InterruptingRating": entity.interrupting_rating,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -628,8 +700,8 @@ class ETAPConnector:
                     "name": entity.name,
                     "parameters": {
                         "PowerRating": entity.power_rating,
-                        "PowerFactor": entity.power_factor
-                    }
+                        "PowerFactor": entity.power_factor,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
@@ -641,13 +713,15 @@ class ETAPConnector:
                     "name": entity.name,
                     "parameters": {
                         "PowerRating": entity.power_rating,
-                        "VoltageRating": entity.voltage_rating
-                    }
+                        "VoltageRating": entity.voltage_rating,
+                    },
                 }
                 etap_operations["operations"].append(operation)
                 etap_operations["elements_created"] += 1
 
-        self.logger.info(f"Converted unified model to {len(etap_operations['operations'])} ETAP operations")
+        self.logger.info(
+            f"Converted unified model to {len(etap_operations['operations'])} ETAP operations"
+        )
         return etap_operations
 
     def sync_with_unified_model(self, unified_model: UnifiedEngineeringModel) -> dict[str, Any]:
@@ -669,7 +743,7 @@ class ETAPConnector:
                 "updated": 0,
                 "deleted": 0,
                 "errors": [],
-                "synced_elements": []
+                "synced_elements": [],
             }
 
             # In a real implementation, this would sync elements between ETAP and unified model
@@ -679,13 +753,17 @@ class ETAPConnector:
                     # Create or update ETAP element based on unified entity
                     # In real implementation, this would call ETAP API
                     sync_results["created"] += 1
-                    sync_results["synced_elements"].append({
-                        "unified_id": entity.id,
-                        "etap_id": f"etap_{entity.type.value}_{entity.id}",
-                        "action": "created"
-                    })
+                    sync_results["synced_elements"].append(
+                        {
+                            "unified_id": entity.id,
+                            "etap_id": f"etap_{entity.type.value}_{entity.id}",
+                            "action": "created",
+                        }
+                    )
 
-            self.logger.info(f"ETAP sync completed: {sync_results['created']} created, {sync_results['updated']} updated")
+            self.logger.info(
+                f"ETAP sync completed: {sync_results['created']} created, {sync_results['updated']} updated"
+            )
             return sync_results
 
         except Exception as e:

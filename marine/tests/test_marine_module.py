@@ -5,6 +5,7 @@ Covers: SOLAS compliance, IEC 60092 detector selection, fire-resistance
 classification, extinguishment sizing, alarm-logic generation, and SCADA
 integration. Follows property-based + unit-test patterns per agent.md Rule 10.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,11 +34,14 @@ from marine.solas.chapter_ii_2 import (
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def cargo_ship() -> ShipProject:
     return ShipProject(
-        project_id="TEST-001", ship_name="Test Cargo",
-        ship_type=ShipType.CARGO, length_overall_m=120.0,
+        project_id="TEST-001",
+        ship_name="Test Cargo",
+        ship_type=ShipType.CARGO,
+        length_overall_m=120.0,
         gross_tonnage=8000.0,
     )
 
@@ -45,8 +49,10 @@ def cargo_ship() -> ShipProject:
 @pytest.fixture
 def passenger_ship() -> ShipProject:
     return ShipProject(
-        project_id="TEST-002", ship_name="Test Ferry",
-        ship_type=ShipType.PASSENGER, length_overall_m=80.0,
+        project_id="TEST-002",
+        ship_name="Test Ferry",
+        ship_type=ShipType.PASSENGER,
+        length_overall_m=80.0,
         passenger_capacity=400,
     )
 
@@ -54,8 +60,10 @@ def passenger_ship() -> ShipProject:
 @pytest.fixture
 def tanker() -> ShipProject:
     return ShipProject(
-        project_id="TEST-003", ship_name="Test Tanker",
-        ship_type=ShipType.TANKER, length_overall_m=180.0,
+        project_id="TEST-003",
+        ship_name="Test Tanker",
+        ship_type=ShipType.TANKER,
+        length_overall_m=180.0,
         gross_tonnage=25000.0,
     )
 
@@ -63,22 +71,33 @@ def tanker() -> ShipProject:
 @pytest.fixture
 def engine_room_zone() -> MarineZone:
     return MarineZone(
-        zone_id="ER-01", name="Engine Room", space_category=SpaceCategory.MACHINERY_SPACE_A,
-        deck="engine_room", frame_start=50, frame_end=80,
-        area_m2=200.0, height_m=6.0,
+        zone_id="ER-01",
+        name="Engine Room",
+        space_category=SpaceCategory.MACHINERY_SPACE_A,
+        deck="engine_room",
+        frame_start=50,
+        frame_end=80,
+        area_m2=200.0,
+        height_m=6.0,
     )
 
 
 @pytest.fixture
 def accommodation_zone() -> MarineZone:
     return MarineZone(
-        zone_id="ACC-01", name="Cabin Block", space_category=SpaceCategory.ACCOMMODATION,
-        deck="A-deck", frame_start=10, frame_end=40,
-        area_m2=150.0, height_m=2.5,
+        zone_id="ACC-01",
+        name="Cabin Block",
+        space_category=SpaceCategory.ACCOMMODATION,
+        deck="A-deck",
+        frame_start=10,
+        frame_end=40,
+        area_m2=150.0,
+        height_m=2.5,
     )
 
 
 # ─── SOLAS Compliance Tests ─────────────────────────────────────────────────
+
 
 class TestSOLASCompliance:
     def test_passenger_ship_detected(self, passenger_ship):
@@ -90,8 +109,10 @@ class TestSOLASCompliance:
 
     def test_small_craft_detected(self):
         small = ShipProject(
-            project_id="S-001", ship_name="Yacht",
-            ship_type=ShipType.SMALL_CRAFT, length_overall_m=18.0,
+            project_id="S-001",
+            ship_name="Yacht",
+            ship_type=ShipType.SMALL_CRAFT,
+            length_overall_m=18.0,
         )
         assert small.is_small_craft is True
 
@@ -125,19 +146,16 @@ class TestSOLASCompliance:
         assert cls == FireClass.A_60
 
     def test_fire_class_cargo_to_escape(self):
-        cls = required_fire_class_between(
-            SpaceCategory.CARGO_SPACE, SpaceCategory.ESCAPE_ROUTE
-        )
+        cls = required_fire_class_between(SpaceCategory.CARGO_SPACE, SpaceCategory.ESCAPE_ROUTE)
         assert cls == FireClass.A_60
 
     def test_fire_class_accommodation_to_escape(self):
-        cls = required_fire_class_between(
-            SpaceCategory.ACCOMMODATION, SpaceCategory.ESCAPE_ROUTE
-        )
+        cls = required_fire_class_between(SpaceCategory.ACCOMMODATION, SpaceCategory.ESCAPE_ROUTE)
         assert cls == FireClass.B_15
 
 
 # ─── Fire Class Hierarchy Tests ─────────────────────────────────────────────
+
 
 class TestFireClassHierarchy:
     def test_insulation_minutes(self):
@@ -152,6 +170,7 @@ class TestFireClassHierarchy:
 
 
 # ─── IEC 60092-502 Detector Tests ───────────────────────────────────────────
+
 
 class TestDetectorSelection:
     def test_engine_room_triple_detection(self, engine_room_zone, cargo_ship):
@@ -184,6 +203,7 @@ class TestDetectorSelection:
 
 # ─── Fire Resistance Tests ──────────────────────────────────────────────────
 
+
 class TestFireResistance:
     def test_division_specs_generated(self, cargo_ship):
         zones = divide_into_main_vertical_zones(cargo_ship.length_overall_m, cargo_ship)
@@ -195,18 +215,35 @@ class TestFireResistance:
 
     def test_machinery_division_is_a60(self):
         zones = [
-            MarineZone(zone_id="Z1", name="ER", space_category=SpaceCategory.MACHINERY_SPACE_A,
-                       deck="main", frame_start=0, frame_end=50, area_m2=100, height_m=3,
-                       adjacent_zones=("Z2",)),
-            MarineZone(zone_id="Z2", name="Acc", space_category=SpaceCategory.ACCOMMODATION,
-                       deck="main", frame_start=50, frame_end=100, area_m2=100, height_m=3,
-                       adjacent_zones=("Z1",)),
+            MarineZone(
+                zone_id="Z1",
+                name="ER",
+                space_category=SpaceCategory.MACHINERY_SPACE_A,
+                deck="main",
+                frame_start=0,
+                frame_end=50,
+                area_m2=100,
+                height_m=3,
+                adjacent_zones=("Z2",),
+            ),
+            MarineZone(
+                zone_id="Z2",
+                name="Acc",
+                space_category=SpaceCategory.ACCOMMODATION,
+                deck="main",
+                frame_start=50,
+                frame_end=100,
+                area_m2=100,
+                height_m=3,
+                adjacent_zones=("Z1",),
+            ),
         ]
         specs = generate_division_specs(zones)
         assert any(s.required_class == FireClass.A_60 for s in specs)
 
 
 # ─── Extinguishment Tests ───────────────────────────────────────────────────
+
 
 class TestExtinguishingSizing:
     def test_water_mist_for_engine_room(self, engine_room_zone, cargo_ship):
@@ -217,10 +254,14 @@ class TestExtinguishingSizing:
 
     def test_co2_for_cargo_space(self, cargo_ship):
         zone = MarineZone(
-            zone_id="CARGO-01", name="Cargo Hold",
+            zone_id="CARGO-01",
+            name="Cargo Hold",
             space_category=SpaceCategory.CARGO_SPACE,
-            deck="lower_hold", frame_start=0, frame_end=100,
-            area_m2=400.0, height_m=4.0,
+            deck="lower_hold",
+            frame_start=0,
+            frame_end=100,
+            area_m2=400.0,
+            height_m=4.0,
         )
         design = size_system(zone, cargo_ship)
         assert design.system_type == ExtinguishingSystem.CO2_TOTAL
@@ -229,10 +270,14 @@ class TestExtinguishingSizing:
 
     def test_inert_gas_for_tanker(self, tanker):
         zone = MarineZone(
-            zone_id="TANK-01", name="Cargo Tank",
+            zone_id="TANK-01",
+            name="Cargo Tank",
             space_category=SpaceCategory.TANK_SPACE,
-            deck="tank_deck", frame_start=0, frame_end=80,
-            area_m2=300.0, height_m=15.0,
+            deck="tank_deck",
+            frame_start=0,
+            frame_end=80,
+            area_m2=300.0,
+            height_m=15.0,
         )
         design = size_system(zone, tanker)
         assert design.system_type == ExtinguishingSystem.INERT_GAS
@@ -246,9 +291,11 @@ class TestExtinguishingSizing:
 
 # ─── Alarm Logic Tests ──────────────────────────────────────────────────────
 
+
 class TestAlarmLogic:
     def test_logic_tree_generated(self, engine_room_zone, cargo_ship):
         from marine.iec60092.part_502 import place_detectors_grid
+
         dps = place_detectors_grid(engine_room_zone, DetectorType.HEAT_FIXED)
         nodes = generate_logic_tree(engine_room_zone, dps)
         assert len(nodes) == len(dps)
@@ -258,6 +305,7 @@ class TestAlarmLogic:
 
     def test_plc_script_export(self, engine_room_zone, cargo_ship):
         from marine.iec60092.part_502 import place_detectors_grid
+
         dps = place_detectors_grid(engine_room_zone, DetectorType.HEAT_FIXED)
         nodes = generate_logic_tree(engine_room_zone, dps)
         script = export_to_plc_script(nodes)
@@ -268,11 +316,18 @@ class TestAlarmLogic:
 
 # ─── IEC 60092-504 Hazardous Zone Tests ─────────────────────────────────────
 
+
 class TestHazardousZones:
     def test_tanker_tank_space_is_zone0(self, tanker):
         zone = MarineZone(
-            zone_id="T1", name="Cargo Tank", space_category=SpaceCategory.TANK_SPACE,
-            deck="tanks", frame_start=0, frame_end=80, area_m2=200, height_m=10,
+            zone_id="T1",
+            name="Cargo Tank",
+            space_category=SpaceCategory.TANK_SPACE,
+            deck="tanks",
+            frame_start=0,
+            frame_end=80,
+            area_m2=200,
+            height_m=10,
         )
         result = classify_hazardous_zone(zone, tanker)
         assert result.details["zone_classification"] == "zone_0"
@@ -283,6 +338,7 @@ class TestHazardousZones:
 
 
 # ─── SCADA Integration Tests ────────────────────────────────────────────────
+
 
 class TestSCADAIntegration:
     def test_mqtt_topics_generated(self):
@@ -301,9 +357,11 @@ class TestSCADAIntegration:
 
 # ─── Property-Based Tests (Hypothesis) ──────────────────────────────────────
 
+
 def _hypothesis_available() -> bool:
     try:
         import hypothesis  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -324,4 +382,5 @@ class TestPropertyBased:
             for z in zones:
                 zone_len = (z.frame_end - z.frame_start) * 0.6
                 assert zone_len <= 40.0 + 0.1  # tolerance
+
         _inner()

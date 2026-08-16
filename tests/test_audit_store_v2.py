@@ -45,6 +45,7 @@ from fireai.core.audit_store import (
 # Fixtures — Use :memory: SQLite for isolation
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(autouse=True)
 def reset_database():
     """
@@ -111,6 +112,7 @@ class TestGetHmacKey:
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("AUDIT_HMAC_KEY", None)
             import fireai.core.audit_store as _as
+
             _as._DEV_HMAC_KEY = None
             _as._DEV_KEY_WARNED = False
             key = _get_hmac_key()
@@ -150,18 +152,18 @@ class TestComputeHash:
         assert h1 == h2
 
     def test_different_inputs_different_hashes(self):
-        h1 = _compute_hash("2024-01-01", "TEST1", "R1", '{}', "prev")
-        h2 = _compute_hash("2024-01-01", "TEST2", "R1", '{}', "prev")
+        h1 = _compute_hash("2024-01-01", "TEST1", "R1", "{}", "prev")
+        h2 = _compute_hash("2024-01-01", "TEST2", "R1", "{}", "prev")
         assert h1 != h2
 
     def test_hash_is_64_hex_chars(self):
-        h = _compute_hash("2024-01-01", "TEST", "R1", '{}', "prev")
+        h = _compute_hash("2024-01-01", "TEST", "R1", "{}", "prev")
         assert len(h) == 64
         assert all(c in "0123456789abcdef" for c in h)
 
     def test_genesis_hash(self):
         """First event should use 'GENESIS' as previous hash."""
-        h = _compute_hash("2024-01-01", "FIRST", "", '{}', "GENESIS")
+        h = _compute_hash("2024-01-01", "FIRST", "", "{}", "GENESIS")
         assert len(h) == 64
 
 
@@ -177,15 +179,21 @@ class TestAddEvent:
 
     def test_add_event_invalid_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", "not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            add_event(
+                "TEST", "R1", "not a dict"
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_none_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            add_event(
+                "TEST", "R1", None
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_list_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", [1, 2, 3])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+            add_event(
+                "TEST", "R1", [1, 2, 3]
+            )  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_stores_data(self):
         add_event("DETECTOR_PLACEMENT", "R1", {"count": 5, "type": "smoke"})
@@ -260,6 +268,7 @@ class TestVerifyChain:
 
         # Tamper with the database directly
         import fireai.core.audit_store as _as
+
         conn = _as._get_connection()
         cursor = conn.cursor()
         # Try to update (should fail due to trigger)
@@ -274,6 +283,7 @@ class TestVerifyChain:
 
         # Get the last hash to chain correctly
         import fireai.core.audit_store as _as
+
         prev_hash = _as._get_last_hash()
 
         # Insert a row with valid hash chain but empty signature
@@ -301,6 +311,7 @@ class TestVerifyChain:
         add_event("TEST", "R1", {"key": "value"})
 
         import fireai.core.audit_store as _as
+
         conn = _as._get_connection()
         cursor = conn.cursor()
         # Insert a row with wrong signature
@@ -400,6 +411,7 @@ class TestSQLiteImmutability:
         """UPDATE trigger must prevent modification of audit records."""
         add_event("TEST", "R1", {"key": "value"})
         import fireai.core.audit_store as _as
+
         conn = _as._get_connection()
         cursor = conn.cursor()
         with pytest.raises(sqlite3.IntegrityError, match="UPDATE"):
@@ -410,6 +422,7 @@ class TestSQLiteImmutability:
         """DELETE trigger must prevent removal of audit records."""
         add_event("TEST", "R1", {"key": "value"})
         import fireai.core.audit_store as _as
+
         conn = _as._get_connection()
         cursor = conn.cursor()
         with pytest.raises(sqlite3.IntegrityError, match="DELETE"):
@@ -426,6 +439,7 @@ class TestECDSALayer:
     def test_ecdsa_not_configured_by_default(self):
         """ECDSA signing is disabled when AUDIT_ECDSA_KEY_PEM is not set."""
         import fireai.core.audit_store as _as
+
         signer = _as._get_ecdsa_signer()
         assert signer is None
 
@@ -470,7 +484,9 @@ class TestEdgeCases:
         }
         add_event("TEST", "R1", details)
         events = get_events()
-        assert events[0]["details"]["room"]["area_sqm"] == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            events[0]["details"]["room"]["area_sqm"] == 25.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_timestamp_is_utc(self):
         """V54 FIX (AUDIT-012): Timestamps must use UTC."""
@@ -482,6 +498,7 @@ class TestEdgeCases:
     def test_many_events_performance(self):
         """Adding 100 events should not take too long."""
         import time
+
         start = time.monotonic()
         for i in range(100):
             add_event("PERF_TEST", f"R{i}", {"step": i})

@@ -19,6 +19,7 @@ import os
 # Falls back gracefully if python-dotenv is not installed.
 try:
     from dotenv import load_dotenv
+
     load_dotenv(override=False)  # Never override real environment variables
 except ImportError:
     pass
@@ -35,13 +36,13 @@ class Config:
 
     DATABASE_URL: str = os.environ.get(
         "DATABASE_URL",
-        f"sqlite:///{_DEFAULT_DB_PATH}"  # Default: absolute path inside /app/data
+        f"sqlite:///{_DEFAULT_DB_PATH}",  # Default: absolute path inside /app/data
     )
 
     # Digital Twin Database Path (for the existing system)
     DIGITAL_TWIN_DB_PATH: str = os.environ.get(
         "DIGITAL_TWIN_DB_PATH",
-        _DEFAULT_DB_PATH  # Same path as DATABASE_URL — no more divergence
+        _DEFAULT_DB_PATH,  # Same path as DATABASE_URL — no more divergence
     )
 
     # Qdrant Configuration (Vector Database)
@@ -69,22 +70,26 @@ class Config:
     # and rejects direct origin access in production.
     # See backend/akamai_middleware.py for the full integration.
     AKAMAI_ENABLED: bool = os.environ.get("AKAMAI_ENABLED", "false").lower() in (
-        "true", "1", "yes", "on",
+        "true",
+        "1",
+        "yes",
+        "on",
     )
     # Shared secret injected by Akamai EdgeWorker / Property Manager.
     # When set, requests without this header are rejected in production.
-    AKAMAI_REQUIRE_ORIGIN_TOKEN: str = os.environ.get(
-        "AKAMAI_REQUIRE_ORIGIN_TOKEN", ""
-    ).strip()
+    AKAMAI_REQUIRE_ORIGIN_TOKEN: str = os.environ.get("AKAMAI_REQUIRE_ORIGIN_TOKEN", "").strip()
     # Comma-separated ISO 3166-1 alpha-2 country codes to block (e.g. "CN,RU,IR,KP")
     AKAMAI_BLOCKED_COUNTRIES: str = os.environ.get("AKAMAI_BLOCKED_COUNTRIES", "")
     # Bot score threshold (0-100, 0=human, 100=bot) for sensitive endpoints.
     # Requests above this score on /api/v1/auth/* are rejected.
     AKAMAI_ALLOWED_BOT_SCORE: int = int(os.environ.get("AKAMAI_ALLOWED_BOT_SCORE", "30"))
     # Forward Akamai's X-RateLimit-* response headers to the client
-    AKAMAI_RATE_LIMIT_HEADER: bool = os.environ.get(
-        "AKAMAI_RATE_LIMIT_HEADER", "true"
-    ).lower() in ("true", "1", "yes", "on")
+    AKAMAI_RATE_LIMIT_HEADER: bool = os.environ.get("AKAMAI_RATE_LIMIT_HEADER", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+        "on",
+    )
 
     # Additional settings
     # V246 fail-safe: default "production" — a safety-critical fire alarm system
@@ -110,13 +115,19 @@ class Config:
         is_prod = cls.ENVIRONMENT.lower() in ("production", "prod")
         if is_prod:
             # Enforce production strict database configuration check
-            if "sqlite" in cls.DATABASE_URL.lower() and os.environ.get("ALLOW_SQLITE_IN_PROD", "").lower() not in ("true", "1"):
-                issues.append("CRITICAL: SQLite is in use for production without ALLOW_SQLITE_IN_PROD=true. Consider PostgreSQL.")
+            if "sqlite" in cls.DATABASE_URL.lower() and os.environ.get(
+                "ALLOW_SQLITE_IN_PROD", ""
+            ).lower() not in ("true", "1"):
+                issues.append(
+                    "CRITICAL: SQLite is in use for production without ALLOW_SQLITE_IN_PROD=true. Consider PostgreSQL."
+                )
 
         # Neo4j — password required when a URI is configured
         if cls.NEO4J_URI and not cls.NEO4J_PASSWORD:
-            issues.append("CRITICAL: NEO4J_URI is set but NEO4J_PASSWORD is missing or empty. "
-                          "Neo4j connections require authentication.")
+            issues.append(
+                "CRITICAL: NEO4J_URI is set but NEO4J_PASSWORD is missing or empty. "
+                "Neo4j connections require authentication."
+            )
 
         return issues
 
@@ -140,7 +151,16 @@ if not _jwt_secret:
         "The application cannot start without a signing secret."
     )
 
-_WEAK_SECRETS = {"secret", "change-me", "default", "test", "123456", "admin", "jwt_secret", "password"}
+_WEAK_SECRETS = {
+    "secret",
+    "change-me",
+    "default",
+    "test",
+    "123456",
+    "admin",
+    "jwt_secret",
+    "password",
+}
 # V246 fail-safe: default "production" — mirrors Config.ENVIRONMENT above.
 _env_name = os.environ.get("FIREAI_ENV", "production").lower()
 if _env_name in ("production", "prod"):
@@ -149,10 +169,8 @@ if _env_name in ("production", "prod"):
             "FATAL: Insecure or default JWT_SECRET / SESSION_SECRET detected in production.\n"
             "Placeholder/weak secrets are strictly forbidden in production.\n"
             "Generate a strong 256-bit secret with:\n"
-            "  python3 -c \"import secrets; print(secrets.token_urlsafe(64))\""
+            '  python3 -c "import secrets; print(secrets.token_urlsafe(64))"'
         )
 
 # Singleton instance
 config = Config()
-
-

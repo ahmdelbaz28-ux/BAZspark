@@ -40,14 +40,18 @@ class TestSensorAdvisory:
             severity="INFO",
         )
         assert advisory.room_id == "R1"
-        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            advisory.ceiling_height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert advisory.severity == "INFO"
         assert advisory.beam_detector_recommended is False
         assert advisory.performance_based_design is False
 
     def test_defaults(self):
         advisory = SensorAdvisory(room_id="R1", ceiling_height_m=3.0)
-        assert advisory.slope_degrees == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            advisory.slope_degrees == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert advisory.detector_type == "smoke"
         assert advisory.severity == "INFO"
         assert advisory.recommendations == []
@@ -104,9 +108,7 @@ class TestAdviseBasic:
 
     def test_heat_detector_normal(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise(
-            room_id="R1", ceiling_height_m=3.0, detector_type="heat"
-        )
+        advisory = advisor.advise(room_id="R1", ceiling_height_m=3.0, detector_type="heat")
         assert advisory.severity == "INFO"
         assert advisory.detector_type == "heat"
 
@@ -133,17 +135,13 @@ class TestAdviseHighCeiling:
 
     def test_heat_detector_high_ceiling(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise(
-            room_id="R1", ceiling_height_m=10.0, detector_type="heat"
-        )
+        advisory = advisor.advise(room_id="R1", ceiling_height_m=10.0, detector_type="heat")
         assert advisory.severity == "WARNING"
         assert advisory.beam_detector_recommended is True
 
     def test_heat_detector_critical_ceiling(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise(
-            room_id="R1", ceiling_height_m=15.0, detector_type="heat"
-        )
+        advisory = advisor.advise(room_id="R1", ceiling_height_m=15.0, detector_type="heat")
         assert advisory.severity == "CRITICAL"
 
     def test_exactly_at_warning_threshold(self):
@@ -278,11 +276,13 @@ class TestAdviseRoomDict:
 
     def test_basic_dict(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise_room_dict({
-            "room_id": "R1",
-            "ceiling_height": 3.0,
-            "ceiling_slope_degrees": 0.0,
-        })
+        advisory = advisor.advise_room_dict(
+            {
+                "room_id": "R1",
+                "ceiling_height": 3.0,
+                "ceiling_slope_degrees": 0.0,
+            }
+        )
         assert advisory.room_id == "R1"
         assert advisory.severity == "INFO"
 
@@ -290,40 +290,50 @@ class TestAdviseRoomDict:
         """Missing ceiling_height defaults to 3.0."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise_room_dict({"room_id": "R1"})
-        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            advisory.ceiling_height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_none_ceiling_height_default(self):
         """None ceiling_height defaults to 3.0."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise_room_dict({"room_id": "R1", "ceiling_height": None})
-        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            advisory.ceiling_height_m == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_heat_detector_type_detection(self):
         """Detector type with 'heat' → heat advisory."""
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise_room_dict({
-            "room_id": "R1",
-            "ceiling_height": 3.0,
-            "detector_type": "heat_rate_compensated",
-        })
+        advisory = advisor.advise_room_dict(
+            {
+                "room_id": "R1",
+                "ceiling_height": 3.0,
+                "detector_type": "heat_rate_compensated",
+            }
+        )
         assert advisory.detector_type == "heat"
 
     def test_smoke_detector_type_detection(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise_room_dict({
-            "room_id": "R1",
-            "ceiling_height": 3.0,
-            "detector_type": "smoke_photoelectric",
-        })
+        advisory = advisor.advise_room_dict(
+            {
+                "room_id": "R1",
+                "ceiling_height": 3.0,
+                "detector_type": "smoke_photoelectric",
+            }
+        )
         assert advisory.detector_type == "smoke"
 
     def test_name_fallback_for_room_id(self):
         """If room_id missing, use 'name' key."""
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise_room_dict({
-            "name": "Office 101",
-            "ceiling_height": 3.0,
-        })
+        advisory = advisor.advise_room_dict(
+            {
+                "name": "Office 101",
+                "ceiling_height": 3.0,
+            }
+        )
         assert advisory.room_id == "Office 101"
 
     def test_unknown_room_id_default(self):
@@ -333,10 +343,12 @@ class TestAdviseRoomDict:
 
     def test_high_ceiling_dict(self):
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise_room_dict({
-            "room_id": "R1",
-            "ceiling_height": 15.0,
-        })
+        advisory = advisor.advise_room_dict(
+            {
+                "room_id": "R1",
+                "ceiling_height": 15.0,
+            }
+        )
         assert advisory.severity == "CRITICAL"
 
 
@@ -414,18 +426,14 @@ class TestIntegrationScenarios:
     def test_cathedral_ceiling(self):
         """Cathedral ceiling: 8m, 25° slope → WARNING for slope."""
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise(
-            room_id="CAT-1", ceiling_height_m=8.0, slope_degrees=25.0
-        )
+        advisory = advisor.advise(room_id="CAT-1", ceiling_height_m=8.0, slope_degrees=25.0)
         assert advisory.severity == "WARNING"
         assert any("ridge" in r.lower() for r in advisory.recommendations)
 
     def test_industrial_high_slope(self):
         """Industrial: 12m ceiling + 15° slope → CRITICAL combination."""
         advisor = SensorPhysicsAdvisor()
-        advisory = advisor.advise(
-            room_id="IND-1", ceiling_height_m=12.0, slope_degrees=15.0
-        )
+        advisory = advisor.advise(room_id="IND-1", ceiling_height_m=12.0, slope_degrees=15.0)
         assert advisory.severity == "CRITICAL"
         assert advisory.beam_detector_recommended is True
         assert advisory.performance_based_design is True

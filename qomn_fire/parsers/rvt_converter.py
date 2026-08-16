@@ -56,11 +56,13 @@ class RvtConverter:
             # Use the validated/sanitized path from here forward
             rvt_path = safe_input_path
         except UnsafePathError as e:
-            return Result.failure(ConversionError(
-                message=f"Unsafe input path: {e}",
-                code_ref="RvtConverter.convert_rvt_to_ifc",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                remedy="Ensure input file is in allowed upload directory with correct extension."
-            ))
+            return Result.failure(
+                ConversionError(
+                    message=f"Unsafe input path: {e}",
+                    code_ref="RvtConverter.convert_rvt_to_ifc",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                    remedy="Ensure input file is in allowed upload directory with correct extension.",
+                )
+            )
 
         # output IFC file does NOT exist yet (we are about to create it).
         # validate_input_path raises FileNotFoundError when the path does not
@@ -75,11 +77,13 @@ class RvtConverter:
             # Use the validated/sanitized path from here forward
             output_ifc_path = str(safe_output_path)
         except UnsafePathError as e:
-            return Result.failure(ConversionError(
-                message=f"Unsafe output path: {e}",
-                code_ref="RvtConverter.convert_rvt_to_ifc",
-                remedy="Ensure output file is in allowed directory with correct extension."
-            ))
+            return Result.failure(
+                ConversionError(
+                    message=f"Unsafe output path: {e}",
+                    code_ref="RvtConverter.convert_rvt_to_ifc",
+                    remedy="Ensure output file is in allowed directory with correct extension.",
+                )
+            )
 
         # Verify that the converter binary exists and is executable
         converter_bin = "RevitBatchProcessor"  # Or determine from environment/config
@@ -92,48 +96,60 @@ class RvtConverter:
                 [converter_bin, "/export", "IFC", rvt_path, output_ifc_path],
                 check=True,
                 capture_output=True,
-                timeout=30  # 30-second safety timeout for conversion
+                timeout=30,  # 30-second safety timeout for conversion
             )
 
             # Verify output file exists and is non-empty
             output_path = Path(output_ifc_path)
             if not output_path.exists():
-                return Result.failure(ConversionError(
-                    message="Conversion succeeded but output file was not created",
-                    code_ref="RvtConverter.convert_rvt_to_ifc",
-                    remedy="Check converter permissions and disk space"
-                ))
+                return Result.failure(
+                    ConversionError(
+                        message="Conversion succeeded but output file was not created",
+                        code_ref="RvtConverter.convert_rvt_to_ifc",
+                        remedy="Check converter permissions and disk space",
+                    )
+                )
 
             if output_path.stat().st_size == 0:
-                return Result.failure(ConversionError(
-                    message="Conversion resulted in empty output file",
-                    code_ref="RvtConverter.convert_rvt_to_ifc",
-                    remedy="Verify input file is a valid RVT file"
-                ))
+                return Result.failure(
+                    ConversionError(
+                        message="Conversion resulted in empty output file",
+                        code_ref="RvtConverter.convert_rvt_to_ifc",
+                        remedy="Verify input file is a valid RVT file",
+                    )
+                )
 
             return Result.success(output_ifc_path)
 
         except subprocess.CalledProcessError as e:
-            return Result.failure(ConversionError(
-                message=f"RVT to IFC conversion failed: {e}",
-                code_ref="RvtConverter.convert_rvt_to_ifc",
-                remedy="Verify input file is a valid RVT file and converter is properly configured"
-            ))
+            return Result.failure(
+                ConversionError(
+                    message=f"RVT to IFC conversion failed: {e}",
+                    code_ref="RvtConverter.convert_rvt_to_ifc",
+                    remedy="Verify input file is a valid RVT file and converter is properly configured",
+                )
+            )
         except subprocess.TimeoutExpired:
-            return Result.failure(ConversionError(
-                message="RVT to IFC conversion timed out",
-                code_ref="RvtConverter.convert_rvt_to_ifc",
-                remedy="Try with a smaller input file or increase timeout"
-            ))
+            return Result.failure(
+                ConversionError(
+                    message="RVT to IFC conversion timed out",
+                    code_ref="RvtConverter.convert_rvt_to_ifc",
+                    remedy="Try with a smaller input file or increase timeout",
+                )
+            )
         except Exception as e:
-            return Result.failure(ConversionError(
-                message=f"Unexpected error during RVT to IFC conversion: {e}",
-                code_ref="RvtConverter.convert_rvt_to_ifc",
-                remedy="Check logs for additional details"
-            ))
+            return Result.failure(
+                ConversionError(
+                    message=f"Unexpected error during RVT to IFC conversion: {e}",
+                    code_ref="RvtConverter.convert_rvt_to_ifc",
+                    remedy="Check logs for additional details",
+                )
+            )
 
     @staticmethod
-    def _mock_convert_rvt_to_ifc(rvt_path: str, output_ifc_path: str) -> Result[str, ConversionError]:
+    def _mock_convert_rvt_to_ifc(
+        rvt_path: str, output_ifc_path: str
+    ) -> Result[str, ConversionError]:
         """
         Mock converter for environments where Revit is not installed.
         Creates a minimal IFC file to allow testing.
@@ -142,11 +158,13 @@ class RvtConverter:
             # Verify input file exists
             input_path = Path(rvt_path)
             if not input_path.exists():
-                return Result.failure(ConversionError(
-                    message=f"Input file does not exist: {rvt_path}",
-                    code_ref="RvtConverter._mock_convert_rvt_to_ifc",
-                    remedy="Provide a valid RVT file path"
-                ))
+                return Result.failure(
+                    ConversionError(
+                        message=f"Input file does not exist: {rvt_path}",
+                        code_ref="RvtConverter._mock_convert_rvt_to_ifc",
+                        remedy="Provide a valid RVT file path",
+                    )
+                )
 
             # Create minimal IFC content
             # "END-ISO-10303-21;" (with hyphens) per ISO 10303-21 §7.3.
@@ -167,14 +185,16 @@ END-ISO-10303-21;
 """
 
             # Write to validated output path
-            with open(output_ifc_path, 'w', encoding='utf-8') as f:
+            with open(output_ifc_path, "w", encoding="utf-8") as f:
                 f.write(mock_content)
 
             return Result.success(output_ifc_path)
 
         except Exception as e:
-            return Result.failure(ConversionError(
-                message=f"Mock RVT to IFC conversion failed: {e}",
-                code_ref="RvtConverter._mock_convert_rvt_to_ifc",
-                remedy="Check file permissions and paths"
-            ))
+            return Result.failure(
+                ConversionError(
+                    message=f"Mock RVT to IFC conversion failed: {e}",
+                    code_ref="RvtConverter._mock_convert_rvt_to_ifc",
+                    remedy="Check file permissions and paths",
+                )
+            )

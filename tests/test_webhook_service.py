@@ -42,7 +42,9 @@ def valid_subscription():
     return WebhookSubscription(
         id="sub-test-001",
         url="https://example.com/webhook",
-        secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+        secret=os.getenv(
+            "SECRET_KEY"
+        ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         event_types=["DESIGN_COMPLETED"],
     )
 
@@ -87,48 +89,86 @@ class TestSubscriptionValidation:
 
     def test_http_rejected_in_production_mode(self):
         prod_service = WebhookDeliveryService(allow_http=False)
-        with pytest.raises(ValueError, match="HTTP webhooks are not allowed"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            prod_service.subscribe(WebhookSubscription(
-                id="sub-1", url="http://insecure.com/hook",  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
-                secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            ))
+        with pytest.raises(
+            ValueError, match="HTTP webhooks are not allowed"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            prod_service.subscribe(
+                WebhookSubscription(
+                    id="sub-1",
+                    url="http://insecure.com/hook",  # NOSONAR: HTTP/WS in test  # NOSONAR — S7632: test function documented via class name / module path
+                    secret=os.getenv(
+                        "SECRET_KEY"
+                    ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                )
+            )
 
     def test_http_allowed_in_development_mode(self):
         dev_service = WebhookDeliveryService(allow_http=True)
         # Should not raise
-        dev_service.subscribe(WebhookSubscription(
-            id="sub-1", url="http://localhost:8000/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-        ))
+        dev_service.subscribe(
+            WebhookSubscription(
+                id="sub-1",
+                url="http://localhost:8000/hook",
+                secret=os.getenv(
+                    "SECRET_KEY"
+                ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            )
+        )
 
     def test_short_secret_rejected(self, service):
         """V135 F-33: Secret must be ≥ 32 chars (NIST SP 800-107)."""
-        with pytest.raises(ValueError, match="at least 32 characters"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="sub-1", url="https://example.com/hook",
-                secret="short-secret-28-chars-!!!",  # 28 chars < 32 — hardcoded to test rejection (NOT env var, which can vary)
-            ))
+        with pytest.raises(
+            ValueError, match="at least 32 characters"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="sub-1",
+                    url="https://example.com/hook",
+                    secret="short-secret-28-chars-!!!",  # 28 chars < 32 — hardcoded to test rejection (NOT env var, which can vary)
+                )
+            )
 
     def test_empty_id_rejected(self, service):
-        with pytest.raises(ValueError, match="non-empty string"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="", url="https://example.com/hook",
-                secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            ))
+        with pytest.raises(
+            ValueError, match="non-empty string"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="",
+                    url="https://example.com/hook",
+                    secret=os.getenv(
+                        "SECRET_KEY"
+                    ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                )
+            )
 
     def test_empty_url_rejected(self, service):
-        with pytest.raises(ValueError, match="non-empty string"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="sub-1", url="",
-                secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            ))
+        with pytest.raises(
+            ValueError, match="non-empty string"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="sub-1",
+                    url="",
+                    secret=os.getenv(
+                        "SECRET_KEY"
+                    ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                )
+            )
 
     def test_non_http_scheme_rejected(self, service):
-        with pytest.raises(ValueError, match="http or https scheme"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="sub-1", url="ftp://example.com/hook",
-                secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            ))
+        with pytest.raises(
+            ValueError, match="http or https scheme"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="sub-1",
+                    url="ftp://example.com/hook",
+                    secret=os.getenv(
+                        "SECRET_KEY"
+                    ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                )
+            )
 
     def test_host_allowlist_enforced(self):
         service = WebhookDeliveryService(
@@ -136,16 +176,28 @@ class TestSubscriptionValidation:
             allowed_hosts={"allowed.com"},
         )
         # Allowed host
-        service.subscribe(WebhookSubscription(
-            id="sub-1", url="https://allowed.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-        ))
+        service.subscribe(
+            WebhookSubscription(
+                id="sub-1",
+                url="https://allowed.com/hook",
+                secret=os.getenv(
+                    "SECRET_KEY"
+                ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            )
+        )
         # Disallowed host
-        with pytest.raises(ValueError, match="not in allowlist"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
-            service.subscribe(WebhookSubscription(
-                id="sub-2", url="https://forbidden.com/hook",
-                secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
-            ))
+        with pytest.raises(
+            ValueError, match="not in allowlist"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            service.subscribe(
+                WebhookSubscription(
+                    id="sub-2",
+                    url="https://forbidden.com/hook",
+                    secret=os.getenv(
+                        "SECRET_KEY"
+                    ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                )
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -170,12 +222,18 @@ class TestSubscriptionManagement:
 
     def test_list_subscriptions(self, service):
         sub1 = WebhookSubscription(
-            id="sub-1", url="https://example.com/1",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com/1",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         sub2 = WebhookSubscription(
-            id="sub-2", url="https://example.com/2",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-2",
+            url="https://example.com/2",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub1)
         service.subscribe(sub2)
@@ -197,24 +255,33 @@ class TestEventMatching:
 
     def test_empty_event_types_matches_all(self):
         sub = WebhookSubscription(
-            id="sub-1", url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com/hook",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
             event_types=[],  # empty = receive all
         )
         assert sub.matches_event("ANY_EVENT") is True
 
     def test_paused_subscription_doesnt_match(self):
         sub = WebhookSubscription(
-            id="sub-1", url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com/hook",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
             status=WebhookStatus.PAUSED,
         )
         assert sub.matches_event("DESIGN_COMPLETED") is False
 
     def test_disabled_subscription_doesnt_match(self):
         sub = WebhookSubscription(
-            id="sub-1", url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com/hook",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
             status=WebhookStatus.DISABLED,
         )
         assert sub.matches_event("DESIGN_COMPLETED") is False
@@ -251,8 +318,11 @@ class TestEventPublishing:
 
     def test_publish_skips_non_matching_subscribers(self, service):
         sub = WebhookSubscription(
-            id="sub-1", url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com/hook",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
             event_types=["ROOM_ANALYSIS_COMPLETED"],  # different event
         )
         service.subscribe(sub)
@@ -277,7 +347,9 @@ class TestDeliveryRetry:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
 
@@ -296,7 +368,9 @@ class TestDeliveryRetry:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
         service.publish_event(
@@ -310,15 +384,19 @@ class TestDeliveryRetry:
         for attempt in history:
             assert isinstance(attempt, WebhookDeliveryAttempt)
             assert attempt.status in (
-                DeliveryStatus.SUCCESS, DeliveryStatus.FAILED,
-                DeliveryStatus.RETRYING, DeliveryStatus.DEAD_LETTERED,
+                DeliveryStatus.SUCCESS,
+                DeliveryStatus.FAILED,
+                DeliveryStatus.RETRYING,
+                DeliveryStatus.DEAD_LETTERED,
             )
 
     def test_clear_dlq(self, service):
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
         service.publish_event(
@@ -357,7 +435,9 @@ class TestSecurity:
     def test_signature_verification_works(self):
         """Verify that HMAC signature can be recomputed and matches."""
         payload = b'{"event": "test"}'
-        secret = os.getenv("SECRET_KEY")  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+        secret = os.getenv(
+            "SECRET_KEY"
+        )  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         sig = compute_webhook_signature(payload, secret)
 
         # Receiver recomputes and compares
@@ -366,12 +446,18 @@ class TestSecurity:
 
     def test_is_https_detection(self):
         https_sub = WebhookSubscription(
-            id="sub-1", url="https://example.com",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-1",
+            url="https://example.com",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         http_sub = WebhookSubscription(
-            id="sub-2", url="http://example.com",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            id="sub-2",
+            url="http://example.com",
+            secret=os.getenv(
+                "SECRET_KEY"
+            ),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         assert https_sub.is_https() is True
         assert http_sub.is_https() is False
@@ -385,12 +471,14 @@ class TestSecurity:
 class TestSingleton:
     def test_get_webhook_service_returns_instance(self):
         from fireai.infrastructure.webhook_service import get_webhook_service
+
         service = get_webhook_service()
         assert service is not None
         assert isinstance(service, WebhookDeliveryService)
 
     def test_get_webhook_service_returns_same_instance(self):
         from fireai.infrastructure.webhook_service import get_webhook_service
+
         s1 = get_webhook_service()
         s2 = get_webhook_service()
         assert s1 is s2

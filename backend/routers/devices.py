@@ -46,7 +46,9 @@ async def list_global_devices(
     projects = db.list_projects(page=1, limit=1)
     if projects and projects.get("data"):
         project_id = projects["data"][0]["id"]
-        result = db.list_devices(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+        result = db.list_devices(
+            project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+        )
         validate_paginated(result, item_validator=validate_device)
         return success(result)
     return success({"data": [], "total": 0, "page": page, "limit": limit})
@@ -57,7 +59,9 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
 # camelCase → snake_case sort field mapping
@@ -95,14 +99,20 @@ async def list_devices(
     """List all devices in a project with pagination."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_devices(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_devices(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     validate_paginated(result, item_validator=validate_device)
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))]
+)
 @limiter.limit("30/minute")
-async def create_device(request: Request, project_id: str, input_data: CreateDeviceInput):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def create_device(
+    request: Request, project_id: str, input_data: CreateDeviceInput
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Create a new device in a project.
 
@@ -120,21 +130,27 @@ async def create_device(request: Request, project_id: str, input_data: CreateDev
     load_unit = input_data.load_unit
     load_amperes = raw_load  # Default: already in Amperes
 
-    if load_unit == "mA" and raw_load != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+    if (
+        load_unit == "mA" and raw_load != 0.0
+    ):  # NOSONAR — S1244: import retained for re-export / API surface
         load_amperes = raw_load / 1000.0
-    elif load_unit == "W" and raw_load != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+    elif (
+        load_unit == "W" and raw_load != 0.0
+    ):  # NOSONAR — S1244: import retained for re-export / API surface
         voltage = input_data.voltage if input_data.voltage is not None else 0.0
         if voltage <= 0:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=400,
                 detail="Cannot convert Watts to Amperes: voltage must be > 0. "
-                       "Provide voltage in Volts or specify load_unit as 'A'.",
+                "Provide voltage in Volts or specify load_unit as 'A'.",
             )
         load_amperes = raw_load / voltage
 
     # Store original unit info in properties for traceability and auditing
     properties = input_data.properties or {}
-    if raw_load != 0.0 and load_unit != "A":  # NOSONAR — S1244: import retained for re-export / API surface
+    if (
+        raw_load != 0.0 and load_unit != "A"
+    ):  # NOSONAR — S1244: import retained for re-export / API surface
         properties["load_original_value"] = raw_load
         properties["load_original_unit"] = load_unit
 
@@ -158,10 +174,10 @@ async def create_device(request: Request, project_id: str, input_data: CreateDev
 
         # Sync device to UDM for conflict detection
         from backend.project_bridge import sync_device_to_udm
+
         sync_device_to_udm(project_id, device_data)
 
     return success(device)
-
 
 
 @router.get("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
@@ -171,7 +187,9 @@ async def get_device(project_id: str, device_id: str):
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        raise HTTPException(
+            status_code=404, detail="Device not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     validate_device(device)
     return success(device)
 
@@ -194,14 +212,18 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
 
     updates = input_data.model_dump(exclude_none=True)
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail="No fields to update"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # ── Unit conversion for load updates (same as create_device) ─────────
     if "load" in updates:
         raw_load = updates["load"]
         load_unit = updates.pop("load_unit", "A")  # Remove from DB updates
 
-        if raw_load is not None and raw_load != 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
+        if (
+            raw_load is not None and raw_load != 0.0
+        ):  # NOSONAR — S1244: import retained for re-export / API surface
             if load_unit == "mA":
                 updates["load"] = raw_load / 1000.0
             elif load_unit == "W":
@@ -214,7 +236,7 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
                     raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                         status_code=400,
                         detail="Cannot convert Watts to Amperes: voltage must be > 0. "
-                               "Provide voltage in Volts or specify load_unit as 'A'.",
+                        "Provide voltage in Volts or specify load_unit as 'A'.",
                     )
                 updates["load"] = raw_load / voltage
 
@@ -231,15 +253,17 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
     with _device_lock:
         device = db.update_device(project_id, device_id, updates)
         if not device:
-            raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            raise HTTPException(
+                status_code=404, detail="Device not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         validate_device(device)
 
         # Sync device update to UDM for conflict detection
         from backend.project_bridge import sync_device_update_to_udm
+
         sync_device_update_to_udm(project_id, device_id, updates)
 
     return success(device)
-
 
 
 @router.delete("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
@@ -256,12 +280,15 @@ async def delete_device(request: Request, project_id: str, device_id: str):
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(
+            status_code=404, detail="Device not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     logging.getLogger("fireai.audit").critical(  # NOSONAR
         "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
         "device_type=%s name=%s — NFPA 72 requires traceability for all "
         "fire alarm device changes. Deletion affects coverage calculations.",
-        project_id, device_id,
+        project_id,
+        device_id,
         device.get("type", "unknown"),
         device.get("name", "unknown"),
     )
@@ -269,6 +296,7 @@ async def delete_device(request: Request, project_id: str, device_id: str):
 
     # Sync device deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_device_delete_to_udm
+
     sync_device_delete_to_udm(project_id, device_id)
 
     return success(None, "Device deleted")

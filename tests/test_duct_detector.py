@@ -95,12 +95,16 @@ class TestDuctSpec:
 
     def test_nan_length_raises(self):
         """V50 FIX: NaN length must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="invalid"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=float("nan"), width_m=0.3)
 
     def test_inf_length_raises(self):
         """Infinite length is not valid."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="invalid"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=float("inf"), width_m=0.3)
 
     def test_negative_length_raises(self):
@@ -110,7 +114,9 @@ class TestDuctSpec:
 
     def test_nan_width_raises(self):
         """NaN width must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="invalid"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=float("nan"))
 
     def test_negative_width_raises(self):
@@ -120,7 +126,9 @@ class TestDuctSpec:
 
     def test_nan_airflow_cfm_raises(self):
         """NaN airflow_cfm must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="invalid"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, airflow_cfm=float("nan"))
 
     def test_negative_airflow_cfm_raises(self):
@@ -140,7 +148,9 @@ class TestDuctSpec:
 
     def test_nan_height_raises(self):
         """NaN height_m is not valid."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="invalid"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, height_m=float("nan"))
 
     def test_negative_height_raises(self):
@@ -159,28 +169,36 @@ class TestDuctExemptions:
 
     def test_zero_width_exempt(self):
         """Zero width duct is exempt (when CFM is known and ≤2000)."""
-        duct = DuctSpec(duct_id="D1", length_m=5.0, width_m=0.0, airflow_cfm=1000.0, duct_type="supply")
+        duct = DuctSpec(
+            duct_id="D1", length_m=5.0, width_m=0.0, airflow_cfm=1000.0, duct_type="supply"
+        )
         result = analyse_duct(duct)
         assert result.exempt is True
         assert result.detector_count == 0
 
     def test_zero_length_exempt(self):
         """Zero length duct is exempt (when CFM is known and ≤2000)."""
-        duct = DuctSpec(duct_id="D1", length_m=0.0, width_m=0.5, airflow_cfm=1000.0, duct_type="supply")
+        duct = DuctSpec(
+            duct_id="D1", length_m=0.0, width_m=0.5, airflow_cfm=1000.0, duct_type="supply"
+        )
         result = analyse_duct(duct)
         assert result.exempt is True
         assert result.detector_count == 0
 
     def test_narrow_duct_exempt(self):
         """Duct narrower than minimum width (0.20m) is exempt."""
-        duct = DuctSpec(duct_id="D1", length_m=5.0, width_m=0.15, airflow_cfm=1000.0, duct_type="supply")
+        duct = DuctSpec(
+            duct_id="D1", length_m=5.0, width_m=0.15, airflow_cfm=1000.0, duct_type="supply"
+        )
         result = analyse_duct(duct)
         assert result.exempt is True
         assert "width" in result.exemption_reason.lower()
 
     def test_short_duct_exempt(self):
         """Duct shorter than minimum length (1.0m) is exempt."""
-        duct = DuctSpec(duct_id="D1", length_m=0.5, width_m=0.5, airflow_cfm=1000.0, duct_type="supply")
+        duct = DuctSpec(
+            duct_id="D1", length_m=0.5, width_m=0.5, airflow_cfm=1000.0, duct_type="supply"
+        )
         result = analyse_duct(duct)
         assert result.exempt is True
         assert "length" in result.exemption_reason.lower()
@@ -195,8 +213,11 @@ class TestDuctExemptions:
     def test_exhaust_duct_exempt_even_if_large(self):
         """Even large exhaust ducts are exempt."""
         duct = DuctSpec(
-            duct_id="D1", length_m=20.0, width_m=1.0,
-            duct_type="exhaust", airflow_cfm=5000.0,
+            duct_id="D1",
+            length_m=20.0,
+            width_m=1.0,
+            duct_type="exhaust",
+            airflow_cfm=5000.0,
         )
         result = analyse_duct(duct)
         assert result.exempt is True
@@ -213,8 +234,11 @@ class TestCFMOverride:
     def test_high_cfm_overrides_narrow_duct(self):
         """CFM >2000 supply duct — even if narrow, detector required."""
         duct = DuctSpec(
-            duct_id="D1", length_m=5.0, width_m=0.15,
-            airflow_cfm=3000.0, duct_type="supply",
+            duct_id="D1",
+            length_m=5.0,
+            width_m=0.15,
+            airflow_cfm=3000.0,
+            duct_type="supply",
         )
         result = analyse_duct(duct)
         assert result.exempt is False
@@ -223,8 +247,11 @@ class TestCFMOverride:
     def test_high_cfm_overrides_short_duct(self):
         """CFM >2000 supply duct — even if short, detector required."""
         duct = DuctSpec(
-            duct_id="D1", length_m=0.5, width_m=0.5,
-            airflow_cfm=3000.0, duct_type="supply",
+            duct_id="D1",
+            length_m=0.5,
+            width_m=0.5,
+            airflow_cfm=3000.0,
+            duct_type="supply",
         )
         result = analyse_duct(duct)
         assert result.exempt is False
@@ -232,8 +259,11 @@ class TestCFMOverride:
     def test_high_cfm_return_duct(self):
         """CFM >2000 return duct — detector required."""
         duct = DuctSpec(
-            duct_id="D1", length_m=5.0, width_m=0.5,
-            airflow_cfm=5000.0, duct_type="return",
+            duct_id="D1",
+            length_m=5.0,
+            width_m=0.5,
+            airflow_cfm=5000.0,
+            duct_type="return",
         )
         result = analyse_duct(duct)
         assert result.exempt is False
@@ -242,8 +272,11 @@ class TestCFMOverride:
         """V68 FIX: Unknown CFM for supply/return blocks dimension exemption."""
         # A narrow supply duct with unknown CFM — AHU could be >2000 CFM
         duct = DuctSpec(
-            duct_id="D1", length_m=5.0, width_m=0.15,
-            airflow_cfm=None, duct_type="supply",
+            duct_id="D1",
+            length_m=5.0,
+            width_m=0.15,
+            airflow_cfm=None,
+            duct_type="supply",
         )
         result = analyse_duct(duct)
         assert result.exempt is False
@@ -251,8 +284,11 @@ class TestCFMOverride:
     def test_cfm_unknown_return_blocks_exemption(self):
         """Unknown CFM for return duct also blocks exemption."""
         duct = DuctSpec(
-            duct_id="D1", length_m=0.5, width_m=0.5,
-            airflow_cfm=None, duct_type="return",
+            duct_id="D1",
+            length_m=0.5,
+            width_m=0.5,
+            airflow_cfm=None,
+            duct_type="return",
         )
         result = analyse_duct(duct)
         assert result.exempt is False
@@ -260,8 +296,11 @@ class TestCFMOverride:
     def test_low_cfm_allows_exemption(self):
         """Known CFM ≤2000 allows dimension exemption."""
         duct = DuctSpec(
-            duct_id="D1", length_m=0.5, width_m=0.5,
-            airflow_cfm=1500.0, duct_type="supply",
+            duct_id="D1",
+            length_m=0.5,
+            width_m=0.5,
+            airflow_cfm=1500.0,
+            duct_type="supply",
         )
         result = analyse_duct(duct)
         assert result.exempt is True
@@ -269,8 +308,11 @@ class TestCFMOverride:
     def test_cfm_exactly_at_threshold_not_overriding(self):
         """CFM = 2000 exactly → NOT overriding (> is required, not ≥)."""
         duct = DuctSpec(
-            duct_id="D1", length_m=0.5, width_m=0.5,
-            airflow_cfm=2000.0, duct_type="supply",
+            duct_id="D1",
+            length_m=0.5,
+            width_m=0.5,
+            airflow_cfm=2000.0,
+            duct_type="supply",
         )
         result = analyse_duct(duct)
         assert result.exempt is True  # Short duct exemption applies
@@ -287,9 +329,13 @@ class TestDetectorPlacement:
     def test_short_duct_one_detector(self):
         """Duct ≤ 3.05m needs 1 detector."""
         duct = DuctSpec(
-            duct_id="D1", length_m=3.0, width_m=0.5,
-            start_point=(0, 0), end_point=(3, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=3.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(3, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         assert result.detector_count == 1
@@ -298,9 +344,13 @@ class TestDetectorPlacement:
     def test_medium_duct_multiple_detectors(self):
         """Duct = 10m needs ceil(10/3.05) = 4 detectors."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            start_point=(0, 0), end_point=(10, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(10, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         expected = math.ceil(10.0 / NFPA_DUCT_MAX_SPACING_M)
@@ -309,9 +359,13 @@ class TestDetectorPlacement:
     def test_detector_positions_along_centreline(self):
         """Detector positions should be along the duct centreline."""
         duct = DuctSpec(
-            duct_id="D1", length_m=6.1, width_m=0.5,
-            start_point=(0, 0), end_point=(6.1, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=6.1,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(6.1, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         for det in result.detectors:
@@ -320,9 +374,13 @@ class TestDetectorPlacement:
     def test_spacing_within_nfpa_limit(self):
         """Auto-calculated spacing must not exceed NFPA limit."""
         duct = DuctSpec(
-            duct_id="D1", length_m=20.0, width_m=0.5,
-            start_point=(0, 0), end_point=(20, 0),
-            duct_type="supply", airflow_cfm=5000.0,
+            duct_id="D1",
+            length_m=20.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(20, 0),
+            duct_type="supply",
+            airflow_cfm=5000.0,
         )
         result = analyse_duct(duct)
         assert result.spacing_used_m <= NFPA_DUCT_MAX_SPACING_M + 0.01
@@ -330,9 +388,13 @@ class TestDetectorPlacement:
     def test_detector_positions_x_coordinates(self):
         """Detector x-coordinates should interpolate between start and end."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            start_point=(0, 0), end_point=(10, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(10, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         for det in result.detectors:
@@ -342,9 +404,13 @@ class TestDetectorPlacement:
     def test_detector_index_is_one_based(self):
         """Detector indices must be 1-based."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            start_point=(0, 0), end_point=(10, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(10, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         for i, det in enumerate(result.detectors):
@@ -353,9 +419,13 @@ class TestDetectorPlacement:
     def test_duct_id_propagated_to_detectors(self):
         """Detector duct_id must match the source duct."""
         duct = DuctSpec(
-            duct_id="AHU-1-SUPPLY", length_m=10.0, width_m=0.5,
-            start_point=(0, 0), end_point=(10, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="AHU-1-SUPPLY",
+            length_m=10.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(10, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         for det in result.detectors:
@@ -364,8 +434,11 @@ class TestDetectorPlacement:
     def test_nfpa_ref_in_detectors(self):
         """Each detector position must cite NFPA 72 §17.7.5."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         for det in result.detectors:
@@ -387,8 +460,11 @@ class TestVelocityBlindness:
         # Round duct: area = π × (0.25)² = 0.196 m² → 2.11 ft²
         # 10000 CFM / 2.11 ft² = 4739 FPM > 4000
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=10000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=10000.0,
         )
         result = analyse_duct(duct)
         assert result.velocity_blindness is True
@@ -397,8 +473,11 @@ class TestVelocityBlindness:
     def test_normal_velocity_no_blindness(self):
         """Velocity in normal range → no blindness."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=2000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=2000.0,
         )
         result = analyse_duct(duct)
         assert result.velocity_blindness is False
@@ -409,8 +488,11 @@ class TestVelocityBlindness:
         # Round duct: area = π × (1.0)² = 3.14 m² → 33.8 ft²
         # 500 CFM / 33.8 ft² = 14.8 FPM < 100
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=2.0,
-            duct_type="supply", airflow_cfm=500.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=2.0,
+            duct_type="supply",
+            airflow_cfm=500.0,
         )
         result = analyse_duct(duct)
         assert result.velocity_blindness is True
@@ -419,8 +501,12 @@ class TestVelocityBlindness:
     def test_rectangular_duct_velocity(self):
         """Rectangular duct velocity calculation uses width × height."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=1.0, height_m=0.5,
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=1.0,
+            height_m=0.5,
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         # Area = 1.0 × 0.5 = 0.5 m² → 5.38 ft²
@@ -431,18 +517,26 @@ class TestVelocityBlindness:
     def test_no_cfm_zero_velocity(self):
         """No CFM → velocity = 0, no blindness."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=None,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=None,
         )
         result = analyse_duct(duct)
-        assert result.velocity_fpm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.velocity_fpm == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.velocity_blindness is False
 
     def test_detectors_functional_when_no_blindness(self):
         """V51 FIX: detectors_functional = True when no velocity issue."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         assert result.detectors_functional is True
@@ -450,8 +544,11 @@ class TestVelocityBlindness:
     def test_detectors_non_functional_when_blindness(self):
         """V51 FIX: detectors_functional = False when velocity blindness."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=10000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=10000.0,
         )
         result = analyse_duct(duct)
         assert result.velocity_blindness is True
@@ -469,8 +566,11 @@ class TestHVACShutdown:
     def test_supply_high_cfm_requires_shutdown(self):
         """Supply duct >2000 CFM requires HVAC shutdown."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=5000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=5000.0,
         )
         result = analyse_duct(duct)
         assert result.hvac_shutdown_required is True
@@ -479,8 +579,11 @@ class TestHVACShutdown:
     def test_supply_unknown_cfm_requires_shutdown(self):
         """Supply duct with unknown CFM requires shutdown (conservative)."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=None,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=None,
         )
         result = analyse_duct(duct)
         assert result.hvac_shutdown_required is True
@@ -488,8 +591,11 @@ class TestHVACShutdown:
     def test_supply_low_cfm_no_shutdown(self):
         """Supply duct ≤2000 CFM does NOT require shutdown."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=1000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=1000.0,
         )
         result = analyse_duct(duct)
         assert result.hvac_shutdown_required is False
@@ -497,8 +603,11 @@ class TestHVACShutdown:
     def test_exhaust_no_shutdown(self):
         """Exhaust ducts don't require HVAC shutdown."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="exhaust", airflow_cfm=5000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="exhaust",
+            airflow_cfm=5000.0,
         )
         result = analyse_duct(duct)
         assert result.hvac_shutdown_required is False
@@ -515,9 +624,13 @@ class TestDuctWarnings:
     def test_length_mismatch_warning(self):
         """When length_m differs from geometric distance → warning."""
         duct = DuctSpec(
-            duct_id="D1", length_m=15.0, width_m=0.5,
-            start_point=(0, 0), end_point=(5, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=15.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(5, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         assert any("differs" in w.lower() for w in result.warnings)
@@ -525,8 +638,11 @@ class TestDuctWarnings:
     def test_low_cfm_warning(self):
         """CFM ≤2000 for supply/return → verify warning."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=1500.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=1500.0,
         )
         result = analyse_duct(duct)
         assert any("CFM" in w for w in result.warnings)
@@ -534,8 +650,11 @@ class TestDuctWarnings:
     def test_velocity_blindness_warning(self):
         """High velocity → warning about UL 268A limit."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=10000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=10000.0,
         )
         result = analyse_duct(duct)
         assert any("UL 268A" in w for w in result.warnings)
@@ -543,9 +662,13 @@ class TestDuctWarnings:
     def test_no_warnings_for_perfect_duct(self):
         """Well-specified duct with matching geometry has no spurious warnings."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            start_point=(0, 0), end_point=(10, 0),
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            start_point=(0, 0),
+            end_point=(10, 0),
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         # Should not have length mismatch warnings
@@ -563,8 +686,12 @@ class TestBatchAnalysis:
     def test_analyse_ducts_multiple(self):
         """analyse_ducts returns one result per duct."""
         ducts = [
-            DuctSpec(duct_id="D1", length_m=10.0, width_m=0.5, airflow_cfm=3000.0, duct_type="supply"),
-            DuctSpec(duct_id="D2", length_m=5.0, width_m=0.3, airflow_cfm=2000.0, duct_type="return"),
+            DuctSpec(
+                duct_id="D1", length_m=10.0, width_m=0.5, airflow_cfm=3000.0, duct_type="supply"
+            ),
+            DuctSpec(
+                duct_id="D2", length_m=5.0, width_m=0.3, airflow_cfm=2000.0, duct_type="return"
+            ),
         ]
         results = analyse_ducts(ducts)
         assert len(results) == 2
@@ -579,8 +706,12 @@ class TestBatchAnalysis:
     def test_total_duct_detectors(self):
         """total_duct_detectors sums detector counts correctly."""
         ducts = [
-            DuctSpec(duct_id="D1", length_m=10.0, width_m=0.5, airflow_cfm=3000.0, duct_type="supply"),
-            DuctSpec(duct_id="D2", length_m=6.0, width_m=0.5, airflow_cfm=3000.0, duct_type="return"),
+            DuctSpec(
+                duct_id="D1", length_m=10.0, width_m=0.5, airflow_cfm=3000.0, duct_type="supply"
+            ),
+            DuctSpec(
+                duct_id="D2", length_m=6.0, width_m=0.5, airflow_cfm=3000.0, duct_type="return"
+            ),
         ]
         results = analyse_ducts(ducts)
         total = total_duct_detectors(results)
@@ -602,8 +733,11 @@ class TestNFPAReferences:
     def test_result_has_nfpa_ref(self):
         """DuctAnalysisResult must include NFPA reference."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         assert "17.7.5" in result.nfpa_ref
@@ -611,8 +745,11 @@ class TestNFPAReferences:
     def test_result_has_spacing_ref(self):
         """DuctAnalysisResult must include spacing reference."""
         duct = DuctSpec(
-            duct_id="D1", length_m=10.0, width_m=0.5,
-            duct_type="supply", airflow_cfm=3000.0,
+            duct_id="D1",
+            length_m=10.0,
+            width_m=0.5,
+            duct_type="supply",
+            airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
         assert "6.4.2.2" in result.spacing_ref  # NOSONAR - python:S1313

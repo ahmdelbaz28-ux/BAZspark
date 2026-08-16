@@ -34,11 +34,14 @@ from fireai.bridges.bim_provider import (
 class TestProtocolConformance:
     """Verify each provider correctly implements BIMProvider Protocol."""
 
-    @pytest.mark.parametrize("provider_class", [
-        LocalRevitProvider,
-        IfcFileProvider,
-        AutodeskForgeProvider,
-    ])
+    @pytest.mark.parametrize(
+        "provider_class",
+        [
+            LocalRevitProvider,
+            IfcFileProvider,
+            AutodeskForgeProvider,
+        ],
+    )
     def test_provider_implements_protocol(self, provider_class):
         """Each provider class should pass isinstance(_, BIMProvider)."""
         instance = provider_class()
@@ -47,11 +50,14 @@ class TestProtocolConformance:
             f"{provider_class.__name__} does not implement BIMProvider Protocol"
         )
 
-    @pytest.mark.parametrize("provider_class", [
-        LocalRevitProvider,
-        IfcFileProvider,
-        AutodeskForgeProvider,
-    ])
+    @pytest.mark.parametrize(
+        "provider_class",
+        [
+            LocalRevitProvider,
+            IfcFileProvider,
+            AutodeskForgeProvider,
+        ],
+    )
     def test_provider_has_required_methods(self, provider_class):
         """Each provider must have all Protocol methods."""
         instance = provider_class()
@@ -59,11 +65,14 @@ class TestProtocolConformance:
             assert hasattr(instance, method), f"Missing method: {method}"
             assert callable(getattr(instance, method)), f"Not callable: {method}"
 
-    @pytest.mark.parametrize("provider_class", [
-        LocalRevitProvider,
-        IfcFileProvider,
-        AutodeskForgeProvider,
-    ])
+    @pytest.mark.parametrize(
+        "provider_class",
+        [
+            LocalRevitProvider,
+            IfcFileProvider,
+            AutodeskForgeProvider,
+        ],
+    )
     def test_provider_name_is_nonempty_string(self, provider_class):
         """provider_name must return a non-empty string."""
         instance = provider_class()
@@ -71,11 +80,14 @@ class TestProtocolConformance:
         assert isinstance(name, str), f"provider_name must be str, got {type(name)}"
         assert len(name) > 0, "provider_name must be non-empty"
 
-    @pytest.mark.parametrize("provider_class", [
-        LocalRevitProvider,
-        IfcFileProvider,
-        AutodeskForgeProvider,
-    ])
+    @pytest.mark.parametrize(
+        "provider_class",
+        [
+            LocalRevitProvider,
+            IfcFileProvider,
+            AutodeskForgeProvider,
+        ],
+    )
     def test_capabilities_returns_tuple(self, provider_class):
         """Capabilities must return a tuple of BIMProviderCapability."""
         instance = provider_class()
@@ -149,14 +161,25 @@ class TestRegistry:
         """Registering a different class under existing name raises ValueError."""
 
         class FakeProvider:
-            def extract_rooms(self, source=None, **kw): return []
-            def read_devices(self, source=None, **kw): return []
-            def write_devices(self, devices, target=None, **kw): return 0
-            def health_check(self): return {"healthy": True}
+            def extract_rooms(self, source=None, **kw):
+                return []
+
+            def read_devices(self, source=None, **kw):
+                return []
+
+            def write_devices(self, devices, target=None, **kw):
+                return 0
+
+            def health_check(self):
+                return {"healthy": True}
+
             @property
-            def provider_name(self): return "fake"
+            def provider_name(self):
+                return "fake"
+
             @property
-            def capabilities(self): return ()
+            def capabilities(self):
+                return ()
 
         with pytest.raises(ValueError, match="already registered with different class"):
             BIMProviderRegistry.register("local_revit", FakeProvider)
@@ -251,7 +274,9 @@ class TestIfcFileProvider:
         """V135 F-10: write_devices now raises NotImplementedError (was silent stub)."""
         p = IfcFileProvider()
         with pytest.raises(NotImplementedError, match="not yet implemented"):
-            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+            p.write_devices(
+                [{"device_id": "TEST"}], target="/tmp/test.ifc"
+            )  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_health_check_returns_dict(self):
         p = IfcFileProvider()
@@ -318,7 +343,9 @@ class TestAutodeskForgeProvider:
         result = p.health_check()
         # APS server) → healthy=False with authentication failure message
         assert result["healthy"] is False
-        assert "authentication" in result["details"].lower() or "failed" in result["details"].lower()
+        assert (
+            "authentication" in result["details"].lower() or "failed" in result["details"].lower()
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -411,6 +438,7 @@ class TestAuditSafety:
         p = LocalRevitProvider()
         # Inspect source code via __code__ to verify the safety check exists
         import inspect
+
         source_code = inspect.getsource(p.extract_rooms)
         assert "room.source" in source_code, (
             "LocalRevitProvider.extract_rooms must set room.source for audit trail"
@@ -419,6 +447,7 @@ class TestAuditSafety:
     def test_ifc_file_sets_source_field(self):
         """IfcFileProvider must set source='ifc_file' on every room."""
         import inspect
+
         source_code = inspect.getsource(IfcFileProvider.extract_rooms)
         assert 'source="ifc_file"' in source_code
 

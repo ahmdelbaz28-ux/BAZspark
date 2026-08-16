@@ -41,6 +41,7 @@ from fireai.core.notification_appliance import (
 # 1. NOTIFICATION DEVICE DATACLASS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestNotificationDevice:
     """Tests for NotificationDevice frozen dataclass."""
 
@@ -70,13 +71,16 @@ class TestNotificationDevice:
 # 2. CALCULATE_NAC_LOAD
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateNACLoad:
     """Tests for calculate_nac_load()."""
 
     def test_empty_circuit(self):
         """No devices → zero current, compliant."""
         result = calculate_nac_load([], nac_rating_a=2.0)
-        assert result.total_current_a == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_current_a == 0.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
         assert result.device_count == 0
 
@@ -84,7 +88,9 @@ class TestCalculateNACLoad:
         """Single horn within capacity."""
         devices = [NotificationDevice("H1", "horn", 0.05)]
         result = calculate_nac_load(devices, nac_rating_a=2.0)
-        assert result.total_current_a == 0.05  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_current_a == 0.05
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
 
     def test_multiple_devices_compliant(self):
@@ -102,12 +108,11 @@ class TestCalculateNACLoad:
     def test_overloaded_nac(self):
         """Too many devices → NAC overloaded, non-compliant."""
         # 20 horn/strobe combos at 0.15A each = 3.0A
-        devices = [
-            NotificationDevice(f"HS{i}", "horn_strobe", 0.15, candela=75)
-            for i in range(20)
-        ]
+        devices = [NotificationDevice(f"HS{i}", "horn_strobe", 0.15, candela=75) for i in range(20)]
         result = calculate_nac_load(devices, nac_rating_a=2.0)
-        assert result.total_current_a == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_current_a == 3.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         max_allowed = 2.0 * _NAC_LOAD_FACTOR
         assert abs(result.max_allowed_a - max_allowed) < 0.001
         assert result.is_compliant is False
@@ -119,8 +124,12 @@ class TestCalculateNACLoad:
         # Use devices summing to exactly 1.6A
         devices = [NotificationDevice("D1", "horn_strobe", 1.6)]
         result = calculate_nac_load(devices, nac_rating_a=2.0)
-        assert result.total_current_a == 1.6  # NOSONAR — S1244: import retained for re-export / API surface
-        assert result.max_allowed_a == 1.6  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.total_current_a == 1.6
+        )  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.max_allowed_a == 1.6
+        )  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
 
     def test_just_over_80_percent(self):
@@ -131,7 +140,9 @@ class TestCalculateNACLoad:
 
     def test_80_percent_derating(self):
         """Verify the 80% derating factor."""
-        assert _NAC_LOAD_FACTOR == 0.80  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            _NAC_LOAD_FACTOR == 0.80
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_nac_rating(self):
         """Custom NAC rating changes max allowed."""
@@ -150,11 +161,15 @@ class TestCalculateNACLoad:
             calculate_nac_load([], nac_rating_a=0.0)
 
     def test_nan_nac_rating_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_nac_load([], nac_rating_a=float("nan"))
 
     def test_inf_nac_rating_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_nac_load([], nac_rating_a=float("inf"))
 
     def test_device_negative_current_raises(self):
@@ -182,6 +197,7 @@ class TestCalculateNACLoad:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. CALCULATE_SPL
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateSPL:
     """Tests for calculate_spl() — inverse square law."""
@@ -235,12 +251,16 @@ class TestCalculateSPL:
         """Minimum required SPL is max(ambient+15, 75)."""
         # Quiet ambient: 40 + 15 = 55 < 75 → min is 75
         result = calculate_spl(95.0, 10.0, ambient_dba=40.0)
-        assert result.min_required_dba == 75.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.min_required_dba == 75.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ambient_drives_minimum(self):
         """Noisy ambient: 70 + 15 = 85 > 75 → min is 85."""
         result = calculate_spl(95.0, 10.0, ambient_dba=70.0)
-        assert result.min_required_dba == 85.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.min_required_dba == 85.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exceeds_max_spl(self):
         """SPL > 110 dBA is non-compliant (hearing protection)."""
@@ -260,11 +280,15 @@ class TestCalculateSPL:
     # --- Invalid inputs ---
 
     def test_nan_horn_rating_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(float("nan"), 10.0)
 
     def test_inf_horn_rating_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(float("inf"), 10.0)
 
     def test_zero_distance_raises(self):
@@ -276,7 +300,9 @@ class TestCalculateSPL:
             calculate_spl(95.0, -5.0)
 
     def test_nan_ambient_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(95.0, 10.0, ambient_dba=float("nan"))
 
     # --- NFPA reference ---
@@ -289,6 +315,7 @@ class TestCalculateSPL:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. MIN_HORN_RATING_FOR_ROOM
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMinHornRating:
     """Tests for min_horn_rating_for_room()."""
@@ -324,6 +351,7 @@ class TestMinHornRating:
 # 5. CALCULATE_STROBE_CANDELA
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCalculateStrobeCandela:
     """Tests for calculate_strobe_candela()."""
 
@@ -349,8 +377,8 @@ class TestCalculateStrobeCandela:
 
     def test_high_ceiling_uses_different_table(self):
         """Ceiling >10ft uses Table 18.5.5.1(b) — typically higher candela."""
-        r_low = calculate_strobe_candela(80.0, 3.0)   # 10ft ceiling
-        r_high = calculate_strobe_candela(80.0, 4.0)   # >13ft ceiling
+        r_low = calculate_strobe_candela(80.0, 3.0)  # 10ft ceiling
+        r_high = calculate_strobe_candela(80.0, 4.0)  # >13ft ceiling
         assert r_high.table_used != r_low.table_used
         # High ceiling table requires more candela for same area
         assert r_high.required_candela >= r_low.required_candela
@@ -365,7 +393,9 @@ class TestCalculateStrobeCandela:
         """Each strobe must still produce at least 15 cd."""
         # 75 cd room with 10 strobes → 7.5 cd each, but min is 15
         result = calculate_strobe_candela(80.0, 3.0, strobe_count=10)
-        assert result.candela_per_strobe == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.candela_per_strobe == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_installed_candela_compliant(self):
         """Check installed candela compliance — compliant."""
@@ -395,7 +425,9 @@ class TestCalculateStrobeCandela:
             calculate_strobe_candela(0.0)
 
     def test_nan_area_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(float("nan"))
 
     def test_negative_ceiling_raises(self):
@@ -420,6 +452,7 @@ class TestCalculateStrobeCandela:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. CORRIDOR STROBES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCalculateCorridorStrobes:
     """Tests for calculate_corridor_strobes()."""
@@ -452,7 +485,9 @@ class TestCalculateCorridorStrobes:
     def test_min_candela_is_15(self):
         """Corridor strobes minimum is 15 cd."""
         result = calculate_corridor_strobes(30.0)
-        assert result.min_candela_per == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert (
+            result.min_candela_per == 15.0
+        )  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_strobe_count(self):
         """Custom strobe count overrides auto-calculation."""
@@ -478,7 +513,9 @@ class TestCalculateCorridorStrobes:
             calculate_corridor_strobes(0.0)
 
     def test_nan_length_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
+        with pytest.raises(
+            ValueError, match="positive finite"
+        ):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_strobes(float("nan"))
 
     # --- NFPA reference ---
@@ -491,6 +528,7 @@ class TestCalculateCorridorStrobes:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7. NOTIFICATION ASSESSMENT (COMBINED)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestNotificationAssessment:
     """Tests for NotificationAssessment combined evaluation."""
@@ -566,7 +604,9 @@ class TestNotificationAssessment:
             strobe_result=strobe,
         )
         assessment.evaluate()
-        assert any("10.6.4.2" in ref for ref in assessment.nfpa_references)  # NOSONAR - python:S1313
+        assert any(
+            "10.6.4.2" in ref for ref in assessment.nfpa_references
+        )  # NOSONAR - python:S1313
         assert any("18.4.3" in ref for ref in assessment.nfpa_references)
         assert any("18.5.5" in ref for ref in assessment.nfpa_references)
 

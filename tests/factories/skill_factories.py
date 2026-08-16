@@ -57,7 +57,9 @@ class SkillMetadataFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
 
 
 class SkillDescriptionFactory:
@@ -89,7 +91,9 @@ class SkillDescriptionFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
 
 
 class SkillPermissionsFactory:
@@ -106,13 +110,21 @@ class SkillPermissionsFactory:
     ) -> SkillPermissions:
         """Create a SkillPermissions instance with default values."""
         if network is None:
-            network = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            network = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if filesystem_read is None:
-            filesystem_read = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            filesystem_read = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if filesystem_write is None:
-            filesystem_write = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            filesystem_write = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if subprocess is None:
-            subprocess = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            subprocess = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if env_vars is None:
             env_vars = [f"ENV_VAR_{cls._random_suffix().upper()}"]
 
@@ -127,7 +139,9 @@ class SkillPermissionsFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
+        return "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
 
 
 class SkillRequirementsFactory:
@@ -145,11 +159,15 @@ class SkillRequirementsFactory:
         if python_version is None:
             python_version = f"{3}.{8 + secrets.randbelow(3)}"  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if dependencies is None:
-            dependencies = {f"pkg{cls._random_suffix()}": f">={1}.0.0"}  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            dependencies = {
+                f"pkg{cls._random_suffix()}": f">={1}.0.0"
+            }  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if permissions is None:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
-            max_execution_time = 60 + secrets.randbelow(3540)  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            max_execution_time = (
+                60 + secrets.randbelow(3540)
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
 
         return SkillRequirements(
             python_version=python_version,
@@ -161,7 +179,9 @@ class SkillRequirementsFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
 
 
 class ExecutionErrorFactory:
@@ -183,7 +203,9 @@ class ExecutionErrorFactory:
         if message is None:
             message = f"Error occurred: {cls._random_suffix()}"
         if can_retry is None:
-            can_retry = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            can_retry = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
 
         return ExecutionError(
             error=error,
@@ -197,7 +219,9 @@ class ExecutionErrorFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
+        return "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
 
 
 class ExecutionResultFactory:
@@ -214,14 +238,19 @@ class ExecutionResultFactory:
     ) -> ExecutionResult:
         """Create an ExecutionResult instance with default values."""
         if success is None:
-            success = secrets.choice([True, False])  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+            success = secrets.choice(
+                [True, False]
+            )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
 
         # Ensure mutual exclusivity of data and error
         if success:
             if error is not None:
                 error = None
             if data is None:
-                data = {"result": cls._random_suffix(), "value": 1 + secrets.randbelow(99)}  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
+                data = {
+                    "result": cls._random_suffix(),
+                    "value": 1 + secrets.randbelow(99),
+                }  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         else:
             if data is not None:
                 data = None
@@ -239,7 +268,9 @@ class ExecutionResultFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)
 
 
 class SkillManifestFactory:
@@ -277,7 +308,9 @@ class SkillManifestFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=length)
+        )  # NOSONAR: weak random in test/example  # NOSONAR — S2245: pseudo-random used for non-cryptographic purpose (test/cache key)  # NOSONAR — S7632: test function documented via class name / module path
 
 
 # Convenience functions for common test scenarios

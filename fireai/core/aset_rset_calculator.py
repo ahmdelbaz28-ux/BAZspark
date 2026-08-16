@@ -202,7 +202,8 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     # Simplified inputs when no time-series data available
     smoke_fill_time_s: float | None = None,
     _fire_growth_rate: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
-    _fire_heat_release_kw: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _fire_heat_release_kw: float
+    | None = None,  # NOSONAR — S1172: parameter retained for API stability
     _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
 ) -> ASETResult:
     """
@@ -305,7 +306,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
                 aset_seconds=last_time,
                 limiting_factor="none_reached_within_simulation",
                 aset_method="tenability_check",
-                smoke_layer_at_aset_m=smoke_layer_height_series[-1][1] if smoke_layer_height_series else None,
+                smoke_layer_at_aset_m=smoke_layer_height_series[-1][1]
+                if smoke_layer_height_series
+                else None,
                 details={"note": "ASET exceeds simulation time — design may be safe"},
             )
 

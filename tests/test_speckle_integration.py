@@ -31,14 +31,14 @@ class TestSpeckleService:
 
         elements = [
             {"id": "100", "type": "FireAlarmDetector", "x": 12.5, "y": 45.3},
-            {"id": "101", "type": "FACP", "x": 10.0, "y": 10.0}
+            {"id": "101", "type": "FACP", "x": 10.0, "y": 10.0},
         ]
 
         res = svc.push_to_speckle(
             stream_id="test_stream",
             server_url="https://speckle.xyz",
             token="test_token",
-            elements=elements
+            elements=elements,
         )
 
         assert res["success"] is True
@@ -51,9 +51,7 @@ class TestSpeckleService:
         svc.simulation_mode = True
 
         res = svc.receive_from_speckle(
-            stream_id="test_stream",
-            server_url="https://speckle.xyz",
-            token="test_token"
+            stream_id="test_stream", server_url="https://speckle.xyz", token="test_token"
         )
 
         assert res["success"] is True
@@ -70,7 +68,7 @@ class TestAgentSpeckleRouting:
         args = {
             "stream_id": "test_stream",
             "server_url": "https://speckle.xyz",
-            "token": "test_token"
+            "token": "test_token",
         }
         res = _dispatch_autocad("speckle_push", args)
         assert res["success"] is False
@@ -81,7 +79,7 @@ class TestAgentSpeckleRouting:
         args = {
             "stream_id": "test_stream",
             "server_url": "https://speckle.xyz",
-            "token": "test_token"
+            "token": "test_token",
         }
         res = _dispatch_revit("speckle_pull", args)
         assert res["success"] is False
