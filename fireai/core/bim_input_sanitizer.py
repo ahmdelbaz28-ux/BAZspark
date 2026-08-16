@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import re
 
 logger = logging.getLogger(__name__)
@@ -175,6 +176,13 @@ def sanitize_room_name(room_name: str) -> str:
     return sanitized.strip()
 
 
+_RESERVED_DEVICE_NAMES = frozenset({
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+})
+
+
 def sanitize_file_path(file_path: str) -> str:
     """
     Sanitize a file path to prevent path traversal attacks.
@@ -190,11 +198,17 @@ def sanitize_file_path(file_path: str) -> str:
 
     Raises:
         ValueError: If path traversal detected.
+        ValueError: If null bytes or reserved device names detected.
         ValueError: If path contains non-whitelisted characters.
 
     """
     if not isinstance(file_path, str):
         raise ValueError(f"File path must be a string, got {type(file_path).__name__}.")
+
+    # Check for null bytes (defense against C-string truncation)
+    if "\x00" in file_path:
+        logger.critical("[SECURITY ALERT]: Null byte detected in file path: %r", file_path)
+        raise ValueError("Null bytes are not allowed in file paths.")
 
     # Check for path traversal
     if ".." in file_path:
@@ -209,6 +223,12 @@ def sanitize_file_path(file_path: str) -> str:
 
     # Whitelist path characters
     sanitized = re.sub(r"[^a-zA-Z0-9_\-./\\]", "", file_path)
+
+    # Check Windows reserved device names
+    base_name = os.path.splitext(os.path.basename(sanitized))[0].upper()
+    if base_name in _RESERVED_DEVICE_NAMES:
+        logger.critical("[SECURITY ALERT]: Windows reserved device name used in path: %s", base_name)
+        raise ValueError(f"Path references reserved system device name: {base_name}")
 
     if sanitized != file_path:
         logger.warning(f"[SANITIZATION]: File path sanitized. '{file_path}' → '{sanitized}'")
