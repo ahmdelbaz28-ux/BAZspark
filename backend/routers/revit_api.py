@@ -379,21 +379,66 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
         raise HTTPException(status_code=500, detail="Status retrieval failed")
 
 
+def _validate_ws_origin(websocket: WebSocket) -> bool:
+    """
+    Validate WebSocket origin to prevent Cross-Site WebSocket Hijacking (CSWSH).
+
+    Same-origin requests (SPA hosted on same server or localhost) are allowed.
+    In production (FIREAI_ENV=production), missing Origin is rejected.
+    """
+    origin = websocket.headers.get("origin", "")
+    host = websocket.headers.get("host", "")
+    is_dev_mode = os.getenv("FIREAI_ENV", "production").lower() not in ("production", "prod")
+
+    if not origin:
+        if is_dev_mode:
+            return True
+        return False
+
+    if origin in (
+        f"http://{host}",
+        f"https://{host}",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8000",
+        "http://testserver",
+        "https://testserver",
+    ):
+        return True
+
+    return is_dev_mode
+
+
 @router.websocket("/ws/{project_id}")
 async def websocket_endpoint(websocket: WebSocket, project_id: str):
     """
     WebSocket endpoint for real-time Revit synchronization updates.
 
-    Args:
-        websocket: WebSocket connection
-        project_id: Project ID for the connection
+    Security:
+      - Origin validation against allowed origins (CSWSH prevention).
+      - Header-based API key authentication (X-API-Key).
     """
+    # ── Origin check ────────────────────────────────────────────────────
+    if not _validate_ws_origin(websocket):
+        logger.warning(
+            "Revit WebSocket rejected: invalid origin origin=%s client=%s",
+            websocket.headers.get("origin", "missing"),
+            websocket.client.host if websocket.client else "unknown",
+        )
+        await websocket.close(code=4001, reason="Unauthorized origin")
+        return
+
     # Authenticate via header before accepting WebSocket connection
     from backend.api_keys import validate_api_key
 
-    api_key = websocket.headers.get("x-api-key")
+    api_key = websocket.headers.get("x-api-key") or websocket.headers.get("X-API-Key")
     if not api_key:
         api_key = websocket.query_params.get("api_key")
+        if api_key:
+            logger.warning("Query parameter auth for WebSocket is deprecated; use X-API-Key header")
 
     principal = validate_api_key(api_key) if api_key else None
     if not principal:
