@@ -5,7 +5,7 @@
  * engineering questions to the LLM. Calls POST /api/v1/llm/chat.
  */
 
-import { AlertCircle, Bot, Send, Sparkles, Trash2, User } from "lucide-react";
+import { AlertCircle, Bot, Mic, MicOff, Send, Sparkles, Trash2, User } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { type ChatMessage, useLlmChat } from "@/hooks/useLlmChat";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
 
 export interface AskAiSheetProps {
 	readonly open: boolean;
@@ -46,6 +47,38 @@ export function AskAiSheet({
 		useLlmChat("engineer_assistant");
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	const handleSpeechTranscript = useCallback((spokenText: string) => {
+		setInput((prev) => {
+			const cleaned = spokenText.trim();
+			return prev ? `${prev} ${cleaned}` : cleaned;
+		});
+	}, []);
+
+	const {
+		isListening,
+		startListening,
+		stopListening,
+		interimTranscript,
+		isSupported,
+	} = useVoiceControl({
+		onTranscript: handleSpeechTranscript,
+	});
+
+	// Stop listening when sheet closes
+	useEffect(() => {
+		if (!open && isListening) {
+			stopListening();
+		}
+	}, [open, isListening, stopListening]);
+
+	const toggleVoice = useCallback(() => {
+		if (isListening) {
+			stopListening();
+		} else {
+			startListening();
+		}
+	}, [isListening, startListening, stopListening]);
 
 	// Auto-scroll to bottom on new messages
 	useEffect(() => {
@@ -189,17 +222,54 @@ export function AskAiSheet({
 					onSubmit={handleSubmit}
 					className="px-4 py-3 border-t border-border bg-card"
 				>
+					{isListening && (
+						<div className="flex items-center gap-2 mb-2 px-2 py-1.5 rounded bg-danger/10 border border-danger/20 text-xs text-danger animate-pulse">
+							<Mic aria-hidden="true" className="w-3.5 h-3.5 flex-shrink-0 animate-bounce" />
+							<span className="truncate">
+								{interimTranscript || t("voice.listening", "Listening... Speak now...")}
+							</span>
+						</div>
+					)}
 					<div className="flex items-center gap-2">
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							onClick={toggleVoice}
+							title={
+								!isSupported
+									? t("voice.unsupported", "Voice recognition not supported")
+									: isListening
+										? t("voice.stop", "Stop listening")
+										: t("voice.start", "Start voice input")
+							}
+							disabled={loading}
+							className={`h-9 w-9 flex-shrink-0 transition-colors ${
+								isListening
+									? "text-danger bg-danger/20 hover:bg-danger/30 animate-pulse"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+						>
+							{isListening ? (
+								<MicOff aria-hidden="true" className="w-4 h-4" />
+							) : (
+								<Mic aria-hidden="true" className="w-4 h-4" />
+							)}
+						</Button>
 						<Input
 							ref={inputRef}
 							value={input}
 							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 								setInput(e.target.value)
 							}
-							placeholder={t(
-								"ai.placeholder",
-								"Ask about NFPA 72, voltage drop, battery sizing...",
-							)}
+							placeholder={
+								isListening
+									? t("voice.listeningPlaceholder", "Listening... (or type here)")
+									: t(
+											"ai.placeholder",
+											"Ask about NFPA 72, voltage drop, battery sizing...",
+										)
+							}
 							disabled={loading}
 							className="flex-1 bg-card border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-red-600"
 						/>

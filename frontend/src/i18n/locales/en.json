@@ -1798,5 +1798,14 @@
 			"paymentFailed": "Payment Failed",
 			"retry": "Retry"
 		}
+	},
+	"voice": {
+		"listening": "Listening... Speak now...",
+		"listeningPlaceholder": "Listening... (or type here)",
+		"start": "Start voice input",
+		"stop": "Stop listening",
+		"unsupported": "Voice recognition not supported in this browser",
+		"permissionDenied": "Microphone permission denied",
+		"networkError": "Speech recognition service network error"
 	}
 }

@@ -2,6 +2,7 @@ import {
 	Cpu,
 	Loader,
 	Mic,
+	MicOff,
 	Plus,
 	Send,
 	Server,
@@ -10,23 +11,48 @@ import {
 	Zap,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLlmChat } from "@/hooks/useLlmChat";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
 
 export function AgentChatPage() {
-	const { t: _t } = useTranslation();
+	const { t: _t, i18n } = useTranslation();
 
 	const { messages, loading, error, sendMessage, clearChat } =
 		useLlmChat("engineer_assistant");
 
 	const [inputValue, setInputValue] = useState("");
-	const [isListening, setIsListening] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+	const handleSpeechTranscript = useCallback((spokenText: string) => {
+		setInputValue((prev) => {
+			const cleaned = spokenText.trim();
+			return prev ? `${prev} ${cleaned}` : cleaned;
+		});
+	}, []);
+
+	const {
+		isListening,
+		startListening,
+		stopListening,
+		interimTranscript,
+		isSupported,
+	} = useVoiceControl({
+		onTranscript: handleSpeechTranscript,
+	});
+
+	const toggleListening = useCallback(() => {
+		if (isListening) {
+			stopListening();
+		} else {
+			startListening();
+		}
+	}, [isListening, startListening, stopListening]);
 
 	const quickCommands = [
 		"فحص الامتثال",
@@ -224,6 +250,17 @@ export function AgentChatPage() {
 
 			{/* Input Area */}
 			<div className="border-t border-border p-4 bg-card stagger-card">
+				{isListening && (
+					<div className="max-w-3xl mx-auto mb-3 px-3.5 py-2 rounded-lg bg-secondary/10 border border-secondary/30 text-xs text-secondary flex items-center gap-2 animate-pulse">
+						<Mic className="h-3.5 w-3.5 animate-bounce flex-shrink-0" />
+						<span className="truncate">
+							{interimTranscript ||
+								(i18n.language?.startsWith("ar")
+									? "جاري الاستماع... تحدث الآن..."
+									: "Listening... Speak now...")}
+						</span>
+					</div>
+				)}
 				<form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
 					<div className="relative flex items-center gap-2">
 						<Button
@@ -238,7 +275,13 @@ export function AgentChatPage() {
 						<Input
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
-							placeholder="اكتب سؤالاً أو أمراً..."
+							placeholder={
+								isListening
+									? i18n.language?.startsWith("ar")
+										? "جاري الاستماع... (أو اكتب هنا)"
+										: "Listening... (or type here)"
+									: "اكتب سؤالاً أو أمراً..."
+							}
 							className="bg-muted border-border flex-1 h-10 rounded-full px-4"
 							disabled={loading}
 						/>
@@ -247,12 +290,25 @@ export function AgentChatPage() {
 							type="button"
 							size="icon"
 							variant="ghost"
-							className="h-10 w-10 text-muted-foreground hover:text-foreground"
-							onClick={() => setIsListening(!isListening)}
+							className={`h-10 w-10 transition-colors ${
+								isListening
+									? "text-secondary bg-secondary/20 hover:bg-secondary/30 animate-pulse"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+							onClick={toggleListening}
+							title={
+								!isSupported
+									? "التعرف الصوتي غير مدعوم"
+									: isListening
+										? "إيقاف الاستماع"
+										: "بدء الإدخال الصوتي"
+							}
 						>
-							<Mic
-								className={`h-4 w-4 ${isListening ? "text-secondary" : ""}`}
-							/>
+							{isListening ? (
+								<MicOff className="h-4 w-4 text-secondary" />
+							) : (
+								<Mic className="h-4 w-4" />
+							)}
 						</Button>
 
 						<Button

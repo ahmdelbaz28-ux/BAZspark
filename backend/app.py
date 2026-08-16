@@ -653,6 +653,7 @@ for _router_name in (
     # through monitor.py and environment.py respectively.
     "experimental_services",  # V270: /api/v1/experimental/{features,ocr,scan-to-bim,speckle}
     "billing",  # Meeza Payment Gateway (شبكة ميزة) — /api/v1/billing/meeza/*
+    "audio",  # V280: Voice Control & Audio Processing — /api/v1/audio/{transcribe,sanitize}
 ):
     _safe_include_router(_router_name)
 
