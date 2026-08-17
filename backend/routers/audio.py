@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Final
+from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, Field
@@ -40,7 +40,7 @@ ALLOWED_AUDIO_MIME_TYPES: Final[frozenset[str]] = frozenset(
     }
 )
 
-MAX_AUDIO_SIZE_BYTES: Final[int] = 10 * 1024 * 1024  # 10 MB
+MAX_AUDIO_SIZE_BYTES: Final[int] = 10 * 1024 * 1024
 
 # Prompt injection and jailbreak patterns to defang/filter
 PROMPT_INJECTION_PATTERNS: Final[list[re.Pattern[str]]] = [
@@ -78,8 +78,7 @@ def sanitize_transcribed_text(raw_text: str) -> str:
 class SanitizeRequest(BaseModel):
     """Payload for text sanitization."""
 
-    text: str = Field(..., max_length=10000, description="Raw speech text to sanitize")
-    language: str | None = Field(default=None, max_length=16, description="Language code")
+    text: str = Field(..., max_length=10000, description="Raw transcribed voice text to sanitize")
 
 
 class SanitizeResponse(BaseModel):
@@ -105,7 +104,6 @@ class TranscribeResponse(BaseModel):
 
 @router.post(
     "/sanitize",
-    response_model=SanitizeResponse,
     dependencies=[Depends(require_permission(Permission.CALCULATION_READ))],
 )
 @limiter.limit("60/minute")
@@ -127,14 +125,13 @@ async def sanitize_voice_text(
 
 @router.post(
     "/transcribe",
-    response_model=TranscribeResponse,
     dependencies=[Depends(require_permission(Permission.CALCULATION_READ))],
 )
 @limiter.limit("20/minute")
 async def transcribe_audio_file(
     request: Request,
-    file: UploadFile = File(...),
-    language: str = Form(default="auto"),
+    file: Annotated[UploadFile, File(...)],
+    language: Annotated[str, Form()] = "auto",
 ) -> TranscribeResponse:
     """
     Accepts and validates audio recordings for speech-to-text processing.
@@ -168,6 +165,13 @@ async def transcribe_audio_file(
     # For development/pipeline stub: return empty clean transcript or processed text
     sanitized_output = sanitize_transcribed_text("")
 
+    if language.startswith("ar"):
+        resolved_language = "ar-EG"
+    elif language != "auto":
+        resolved_language = "en-US"
+    else:
+        resolved_language = "auto"
+
     return TranscribeResponse(
         success=True,
         text=sanitized_output,
@@ -175,9 +179,5 @@ async def transcribe_audio_file(
         content_type=raw_content_type,
         size_bytes=len(contents),
         duration_seconds=None,
-        language="ar-EG"
-        if language.startswith("ar")
-        else "en-US"
-        if language != "auto"
-        else "auto",
+        language=resolved_language,
     )

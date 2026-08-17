@@ -106,6 +106,154 @@ export function resolveSpeechLocale(lang?: string): string {
 	return current.startsWith("ar") ? "ar-EG" : "en-US";
 }
 
+interface VoiceStoreActions {
+	readonly addElement: (el: {
+		type: string;
+		x: number;
+		y: number;
+		voltage: number;
+	}) => void;
+	readonly setDataMode: (mode: "live" | "simulation" | "demo" | "mock") => void;
+	readonly clearErrors: () => void;
+	readonly setSelectedElement: (el: string | null) => void;
+}
+
+function processVoiceCommand(
+	cleanFinal: string,
+	storeActions: VoiceStoreActions,
+	onCommand?: (command: string, transcript: string) => void,
+) {
+	const lower = cleanFinal.toLowerCase();
+	let matchedCommand: string | null = null;
+
+	if (
+		lower.includes("add generator") ||
+		lower.includes("اضف مولد") ||
+		lower.includes("إضافة مولد") ||
+		lower.includes("مولد")
+	) {
+		matchedCommand = "ADD_GENERATOR";
+		storeActions.addElement({
+			type: "generator",
+			x: 100,
+			y: 100,
+			voltage: 11000,
+		});
+	} else if (
+		lower.includes("add battery") ||
+		lower.includes("اضف بطارية") ||
+		lower.includes("إضافة بطارية") ||
+		lower.includes("بطارية")
+	) {
+		matchedCommand = "ADD_BATTERY";
+		storeActions.addElement({
+			type: "battery",
+			x: 200,
+			y: 200,
+			voltage: 220,
+		});
+	} else if (
+		lower.includes("add panel") ||
+		lower.includes("اضف لوحة") ||
+		lower.includes("إضافة لوحة") ||
+		lower.includes("لوحة")
+	) {
+		matchedCommand = "ADD_PANEL";
+		storeActions.addElement({
+			type: "panel",
+			x: 300,
+			y: 300,
+			voltage: 220,
+		});
+	} else if (
+		lower.includes("zoom in") ||
+		lower.includes("تكبير") ||
+		lower.includes("قرب") ||
+		lower.includes("زووم ان")
+	) {
+		matchedCommand = "ZOOM_IN";
+	} else if (
+		lower.includes("zoom out") ||
+		lower.includes("تصغير") ||
+		lower.includes("ابعد") ||
+		lower.includes("زووم اوت")
+	) {
+		matchedCommand = "ZOOM_OUT";
+	} else if (
+		lower.includes("run simulation") ||
+		lower.includes("تشغيل المحاكاة") ||
+		lower.includes("ابدأ الحسابات") ||
+		lower.includes("بدء المحاكاة") ||
+		lower.includes("احسب")
+	) {
+		matchedCommand = "RUN_SIMULATION";
+		storeActions.setDataMode("simulation");
+	} else if (
+		lower.includes("clear errors") ||
+		lower.includes("مسح الاخطاء") ||
+		lower.includes("مسح الأخطاء")
+	) {
+		matchedCommand = "CLEAR_ERRORS";
+		storeActions.clearErrors();
+	} else if (
+		lower.includes("select") ||
+		lower.includes("تحديد") ||
+		lower.includes("مسح") ||
+		lower.includes("الغاء التحديد") ||
+		lower.includes("إلغاء التحديد")
+	) {
+		matchedCommand = "SELECT_OR_CLEAR";
+		if (
+			lower.includes("مسح") ||
+			lower.includes("الغاء التحديد") ||
+			lower.includes("إلغاء التحديد")
+		) {
+			storeActions.setSelectedElement(null);
+		}
+	}
+
+	if (matchedCommand) {
+		onCommand?.(matchedCommand, cleanFinal);
+	}
+}
+
+function handleSpeechError(
+	err: string,
+	isArabic: boolean,
+	pushError: (err: { message: string }) => void,
+) {
+	if (
+		err === "not-allowed" ||
+		err === "permission-denied" ||
+		err === "service-not-allowed"
+	) {
+		toast({
+			title: isArabic ? "تم رفض إذن الميكروفون" : "Microphone Access Denied",
+			description: isArabic
+				? "يرجى السماح بالوصول إلى الميكروفون في إعدادات المتصفح لاستخدام التحكم الصوتي."
+				: "Please enable microphone permissions in your browser settings to use voice control.",
+			variant: "destructive",
+		});
+		pushError({
+			message: isArabic
+				? "تم رفض إذن الميكروفون في المتصفح"
+				: "Microphone permission denied in browser",
+		});
+	} else if (err === "network") {
+		toast({
+			title: isArabic ? "خطأ في اتصال الصوت" : "Voice Network Error",
+			description: isArabic
+				? "تعذر الاتصال بخدمة التعرف على الصوت عبر الشبكة."
+				: "Speech recognition service encountered a network error.",
+			variant: "destructive",
+		});
+	} else if (err !== "no-speech") {
+		pushError({
+			message: `Speech recognition error: ${err}`,
+		});
+	}
+}
+
 export function useVoiceControl(
 	options?: VoiceControlOptions,
 ): VoiceControlReturn {
@@ -145,9 +293,9 @@ export function useVoiceControl(
 	const isMediaRecorderSupported =
 		typeof window !== "undefined" &&
 		typeof navigator !== "undefined" &&
-		typeof navigator.mediaDevices !== "undefined" &&
+		navigator.mediaDevices !== undefined &&
 		typeof navigator.mediaDevices.getUserMedia === "function" &&
-		typeof window.MediaRecorder !== "undefined";
+		window.MediaRecorder !== undefined;
 
 	// Initialize SpeechRecognition
 	useEffect(() => {
@@ -201,154 +349,26 @@ export function useVoiceControl(
 
 				if (finalTranscript) {
 					const cleanFinal = sanitizeVoiceInput(finalTranscript);
-					const lower = cleanFinal.toLowerCase();
-
 					setTranscript(cleanFinal);
 					setInterimTranscript("");
 					optionsRef.current?.onTranscript?.(cleanFinal);
 
-					if (import.meta.env.DEV) {
-						console.log("Voice Transcript Received:", cleanFinal);
-					}
-
-					// Bilingual Command Matching
-					let matchedCommand: string | null = null;
-
-					if (
-						lower.includes("add generator") ||
-						lower.includes("اضف مولد") ||
-						lower.includes("إضافة مولد") ||
-						lower.includes("مولد")
-					) {
-						matchedCommand = "ADD_GENERATOR";
-						actions.addElement({
-							type: "generator",
-							x: 100,
-							y: 100,
-							voltage: 11000,
-						});
-					} else if (
-						lower.includes("add battery") ||
-						lower.includes("اضف بطارية") ||
-						lower.includes("إضافة بطارية") ||
-						lower.includes("بطارية")
-					) {
-						matchedCommand = "ADD_BATTERY";
-						actions.addElement({
-							type: "battery",
-							x: 200,
-							y: 200,
-							voltage: 220,
-						});
-					} else if (
-						lower.includes("add panel") ||
-						lower.includes("اضف لوحة") ||
-						lower.includes("إضافة لوحة") ||
-						lower.includes("لوحة")
-					) {
-						matchedCommand = "ADD_PANEL";
-						actions.addElement({
-							type: "panel",
-							x: 300,
-							y: 300,
-							voltage: 220,
-						});
-					} else if (
-						lower.includes("zoom in") ||
-						lower.includes("تكبير") ||
-						lower.includes("قرب") ||
-						lower.includes("زووم ان")
-					) {
-						matchedCommand = "ZOOM_IN";
-					} else if (
-						lower.includes("zoom out") ||
-						lower.includes("تصغير") ||
-						lower.includes("ابعد") ||
-						lower.includes("زووم اوت")
-					) {
-						matchedCommand = "ZOOM_OUT";
-					} else if (
-						lower.includes("run simulation") ||
-						lower.includes("تشغيل المحاكاة") ||
-						lower.includes("ابدأ الحسابات") ||
-						lower.includes("بدء المحاكاة") ||
-						lower.includes("احسب")
-					) {
-						matchedCommand = "RUN_SIMULATION";
-						actions.setDataMode("simulation");
-					} else if (
-						lower.includes("clear errors") ||
-						lower.includes("مسح الاخطاء") ||
-						lower.includes("مسح الأخطاء")
-					) {
-						matchedCommand = "CLEAR_ERRORS";
-						actions.clearErrors();
-					} else if (
-						lower.includes("select") ||
-						lower.includes("تحديد") ||
-						lower.includes("مسح") ||
-						lower.includes("الغاء التحديد") ||
-						lower.includes("إلغاء التحديد")
-					) {
-						matchedCommand = "SELECT_OR_CLEAR";
-						if (
-							lower.includes("مسح") ||
-							lower.includes("الغاء التحديد") ||
-							lower.includes("إلغاء التحديد")
-						) {
-							actions.setSelectedElement(null);
-						}
-					}
-
-					if (matchedCommand) {
-						optionsRef.current?.onCommand?.(matchedCommand, cleanFinal);
-					}
+					processVoiceCommand(
+						cleanFinal,
+						actions,
+						optionsRef.current?.onCommand,
+					);
 				}
 			};
 
 			rec.onerror = (event: SpeechRecognitionErrorEvent) => {
 				const err = event.error;
-				if (import.meta.env.DEV) {
-					console.warn("Speech recognition error:", err);
-				}
 				setIsListening(false);
 				actions.setVoiceActive(false);
 				optionsRef.current?.onError?.(err);
 
 				const isArabic = (i18n.language || "en").startsWith("ar");
-
-				if (
-					err === "not-allowed" ||
-					err === "permission-denied" ||
-					err === "service-not-allowed"
-				) {
-					toast({
-						title: isArabic
-							? "تم رفض إذن الميكروفون"
-							: "Microphone Access Denied",
-						description: isArabic
-							? "يرجى السماح بالوصول إلى الميكروفون في إعدادات المتصفح لاستخدام التحكم الصوتي."
-							: "Please enable microphone permissions in your browser settings to use voice control.",
-						variant: "destructive",
-					});
-					actions.pushError({
-						message: isArabic
-							? "تم رفض إذن الميكروفون في المتصفح"
-							: "Microphone permission denied in browser",
-					});
-				} else if (err === "network") {
-					toast({
-						title: isArabic ? "خطأ في اتصال الصوت" : "Voice Network Error",
-						description: isArabic
-							? "تعذر الاتصال بخدمة التعرف على الصوت عبر الشبكة."
-							: "Speech recognition service encountered a network error.",
-						variant: "destructive",
-					});
-				} else if (err !== "no-speech") {
-					actions.pushError({
-						message: `Speech recognition error: ${err}`,
-					});
-				}
+				handleSpeechError(err, isArabic, actions.pushError);
 			};
 
 			rec.onend = () => {
@@ -358,7 +378,6 @@ export function useVoiceControl(
 
 			recognitionRef.current = rec;
 
-			// Handle dynamic i18n language changes
 			const handleLanguageChanged = (newLang: string) => {
 				if (recognitionRef.current) {
 					recognitionRef.current.lang = resolveSpeechLocale(newLang);
@@ -390,28 +409,7 @@ export function useVoiceControl(
 
 	const startListening = useCallback(() => {
 		const recognition = recognitionRef.current;
-		if (recognition) {
-			try {
-				recognition.lang = resolveSpeechLocale(optionsRef.current?.lang);
-				recognition.start();
-				setIsListening(true);
-				actions.setVoiceActive(true);
-			} catch (e) {
-				if (import.meta.env.DEV) {
-					console.warn("Failed to start recognition, resetting:", e);
-				}
-				try {
-					recognition.stop();
-					recognition.start();
-					setIsListening(true);
-					actions.setVoiceActive(true);
-				} catch (retryError) {
-					if (import.meta.env.DEV) {
-						console.error("Speech recognition start failed:", retryError);
-					}
-				}
-			}
-		} else {
+		if (!recognition) {
 			const isArabic = (i18n.language || "en").startsWith("ar");
 			toast({
 				title: isArabic
@@ -425,6 +423,28 @@ export function useVoiceControl(
 			actions.pushError({
 				message: "Speech Recognition not supported in this browser.",
 			});
+			return;
+		}
+
+		try {
+			recognition.lang = resolveSpeechLocale(optionsRef.current?.lang);
+			recognition.start();
+			setIsListening(true);
+			actions.setVoiceActive(true);
+		} catch (e) {
+			if (import.meta.env.DEV) {
+				console.warn("Failed to start recognition, resetting:", e);
+			}
+			try {
+				recognition.stop();
+				recognition.start();
+				setIsListening(true);
+				actions.setVoiceActive(true);
+			} catch (retryError) {
+				if (import.meta.env.DEV) {
+					console.error("Speech recognition start failed:", retryError);
+				}
+			}
 		}
 	}, []);
 
@@ -445,7 +465,7 @@ export function useVoiceControl(
 		if (
 			typeof window === "undefined" ||
 			typeof navigator === "undefined" ||
-			typeof navigator.mediaDevices === "undefined" ||
+			navigator.mediaDevices === undefined ||
 			typeof navigator.mediaDevices.getUserMedia !== "function"
 		) {
 			const isArabic = (i18n.language || "en").startsWith("ar");
@@ -483,7 +503,10 @@ export function useVoiceControl(
 			mediaRecorderRef.current = recorder;
 			recorder.start();
 			setIsRecording(true);
-		} catch (e) {
+		} catch (error) {
+			if (import.meta.env.DEV) {
+				console.error("Audio recording start error:", error);
+			}
 			const isArabic = (i18n.language || "en").startsWith("ar");
 			toast({
 				title: isArabic ? "خطأ في الميكروفون" : "Microphone Access Error",

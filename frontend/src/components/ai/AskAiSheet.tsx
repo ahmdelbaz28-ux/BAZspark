@@ -112,6 +112,13 @@ export function AskAiSheet({
 		[loading, sendMessage],
 	);
 
+	let voiceButtonTitle = t("voice.start", "Start voice input");
+	if (!isSupported) {
+		voiceButtonTitle = t("voice.unsupported", "Voice recognition not supported");
+	} else if (isListening) {
+		voiceButtonTitle = t("voice.stop", "Stop listening");
+	}
+
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
@@ -125,8 +132,14 @@ export function AskAiSheet({
 							<Sparkles aria-hidden="true" className="w-5 h-5 text-slate-400" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<SheetTitle className="text-foreground text-base font-semibold">
+							<SheetTitle className="text-foreground text-sm font-semibold flex items-center gap-2">
 								{t("ai.title", "Ask AI Copilot")}
+								<Badge
+									variant="secondary"
+									className="text-[10px] bg-danger/20 text-danger border-none px-1.5 py-0"
+								>
+									{t("ai.badge", "Beta")}
+								</Badge>
 							</SheetTitle>
 							<SheetDescription className="text-muted-foreground text-xs">
 								{t("ai.subtitle", "Engineering assistant — NFPA 72 & NEC")}
@@ -159,10 +172,10 @@ export function AskAiSheet({
 										"Ask me anything about fire alarm engineering",
 									)}
 								</p>
-								<p className="text-muted-foreground text-xs max-w-xs">
+								<p className="text-muted-foreground text-xs max-w-[280px]">
 									{t(
-										"ai.welcomeDesc",
-										"NFPA 72 spacing, voltage drop, battery sizing, FACP selection, and more",
+										"ai.welcomeHint",
+										"Voltage drop, battery sizing, detector spacing, or NFPA 72 requirements",
 									)}
 								</p>
 							</div>
@@ -236,13 +249,7 @@ export function AskAiSheet({
 							variant="ghost"
 							size="icon"
 							onClick={toggleVoice}
-							title={
-								!isSupported
-									? t("voice.unsupported", "Voice recognition not supported")
-									: isListening
-										? t("voice.stop", "Stop listening")
-										: t("voice.start", "Start voice input")
-							}
+							title={voiceButtonTitle}
 							disabled={loading}
 							className={`h-9 w-9 flex-shrink-0 transition-colors ${
 								isListening

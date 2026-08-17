@@ -70,11 +70,6 @@ class MockSpeechRecognition {
 	onerror: ((event: unknown) => void) | null = null;
 	onend: (() => void) | null = null;
 
-	constructor() {
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		latestMockInstance = this;
-	}
-
 	start = vi.fn(() => {
 		if (this.onstart) this.onstart();
 	});
@@ -83,6 +78,12 @@ class MockSpeechRecognition {
 	});
 	abort = vi.fn();
 }
+
+const MockSpeechRecognitionProxy = vi.fn().mockImplementation(() => {
+	const instance = new MockSpeechRecognition();
+	latestMockInstance = instance;
+	return instance;
+});
 
 describe("sanitizeVoiceInput", () => {
 	it("returns empty string when input is empty or null", () => {
@@ -145,7 +146,7 @@ describe("useVoiceControl Hook", () => {
 		vi.clearAllMocks();
 		latestMockInstance = null;
 		originalSpeechRecognition = (window as unknown as { SpeechRecognition: unknown }).SpeechRecognition;
-		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = MockSpeechRecognition;
+		(window as unknown as { SpeechRecognition: unknown }).SpeechRecognition = MockSpeechRecognitionProxy;
 	});
 
 	afterEach(() => {
