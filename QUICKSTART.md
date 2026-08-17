@@ -17,7 +17,18 @@ Verify your host environment satisfies the minimum runtime requirements before p
 
 ---
 
-## 2. Fast Setup from Source
+## 2. Interactive Setup Wizard (Recommended)
+
+Quickly configure all required cryptographic keys, database endpoints, AI models, and CI/CD secrets using the interactive wizard:
+
+```bash
+chmod +x scripts/setup_wizard.sh
+./scripts/setup_wizard.sh
+```
+
+---
+
+## 3. Fast Setup from Source
 
 Clone the repository and install core backend dependencies in editable mode.
 
@@ -47,7 +58,7 @@ Navigate to `http://localhost:5173`. Open Settings, enter your `FIREAI_API_KEY`,
 
 ---
 
-## 3. Docker Deployment
+## 4. Docker Deployment
 
 Deploy the full application stack using Docker Compose.
 
@@ -65,7 +76,7 @@ curl http://localhost:8000/api/health
 
 ---
 
-## 4. Executing Your First Analysis
+## 5. Executing Your First Analysis
 
 1. Open `http://localhost:5173` and authenticate.
 2. Click **New Project** and enter building metadata.
@@ -76,7 +87,7 @@ Inspect generated detector placement heatmaps, NAC voltage drop reports, and sig
 
 ---
 
-## 5. API Quick Reference
+## 6. API Quick Reference
 
 Check system status and engine module readiness.
 
@@ -95,7 +106,7 @@ curl -X POST http://localhost:8000/api/v1/projects \
 
 ---
 
-## 6. Common Troubleshooting
+## 7. Common Troubleshooting
 
 - **Server Aborts at Boot:** Verify `FIREAI_SESSION_SECRET` is set and at least 43 characters long.
 - **CORS Error:** Add your client URL to `CORS_ORIGINS` in `.env`.
