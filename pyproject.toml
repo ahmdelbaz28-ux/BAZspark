@@ -503,7 +503,8 @@ markers = [
     "safety_critical: marks tests as safety-critical",
     "security: marks tests as security-related",
     "compliance: marks tests as compliance-related",
-    "asyncio: marks tests as asyncio-related"
+    "asyncio: marks tests as asyncio-related",
+    "timeout: marks tests with execution timeout",
 ]
 filterwarnings = [
     "error",
@@ -856,4 +857,9 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
 "backend/routers/settings.py" = [
     "PT019",  # Fixture without value injected as parameter (FastAPI Depends pattern)
     "PT028",  # Test function parameter with default argument (FastAPI Depends pattern)
+]
+
+[dependency-groups]
+dev = [
+    "pytest-timeout>=2.5.0",
 ]

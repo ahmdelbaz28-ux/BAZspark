@@ -82,6 +82,17 @@ async function executeDeleteKey(
 	resolve();
 }
 
+/** Execute a GET request to fetch all API keys. */
+async function executeFetchKeys(): Promise<ApiKeyInfo[]> {
+	const resp = await fetch("/api/v1/admin/keys", {
+		headers: buildAuthHeaders(),
+		credentials: "same-origin",
+	});
+	if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+	const data = await resp.json();
+	return data.keys || data.data?.keys || [];
+}
+
 export function ApiKeysPage() {
 	const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -98,13 +109,8 @@ export function ApiKeysPage() {
 	const fetchKeys = async () => {
 		setLoading(true);
 		try {
-			const resp = await fetch("/api/v1/admin/keys", {
-				headers: buildAuthHeaders(),
-				credentials: "same-origin",
-			});
-			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-			const data = await resp.json();
-			setKeys(data.keys || data.data?.keys || []);
+			const fetchedKeys = await executeFetchKeys();
+			setKeys(fetchedKeys);
 		} catch (err) {
 			toast.error(
 				`Failed to load API keys: ${err instanceof Error ? err.message : "Unknown"}`,
@@ -115,28 +121,22 @@ export function ApiKeysPage() {
 	};
 
 	useEffect(() => {
-		// Inline async IIFE — no synchronous setState in the effect body
-		// (react-hooks/set-state-in-effect). `fetchKeys` is still defined
-		// above for use by event handlers (refresh, create, delete).
 		let cancelled = false;
-		(async () => {
-			try {
-				const resp = await fetch("/api/v1/admin/keys", {
-					headers: buildAuthHeaders(),
-					credentials: "same-origin",
-				});
-				if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-				const data = await resp.json();
-				if (!cancelled) setKeys(data.keys || data.data?.keys || []);
-			} catch (err) {
-				if (!cancelled)
+		executeFetchKeys()
+			.then((fetchedKeys) => {
+				if (!cancelled) {
+					setKeys(fetchedKeys);
+					setLoading(false);
+				}
+			})
+			.catch((err) => {
+				if (!cancelled) {
 					toast.error(
 						`Failed to load API keys: ${err instanceof Error ? err.message : "Unknown"}`,
 					);
-			} finally {
-				if (!cancelled) setLoading(false);
-			}
-		})();
+					setLoading(false);
+				}
+			});
 		return () => {
 			cancelled = true;
 		};

@@ -318,7 +318,7 @@ class WebSocketTransport(TransportLayer):
 
         async def send_to_target():
             try:
-                async with websockets.connect(node) as websocket:
+                async with websockets.connect(node, open_timeout=2) as websocket:
                     await websocket.send(json.dumps(request_data))
                     response = await websocket.recv()
                     return json.loads(response)

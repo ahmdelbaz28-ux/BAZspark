@@ -87,37 +87,42 @@ class TokenManager:
             )
 
         if has_rsa_paths:
-            # RSA mode (RS256) — for distributed deployments with persistent keys
-            self._signing_mode = "rsa"
-            if private_key_path and os.path.exists(private_key_path):
-                with open(private_key_path, "rb") as key_file:
-                    self.private_key = serialization.load_pem_private_key(
-                        key_file.read(),
-                        password=None,
-                    )
-            else:
-                raise FileNotFoundError(
-                    f"TokenManager: private_key_path '{private_key_path}' does not exist. "
-                    f"RSA mode requires a persistent PEM key file — generate one with: "
-                    f"openssl genrsa -out private_key.pem 2048"
-                )
-
-            if public_key_path and os.path.exists(public_key_path):
-                with open(public_key_path, "rb") as key_file:
-                    self.public_key = serialization.load_pem_public_key(key_file.read())
-            else:
-                # Derive public key from private key (single-file mode)
-                self.public_key = self.private_key.public_key()
+            self._init_rsa(private_key_path, public_key_path)
         else:
-            # HMAC mode (HS256) — for single-instance with shared secret
-            self._signing_mode = "hmac"
-            self._hmac_secret = secret_key.encode("utf-8")
-            if len(secret_key) < 32:
-                raise ValueError(
-                    f"TokenManager: HMAC secret_key must be at least 32 characters "
-                    f"for adequate security (got {len(secret_key)}). Generate one with: "
-                    f'python3 -c "import secrets; print(secrets.token_urlsafe(48))"'
-                )
+            self._init_hmac(secret_key)
+
+    def _init_rsa(self, private_key_path: str | None, public_key_path: str | None) -> None:
+        """Initialize RSA RS256 signing mode."""
+        self._signing_mode = "rsa"
+        if not private_key_path or not os.path.exists(private_key_path):
+            raise FileNotFoundError(
+                f"TokenManager: private_key_path '{private_key_path}' does not exist. "
+                f"RSA mode requires a persistent PEM key file — generate one with: "
+                f"openssl genrsa -out private_key.pem 2048"
+            )
+
+        with open(private_key_path, "rb") as key_file:
+            self.private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+            )
+
+        if public_key_path and os.path.exists(public_key_path):
+            with open(public_key_path, "rb") as key_file:
+                self.public_key = serialization.load_pem_public_key(key_file.read())
+        else:
+            self.public_key = self.private_key.public_key()
+
+    def _init_hmac(self, secret_key: str) -> None:
+        """Initialize HMAC HS256 signing mode."""
+        self._signing_mode = "hmac"
+        self._hmac_secret = secret_key.encode("utf-8")
+        if len(secret_key) < 32:
+            raise ValueError(
+                f"TokenManager: HMAC secret_key must be at least 32 characters "
+                f"for adequate security (got {len(secret_key)}). Generate one with: "
+                f'python3 -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
 
     def generate_token(
         self, user_id: str, permissions: list, roles: list, expires_in: int = 3600

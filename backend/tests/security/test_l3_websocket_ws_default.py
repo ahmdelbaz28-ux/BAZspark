@@ -36,7 +36,6 @@ NON-VACUOUSNESS:
 
 from __future__ import annotations
 
-import asyncio
 import re
 import sys
 from pathlib import Path
@@ -242,9 +241,13 @@ def test_l3_class_not_instantiated_in_production():
         rel_path = py_file.relative_to(REPO_ROOT)
         if py_file == WEBSOCKET_TRANSPORT_PY:
             continue
-        path_str = str(rel_path)
+        path_str = str(rel_path).replace("\\", "/")
         if (
-            "/tests/" in path_str
+            "/.venv/" in path_str
+            or path_str.startswith(".venv/")
+            or "/site-packages/" in path_str
+            or "/node_modules/" in path_str
+            or "/tests/" in path_str
             or "/test/" in path_str
             or path_str.startswith("tests/")
             or path_str.startswith("test/")
@@ -418,11 +421,9 @@ def test_l3_runtime_ws_rejected_without_opt_in(monkeypatch):
     # Call send_request with a ws:// target_node. This should raise
     # ValueError because allow_insecure_ws is False.
     with pytest.raises(ValueError, match="insecure ws://"):
-        asyncio.run(
-            transport.send_request(
-                target_node="ws://insecure.example.com:8002",
-                request_data={"id": "test", "method": "ping"},
-            )
+        transport.send_request(
+            target_node="ws://insecure.example.com:8002",
+            request_data={"id": "test", "method": "ping"},
         )
 
 
@@ -451,26 +452,17 @@ def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
     except Exception as e:
         pytest.skip(f"Cannot import WebSocketTransport: {e}")
 
-    transport = WebSocketTransport(host="example.com", port=8002)
-
-    async def _call():
-        # No target_node — the default wss:// URL should be used.
-        # The actual connection will FAIL (example.com:8002 doesn't
-        # run a websocket server), but the failure should NOT be a
-        # ValueError from the ws:// rejection. It should be a
-        # WEBSOCKET_CONNECTION_ERROR from the connection attempt.
-        result = await transport.send_request(
-            target_node=None,
-            request_data={"id": "test", "method": "ping"},
-        )
-        return result
+    transport = WebSocketTransport(host="127.0.0.1", port=8002)
 
     # The call should NOT raise ValueError. It may return an error
     # dict (WEBSOCKET_CONNECTION_ERROR) because the connection fails,
     # but that's expected — we're testing that the ws:// rejection
     # logic doesn't fire on the wss:// default.
     try:
-        result = asyncio.run(_call())
+        result = transport.send_request(
+            target_node=None,
+            request_data={"id": "test", "method": "ping"},
+        )
         # If we got a result, it should be an error dict (connection
         # failed), NOT a successful response (we didn't actually
         # connect to anything).
@@ -479,9 +471,9 @@ def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
     except ValueError as e:
         if "insecure ws://" in str(e):
             pytest.fail(
-                "The wss:// default URL was WRONGLY rejected by the "
-                "ws:// rejection logic. The check must only fire on "
-                "ws:// URLs, not wss://. RESTORE the L-3 fix."
+                "The wss:// default was WRONGLY rejected as insecure ws://. "
+                "The L-3 fix must only reject explicit ws:// URLs without opt-in. "
+                "RESTORE the L-3 fix."
             )
         else:
             # A different ValueError — re-raise (unexpected).
@@ -520,21 +512,18 @@ def test_l3_runtime_ws_allowed_with_opt_in(monkeypatch):
         pytest.skip(f"Cannot import WebSocketTransport: {e}")
 
     transport = WebSocketTransport(
-        host="example.com",
+        host="127.0.0.1",
         port=8002,
         allow_insecure_ws=True,
     )
 
-    async def _call():
-        await transport.send_request(
-            target_node="ws://internal-dev.example.com:8002",
+    # The call should NOT raise ValueError. It may return a connection
+    # error dict (no actual server running), but that's acceptable.
+    try:
+        transport.send_request(
+            target_node="ws://127.0.0.1:8002",
             request_data={"id": "test", "method": "ping"},
         )
-
-    # The call should NOT raise ValueError. It may raise a connection
-    # error (no actual server running), but that's acceptable.
-    try:
-        asyncio.run(_call())
     except ValueError as e:
         if "insecure ws://" in str(e):
             pytest.fail(
@@ -546,7 +535,6 @@ def test_l3_runtime_ws_allowed_with_opt_in(monkeypatch):
             raise
     except (OSError, ConnectionError, RuntimeError, TypeError):
         # Connection/type errors are acceptable — send_request is sync
-        # but the test awaits it; TypeError from non-awaitable is expected.
         # Intentionally narrow catch to avoid swallowing AssertionError.
         pass
 
