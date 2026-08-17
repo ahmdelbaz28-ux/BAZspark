@@ -79,11 +79,11 @@ class MockSpeechRecognition {
 	abort = vi.fn();
 }
 
-const MockSpeechRecognitionProxy = vi.fn().mockImplementation(() => {
+const MockSpeechRecognitionProxy = function (this: unknown) {
 	const instance = new MockSpeechRecognition();
 	latestMockInstance = instance;
 	return instance;
-});
+} as unknown as typeof MockSpeechRecognition;
 
 describe("sanitizeVoiceInput", () => {
 	it("returns empty string when input is empty or null", () => {
