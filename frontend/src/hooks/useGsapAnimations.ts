@@ -290,6 +290,34 @@ function formatCounterValue(
 
 // ─── Hook: Number Counter (for metrics) ─────────────────────────────
 
+function setupCounterTarget(
+	el: Element,
+	duration: number,
+	ease: string,
+	start: string,
+) {
+	const target = el as HTMLElement;
+	const finalValue = Number.parseFloat(target.dataset.value || "0");
+	const suffix = target.dataset.suffix || "";
+	const prefix = target.dataset.prefix || "";
+
+	ScrollTrigger.create({
+		trigger: target,
+		start,
+		once: true,
+		onEnter: () => {
+			const obj = { val: 0 };
+			gsap.to(obj, {
+				val: finalValue,
+				duration,
+				ease,
+				onUpdate: () =>
+					formatCounterValue(obj, finalValue, prefix, suffix, target),
+			});
+		},
+	});
+}
+
 export function useGsapCounter(
 	containerRef: RefObject<HTMLElement | null>,
 	options: { duration?: number; ease?: string; start?: string } = {},
@@ -299,31 +327,8 @@ export function useGsapCounter(
 	useGSAP(
 		() => {
 			if (!containerRef.current) return;
-
 			const targets = containerRef.current.querySelectorAll(".gsap-counter");
-
-			targets.forEach((el) => {
-				const target = el as HTMLElement;
-				const finalValue = Number.parseFloat(target.dataset.value || "0");
-				const suffix = target.dataset.suffix || "";
-				const prefix = target.dataset.prefix || "";
-
-				ScrollTrigger.create({
-					trigger: target,
-					start,
-					once: true,
-					onEnter: () => {
-						const obj = { val: 0 };
-						gsap.to(obj, {
-							val: finalValue,
-							duration,
-							ease,
-							onUpdate: () =>
-								formatCounterValue(obj, finalValue, prefix, suffix, target),
-						});
-					},
-				});
-			});
+			targets.forEach((el) => setupCounterTarget(el, duration, ease, start));
 		},
 		{ scope: containerRef },
 	);
