@@ -328,6 +328,194 @@ describe("useVoiceControl Hook", () => {
 		expect(mockPushError).toHaveBeenCalled();
 	});
 
+	it("processes remaining voice commands (panel, zoom in/out, clear errors, select/clear)", () => {
+		const onCommandMock = vi.fn();
+		const { result } = renderHook(() => useVoiceControl({ onCommand: onCommandMock }));
+
+		act(() => {
+			result.current.startListening();
+		});
+
+		// 1. Add panel
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "Add panel", confidence: 0.95 }], {
+						isFinal: true,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+		expect(mockAddElement).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "panel", voltage: 220 }),
+		);
+		expect(onCommandMock).toHaveBeenCalledWith("ADD_PANEL", "Add panel");
+
+		// 2. Zoom in
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "Zoom in", confidence: 0.95 }], {
+						isFinal: true,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+		expect(onCommandMock).toHaveBeenCalledWith("ZOOM_IN", "Zoom in");
+
+		// 3. Zoom out
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "Zoom out", confidence: 0.95 }], {
+						isFinal: true,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+		expect(onCommandMock).toHaveBeenCalledWith("ZOOM_OUT", "Zoom out");
+
+		// 4. Clear errors
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "Clear errors", confidence: 0.95 }], {
+						isFinal: true,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+		expect(mockClearErrors).toHaveBeenCalled();
+		expect(onCommandMock).toHaveBeenCalledWith("CLEAR_ERRORS", "Clear errors");
+
+		// 5. Select / Deselect
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "الغاء التحديد", confidence: 0.95 }], {
+						isFinal: true,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+		expect(mockSetSelectedElement).toHaveBeenCalledWith(null);
+		expect(onCommandMock).toHaveBeenCalledWith("SELECT_OR_CLEAR", "الغاء التحديد");
+	});
+
+	it("handles interim transcripts and onInterim callback", () => {
+		const onInterimMock = vi.fn();
+		const { result } = renderHook(() =>
+			useVoiceControl({ onInterim: onInterimMock }),
+		);
+
+		act(() => {
+			result.current.startListening();
+		});
+
+		act(() => {
+			latestMockInstance?.onresult?.({
+				results: [
+					Object.assign([{ transcript: "calculating drop", confidence: 0.8 }], {
+						isFinal: false,
+						length: 1,
+					}),
+				],
+				resultIndex: 0,
+			});
+		});
+
+		expect(result.current.interimTranscript).toBe("calculating drop");
+		expect(onInterimMock).toHaveBeenCalledWith("calculating drop");
+	});
+
+	it("handles onend and generic speech errors", () => {
+		const { result } = renderHook(() => useVoiceControl());
+
+		act(() => {
+			result.current.startListening();
+		});
+		expect(result.current.isListening).toBe(true);
+
+		act(() => {
+			latestMockInstance?.onerror?.({ error: "audio-capture" });
+		});
+		expect(result.current.isListening).toBe(false);
+		expect(mockPushError).toHaveBeenCalledWith(
+			expect.objectContaining({ message: expect.stringContaining("audio-capture") }),
+		);
+
+		act(() => {
+			latestMockInstance?.onend?.();
+		});
+		expect(result.current.isListening).toBe(false);
+	});
+
+	it("handles startRecording and stopRecording using MediaRecorder mock", async () => {
+		const mockTracks = [{ stop: vi.fn() }];
+		const mockStream = {
+			getTracks: () => mockTracks,
+		};
+
+		const mockMediaRecorder = {
+			start: vi.fn(),
+			stop: vi.fn(function (this: { onstop?: () => void; addEventListener?: (event: string, cb: () => void) => void }) {
+				if (this.onstop) this.onstop();
+			}),
+			ondataavailable: null as ((e: { data: Blob }) => void) | null,
+			onstop: null as (() => void) | null,
+			addEventListener: vi.fn((event: string, cb: () => void) => {
+				if (event === "stop") cb();
+			}),
+			state: "recording",
+			mimeType: "audio/webm",
+		};
+
+		const originalMediaDevices = navigator.mediaDevices;
+		const originalMediaRecorder = window.MediaRecorder;
+
+		Object.defineProperty(navigator, "mediaDevices", {
+			value: {
+				getUserMedia: vi.fn().mockResolvedValue(mockStream),
+			},
+			configurable: true,
+		});
+
+		(window as unknown as { MediaRecorder: unknown }).MediaRecorder = vi.fn().mockImplementation(function () {
+			return mockMediaRecorder;
+		});
+
+		const { result } = renderHook(() => useVoiceControl());
+
+		await act(async () => {
+			await result.current.startRecording();
+		});
+
+		expect(result.current.isRecording).toBe(true);
+
+		await act(async () => {
+			await result.current.stopRecording();
+		});
+
+		expect(result.current.isRecording).toBe(false);
+
+		// Restore
+		Object.defineProperty(navigator, "mediaDevices", {
+			value: originalMediaDevices,
+			configurable: true,
+		});
+		(window as unknown as { MediaRecorder: unknown }).MediaRecorder = originalMediaRecorder;
+	});
+
 	it("clears transcript when clearTranscript is called", () => {
 		const { result } = renderHook(() => useVoiceControl());
 
