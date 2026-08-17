@@ -470,7 +470,9 @@ async def get_bootstrap_settings(_role: SystemConfigRole) -> dict[str, str]:
     return {
         "FIREAI_ENV": os.environ.get("FIREAI_ENV", "production"),
         "LOG_LEVEL": os.environ.get("FIREAI_LOG_LEVEL", "INFO"),
-        "DATABASE_ENGINE": "PostgreSQL" if "postgres" in os.environ.get("DATABASE_URL", "").lower() else "SQLite",
+        "DATABASE_ENGINE": "PostgreSQL"
+        if "postgres" in os.environ.get("DATABASE_URL", "").lower()
+        else "SQLite",
         "SECURITY_PROFILE": "STRICT_RBAC_ENABLED",
         "MEEZA_GATEWAY": "ISOLATED_PRIMARY",
     }
@@ -614,18 +616,50 @@ _CATEGORY_LABELS: dict[str, str] = {
 _ENV_SETTING_METADATA: dict[str, dict[str, Any]] = {
     "API_TIMEOUT": {"label": "API Request Timeout (sec)", "type": "number", "default": "30"},
     "RETRY_ATTEMPTS": {"label": "API Retry Attempts", "type": "number", "default": "3"},
-    "SESSION_COOKIE_SECURE": {"label": "Session Cookie Secure", "type": "boolean", "default": "true"},
+    "SESSION_COOKIE_SECURE": {
+        "label": "Session Cookie Secure",
+        "type": "boolean",
+        "default": "true",
+    },
     "NVIDIA_API_KEY": {"label": "NVIDIA API Key", "type": "secret", "default": ""},
-    "NVIDIA_BASE_URL": {"label": "NVIDIA Base URL", "type": "url", "default": "https://integrate.api.nvidia.com/v1"},
-    "NVIDIA_MODEL": {"label": "NVIDIA Model", "type": "string", "default": "nvidia/llama-3.1-nemotron-70b-instruct"},
+    "NVIDIA_BASE_URL": {
+        "label": "NVIDIA Base URL",
+        "type": "url",
+        "default": "https://integrate.api.nvidia.com/v1",
+    },
+    "NVIDIA_MODEL": {
+        "label": "NVIDIA Model",
+        "type": "string",
+        "default": "nvidia/llama-3.1-nemotron-70b-instruct",
+    },
     "LANGFUSE_SECRET_KEY": {"label": "Langfuse Secret Key", "type": "secret", "default": ""},
     "LANGFUSE_PUBLIC_KEY": {"label": "Langfuse Public Key", "type": "string", "default": ""},
-    "LANGFUSE_HOST": {"label": "Langfuse Host URL", "type": "url", "default": "https://cloud.langfuse.com"},
+    "LANGFUSE_HOST": {
+        "label": "Langfuse Host URL",
+        "type": "url",
+        "default": "https://cloud.langfuse.com",
+    },
     "AKAMAI_ENABLED": {"label": "Enable Akamai Headers", "type": "boolean", "default": "false"},
-    "AKAMAI_BLOCKED_COUNTRIES": {"label": "Blocked Countries (ISO-2)", "type": "string", "default": ""},
-    "AKAMAI_ALLOWED_BOT_SCORE": {"label": "Max Allowed Bot Score", "type": "number", "default": "30"},
-    "AKAMAI_RATE_LIMIT_HEADER": {"label": "Forward Rate Limit Headers", "type": "boolean", "default": "true"},
-    "DATABASE_URL": {"label": "Primary Database URL", "type": "string", "default": "sqlite:////app/data/digital_twin.db"},
+    "AKAMAI_BLOCKED_COUNTRIES": {
+        "label": "Blocked Countries (ISO-2)",
+        "type": "string",
+        "default": "",
+    },
+    "AKAMAI_ALLOWED_BOT_SCORE": {
+        "label": "Max Allowed Bot Score",
+        "type": "number",
+        "default": "30",
+    },
+    "AKAMAI_RATE_LIMIT_HEADER": {
+        "label": "Forward Rate Limit Headers",
+        "type": "boolean",
+        "default": "true",
+    },
+    "DATABASE_URL": {
+        "label": "Primary Database URL",
+        "type": "string",
+        "default": "sqlite:////app/data/digital_twin.db",
+    },
     "DATABASE_POOL_SIZE": {"label": "Database Pool Size", "type": "number", "default": "20"},
     "DATABASE_TIMEOUT": {"label": "Database Timeout (sec)", "type": "number", "default": "30"},
     "REDIS_URL": {"label": "Redis Cache URL", "type": "string", "default": ""},
@@ -641,36 +675,108 @@ _ENV_SETTING_METADATA: dict[str, dict[str, Any]] = {
     "FIREAI_MAX_BATCH_SIZE": {"label": "Max Batch Size", "type": "number", "default": "500"},
     "FIREAI_LOG_LEVEL": {"label": "System Log Level", "type": "string", "default": "INFO"},
     "FIREAI_ENABLE_WAL": {"label": "Enable SQLite WAL Mode", "type": "boolean", "default": "true"},
-    "FIREAI_COVERAGE_THRESHOLD_PCT": {"label": "NFPA 72 Coverage Threshold (%)", "type": "number", "default": "100.0"},
-    "AUTO_SAVE_REPORTS": {"label": "Auto-Save Engineering Reports", "type": "boolean", "default": "true"},
+    "FIREAI_COVERAGE_THRESHOLD_PCT": {
+        "label": "NFPA 72 Coverage Threshold (%)",
+        "type": "number",
+        "default": "100.0",
+    },
+    "AUTO_SAVE_REPORTS": {
+        "label": "Auto-Save Engineering Reports",
+        "type": "boolean",
+        "default": "true",
+    },
     "REPORT_FORMAT": {"label": "Default Report Format", "type": "string", "default": "PDF"},
     "REPORT_QUALITY": {"label": "Report Resolution / Quality", "type": "string", "default": "HIGH"},
-    "OPENAI_API_URL": {"label": "OpenAI Compatible API URL", "type": "url", "default": "https://api.openai.com/v1"},
-    "SPECKLE_SERVER_URL": {"label": "Speckle Server URL", "type": "url", "default": "https://speckle.xyz"},
-    "REVIT_BRIDGE_URL": {"label": "Revit Local Bridge URL", "type": "url", "default": "http://localhost:8002"},
+    "OPENAI_API_URL": {
+        "label": "OpenAI Compatible API URL",
+        "type": "url",
+        "default": "https://api.openai.com/v1",
+    },
+    "SPECKLE_SERVER_URL": {
+        "label": "Speckle Server URL",
+        "type": "url",
+        "default": "https://speckle.xyz",
+    },
+    "REVIT_BRIDGE_URL": {
+        "label": "Revit Local Bridge URL",
+        "type": "url",
+        "default": "http://localhost:8002",
+    },
     "AUTOCAD_BRIDGE_PORT": {"label": "AutoCAD Bridge Port", "type": "number", "default": "8001"},
-    "CORS_ORIGINS": {"label": "Allowed CORS Origins", "type": "string", "default": "http://localhost:3000,http://localhost:5173"},
+    "CORS_ORIGINS": {
+        "label": "Allowed CORS Origins",
+        "type": "string",
+        "default": "http://localhost:3000,http://localhost:5173",
+    },
     "AMBIENT_NOISE_DB": {"label": "Ambient Noise Level (dBA)", "type": "number", "default": "65.0"},
-    "SPL_DROP_PER_DOUBLING_DB": {"label": "SPL Drop Per Doubling (dB)", "type": "number", "default": "6.0"},
-    "MIN_SNR_DBA": {"label": "Min Signal-to-Noise Ratio (dBA)", "type": "number", "default": "15.0"},
+    "SPL_DROP_PER_DOUBLING_DB": {
+        "label": "SPL Drop Per Doubling (dB)",
+        "type": "number",
+        "default": "6.0",
+    },
+    "MIN_SNR_DBA": {
+        "label": "Min Signal-to-Noise Ratio (dBA)",
+        "type": "number",
+        "default": "15.0",
+    },
     "STROBE_SYNC_ENABLED": {"label": "Strobe Sync Enabled", "type": "boolean", "default": "true"},
     "STROBE_FLASH_RATE_HZ": {"label": "Strobe Flash Rate (Hz)", "type": "number", "default": "1.0"},
-    "DEFAULT_FLUID_DENSITY_KG_M3": {"label": "Fluid Density (kg/m³)", "type": "number", "default": "1000.0"},
-    "DEFAULT_FLUID_VISCOSITY_PA_S": {"label": "Fluid Viscosity (Pa·s)", "type": "number", "default": "0.001"},
-    "DEFAULT_PIPE_ROUGHNESS_MM": {"label": "Pipe Roughness (mm)", "type": "number", "default": "0.045"},
+    "DEFAULT_FLUID_DENSITY_KG_M3": {
+        "label": "Fluid Density (kg/m³)",
+        "type": "number",
+        "default": "1000.0",
+    },
+    "DEFAULT_FLUID_VISCOSITY_PA_S": {
+        "label": "Fluid Viscosity (Pa·s)",
+        "type": "number",
+        "default": "0.001",
+    },
+    "DEFAULT_PIPE_ROUGHNESS_MM": {
+        "label": "Pipe Roughness (mm)",
+        "type": "number",
+        "default": "0.045",
+    },
     "DEFAULT_C_FACTOR": {"label": "Hazen-Williams C Factor", "type": "number", "default": "120.0"},
-    "COLEBROOK_TOLERANCE": {"label": "Colebrook Solver Tolerance", "type": "number", "default": "1e-8"},
+    "COLEBROOK_TOLERANCE": {
+        "label": "Colebrook Solver Tolerance",
+        "type": "number",
+        "default": "1e-8",
+    },
     "MAX_SOLVER_ITERATIONS": {"label": "Max Solver Iterations", "type": "number", "default": "100"},
-    "AMBIENT_TEMPERATURE_C": {"label": "Battery Ambient Temp (°C)", "type": "number", "default": "25.0"},
-    "STANDBY_DURATION_HOURS": {"label": "Standby Duration (Hours)", "type": "number", "default": "24.0"},
-    "ALARM_DURATION_MINUTES": {"label": "Alarm Duration (Minutes)", "type": "number", "default": "5.0"},
-    "AGING_SAFETY_MARGIN_PCT": {"label": "Battery Aging Margin (%)", "type": "number", "default": "20.0"},
-    "BATTERY_DERATING_FACTOR": {"label": "Battery Derating Factor", "type": "number", "default": "0.85"},
+    "AMBIENT_TEMPERATURE_C": {
+        "label": "Battery Ambient Temp (°C)",
+        "type": "number",
+        "default": "25.0",
+    },
+    "STANDBY_DURATION_HOURS": {
+        "label": "Standby Duration (Hours)",
+        "type": "number",
+        "default": "24.0",
+    },
+    "ALARM_DURATION_MINUTES": {
+        "label": "Alarm Duration (Minutes)",
+        "type": "number",
+        "default": "5.0",
+    },
+    "AGING_SAFETY_MARGIN_PCT": {
+        "label": "Battery Aging Margin (%)",
+        "type": "number",
+        "default": "20.0",
+    },
+    "BATTERY_DERATING_FACTOR": {
+        "label": "Battery Derating Factor",
+        "type": "number",
+        "default": "0.85",
+    },
     "AUTOCAD_VERSION": {"label": "AutoCAD Version", "type": "string", "default": "2024"},
     "AUTOCAD_UNITS": {"label": "AutoCAD Drawing Units", "type": "string", "default": "Millimeters"},
     "REVIT_VERSION": {"label": "Revit Version", "type": "string", "default": "2024"},
     "REVIT_UNITS": {"label": "Revit Drawing Units", "type": "string", "default": "Millimeters"},
-    "APS_ACTIVITY_ID": {"label": "APS WorkItem Activity ID", "type": "string", "default": "BazSparkAutoCADBridge.DrawLayout"},
+    "APS_ACTIVITY_ID": {
+        "label": "APS WorkItem Activity ID",
+        "type": "string",
+        "default": "BazSparkAutoCADBridge.DrawLayout",
+    },
 }
 
 _BOOLEAN_LIKE = {
@@ -696,7 +802,13 @@ def _resolve_env_var_value(var: str, value: str | None) -> Any:
             return f"***@{host_part}"
         return value
 
-    if var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY", "SPECKLE_SERVER_URL", "REVIT_BRIDGE_URL"}:
+    if var in {
+        "OPENAI_API_URL",
+        "LANGFUSE_HOST",
+        "LANGFUSE_PUBLIC_KEY",
+        "SPECKLE_SERVER_URL",
+        "REVIT_BRIDGE_URL",
+    }:
         return value
 
     if var in _BOOLEAN_LIKE:
@@ -739,7 +851,8 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
                 source = "override"
 
             is_secret = meta.get("type") == "secret" or bool(
-                re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var) and var != "LANGFUSE_PUBLIC_KEY"
+                re.search(r"(?i)(_KEY|_SECRET|_TOKEN|_PASSWORD)$", var)
+                and var != "LANGFUSE_PUBLIC_KEY"
             )
 
             if isinstance(val, int | float | bool):
@@ -755,7 +868,8 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
                     "label": meta.get("label", var.replace("_", " ").title()),
                     "type": meta.get("type", "string"),
                     "value": display_str,
-                    "is_set": raw_env is not None or (cat_key in _ENV_CONFIG_OVERRIDES and var in _ENV_CONFIG_OVERRIDES[cat_key]),
+                    "is_set": raw_env is not None
+                    or (cat_key in _ENV_CONFIG_OVERRIDES and var in _ENV_CONFIG_OVERRIDES[cat_key]),
                     "is_secret": is_secret,
                     "source": source,
                 }
@@ -834,19 +948,37 @@ async def get_engineering_config(_role: SystemConfigRole) -> dict[str, Any]:
             "metadata": {
                 "acoustic": {
                     "standard": "NFPA 72-2022 Chapter 18",
-                    "units": {"ambient_noise_db": "dBA", "spl_drop_per_doubling_db": "dB", "min_snr_dba": "dBA", "strobe_flash_rate_hz": "Hz"},
+                    "units": {
+                        "ambient_noise_db": "dBA",
+                        "spl_drop_per_doubling_db": "dB",
+                        "min_snr_dba": "dBA",
+                        "strobe_flash_rate_hz": "Hz",
+                    },
                 },
                 "hydraulic": {
                     "standard": "NFPA 13-2022 / NFPA 12-2022 / NFPA 2001-2022",
-                    "units": {"default_fluid_density_kg_m3": "kg/m³", "default_fluid_viscosity_pa_s": "Pa·s", "default_pipe_roughness_mm": "mm", "default_c_factor": "dimensionless"},
+                    "units": {
+                        "default_fluid_density_kg_m3": "kg/m³",
+                        "default_fluid_viscosity_pa_s": "Pa·s",
+                        "default_pipe_roughness_mm": "mm",
+                        "default_c_factor": "dimensionless",
+                    },
                 },
                 "battery": {
                     "standard": "NFPA 72-2022 §10.6.7 / IEEE 485",
-                    "units": {"ambient_temperature_c": "°C", "standby_duration_hours": "Hours", "alarm_duration_minutes": "Minutes", "aging_safety_margin_pct": "%"},
+                    "units": {
+                        "ambient_temperature_c": "°C",
+                        "standby_duration_hours": "Hours",
+                        "alarm_duration_minutes": "Minutes",
+                        "aging_safety_margin_pct": "%",
+                    },
                 },
                 "integration": {
                     "standard": "BIM / CAD Local IPC Bridge & FDS v6.8",
-                    "units": {"autocad_bridge_port": "TCP Port", "fds_queue_timeout_seconds": "Seconds"},
+                    "units": {
+                        "autocad_bridge_port": "TCP Port",
+                        "fds_queue_timeout_seconds": "Seconds",
+                    },
                 },
             },
         }
@@ -1003,7 +1135,9 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
     rotator = KeyRotator()
     if previous_token:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token)
-        rotated, rotate_msg = rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token)
+        rotated, rotate_msg = rotator.rotate(
+            "BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token
+        )
     else:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", new_token)
         rotated, rotate_msg = True, "Registered new admin token (no previous token to rotate from)."

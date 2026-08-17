@@ -175,5 +175,9 @@ async def transcribe_audio_file(
         content_type=raw_content_type,
         size_bytes=len(contents),
         duration_seconds=None,
-        language="ar-EG" if language.startswith("ar") else "en-US" if language != "auto" else "auto",
+        language="ar-EG"
+        if language.startswith("ar")
+        else "en-US"
+        if language != "auto"
+        else "auto",
     )

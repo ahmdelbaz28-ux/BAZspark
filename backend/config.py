@@ -164,7 +164,11 @@ _WEAK_SECRETS = {
 # V246 fail-safe: default "production" — mirrors Config.ENVIRONMENT above.
 _env_name = os.environ.get("FIREAI_ENV", os.environ.get("ENVIRONMENT", "production")).lower()
 if _env_name in ("production", "prod", "staging"):
-    if not _jwt_secret or _jwt_secret.strip().lower() in _WEAK_SECRETS or len(_jwt_secret.strip()) < 32:
+    if (
+        not _jwt_secret
+        or _jwt_secret.strip().lower() in _WEAK_SECRETS
+        or len(_jwt_secret.strip()) < 32
+    ):
         raise RuntimeError(
             "FATAL: Insecure or missing SESSION_SECRET in production mode.\n"
             "Placeholder/weak/short secrets are strictly forbidden in production.\n"
