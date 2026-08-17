@@ -43,6 +43,12 @@
       "skillPath": "skills/code-review-and-quality/SKILL.md",
       "computedHash": "6231479cc74c7ed70a5618b81b3f94034d9806c0319a1a23d15f9b94a368c581"
     },
+    "create-readme": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-readme/SKILL.md",
+      "computedHash": "a93f9161bef324e3a1550fc79d4f01b660a3fb7eadc4455677d9ace4da2965ac"
+    },
     "debugging-wizard": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
