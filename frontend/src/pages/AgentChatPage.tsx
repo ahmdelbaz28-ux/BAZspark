@@ -2,6 +2,7 @@ import {
 	Cpu,
 	Loader,
 	Mic,
+	MicOff,
 	Plus,
 	Send,
 	Server,
@@ -10,34 +11,89 @@ import {
 	Zap,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLlmChat } from "@/hooks/useLlmChat";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
+
+const QUICK_COMMANDS = [
+	"فحص الامتثال",
+	"حساب الحمل",
+	"دراسة القوس الكهربائي",
+	"تحديد حجم الكابل",
+	"تحليل التيار القصير",
+	"دراسة التنسيق",
+	"إنشاء مخطط",
+	"تصدير التقرير",
+] as const;
+
+function getStatusClass(isConnected: boolean, hasError: boolean): string {
+	if (isConnected) return "text-emerald-500";
+	if (hasError) return "text-destructive";
+	return "text-muted-foreground";
+}
+
+function getStatusDotClass(isConnected: boolean, hasError: boolean): string {
+	if (isConnected) return "w-1.5 h-1.5 rounded-full bg-emerald-500";
+	if (hasError) return "w-1.5 h-1.5 rounded-full bg-destructive";
+	return "w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse";
+}
+
+function getStatusText(loading: boolean, hasError: boolean): string {
+	if (loading) return "Connecting...";
+	if (hasError) return "Offline";
+	return "Connected";
+}
+
+function getInputPlaceholder(isListening: boolean, isArabic: boolean): string {
+	if (!isListening) return "اكتب سؤالاً أو أمراً...";
+	return isArabic
+		? "جاري الاستماع... (أو اكتب هنا)"
+		: "Listening... (or type here)";
+}
+
+function getVoiceTitle(isSupported: boolean, isListening: boolean): string {
+	if (!isSupported) return "التعرف الصوتي غير مدعوم";
+	if (isListening) return "إيقاف الاستماع";
+	return "بدء الإدخال الصوتي";
+}
 
 export function AgentChatPage() {
-	const { t: _t } = useTranslation();
-
+	const { i18n } = useTranslation();
 	const { messages, loading, error, sendMessage, clearChat } =
 		useLlmChat("engineer_assistant");
 
 	const [inputValue, setInputValue] = useState("");
-	const [isListening, setIsListening] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-	const quickCommands = [
-		"فحص الامتثال",
-		"حساب الحمل",
-		"دراسة القوس الكهربائي",
-		"تحديد حجم الكابل",
-		"تحليل التيار القصير",
-		"دراسة التنسيق",
-		"إنشاء مخطط",
-		"تصدير التقرير",
-	];
+	const handleSpeechTranscript = useCallback((spokenText: string) => {
+		setInputValue((prev) => {
+			const cleaned = spokenText.trim();
+			return prev ? `${prev} ${cleaned}` : cleaned;
+		});
+	}, []);
+
+	const {
+		isListening,
+		startListening,
+		stopListening,
+		interimTranscript,
+		isSupported,
+	} = useVoiceControl({
+		onTranscript: handleSpeechTranscript,
+	});
+
+	const toggleListening = useCallback(() => {
+		if (isListening) {
+			stopListening();
+		} else {
+			startListening();
+		}
+	}, [isListening, startListening, stopListening]);
 
 	useEffect(() => {
 		if (scrollAreaRef.current) {
@@ -53,28 +109,13 @@ export function AgentChatPage() {
 		void sendMessage(content);
 	};
 
-	const handleQuickCommand = (command: string) => {
-		setInputValue(command);
-	};
-
-	const handleClearHistory = () => {
-		clearChat();
-	};
-
 	const isConnected = !loading && !error;
-
-	// Status bar helpers - extracted to avoid nested ternaries (S3358)
-	const statusTextClass = isConnected
-		? "text-emerald-500"
-		: error
-			? "text-destructive"
-			: "text-muted-foreground";
-	const statusDotClass = `w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-500" : error ? "bg-destructive" : "bg-muted-foreground animate-pulse"}`;
-	const statusText = loading
-		? "Connecting..."
-		: error
-			? "Offline"
-			: "Connected";
+	const isArabic = Boolean(i18n.language?.startsWith("ar"));
+	const statusTextClass = getStatusClass(isConnected, Boolean(error));
+	const statusDotClass = getStatusDotClass(isConnected, Boolean(error));
+	const statusText = getStatusText(loading, Boolean(error));
+	const inputPlaceholder = getInputPlaceholder(isListening, isArabic);
+	const voiceTitle = getVoiceTitle(isSupported, isListening);
 
 	return (
 		<div className="h-screen flex flex-col bg-background text-foreground">
@@ -98,7 +139,7 @@ export function AgentChatPage() {
 						variant="outline"
 						size="icon"
 						className="h-9 w-9 border-border hover:bg-muted"
-						onClick={handleClearHistory}
+						onClick={clearChat}
 						title="مسح المحادثة"
 					>
 						<Trash2 className="h-4 w-4" />
@@ -126,34 +167,31 @@ export function AgentChatPage() {
 						</div>
 					)}
 
-					{messages.map((message, index) => (
-						<div
-							key={`${message.timestamp}-${index}`}
-							className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-						>
-							{message.role === "assistant" && (
-								<div className="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center border border-secondary/50 shrink-0 mr-3">
-									<Zap className="h-4 w-4 text-secondary" />
-								</div>
-							)}
+					{messages.map((message, index) => {
+						const isUser = message.role === "user";
+						const bubbleClass = isUser
+							? "bg-secondary/20 text-foreground border border-secondary/30 rounded-br-none"
+							: "bg-muted text-foreground border border-border rounded-bl-none";
 
+						return (
 							<div
-								className={`max-w-md ${message.role === "user" ? "order-2 ml-3" : ""}`}
+								key={`${message.timestamp}-${index}`}
+								className={`flex ${isUser ? "justify-end" : "justify-start"}`}
 							>
-								<div
-									className={`px-4 py-3 rounded-xl ${
-										message.role === "user"
-											? "bg-secondary/20 text-foreground border border-secondary/30 rounded-br-none"
-											: "bg-muted text-foreground border border-border rounded-bl-none"
-									}`}
-								>
-									<p className="text-sm leading-relaxed whitespace-pre-wrap">
-										{message.content}
-									</p>
-								</div>
+								{!isUser && (
+									<div className="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center border border-secondary/50 shrink-0 mr-3">
+										<Zap className="h-4 w-4 text-secondary" />
+									</div>
+								)}
 
-								{message.role === "assistant" &&
-									(message.source || message.model) && (
+								<div className={`max-w-md ${isUser ? "order-2 ml-3" : ""}`}>
+									<div className={`px-4 py-3 rounded-xl ${bubbleClass}`}>
+										<p className="text-sm leading-relaxed whitespace-pre-wrap">
+											{message.content}
+										</p>
+									</div>
+
+									{!isUser && (message.source || message.model) && (
 										<div className="flex gap-2 mt-2 flex-wrap">
 											{message.source && (
 												<Badge
@@ -178,9 +216,10 @@ export function AgentChatPage() {
 											)}
 										</div>
 									)}
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 
 					{loading && (
 						<div className="flex justify-start">
@@ -209,12 +248,12 @@ export function AgentChatPage() {
 					الأوامر السريعة:
 				</p>
 				<div className="flex flex-wrap gap-2">
-					{quickCommands.map((cmd) => (
+					{QUICK_COMMANDS.map((cmd) => (
 						<Badge
 							key={cmd}
 							variant="outline"
 							className="bg-muted border-border hover:bg-secondary/20 hover:text-secondary hover:border-secondary/50 cursor-pointer py-1.5 px-3"
-							onClick={() => handleQuickCommand(cmd)}
+							onClick={() => setInputValue(cmd)}
 						>
 							{cmd}
 						</Badge>
@@ -224,6 +263,17 @@ export function AgentChatPage() {
 
 			{/* Input Area */}
 			<div className="border-t border-border p-4 bg-card stagger-card">
+				{isListening && (
+					<div className="max-w-3xl mx-auto mb-3 px-3.5 py-2 rounded-lg bg-secondary/10 border border-secondary/30 text-xs text-secondary flex items-center gap-2 animate-pulse">
+						<Mic className="h-3.5 w-3.5 animate-bounce flex-shrink-0" />
+						<span className="truncate">
+							{interimTranscript ||
+								(isArabic
+									? "جاري الاستماع... تحدث الآن..."
+									: "Listening... Speak now...")}
+						</span>
+					</div>
+				)}
 				<form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
 					<div className="relative flex items-center gap-2">
 						<Button
@@ -238,7 +288,7 @@ export function AgentChatPage() {
 						<Input
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
-							placeholder="اكتب سؤالاً أو أمراً..."
+							placeholder={inputPlaceholder}
 							className="bg-muted border-border flex-1 h-10 rounded-full px-4"
 							disabled={loading}
 						/>
@@ -247,12 +297,19 @@ export function AgentChatPage() {
 							type="button"
 							size="icon"
 							variant="ghost"
-							className="h-10 w-10 text-muted-foreground hover:text-foreground"
-							onClick={() => setIsListening(!isListening)}
+							className={`h-10 w-10 transition-colors ${
+								isListening
+									? "text-secondary bg-secondary/20 hover:bg-secondary/30 animate-pulse"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+							onClick={toggleListening}
+							title={voiceTitle}
 						>
-							<Mic
-								className={`h-4 w-4 ${isListening ? "text-secondary" : ""}`}
-							/>
+							{isListening ? (
+								<MicOff className="h-4 w-4 text-secondary" />
+							) : (
+								<Mic className="h-4 w-4" />
+							)}
 						</Button>
 
 						<Button
@@ -267,7 +324,7 @@ export function AgentChatPage() {
 				</form>
 			</div>
 
-			{/* Status Bar — real connection state, not a hardcoded badge */}
+			{/* Status Bar */}
 			<div className="h-8 bg-background border-t border-border flex items-center justify-between px-6 text-[10px] font-mono text-muted-foreground">
 				<div className="flex items-center gap-3">
 					<span className="flex items-center gap-1">

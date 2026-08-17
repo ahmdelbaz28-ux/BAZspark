@@ -105,15 +105,15 @@ RUN pip install --no-cache-dir --upgrade --force-reinstall \
 # itself — pip depends on it.
 RUN cd /usr/local/lib/python3.12/site-packages && \
     for d in setuptools-*.dist-info; do \
-        case "$$d" in \
+        case "$d" in \
             setuptools-8[3-9]*.dist-info|setuptools-9*.dist-info) ;; \
-            *) echo "Purging stale: $$d"; rm -rf "$$d" ;; \
+            *) echo "Purging stale: $d"; rm -rf "$d" ;; \
         esac; \
     done && \
     for d in msgpack-*.dist-info; do \
-        case "$$d" in \
+        case "$d" in \
             msgpack-1.[2-9]*.dist-info|msgpack-[2-9]*.dist-info) ;; \
-            *) echo "Purging stale: $$d"; rm -rf "$$d" ;; \
+            *) echo "Purging stale: $d"; rm -rf "$d" ;; \
         esac; \
     done; \
     true

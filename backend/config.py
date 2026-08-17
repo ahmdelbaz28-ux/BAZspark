@@ -163,14 +163,15 @@ _WEAK_SECRETS = {
 }
 # V246 fail-safe: default "production" — mirrors Config.ENVIRONMENT above.
 _env_name = os.environ.get("FIREAI_ENV", os.environ.get("ENVIRONMENT", "production")).lower()
-if _env_name in ("production", "prod", "staging"):
-    if not _jwt_secret or _jwt_secret.strip().lower() in _WEAK_SECRETS or len(_jwt_secret.strip()) < 32:
-        raise RuntimeError(
-            "FATAL: Insecure or missing SESSION_SECRET in production mode.\n"
-            "Placeholder/weak/short secrets are strictly forbidden in production.\n"
-            "Generate a strong 256-bit secret with:\n"
-            '  python3 -c "import secrets; print(secrets.token_urlsafe(64))"'
-        )
+if _env_name in ("production", "prod", "staging") and (
+    not _jwt_secret or _jwt_secret.strip().lower() in _WEAK_SECRETS or len(_jwt_secret.strip()) < 32
+):
+    raise RuntimeError(
+        "FATAL: Insecure or missing SESSION_SECRET in production mode.\n"
+        "Placeholder/weak/short secrets are strictly forbidden in production.\n"
+        "Generate a strong 256-bit secret with:\n"
+        '  python3 -c "import secrets; print(secrets.token_urlsafe(64))"'
+    )
 
 # Singleton instance
 config = Config()

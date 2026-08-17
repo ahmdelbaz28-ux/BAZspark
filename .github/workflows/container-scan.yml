@@ -60,6 +60,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'library'
+          trivyignores: '.trivyignore'
         # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'
         # — CRITICAL/HIGH findings must fail the pipeline.
         # P0-14b FIX: changed vuln-type from 'os,library' to 'library'.
@@ -82,6 +83,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'library'
+          trivyignores: '.trivyignore'
         # P0-14 FIX: removed `continue-on-error` and switched exit-code to '1'.
         # P0-14b FIX: changed vuln-type from implicit 'os,library' to 'library'.
 

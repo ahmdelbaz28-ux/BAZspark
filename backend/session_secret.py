@@ -224,9 +224,10 @@ class SessionSecretManager:
         For rotation: set FIREAI_SESSION_SECRET_NEW to the new secret.
         The old FIREAI_SESSION_SECRET becomes the "previous" secret.
         """
-        is_production = (
-            os.getenv("FIREAI_ENV", os.getenv("ENVIRONMENT", "production")).lower()
-            in ("production", "prod", "staging")
+        is_production = os.getenv("FIREAI_ENV", os.getenv("ENVIRONMENT", "production")).lower() in (
+            "production",
+            "prod",
+            "staging",
         )
 
         # Load primary secret
