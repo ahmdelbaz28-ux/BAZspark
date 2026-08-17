@@ -6,6 +6,8 @@ BAZSpark documentation follows the [Diátaxis framework](https://diataxis.fr/) �
 
 ```
 docs/
+├── adr/                    # Architecture Decision Records (ADRs)
+│   └── 0001-0006...
 ├── tutorials/              # Learning-oriented (lessons)
 │   └── first-fire-alarm-design.md
 ├── how-to/                 # Problem-oriented (recipes)
@@ -24,6 +26,10 @@ docs/
 ```
 
 ## Quick Links
+
+### Architecture Decision Records (ADRs)
+
+Browse [Architecture Decision Records](adr/README.md) capturing major system design decisions.
 
 ### New to BAZSpark?
 
