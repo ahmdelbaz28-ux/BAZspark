@@ -13,17 +13,18 @@ Comprehensive Verification Test Suite for Final Release Protocol:
 """
 
 import math
-import os
-import pytest
 
+import pytest
 
 # ============================================================================
 # 1. SEC-001: Session Secret Enforcement
 # ============================================================================
 
+
 class TestSessionSecretEnforcement:
     def test_session_secret_manager_valid_production(self):
-        from backend.session_secret import SessionSecretManager, validate_secret
+        from backend.session_secret import validate_secret
+
         # Generate a valid high-entropy secret
         valid_key = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ--"
         validate_secret(valid_key)
@@ -31,6 +32,7 @@ class TestSessionSecretEnforcement:
 
     def test_session_secret_manager_weak_secret_rejected(self):
         from backend.session_secret import validate_secret
+
         with pytest.raises(ValueError, match="too short|low entropy|placeholder"):
             validate_secret("short")
         with pytest.raises(ValueError, match="too short|low entropy|placeholder"):
@@ -41,9 +43,11 @@ class TestSessionSecretEnforcement:
 # 2. SEC-002: SSRF Protection
 # ============================================================================
 
+
 class TestSSRFProtection:
     def test_ssrf_rejects_loopback_and_metadata(self):
         from backend.integrations._ssrf_guard import SSRFError, validate_url
+
         with pytest.raises(SSRFError):
             validate_url("http://127.0.0.1/admin")
         with pytest.raises(SSRFError):
@@ -58,10 +62,11 @@ class TestSSRFProtection:
 # 3. SEC-003: WebSocket Authentication & Origin Validation
 # ============================================================================
 
+
 class TestWebSocketSecurity:
     def test_revit_websocket_origin_validation(self, monkeypatch):
         from backend.routers.revit_api import _validate_ws_origin
-        
+
         class MockWS:
             def __init__(self, headers):
                 self.headers = headers
@@ -84,9 +89,11 @@ class TestWebSocketSecurity:
 # 4. ENG-001: Darcy-Weisbach Hydraulic Solver Benchmarks
 # ============================================================================
 
+
 class TestDarcyWeisbachBenchmarks:
     def test_zero_flow(self):
         from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss
+
         res = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.1,
@@ -99,6 +106,7 @@ class TestDarcyWeisbachBenchmarks:
     def test_laminar_flow_stokes_law(self):
         """Re < 2300: f = 64 / Re"""
         from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss
+
         # High viscosity fluid for laminar flow
         res = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=50.0,
@@ -116,6 +124,7 @@ class TestDarcyWeisbachBenchmarks:
     def test_transitional_flow(self):
         """2300 <= Re <= 4000: Transitional regime"""
         from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss
+
         res = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=50.0,
             pipe_diameter_m=0.05,
@@ -129,7 +138,11 @@ class TestDarcyWeisbachBenchmarks:
 
     def test_turbulent_flow_colebrook(self):
         """Re > 4000: Colebrook-White equation"""
-        from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss, FluidType
+        from fireai.core.darcy_weisbach_solver import (
+            FluidType,
+            calculate_darcy_weisbach_friction_loss,
+        )
+
         res = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
             pipe_diameter_m=0.1,
@@ -144,6 +157,7 @@ class TestDarcyWeisbachBenchmarks:
 
     def test_negative_parameters_raise(self):
         from fireai.core.darcy_weisbach_solver import calculate_darcy_weisbach_friction_loss
+
         with pytest.raises(ValueError):
             calculate_darcy_weisbach_friction_loss(
                 pipe_length_m=-10.0,
@@ -162,12 +176,14 @@ class TestDarcyWeisbachBenchmarks:
 # 5. ENG-002: Battery Temperature & Aging Derating
 # ============================================================================
 
+
 class TestBatteryDeratingBenchmarks:
     def test_battery_temperature_curve(self):
         from fireai.core.battery_aging_derating import (
             TEMPERATURE_DERATING,
             size_battery,
         )
+
         # Check standard IEEE 485 values
         assert TEMPERATURE_DERATING[-10] == 0.60
         assert TEMPERATURE_DERATING[0] == 0.72
@@ -198,6 +214,7 @@ class TestBatteryDeratingBenchmarks:
 # 6. REL-001: Self-Healing Failure Non-Masking
 # ============================================================================
 
+
 class TestSelfHealingIntegrity:
     def test_safety_critical_failure_is_reraised(self):
         from fireai.core.qomn_self_healing_engine import (
@@ -217,10 +234,11 @@ class TestSelfHealingIntegrity:
 # 7. AAI-001: MCP / Agent File Path Security
 # ============================================================================
 
+
 class TestAgentFilePathSecurity:
     def test_sanitize_file_path_blocks_null_and_devices(self):
         from fireai.core.bim_input_sanitizer import sanitize_file_path
-        
+
         # Simple safe path
         assert sanitize_file_path("project/model.rvt") == "project/model.rvt"
 

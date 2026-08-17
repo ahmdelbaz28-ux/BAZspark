@@ -97,12 +97,9 @@ export async function verifyEndpoint(
 		: [expectedStatus];
 	const isSuccess = expectedStatusArray.includes(response.status);
 
-	let message = "";
-	if (isSuccess) {
-		message = `Endpoint ${endpoint} responded with expected status ${response.status}`;
-	} else {
-		message = `Endpoint ${endpoint} responded with unexpected status ${response.status} (expected: ${expectedStatusArray.join(", ")})`;
-	}
+	const message = isSuccess
+		? `Endpoint ${endpoint} responded with expected status ${response.status}`
+		: `Endpoint ${endpoint} responded with unexpected status ${response.status} (expected: ${expectedStatusArray.join(", ")})`;
 
 	return {
 		success: isSuccess,

@@ -227,6 +227,7 @@ export function exportToIFC(
 			`IFC export failed: ${msg}. ` +
 				`Check that all devices have valid type, category, voltage, ` +
 				`and load fields, and that the project has a name and author.`,
+			{ cause: err },
 		);
 	}
 }
