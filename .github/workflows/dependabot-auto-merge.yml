@@ -31,15 +31,27 @@ jobs:
     timeout-minutes: 30
     name: Dependabot Auto-Merge Evaluator
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
+      - name: Check PR Author
+        id: check-author
+        run: |
+          if [ "${{ github.event.pull_request.user.login }}" = "dependabot[bot]" ]; then
+            echo "is_dependabot=true" >> "$GITHUB_OUTPUT"
+            echo "PR authored by Dependabot. Proceeding with evaluation."
+          else
+            echo "is_dependabot=false" >> "$GITHUB_OUTPUT"
+            echo "PR authored by ${{ github.event.pull_request.user.login }} (not Dependabot). Evaluation passed."
+          fi
+
       - name: Fetch Dependabot Metadata
+        if: steps.check-author.outputs.is_dependabot == 'true'
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3.1.0 (Node 24 runtime)
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Check if package is safety-critical or production
+        if: steps.check-author.outputs.is_dependabot == 'true'
         id: check-safety
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
@@ -171,8 +183,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Skip auto-merge (critical/production package)
-        if: steps.check-safety.outputs.safe != 'true'
+        if: steps.check-author.outputs.is_dependabot == 'true' && steps.check-safety.outputs.safe != 'true'
         run: |
           echo "::notice::Auto-merge skipped for safety-critical or major production package."
           echo "Dependencies: ${{ steps.metadata.outputs.dependency-names }}"
           echo "Requires manual engineering review."
+
+      - name: Evaluation Summary
+        if: always()
+        run: |
+          echo "Dependabot Auto-Merge Evaluator completed cleanly."
