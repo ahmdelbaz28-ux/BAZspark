@@ -277,14 +277,26 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
-          fetch-depth: 0
+      - name: Validate required secrets
+        id: validate
+        env:
+          KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING }}
+        run: |
+          if [ -z "$KUBE_CONFIG_STAGING" ]; then
+            echo "::warning::KUBE_CONFIG_STAGING not set — skipping deployment (images are built and pushed)"
+            echo "deploy_skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_skipped=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure kubectl
+        if: steps.validate.outputs.deploy_skipped != 'true'
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d  # v5.1.0  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
 
       - name: Set up kubeconfig
+        if: steps.validate.outputs.deploy_skipped != 'true'
         env:
           KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING }}  # NOSONAR: githubactions:S7636 — secret bound to env var, not expanded inline in shell
         run: |
@@ -295,6 +307,7 @@ jobs:
       # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
       # leaking secrets in /proc/<pid>/cmdline on the runner).
       - name: Create Helm secrets values file (staging)
+        if: steps.validate.outputs.deploy_skipped != 'true'
         env:
           FIREAI_API_KEY: ${{ secrets.FIREAI_API_KEY }}
           FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
@@ -324,6 +337,7 @@ jobs:
           HELMEOF
 
       - name: Deploy Helm chart
+        if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
           helm upgrade --install fireai deploy/helm/fireai \
             --namespace fireai \
@@ -337,12 +351,14 @@ jobs:
           rm -f /tmp/helm-secrets-staging.yaml
 
       - name: Verify deployment
+        if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
           kubectl rollout status deployment/fireai-api -n fireai --timeout=180s
           kubectl rollout status deployment/fireai-worker -n fireai --timeout=180s
           echo "Staging deployment complete."
 
       - name: Smoke test
+        if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
           echo "Waiting for service to be ready..."
           sleep 30

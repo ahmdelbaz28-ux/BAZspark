@@ -54,12 +54,13 @@ const translations = {
 		supportDesc:
 			"Need help acquiring an Engineering Key or connecting your Revit/AutoCAD workstation?",
 		supportDocsBtn: "View API Key Documentation",
-		supportEmail: "Direct Support: support@bazspark.com",
+		supportEmail: "Direct Support: ahmdelbaz28@gmail.com",
 		closeBtn: "Close",
 		// Request Access Modal
 		requestTitle: "Request Engineering Access Key",
 		requestDesc:
 			"Engineering Keys are granted to certified life-safety designers, CAD operators, and enterprise partners.",
+		requestEmailBtn: "Email Project Owner (Direct Request)",
 		autoFillDemoBtn: "Auto-Fill Valid Test Key (1-Click Demo)",
 		accessGranted: "Access Granted",
 		sessionInitialized: "Secure engineering session initialized successfully.",
@@ -70,7 +71,7 @@ const translations = {
 		heroTitle:
 			"المنصة الأكثر تطوراً عالمياً للهندسة الوقائية والسلامة من الحرائق بالذكاء الاصطناعي.",
 		heroSubtitle:
-			"من المجمعات العمرانية إلى السفن البحرية، تمتلك BAZspark نظاماً آلياً لمطابقة الأكواد الدولية (NFPA 72, NEC, SOLAS) بدقة فائقة.",
+			"من المجمعات العمرانية إلى السفن البحرية، تمتمل BAZspark نظاماً آلياً لمطابقة الأكواد الدولية (NFPA 72, NEC, SOLAS) بدقة فائقة.",
 		feature1Title: "التصميم الآلي لـ CAD",
 		feature1Desc:
 			"التوزيع الذكي لكواشف الحريق وتوجيه المسارات المثالية للكابلات.",
@@ -100,12 +101,13 @@ const translations = {
 		supportDesc:
 			"هل تحتاج إلى مساعدة في الحصول على مفتاح ترخيص أو ربط محطة عمل Revit/AutoCAD؟",
 		supportDocsBtn: "عرض دليل مفاتيح API",
-		supportEmail: "الدعم المباشر: support@bazspark.com",
+		supportEmail: "الدعم المباشر: ahmdelbaz28@gmail.com",
 		closeBtn: "إغلاق",
 		// Request Access Modal
 		requestTitle: "طلب مفتاح ترخيص مهندسي",
 		requestDesc:
 			"يتم منح مفاتيح الترخيص للمهندسين المعتمدين والمشغلين والشركاء المؤسسيين.",
+		requestEmailBtn: "مراسلة مالك المشروع عبر البريد (طلب ترخيص)",
 		autoFillDemoBtn: "تعبئة مفتاح تجريبي معتمد (بنقرة واحدة)",
 		accessGranted: "تم منح تصريح الدخول",
 		sessionInitialized: "تم بدء الجلسة الهندسية الآمنة بنجاح.",
