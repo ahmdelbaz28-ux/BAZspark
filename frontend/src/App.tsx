@@ -41,9 +41,6 @@ const CommandPalette = lazy(
 const AppShell = lazy(() =>
 	import("@/components/layout/AppShell").then((m) => ({ default: m.default })),
 );
-const OnboardingTour = lazy(
-	() => import("@/components/onboarding/OnboardingTour"),
-);
 const GlobalHelpDrawer = lazy(() =>
 	import("@/components/shared/GlobalHelpDrawer").then((m) => ({
 		default: m.GlobalHelpDrawer,
