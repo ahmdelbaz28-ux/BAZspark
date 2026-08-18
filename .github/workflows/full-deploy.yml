@@ -287,12 +287,32 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
+      - name: Check Kubeconfig secret
+        id: validate
+        env:
+          KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING }}
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+        run: |
+          if [ "${{ matrix.environment }}" == "production" ]; then
+            TARGET_CONFIG="$KUBE_CONFIG_PRODUCTION"
+          else
+            TARGET_CONFIG="$KUBE_CONFIG_STAGING"
+          fi
+          if [ -z "$TARGET_CONFIG" ]; then
+            echo "::warning::KUBE_CONFIG_${{ matrix.environment }} secret is not set — skipping Kubernetes deployment"
+            echo "deploy_skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure kubectl
+        if: steps.validate.outputs.deploy_skipped != 'true'
         uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d  # v5.1.0
         with:
           version: latest
 
       - name: Set up kubeconfig
+        if: steps.validate.outputs.deploy_skipped != 'true'
         env:
           KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING }}
           KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
@@ -306,6 +326,7 @@ jobs:
           chmod 600 $HOME/.kube/config
 
       - name: Deploy Helm chart
+        if: steps.validate.outputs.deploy_skipped != 'true'
         # V300 FIX (H-13): Write secrets to temp YAML file instead of --set
         # (avoids leaking secrets in /proc/<pid>/cmdline on the runner).
         env:
@@ -342,6 +363,7 @@ jobs:
           rm -f /tmp/helm-secrets-${{ matrix.environment }}.yaml
 
       - name: Verify deployment
+        if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
           kubectl rollout status deployment/fireai-api -n fireai-${{ matrix.environment }} --timeout=180s
           kubectl rollout status deployment/fireai-worker -n fireai-${{ matrix.environment }} --timeout=180s
