@@ -79,6 +79,12 @@
       "skillPath": "skills/finding-duplicate-functions/SKILL.md",
       "computedHash": "1a4b8322c630677c1e3c934aba450ba5703fc1545769936ac1ddf6d828251fbc"
     },
+    "fix-dependabot": {
+      "source": "remotion-dev/remotion",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/fix-dependabot/SKILL.md",
+      "computedHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
     "git-commit": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
@@ -114,6 +120,12 @@
       "sourceType": "github",
       "skillPath": "skills/omniverse-cad-to-simready/SKILL.md",
       "computedHash": "1e21ae621dfebf39b9bceb1b431e868eb2bcbe0f355ca92db2b0e97e0dfee30e"
+    },
+    "performance": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "skillPath": "skills/performance/SKILL.md",
+      "computedHash": "646931a3af896ae12a3cad3d762668cb6487fe3ab179daf8fdc974fb79acfe49"
     },
     "production-audit": {
       "source": "affaan-m/ECC",
@@ -193,12 +205,6 @@
       "skillPath": ".github/skills/test-engineer/SKILL.md",
       "computedHash": "3397c778c1eaeec32ed9450ec7ddd6a3e3c8e644a74091cf94f33cd5d3788699"
     },
-    "fix-dependabot": {
-      "source": "remotion-dev/remotion",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/fix-dependabot/SKILL.md",
-      "computedHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
     "using-superpowers": {
       "source": "obra/superpowers",
       "sourceType": "github",
@@ -225,4 +231,3 @@
     }
   }
 }
-

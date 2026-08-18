@@ -51,6 +51,12 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Building, deploying, configuring, or optimizing Retrieval-Augmented Generation (RAG), NeMo Guardrails, VLM, hybrid search, NV-Ingest, reranking, and LLM reasoning pipelines.
 - **Scope:** NVIDIA RAG Blueprint operations — multimodal ingestion, NeMo guardrails, Agentic RAG, Qdrant/Neo4j hybrid search, Nemotron reranking, and observability.
 
+### 7. `performance`
+
+- **Location:** `.agents/skills/performance/SKILL.md`
+- **When:** Optimizing web performance, page speed, Core Web Vitals, asset loading, JavaScript/CSS execution, or caching strategies.
+- **Scope:** Lighthouse audits, performance budgets, critical rendering path, resource preloading/prerendering, script loading, image & font optimization, and runtime performance.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.
