@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "contract_version": "1.0.0",
+  "project_identity": {
+    "name": "BAZspark",
+    "monorepo_name": "bazspark-monorepo",
+    "version_source": "VERSION",
+    "authoritative_repo": "ahmdelbaz28-ux/BAZspark",
+    "license": "MIT"
+  },
+  "runtime_requirements": {
+    "python_minimum": ">=3.12",
+    "node_minimum": "22"
+  },
+  "core_stack": {
+    "frontend_framework": "React",
+    "frontend_major_version": 19,
+    "typescript_major_version": 5,
+    "vite_major_version": 8,
+    "tailwind_major_version": 4,
+    "backend_framework": "FastAPI"
+  },
+  "verified_deployments": {
+    "frontend_url": "https://ba-zspark-tau.vercel.app",
+    "backend_api_url": "https://ahmdelbaz28-bazspark.hf.space"
+  },
+  "mandatory_package_scripts": [
+    { "package": "root", "script": "dev" },
+    { "package": "root", "script": "build" },
+    { "package": "root", "script": "test" },
+    { "package": "root", "script": "lint" },
+    { "package": "root", "script": "typecheck" },
+    { "package": "frontend", "script": "dev" },
+    { "package": "frontend", "script": "build" },
+    { "package": "frontend", "script": "test" },
+    { "package": "frontend", "script": "lint" },
+    { "package": "frontend", "script": "typecheck" },
+    { "package": "frontend", "script": "lint:boundaries" },
+    { "package": "frontend", "script": "perf:check" }
+  ],
+  "mandatory_documentation_links": [
+    "ARCHITECTURE.md",
+    "ENGINEERING_BASIS.md",
+    "CONFIGURATION_GUIDE.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "ONBOARDING.md",
+    "CI-CD-POLICY.md",
+    "TROUBLESHOOTING_GUIDE.md",
+    "LICENSE",
+    "docs/FACP_SPECIFICATION.md",
+    "docs/PRODUCTION_DEPLOYMENT_GUIDE.md"
+  ]
+}

@@ -17,7 +17,9 @@
 		"test": "cd frontend && npm run test",
 		"lint": "cd frontend && npm run lint",
 		"typecheck": "cd frontend && npm run typecheck",
-		"test:visual": "cd frontend && npm run test:visual"
+		"test:visual": "cd frontend && npm run test:visual",
+		"docs:check": "node scripts/validate-readme-drift.cjs",
+		"governance:audit": "node scripts/validate-governance-runtime.cjs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.2",

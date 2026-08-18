@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "policy_version": "1.1.0",
+  "repository": {
+    "full_name": "ahmdelbaz28-ux/BAZspark",
+    "primary_owner": "@ahmdelbaz28-ux",
+    "owner_type": "User",
+    "default_branch": "main"
+  },
+  "branch_protection": {
+    "target_branch": "main",
+    "protection_active": true,
+    "allow_force_pushes": false,
+    "allow_deletions": false,
+    "enforce_admins": false,
+    "strict_up_to_date": false,
+    "required_pull_request_reviews": false,
+    "required_signatures": false,
+    "required_status_checks": [
+      "Gate 1 — Static Analysis",
+      "Gate 2 — Test Suite (3.12)",
+      "Gate 3 — Property-Based Tests",
+      "Gate 4 — Frontend Build",
+      "Gate 4b — Visual Regression (Playwright)",
+      "Gate 5 — Dependency Audit",
+      "Gate 6 — Docker Build & Test",
+      "Gate 7 — Bundle Size",
+      "CodeQL",
+      "SonarCloud Code Analysis",
+      "Gitleaks Secret Scan"
+    ],
+    "admin_bypass_policy": "Administrator platform emergency bypass available (enforce_admins: false)"
+  },
+  "codeowners_policy": {
+    "file_path": ".github/CODEOWNERS",
+    "enforce_owner": "@ahmdelbaz28-ux",
+    "enforcement_mode": "automatic_reviewer_assignment",
+    "mandatory_protected_paths": [
+      "/README.md",
+      "/VERSION",
+      "/docs/readme-contract.json",
+      "/docs/governance-policy.json",
+      "/scripts/validate-readme-drift.cjs",
+      "/scripts/validate-governance-runtime.cjs",
+      "/frontend/scripts/validate-perf-budget.cjs",
+      "/package.json",
+      "/frontend/package.json",
+      "/pyproject.toml",
+      "/requirements.txt",
+      "/.github/workflows/",
+      "/.github/CODEOWNERS",
+      "/CI-CD-POLICY.md"
+    ]
+  },
+  "ci_permissions_policy": {
+    "default_mode": "least_privilege",
+    "standard_permission": "contents: read"
+  }
+}
