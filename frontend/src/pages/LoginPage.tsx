@@ -54,7 +54,7 @@ const translations = {
 		supportDesc:
 			"Need help acquiring an Engineering Key or connecting your Revit/AutoCAD workstation?",
 		supportDocsBtn: "View API Key Documentation",
-		supportEmail: "Direct Support: support@bazspark.com",
+		supportEmail: "Direct Support: ahmdelbaz28@gmail.com",
 		closeBtn: "Close",
 		// Request Access Modal
 		requestTitle: "Request Engineering Access Key",
@@ -100,7 +100,7 @@ const translations = {
 		supportDesc:
 			"هل تحتاج إلى مساعدة في الحصول على مفتاح ترخيص أو ربط محطة عمل Revit/AutoCAD؟",
 		supportDocsBtn: "عرض دليل مفاتيح API",
-		supportEmail: "الدعم المباشر: support@bazspark.com",
+		supportEmail: "الدعم المباشر: ahmdelbaz28@gmail.com",
 		closeBtn: "إغلاق",
 		// Request Access Modal
 		requestTitle: "طلب مفتاح ترخيص مهندسي",
