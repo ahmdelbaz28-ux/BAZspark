@@ -111,9 +111,7 @@ test.describe("RTL Breadcrumb Navigation", () => {
     }
   });
 
-  // NOTE: Breadcrumb component is not yet integrated into the Settings page.
-  // This test will be enabled once the breadcrumb is added to the page layout.
-  test.skip("Breadcrumb updates on navigation to Settings page", async ({ page }) => {
+  test("Breadcrumb updates on navigation to Settings page", async ({ page }) => {
     await installApiMock(page, { preAuthenticated: true });
 
     await page.goto("/settings", { waitUntil: "domcontentloaded", timeout: 30000 });

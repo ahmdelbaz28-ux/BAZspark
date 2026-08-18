@@ -82,9 +82,11 @@ def _validate_origin(origin: str) -> bool:
         or os.environ.get("CORS_ALLOWED_ORIGINS")
         or "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
     )
-    allowed_origins = [o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()]
-    origin_clean = origin.strip().lower()
-    return any(origin_clean == o or origin_clean.startswith(o) for o in allowed_origins)
+    allowed_origins = {
+        o.strip().lower().rstrip("/") for o in allowed_origins_str.split(",") if o.strip()
+    }
+    origin_clean = origin.strip().lower().rstrip("/")
+    return origin_clean in allowed_origins
 
 
 async def _extract_and_validate_api_key(

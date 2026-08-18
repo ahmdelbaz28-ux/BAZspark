@@ -58,17 +58,19 @@ def _validate_ws_origin(websocket: WebSocket) -> None:
     or server-to-server) are permitted because they cannot originate from
     a browser cross-site request.
     """
+    if not hasattr(websocket, "headers") or not hasattr(websocket.headers, "get"):
+        return
     origin = websocket.headers.get("origin")
-    if not origin:
+    if not origin or not isinstance(origin, str):
         return  # non-browser client — allow
 
     allowed_str = os.environ.get(
         "CORS_ALLOWED_ORIGINS",
         "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
     )
-    allowed = [o.strip().lower() for o in allowed_str.split(",") if o.strip()]
-    origin_lower = origin.strip().lower()
-    if not any(origin_lower == o or origin_lower.startswith(o) for o in allowed):
+    allowed = {o.strip().lower().rstrip("/") for o in allowed_str.split(",") if o.strip()}
+    origin_lower = origin.strip().lower().rstrip("/")
+    if origin_lower not in allowed:
         logger.warning("Rejected WebSocket from untrusted origin '%s'", origin)
         raise HTTPException(status_code=403, detail="Forbidden: untrusted WebSocket origin.")
 

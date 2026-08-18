@@ -185,3 +185,44 @@ class TestConnectionManager:
         assert manager.is_connected("client-1") is True
         connections = manager.get_active_connections()
         assert connections == ["client-1"]
+
+
+class TestWebSocketOriginValidation:
+    """Security tests for WebSocket Origin validation (CSWSH defense)."""
+
+    def test_allowed_origin_succeeds(self, monkeypatch):
+        from fireai.core.websocket_manager import _validate_ws_origin
+
+        monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+        ws = MagicMock()
+        ws.headers = {"origin": "http://localhost:5173"}
+        _validate_ws_origin(ws)  # Should not raise
+
+    def test_untrusted_origin_raises_403(self, monkeypatch):
+        from fireai.core.websocket_manager import _validate_ws_origin
+
+        monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+        ws = MagicMock()
+        ws.headers = {"origin": "http://evil.com"}
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_ws_origin(ws)
+        assert exc_info.value.status_code == 403
+
+    def test_prefix_matching_bypass_blocked(self, monkeypatch):
+        """Attacker domain starting with allowed origin prefix MUST be blocked."""
+        from fireai.core.websocket_manager import _validate_ws_origin
+
+        monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+        ws = MagicMock()
+        ws.headers = {"origin": "http://localhost:5173.attacker.com"}
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_ws_origin(ws)
+        assert exc_info.value.status_code == 403
+
+    def test_missing_origin_allowed_for_non_browser(self):
+        from fireai.core.websocket_manager import _validate_ws_origin
+
+        ws = MagicMock()
+        ws.headers = {}
+        _validate_ws_origin(ws)  # Non-browser client should pass
+

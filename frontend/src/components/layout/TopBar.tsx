@@ -69,12 +69,14 @@ const TopBar: React.FC<TopBarProps> = memo(
 
 		return (
 			<header className="shell-topbar h-16 flex items-center px-4 lg:px-6 gap-2 lg:gap-4 shrink-0 sticky top-0 z-40">
-				{/* Left — logo + page title */}
+				{/* Left — logo + page title / breadcrumb */}
 				<div className="flex items-center gap-3 min-w-0">
 					<BazSparkLogo size={30} className="shrink-0" />
-					<h1 className="shell-page-title truncate" title={pageName}>
-						{pageName}
-					</h1>
+					<nav aria-label="breadcrumb" className="breadcrumb-container flex items-center gap-1.5 min-w-0">
+						<h1 className="shell-page-title truncate" title={pageName}>
+							{pageName}
+						</h1>
+					</nav>
 				</div>
 
 				<div className="flex-1" />
