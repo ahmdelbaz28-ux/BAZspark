@@ -66,6 +66,16 @@ By integrating physics-based voltage drop and battery sizing algorithms with CAD
 | ![Digital Twin](docs/assets/screenshots/digital-twin.png) | ![Compliance](docs/assets/screenshots/compliance-center.png) |
 | *Multi-format CAD to Revit IFC 4.3 element transformation* | *Automated NFPA 72 & SOLAS clause-by-clause verification* |
 
+| Engineering Calculations Workspace | Multi-Agent FACP Pipeline |
+|:---:|:---:|
+| ![Engineering Workspace](docs/assets/screenshots/engineering.png) | ![FACP Pipeline](docs/assets/screenshots/facp.png) |
+| *Voltage drop, battery standby, and sound level calculations* | *Distributed L1/L2/L3 multi-agent survivability simulation* |
+
+| Marine SOLAS Fire Protection | Automated Submittals & Reports |
+|:---:|:---:|
+| ![Marine Engineering](docs/assets/screenshots/marine.png) | ![Reports Center](docs/assets/screenshots/reports.png) |
+| *SOLAS II-2 & IEC 60092 marine detection topology verification* | *Deterministic Bill of Quantities (BOQ) and regulatory submittals* |
+
 ---
 
 ## 🏗️ Architecture & System Topology
