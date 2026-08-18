@@ -627,23 +627,26 @@ function App() {
 					)}
 					{/* V140 Phase 7: Global Help Drawer with full tree + user guide */}
 					<Suspense fallback={null}>
-						<GlobalHelpDrawer
-							open={helpOpen}
-							onOpenChange={setHelpOpen}
-							initialTopicId={magicHelpTopic}
-						/>
-						<CommandPalette
-							open={commandPaletteOpen}
-							onOpenChange={setCommandPaletteOpen}
-						/>
+						{helpOpen && (
+							<GlobalHelpDrawer
+								open={helpOpen}
+								onOpenChange={setHelpOpen}
+								initialTopicId={magicHelpTopic}
+							/>
+						)}
+						{commandPaletteOpen && (
+							<CommandPalette
+								open={commandPaletteOpen}
+								onOpenChange={setCommandPaletteOpen}
+							/>
+						)}
 						{/* V207.3: Global AI Copilot — visible on all protected routes (Ctrl+J) */}
 						{!isPublicRoute && (
 							<>
 								<AskAiButton onClick={handleAiOpen} />
-								<AskAiSheet open={aiOpen} onOpenChange={setAiOpen} />
+								{aiOpen && <AskAiSheet open={aiOpen} onOpenChange={setAiOpen} />}
 							</>
 						)}
-						<OnboardingTour />
 					</Suspense>
 					{/* V215: Move toaster to top-right to avoid overlapping
                                      the new floating Ask AI button (bottom-right). */}
