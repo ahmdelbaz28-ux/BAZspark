@@ -30,7 +30,8 @@
                 "lint": "eslint src/",
                 "lint:fix": "eslint src --ext .ts,.tsx --fix",
                 "lint:boundaries": "depcruise --ts-pre-compilation-deps src/packages",
-                "ci": "npm ci && npm run typecheck && npm run audit && npm run lint:boundaries && npm run test && npm run build"
+                "perf:check": "node scripts/validate-perf-budget.cjs",
+                "ci": "npm ci && npm run typecheck && npm run audit && npm run lint:boundaries && npm run test && npm run build && npm run perf:check"
         },
         "dependencies": {
                 "@gsap/react": "^2.1.1",

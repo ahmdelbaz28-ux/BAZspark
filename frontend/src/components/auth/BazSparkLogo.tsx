@@ -24,24 +24,56 @@ interface BazSparkLogoProps {
 	readonly className?: string;
 }
 
-export function BazSparkLogo({
+function BazSparkAnimatedLogo({
 	size = 56,
-	animated = false,
 	className = "",
-}: BazSparkLogoProps) {
+}: { readonly size?: number; readonly className?: string }) {
 	const logoRef = useRef<HTMLDivElement>(null);
 	useGsapLogoAnimation(logoRef, { duration: 2.2 });
 
 	return (
 		<div ref={logoRef} className="inline-flex">
-			<svg
-				width={size}
-				height={size}
-				viewBox="0 0 100 100"
-				xmlns="http://www.w3.org/2000/svg"
-				className={`${className} ${animated ? "baz-logo-animated" : ""}`}
-				aria-label="BAZSPARK logo"
-			>
+			<BazSparkSvgContent size={size} animated className={className} />
+		</div>
+	);
+}
+
+function BazSparkStaticLogo({
+	size = 56,
+	className = "",
+}: { readonly size?: number; readonly className?: string }) {
+	return (
+		<div className="inline-flex">
+			<BazSparkSvgContent size={size} animated={false} className={className} />
+		</div>
+	);
+}
+
+export function BazSparkLogo({
+	size = 56,
+	animated = false,
+	className = "",
+}: BazSparkLogoProps) {
+	if (animated) {
+		return <BazSparkAnimatedLogo size={size} className={className} />;
+	}
+	return <BazSparkStaticLogo size={size} className={className} />;
+}
+
+function BazSparkSvgContent({
+	size = 56,
+	animated = false,
+	className = "",
+}: BazSparkLogoProps) {
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 100 100"
+			xmlns="http://www.w3.org/2000/svg"
+			className={`${className} ${animated ? "baz-logo-animated" : ""}`}
+			aria-label="BAZSPARK logo"
+		>
 				<defs>
 					{/* Flame Gradient */}
 					<linearGradient id="bazFlameGrad" x1="0" y1="1" x2="0" y2="0">
@@ -122,7 +154,6 @@ export function BazSparkLogo({
 					mask="url(#bazFlameMask)"
 				/>
 			</svg>
-		</div>
 	);
 }
 

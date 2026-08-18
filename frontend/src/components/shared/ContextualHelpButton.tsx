@@ -10,7 +10,6 @@ import { HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router";
 import { toast } from "sonner";
-import { HELP_TOPICS as TOPICS } from "@/help/helpTopics";
 import { ROUTE_HELP_MAP } from "@/help/types";
 
 // Vercel React Best Practices: js-hoist-regexp / js-cache-function-results
@@ -63,10 +62,19 @@ export function ContextualHelpButton({
 		return null;
 	};
 
-	const topicId = findHelpTopic();
-	const topic = topicId ? TOPICS[topicId as keyof typeof TOPICS] : null;
+	const handleClick = async () => {
+		const topicId = findHelpTopic();
+		if (!topicId) {
+			toast.info(
+				i18n.language === "ar"
+					? "لا يوجد مساعدة متاحة لهذه الصفحة"
+					: "No help available for this page",
+			);
+			return;
+		}
 
-	const handleClick = () => {
+		const { HELP_TOPICS: TOPICS } = await import("@/help/helpTopics");
+		const topic = TOPICS[topicId as keyof typeof TOPICS];
 		if (!topic) {
 			toast.info(
 				i18n.language === "ar"
