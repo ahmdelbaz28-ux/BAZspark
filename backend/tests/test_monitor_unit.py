@@ -344,35 +344,26 @@ class TestWorkflowPathValidation:
         """Test disallowed file extensions are rejected."""
         if not self.available:
             pytest.skip("workflow module not available")
-        from fastapi import HTTPException
-
         for ext in [".exe", ".sh", ".py", ".bat"]:
             test_path = os.path.join(self.workflow_mod.ALLOWED_DATA_DIRS[0], f"test{ext}")
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(ValueError, match="not allowed"):
                 self.workflow_mod._validate_file_path(test_path)
-            assert exc_info.value.status_code == 400
 
     def test_null_byte_injection_rejected(self) -> None:
         """Test null byte injection is blocked."""
         if not self.available:
             pytest.skip("workflow module not available")
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ValueError, match="null byte"):
             self.workflow_mod._validate_file_path(
                 "/tmp/test.pdf\x00.sh"
             )  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
-        assert exc_info.value.status_code == 400
 
     def test_path_traversal_rejected(self) -> None:
         """Test path traversal outside allowed dirs is rejected."""
         if not self.available:
             pytest.skip("workflow module not available")
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ValueError, match="Path traversal blocked"):
             self.workflow_mod._validate_file_path("/etc/shadow.dxf")
-        assert exc_info.value.status_code == 400
 
 
 # ══════════════════════════════════════════════════════════════════════════════
