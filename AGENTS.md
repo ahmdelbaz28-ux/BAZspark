@@ -57,6 +57,18 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Optimizing web performance, page speed, Core Web Vitals, asset loading, JavaScript/CSS execution, or caching strategies.
 - **Scope:** Lighthouse audits, performance budgets, critical rendering path, resource preloading/prerendering, script loading, image & font optimization, and runtime performance.
 
+### 8. `ui-ux-pro-max`
+
+- **Location:** `.agents/skills/ui-ux-pro-max/SKILL.md`
+- **When:** Building and refining user interfaces, design systems, modern styling, interactions, UX heuristics, and professional visual aesthetics.
+- **Scope:** UI/UX design intelligence, design tokens, responsive layouts, color harmony, typography systems, and interaction patterns.
+
+### 9. `playwright-best-practices`
+
+- **Location:** `.agents/skills/playwright-best-practices/SKILL.md`
+- **When:** Writing, debugging, or optimizing Playwright end-to-end tests, visual regression, assertions, locator strategy, network mocking, and test performance.
+- **Scope:** Playwright best practices — resilient locators, auto-waiting, Page Object Model, auth reuse, parallel execution, and CI/CD test stability.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.
