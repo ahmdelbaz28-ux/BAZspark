@@ -1452,15 +1452,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
         bbox_y = (0.0, side)
 
     grid_res_m = 0.1
-    max(
-        2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4
-    )  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
-    max(
-        2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4
-    )  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
-    max(
-        2, int(3.0 / grid_res_m) + 2
-    )  # default 3m ceiling  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
 
     try:
         # Build model from polygon walls

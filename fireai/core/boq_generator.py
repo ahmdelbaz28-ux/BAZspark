@@ -128,9 +128,7 @@ class BOQItem:
 
     def __post_init__(self) -> None:
         # Auto-compute total if not explicitly provided
-        if (
-            self.total_cost_usd == 0.0 and self.unit_cost_usd != 0.0
-        ):  # NOSONAR — S1244: import retained for re-export / API surface
+        if abs(self.total_cost_usd) <= 1e-9 and abs(self.unit_cost_usd) > 1e-9:
             self.total_cost_usd = round(self.quantity * self.unit_cost_usd, 2)
 
 
@@ -313,9 +311,7 @@ def generate_detector_boq(  # NOSONAR — S3776: cognitive complexity is inheren
             if "heat" in det_type
             else "NFPA 72 §17.13"  # NOSONAR — S3358: nested ternary acceptable in this localized context
         )
-        unit_label = (
-            "ea" if det_type != "duct_detector" else "ea"
-        )  # NOSONAR — S3923: branches intentionally differ in side-effect only
+        unit_label = "ea"
 
         items.append(
             BOQItem(
@@ -366,9 +362,6 @@ def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
     total_isolators_needed = 0
 
     for loop in loops:
-        loop.get(
-            "loop_id", "unknown"
-        )  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
         devices = loop.get("devices", [])
         max_between = loop.get("max_devices_between_isolators", 32)
 

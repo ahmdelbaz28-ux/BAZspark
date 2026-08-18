@@ -865,9 +865,7 @@ class DigitalTwin:
         # The old code stored AuditStore (class), which meant _audit_log
         # called class methods instead of instance methods — no state,
         # no database connection, no hash chain.
-        self._audit_store = (
-            AuditStore() if AuditStore is not None else None
-        )  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        self._audit_store = AuditStore()
 
         # Compose sub-components
         self._drift_analyzer = TwinDriftAnalyzer()

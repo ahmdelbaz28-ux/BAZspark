@@ -1790,28 +1790,15 @@ class NACBoosterAllocator:
 
         """
         # Map "WARNING" to "HIGH" for provenance Violation compatibility
-        mapped_severity = severity
-        if severity == "WARNING" and Violation is not None:
-            mapped_severity = "HIGH"
+        mapped_severity = "HIGH" if severity == "WARNING" else severity
 
-        if (
-            Violation is not None
-        ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-            violations.append(
-                Violation(
-                    severity=mapped_severity,
-                    description=description,
-                    nfpa_section=citation,
-                )
+        violations.append(
+            Violation(
+                severity=mapped_severity,
+                description=description,
+                nfpa_section=citation,
             )
-        else:
-            violations.append(
-                {
-                    "severity": severity,
-                    "citation": citation,
-                    "description": description,
-                }
-            )
+        )
 
 
 # ============================================================================

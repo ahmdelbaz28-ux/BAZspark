@@ -264,13 +264,6 @@ class DensityOptimizerV2:
         self.chunk_size = max(1, chunk_size)
         self.timeout_per_room_s = timeout_per_room_s
 
-        if (
-            DensityOptimizer is None
-        ):  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-            log.warning(
-                "DensityOptimizer not available — batch optimization will return errors for all rooms"
-            )
-
     def optimize_batch(
         self, room_specs: dict[str, Any], detector_type: str = "smoke", **kwargs
     ) -> (

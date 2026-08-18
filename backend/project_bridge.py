@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -42,6 +43,11 @@ logger = logging.getLogger(__name__)
 
 _TARGET_DB = "udm_elements"
 _SUPPRESSED_EXCEPTION_MSG = "Suppressed Exception in project_bridge.py"  # NOSONAR - python:S1192
+
+
+def _sanitize_log_val(val: Any) -> str:
+    """Sanitize values before logging to prevent CRLF injection (CWE-117)."""
+    return re.sub(r"[^a-zA-Z0-9_\-.:]", "_", str(val))[:64]
 
 
 def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
@@ -164,8 +170,8 @@ def sync_project_update_to_udm(
         existing = udm.get_project(project_id)
         if existing is None:
             logger.warning(
-                "Project %s not found in UDM — attempting to create", project_id
-            )  # NOSONAR
+                "Project %s not found in UDM — attempting to create", _sanitize_log_val(project_id)
+            )
             # Attempt to create it from scratch
             return sync_project_to_udm({"id": project_id, **updates})
 
@@ -475,12 +481,14 @@ def sync_device_update_to_udm(
                 )
 
             logger.info(
-                "Device %s update synced to UDM for project %s", device_id, project_id
-            )  # NOSONAR
+                "Device %s update synced to UDM for project %s",
+                _sanitize_log_val(device_id),
+                _sanitize_log_val(project_id),
+            )
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.exception("Failed to sync device %s update to UDM: %s", device_id, e)
+            logger.exception("Failed to sync device %s update to UDM: %s", _sanitize_log_val(device_id), e)
             db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -529,12 +537,14 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
             )
 
             logger.info(
-                "Device %s deletion synced to UDM for project %s", device_id, project_id
-            )  # NOSONAR
+                "Device %s deletion synced to UDM for project %s",
+                _sanitize_log_val(device_id),
+                _sanitize_log_val(project_id),
+            )
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.exception("Failed to sync device %s deletion to UDM: %s", device_id, e)
+            logger.exception("Failed to sync device %s deletion to UDM: %s", _sanitize_log_val(device_id), e)
             db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -623,12 +633,14 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
             )
 
             logger.info(
-                "Connection %s synced to UDM for project %s", connection_id, project_id
-            )  # NOSONAR
+                "Connection %s synced to UDM for project %s",
+                _sanitize_log_val(connection_id),
+                _sanitize_log_val(project_id),
+            )
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.exception("Failed to sync connection %s to UDM: %s", connection_id, e)
+            logger.exception("Failed to sync connection %s to UDM: %s", _sanitize_log_val(connection_id), e)
             db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -692,12 +704,14 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                 )
 
             logger.info(
-                "Connection %s deletion synced to UDM for project %s", connection_id, project_id
-            )  # NOSONAR
+                "Connection %s deletion synced to UDM for project %s",
+                _sanitize_log_val(connection_id),
+                _sanitize_log_val(project_id),
+            )
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.exception("Failed to sync connection %s deletion to UDM: %s", connection_id, e)
+            logger.exception("Failed to sync connection %s deletion to UDM: %s", _sanitize_log_val(connection_id), e)
             db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 

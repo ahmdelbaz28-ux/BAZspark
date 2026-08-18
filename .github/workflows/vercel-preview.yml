@@ -77,16 +77,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Check that secret is set
           if [ -z "${PROJECT_ID:-}" ]; then
-            echo "::error::VERCEL_PROJECT_ID secret not set — preview deployment cannot proceed"
+            echo "::warning::VERCEL_PROJECT_ID secret not set — preview deployment skipped"
             echo "deploy_uid=" >> "$GITHUB_OUTPUT"
             echo "deploy_url=" >> "$GITHUB_OUTPUT"
-            exit 1
+            exit 0
           fi
           PROJ="$PROJECT_ID"
-
-          DEPLOY_PAYLOAD=$(printf '{"name":"bazspark","target":"preview","gitSource":{"type":"github","org":"%s","repo":"%s","ref":"%s","sha":"%s"},"ref":"%s"}' "$REPO_OWNER" "$REPO_NAME" "$REF" "$SHA" "$REF")
+          DEPLOY_PAYLOAD=$(printf '{"name":"ba-zspark","target":"preview","gitSource":{"type":"github","org":"%s","repo":"%s","ref":"%s","sha":"%s"},"ref":"%s"}' "$REPO_OWNER" "$REPO_NAME" "$REF" "$SHA" "$REF")
 
           echo "Branch: $REF | SHA: ${SHA:0:8} | PR: #${PR_NUMBER:-none}"
 
@@ -122,43 +120,44 @@ jobs:
             echo "deploy_url=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Mark GitHub deployment as success
-        if: steps.check-secrets.outputs.skip != 'true' && steps.gh-deploy.outputs.deployment_id != '' && steps.trigger.outputs.deploy_uid != ''
+      - name: Update GitHub deployment status
+        if: always() && steps.gh-deploy.outputs.deployment_id != ''
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
+          DEPLOY_UID: ${{ steps.trigger.outputs.deploy_uid }}
           DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
         with:
           script: |
             const deploymentId = Number('${{ steps.gh-deploy.outputs.deployment_id }}');
             if (!deploymentId) return;
+            const deployUid = process.env.DEPLOY_UID;
             const deployUrl = process.env.DEPLOY_URL;
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: deploymentId,
-              state: 'success',
-              description: 'Preview deployment triggered',
-              environment_url: deployUrl ? `https://${deployUrl}` : '',
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              auto_inactive: true,
-            });
 
-      - name: Mark GitHub deployment as inactive (on skip/failure)
-        if: always() && steps.check-secrets.outputs.skip == 'true' && steps.gh-deploy.outputs.deployment_id != ''
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
-        with:
-          script: |
-            const deploymentId = Number('${{ steps.gh-deploy.outputs.deployment_id }}');
-            if (!deploymentId) return;
             try {
-              await github.rest.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: deploymentId,
-                state: 'inactive',
-                description: 'Preview deployment skipped',
-              });
-            } catch (e) { console.log('Could not update deployment status:', e.message); }
+              if (deployUid && deployUrl) {
+                await github.rest.repos.createDeploymentStatus({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  deployment_id: deploymentId,
+                  state: 'success',
+                  description: 'Vercel preview deployment active',
+                  environment_url: `https://${deployUrl}`,
+                  log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                  auto_inactive: true,
+                });
+              } else {
+                await github.rest.repos.createDeploymentStatus({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  deployment_id: deploymentId,
+                  state: 'inactive',
+                  description: 'Preview deployment skipped or unavailable',
+                  log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                });
+              }
+            } catch (err) {
+              console.log(`Warning: Could not update deployment status: ${err.message}`);
+            }
 
       - name: Comment PR with preview URL
         if: steps.trigger.outputs.deploy_url != '' && github.event.pull_request.number

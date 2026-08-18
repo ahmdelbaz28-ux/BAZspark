@@ -64,66 +64,50 @@ ALLOWED_DATA_DIRS = os.environ.get(
 ALLOWED_FILE_EXTENSIONS = frozenset({".dxf", ".dwg", ".pdf", ".ifc", ".rvt"})
 
 
-def _validate_file_path(
-    file_path: str,
-) -> str:  # NOSONAR — S3516: both branches return `file_path` because this is a validation gate (returns input on success, raises on failure)
+def _validate_file_path(file_path: str) -> str:
     """
     Validate file_path against path traversal and extension whitelist.
 
     SECURITY: This is the FIRST line of defense at the router layer.
     The service layer (node_initialize) provides a SECOND check.
     Both are required — defense-in-depth per agent.md Priority 1 (Safety).
-
-    Raises HTTPException 400 if:
-      - Path resolves outside allowed directories
-      - File extension is not in allowed set
-      - Path contains null bytes
     """
     # Null byte injection (e.g., "file.pdf\x00.sh")
     if "\x00" in file_path:
-        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-            status_code=400,
-            detail="Invalid file path: null byte detected",
-        )
+        raise ValueError("Invalid file path: null byte detected")
 
     # Extension whitelist — only BIM/CAD file types
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in ALLOWED_FILE_EXTENSIONS:
-        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-            status_code=400,
-            detail=(
-                f"File extension '{ext}' not allowed. Permitted: {sorted(ALLOWED_FILE_EXTENSIONS)}"
-            ),
+        raise ValueError(
+            f"File extension '{ext}' not allowed. Permitted: {sorted(ALLOWED_FILE_EXTENSIONS)}"
         )
 
     # Path traversal check — resolve and verify within allowed dirs
     real_path = os.path.realpath(file_path)
-    for allowed_dir in ALLOWED_DATA_DIRS:
-        if not allowed_dir:
-            continue
-        allowed_real = os.path.realpath(allowed_dir)
-        if real_path == allowed_real or real_path.startswith(allowed_real + os.sep):
-            return file_path  # OK — within allowed directory
-
-    # If file doesn't exist yet (upload pending), check the parent path
-    # This handles cases where the path is within an allowed dir but
-    # the file hasn't been created yet
     parent_dir = os.path.dirname(real_path)
+    is_allowed = False
     for allowed_dir in ALLOWED_DATA_DIRS:
         if not allowed_dir:
             continue
         allowed_real = os.path.realpath(allowed_dir)
-        if parent_dir == allowed_real or parent_dir.startswith(allowed_real + os.sep):
-            return file_path
+        if (
+            real_path == allowed_real
+            or real_path.startswith(allowed_real + os.sep)
+            or parent_dir == allowed_real
+            or parent_dir.startswith(allowed_real + os.sep)
+        ):
+            is_allowed = True
+            break
 
-    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-        status_code=400,
-        detail=(
+    if not is_allowed:
+        raise ValueError(
             f"Path traversal blocked: '{file_path}' resolves outside "
             f"allowed directories. Per security policy, file access is "
             f"restricted to designated data directories."
-        ),
-    )
+        )
+
+    return real_path
 
 
 router = APIRouter(prefix="/workflow", tags=["workflow"])
@@ -166,7 +150,14 @@ async def get_workflow_engine_status():
     )
 
 
-@router.post("/start", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
+@router.post(
+    "/start",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))],
+    responses={
+        400: {"description": "Invalid file path or unpermitted directory"},
+        403: {"description": "Human review bypass forbidden in production"},
+    },
+)
 @limiter.limit("10/minute")
 async def start_workflow(
     request: Request,
@@ -207,7 +198,10 @@ async def start_workflow(
     LIFE-SAFETY: skip_human_review=True should NEVER be used in production.
     It bypasses the PE review gate required by NFPA 72.
     """
-    _validate_file_path(file_path)
+    try:
+        _validate_file_path(file_path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     if skip_human_review:
         # NFPA 72 requires PE review for all fire alarm designs.

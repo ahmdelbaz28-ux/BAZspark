@@ -1,26 +1,10 @@
 """FireAI Digital Twin Platform — Backend Package."""
 
-# Compatibility patch for hashlib.md5 used by older ReportLab versions.
-# Older ReportLab calls hashlib.md5(usedforsecurity=False), which is invalid in Python 3.12+.
-# This patch removes the unsupported kwarg to prevent TypeError during PDF generation.
-import hashlib
+from pathlib import Path
 
-_original_md5 = (
-    hashlib.md5
-)  # NOSONAR — python:S4790: compatibility patch for ReportLab, NOT used for security
-
-
-def _patched_md5(*args, **kwargs):  # type: ignore[no-untyped-def]
-    kwargs.pop("usedforsecurity", None)
-    return _original_md5(
-        *args, **kwargs
-    )  # NOSONAR — python:S4790: ReportLab compat, no security context
-
-
-hashlib.md5 = _patched_md5  # NOSONAR — python:S4790: ReportLab backward compat patch
-
+_version_file = Path(__file__).resolve().parent.parent / "VERSION"
 try:
-    with open("VERSION") as f:
-        __version__ = f.read().strip()
-except FileNotFoundError:
+    __version__ = _version_file.read_text(encoding="utf-8").strip()
+except OSError:
     __version__ = "0.0.0"
+

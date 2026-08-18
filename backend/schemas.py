@@ -10,7 +10,7 @@ now live in backend/schema_base.py to eliminate duplication with backend/models.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -451,9 +451,6 @@ class StatisticsResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # UNIVERSAL RESPONSE WRAPPER
 # ════════════════════════════════════════════════════════════════════════════
-
-T = TypeVar("T")
-
 
 class ApiResponse[T](CamelModel):
     """Universal response wrapper for all API endpoints."""
