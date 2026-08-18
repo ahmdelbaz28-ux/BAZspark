@@ -104,6 +104,40 @@ const related = {
 		"troubleshooting.auth",
 		"troubleshooting.app-crash",
 	] as HelpTopicId[],
+	marine: [
+		"marine.overview",
+		"compliance.overview",
+		"reports.generate",
+	] as HelpTopicId[],
+	mining: [
+		"mining.overview",
+		"compliance.overview",
+		"reports.generate",
+	] as HelpTopicId[],
+	facp: [
+		"facp.overview",
+		"dashboard.overview",
+		"engineering.overview",
+	] as HelpTopicId[],
+	apiKeys: [
+		"api-keys.manage",
+		"settings.api-keys",
+		"settings.backend",
+	] as HelpTopicId[],
+	compliance: [
+		"compliance.overview",
+		"reports.generate",
+		"fire-alarm.detector-placement",
+	] as HelpTopicId[],
+	monitor: [
+		"monitor.overview",
+		"troubleshooting.backend",
+		"dashboard.overview",
+	] as HelpTopicId[],
+	billing: [
+		"billing.overview",
+		"dashboard.overview",
+	] as HelpTopicId[],
 };
 
 export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
@@ -1422,6 +1456,472 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
 		keywords: ["crash", "freeze", "refresh", "تعطل", "تجمد", "تحديث"],
 		relatedTopics: related.troubleshooting,
 	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// MARINE FIRE PROTECTION
+	// ═══════════════════════════════════════════════════════════════════════
+	"marine.overview": {
+		id: "marine.overview",
+		category: "marine",
+		titleEn: "Marine & Offshore Fire Protection (SOLAS)",
+		titleAr: "أنظمة الحماية البحرية للسفن والمنصات (SOLAS)",
+		descriptionEn:
+			"Design and verify marine fire detection, suppression, and watertight boundary topologies conforming to SOLAS II-2 and IEC 60092.",
+		descriptionAr:
+			"تصميم والتحقق من شبكات إنذار وإطفاء الحريق البحرية وفواصل الإحكام المائي طبقاً لمعايير SOLAS II-2 و IEC 60092.",
+		stepsEn: [
+			"Navigate to Marine Fire Protection from the main navigation.",
+			"Select vessel type, gross tonnage, and passenger capacity.",
+			"Configure fire-resistant bulkheads (Class A-60 / B-15) and watertight compartments.",
+			"Deploy marine-grade heat, optical flame, and smoke sensors with IP67/IP68 ingress ratings.",
+			"Run the automated SOLAS verification audit to validate safe evacuation routes.",
+		],
+		stepsAr: [
+			"انتقل إلى 'الهندسة البحرية' من القائمة الجانبية.",
+			"اختر نوع السفينة أو المنصة وحمولتها وسعتها الاستيعابية.",
+			"حدد قواطع الحريق المقاومة للهب (فئات A-60 و B-15) وحجرات الإحكام المائي.",
+			"وزّع كواشف الحريق البحرية المقاومة للرطوبة والأملاح بدرجة حماية IP67/IP68.",
+			"شغّل الفحص الآلي لمطابقة معايير SOLAS وتأكيد مسارات الإخلاء الآمنة.",
+		],
+		warningsEn: [
+			"Marine installations require certified IEC 60092 cabling and redundant loop isolators.",
+		],
+		warningsAr: [
+			"تتطلب التركيبات البحرية كابلات معتمدة بحرياً طبقاً لـ IEC 60092 مع عوازل قصر redundant.",
+		],
+		keywords: [
+			"marine",
+			"solas",
+			"ship",
+			"vessel",
+			"offshore",
+			"بحري",
+			"سفينة",
+			"منصة",
+			"حريق بحري",
+		],
+		relatedTopics: related.marine,
+		navigateTo: "/marine",
+		contextRoute: "/marine",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// MINING FIRE PROTECTION
+	// ═══════════════════════════════════════════════════════════════════════
+	"mining.overview": {
+		id: "mining.overview",
+		category: "mining",
+		titleEn: "Mining & Heavy Industry Fire Engineering",
+		titleAr: "أنظمة الحماية لقطاع التعدين والصناعات الثقيلة",
+		descriptionEn:
+			"Heavy equipment fire suppression, underground mine shaft detection, conveyor belt protection, and hazardous area classification.",
+		descriptionAr:
+			"حماية المعدات الثقيلة، كشف الحريق في الأنفاق والمناجم، حماية سيور النقل، وتصنيف المناطق الخطرة والقابلة للانفجار.",
+		stepsEn: [
+			"Open Mining Protection from the navigation menu.",
+			"Select mining environment: underground, open pit, or processing plant.",
+			"Configure linear heat detection (LHD) cables along conveyor belts.",
+			"Design dual-agent automatic suppression systems for haul trucks and excavators.",
+			"Verify hazardous area ATEX / IECEx ratings for spark-free operation.",
+		],
+		stepsAr: [
+			"افتح صفحة 'قطاع التعدين' من القائمة الجانبية.",
+			"اختر بيئة التعدين: مناجم تحت الأرض، محاجر مفتوحة، أو مصانع معالجة.",
+			"اضبط كابلات الاستشعار الحراري الخطي (LHD) على طول سيور النقل.",
+			"صمم أنظمة الإطفاء التلقائي المزدوج للشاحنات والمعدات الثقيلة.",
+			"تحقق من تصنيف المناطق الخطرة ومعايير ATEX / IECEx ضد الشرر والانفجار.",
+		],
+		warningsEn: [
+			"Dust accumulation in mining requires specialized high-dust optical sensors or optical flame detectors.",
+		],
+		warningsAr: [
+			"تراكم الغبار في بيئات التعدين يتطلب كواشف مخصصة للأجواء المغبرة أو كواشف لهب بصرية.",
+		],
+		keywords: [
+			"mining",
+			"heavy industry",
+			"conveyor",
+			"atex",
+			"تعدين",
+			"مناجم",
+			"معدات ثقيلة",
+			"سيور نقل",
+		],
+		relatedTopics: related.mining,
+		navigateTo: "/mining",
+		contextRoute: "/mining",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// MULTI-AGENT DISTRIBUTED FACP
+	// ═══════════════════════════════════════════════════════════════════════
+	"facp.overview": {
+		id: "facp.overview",
+		category: "facp",
+		titleEn: "Multi-Agent Distributed FACP Network",
+		titleAr: "شبكة لوحات التحكم الذكية والوكلاء المتعددين (FACP)",
+		descriptionEn:
+			"Real-time distributed fire alarm control panel simulation with Level 1 (Reflexive), Level 2 (Tactical), and Level 3 (Strategic) AI agents.",
+		descriptionAr:
+			"محاكاة وإدارة شبكات لوحات التحكم الموزعة مع وكلاء الذكاء الاصطناعي على المستويات الثلاثة: الانعكاسي والتكتيكي والاستراتيجي.",
+		stepsEn: [
+			"Navigate to Distributed FACP from the sidebar.",
+			"View active control nodes and peer-to-peer network mesh health.",
+			"Observe Level 1 reflexive trip times (< 50ms) for immediate alarm activation.",
+			"Simulate network cable severance to verify automatic Level 2 ring-healing failover.",
+			"Review Level 3 strategic evacuation routing based on real-time smoke spread.",
+		],
+		stepsAr: [
+			"انتقل إلى 'وكلاء FACP المتعددين' من القائمة الجانبية.",
+			"استعرض اللوحات الفرعية النشطة وحالة شبكة الاتصال الحلقية (Mesh Network).",
+			"راقب زمن الاستجابة الفوري للمستوى الأول L1 (أقل من 50 مللي ثانية).",
+			"جرّب محاكاة انقطاع كابل الشبكة للتحقق من التعافي الذاتي الفوري للحلقة (Ring Healing).",
+			"راجع خطط الإخلاء الديناميكية للمستوى الثالث L3 بناءً على انتشار الدخان.",
+		],
+		warningsEn: [
+			"Always ensure FACP networks maintain redundant communication loops for NFPA 72 Class X survivability.",
+		],
+		warningsAr: [
+			"تأكد دائماً من أن شبكة اللوحات تدعم حلقات الاتصال المزدوجة لتحقيق معيار النجاة Class X.",
+		],
+		keywords: [
+			"facp",
+			"multi-agent",
+			"distributed",
+			"panel",
+			"لوحة إنذار",
+			"شبكة موحدة",
+			"وكلاء ذكاء اصطناعي",
+		],
+		relatedTopics: related.facp,
+		navigateTo: "/facp",
+		contextRoute: "/facp",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// REGULATORY COMPLIANCE CENTER
+	// ═══════════════════════════════════════════════════════════════════════
+	"compliance.overview": {
+		id: "compliance.overview",
+		category: "compliance",
+		titleEn: "Regulatory Compliance & Code Audit (NFPA / SOLAS / IBC)",
+		titleAr: "مركز التدقيق والمطابقة الرقابية للأكواد الهندسية",
+		descriptionEn:
+			"Automated, clause-by-clause audit engine verifying your drawings against NFPA 72, NFPA 101, SOLAS, and IBC life-safety rules.",
+		descriptionAr:
+			"محرك التدقيق الآلي الذي يفحص مخططاتك بنداً ببند للتأكد من مطابقتها لكودات NFPA 72 و NFPA 101 و SOLAS وقانون البناء الدولي IBC.",
+		stepsEn: [
+			"Open Regulatory Compliance Center from the sidebar.",
+			"Select the active standard (NFPA 72, SOLAS II-2, or IBC 2024).",
+			"Click 'Run Automated Compliance Audit' to inspect the current project.",
+			"Review detected violations (e.g. exceeded detector spacing, dead zones, insufficient strobe candela).",
+			"Click 'Auto-Remediate' or jump directly to the flagged element to resolve it.",
+		],
+		stepsAr: [
+			"افتح 'المطابقة الرقابية للأكواد' من القائمة الجانبية.",
+			"حدد الكود الهندسي المطلوب التدقيق بناءً عليه (مثل NFPA 72 أو SOLAS أو IBC).",
+			"اضغط على 'بدء التدقيق الآلي' لفحص المشروع بالكامل.",
+			"استعرض الملاحظات أو المخالفات المرصودة (مثل تجاوز المسافة المسموحة بين الكواشف أو ضعف شدة الصوت).",
+			"اضغط على العنصر المطلوب لتعديله فوراً أو اختر المعالجة الآلية.",
+		],
+		warningsEn: [
+			"All designs submitted for official AHJ approval must show 100% compliance with zero unresolved critical findings.",
+		],
+		warningsAr: [
+			"يجب أن تكون نتيجة التدقيق 100% مطابقة قبل تقديم المخططات للدفاع المدني أو الاستشاري المعتمد.",
+		],
+		keywords: [
+			"compliance",
+			"nfpa",
+			"audit",
+			"solas",
+			"ibc",
+			"مطابقة",
+			"أكواد",
+			"تدقيق",
+			"دفاع مدني",
+		],
+		relatedTopics: related.compliance,
+		navigateTo: "/compliance",
+		contextRoute: "/compliance",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// API KEYS & ACCESS MANAGEMENT
+	// ═══════════════════════════════════════════════════════════════════════
+	"api-keys.manage": {
+		id: "api-keys.manage",
+		category: "api-keys",
+		titleEn: "API Keys & Access Control Management",
+		titleAr: "إدارة التراخيص ومفاتيح API وصلاحيات المستخدمين",
+		descriptionEn:
+			"Generate, revoke, and manage secure API keys with granular Role-Based Access Control (Admin, Engineer, Viewer).",
+		descriptionAr:
+			"توليد وإلغاء وإدارة مفاتيح API الآمنة مع تحديد الصلاحيات بدقة (مشرف، مهندس مصمم، مشاهد فقط).",
+		stepsEn: [
+			"Access the API Keys Management page from the sidebar (Admin only).",
+			"Click 'Generate New Key' to create a new credential.",
+			"Assign the role: Engineer (design/calculate), Viewer (read-only), or Admin.",
+			"Provide an identifier name (e.g., 'Eng. Ahmed Site Team').",
+			"Copy the generated key immediately and securely share it with the user.",
+		],
+		stepsAr: [
+			"ادخل إلى صفحة 'إدارة المفاتيح' من القائمة الجانبية (للمشرفين فقط).",
+			"اضغط على 'توليد مفتاح جديد' (Generate New Key).",
+			"حدد الصلاحية: مهندس (تصميم وحسابات)، مشاهد (قراءة فقط)، أو مشرف.",
+			"اكتب اسماً أو وصفاً لصاحب المفتاح (مثل: المهندس أحمد - فريق الموقع).",
+			"انسخ المفتاح المتولد فوراً وسلّمه للمستخدم بأمان.",
+		],
+		warningsEn: [
+			"API keys cannot be recovered once the window is closed. Always copy and store them securely.",
+		],
+		warningsAr: [
+			"لا يمكن استرجاع نص المفتاح بعد إغلاق النافذة؛ انسخه وخزنه في مكان آمن فوراً.",
+		],
+		keywords: [
+			"api",
+			"key",
+			"admin",
+			"token",
+			"مفتاح",
+			"ترخيص",
+			"صلاحيات",
+			"أدمن",
+		],
+		relatedTopics: related.apiKeys,
+		navigateTo: "/api-keys",
+		contextRoute: "/api-keys",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// SYSTEM HEALTH & MONITORING
+	// ═══════════════════════════════════════════════════════════════════════
+	"monitor.overview": {
+		id: "monitor.overview",
+		category: "monitor",
+		titleEn: "System Health, Diagnostics & Self-Healing",
+		titleAr: "مراقبة صحة النظام والتشخيص والمعالجة الذاتية",
+		descriptionEn:
+			"Real-time cluster telemetry, WebSocket link latency, database pool health, and autonomous agent self-healing workflows.",
+		descriptionAr:
+			"متابعة حية لأداء الخوادم، سرعة استجابة الاتصال، حالة قواعد البيانات، ومحركات المعالجة الذاتية التلقائية للأخطاء.",
+		stepsEn: [
+			"Navigate to System Monitor or Self-Healing from the navigation menu.",
+			"Check overall health badges (Database, Redis, WebSocket, Calculation Engine).",
+			"Review error graphs and latency percentiles (p50, p95, p99).",
+			"If a service becomes degraded, trigger the automated 'Self-Heal' recovery sequence.",
+			"Interact with the diagnostic AI agent for troubleshooting advice.",
+		],
+		stepsAr: [
+			"افتح 'مراقبة النظام' أو 'المعالجة الذاتية' من القائمة الجانبية.",
+			"تحقق من مؤشرات الحالة (قاعدة البيانات، الذاكرة المؤقتة، محرك الحسابات).",
+			"استعرض سرعة الاستجابة وزمن المعالجة.",
+			"في حال حدوث بطء أو خلل، اضغط على زر 'المعالجة الذاتية' (Self-Heal) لإعادة الضبط التلقائي.",
+			"يمكنك التحدث مع وكيل التشخيص الذكي للحصول على نصائح فورية لحل أي مشكلة.",
+		],
+		warningsEn: [
+			"Ensure backend services have stable network connectivity for real-time telemetry streaming.",
+		],
+		warningsAr: [
+			"تأكد من استقرار اتصال الإنترنت لضمان تدفق بيانات المراقبة بشكل لحظي ودقيق.",
+		],
+		keywords: [
+			"monitor",
+			"health",
+			"self-healing",
+			"telemetry",
+			"مراقبة",
+			"صحة النظام",
+			"معالجة ذاتية",
+			"أداء",
+		],
+		relatedTopics: related.monitor,
+		navigateTo: "/monitor",
+		contextRoute: "/monitor",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// BILLING & SUBSCRIPTIONS
+	// ═══════════════════════════════════════════════════════════════════════
+	"billing.overview": {
+		id: "billing.overview",
+		category: "billing",
+		titleEn: "Billing, Subscriptions & Payment Gateway",
+		titleAr: "إدارة الاشتراكات وبوابة الدفع والفواتير",
+		descriptionEn:
+			"Manage project licenses, active subscriptions, automated invoicing, and local Meeza / card payment gateways.",
+		descriptionAr:
+			"إدارة تراخيص المشاريع، تجديد الاشتراكات، إصدار الفواتير الآلية، والدفع عبر كروت ميزة والبطاقات الائتمانية.",
+		stepsEn: [
+			"Open Billing & Subscriptions from the sidebar.",
+			"Select your desired tier (Starter, Professional Engineer, or Enterprise Cluster).",
+			"Choose payment method (Credit Card or Egyptian Meeza Card).",
+			"Complete the transaction through the secure payment modal.",
+			"Download official tax invoices and receipts instantly.",
+		],
+		stepsAr: [
+			"افتح 'الاشتراكات والفواتير' من القائمة الجانبية.",
+			"اختر باقة الاستخدام المناسبة لاحتياجاتك (فردي، مكاتب هندسية، أو شركات كبرى).",
+			"حدد وسيلة الدفع (بطاقات ائتمانية أو بطاقة ميزة المحلية).",
+			"أتمم عملية الدفع بأمان من خلال النافذة المعتمدة.",
+			"حمّل الفاتورة الضريبية وسند السداد المعتمد فورياً.",
+		],
+		warningsEn: [
+			"All transactions are encrypted with PCI-DSS compliant tokenization.",
+		],
+		warningsAr: [
+			"جميع المعاملات المالية مشفرة بالكامل طبقاً لأعلى معايير الأمان المصرفي PCI-DSS.",
+		],
+		keywords: [
+			"billing",
+			"subscription",
+			"meeza",
+			"payment",
+			"اشتراك",
+			"فواتير",
+			"دفع",
+			"ميزة",
+		],
+		relatedTopics: related.billing,
+		navigateTo: "/billing",
+		contextRoute: "/billing",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// SIMREADY USD & BIM DIGITAL TWINS
+	// ═══════════════════════════════════════════════════════════════════════
+	"simready.overview": {
+		id: "simready.overview",
+		category: "digital-twin",
+		titleEn: "SimReady USD & NVIDIA Omniverse Digital Twin",
+		titleAr: "التوأم الرقمي ونماذج SimReady USD لبيئات المحاكاة",
+		descriptionEn:
+			"Export physics-accurate 3D fire protection models in Universal Scene Description (USD) format for NVIDIA Omniverse simulations.",
+		descriptionAr:
+			"تصدير مجسمات ونماذج أنظمة الحريق ثلاثية الأبعاد بدقة فيزيائية بصيغة USD لمحاكاتها في بيئة NVIDIA Omniverse.",
+		stepsEn: [
+			"Navigate to SimReady Export or Digital Twin.",
+			"Select the active BIM/CAD building elements.",
+			"Assign thermodynamic and smoke dispersion physics materials.",
+			"Click 'Generate SimReady USD Asset' to compile the scene.",
+			"Import the asset directly into NVIDIA Omniverse or Isaac Sim for fire drill simulations.",
+		],
+		stepsAr: [
+			"انتقل إلى 'التوأم الرقمي' أو تصدير SimReady.",
+			"حدد عناصر ومعدات الحريق في المبنى.",
+			"اضبط الخصائص الفيزيائية والمواد المقاومة للحرارة.",
+			"اضغط على 'توليد ملف SimReady USD' لتجميع المشهد بالكامل.",
+			"افتح الملف مباشرة في منصة NVIDIA Omniverse لإجراء محاكاة تجارب الإخلاء والحرائق.",
+		],
+		warningsEn: [
+			"USD assets include collision geometry and sensor telemetry hooks for physics engines.",
+		],
+		warningsAr: [
+			"تتضمن نماذج USD حدود التصادم والربط الحركي مع محركات المحاكاة الفيزيائية.",
+		],
+		keywords: [
+			"simready",
+			"usd",
+			"omniverse",
+			"nvidia",
+			"توأم رقمي",
+			"محاكاة ثلاثية الأبعاد",
+		],
+		relatedTopics: related.digitalTwin,
+		navigateTo: "/simready",
+		contextRoute: "/simready",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// CRYPTOGRAPHIC AUDIT TRAIL
+	// ═══════════════════════════════════════════════════════════════════════
+	"audit-trail.overview": {
+		id: "audit-trail.overview",
+		category: "settings",
+		titleEn: "Cryptographic Audit Trail & Evidence Log",
+		titleAr: "سجل التدقيق المشفر والأدلة الجنائية الهندسية",
+		descriptionEn:
+			"Immutable HMAC-SHA256 chained audit logs recording all design modifications, safety overrides, and regulatory submissions.",
+		descriptionAr:
+			"سجل غير قابل للتعديل مشفر بسلاسل HMAC-SHA256 يوثق جميع التعديلات الهندسية والموافقات والتقارير المصدرة.",
+		stepsEn: [
+			"Open Audit Trail from Settings or System Menu.",
+			"View chronological history of all user actions and calculation runs.",
+			"Verify the cryptographic signature of any past calculation.",
+			"Export the verifiable compliance certificate for legal and insurance submittals.",
+		],
+		stepsAr: [
+			"افتح 'سجل التدقيق' من قائمة الإعدادات أو لوحة التحكم.",
+			"استعرض السجل الزمني الموثق لجميع التعديلات والعمليات الحسابية.",
+			"تحقق من صحة التوقيع الرقمي المشفر لأي عملية سابقة.",
+			"صدّر شهادة الأدلة الرقمية لتقديمها للجهات الاستشارية والتأمينية.",
+		],
+		warningsEn: [
+			"Tampering with the local storage or log files will immediately invalidate the cryptographic chain.",
+		],
+		warningsAr: [
+			"أي تلاعب في سجلات العمليات يبطل السلسلة الرقمية المشفرة فورياً لضمان الشفافية والمصداقية.",
+		],
+		keywords: [
+			"audit",
+			"trail",
+			"hmac",
+			"security",
+			"تدقيق مشفر",
+			"سجل الأدلة",
+			"أمان",
+		],
+		relatedTopics: related.settings,
+		navigateTo: "/audit-trail",
+		contextRoute: "/audit-trail",
+	},
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// DEVICE INVENTORY & SPECIFICATIONS
+	// ═══════════════════════════════════════════════════════════════════════
+	"devices.overview": {
+		id: "devices.overview",
+		category: "elements",
+		titleEn: "Device Inventory, Catalogs & Electrical Specs",
+		titleAr: "كتالوج الأجهزة والمعدات والمواصفات الكهربائية",
+		descriptionEn:
+			"Comprehensive catalog of fire alarm initiating devices, notification appliances, modules, and loop load ratings.",
+		descriptionAr:
+			"دليل وكتالوج شامل لجميع كواشف الحريق وسارينات الإنذار ووحدات التحكم مع أحمال التيار والجهد الكهربائي.",
+		stepsEn: [
+			"Navigate to Device Inventory or Elements from the sidebar.",
+			"Filter devices by category: Smoke, Heat, Flame, Pull Stations, Sounders, Modules.",
+			"Inspect electrical ratings: Standby Current (μA), Alarm Current (mA), and Operating Voltage.",
+			"Add custom manufacturer specifications to the local device catalog.",
+			"Export the equipment catalog directly to project specifications.",
+		],
+		stepsAr: [
+			"انتقل إلى 'كتالوج الأجهزة والعناصر' من القائمة الجانبية.",
+			"قم بتصفية الأجهزة حسب النوع: كواشف دخان، حرارة، لهب، كواسر زجاج، سارينات، وحدات تحكم.",
+			"افحص المواصفات الكهربائية: تيار الاستعداد (Standby)، تيار الإنذار (Alarm)، وجهد التشغيل.",
+			"يمكنك إضافة أجهزة جديدة من كبرى الشركات المصنعة مع ضبط مواصفاتها الفنية.",
+			"صدّر قائمة المواصفات الفنية للمعدات لإرفاقها بالمناقصات والمشاريع.",
+		],
+		warningsEn: [
+			"Always verify device operating voltage matches the FACP SLC loop output under full load.",
+		],
+		warningsAr: [
+			"تأكد دائماً من أن جهد تشغيل الأجهزة متوافق مع خرج لوحة الإنذار عند الحمل الكامل.",
+		],
+		keywords: [
+			"devices",
+			"inventory",
+			"catalog",
+			"specs",
+			"أجهزة",
+			"كتالوج",
+			"مواصفات",
+			"كواشف",
+		],
+		relatedTopics: related.elements,
+		navigateTo: "/devices",
+		contextRoute: "/devices",
+	},
 };
 
 // ─── Legacy exports for backward compatibility ─────────────────────────────
@@ -1444,6 +1944,13 @@ export const HELP_CATEGORY_LABELS: Record<string, { en: string; ar: string }> =
 		elements: { en: "Elements", ar: "العناصر" },
 		connections: { en: "Connections", ar: "التوصيلات" },
 		conflicts: { en: "Conflicts", ar: "التعارضات" },
+		marine: { en: "Marine Engineering", ar: "الهندسة البحرية SOLAS" },
+		mining: { en: "Mining Industry", ar: "قطاع التعدين والصناعة" },
+		facp: { en: "Multi-Agent FACP", ar: "وكلاء لوحات FACP" },
+		compliance: { en: "Regulatory Compliance", ar: "المطابقة الرقابية" },
+		"api-keys": { en: "Access & API Keys", ar: "إدارة التراخيص ومفاتيح API" },
+		monitor: { en: "System Health", ar: "مراقبة النظام" },
+		billing: { en: "Billing & Subscriptions", ar: "الاشتراكات والدفع" },
 		settings: { en: "Settings", ar: "الإعدادات" },
 		troubleshooting: { en: "Troubleshooting", ar: "استكشاف الأخطاء" },
 		general: { en: "General", ar: "عام" },

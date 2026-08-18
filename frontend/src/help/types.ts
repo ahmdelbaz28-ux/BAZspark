@@ -18,6 +18,13 @@ export type HelpCategory =
 	| "connections"
 	| "conflicts"
 	| "settings"
+	| "marine"
+	| "mining"
+	| "facp"
+	| "api-keys"
+	| "compliance"
+	| "monitor"
+	| "billing"
 	| "troubleshooting"
 	| "general"
 	| "getting-started";
@@ -55,10 +62,29 @@ export type HelpTopicId =
 	| "reports.generate"
 	// Elements
 	| "elements.overview"
+	| "devices.overview"
 	// Connections
 	| "connections.create"
 	// Conflicts
 	| "conflicts.overview"
+	// Marine
+	| "marine.overview"
+	// Mining
+	| "mining.overview"
+	// FACP
+	| "facp.overview"
+	// API Keys
+	| "api-keys.manage"
+	// Compliance
+	| "compliance.overview"
+	// Monitoring & Health
+	| "monitor.overview"
+	// Billing
+	| "billing.overview"
+	// SimReady
+	| "simready.overview"
+	// Audit Trail
+	| "audit-trail.overview"
 	// Settings
 	| "settings.backend"
 	| "settings.api-keys"
@@ -125,9 +151,21 @@ export const ROUTE_HELP_MAP: Record<string, HelpTopicId> = {
 	"/digital-twin/config": "digital-twin.config",
 	"/digital-twin/history": "digital-twin.history",
 	"/reports": "reports.generate",
+	"/exports": "reports.generate",
 	"/elements": "elements.overview",
+	"/devices": "devices.overview",
 	"/connections": "connections.create",
 	"/conflicts": "conflicts.overview",
+	"/marine": "marine.overview",
+	"/mining": "mining.overview",
+	"/facp": "facp.overview",
+	"/api-keys": "api-keys.manage",
+	"/compliance": "compliance.overview",
+	"/monitor": "monitor.overview",
+	"/self-healing": "monitor.overview",
+	"/billing": "billing.overview",
+	"/simready": "simready.overview",
+	"/audit-trail": "audit-trail.overview",
 	"/settings": "settings.backend",
 };
 
@@ -230,6 +268,55 @@ export const HELP_TREE: HelpTreeNode[] = [
 		labelAr: "التعارضات",
 		icon: "⚠️",
 		topics: ["conflicts.overview"],
+	},
+	{
+		category: "marine",
+		labelEn: "Marine Engineering",
+		labelAr: "الهندسة البحرية SOLAS",
+		icon: "🚢",
+		topics: ["marine.overview"],
+	},
+	{
+		category: "mining",
+		labelEn: "Mining Industry",
+		labelAr: "قطاع التعدين والصناعة",
+		icon: "⛏️",
+		topics: ["mining.overview"],
+	},
+	{
+		category: "facp",
+		labelEn: "Multi-Agent FACP",
+		labelAr: "وكلاء لوحات FACP المتعددين",
+		icon: "🤖",
+		topics: ["facp.overview"],
+	},
+	{
+		category: "compliance",
+		labelEn: "Regulatory Compliance",
+		labelAr: "المطابقة الرقابية للأكواد",
+		icon: "📜",
+		topics: ["compliance.overview"],
+	},
+	{
+		category: "api-keys",
+		labelEn: "Access & API Keys",
+		labelAr: "إدارة التراخيص ومفاتيح API",
+		icon: "🔑",
+		topics: ["api-keys.manage"],
+	},
+	{
+		category: "monitor",
+		labelEn: "System Health & Monitor",
+		labelAr: "مراقبة النظام والمعالجة الذاتية",
+		icon: "🩺",
+		topics: ["monitor.overview"],
+	},
+	{
+		category: "billing",
+		labelEn: "Billing & Subscriptions",
+		labelAr: "الاشتراكات وبوابة الدفع",
+		icon: "💳",
+		topics: ["billing.overview"],
 	},
 	{
 		category: "settings",
