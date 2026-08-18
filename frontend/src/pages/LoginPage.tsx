@@ -60,6 +60,7 @@ const translations = {
 		requestTitle: "Request Engineering Access Key",
 		requestDesc:
 			"Engineering Keys are granted to certified life-safety designers, CAD operators, and enterprise partners.",
+		requestEmailBtn: "Email Project Owner (Direct Request)",
 		autoFillDemoBtn: "Auto-Fill Valid Test Key (1-Click Demo)",
 		accessGranted: "Access Granted",
 		sessionInitialized: "Secure engineering session initialized successfully.",
@@ -70,7 +71,7 @@ const translations = {
 		heroTitle:
 			"المنصة الأكثر تطوراً عالمياً للهندسة الوقائية والسلامة من الحرائق بالذكاء الاصطناعي.",
 		heroSubtitle:
-			"من المجمعات العمرانية إلى السفن البحرية، تمتلك BAZspark نظاماً آلياً لمطابقة الأكواد الدولية (NFPA 72, NEC, SOLAS) بدقة فائقة.",
+			"من المجمعات العمرانية إلى السفن البحرية، تمتمل BAZspark نظاماً آلياً لمطابقة الأكواد الدولية (NFPA 72, NEC, SOLAS) بدقة فائقة.",
 		feature1Title: "التصميم الآلي لـ CAD",
 		feature1Desc:
 			"التوزيع الذكي لكواشف الحريق وتوجيه المسارات المثالية للكابلات.",
@@ -106,6 +107,7 @@ const translations = {
 		requestTitle: "طلب مفتاح ترخيص مهندسي",
 		requestDesc:
 			"يتم منح مفاتيح الترخيص للمهندسين المعتمدين والمشغلين والشركاء المؤسسيين.",
+		requestEmailBtn: "مراسلة مالك المشروع عبر البريد (طلب ترخيص)",
 		autoFillDemoBtn: "تعبئة مفتاح تجريبي معتمد (بنقرة واحدة)",
 		accessGranted: "تم منح تصريح الدخول",
 		sessionInitialized: "تم بدء الجلسة الهندسية الآمنة بنجاح.",
