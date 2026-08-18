@@ -2136,16 +2136,8 @@ class RevitService:
             tx = Transaction(self._revit_doc, "FireAI: Create View")
             tx.Start()
             try:
-                # ViewPlan.Create for floor plans; falls back to View.Create
-                if (
-                    view_type.lower() in ("floor plan", "floor_plan", "plan")
-                ):  # NOSONAR:S3923 branches intentionally identical  # NOSONAR:S7632: test function documented via class name / module path
-                    new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
-                else:
-                    # Other view types: requires ViewFamilyType lookup.
-                    # Fall back to ViewPlan for now — callers needing
-                    # sections/3D should use Revit UI directly.
-                    new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
+                # Create ViewPlan for the target level
+                new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
 
                 if new_view is None:
                     tx.RollBack()

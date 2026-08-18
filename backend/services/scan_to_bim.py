@@ -71,8 +71,8 @@ ROOM_TYPE_PATTERNS = {
     ],
     "CORRIDOR": [
         re.compile(
-            r"(?:corridor|hallway|passage|corridor|ممر)", re.IGNORECASE
-        ),  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+            r"(?:corridor|hallway|passage|ممر)", re.IGNORECASE
+        ),
         re.compile(
             r"hall", re.IGNORECASE
         ),  # NOSONAR: S5855 regex reviewed  # NOSONAR — S7632: test function documented via class name / module path

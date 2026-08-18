@@ -489,32 +489,19 @@ class StreamingParser:
 
     async def parse_dxf_stream(self, path: Path) -> AsyncIterator[list[NDArray[np.float64]]]:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
-        buffer: list[str] = []
         try:
-            with (
-                open(path, encoding="utf-8", errors="replace") as fh
-            ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
-                for line in fh:
-                    buffer.append(line)
-                    if len(buffer) >= self.CHUNK_LINES:
-                        # with asyncio.get_running_loop(). Per Python 3.10+
-                        # deprecation: get_event_loop() emits DeprecationWarning
-                        # and will be removed in Python 3.14. Since this is an
-                        # async method, a running loop is guaranteed.
-                        # Per agent.md Rule 17: Root cause is deprecated API.
-                        walls = await asyncio.get_running_loop().run_in_executor(
-                            None, self._parse_dxf_chunk, buffer
-                        )
-                        if walls:
-                            yield walls
-                        buffer = []
-                if buffer:
-                    # asyncio.get_event_loop() with asyncio.get_running_loop().
-                    walls = await asyncio.get_running_loop().run_in_executor(
-                        None, self._parse_dxf_chunk, buffer
-                    )
-                    if walls:
-                        yield walls
+            loop = asyncio.get_running_loop()
+
+            def _read_lines(p: Path) -> list[str]:
+                with open(p, encoding="utf-8", errors="replace") as fh:
+                    return fh.readlines()
+
+            lines = await loop.run_in_executor(None, _read_lines, path)
+            for i in range(0, len(lines), self.CHUNK_LINES):
+                chunk = lines[i : i + self.CHUNK_LINES]
+                walls = await loop.run_in_executor(None, self._parse_dxf_chunk, chunk)
+                if walls:
+                    yield walls
         except Exception as e:
             self._errors.append(f"DXF stream error: {e}")
             logger.exception("DXF stream error at %s: %s", path, e)

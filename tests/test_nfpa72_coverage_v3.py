@@ -1437,14 +1437,18 @@ class TestGetSlopedCeilingConstraints:
             ceiling_type=CeilingType.SLOPED,
             slope_run_m=3.0,
         )
-        try:
-            poly = Polygon([(0, 0), (float("nan"), 0), (10, 10), (0, 10)])
-            result = get_sloped_ceiling_constraints(poly, sloped, DetectorType.SMOKE)
-            assert isinstance(
-                result, dict
-            )  # NOSONAR — S5779: pickle used intentionally for ML model serialization
-        except Exception:
-            pass
+        import warnings
+
+        result = None
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            try:
+                poly = Polygon([(0, 0), (float("nan"), 0), (10, 10), (0, 10)])
+                result = get_sloped_ceiling_constraints(poly, sloped, DetectorType.SMOKE)
+            except Exception:
+                pass
+        if result is not None:
+            assert isinstance(result, dict)
 
     def test_degenerate_polygon(self):
         sloped = CeilingSpec(

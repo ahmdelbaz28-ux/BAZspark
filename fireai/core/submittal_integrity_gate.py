@@ -282,52 +282,40 @@ class SubmittalIntegrityGate:
                 source_file,
                 current_hash[:16],
             )
-            violations_list: list[dict[str, Any]] = []
-            result = IntegrityCheckResult(
-                source_file=source_file,
-                pre_hash=pre_calculation_hash,
-                post_hash=current_hash,
-                match=True,
-                violations=violations_list,
-            )
 
-            if (
-                DecisionProvenance is not None and ConfidenceScore is not None
-            ):  # NOSONAR — pythonbugs:S2589: condition intentional  # NOSONAR — acceptable in this context
-                confidence = ConfidenceScore(
-                    input_quality_score=1.0,
-                    rule_coverage=1.0,
-                    geometry_certainty=1.0,
-                    overall=ConfidenceLevel.HIGH,  # type: ignore[union-attr]
-                )
-                return DecisionProvenance.new(
-                    decision_type="submittal_integrity_gate",
-                    value={"safe": True, "source_file": source_file},
-                    inputs={
-                        "source_file": source_file,
-                        "pre_calculation_hash": pre_calculation_hash,
-                        "post_draft_hash": current_hash,
-                    },
-                    rules_applied=[
-                        RuleApplied(  # type: ignore[misc]
-                            citation=_CITE_NFPA72_INTEGRITY,
-                            constant_id="submittal_integrity.sha256_match",
-                            value_used=1.0,
-                            unit="boolean",
-                        ),
-                    ],
-                    algorithm={
-                        "name": "sha256_hash_comparison",
-                        "version": "1.0.0",
-                        "parameters": {"chunk_size": _SHA256_CHUNK_SIZE},
-                    },
-                    confidence=confidence,
-                    selected_because="Source file hash unchanged between pre-calculation and final submittal.",
-                    feasible_alternatives_considered=1,
-                    warnings=[],
-                    violations=[],
-                )
-            return result
+            confidence = ConfidenceScore(
+                input_quality_score=1.0,
+                rule_coverage=1.0,
+                geometry_certainty=1.0,
+                overall=ConfidenceLevel.HIGH,
+            )
+            return DecisionProvenance.new(
+                decision_type="submittal_integrity_gate",
+                value={"safe": True, "source_file": source_file},
+                inputs={
+                    "source_file": source_file,
+                    "pre_calculation_hash": pre_calculation_hash,
+                    "post_draft_hash": current_hash,
+                },
+                rules_applied=[
+                    RuleApplied(
+                        citation=_CITE_NFPA72_INTEGRITY,
+                        constant_id="submittal_integrity.sha256_match",
+                        value_used=1.0,
+                        unit="boolean",
+                    ),
+                ],
+                algorithm={
+                    "name": "sha256_hash_comparison",
+                    "version": "1.0.0",
+                    "parameters": {"chunk_size": _SHA256_CHUNK_SIZE},
+                },
+                confidence=confidence,
+                selected_because="Source file hash unchanged between pre-calculation and final submittal.",
+                feasible_alternatives_considered=1,
+                warnings=[],
+                violations=[],
+            )
 
         # MISMATCH — CRITICAL violation
         description = (
@@ -339,69 +327,47 @@ class SubmittalIntegrityGate:
         )
         logger.critical("INTEGRITY FAILURE: %s", description)
 
-        violation_dict: dict[str, Any] = {
-            "severity": "CRITICAL",
-            "citation": _CITE_CWE367,
-            "description": description,
-            "location": source_file,
-            "pre_calculation_hash": pre_calculation_hash,
-            "post_draft_hash": current_hash,
-        }
-        violations = [violation_dict]
-
-        result = IntegrityCheckResult(
-            source_file=source_file,
-            pre_hash=pre_calculation_hash,
-            post_hash=current_hash,
-            match=False,
-            violations=violations,
+        confidence_mismatch = ConfidenceScore(
+            input_quality_score=0.0,
+            rule_coverage=0.0,
+            geometry_certainty=0.0,
+            overall=ConfidenceLevel.LOW,
         )
 
-        if (
-            DecisionProvenance is not None and ConfidenceScore is not None
-        ):  # NOSONAR — acceptable in this context  # NOSONAR — pythonbugs:S2589: condition intentional
-            confidence = ConfidenceScore(
-                input_quality_score=0.0,
-                rule_coverage=0.0,
-                geometry_certainty=0.0,
-                overall=ConfidenceLevel.LOW,  # type: ignore[union-attr]
-            )
+        provenance_violation = Violation(
+            severity="CRITICAL",
+            citation=_CITE_CWE367,
+            description=description,
+            location=source_file,
+        )
 
-            provenance_violation = Violation(  # type: ignore[misc]
-                severity="CRITICAL",
-                citation=_CITE_CWE367,
-                description=description,
-                location=source_file,
-            )
-
-            return DecisionProvenance.new(
-                decision_type="submittal_integrity_gate",
-                value={"safe": False, "source_file": source_file},
-                inputs={
-                    "source_file": source_file,
-                    "pre_calculation_hash": pre_calculation_hash,
-                    "post_draft_hash": current_hash,
-                },
-                rules_applied=[
-                    RuleApplied(  # type: ignore[misc]
-                        citation=_CITE_CWE367,
-                        constant_id="submittal_integrity.toctou_violation",
-                        value_used=0.0,
-                        unit="boolean",
-                    ),
-                ],
-                algorithm={
-                    "name": "sha256_hash_comparison",
-                    "version": "1.0.0",
-                    "parameters": {"chunk_size": _SHA256_CHUNK_SIZE},
-                },
-                confidence=confidence,
-                selected_because="Source file hash MISMATCH — TOCTOU vulnerability detected. Submittal MUST be rejected.",
-                feasible_alternatives_considered=0,
-                warnings=[],
-                violations=[provenance_violation],
-            )
-        return result
+        return DecisionProvenance.new(
+            decision_type="submittal_integrity_gate",
+            value={"safe": False, "source_file": source_file},
+            inputs={
+                "source_file": source_file,
+                "pre_calculation_hash": pre_calculation_hash,
+                "post_draft_hash": current_hash,
+            },
+            rules_applied=[
+                RuleApplied(
+                    citation=_CITE_CWE367,
+                    constant_id="submittal_integrity.toctou_violation",
+                    value_used=0.0,
+                    unit="boolean",
+                ),
+            ],
+            algorithm={
+                "name": "sha256_hash_comparison",
+                "version": "1.0.0",
+                "parameters": {"chunk_size": _SHA256_CHUNK_SIZE},
+            },
+            confidence=confidence_mismatch,
+            selected_because="Source file hash MISMATCH — TOCTOU vulnerability detected. Submittal MUST be rejected.",
+            feasible_alternatives_considered=0,
+            warnings=[],
+            violations=[provenance_violation],
+        )
 
     def get_hash_history(self, file_path: str) -> list[HashRecord]:
         """

@@ -30,11 +30,13 @@ SECURITY FIXES APPLIED:
 - FIX #34: Removed dummy function
 """
 
+import asyncio
 import logging
 import os
 import re
 import tempfile
 import uuid
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
@@ -672,10 +674,7 @@ async def upload_and_read_dwg(
         temp_dir = tempfile.mkdtemp()
         temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
 
-        with (
-            open(temp_path, "wb") as buffer
-        ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
-            buffer.write(contents)
+        await asyncio.to_thread(Path(temp_path).write_bytes, contents)
 
         # Read the file
         result = service.read_dwg(temp_path)

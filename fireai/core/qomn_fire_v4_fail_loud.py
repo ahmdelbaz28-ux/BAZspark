@@ -231,9 +231,7 @@ class AsyncAuditLogger:
         ).hexdigest()[:12]
 
         # [v4.0 NEW] إضافة مستوى الخطورة
-        event_data.get(
-            "severity", "INFO"
-        )  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
+        event_data.setdefault("severity", "INFO")
         if event_data.get("status") == "REJECTED":
             event_data["severity"] = "CRITICAL"
         elif event_data.get("status") == "HEALED":

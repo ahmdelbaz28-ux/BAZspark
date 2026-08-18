@@ -50,11 +50,13 @@ ENDPOINTS:
 - POST /api/revit/execute - Execute AI command
 """
 
+import asyncio
 import logging
 import os
 import re
 import tempfile
 import uuid
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
@@ -729,10 +731,7 @@ async def upload_and_read_rvt(
     temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
 
     try:
-        with open(
-            temp_path, "wb"
-        ) as buffer:  # NOSONAR — S7493: default mutable acceptable (frozen at module load)
-            buffer.write(contents)
+        await asyncio.to_thread(Path(temp_path).write_bytes, contents)
 
         result = svc.read_rvt(temp_path)
 

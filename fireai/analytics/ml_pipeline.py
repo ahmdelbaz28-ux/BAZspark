@@ -19,6 +19,7 @@ import pickle
 import random
 import secrets
 import sqlite3
+import tempfile
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -448,11 +449,13 @@ class MLPipeline:
     def __init__(
         self,
         registry_path: str = "fireai_ml_registry.sqlite3",
-        artifacts_dir: str = "/tmp/fireai_models",
-    ) -> None:  # NOSONAR
+        artifacts_dir: str | None = None,
+    ) -> None:
         self.registry_path = registry_path
-        self.artifacts_dir = artifacts_dir
-        os.makedirs(artifacts_dir, exist_ok=True)
+        self.artifacts_dir = artifacts_dir or os.environ.get(
+            "FIREAI_MODELS_DIR", os.path.join(tempfile.gettempdir(), "fireai_models")
+        )
+        os.makedirs(self.artifacts_dir, exist_ok=True)
         self._conn = sqlite3.connect(registry_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._create_registry_tables()

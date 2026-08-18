@@ -107,7 +107,10 @@ async def list_devices(
 
 
 @router.post(
-    "", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))]
+    "",
+    status_code=201,
+    dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))],
+    responses={400: {"description": "Invalid load unit or conversion parameters"}},
 )
 @limiter.limit("30/minute")
 async def create_device(
@@ -130,16 +133,12 @@ async def create_device(
     load_unit = input_data.load_unit
     load_amperes = raw_load  # Default: already in Amperes
 
-    if (
-        load_unit == "mA" and raw_load != 0.0
-    ):  # NOSONAR — S1244: import retained for re-export / API surface
+    if load_unit == "mA" and abs(raw_load) > 1e-9:
         load_amperes = raw_load / 1000.0
-    elif (
-        load_unit == "W" and raw_load != 0.0
-    ):  # NOSONAR — S1244: import retained for re-export / API surface
+    elif load_unit == "W" and abs(raw_load) > 1e-9:
         voltage = input_data.voltage if input_data.voltage is not None else 0.0
         if voltage <= 0:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            raise HTTPException(
                 status_code=400,
                 detail="Cannot convert Watts to Amperes: voltage must be > 0. "
                 "Provide voltage in Volts or specify load_unit as 'A'.",
@@ -148,9 +147,7 @@ async def create_device(
 
     # Store original unit info in properties for traceability and auditing
     properties = input_data.properties or {}
-    if (
-        raw_load != 0.0 and load_unit != "A"
-    ):  # NOSONAR — S1244: import retained for re-export / API surface
+    if abs(raw_load) > 1e-9 and load_unit != "A":
         properties["load_original_value"] = raw_load
         properties["load_original_unit"] = load_unit
 
@@ -221,9 +218,7 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
         raw_load = updates["load"]
         load_unit = updates.pop("load_unit", "A")  # Remove from DB updates
 
-        if (
-            raw_load is not None and raw_load != 0.0
-        ):  # NOSONAR — S1244: import retained for re-export / API surface
+        if raw_load is not None and abs(raw_load) > 1e-9:
             if load_unit == "mA":
                 updates["load"] = raw_load / 1000.0
             elif load_unit == "W":

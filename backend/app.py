@@ -38,7 +38,7 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
 import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from fastapi import Depends, FastAPI, Request
@@ -347,12 +347,8 @@ async def lifespan(app: FastAPI):
     # C-08: Cancel the session cleanup task explicitly on shutdown.
     if _session_cleanup_task is not None and not _session_cleanup_task.done():
         _session_cleanup_task.cancel()
-        try:
+        with suppress(asyncio.CancelledError):
             await _session_cleanup_task
-        except asyncio.CancelledError:
-            pass
-        except Exception as exc:
-            logger.warning("Session cleanup task shutdown error: %s", exc)
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 

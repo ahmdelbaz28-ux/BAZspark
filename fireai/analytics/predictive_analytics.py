@@ -444,7 +444,7 @@ class PredictiveAnalyticsEngine:
         failure_rate = len(failure_events) / max(len(age_hours), 1)
         trouble_rate = len(trouble_events) / max(len(age_hours), 1)
 
-        fc = _holt_winters_forecast(
+        _holt_winters_forecast(
             age_hours,
             horizon=30,
             alpha=self.alpha,
@@ -452,9 +452,6 @@ class PredictiveAnalyticsEngine:
             gamma=self.gamma,
             season_period=self.season_period,
         )
-        fc["forecast"][-1] if fc["forecast"] else age_hours[
-            -1
-        ]  # NOSONAR — S905: statement kept for clarity
 
         base_ttf = 87600.0
         if failure_rate > 0:

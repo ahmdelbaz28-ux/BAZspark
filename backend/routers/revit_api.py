@@ -7,10 +7,12 @@ REST API endpoints for Revit integration operations.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 
+import asyncio
 import logging
 import os
 import tempfile
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 try:
@@ -146,16 +148,11 @@ async def upload_revit_model(project_id: str, file: UploadFileDep) -> RevitSyncR
     """
     try:
         # Create temporary file to save upload
-        # NOSONAR:S7493 — single write of in-memory upload content (already
-        # awaited via file.read()); the synchronous tmp_file.write is a sub-ms
-        # disk operation. aiofiles is intentionally not a dependency (see
-        # backend/routers/digital_twin.py:401 comment).
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=os.path.splitext(file.filename)[1]
-        ) as tmp_file:
-            content = await file.read()
-            tmp_file.write(content)
-            temp_path = tmp_file.name
+        suffix = os.path.splitext(file.filename or "")[1]
+        fd, temp_path = tempfile.mkstemp(suffix=suffix)
+        os.close(fd)
+        content = await file.read()
+        await asyncio.to_thread(Path(temp_path).write_bytes, content)
 
         try:
             # In a real implementation, this would:
@@ -391,25 +388,45 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     is_dev_mode = os.getenv("FIREAI_ENV", "production").lower() not in ("production", "prod")
 
     if not origin:
-        if is_dev_mode:
-            return True
+        return bool(is_dev_mode)
+
+    from urllib.parse import urlsplit
+
+    try:
+        parsed = urlsplit(origin)
+    except ValueError:
         return False
 
-    if origin in (
-        f"http://{host}",
-        f"https://{host}",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8000",
-        "http://testserver",
-        "https://testserver",
-    ):
-        return True
+    scheme = parsed.scheme.lower()
+    netloc = parsed.netloc.lower()
+    host_clean = host.lower()
 
-    return is_dev_mode
+    if scheme == "https":
+        if netloc in (host_clean, "testserver"):
+            return True
+        cors_origins = os.getenv("CORS_ORIGINS", "")
+        if cors_origins:
+            allowed_list = [o.strip().lower() for o in cors_origins.split(",") if o.strip()]
+            if origin.lower() in allowed_list:
+                return True
+
+    if is_dev_mode:
+        dev_allowed_netlocs = {
+            host_clean,
+            "testserver",
+            "localhost",
+            "localhost:3000",
+            "localhost:5173",
+            "localhost:8000",
+            "127.0.0.1",
+            "127.0.0.1:3000",
+            "127.0.0.1:5173",
+            "127.0.0.1:8000",
+        }
+        if netloc in dev_allowed_netlocs:
+            return True
+
+    return False
 
 
 @router.websocket("/ws/{project_id}")
@@ -567,5 +584,4 @@ async def broadcast_to_project(project_id: str, message: WebSocketMessage):
                 active_connections.pop(conn_key, None)
 
 
-# Import asyncio for WebSocket operations
-import asyncio
+
