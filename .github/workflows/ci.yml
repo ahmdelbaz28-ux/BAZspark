@@ -413,7 +413,7 @@ jobs:
           pip install --only-binary :all: uvicorn
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
         working-directory: frontend
 
       - name: Build frontend

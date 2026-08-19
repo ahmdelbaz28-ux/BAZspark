@@ -308,62 +308,75 @@ export const AuditTrailPage: React.FC = () => {
 				</div>
 			)}
 
-			{/* Event List */}
+			{/* Event Grid / Table */}
 			{!loading && (
-				<div className="space-y-2">
+				<div className="border border-border rounded overflow-hidden bg-card">
 					{filteredEvents.length === 0 ? (
-						<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
-							<ClipboardList className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-							<p className="text-slate-400">
+						<div className="p-8 text-center">
+							<ClipboardList className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+							<p className="text-muted-foreground text-xs font-mono">
 								{searchQuery || filterType !== "all"
 									? "No events match your filters."
 									: "No audit events recorded yet."}
 							</p>
 						</div>
 					) : (
-						filteredEvents.map((ev) => (
-							<div
-								key={ev.id}
-								className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
-							>
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex-1 min-w-0">
-										<div className="flex items-center gap-2 mb-1">
-											<span
-												className={`text-xs font-medium px-2 py-0.5 rounded border ${severityStyles[ev.severity || "info"]}`}
-											>
+						<div className="max-h-[600px] overflow-auto">
+							<table className="w-full text-xs font-mono text-left">
+								<thead className="sticky top-0 z-10 bg-popover/95 backdrop-blur-sm border-b border-border text-muted-foreground uppercase text-[10px]">
+									<tr>
+										<th className="p-2.5">Timestamp</th>
+										<th className="p-2.5">Severity</th>
+										<th className="p-2.5">Action</th>
+										<th className="p-2.5">Entity Type</th>
+										<th className="p-2.5">Entity ID</th>
+										<th className="p-2.5">Actor</th>
+										<th className="p-2.5">Details</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y divide-border font-sans">
+									{filteredEvents.map((ev) => (
+										<tr
+											key={ev.id}
+											className="hover:bg-muted/30 transition-colors"
+										>
+											<td className="p-2.5 text-muted-foreground font-mono tabular-nums text-xs whitespace-nowrap">
+												{new Date(ev.timestamp).toLocaleString()}
+											</td>
+											<td className="p-2.5 whitespace-nowrap">
+												<span
+													className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded border ${severityStyles[ev.severity || "info"]}`}
+												>
+													{(ev.severity || "info").toUpperCase()}
+												</span>
+											</td>
+											<td className="p-2.5 font-mono text-xs font-semibold text-foreground whitespace-nowrap">
 												{ev.action}
-											</span>
-											<span className="text-xs text-slate-500 font-mono">
+											</td>
+											<td className="p-2.5 text-muted-foreground text-xs font-mono">
+												{ev.entity_type}
+											</td>
+											<td className="p-2.5 text-primary text-xs font-mono font-bold whitespace-nowrap">
 												{ev.entity_id}
-											</span>
-										</div>
-										{ev.details && (
-											<p className="text-sm text-slate-300 mt-1">
-												{ev.details}
-											</p>
-										)}
-									</div>
-									<div className="text-right shrink-0">
-										<p className="text-xs text-slate-500 font-mono">
-											{new Date(ev.timestamp).toLocaleString()}
-										</p>
-										{ev.user && (
-											<p className="text-xs text-slate-500 mt-0.5">
-												by {ev.user}
-											</p>
-										)}
-									</div>
-								</div>
-							</div>
-						))
+											</td>
+											<td className="p-2.5 text-muted-foreground text-xs font-mono whitespace-nowrap">
+												{ev.user || "system"}
+											</td>
+											<td className="p-2.5 text-foreground text-xs max-w-md truncate">
+												{ev.details || "—"}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
 					)}
 				</div>
 			)}
 
 			{/* Footer */}
 			{!loading && filteredEvents.length > 0 && (
-				<div className="text-center text-xs text-slate-500">
+				<div className="text-center text-xs text-muted-foreground font-mono">
 					Showing {filteredEvents.length} of {events.length} total events
 				</div>
 			)}

@@ -638,12 +638,12 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                             Phase 14: glass blur + white/10 border → solid graphite + steel hairline.
                             Wordmark switches to Space Grotesk (matches login hero / TopBar title).
                             Subtitle becomes IBM Plex Mono uppercase tracked (FACP nameplate style). */}
-			<div className="sidebar-brand flex items-center gap-3 px-5 h-16 shrink-0">
-				<BazSparkLogo size={32} className="shrink-0" />
+			<div className="sidebar-brand flex items-center gap-2.5 px-4 h-12 shrink-0 border-b border-border bg-card">
+				<BazSparkLogo size={26} className="shrink-0" />
 				{!collapsed && (
-					<div className="flex flex-col leading-relaxed">
-						<span className="sidebar-brand-wordmark">BAZSPARK</span>
-						<span className="sidebar-brand-subtitle">FireAI Digital Twin</span>
+					<div className="flex flex-col leading-none">
+						<span className="sidebar-brand-wordmark text-xs font-bold tracking-wider text-foreground">BAZSPARK</span>
+						<span className="sidebar-brand-subtitle text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Engineering Suite</span>
 					</div>
 				)}
 			</div>

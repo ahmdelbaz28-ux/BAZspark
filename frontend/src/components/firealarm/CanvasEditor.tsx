@@ -16,7 +16,8 @@ export type DetectorType =
 	| "pull"
 	| "horns"
 	| "speaker"
-	| "facp";
+	| "facp"
+	| "iso";
 
 // Define detector interface
 export interface Detector {
@@ -36,22 +37,45 @@ export interface Detector {
 	lastTestDate?: string;
 }
 
+export interface PreviewGhostDevice {
+	id: string;
+	x_m?: number;
+	y_m?: number;
+	x?: number;
+	y?: number;
+	type: DetectorType;
+	coverage_radius_m?: number;
+}
+
 interface CanvasEditorProps {
 	floorPlanImage?: string;
 	detectors: Detector[];
 	onDetectorsChange: (detectors: Detector[]) => void;
+	circuitTopology?: "class_a" | "class_b";
+	onTopologyChange?: (topology: "class_a" | "class_b") => void;
+	previewDevices?: PreviewGhostDevice[];
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 	floorPlanImage,
 	detectors,
 	onDetectorsChange,
+	circuitTopology: externalTopology,
+	onTopologyChange,
+	previewDevices = [],
 }) => {
 	const { t } = useTranslation();
 	const canvasRef = useRef<HTMLDivElement>(null);
 	const [draggingDetector, setDraggingDetector] = useState<string | null>(null);
 	const [selectedDetector, setSelectedDetector] = useState<string | null>(null);
 	const [newDetectorType, setNewDetectorType] = useState<DetectorType>("smoke");
+	const [internalTopology, setInternalTopology] = useState<"class_a" | "class_b">("class_b");
+
+	const topology = externalTopology ?? internalTopology;
+	const setTopology = (top: "class_a" | "class_b") => {
+		setInternalTopology(top);
+		onTopologyChange?.(top);
+	};
 
 	// Handle click on canvas to add new detector
 	const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -65,6 +89,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 		let coverageRadius = 6.37; // Default for smoke detector
 		if (newDetectorType === "heat") {
 			coverageRadius = 4.27; // Smaller for heat detector
+		} else if (newDetectorType === "iso" || newDetectorType === "facp") {
+			coverageRadius = 0; // Modules / panels don't have optical coverage circles
 		}
 
 		const newDetector: Detector = {
@@ -145,10 +171,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 		const isSelected = selectedDetector === detector.id;
 		const statusColor = getStatusColor(detector.status);
 
-		// Different shapes for different detector types.
-		// SonarQube S3923: "smoke", "speaker", and the default case all
-		// render the same circle shape. Initialize detectorShape with the
-		// default (circle) and only override in the cases that differ.
 		let detectorShape = (
 			<circle
 				cx="12"
@@ -212,8 +234,29 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 					/>
 				);
 				break;
-			// "smoke", "speaker", and any unknown type fall through
-			// to the default circle shape initialized above.
+			case "iso":
+				detectorShape = (
+					<g>
+						<polygon
+							points="12,2 21,7 21,17 12,22 3,17 3,7"
+							fill="#0e7490"
+							stroke="#38bdf8"
+							strokeWidth="2"
+						/>
+						<text
+							x="12"
+							y="14.5"
+							textAnchor="middle"
+							fill="#ffffff"
+							fontSize="7"
+							fontWeight="bold"
+							fontFamily="monospace"
+						>
+							ISO
+						</text>
+					</g>
+				);
+				break;
 		}
 
 		return (
@@ -221,21 +264,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 				key={detector.id}
 				transform={`translate(${detector.x - 12}, ${detector.y - 12})`}
 				onMouseDown={(e) => handleMouseDown(detector.id, e)}
-				// V191 FIX: Stop the click event from bubbling to the canvas div's
-				// onClick handler (handleCanvasClick). Without this, clicking on a
-				// detector selects it (via onMouseDown) AND adds a new detector on
-				// top of it (via the bubbled click). stopPropagation on mousedown
-				// does NOT prevent the separate click event from bubbling.
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e: React.KeyboardEvent) => {
 					if (e.key === "Enter") e.stopPropagation();
 				}}
 				style={{
 					cursor: draggingDetector ? "grabbing" : "grab",
-					// V191 FIX: pointerEvents:'auto' overrides the parent SVG's
-					// pointer-events:none, so this <g> receives mouse events for
-					// dragging. Without this, clicks pass through to the canvas div
-					// (which adds a new detector) instead of selecting this one.
 					pointerEvents: "auto",
 				}}
 			>
@@ -248,7 +282,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 						height="28"
 						rx="4"
 						fill="none"
-						stroke="#3B82F6"
+						stroke="#38bdf8"
 						strokeWidth="2"
 						strokeDasharray="4 2"
 					/>
@@ -257,25 +291,65 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 		);
 	};
 
+	const isolatorCount = detectors.filter((d) => d.type === "iso").length;
+	const lastDetector = detectors.at(-1);
+	const firstDetector = detectors.at(0);
+
 	return (
-		<div className="flex flex-col h-full">
-			<div className="mb-4 flex gap-2">
-				<label className="text-sm font-medium text-foreground/90">
-					{t("fireAlarm.addDetector")}
-				</label>
-				<select
-					aria-label={t("fireAlarm.addDetector")}
-					value={newDetectorType}
-					onChange={(e) => setNewDetectorType(e.target.value as DetectorType)}
-					className="bg-card border border-border rounded px-2 py-1 text-sm text-foreground"
-				>
-					<option value="smoke">{t("fireAlarm.smokeDet")}</option>
-					<option value="heat">{t("fireAlarm.heatDet")}</option>
-					<option value="pull">{t("fireAlarm.pullStation")}</option>
-					<option value="horns">{t("fireAlarm.hornStrobe")}</option>
-					<option value="speaker">{t("fireAlarm.speaker")}</option>
-					<option value="facp">{t("fireAlarm.facp")}</option>
-				</select>
+		<div className="flex flex-col h-full space-y-3">
+			<div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-card border border-border rounded text-xs">
+				<div className="flex items-center gap-3">
+					<div className="flex items-center gap-1.5">
+						<label htmlFor="detector-type-select" className="font-mono text-muted-foreground font-semibold">
+							Tool / Device:
+						</label>
+						<select
+							id="detector-type-select"
+							aria-label={t("fireAlarm.addDetector")}
+							value={newDetectorType}
+							onChange={(e) => setNewDetectorType(e.target.value as DetectorType)}
+							className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground font-mono"
+						>
+							<option value="smoke">{t("fireAlarm.smokeDet")}</option>
+							<option value="heat">{t("fireAlarm.heatDet")}</option>
+							<option value="pull">{t("fireAlarm.pullStation")}</option>
+							<option value="horns">{t("fireAlarm.hornStrobe")}</option>
+							<option value="speaker">{t("fireAlarm.speaker")}</option>
+							<option value="facp">{t("fireAlarm.facp")}</option>
+							<option value="iso">⚡ Fault Isolator (ISO)</option>
+						</select>
+					</div>
+
+					<div className="flex items-center gap-1.5">
+						<label htmlFor="circuit-topology-select" className="font-mono text-muted-foreground font-semibold">
+							Circuit Pathway:
+						</label>
+						<select
+							id="circuit-topology-select"
+							aria-label="Circuit Pathway Topology"
+							value={topology}
+							onChange={(e) => setTopology(e.target.value as "class_a" | "class_b")}
+							className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground font-mono"
+						>
+							<option value="class_b">Class B (Radial / Branch)</option>
+							<option value="class_a">Class A (Loop Return / Cyclic)</option>
+						</select>
+					</div>
+				</div>
+
+				<div className="flex items-center gap-2 font-mono text-[11px]">
+					<span className="px-2 py-0.5 rounded bg-muted/60 border border-border text-muted-foreground">
+						Devices: <strong className="text-foreground">{detectors.length}</strong>
+					</span>
+					<span className="px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
+						Isolators: <strong className="text-cyan-200">{isolatorCount}</strong>
+					</span>
+					{topology === "class_a" && (
+						<span className="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
+							✓ Class A Return Leg Active
+						</span>
+					)}
+				</div>
 			</div>
 
 			<div // NOSONAR: typescript:S6848
@@ -298,65 +372,103 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 					/>
 				) : (
 					<div className="absolute inset-0 bg-card flex items-center justify-center pointer-events-none">
-						{/* V192 FIX: pointer-events-none so clicks pass through to the
-                canvas div's onClick handler (handleCanvasClick). Previously,
-                this div intercepted clicks on empty canvas area, preventing
-                new detectors from being added when no floor plan was loaded. */}
-						<p className="text-muted-foreground text-sm select-none">
+						<p className="text-muted-foreground text-sm select-none font-mono">
 							{t("fireAlarm.floorPlanPlaceholder")}
 						</p>
 					</div>
 				)}
 
-				{/* V190 FIX: Wrap ALL SVG elements (circle, rect, g, polygon) inside
-            a single <svg> container. Previously, the coverage <circle>
-            elements were rendered as direct children of the HTML <div>,
-            causing React to render them as unknown HTML tags (not SVG
-            namespace). This produced the console warning:
-              "Warning: The tag <%s> is unrecognized in this browser.
-               If you meant to render a React component, start its name
-               with an uppercase letter.%s circle"
-            The browser then silently dropped the coverage circles,
-            so users never saw the detector coverage visualization.
-            Root cause: SVG elements MUST be inside an <svg> parent to
-            be rendered in the SVG namespace. Without it, the browser
-            treats <circle> as an unknown HTML element (like <foo>).
-            Fix: render coverage circles AND detectors inside the same
-            <svg> container. This also reduces DOM nodes (one <svg>
-            instead of two) and ensures correct z-ordering (coverage
-            under detectors, both over the floor plan).
-
-            V191 FIX: The SVG has pointer-events:none so that clicks on
-            empty canvas area pass THROUGH to the underlying <div>
-            (which calls handleCanvasClick to add new detectors). But
-            this also prevented detector <g> elements from receiving
-            onMouseDown events — making detectors impossible to drag.
-            Root cause: per CSS spec, pointer-events:none on parent
-            means children don't receive events UNLESS they explicitly
-            set pointer-events:auto. The <g> elements didn't, so
-            clicking on a detector added a NEW detector on top instead
-            of selecting/dragging it.
-            Fix: set pointerEvents:'auto' on each detector <g> so it
-            captures mouse events for dragging, while the rest of the
-            SVG remains click-through for adding new detectors. */}
 				<svg className="absolute inset-0 pointer-events-none w-full h-full">
-					{/* Coverage circles (rendered first so they appear under detectors).
-              These stay pointer-events:none (inherited from SVG) — they're
-              visual-only, clicks pass through to the canvas div. */}
-					{detectors.map((detector) => (
-						<circle
-							key={`coverage-${detector.id}`}
-							cx={detector.x}
-							cy={detector.y}
-							r={detector.coverageRadius * 10}
-							fill="rgba(167, 139, 250, 0.2)"
-							stroke="rgba(167, 139, 250, 0.5)"
-							strokeWidth="1"
+					{/* Coverage circles */}
+					{detectors.map((detector) => {
+						if (!detector.coverageRadius) return null;
+						return (
+							<circle
+								key={`coverage-${detector.id}`}
+								cx={detector.x}
+								cy={detector.y}
+								r={detector.coverageRadius * 10}
+								fill="rgba(56, 189, 248, 0.1)"
+								stroke="rgba(56, 189, 248, 0.3)"
+								strokeWidth="1"
+							/>
+						);
+					})}
+
+					{/* Circuit Wiring Pathways */}
+					{detectors.length > 1 &&
+						detectors.map((detector, idx) => {
+							if (idx === detectors.length - 1) return null;
+							const next = detectors[idx + 1];
+							return (
+								<line
+									key={`wire-${detector.id}-${next.id}`}
+									x1={detector.x}
+									y1={detector.y}
+									x2={next.x}
+									y2={next.y}
+									stroke="#f59e0b"
+									strokeWidth="2"
+									strokeOpacity="0.8"
+								/>
+							);
+						})}
+
+					{/* Class A Return Loop Leg (connects last device back to FACP / source) */}
+					{topology === "class_a" && detectors.length > 1 && lastDetector && firstDetector && (
+						<line
+							x1={lastDetector.x}
+							y1={lastDetector.y}
+							x2={firstDetector.x}
+							y2={firstDetector.y}
+							stroke="#38bdf8"
+							strokeWidth="2"
+							strokeDasharray="4 2"
+							strokeOpacity="0.9"
 						/>
-					))}
-					{/* Detectors (rendered on top of coverage circles).
-              V191: pointerEvents:'auto' overrides the SVG's pointer-events:none
-              so detectors receive onMouseDown for dragging. */}
+					)}
+
+					{/* AI Proposal Preview Ghost Layer (Transient Projection) */}
+					{previewDevices.map((pDev) => {
+						const px = pDev.x ?? (pDev.x_m || 0) * 20 + 50;
+						const py = pDev.y ?? (pDev.y_m || 0) * 20 + 50;
+						const rad = (pDev.coverage_radius_m || 6.37) * 10;
+						return (
+							<g key={`preview-ghost-${pDev.id}`} opacity="0.85">
+								<circle
+									cx={px}
+									cy={py}
+									r={rad}
+									fill="rgba(6, 182, 212, 0.08)"
+									stroke="#06b6d4"
+									strokeWidth="1.5"
+									strokeDasharray="4 2"
+								/>
+								<circle
+									cx={px}
+									cy={py}
+									r="10"
+									fill="rgba(6, 182, 212, 0.25)"
+									stroke="#06b6d4"
+									strokeWidth="2"
+									strokeDasharray="3 2"
+								/>
+								<text
+									x={px}
+									y={py + 3}
+									textAnchor="middle"
+									fill="#06b6d4"
+									fontSize="8"
+									fontWeight="bold"
+									fontFamily="monospace"
+								>
+									AI
+								</text>
+							</g>
+						);
+					})}
+
+					{/* Detectors & Isolators */}
 					{detectors.map(renderDetector)}
 				</svg>
 			</div>

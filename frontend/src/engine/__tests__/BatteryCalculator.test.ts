@@ -236,4 +236,77 @@ describe("BatteryCalculator", () => {
 			expect(reqs).toContainEqual(expect.stringContaining("NFPA 72 §27.6.2"));
 		});
 	});
+
+	describe("Thermal Derating & Aging Factor (ENG-UI-001)", () => {
+		it("should calculate standard kt = 1.0 at 25°C for VRLA", () => {
+			const result = calculateBatteryRequirements({
+				...validInput,
+				ambientTempC: 25,
+				agingFactor: 1.25,
+				batteryChemistry: "vrla",
+			});
+			expect(result.tempMultiplier).toBe(1.0);
+			expect(result.agingFactor).toBe(1.25);
+			expect(result.compliance.tempDeratingApplied).toBe(false);
+		});
+
+		it("should apply cold temperature derating at 0°C for VRLA (kt = 1.25)", () => {
+			const result = calculateBatteryRequirements({
+				...validInput,
+				ambientTempC: 0,
+				agingFactor: 1.25,
+				batteryChemistry: "vrla",
+			});
+			expect(result.tempMultiplier).toBe(1.25);
+			expect(result.compliance.tempDeratingApplied).toBe(true);
+			// Required capacity should be baseCapacity * 1.25 * 1.25
+			expect(result.requiredCapacity).toBeCloseTo(
+				result.baseCapacity * 1.25 * 1.25,
+				1,
+			);
+		});
+
+		it("should apply severe cold derating at -20°C for VRLA (kt = 1.45)", () => {
+			const result = calculateBatteryRequirements({
+				...validInput,
+				ambientTempC: -20,
+				agingFactor: 1.40,
+				batteryChemistry: "vrla",
+			});
+			expect(result.tempMultiplier).toBe(1.45);
+			expect(result.agingFactor).toBe(1.40);
+			expect(result.requiredCapacity).toBeCloseTo(
+				result.baseCapacity * 1.40 * 1.45,
+				1,
+			);
+		});
+
+		it("should calculate LiFePO4 derating properly", () => {
+			const resultCold = calculateBatteryRequirements({
+				...validInput,
+				ambientTempC: 0,
+				batteryChemistry: "lifepo4",
+			});
+			expect(resultCold.tempMultiplier).toBeCloseTo(1.15, 2);
+			expect(resultCold.recommendedBattery.type).toContain("LiFePO4");
+		});
+
+		it("should support Critical Infrastructure 1.40 aging derating factor", () => {
+			const stdResult = calculateBatteryRequirements({
+				...validInput,
+				agingFactor: 1.25,
+				ambientTempC: 25,
+			});
+			const critResult = calculateBatteryRequirements({
+				...validInput,
+				agingFactor: 1.40,
+				ambientTempC: 25,
+			});
+			expect(critResult.requiredCapacity).toBeGreaterThan(stdResult.requiredCapacity);
+			expect(critResult.requiredCapacity).toBeCloseTo(
+				critResult.baseCapacity * 1.40,
+				1,
+			);
+		});
+	});
 });

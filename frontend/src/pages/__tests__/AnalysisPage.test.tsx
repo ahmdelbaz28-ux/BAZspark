@@ -102,11 +102,37 @@ describe("AnalysisPage", () => {
 		expect(screen.getByText("NFPA 72 / NEC Analysis")).toBeInTheDocument();
 	});
 
-	it("renders all 3 analysis tabs", () => {
+	it("renders all 4 analysis tabs including Hydraulics", () => {
 		renderPage();
 		expect(screen.getByText("Battery Capacity")).toBeInTheDocument();
 		expect(screen.getByText("Voltage Drop")).toBeInTheDocument();
 		expect(screen.getByText("Room Analysis")).toBeInTheDocument();
+		expect(screen.getByText("Hydraulics (Darcy-Weisbach)")).toBeInTheDocument();
+	});
+
+	it("switches to hydraulics form when Hydraulics tab is clicked and runs solver", async () => {
+		renderPage();
+		const hydraulicTab = screen.getByText("Hydraulics (Darcy-Weisbach)");
+		await userEvent.click(hydraulicTab);
+
+		expect(
+			screen.getByText("Pipe Network Schedule (Darcy-Weisbach Method)"),
+		).toBeInTheDocument();
+		expect(screen.getByText("Add Pipe Segment")).toBeInTheDocument();
+		expect(screen.getByText("Segment ID")).toBeInTheDocument();
+
+		const runBtn = screen.getByText("Run Analysis");
+		await userEvent.click(runBtn);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Hydraulics (Darcy-Weisbach) Results"),
+			).toBeInTheDocument();
+			expect(screen.getByText("Total Pressure Drop (ΔP)")).toBeInTheDocument();
+			expect(screen.getByText("Total Head Loss (hf)")).toBeInTheDocument();
+			expect(screen.getByText("P-01")).toBeInTheDocument();
+			expect(screen.getByText("P-02")).toBeInTheDocument();
+		});
 	});
 
 	it("shows battery form by default", () => {

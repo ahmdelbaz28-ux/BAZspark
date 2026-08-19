@@ -27,17 +27,82 @@
 	input,
 	select,
 	textarea {
-		min-height: 44px;
 		outline: none;
-		transition: all 0.2s ease;
+		transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 	}
+
+	@media (pointer: coarse) {
+		button,
+		input,
+		select,
+		textarea {
+			min-height: 44px;
+		}
+	}
+
 	button:focus-visible,
 	input:focus-visible,
 	select:focus-visible,
 	textarea:focus-visible {
-		outline: 2px solid rgba(34, 211, 238, 0.6);
-		outline-offset: 2px;
+		outline: 2px solid var(--color-ring);
+		outline-offset: 1px;
 	}
+}
+
+/* Workstation density and table utility classes */
+.workstation-panel {
+	background-color: var(--color-card);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+}
+
+.workstation-toolbar {
+	background-color: var(--color-popover);
+	border-bottom: 1px solid var(--color-border);
+	padding: 0.25rem 0.5rem;
+}
+
+.cad-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.8125rem;
+}
+
+.cad-th {
+	background-color: var(--color-panel-recess);
+	color: var(--color-muted-foreground);
+	font-family: var(--font-data);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	padding: 0.375rem 0.5rem;
+	border-bottom: 1px solid var(--color-border);
+	text-align: left;
+}
+
+.cad-td {
+	padding: 0.375rem 0.5rem;
+	border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.05));
+	color: var(--color-foreground);
+}
+
+.cad-cell-num {
+	font-family: var(--font-data);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.tech-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.125rem 0.375rem;
+	font-family: var(--font-data);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	border-radius: 2px;
+	border: 1px solid transparent;
 }
 
 /* Technical utility classes */

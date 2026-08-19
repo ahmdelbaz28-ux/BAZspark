@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -91,261 +90,259 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 
 	if (!device) {
 		return (
-			<div className="fixed top-4 right-4 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
-				<Card className="border-border bg-card">
-					<CardHeader className="pb-3">
-						<div className="flex justify-between items-center">
-							<CardTitle className="text-lg text-foreground">
-								{t("fireAlarm.deviceProperties")}
-							</CardTitle>
-							<Button variant="ghost" size="sm" onClick={onClose}>
-								<X aria-hidden="true" className="h-4 w-4" />
-							</Button>
-						</div>
-					</CardHeader>
-					<CardContent>
-						<p className="text-muted-foreground">
-							{t("fireAlarm.selectDevice")}
-						</p>
-					</CardContent>
-				</Card>
+			<div className="fixed top-14 right-4 w-80 md:w-96 max-h-[calc(100vh-80px)] flex flex-col bg-card border border-border rounded shadow-2xl z-50 overflow-hidden">
+				<div className="p-4 flex-none border-b border-border flex justify-between items-center bg-popover/80">
+					<h3 className="text-sm font-semibold text-foreground font-mono">
+						{t("fireAlarm.deviceProperties")}
+					</h3>
+					<Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0">
+						<X aria-hidden="true" className="h-4 w-4" />
+					</Button>
+				</div>
+				<div className="p-4 flex-1">
+					<p className="text-xs text-muted-foreground font-mono">
+						{t("fireAlarm.selectDevice")}
+					</p>
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="fixed top-4 right-4 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
-			<Card className="border-border bg-card">
-				<CardHeader className="pb-3">
-					<div className="flex justify-between items-center">
-						<CardTitle className="text-lg text-foreground">
-							{t("fireAlarm.deviceProperties")}
-						</CardTitle>
-						<Button variant="ghost" size="sm" onClick={onClose}>
-							<X aria-hidden="true" className="h-4 w-4" />
-						</Button>
+		<div className="fixed top-14 right-4 w-80 md:w-96 max-h-[calc(100vh-80px)] flex flex-col bg-card border border-border rounded shadow-2xl z-50 overflow-hidden">
+			{/* Fixed Header */}
+			<div className="px-4 py-3 flex-none border-b border-border flex justify-between items-center bg-popover/80">
+				<div className="flex items-center gap-2">
+					<span className="h-2.5 w-2.5 rounded-full bg-primary" />
+					<h3 className="text-sm font-semibold text-foreground font-mono">
+						{t("fireAlarm.deviceProperties")}
+					</h3>
+				</div>
+				<Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-muted text-muted-foreground">
+					<X aria-hidden="true" className="h-4 w-4" />
+				</Button>
+			</div>
+
+			{/* Scrollable Form Body */}
+			<div className="p-4 flex-1 min-h-0 overflow-y-auto space-y-3.5 text-xs">
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.address")}
+					</Label>
+					<Input
+						value={editedDevice.address || ""}
+						onChange={(e) => handleChange("address", e.target.value)}
+						placeholder={t("fireAlarm.addressPlaceholder") || undefined}
+						className="h-8 text-xs bg-input border-border text-foreground font-mono"
+					/>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.zone")}
+					</Label>
+					<Input
+						value={editedDevice.zone || ""}
+						onChange={(e) => handleChange("zone", e.target.value)}
+						placeholder={t("fireAlarm.zonePlaceholder") || undefined}
+						className="h-8 text-xs bg-input border-border text-foreground font-mono"
+					/>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.location")}
+					</Label>
+					<Input
+						value={editedDevice.location || ""}
+						onChange={(e) => handleChange("location", e.target.value)}
+						placeholder={t("fireAlarm.locationPlaceholder") || undefined}
+						className="h-8 text-xs bg-input border-border text-foreground font-mono"
+					/>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.detectorType")}
+					</Label>
+					<Select
+						value={editedDevice.detectorType}
+						onValueChange={(value: DetectorType) =>
+							handleChange("detectorType", value)
+						}
+					>
+						<SelectTrigger className="h-8 text-xs bg-input border-border text-foreground font-mono">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent className="bg-card border-border">
+							<SelectItem value="smoke">
+								{t("fireAlarm.smokeDet")}
+							</SelectItem>
+							<SelectItem value="heat">{t("fireAlarm.heatDet")}</SelectItem>
+							<SelectItem value="pull">
+								{t("fireAlarm.pullStation")}
+							</SelectItem>
+							<SelectItem value="horns">
+								{t("fireAlarm.hornStrobe")}
+							</SelectItem>
+							<SelectItem value="speaker">
+								{t("fireAlarm.speaker")}
+							</SelectItem>
+							<SelectItem value="facp">{t("fireAlarm.facp")}</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+
+				<div className="grid grid-cols-2 gap-2">
+					<div>
+						<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+							{t("fireAlarm.heightAff")} (m)
+						</Label>
+						<Input
+							type="number"
+							step="0.1"
+							value={editedDevice.heightAFF || ""}
+							onChange={(e) =>
+								handleChange(
+									"heightAFF",
+									Number.parseFloat(e.target.value) || 0,
+								)
+							}
+							placeholder="2.7"
+							className="h-8 text-xs bg-input border-border text-foreground font-mono"
+						/>
 					</div>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-4">
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.address")}
-							</Label>
-							<Input
-								value={editedDevice.address || ""}
-								onChange={(e) => handleChange("address", e.target.value)}
-								placeholder={t("fireAlarm.addressPlaceholder") || undefined}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.zone")}
-							</Label>
-							<Input
-								value={editedDevice.zone || ""}
-								onChange={(e) => handleChange("zone", e.target.value)}
-								placeholder={t("fireAlarm.zonePlaceholder") || undefined}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.location")}
-							</Label>
-							<Input
-								value={editedDevice.location || ""}
-								onChange={(e) => handleChange("location", e.target.value)}
-								placeholder={t("fireAlarm.locationPlaceholder") || undefined}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.detectorType")}
-							</Label>
-							<Select
-								value={editedDevice.detectorType}
-								onValueChange={(value: DetectorType) =>
-									handleChange("detectorType", value)
-								}
-							>
-								<SelectTrigger className="bg-card border-border text-foreground">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-card border-border">
-									<SelectItem value="smoke">
-										{t("fireAlarm.smokeDet")}
-									</SelectItem>
-									<SelectItem value="heat">{t("fireAlarm.heatDet")}</SelectItem>
-									<SelectItem value="pull">
-										{t("fireAlarm.pullStation")}
-									</SelectItem>
-									<SelectItem value="horns">
-										{t("fireAlarm.hornStrobe")}
-									</SelectItem>
-									<SelectItem value="speaker">
-										{t("fireAlarm.speaker")}
-									</SelectItem>
-									<SelectItem value="facp">{t("fireAlarm.facp")}</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.heightAff")}
-							</Label>
-							<Input
-								type="number"
-								value={editedDevice.heightAFF || ""}
-								onChange={(e) =>
-									handleChange(
-										"heightAFF",
-										Number.parseFloat(e.target.value) || 0,
-									)
-								}
-								placeholder={t("fireAlarm.heightAffPlaceholder") || undefined}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.manufacturer")}
-							</Label>
-							<Input
-								value={editedDevice.manufacturer || ""}
-								onChange={(e) => handleChange("manufacturer", e.target.value)}
-								placeholder={
-									t("fireAlarm.manufacturerPlaceholder") || undefined
-								}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.model")}
-							</Label>
-							<Input
-								value={editedDevice.modelNumber || ""}
-								onChange={(e) => handleChange("modelNumber", e.target.value)}
-								placeholder={t("fireAlarm.modelPlaceholder") || undefined}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.sensitivity")}
-							</Label>
-							<Select
-								value={editedDevice.sensitivityLevel}
-								onValueChange={(value: "high" | "standard" | "low") =>
-									handleChange("sensitivityLevel", value)
-								}
-							>
-								<SelectTrigger className="bg-card border-border text-foreground">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent className="bg-card border-border">
-									<SelectItem value="high">{t("fireAlarm.high")}</SelectItem>
-									<SelectItem value="standard">
-										{t("fireAlarm.standard")}
-									</SelectItem>
-									<SelectItem value="low">{t("fireAlarm.low")}</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.coverageArea")}
-							</Label>
-							<Input
-								type="number"
-								value={editedDevice.coverageArea || ""}
-								onChange={(e) =>
-									handleChange(
-										"coverageArea",
-										Number.parseFloat(e.target.value) || 0,
-									)
-								}
-								placeholder={
-									t("fireAlarm.coverageAreaPlaceholder") || undefined
-								}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.status")}
-							</Label>
-							<div className="flex items-center gap-2">
-								<Badge
-									variant="secondary"
-									className={
-										editedDevice.status === "normal"
-											? "bg-success/10 text-success border-success/30"
-											: editedDevice.status === "warning" // NOSONAR: typescript:S3358
-												? "bg-warning/10 text-warning border-warning/30"
-												: "bg-danger/10 text-danger border-danger/30"
-									}
-								>
-									{editedDevice.status === "normal" && (
-										<CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" />
-									)}
-									{editedDevice.status === "warning" && (
-										<AlertTriangle
-											aria-hidden="true"
-											className="h-3 w-3 mr-1"
-										/>
-									)}
-									{editedDevice.status === "fault" && (
-										<XCircle aria-hidden="true" className="h-3 w-3 mr-1" />
-									)}
-									{editedDevice.status}
-								</Badge>
-							</div>
-						</div>
-
-						<div>
-							<Label className="text-foreground/90">
-								{t("fireAlarm.lastTest")}
-							</Label>
-							<Input
-								type="date"
-								value={editedDevice.lastTestDate || ""}
-								onChange={(e) => handleChange("lastTestDate", e.target.value)}
-								className="bg-card border-border text-foreground"
-							/>
-						</div>
-
-						<div className="flex gap-2 pt-2">
-							<Button
-								className="flex-1 bg-danger hover:bg-danger/90 text-danger-foreground border-none"
-								onClick={handleSave}
-							>
-								<Save aria-hidden="true" className="h-4 w-4 mr-2" />
-								{t("common.save")}
-							</Button>
-							<Button
-								variant="outline"
-								className="border-border text-foreground/90"
-								onClick={onClose}
-							>
-								{t("common.cancel")}
-							</Button>
-						</div>
+					<div>
+						<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+							Coverage (m²)
+						</Label>
+						<Input
+							type="number"
+							value={editedDevice.coverageArea ? Math.round(editedDevice.coverageArea) : ""}
+							onChange={(e) =>
+								handleChange(
+									"coverageArea",
+									Number.parseFloat(e.target.value) || 0,
+								)
+							}
+							placeholder="80"
+							className="h-8 text-xs bg-input border-border text-foreground font-mono"
+						/>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+
+				<div className="grid grid-cols-2 gap-2">
+					<div>
+						<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+							{t("fireAlarm.manufacturer")}
+						</Label>
+						<Input
+							value={editedDevice.manufacturer || ""}
+							onChange={(e) => handleChange("manufacturer", e.target.value)}
+							placeholder="System Sensor"
+							className="h-8 text-xs bg-input border-border text-foreground"
+						/>
+					</div>
+					<div>
+						<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+							{t("fireAlarm.model")}
+						</Label>
+						<Input
+							value={editedDevice.modelNumber || ""}
+							onChange={(e) => handleChange("modelNumber", e.target.value)}
+							placeholder="2251B"
+							className="h-8 text-xs bg-input border-border text-foreground font-mono"
+						/>
+					</div>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.sensitivity")}
+					</Label>
+					<Select
+						value={editedDevice.sensitivityLevel}
+						onValueChange={(value: "high" | "standard" | "low") =>
+							handleChange("sensitivityLevel", value)
+						}
+					>
+						<SelectTrigger className="h-8 text-xs bg-input border-border text-foreground font-mono">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent className="bg-card border-border">
+							<SelectItem value="high">{t("fireAlarm.high")}</SelectItem>
+							<SelectItem value="standard">
+								{t("fireAlarm.standard")}
+							</SelectItem>
+							<SelectItem value="low">{t("fireAlarm.low")}</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.status")}
+					</Label>
+					<div className="flex items-center gap-2">
+						<Badge
+							variant="secondary"
+							className={
+								editedDevice.status === "normal"
+									? "bg-success/15 text-emerald-400 border-success/30 font-mono text-[11px]"
+									: editedDevice.status === "warning" // NOSONAR: typescript:S3358
+										? "bg-warning/15 text-amber-400 border-warning/30 font-mono text-[11px]"
+										: "bg-danger/15 text-red-400 border-danger/30 font-mono text-[11px]"
+							}
+						>
+							{editedDevice.status === "normal" && (
+								<CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" />
+							)}
+							{editedDevice.status === "warning" && (
+								<AlertTriangle
+									aria-hidden="true"
+									className="h-3 w-3 mr-1"
+								/>
+							)}
+							{editedDevice.status === "fault" && (
+								<XCircle aria-hidden="true" className="h-3 w-3 mr-1" />
+							)}
+							{editedDevice.status?.toUpperCase()}
+						</Badge>
+					</div>
+				</div>
+
+				<div>
+					<Label className="text-xs text-muted-foreground font-mono mb-1 block">
+						{t("fireAlarm.lastTest")}
+					</Label>
+					<Input
+						type="date"
+						value={editedDevice.lastTestDate || ""}
+						onChange={(e) => handleChange("lastTestDate", e.target.value)}
+						className="h-8 text-xs bg-input border-border text-foreground font-mono"
+					/>
+				</div>
+			</div>
+
+			{/* Fixed Action Footer */}
+			<div className="p-3 flex-none border-t border-border bg-popover/80 flex items-center gap-2">
+				<Button
+					size="sm"
+					className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs h-8"
+					onClick={handleSave}
+				>
+					<Save aria-hidden="true" className="h-3.5 w-3.5 mr-1.5" />
+					Apply Parameters
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					className="border-border text-foreground/90 font-mono text-xs h-8"
+					onClick={onClose}
+				>
+					{t("common.cancel")}
+				</Button>
+			</div>
 		</div>
 	);
 };

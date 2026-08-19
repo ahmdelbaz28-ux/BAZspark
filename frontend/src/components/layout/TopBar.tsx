@@ -68,12 +68,13 @@ const TopBar: React.FC<TopBarProps> = memo(
 		const connState = isConnected ? "online" : "offline";
 
 		return (
-			<header className="shell-topbar h-16 flex items-center px-4 lg:px-6 gap-2 lg:gap-4 shrink-0 sticky top-0 z-40">
+			<header className="shell-topbar h-12 flex items-center px-3 lg:px-4 gap-2 shrink-0 sticky top-0 z-40 border-b border-border bg-card">
 				{/* Left — logo + page title / breadcrumb */}
-				<div className="flex items-center gap-3 min-w-0">
-					<BazSparkLogo size={30} className="shrink-0" />
+				<div className="flex items-center gap-2.5 min-w-0">
+					<BazSparkLogo size={26} className="shrink-0" />
 					<nav aria-label="breadcrumb" className="breadcrumb-container flex items-center gap-1.5 min-w-0">
-						<h1 className="shell-page-title truncate" title={pageName}>
+						<span className="text-xs text-muted-foreground font-mono hidden sm:inline">WORKSTATION ▸</span>
+						<h1 className="shell-page-title truncate text-sm font-semibold tracking-tight text-foreground" title={pageName}>
 							{pageName}
 						</h1>
 					</nav>
@@ -81,10 +82,22 @@ const TopBar: React.FC<TopBarProps> = memo(
 
 				<div className="flex-1" />
 
-				{/* Connection status — alarm-color vocabulary (evac-green / amber-alert).
-                                    Previous bg-slate-500 was a decorative nothing; amber = TROUBLE in FACP. */}
+				{/* Quick Command Palette trigger */}
+				<button
+					type="button"
+					onClick={onSearchOpen}
+					className="hidden md:flex items-center gap-2 px-2.5 py-1 text-xs text-muted-foreground bg-popover hover:bg-muted border border-border rounded transition-colors"
+					aria-label="Quick command search"
+					title="Quick Command (Ctrl+K)"
+				>
+					<Search aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
+					<span>Commands & Tools...</span>
+					<kbd className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded border border-border text-muted-foreground">Ctrl+K</kbd>
+				</button>
+
+				{/* Connection status — engineering online/offline telemetry */}
 				<div
-					className="flex items-center gap-2"
+					className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-popover/80 border border-border text-xs"
 					role="status"
 					aria-live="polite"
 					aria-label={
@@ -92,8 +105,8 @@ const TopBar: React.FC<TopBarProps> = memo(
 					}
 				>
 					<span className={`shell-conn-dot ${connState}`} aria-hidden="true" />
-					<span className={`shell-conn-label ${connState} hidden md:inline`}>
-						{isConnected ? "Online" : "Offline"}
+					<span className={`shell-conn-label ${connState} font-mono text-[11px]`}>
+						{isConnected ? "ONLINE" : "OFFLINE"}
 					</span>
 				</div>
 
@@ -103,11 +116,11 @@ const TopBar: React.FC<TopBarProps> = memo(
 				<button
 					type="button"
 					onClick={onSearchOpen}
-					className="shell-icon-btn p-2"
+					className="shell-icon-btn p-1.5 md:hidden"
 					aria-label="Search"
 					title="Search (Ctrl+K)"
 				>
-					<Search aria-hidden="true" className="h-[18px] w-[18px]" />
+					<Search aria-hidden="true" className="h-4 w-4" />
 				</button>
 
 				<ContextualHelpButton />
@@ -115,21 +128,21 @@ const TopBar: React.FC<TopBarProps> = memo(
 				<button
 					type="button"
 					onClick={onHelpOpen}
-					className="shell-icon-btn p-2"
+					className="shell-icon-btn p-1.5"
 					aria-label="Help"
 					data-onboarding="help-button"
 					title="Global help (F1)"
 				>
-					<HelpCircle aria-hidden="true" className="h-[18px] w-[18px]" />
+					<HelpCircle aria-hidden="true" className="h-4 w-4" />
 				</button>
 
 				<Link
 					to="/settings"
-					className="shell-icon-btn p-2 inline-flex"
+					className="shell-icon-btn p-1.5 inline-flex"
 					aria-label="Settings"
 					title="Settings"
 				>
-					<Settings aria-hidden="true" className="h-[18px] w-[18px]" />
+					<Settings aria-hidden="true" className="h-4 w-4" />
 				</Link>
 
 				{/* Dark mode toggle */}
@@ -137,12 +150,12 @@ const TopBar: React.FC<TopBarProps> = memo(
 					type="button"
 					onClick={toggle}
 					aria-label="Toggle dark mode"
-					className="shell-icon-btn p-2"
+					className="shell-icon-btn p-1.5"
 				>
 					{dark ? (
-						<Moon aria-hidden="true" className="h-5 w-5" />
+						<Moon aria-hidden="true" className="h-4 w-4" />
 					) : (
-						<Sun aria-hidden="true" className="h-5 w-5" />
+						<Sun aria-hidden="true" className="h-4 w-4" />
 					)}
 				</button>
 
@@ -151,17 +164,17 @@ const TopBar: React.FC<TopBarProps> = memo(
 					<button
 						type="button"
 						onClick={() => setLangOpen(!langOpen)}
-						className="shell-lang-btn flex items-center gap-1.5 px-3 py-2"
+						className="shell-lang-btn flex items-center gap-1 px-2 py-1 text-xs"
 						aria-label="Change language"
 						aria-expanded={langOpen}
 						aria-haspopup="menu"
 					>
-						<Globe aria-hidden="true" className="h-4 w-4" />
-						{currentLanguage.toUpperCase()}
+						<Globe aria-hidden="true" className="h-3.5 w-3.5" />
+						<span>{currentLanguage.toUpperCase()}</span>
 					</button>
 					{langOpen && (
 						<div
-							className="shell-lang-menu absolute right-0 top-full mt-2 shadow-xl z-50 min-w-[140px] overflow-hidden"
+							className="shell-lang-menu absolute right-0 top-full mt-1 shadow-xl z-50 min-w-[130px] overflow-hidden"
 							role="menu"
 							aria-label="Language selector"
 						>
@@ -175,7 +188,7 @@ const TopBar: React.FC<TopBarProps> = memo(
 									}}
 									role="menuitemradio"
 									aria-checked={currentLanguage === lang}
-									className={`shell-lang-item block w-full text-left px-3 py-2.5 ${
+									className={`shell-lang-item block w-full text-left px-3 py-2 text-xs ${
 										currentLanguage === lang ? "active" : ""
 									}`}
 								>

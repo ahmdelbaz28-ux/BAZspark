@@ -21,41 +21,43 @@
 
 :root {
 	/* ── Surfaces ─────────────────────────────────────────────────────────── */
-	--color-background: #070b12; /* deep navy — pure void */
-	--color-foreground: #e8f0fe; /* off-white at 95% */
-	--color-card: rgba(17, 24, 39, 0.6); /* glassmorphism surface */
-	--color-card-foreground: #e8f0fe;
-	--color-popover: rgba(17, 24, 39, 0.8);
-	--color-popover-foreground: #e8f0fe;
+	--color-background: #0b0f14; /* deep workstation matte dark void */
+	--color-foreground: #e2e8f0; /* crisp high-contrast text */
+	--color-card: #111722; /* solid matte engineering panel surface */
+	--color-card-foreground: #e2e8f0;
+	--color-popover: #151d2a; /* elevated panel surface */
+	--color-popover-foreground: #f1f5f9;
 
-	/* ── Brand ────────────────────────────────────────────────────────────── */
-	--color-primary: #22d3ee; /* softer cyan-400 */
-	--color-primary-foreground: #070b12;
-	--color-secondary: rgba(255, 255, 255, 0.05);
-	--color-secondary-foreground: #e8f0fe;
-	--color-accent: #22d3ee;
-	--color-accent-foreground: #070b12;
+	/* ── Brand & Vector Highlights ─────────────────────────────────────────── */
+	--color-primary: #38bdf8; /* technical sky cyan vector highlight */
+	--color-primary-foreground: #0b0f14;
+	--color-secondary: #1e293b;
+	--color-secondary-foreground: #cbd5e1;
+	--color-accent: #0ea5e9;
+	--color-accent-foreground: #0b0f14;
 
 	/* ── Status ───────────────────────────────────────────────────────────── */
-	--color-success: #34d399; /* emerald */
-	--color-warning: #fbbf24; /* amber */
-	--color-danger: rgb(248, 113, 113); /* red — ONLY for real errors */
-	--color-danger-foreground: #070b12; /* dark text on danger bg (WCAG AA: 7.12:1) */
-	--color-destructive: rgb(248, 113, 113);
-	--color-destructive-foreground: #070b12;
-	--color-info: #22d3ee; /* cyan */
+	--color-success: #10b981; /* emerald — normal / online / verified */
+	--color-warning: #f59e0b; /* amber — trouble / supervisory alert */
+	--color-danger: #ef4444; /* red — critical alarm / fault */
+	--color-danger-foreground: #0b0f14;
+	--color-destructive: #ef4444;
+	--color-destructive-foreground: #0b0f14;
+	--color-info: #38bdf8; /* cyan */
 
-	/* ── Structural ───────────────────────────────────────────────────────── */
-	--color-border: rgba(31, 45, 68, 0.5); /* muted navy hairline */
-	--color-input: rgba(31, 45, 68, 0.5);
-	--color-ring: #22d3ee;
-	--color-muted: rgba(255, 255, 255, 0.05);
-	--color-muted-foreground: #94a3b8; /* slate at 60% */
-	--color-darker: #0a0e17;
+	/* ── Structural & Precision Hairlines ─────────────────────────────────── */
+	--color-border: rgba(51, 65, 85, 0.65); /* crisp technical hairline */
+	--color-input: #0e141e; /* recessed input well */
+	--color-ring: #38bdf8;
+	--color-muted: #182230;
+	--color-muted-foreground: #94a3b8; /* legible slate */
+	--color-darker: #070b10;
 
-	/* ── Radius ───────────────────────────────────────────────────────────── */
-	--radius: 0.75rem; /* 12px */
-	--radius-sm: 0.5rem; /* 8px */
+	/* ── Workstation Radius ────────────────────────────────────────────────── */
+	--radius: 0.25rem; /* 4px — crisp industrial geometry */
+	--radius-sm: 0.125rem; /* 2px — compact controls and badges */
+	--radius-md: 0.25rem; /* 4px */
+	--radius-lg: 0.375rem; /* 6px */
 
 	/* ── Glassmorphism helpers ────────────────────────────────────────────── */
 	--glass-bg: rgba(17, 24, 39, 0.6);

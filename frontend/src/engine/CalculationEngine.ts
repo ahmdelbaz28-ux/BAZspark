@@ -690,3 +690,120 @@ export function generateCompleteReport(
 		timestamp: Date.now(),
 	};
 }
+
+// ============================================================================
+// NFPA 72 § 23.6 — CIRCUIT PATHWAY & FAULT ISOLATOR VALIDATION
+// ============================================================================
+
+export interface CircuitTopologyInput {
+	topology: "class_a" | "class_b";
+	devices: Array<{
+		id: string;
+		type: string;
+		current_ma?: number;
+		isIsolator?: boolean;
+		zone?: string;
+	}>;
+	wireLengthMeters: number;
+	awgGauge?: number; // default: 16 AWG
+	supplyVoltage?: number; // default: 24V
+	isLoopClosed?: boolean;
+}
+
+export interface CircuitTopologyResult {
+	topology: "class_a" | "class_b";
+	isLoopClosed: boolean;
+	totalDevices: number;
+	isolatorCount: number;
+	maxDevicesBetweenIsolators: number;
+	meetsNFPA72_23_6: boolean;
+	warnings: string[];
+	violations: string[];
+	returnPathVoltageDropV: number;
+	returnPathDropPct: number;
+}
+
+function isDeviceIsolator(d: { type: string; isIsolator?: boolean }): boolean {
+	return Boolean(d.isIsolator || d.type.toLowerCase().includes("iso") || d.type === "fault_isolator");
+}
+
+function calculateMaxSpanBetweenIsolators(devices: { type: string; isIsolator?: boolean }[]): number {
+	let currentSpan = 0;
+	let maxSpan = 0;
+	for (const dev of devices) {
+		if (isDeviceIsolator(dev)) {
+			if (currentSpan > maxSpan) maxSpan = currentSpan;
+			currentSpan = 0;
+		} else {
+			currentSpan++;
+		}
+	}
+	return Math.max(maxSpan, currentSpan);
+}
+
+/**
+ * Validates Class A vs Class B circuit topology & Fault Isolator placement per NFPA 72 § 23.6
+ */
+export function validateCircuitTopology(
+	input: CircuitTopologyInput,
+): CircuitTopologyResult {
+	const violations: string[] = [];
+	const warnings: string[] = [];
+
+	const totalDevices = input.devices.length;
+	const isolators = input.devices.filter(isDeviceIsolator);
+	const isolatorCount = isolators.length;
+	const maxDevicesBetweenIsolators = calculateMaxSpanBetweenIsolators(input.devices);
+
+	const isLoopClosed = input.topology === "class_a" ? (input.isLoopClosed ?? true) : false;
+
+	if (input.topology === "class_a") {
+		if (!isLoopClosed) {
+			violations.push(
+				"Class A circuit requires return loop closure back to the FACP return terminal per NFPA 72 § 23.6.1.",
+			);
+		}
+		if (totalDevices > 25 && isolatorCount === 0) {
+			warnings.push(
+				`Circuit has ${totalDevices} devices with 0 fault isolator modules. NFPA 72 § 23.6.1 recommends isolator modules for circuits with >25 devices.`,
+			);
+		}
+		if (maxDevicesBetweenIsolators > 25) {
+			warnings.push(
+				`Maximum span of ${maxDevicesBetweenIsolators} devices between fault isolators exceeds recommended 25 devices per NFPA 72 § 23.6.`,
+			);
+		}
+	}
+
+	// Calculate total circuit load current
+	const totalCurrentA = input.devices.reduce(
+		(sum, d) => sum + (d.current_ma || 2) / 1000,
+		0,
+	);
+	const supplyV = input.supplyVoltage || 24;
+	const lengthM = input.wireLengthMeters || 100;
+	// Standard 16 AWG Cu resistance ~ 13.17 ohms/km = 0.01317 ohms/m
+	const rPerMeter = 0.01317;
+	const totalResistance = lengthM * 2 * rPerMeter;
+	const returnDropV = totalCurrentA * totalResistance;
+	const returnDropPct = (returnDropV / supplyV) * 100;
+
+	if (returnDropPct > 10) {
+		violations.push(
+			`Circuit return path voltage drop (${returnDropPct.toFixed(1)}%) exceeds 10% limit.`,
+		);
+	}
+
+	return {
+		topology: input.topology,
+		isLoopClosed,
+		totalDevices,
+		isolatorCount,
+		maxDevicesBetweenIsolators,
+		meetsNFPA72_23_6: violations.length === 0,
+		warnings,
+		violations,
+		returnPathVoltageDropV: Number.parseFloat(returnDropV.toFixed(3)),
+		returnPathDropPct: Number.parseFloat(returnDropPct.toFixed(2)),
+	};
+}

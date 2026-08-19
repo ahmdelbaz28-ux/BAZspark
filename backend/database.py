@@ -593,6 +593,60 @@ class Database:
                 "CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)"
             )
 
+            # ── AI Command Bus Persistence (Phase 2A) ────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS project_revisions (
+                    project_id TEXT PRIMARY KEY,
+                    revision INTEGER NOT NULL DEFAULT 1,
+                    canonical_state TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS command_executions (
+                    command_id TEXT PRIMARY KEY,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT,
+                    project_id TEXT NOT NULL,
+                    capability_id TEXT NOT NULL,
+                    expected_revision INTEGER NOT NULL,
+                    committed_revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    is_dry_run BOOLEAN NOT NULL DEFAULT FALSE,
+                    payload_hash TEXT NOT NULL DEFAULT '',
+                    result_data TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL DEFAULT 'COMPLETED',
+                    created_at TEXT NOT NULL
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_command_executions_project ON command_executions(project_id)"
+            )
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS domain_events (
+                    event_id TEXT PRIMARY KEY,
+                    command_id TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT,
+                    project_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    verification_result TEXT NOT NULL DEFAULT '{}',
+                    audit_reference TEXT NOT NULL,
+                    payload TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_domain_events_project ON domain_events(project_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_domain_events_command ON domain_events(command_id)"
+            )
+
         logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
     def _init_schema(self) -> None:
@@ -820,6 +874,60 @@ class Database:
             )
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_vision_keys_active ON vision_api_keys(is_active)"
+            )
+
+            # ── AI Command Bus Persistence (Phase 2A) ────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS project_revisions (
+                    project_id TEXT PRIMARY KEY,
+                    revision INTEGER NOT NULL DEFAULT 1,
+                    canonical_state TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS command_executions (
+                    command_id TEXT PRIMARY KEY,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT,
+                    project_id TEXT NOT NULL,
+                    capability_id TEXT NOT NULL,
+                    expected_revision INTEGER NOT NULL,
+                    committed_revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    is_dry_run INTEGER NOT NULL DEFAULT 0,
+                    payload_hash TEXT NOT NULL DEFAULT '',
+                    result_data TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL DEFAULT 'COMPLETED',
+                    created_at TEXT NOT NULL
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_command_executions_project ON command_executions(project_id)"
+            )
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS domain_events (
+                    event_id TEXT PRIMARY KEY,
+                    command_id TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    causation_id TEXT,
+                    project_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    verification_result TEXT NOT NULL DEFAULT '{}',
+                    audit_reference TEXT NOT NULL,
+                    payload TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_domain_events_project ON domain_events(project_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_domain_events_command ON domain_events(command_id)"
             )
 
     # ========================================================================

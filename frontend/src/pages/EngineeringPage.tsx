@@ -55,6 +55,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { apiCall, qomnApi } from "@/services/fullApi";
+import { getTemperatureCorrectionFactor } from "@/engine/BatteryCalculator";
 import "../styles/etap-theme.css";
 
 // ============================================================================
@@ -111,6 +112,9 @@ export function EngineeringPage() {
 		alarmCurrent: "",
 		standbyHours: "24",
 		alarmMinutes: "5",
+		ambientTemp: "25",
+		agingFactor: "1.25",
+		chemistry: "vrla",
 	});
 
 	// Room analysis controlled inputs (FIX #2: was uncontrolled defaultValue)
@@ -265,7 +269,10 @@ export function EngineeringPage() {
 			return {
 				totalStandbyCurrent: 0,
 				totalAlarmCurrent: 0,
+				baseCapacity: 0,
 				requiredCapacity: 0,
+				tempMultiplier: 1.0,
+				agingFactor: 1.25,
 				recommendedBattery: "N/A",
 			};
 		}
@@ -274,13 +281,28 @@ export function EngineeringPage() {
 		const totalAlarmCurrent = alarmDevices * alarmCurrent;
 		const standbyCapacity = (totalStandbyCurrent / 1000) * standbyHours;
 		const alarmCapacity = (totalAlarmCurrent / 1000) * (alarmMinutes / 60);
-		const requiredCapacity = (standbyCapacity + alarmCapacity) * 1.2;
+		const baseCapacity = standbyCapacity + alarmCapacity;
+
+		const ambientTemp = Number.parseFloat(batteryCalcInputs.ambientTemp) || 25;
+		const agingFactor = Number.parseFloat(batteryCalcInputs.agingFactor) || 1.25;
+		const chemistry = (batteryCalcInputs.chemistry as "vrla" | "lifepo4" | "nicad" | "lead-acid") || "vrla";
+		const tempMultiplier = getTemperatureCorrectionFactor(ambientTemp, chemistry);
+		const requiredCapacity = baseCapacity * agingFactor * tempMultiplier;
+		let chemLabel = "Lead Acid VRLA";
+		if (chemistry === "lifepo4") {
+			chemLabel = "LiFePO4";
+		} else if (chemistry === "nicad") {
+			chemLabel = "NiCad";
+		}
 
 		return {
 			totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),
 			totalAlarmCurrent: Number.parseFloat(totalAlarmCurrent.toFixed(2)),
+			baseCapacity: Number.parseFloat(baseCapacity.toFixed(2)),
 			requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
-			recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah Lead Acid`,
+			tempMultiplier,
+			agingFactor,
+			recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah ${chemLabel}`,
 		};
 	}, [batteryCalcInputs]);
 
@@ -1171,6 +1193,71 @@ export function EngineeringPage() {
 												placeholder="min"
 											/>
 										</div>
+										<div className="etap-field">
+											<Label className="etap-label">
+												Ambient Temperature (°C)
+											</Label>
+											<Input
+												type="number"
+												min="-20"
+												max="60"
+												value={batteryCalcInputs.ambientTemp}
+												onChange={(e) =>
+													setBatteryCalcInputs((p) => ({
+														...p,
+														ambientTemp: e.target.value,
+													}))
+												}
+												className="etap-input"
+												placeholder="25°C"
+											/>
+										</div>
+										<div className="etap-field">
+											<Label className="etap-label">
+												Aging Derating Factor
+											</Label>
+											<Select
+												value={batteryCalcInputs.agingFactor}
+												onValueChange={(val) =>
+													setBatteryCalcInputs((p) => ({
+														...p,
+														agingFactor: val,
+													}))
+												}
+											>
+												<SelectTrigger className="etap-input">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent className="bg-card border-border">
+													<SelectItem value="1.25">1.25 (NFPA 72 Standard)</SelectItem>
+													<SelectItem value="1.40">1.40 (Critical Infrastructure)</SelectItem>
+													<SelectItem value="1.15">1.15 (Light Commercial)</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="etap-field">
+											<Label className="etap-label">
+												Battery Chemistry Type
+											</Label>
+											<Select
+												value={batteryCalcInputs.chemistry}
+												onValueChange={(val) =>
+													setBatteryCalcInputs((p) => ({
+														...p,
+														chemistry: val,
+													}))
+												}
+											>
+												<SelectTrigger className="etap-input">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent className="bg-card border-border">
+													<SelectItem value="vrla">Lead-Acid Sealed AGM (VRLA)</SelectItem>
+													<SelectItem value="lifepo4">Lithium Iron Phosphate (LiFePO4)</SelectItem>
+													<SelectItem value="nicad">Nickel-Cadmium (NiCad)</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -1209,9 +1296,33 @@ export function EngineeringPage() {
 											</div>
 											<div className="flex justify-between items-baseline">
 												<span className="etap-label">
+													Base Capacity (Ah)
+												</span>
+												<span className="font-mono-num text-[var(--etap-text-secondary)]">
+													{batteryResult.baseCapacity} Ah
+												</span>
+											</div>
+											<div className="flex justify-between items-baseline">
+												<span className="etap-label">
+													Thermal Derating (kt @ {batteryCalcInputs.ambientTemp}°C)
+												</span>
+												<span className="font-mono-num text-[var(--etap-text-secondary)]">
+													{batteryResult.tempMultiplier}x
+												</span>
+											</div>
+											<div className="flex justify-between items-baseline">
+												<span className="etap-label">
+													Aging Factor
+												</span>
+												<span className="font-mono-num text-[var(--etap-text-secondary)]">
+													{batteryResult.agingFactor}x
+												</span>
+											</div>
+											<div className="flex justify-between items-baseline border-t border-[var(--etap-border-subtle)] pt-2">
+												<span className="etap-label font-bold text-foreground">
 													{t("engineering.requiredCapacity")}
 												</span>
-												<span className="font-mono-num text-lg text-[var(--etap-text-primary)]">
+												<span className="font-mono-num text-xl font-bold text-[var(--etap-accent)]">
 													{batteryResult.requiredCapacity} Ah
 												</span>
 											</div>

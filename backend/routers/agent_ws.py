@@ -5,12 +5,20 @@ import json
 import logging
 import uuid
 from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from backend.api_keys import validate_api_key
 from backend.auth import has_permission
+from backend.core.capability_registry import default_capability_registry
+from backend.core.command_bus import (
+    AuthenticatedPrincipal,
+    DomainCommand,
+    default_command_bus,
+)
+from backend.core.context_resolver import default_context_resolver
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -25,6 +33,10 @@ agent_response_futures: dict[str, asyncio.Future[Any]] = {}
 
 # A lock per connection to serialize command dispatches
 agent_locks: dict[str, asyncio.Lock] = {}
+
+# Capability ID constants — avoid string literal duplication (SonarCloud S1192)
+CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
+CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
 
 # Track which futures belong to which websocket (for cleanup on disconnect)
 # Maps websocket id -> set of pending command IDs
@@ -196,7 +208,199 @@ def _validate_agent_nonce(msg: dict) -> bool:
     return True
 
 
-async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
+class AIOrchestrationService:
+    """Orchestrates Phase 1 Vertical Slice B:
+    User Intent -> Context Resolution -> Capability Discovery -> Deterministic Planning ->
+    Dry-Run DomainCommand -> Preview -> Approval -> OCC Check -> Deterministic Commit -> Event & Audit.
+    """
+
+    def __init__(
+        self,
+        command_bus=None,
+        context_resolver=None,
+        capability_registry=None,
+    ) -> None:
+        self.command_bus = command_bus or default_command_bus
+        self.context_resolver = context_resolver or default_context_resolver
+        self.capability_registry = capability_registry or default_capability_registry
+
+    async def handle_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process an AI intent: resolve context, plan placement deterministically, and return dry-run preview."""
+        project_id = str(msg.get("projectId", "default_project"))
+        room_id = str(msg.get("roomId", "room-101"))
+        room_bounds = msg.get(
+            "roomBounds", {"width_m": 10.0, "length_m": 15.0, "ceiling_height_m": 3.0}
+        )
+        existing_devices = msg.get("existingDevices", [])
+        detector_type = msg.get("detectorType", "smoke")
+
+        # 1. Context Resolution with hard <=1500 token budget
+        current_rev = self.command_bus.get_project_revision(project_id)
+        context_pkt = self.context_resolver.resolve_room_context(
+            project_id=project_id,
+            room_id=room_id,
+            revision=current_rev,
+            room_bounds=room_bounds,
+            existing_devices=existing_devices,
+        )
+
+        # 2. Capability Discovery (spatial.place_devices)
+        caps = self.capability_registry.discover(categories=["spatial"], scopes=principal.scopes)
+        if not caps:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "NO_CAPABILITY_AVAILABLE",
+                    "message": "No matching spatial capabilities available for user scopes.",
+                }
+            )
+            return
+
+        # 3. Create Dry-Run Domain Command
+        command_id = f"cmd-{uuid.uuid4().hex[:12]}"
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        command = DomainCommand(
+            commandId=command_id,
+            correlationId=correlation_id,
+            capabilityId=CAP_SPATIAL_PLACE_DEVICES,
+            projectId=project_id,
+            expectedRevision=current_rev,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=principal,
+            riskClass="MEDIUM",
+            isDryRun=True,
+            payload={
+                "room_id": room_id,
+                "width_m": context_pkt.room_bounds["width_m"],
+                "length_m": context_pkt.room_bounds["length_m"],
+                "ceiling_height_m": context_pkt.room_bounds["ceiling_height_m"],
+                "detector_type": detector_type,
+            },
+        )
+
+        # 4. Execute Dry-Run via CommandBus
+        result = self.command_bus.execute(command)
+
+        # 5. Send Preview to Client via WS
+        await websocket.send_json(
+            {
+                "type": "ai_preview",
+                "commandId": command_id,
+                "correlationId": correlation_id,
+                "projectId": project_id,
+                "expectedRevision": current_rev,
+                "capabilityId": CAP_SPATIAL_PLACE_DEVICES,
+                "previewDevices": result.resultData.get("devices", []),
+                "deviceCount": result.resultData.get("device_count", 0),
+                "coveragePct": result.resultData.get("coverage_pct", 100.0),
+                "isCompliant": result.resultData.get("is_compliant", True),
+                "tokenTelemetry": context_pkt.telemetry,
+                "payload": command.payload,
+            }
+        )
+
+    async def handle_approval(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process user approval: execute deterministic commit with OCC validation."""
+        command_id = str(msg.get("commandId", f"cmd-{uuid.uuid4().hex[:12]}"))
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        project_id = str(msg.get("projectId", "default_project"))
+        expected_revision = int(msg.get("expectedRevision", 1))
+        capability_id = str(msg.get("capabilityId", CAP_SPATIAL_PLACE_DEVICES))
+        payload = msg.get("payload", {})
+
+        command = DomainCommand(
+            commandId=command_id,
+            correlationId=correlation_id,
+            capabilityId=capability_id,
+            projectId=project_id,
+            expectedRevision=expected_revision,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=principal,
+            riskClass="MEDIUM",
+            isDryRun=False,
+            payload=payload,
+        )
+
+        result = self.command_bus.execute(command)
+
+        if not result.success:
+            if result.errorCode == "CONCURRENCY_CONFLICT":
+                await websocket.send_json(
+                    {
+                        "type": "ai_conflict",
+                        "commandId": command_id,
+                        "projectId": project_id,
+                        "expectedRevision": expected_revision,
+                        "currentRevision": result.revision,
+                        "errorCode": result.errorCode,
+                        "message": result.errorMessage,
+                    }
+                )
+            else:
+                await websocket.send_json(
+                    {
+                        "type": "ai_error",
+                        "commandId": command_id,
+                        "errorCode": result.errorCode,
+                        "message": result.errorMessage,
+                    }
+                )
+            return
+
+        # Success: emit committed state & audit event
+        await websocket.send_json(
+            {
+                "type": "ai_committed",
+                "commandId": command_id,
+                "projectId": project_id,
+                "revision": result.revision,
+                "devices": result.resultData.get("devices", []),
+                "event": result.event.to_dict() if result.event else None,
+                "auditReference": result.event.auditReference if result.event else "",
+                "coveragePct": result.resultData.get("coverage_pct", 100.0),
+            }
+        )
+
+    async def handle_user_mutation(
+        self, websocket: WebSocket, msg: dict[str, Any]
+    ) -> None:
+        """Simulate/commit a direct manual user edit that increments canonical revision (N -> N+1)."""
+        project_id = str(msg.get("projectId", "default_project"))
+        current_rev = self.command_bus.get_project_revision(project_id)
+        new_rev = current_rev + 1
+        self.command_bus.set_project_revision(project_id, new_rev)
+
+        devices = msg.get("devices", [])
+        self.command_bus.save_canonical_state(
+            project_id=project_id,
+            state={
+                "devices": devices,
+                "last_mutation": "user_manual_edit",
+                "revision": new_rev,
+            },
+            revision=new_rev,
+        )
+
+        await websocket.send_json(
+            {
+                "type": "user_mutation_committed",
+                "projectId": project_id,
+                "revision": new_rev,
+                "devices": devices,
+            }
+        )
+
+
+default_orchestration_service = AIOrchestrationService()
+
+
+async def _handle_agent_message(
+    websocket: WebSocket, msg: dict, principal: AuthenticatedPrincipal | None = None
+) -> None:
     """Dispatch a single decoded agent message."""
     if not _validate_agent_nonce(msg):
         return
@@ -206,6 +410,12 @@ async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
         await _handle_response_message(msg)
     elif msg_type == "ping":
         await _handle_ping_message(websocket)
+    elif msg_type in ("ai_intent", "intent_submit") and principal:
+        await default_orchestration_service.handle_intent(websocket, principal, msg)
+    elif msg_type in ("ai_approve", "command_approve") and principal:
+        await default_orchestration_service.handle_approval(websocket, principal, msg)
+    elif msg_type in ("user_mutate", "manual_edit") and principal:
+        await default_orchestration_service.handle_user_mutation(websocket, msg)
 
 
 async def _handle_response_message(msg: dict) -> None:
@@ -335,6 +545,14 @@ async def agent_websocket_endpoint(websocket: WebSocket):
 
     pong_flag, ping_cycle_fn = _run_heartbeat_loop(websocket, api_key=raw_api_key)
 
+    principal = AuthenticatedPrincipal(
+        user_id=getattr(api_key_info, "name", "agent_user"),
+        email=getattr(api_key_info, "email", "agent@bazspark.com"),
+        role=getattr(api_key_info, "role", "engineer"),
+        scopes=["spatial:write", "compliance:read"],
+        is_authenticated=True,
+    )
+
     async def _message_loop() -> None:
         while True:
             data = await websocket.receive_text()
@@ -344,7 +562,7 @@ async def agent_websocket_endpoint(websocket: WebSocket):
                 if msg.get("type") == "pong":
                     pong_flag["value"] = True
                 else:
-                    await _handle_agent_message(websocket, msg)
+                    await _handle_agent_message(websocket, msg, principal)
             except Exception as e:
                 logger.warning("Error handling agent message: %s", e)
 
