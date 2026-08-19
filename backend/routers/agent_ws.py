@@ -34,6 +34,10 @@ agent_response_futures: dict[str, asyncio.Future[Any]] = {}
 # A lock per connection to serialize command dispatches
 agent_locks: dict[str, asyncio.Lock] = {}
 
+# Capability ID constants — avoid string literal duplication (SonarCloud S1192)
+CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
+CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
+
 # Track which futures belong to which websocket (for cleanup on disconnect)
 # Maps websocket id -> set of pending command IDs
 _agent_pending_commands: dict[str, set[str]] = {}
@@ -260,7 +264,7 @@ class AIOrchestrationService:
         command = DomainCommand(
             commandId=command_id,
             correlationId=correlation_id,
-            capabilityId="spatial.place_devices",
+            capabilityId=CAP_SPATIAL_PLACE_DEVICES,
             projectId=project_id,
             expectedRevision=current_rev,
             timestamp=datetime.now(UTC).isoformat(),
@@ -362,7 +366,7 @@ class AIOrchestrationService:
         )
 
     async def handle_user_mutation(
-        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+        self, websocket: WebSocket, msg: dict[str, Any]
     ) -> None:
         """Simulate/commit a direct manual user edit that increments canonical revision (N -> N+1)."""
         project_id = str(msg.get("projectId", "default_project"))
@@ -406,15 +410,12 @@ async def _handle_agent_message(
         await _handle_response_message(msg)
     elif msg_type == "ping":
         await _handle_ping_message(websocket)
-    elif msg_type in ("ai_intent", "intent_submit"):
-        if principal:
-            await default_orchestration_service.handle_intent(websocket, principal, msg)
-    elif msg_type in ("ai_approve", "command_approve"):
-        if principal:
-            await default_orchestration_service.handle_approval(websocket, principal, msg)
-    elif msg_type in ("user_mutate", "manual_edit"):
-        if principal:
-            await default_orchestration_service.handle_user_mutation(websocket, principal, msg)
+    elif msg_type in ("ai_intent", "intent_submit") and principal:
+        await default_orchestration_service.handle_intent(websocket, principal, msg)
+    elif msg_type in ("ai_approve", "command_approve") and principal:
+        await default_orchestration_service.handle_approval(websocket, principal, msg)
+    elif msg_type in ("user_mutate", "manual_edit") and principal:
+        await default_orchestration_service.handle_user_mutation(websocket, msg)
 
 
 async def _handle_response_message(msg: dict) -> None:

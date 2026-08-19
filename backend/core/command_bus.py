@@ -55,17 +55,17 @@ class AuthenticatedPrincipal:
 class DomainCommand:
     """Frozen DomainCommand structure for deterministic mutation and planning."""
 
-    commandId: str
-    correlationId: str
-    capabilityId: str
-    projectId: str
-    expectedRevision: int
+    commandId: str  # NOSONAR — frozen API contract (camelCase JSON wire format)
+    correlationId: str  # NOSONAR
+    capabilityId: str  # NOSONAR
+    projectId: str  # NOSONAR
+    expectedRevision: int  # NOSONAR
     timestamp: str
     principal: AuthenticatedPrincipal
-    riskClass: str = "MEDIUM"  # "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-    isDryRun: bool = False
+    riskClass: str = "MEDIUM"  # NOSONAR — "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+    isDryRun: bool = False  # NOSONAR
     payload: dict[str, Any] = field(default_factory=dict)
-    causationId: str | None = None
+    causationId: str | None = None  # NOSONAR
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -76,18 +76,18 @@ class DomainCommand:
 class DomainEvent:
     """Traceable domain event produced upon successful command execution."""
 
-    eventId: str
-    commandId: str
-    correlationId: str
-    projectId: str
+    eventId: str  # NOSONAR — frozen API contract (camelCase JSON wire format)
+    commandId: str  # NOSONAR
+    correlationId: str  # NOSONAR
+    projectId: str  # NOSONAR
     revision: int
     actor: str
-    eventType: str
+    eventType: str  # NOSONAR
     timestamp: str
-    verificationResult: dict[str, Any]
-    auditReference: str
+    verificationResult: dict[str, Any]  # NOSONAR
+    auditReference: str  # NOSONAR
     payload: dict[str, Any]
-    causationId: str | None = None
+    causationId: str | None = None  # NOSONAR
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -98,14 +98,14 @@ class CommandResult:
     """Result of command dispatch via CommandBus."""
 
     success: bool
-    commandId: str
-    projectId: str
+    commandId: str  # NOSONAR — frozen API contract (camelCase JSON wire format)
+    projectId: str  # NOSONAR
     revision: int
-    isDryRun: bool
-    resultData: dict[str, Any] = field(default_factory=dict)
+    isDryRun: bool  # NOSONAR
+    resultData: dict[str, Any] = field(default_factory=dict)  # NOSONAR
     event: DomainEvent | None = None
-    errorCode: str | None = None
-    errorMessage: str | None = None
+    errorCode: str | None = None  # NOSONAR
+    errorMessage: str | None = None  # NOSONAR
 
     def to_dict(self) -> dict[str, Any]:
         return {

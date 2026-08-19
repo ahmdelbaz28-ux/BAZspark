@@ -430,8 +430,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
 					{/* AI Proposal Preview Ghost Layer (Transient Projection) */}
 					{previewDevices.map((pDev) => {
-						const px = pDev.x !== undefined ? pDev.x : (pDev.x_m || 0) * 20 + 50;
-						const py = pDev.y !== undefined ? pDev.y : (pDev.y_m || 0) * 20 + 50;
+						const px = pDev.x ?? (pDev.x_m || 0) * 20 + 50;
+						const py = pDev.y ?? (pDev.y_m || 0) * 20 + 50;
 						const rad = (pDev.coverage_radius_m || 6.37) * 10;
 						return (
 							<g key={`preview-ghost-${pDev.id}`} opacity="0.85">
