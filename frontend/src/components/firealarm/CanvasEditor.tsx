@@ -37,12 +37,23 @@ export interface Detector {
 	lastTestDate?: string;
 }
 
+export interface PreviewGhostDevice {
+	id: string;
+	x_m?: number;
+	y_m?: number;
+	x?: number;
+	y?: number;
+	type: DetectorType;
+	coverage_radius_m?: number;
+}
+
 interface CanvasEditorProps {
 	floorPlanImage?: string;
 	detectors: Detector[];
 	onDetectorsChange: (detectors: Detector[]) => void;
 	circuitTopology?: "class_a" | "class_b";
 	onTopologyChange?: (topology: "class_a" | "class_b") => void;
+	previewDevices?: PreviewGhostDevice[];
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
@@ -51,6 +62,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 	onDetectorsChange,
 	circuitTopology: externalTopology,
 	onTopologyChange,
+	previewDevices = [],
 }) => {
 	const { t } = useTranslation();
 	const canvasRef = useRef<HTMLDivElement>(null);
@@ -415,6 +427,46 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 							strokeOpacity="0.9"
 						/>
 					)}
+
+					{/* AI Proposal Preview Ghost Layer (Transient Projection) */}
+					{previewDevices.map((pDev) => {
+						const px = pDev.x !== undefined ? pDev.x : (pDev.x_m || 0) * 20 + 50;
+						const py = pDev.y !== undefined ? pDev.y : (pDev.y_m || 0) * 20 + 50;
+						const rad = (pDev.coverage_radius_m || 6.37) * 10;
+						return (
+							<g key={`preview-ghost-${pDev.id}`} opacity="0.85">
+								<circle
+									cx={px}
+									cy={py}
+									r={rad}
+									fill="rgba(6, 182, 212, 0.08)"
+									stroke="#06b6d4"
+									strokeWidth="1.5"
+									strokeDasharray="4 2"
+								/>
+								<circle
+									cx={px}
+									cy={py}
+									r="10"
+									fill="rgba(6, 182, 212, 0.25)"
+									stroke="#06b6d4"
+									strokeWidth="2"
+									strokeDasharray="3 2"
+								/>
+								<text
+									x={px}
+									y={py + 3}
+									textAnchor="middle"
+									fill="#06b6d4"
+									fontSize="8"
+									fontWeight="bold"
+									fontFamily="monospace"
+								>
+									AI
+								</text>
+							</g>
+						);
+					})}
 
 					{/* Detectors & Isolators */}
 					{detectors.map(renderDetector)}
