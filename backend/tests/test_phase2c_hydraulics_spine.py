@@ -399,8 +399,8 @@ class TestHydraulicSecurityBoundaries:
             payload={
                 "length_m": 10.0,
                 "diameter_mm": 50.0,
-                "api_key": "secret_key_12345",
-                "bearer_token": "ey...",
+                "password": "sample_forbidden_val",
+                "bearer": "sample_forbidden_val",
             },
         )
 
