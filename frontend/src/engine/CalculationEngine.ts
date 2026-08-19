@@ -723,6 +723,24 @@ export interface CircuitTopologyResult {
 	returnPathDropPct: number;
 }
 
+function isDeviceIsolator(d: { type: string; isIsolator?: boolean }): boolean {
+	return Boolean(d.isIsolator || d.type.toLowerCase().includes("iso") || d.type === "fault_isolator");
+}
+
+function calculateMaxSpanBetweenIsolators(devices: { type: string; isIsolator?: boolean }[]): number {
+	let currentSpan = 0;
+	let maxSpan = 0;
+	for (const dev of devices) {
+		if (isDeviceIsolator(dev)) {
+			if (currentSpan > maxSpan) maxSpan = currentSpan;
+			currentSpan = 0;
+		} else {
+			currentSpan++;
+		}
+	}
+	return Math.max(maxSpan, currentSpan);
+}
+
 /**
  * Validates Class A vs Class B circuit topology & Fault Isolator placement per NFPA 72 § 23.6
  */
@@ -733,24 +751,9 @@ export function validateCircuitTopology(
 	const warnings: string[] = [];
 
 	const totalDevices = input.devices.length;
-	const isolators = input.devices.filter(
-		(d) => d.isIsolator || d.type.toLowerCase().includes("iso") || d.type === "fault_isolator",
-	);
+	const isolators = input.devices.filter(isDeviceIsolator);
 	const isolatorCount = isolators.length;
-
-	// Calculate devices between consecutive isolators
-	let currentSpan = 0;
-	let maxSpan = 0;
-	for (const dev of input.devices) {
-		if (dev.isIsolator || dev.type.toLowerCase().includes("iso") || dev.type === "fault_isolator") {
-			if (currentSpan > maxSpan) maxSpan = currentSpan;
-			currentSpan = 0;
-		} else {
-			currentSpan++;
-		}
-	}
-	if (currentSpan > maxSpan) maxSpan = currentSpan;
-	const maxDevicesBetweenIsolators = maxSpan;
+	const maxDevicesBetweenIsolators = calculateMaxSpanBetweenIsolators(input.devices);
 
 	const isLoopClosed = input.topology === "class_a" ? (input.isLoopClosed ?? true) : false;
 

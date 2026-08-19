@@ -274,14 +274,13 @@ export const AnalysisPage: React.FC = () => {
 		},
 	});
 
-	const currentMutation =
-		selectedAnalysis === "battery"
-			? batteryMutation
-			: selectedAnalysis === "voltage"
-				? voltageMutation
-				: selectedAnalysis === "room"
-					? roomMutation
-					: hydraulicMutation;
+	const getActiveMutation = () => {
+		if (selectedAnalysis === "battery") return batteryMutation;
+		if (selectedAnalysis === "voltage") return voltageMutation;
+		if (selectedAnalysis === "room") return roomMutation;
+		return hydraulicMutation;
+	};
+	const currentMutation = getActiveMutation();
 
 	const handleAddPipe = () => {
 		const nextIdx = pipes.length + 1;
@@ -395,10 +394,11 @@ export const AnalysisPage: React.FC = () => {
 						{selectedAnalysis === "battery" && (
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<label className="block text-xs font-mono text-muted-foreground mb-1">
+									<label htmlFor="battery-total-load-input" className="block text-xs font-mono text-muted-foreground mb-1">
 										Total Load (A)
 									</label>
 									<input
+										id="battery-total-load-input"
 										type="number"
 										step="0.1"
 										value={batteryLoad}
@@ -407,10 +407,11 @@ export const AnalysisPage: React.FC = () => {
 									/>
 								</div>
 								<div>
-									<label className="block text-xs font-mono text-muted-foreground mb-1">
+									<label htmlFor="battery-backup-duration-input" className="block text-xs font-mono text-muted-foreground mb-1">
 										Backup Duration (min)
 									</label>
 									<input
+										id="battery-backup-duration-input"
 										type="number"
 										value={batteryMinutes}
 										onChange={(e) => setBatteryMinutes(e.target.value)}
@@ -423,10 +424,11 @@ export const AnalysisPage: React.FC = () => {
 						{selectedAnalysis === "voltage" && (
 							<div className="grid grid-cols-3 gap-3">
 								<div>
-									<label className="block text-xs font-mono text-muted-foreground mb-1">
+									<label htmlFor="voltage-circuit-length-input" className="block text-xs font-mono text-muted-foreground mb-1">
 										Length (ft)
 									</label>
 									<input
+										id="voltage-circuit-length-input"
 										type="number"
 										value={voltageLength}
 										onChange={(e) => setVoltageLength(e.target.value)}
@@ -434,10 +436,11 @@ export const AnalysisPage: React.FC = () => {
 									/>
 								</div>
 								<div>
-									<label className="block text-xs font-mono text-muted-foreground mb-1">
+									<label htmlFor="voltage-load-current-input" className="block text-xs font-mono text-muted-foreground mb-1">
 										Current (A)
 									</label>
 									<input
+										id="voltage-load-current-input"
 										type="number"
 										step="0.1"
 										value={voltageCurrent}
@@ -446,10 +449,11 @@ export const AnalysisPage: React.FC = () => {
 									/>
 								</div>
 								<div>
-									<label className="block text-xs font-mono text-muted-foreground mb-1">
+									<label htmlFor="voltage-wire-gauge-select" className="block text-xs font-mono text-muted-foreground mb-1">
 										Wire (AWG)
 									</label>
 									<select
+										id="voltage-wire-gauge-select"
 										value={voltageWire}
 										onChange={(e) => setVoltageWire(e.target.value)}
 										className="w-full px-3 py-1.5 bg-input border border-border rounded text-foreground font-mono text-xs focus:border-primary focus:outline-none"
@@ -466,10 +470,11 @@ export const AnalysisPage: React.FC = () => {
 
 						{selectedAnalysis === "room" && (
 							<div>
-								<label className="block text-xs font-mono text-muted-foreground mb-1">
+								<label htmlFor="room-analysis-project-select" className="block text-xs font-mono text-muted-foreground mb-1">
 									Project
 								</label>
 								<select
+									id="room-analysis-project-select"
 									value={projectId}
 									onChange={(e) => setProjectId(e.target.value)}
 									className="w-full px-3 py-1.5 bg-input border border-border rounded text-foreground font-mono text-xs focus:border-primary focus:outline-none"
@@ -517,7 +522,7 @@ export const AnalysisPage: React.FC = () => {
 										</thead>
 										<tbody className="divide-y divide-border">
 											{pipes.map((pipe, idx) => (
-												<tr key={idx} className="hover:bg-muted/30">
+												<tr key={pipe.id || `pipe-row-${idx}`} className="hover:bg-muted/30">
 													<td className="p-1.5">
 														<input
 															type="text"
@@ -779,7 +784,7 @@ export const AnalysisPage: React.FC = () => {
 									Warnings
 								</p>
 								{roomMutation.data.data.warnings.map((w, i) => (
-									<p key={i} className="text-xs text-amber-300/80 font-mono">
+									<p key={`room-warn-${w.slice(0, 16)}-${i}`} className="text-xs text-amber-300/80 font-mono">
 										{w}
 									</p>
 								))}

@@ -287,9 +287,12 @@ export function EngineeringPage() {
 		const agingFactor = Number.parseFloat(batteryCalcInputs.agingFactor) || 1.25;
 		const chemistry = (batteryCalcInputs.chemistry as "vrla" | "lifepo4" | "nicad" | "lead-acid") || "vrla";
 		const tempMultiplier = getTemperatureCorrectionFactor(ambientTemp, chemistry);
-		const requiredCapacity = baseCapacity * agingFactor * tempMultiplier;
-
-		const chemLabel = chemistry === "lifepo4" ? "LiFePO4" : chemistry === "nicad" ? "NiCad" : "Lead Acid VRLA";
+		let chemLabel = "Lead Acid VRLA";
+		if (chemistry === "lifepo4") {
+			chemLabel = "LiFePO4";
+		} else if (chemistry === "nicad") {
+			chemLabel = "NiCad";
+		}
 
 		return {
 			totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),

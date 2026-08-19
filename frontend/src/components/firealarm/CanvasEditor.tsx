@@ -159,10 +159,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 		const isSelected = selectedDetector === detector.id;
 		const statusColor = getStatusColor(detector.status);
 
-		// Different shapes for different detector types.
-		// SonarQube S3923: "smoke", "speaker", and the default case all
-		// render the same circle shape. Initialize detectorShape with the
-		// default (circle) and only override in the cases that differ.
 		let detectorShape = (
 			<circle
 				cx="12"
@@ -284,16 +280,19 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 	};
 
 	const isolatorCount = detectors.filter((d) => d.type === "iso").length;
+	const lastDetector = detectors.at(-1);
+	const firstDetector = detectors.at(0);
 
 	return (
 		<div className="flex flex-col h-full space-y-3">
 			<div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-card border border-border rounded text-xs">
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-1.5">
-						<label className="font-mono text-muted-foreground font-semibold">
+						<label htmlFor="detector-type-select" className="font-mono text-muted-foreground font-semibold">
 							Tool / Device:
 						</label>
 						<select
+							id="detector-type-select"
 							aria-label={t("fireAlarm.addDetector")}
 							value={newDetectorType}
 							onChange={(e) => setNewDetectorType(e.target.value as DetectorType)}
@@ -310,10 +309,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 					</div>
 
 					<div className="flex items-center gap-1.5">
-						<label className="font-mono text-muted-foreground font-semibold">
+						<label htmlFor="circuit-topology-select" className="font-mono text-muted-foreground font-semibold">
 							Circuit Pathway:
 						</label>
 						<select
+							id="circuit-topology-select"
 							aria-label="Circuit Pathway Topology"
 							value={topology}
 							onChange={(e) => setTopology(e.target.value as "class_a" | "class_b")}
@@ -403,12 +403,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 						})}
 
 					{/* Class A Return Loop Leg (connects last device back to FACP / source) */}
-					{topology === "class_a" && detectors.length > 1 && (
+					{topology === "class_a" && detectors.length > 1 && lastDetector && firstDetector && (
 						<line
-							x1={detectors[detectors.length - 1].x}
-							y1={detectors[detectors.length - 1].y}
-							x2={detectors[0].x}
-							y2={detectors[0].y}
+							x1={lastDetector.x}
+							y1={lastDetector.y}
+							x2={firstDetector.x}
+							y2={firstDetector.y}
 							stroke="#38bdf8"
 							strokeWidth="2"
 							strokeDasharray="4 2"
