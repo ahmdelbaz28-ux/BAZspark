@@ -293,6 +293,145 @@ class CapabilityRegistry:
             )
         )
 
+        def _solve_darcy_weisbach_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from fireai.core.darcy_weisbach_solver import (
+                FLUID_PROPERTIES,
+                GRAVITY_M_S2,
+                FluidType,
+                calculate_darcy_weisbach_friction_loss,
+            )
+
+            pipe_segment_id = str(payload.get("pipe_segment_id", "pipe-seg-01"))
+            length_m = float(payload.get("length_m", 15.0))
+            diameter_mm = float(payload.get("diameter_mm", 50.0))
+            pipe_diameter_m = diameter_mm / 1000.0
+
+            roughness_mm = payload.get("roughness_mm")
+            pipe_roughness_m = float(roughness_mm) / 1000.0 if roughness_mm is not None else None
+
+            fluid_str = str(payload.get("fluid_type", "water")).strip().lower()
+            try:
+                fluid_type = FluidType(fluid_str)
+            except ValueError:
+                fluid_type = FluidType.WATER
+
+            density_kg_m3 = float(payload["density_kg_m3"]) if payload.get("density_kg_m3") is not None else None
+            viscosity_pa_s = float(payload["viscosity_pa_s"]) if payload.get("viscosity_pa_s") is not None else None
+
+            flow_rate_kg_s = payload.get("flow_rate_kg_s")
+            flow_l_min = payload.get("flow_l_min")
+
+            if flow_rate_kg_s is not None:
+                flow_rate_kg_s = float(flow_rate_kg_s)
+                props = FLUID_PROPERTIES.get(fluid_type, FLUID_PROPERTIES[FluidType.WATER])
+                rho = density_kg_m3 if density_kg_m3 is not None else props["density_kg_m3"]
+                if flow_l_min is None:
+                    flow_l_min = (flow_rate_kg_s / rho) * 60000.0 if rho > 0 else 0.0
+            else:
+                flow_l_min = float(flow_l_min) if flow_l_min is not None else 250.0
+                props = FLUID_PROPERTIES.get(fluid_type, FLUID_PROPERTIES[FluidType.WATER])
+                rho = density_kg_m3 if density_kg_m3 is not None else props["density_kg_m3"]
+                flow_rate_kg_s = (flow_l_min / 60000.0) * rho
+
+            elevation_m = float(payload.get("elevation_m", 0.0))
+
+            res = calculate_darcy_weisbach_friction_loss(
+                pipe_length_m=length_m,
+                pipe_diameter_m=pipe_diameter_m,
+                flow_rate_kg_s=flow_rate_kg_s,
+                fluid_type=fluid_type,
+                pipe_roughness_m=pipe_roughness_m,
+                density_kg_m3=density_kg_m3,
+                viscosity_pa_s=viscosity_pa_s,
+            )
+
+            props = FLUID_PROPERTIES.get(fluid_type, FLUID_PROPERTIES[FluidType.WATER])
+            rho = density_kg_m3 if density_kg_m3 is not None else props["density_kg_m3"]
+            elevation_loss_pa = rho * GRAVITY_M_S2 * elevation_m
+            total_pressure_loss_pa = res.pressure_loss_pa + elevation_loss_pa
+            total_pressure_loss_psi = total_pressure_loss_pa * 0.000145038
+
+            warnings: list[str] = list(res.warnings)
+            if res.flow_velocity_m_s > 10.0:
+                warnings.append(
+                    f"Excessive flow velocity flag: velocity {res.flow_velocity_m_s:.2f} m/s exceeds typical recommended engineering limit (10.0 m/s). Risk of erosion and water hammer."
+                )
+            elif res.flow_velocity_m_s > 5.0:
+                warnings.append(
+                    f"High flow velocity flag: velocity {res.flow_velocity_m_s:.2f} m/s exceeds standard distribution main velocity guideline (5.0 m/s)."
+                )
+
+            return {
+                "pipe_segment_id": pipe_segment_id,
+                "length_m": length_m,
+                "diameter_mm": diameter_mm,
+                "flow_rate_kg_s": round(flow_rate_kg_s, 4),
+                "flow_l_min": round(flow_l_min, 2),
+                "fluid_type": fluid_type.value,
+                "flow_velocity_m_s": res.flow_velocity_m_s,
+                "reynolds_number": res.reynolds_number,
+                "friction_factor": res.friction_factor,
+                "flow_regime": res.flow_regime,
+                "head_loss_m": res.head_loss_m,
+                "pressure_loss_pa": res.pressure_loss_pa,
+                "pressure_loss_psi": res.pressure_loss_psi,
+                "elevation_m": elevation_m,
+                "elevation_loss_pa": round(elevation_loss_pa, 2),
+                "total_pressure_loss_pa": round(total_pressure_loss_pa, 2),
+                "total_pressure_loss_psi": round(total_pressure_loss_psi, 4),
+                "is_compliant": True,
+                "warnings": warnings,
+                "converged": res.converged,
+                "nfpa_reference": res.nfpa_reference,
+            }
+
+        # 4. hydraulics.solve_darcy_weisbach (Phase 2C Vertical Slice D)
+        self.register(
+            CapabilityDefinition(
+                capability_id="hydraulics.solve_darcy_weisbach",
+                name="Solve Darcy-Weisbach Hydraulic Friction Loss",
+                description="Deterministically calculate pipe friction loss, flow velocity, Reynolds number, and Darcy friction factor.",
+                category="hydraulics",
+                risk_class="ENGINEERING_MUTATION",
+                required_scopes=["hydraulics:write"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "pipe_segment_id": {"type": "string"},
+                        "length_m": {"type": "number", "minimum": 0.0},
+                        "diameter_mm": {"type": "number", "minimum": 5.0, "maximum": 1000.0},
+                        "flow_rate_kg_s": {"type": "number", "minimum": 0.0},
+                        "flow_l_min": {"type": "number", "minimum": 0.0},
+                        "fluid_type": {
+                            "type": "string",
+                            "enum": ["water", "co2_liquid", "co2_vapor", "fm200", "novec1230", "inergen_ig541", "afff_foam", "custom"],
+                            "default": "water",
+                        },
+                        "roughness_mm": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+                        "elevation_m": {"type": "number", "default": 0.0},
+                    },
+                    "required": ["length_m", "diameter_mm"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "pipe_segment_id": {"type": "string"},
+                        "flow_velocity_m_s": {"type": "number"},
+                        "reynolds_number": {"type": "number"},
+                        "friction_factor": {"type": "number"},
+                        "flow_regime": {"type": "string"},
+                        "head_loss_m": {"type": "number"},
+                        "pressure_loss_pa": {"type": "number"},
+                        "pressure_loss_psi": {"type": "number"},
+                        "total_pressure_loss_psi": {"type": "number"},
+                        "is_compliant": {"type": "boolean"},
+                        "warnings": {"type": "array"},
+                    },
+                },
+                handler=_solve_darcy_weisbach_handler,
+            )
+        )
+
 
 # Global singleton instance
 default_capability_registry = CapabilityRegistry()

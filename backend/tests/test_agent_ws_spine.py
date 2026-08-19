@@ -379,3 +379,100 @@ async def test_handle_electrical_approval_commit(
     assert resp["event"]["eventType"] == "VOLTAGE_DROP_CALCULATED"
 
 
+@pytest.mark.asyncio
+async def test_handle_hydraulic_intent_success(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="hyd-eng-01",
+        email="hyd1@bazspark.io",
+        role="engineer",
+        scopes=["hydraulics:read", "hydraulics:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_hydraulic_intent",
+        "projectId": "proj-ws-hyd-1",
+        "pipeSegmentId": "pipe-01",
+        "lengthM": 20.0,
+        "diameterMm": 50.0,
+        "flowLMin": 300.0,
+        "fluidType": "water",
+    }
+    await orchestration_service.handle_hydraulic_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_hydraulic_preview"
+    assert resp["pipeSegmentId"] == "pipe-01"
+    assert resp["flowVelocityMS"] > 0.0
+    assert resp["headLossM"] > 0.0
+    assert resp["tokenTelemetry"]["measured_tokens"] <= 1500
+
+
+@pytest.mark.asyncio
+async def test_handle_hydraulic_intent_no_scope(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="viewer-02",
+        email="viewer2@bazspark.io",
+        role="viewer",
+        scopes=["spatial:read"],  # Lacks hydraulics scopes
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_hydraulic_intent",
+        "projectId": "proj-ws-hyd-2",
+        "pipeSegmentId": "pipe-02",
+        "lengthM": 15.0,
+        "diameterMm": 50.0,
+        "flowLMin": 250.0,
+    }
+    await orchestration_service.handle_hydraulic_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_error"
+    assert resp["errorCode"] == "NO_CAPABILITY_AVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_handle_hydraulic_approval_commit(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="hyd-eng-02",
+        email="hyd2@bazspark.io",
+        role="engineer",
+        scopes=["hydraulics:read", "hydraulics:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_approve",
+        "commandId": "cmd-hyd-commit-01",
+        "projectId": "proj-ws-hyd-commit",
+        "expectedRevision": 1,
+        "capabilityId": "hydraulics.solve_darcy_weisbach",
+        "payload": {
+            "pipe_segment_id": "pipe-commit-01",
+            "length_m": 25.0,
+            "diameter_mm": 65.0,
+            "flow_l_min": 450.0,
+            "fluid_type": "water",
+        },
+    }
+    await orchestration_service.handle_approval(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_committed"
+    assert resp["projectId"] == "proj-ws-hyd-commit"
+    assert resp["revision"] == 2
+    assert resp["hydraulic"] is not None
+    assert resp["hydraulic"]["pipe_segment_id"] == "pipe-commit-01"
+    assert resp["event"]["eventType"] == "HYDRAULIC_CALCULATION_SOLVED"
+

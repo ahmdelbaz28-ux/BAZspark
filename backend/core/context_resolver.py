@@ -44,6 +44,23 @@ class BoundedCircuitContextPacket:
         return asdict(self)
 
 
+@dataclass
+class BoundedHydraulicContextPacket:
+    project_id: str
+    pipe_segment_id: str
+    revision: int
+    hydraulic_spec: dict[str, Any]  # length_m, diameter_mm, roughness_mm, flow_rate_kg_s, flow_l_min, fluid_type, elevation_m
+    standards: list[str]
+    token_count: int
+    is_within_budget: bool
+    budget_limit: int = 1500
+    telemetry: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+
 def estimate_token_count(text_or_dict: str | dict[str, Any]) -> int:
     """Accurately estimate token count for JSON payloads.
 
@@ -211,6 +228,69 @@ class ContextResolver:
             revision=revision,
             circuit_spec=standardized_spec,
             connected_device_count=len(devices),
+            standards=standards,
+            token_count=measured_tokens,
+            is_within_budget=measured_tokens <= self.token_budget,
+            budget_limit=self.token_budget,
+            telemetry=telemetry,
+        )
+
+    def resolve_hydraulic_context(
+        self,
+        project_id: str,
+        pipe_segment_id: str,
+        revision: int,
+        hydraulic_spec: dict[str, Any] | None = None,
+    ) -> BoundedHydraulicContextPacket:
+        """Constructs a strictly bounded context packet for a hydraulic pipe segment (Phase 2C)."""
+        spec = hydraulic_spec or {}
+        length_m = float(spec.get("length_m", 15.0))
+        diameter_mm = float(spec.get("diameter_mm", 50.0))
+        roughness_mm = float(spec.get("roughness_mm", 0.0457)) if spec.get("roughness_mm") is not None else 0.0457
+        flow_rate_kg_s = float(spec["flow_rate_kg_s"]) if spec.get("flow_rate_kg_s") is not None else None
+        flow_l_min = float(spec["flow_l_min"]) if spec.get("flow_l_min") is not None else (None if flow_rate_kg_s is not None else 250.0)
+        fluid_type = str(spec.get("fluid_type", "water")).strip().lower()
+        elevation_m = float(spec.get("elevation_m", 0.0))
+
+        standardized_spec = {
+            "length_m": length_m,
+            "diameter_mm": diameter_mm,
+            "roughness_mm": roughness_mm,
+            "flow_rate_kg_s": flow_rate_kg_s,
+            "flow_l_min": flow_l_min,
+            "fluid_type": fluid_type,
+            "elevation_m": elevation_m,
+        }
+
+        standards = [
+            "Darcy-Weisbach Equation (NFPA 12 / NFPA 2001 / Crane TP-410)",
+            "Colebrook-White Friction Factor Formulation",
+        ]
+
+        packet_content = {
+            "project_id": project_id,
+            "pipe_segment_id": pipe_segment_id,
+            "revision": revision,
+            "hydraulic_spec": standardized_spec,
+            "standards": standards,
+        }
+
+        measured_tokens = estimate_token_count(packet_content)
+
+        telemetry = {
+            "measured_tokens": measured_tokens,
+            "budget_limit": self.token_budget,
+            "utilization_pct": round((measured_tokens / self.token_budget) * 100, 2),
+            "raw_cad_excluded": True,
+            "geometry_mesh_excluded": True,
+            "whole_project_dump_excluded": True,
+        }
+
+        return BoundedHydraulicContextPacket(
+            project_id=project_id,
+            pipe_segment_id=pipe_segment_id,
+            revision=revision,
+            hydraulic_spec=standardized_spec,
             standards=standards,
             token_count=measured_tokens,
             is_within_budget=measured_tokens <= self.token_budget,
