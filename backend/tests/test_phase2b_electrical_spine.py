@@ -524,13 +524,14 @@ class TestRevisionPollutionInvariant:
         """
         project_id = "proj-pollution-test"
 
-        # Baseline inspection directly against raw SQLite tables
+        # Baseline inspection directly against raw database tables
+        ph = fresh_db._ph()
         with fresh_db._transaction() as cur:
-            cur.execute("SELECT COUNT(*) FROM project_revisions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,))
             rev_count_before = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
             events_count_before = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
             cmds_count_before = cur.fetchone()[0]
 
         assert rev_count_before == 0
@@ -558,11 +559,11 @@ class TestRevisionPollutionInvariant:
 
         # Verify raw database tables remain completely unpolluted
         with fresh_db._transaction() as cur:
-            cur.execute("SELECT COUNT(*) FROM project_revisions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,))
             rev_count_after = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
             events_count_after = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
             cmds_count_after = cur.fetchone()[0]
 
         assert rev_count_after == 0
@@ -599,15 +600,16 @@ class TestRevisionPollutionInvariant:
         assert res.event is not None
         assert res.event.eventType == "VOLTAGE_DROP_CALCULATED"
 
+        ph = fresh_db._ph()
         with fresh_db._transaction() as cur:
-            cur.execute("SELECT revision, canonical_state FROM project_revisions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT revision, canonical_state FROM project_revisions WHERE project_id = {ph}", (project_id,))
             row = cur.fetchone()
             assert row[0] == 2
 
-            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
             assert cur.fetchone()[0] == 1
 
-            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
             assert cur.fetchone()[0] == 1
 
 
