@@ -48,7 +48,7 @@ const StatusBar: React.FC<StatusBarProps> = memo(
 
 				<div className="flex-1" />
 
-				<span className="hidden lg:inline text-muted-foreground/70 text-[10px]">
+				<span className="hidden lg:inline text-muted-foreground text-[10px]">
 					Ctrl+K Command | Ctrl+J Copilot | F1 Help
 				</span>
 
