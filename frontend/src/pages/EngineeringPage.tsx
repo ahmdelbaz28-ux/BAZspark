@@ -287,6 +287,7 @@ export function EngineeringPage() {
 		const agingFactor = Number.parseFloat(batteryCalcInputs.agingFactor) || 1.25;
 		const chemistry = (batteryCalcInputs.chemistry as "vrla" | "lifepo4" | "nicad" | "lead-acid") || "vrla";
 		const tempMultiplier = getTemperatureCorrectionFactor(ambientTemp, chemistry);
+		const requiredCapacity = baseCapacity * agingFactor * tempMultiplier;
 		let chemLabel = "Lead Acid VRLA";
 		if (chemistry === "lifepo4") {
 			chemLabel = "LiFePO4";
