@@ -501,3 +501,204 @@ class TestVerificationCorrectness:
 
         with pytest.raises(ValueError, match="Unknown AWG gauge"):
             calculate_voltage_drop(current_a=1.0, one_way_length_m=10.0, awg="99")
+
+
+# ============================================================================
+# 10. Mandatory Revision Pollution & Zero-Side-Effect Invariant Tests
+# ============================================================================
+class TestRevisionPollutionInvariant:
+    def test_dry_run_produces_zero_database_pollution(
+        self,
+        command_bus: CommandBus,
+        state_store: CommandStateStore,
+        authorized_principal: AuthenticatedPrincipal,
+        fresh_db: Database,
+    ) -> None:
+        """Mandatory Gate 3: Prove that dry-run/preview execution produces ZERO mutations.
+
+        Invariants:
+          revision_before == revision_after
+          canonical_state_before == canonical_state_after
+          domain_events_count_before == domain_events_count_after == 0
+          command_executions_count_before == command_executions_count_after == 0
+        """
+        project_id = "proj-pollution-test"
+
+        # Baseline inspection directly against raw SQLite tables
+        with fresh_db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM project_revisions WHERE project_id = ?", (project_id,))
+            rev_count_before = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            events_count_before = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            cmds_count_before = cur.fetchone()[0]
+
+        assert rev_count_before == 0
+        assert events_count_before == 0
+        assert cmds_count_before == 0
+
+        # Execute Dry-Run Calculation (READ / INSPECT)
+        dry_run_cmd = DomainCommand(
+            commandId="cmd-dryrun-pollution-01",
+            correlationId="corr-dryrun-01",
+            capabilityId="electrical.calculate_voltage_drop",
+            projectId=project_id,
+            expectedRevision=1,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=authorized_principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=True,
+            payload={"circuit_id": "nac-01", "current_a": 1.5, "one_way_length_m": 35.0, "awg": "14"},
+        )
+
+        res = command_bus.execute(dry_run_cmd)
+        assert res.success is True
+        assert res.isDryRun is True
+        assert res.event is None
+
+        # Verify raw database tables remain completely unpolluted
+        with fresh_db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM project_revisions WHERE project_id = ?", (project_id,))
+            rev_count_after = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            events_count_after = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            cmds_count_after = cur.fetchone()[0]
+
+        assert rev_count_after == 0
+        assert events_count_after == 0
+        assert cmds_count_after == 0
+        assert command_bus.get_project_revision(project_id) == 1
+        assert command_bus.get_canonical_state(project_id) == {"devices": [], "revision": 1}
+
+    def test_committed_mutation_produces_exact_atomic_records(
+        self,
+        command_bus: CommandBus,
+        authorized_principal: AuthenticatedPrincipal,
+        fresh_db: Database,
+    ) -> None:
+        """Prove that a committed mutation produces exactly 1 atomic increment across all tables."""
+        project_id = "proj-atomic-commit-test"
+
+        commit_cmd = DomainCommand(
+            commandId="cmd-commit-atomic-01",
+            correlationId="corr-commit-01",
+            capabilityId="electrical.calculate_voltage_drop",
+            projectId=project_id,
+            expectedRevision=1,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=authorized_principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=False,
+            payload={"circuit_id": "nac-01", "current_a": 1.2, "one_way_length_m": 25.0, "awg": "14"},
+        )
+
+        res = command_bus.execute(commit_cmd)
+        assert res.success is True
+        assert res.revision == 2
+        assert res.event is not None
+        assert res.event.eventType == "VOLTAGE_DROP_CALCULATED"
+
+        with fresh_db._transaction() as cur:
+            cur.execute("SELECT revision, canonical_state FROM project_revisions WHERE project_id = ?", (project_id,))
+            row = cur.fetchone()
+            assert row[0] == 2
+
+            cur.execute("SELECT COUNT(*) FROM domain_events WHERE project_id = ?", (project_id,))
+            assert cur.fetchone()[0] == 1
+
+            cur.execute("SELECT COUNT(*) FROM command_executions WHERE project_id = ?", (project_id,))
+            assert cur.fetchone()[0] == 1
+
+
+# ============================================================================
+# 11. Adversarial Extremes & Boundary Precision Forensics
+# ============================================================================
+class TestAdversarialExtremes:
+    def test_temperature_extreme_hot_65c(self) -> None:
+        """Test physical plausibility at 65°C operating ambient temperature."""
+        res = calculate_voltage_drop(current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=65.0)
+        # R_65 = R_75 * [1 + 0.00323 * (65 - 75)] = R_75 * 0.9677
+        assert res["is_compliant"] is True
+        assert res["resistance_per_m_ohm"] < 0.0103  # Cooler than 75°C -> slightly lower R
+
+    def test_temperature_extreme_cold_minus_30c(self) -> None:
+        """Test physical plausibility at -30°C extreme freezing temperature."""
+        res = calculate_voltage_drop(current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=-30.0)
+        # R_-30 = R_75 * [1 + 0.00323 * (-30 - 75)] = R_75 * 0.66085
+        assert res["is_compliant"] is True
+        assert res["resistance_per_m_ohm"] < 0.0103 * 0.7
+
+    def test_temperature_out_of_range_rejected(self) -> None:
+        """Test rejection of non-physical temperatures."""
+        with pytest.raises(ValueError, match="out of valid range"):
+            calculate_voltage_drop(current_a=1.0, one_way_length_m=20.0, temperature_c=-50.0)
+
+        with pytest.raises(ValueError, match="out of valid range"):
+            calculate_voltage_drop(current_a=1.0, one_way_length_m=20.0, temperature_c=250.0)
+
+    def test_zero_length_and_zero_current_physically_valid(self) -> None:
+        """0m length or 0A current produces 0V drop and 0% drop without NaN or zero-division."""
+        res_zero_len = calculate_voltage_drop(current_a=2.0, one_way_length_m=0.0, awg="14")
+        assert res_zero_len["voltage_drop_v"] == 0.0
+        assert res_zero_len["voltage_drop_pct"] == 0.0
+        assert res_zero_len["is_compliant"] is True
+
+        res_zero_cur = calculate_voltage_drop(current_a=0.0, one_way_length_m=100.0, awg="14")
+        assert res_zero_cur["voltage_drop_v"] == 0.0
+        assert res_zero_cur["voltage_drop_pct"] == 0.0
+        assert res_zero_cur["is_compliant"] is True
+
+    def test_negative_or_zero_voltage_rejected(self) -> None:
+        """Test rejection of non-positive nominal voltages."""
+        with pytest.raises(ValueError, match="must be > 0"):
+            calculate_voltage_drop(current_a=1.0, one_way_length_m=20.0, nominal_voltage=0.0)
+
+        with pytest.raises(ValueError, match="must be > 0"):
+            calculate_voltage_drop(current_a=1.0, one_way_length_m=20.0, nominal_voltage=-24.0)
+
+    def test_boundary_precision_9_99_vs_10_01_pct(self) -> None:
+        """High-precision boundary test at the exact 10.0% NFPA 72 §27.4.1.2 limit."""
+        # For 24V, 10% is 2.4V drop.
+        # At 1.0A on AWG 14 (R = 0.0103 ohm/m):
+        # 2 * L * 0.0103 = 2.399V -> L = 2.399 / (2 * 0.0103) = 116.456m -> ~9.996% drop (PASS)
+        # 2 * L * 0.0103 = 2.403V -> L = 2.403 / (2 * 0.0103) = 116.650m -> ~10.012% drop (FAIL)
+        res_pass = calculate_voltage_drop(current_a=1.0, one_way_length_m=116.45, awg="14")
+        assert res_pass["voltage_drop_pct"] <= 10.0
+        assert res_pass["is_compliant"] is True
+
+        res_fail = calculate_voltage_drop(current_a=1.0, one_way_length_m=116.65, awg="14")
+        assert res_fail["voltage_drop_pct"] > 10.0
+        assert res_fail["is_compliant"] is False
+
+
+# ============================================================================
+# 12. Cryptographic Audit Digest Forensics
+# ============================================================================
+class TestCryptographicAuditDigest:
+    def test_audit_reference_is_valid_sha256_digest(
+        self,
+        command_bus: CommandBus,
+        authorized_principal: AuthenticatedPrincipal,
+    ) -> None:
+        """Verify audit reference is a valid 64-character SHA-256 hex digest."""
+        cmd = DomainCommand(
+            commandId="cmd-crypto-audit-01",
+            correlationId="corr-crypto-01",
+            capabilityId="electrical.calculate_voltage_drop",
+            projectId="proj-crypto-test",
+            expectedRevision=1,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=authorized_principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=False,
+            payload={"circuit_id": "nac-01", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
+        )
+        res = command_bus.execute(cmd)
+        assert res.success is True
+        assert res.event is not None
+        audit_ref = res.event.auditReference
+        assert isinstance(audit_ref, str)
+        assert len(audit_ref) == 64  # SHA-256 hex digest length
+        assert all(c in "0123456789abcdef" for c in audit_ref.lower())
+
