@@ -291,7 +291,7 @@ class AIOrchestrationService:
                 "correlationId": correlation_id,
                 "projectId": project_id,
                 "expectedRevision": current_rev,
-                "capabilityId": "spatial.place_devices",
+                "capabilityId": CAP_SPATIAL_PLACE_DEVICES,
                 "previewDevices": result.resultData.get("devices", []),
                 "deviceCount": result.resultData.get("device_count", 0),
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
@@ -309,7 +309,7 @@ class AIOrchestrationService:
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
         project_id = str(msg.get("projectId", "default_project"))
         expected_revision = int(msg.get("expectedRevision", 1))
-        capability_id = str(msg.get("capabilityId", "spatial.place_devices"))
+        capability_id = str(msg.get("capabilityId", CAP_SPATIAL_PLACE_DEVICES))
         payload = msg.get("payload", {})
 
         command = DomainCommand(

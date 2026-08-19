@@ -741,3 +741,78 @@ class TestCoverageBooster:
         d = cmd.to_dict()
         assert d["commandId"] == "cmd-dict-01"
         assert "principal" in d
+
+    def test_state_store_get_idempotent_command_with_event(self) -> None:
+        """Covers StateStore L207-255: retrieving cached command with associated DomainEvent."""
+        from backend.core.command_bus import DomainEvent
+
+        db = Database()
+        store = CommandStateStore(db)
+        pid = "proj-idem-event"
+        cmd = self._make_cmd("cmd-with-event-01", pid, expected_rev=1)
+        event = DomainEvent(
+            eventId="evt-with-event-01",
+            commandId="cmd-with-event-01",
+            correlationId="corr-with-event-01",
+            projectId=pid,
+            revision=2,
+            actor="test-cov-user",
+            eventType="DEVICES_PLACED",
+            timestamp=datetime.now(UTC).isoformat(),
+            verificationResult={"coverage_pct": 98.5},
+            auditReference="a" * 64,
+            payload={"devices": [{"id": "d1"}]},
+        )
+        committed, err = store.commit_transaction(
+            command=cmd,
+            new_revision=2,
+            exec_result={"devices": [{"id": "d1"}]},
+            event=event,
+            payload_hash="hash123",
+        )
+        assert committed is True
+        assert err is None
+
+        # Now lookup the cached command with its event
+        cached_result, is_collision = store.get_idempotent_command("cmd-with-event-01", "hash123")
+        assert is_collision is False
+        assert cached_result is not None
+        assert cached_result.commandId == "cmd-with-event-01"
+        assert cached_result.event is not None
+        assert cached_result.event.eventId == "evt-with-event-01"
+        assert cached_result.event.verificationResult == {"coverage_pct": 98.5}
+
+    def test_state_store_get_domain_events_rows_parsed(self) -> None:
+        """Covers StateStore L444, L461-473: get_domain_events with persisted rows."""
+        from backend.core.command_bus import DomainEvent
+
+        db = Database()
+        store = CommandStateStore(db)
+        pid = "proj-events-parsed"
+        cmd = self._make_cmd("cmd-events-parsed-01", pid, expected_rev=1)
+        event = DomainEvent(
+            eventId="evt-events-parsed-01",
+            commandId="cmd-events-parsed-01",
+            correlationId="corr-events-parsed-01",
+            projectId=pid,
+            revision=2,
+            actor="test-cov-user",
+            eventType="DEVICES_PLACED",
+            timestamp=datetime.now(UTC).isoformat(),
+            verificationResult={"valid": True},
+            auditReference="b" * 64,
+            payload={"devices": []},
+        )
+        store.commit_transaction(
+            command=cmd,
+            new_revision=2,
+            exec_result={"devices": []},
+            event=event,
+            payload_hash="hash456",
+        )
+
+        events = store.get_domain_events(project_id=pid, limit=10)
+        assert len(events) >= 1
+        assert events[0].eventId == "evt-events-parsed-01"
+        assert events[0].verificationResult == {"valid": True}
+
