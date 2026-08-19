@@ -276,12 +276,15 @@ class TestOptimisticConcurrencyControl:
         assert preview_res.revision == 1
 
         # Step 2: Concurrently, user manually edits the canvas -> project revision advances to 2
-        command_bus.set_project_revision(project_id, 2)
-        command_bus._project_canonical_state[project_id] = {
-            "devices": [{"id": "user-manual-dev-1", "x_m": 2.0, "y_m": 2.0, "type": "smoke"}],
-            "last_mutation": "user_manual_edit",
-            "revision": 2,
-        }
+        command_bus.save_canonical_state(
+            project_id=project_id,
+            state={
+                "devices": [{"id": "user-manual-dev-1", "x_m": 2.0, "y_m": 2.0, "type": "smoke"}],
+                "last_mutation": "user_manual_edit",
+                "revision": 2,
+            },
+            revision=2,
+        )
 
         # Step 3: AI attempts to commit with stale expectedRevision = 1
         stale_commit_cmd = DomainCommand(

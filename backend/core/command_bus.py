@@ -21,6 +21,7 @@ from backend.core.capability_registry import (
     CapabilityRegistry,
     default_capability_registry,
 )
+from backend.core.state_store import CommandStateStore, default_state_store
 
 logger = logging.getLogger(__name__)
 
@@ -136,27 +137,31 @@ class InvalidPayloadError(Exception):
 class CommandBus:
     """Production CommandBus orchestrating validation, OCC, deterministic execution, and audit."""
 
-    def __init__(self, capability_registry: CapabilityRegistry | None = None) -> None:
+    def __init__(
+        self,
+        capability_registry: CapabilityRegistry | None = None,
+        state_store: CommandStateStore | None = None,
+    ) -> None:
         self.registry = capability_registry or default_capability_registry
-        # In-memory store for canonical project revisions and project states
-        self._project_revisions: dict[str, int] = {}
-        self._project_canonical_state: dict[str, dict[str, Any]] = {}
-        # Idempotency cache: commandId -> CommandResult
-        self._idempotency_store: dict[str, CommandResult] = {}
-        # Audit event store
-        self._audit_events: list[DomainEvent] = []
+        self.state_store = state_store or default_state_store
 
     def get_project_revision(self, project_id: str) -> int:
-        """Get canonical revision of a project (defaulting to 1 for new projects)."""
-        return self._project_revisions.get(project_id, 1)
+        """Get canonical revision of a project from persistent storage."""
+        return self.state_store.get_project_revision(project_id)
 
     def set_project_revision(self, project_id: str, revision: int) -> None:
-        """Update canonical project revision (e.g. on manual user edit)."""
-        self._project_revisions[project_id] = revision
+        """Update canonical project revision in persistent storage."""
+        self.state_store.set_project_revision(project_id, revision)
 
     def get_canonical_state(self, project_id: str) -> dict[str, Any]:
-        """Retrieve canonical engineering state for project."""
-        return self._project_canonical_state.get(project_id, {"devices": []})
+        """Retrieve canonical engineering state for project from persistent storage."""
+        return self.state_store.get_canonical_state(project_id)
+
+    def save_canonical_state(
+        self, project_id: str, state: dict[str, Any], revision: int
+    ) -> None:
+        """Save canonical engineering state to persistent storage."""
+        self.state_store.save_canonical_state(project_id, state, revision)
 
     def execute(self, command: DomainCommand) -> CommandResult:
         """Execute or preview a domain command with strict validation and OCC enforcement."""
@@ -211,12 +216,14 @@ class CommandBus:
                     errorMessage=f"Principal '{command.principal.user_id}' lacks required scope: {req_scope}",
                 )
 
-        # 5. Idempotency Check (for non-dry-run commands)
-        if not command.isDryRun and command.commandId in self._idempotency_store:
-            logger.info("Idempotent command replay: %s", command.commandId)
-            return self._idempotency_store[command.commandId]
+        # 5. Persistent Idempotency Check (for non-dry-run commands)
+        if not command.isDryRun:
+            cached_result = self.state_store.get_idempotent_command(command.commandId)
+            if cached_result is not None:
+                logger.info("Idempotent command replay from persistent store: %s", command.commandId)
+                return cached_result
 
-        # 6. Optimistic Concurrency Control (OCC) Check
+        # 6. Optimistic Concurrency Control (OCC) Pre-Check
         current_rev = self.get_project_revision(command.projectId)
         if not command.isDryRun and command.expectedRevision != current_rev:
             return CommandResult(
@@ -269,21 +276,9 @@ class CommandBus:
                 resultData=exec_result,
             )
 
-        # 9. Canonical State Commit & Revision Increment (N -> N+1)
+        # 9. Build DomainEvent & Cryptographic Audit Reference
         new_revision = current_rev + 1
-        self._project_revisions[command.projectId] = new_revision
-
-        # Update canonical state atomically
-        existing_state = self._project_canonical_state.get(command.projectId, {"devices": []})
         new_devices = exec_result.get("devices", [])
-        updated_state = {
-            "devices": new_devices if new_devices else existing_state.get("devices", []),
-            "last_mutation": command.capabilityId,
-            "revision": new_revision,
-        }
-        self._project_canonical_state[command.projectId] = updated_state
-
-        # 10. Audit Lineage & Cryptographic Event Generation
         audit_payload = {
             "commandId": command.commandId,
             "capabilityId": command.capabilityId,
@@ -315,9 +310,31 @@ class CommandBus:
             auditReference=audit_ref,
             payload=exec_result,
         )
-        self._audit_events.append(event)
 
-        result = CommandResult(
+        # 10. Atomic Database Transaction: OCC commit + command execution + domain event
+        committed, error_code = self.state_store.commit_transaction(
+            command=command,
+            new_revision=new_revision,
+            exec_result=exec_result,
+            event=event,
+        )
+
+        if not committed:
+            latest_rev = self.get_project_revision(command.projectId)
+            return CommandResult(
+                success=False,
+                commandId=command.commandId,
+                projectId=command.projectId,
+                revision=latest_rev,
+                isDryRun=False,
+                errorCode=error_code or "TRANSACTION_COMMIT_FAILED",
+                errorMessage=(
+                    f"Concurrency Conflict: Revision {command.expectedRevision} could not be committed. "
+                    f"Project canonical revision is now {latest_rev}."
+                ),
+            )
+
+        return CommandResult(
             success=True,
             commandId=command.commandId,
             projectId=command.projectId,
@@ -326,10 +343,6 @@ class CommandBus:
             resultData=exec_result,
             event=event,
         )
-
-        # Store in idempotency store
-        self._idempotency_store[command.commandId] = result
-        return result
 
 
 # Global singleton instance

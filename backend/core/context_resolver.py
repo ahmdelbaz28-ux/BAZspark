@@ -45,6 +45,15 @@ def estimate_token_count(text_or_dict: str | dict[str, Any]) -> int:
     return max(1, int(len(serialized) / 3.8))
 
 
+class TokenCounter:
+    """Abstract tokenizer interface for measuring context budget utilization."""
+
+    @staticmethod
+    def count(text_or_dict: str | dict[str, Any]) -> int:
+        """Count or estimate tokens in context payload."""
+        return estimate_token_count(text_or_dict)
+
+
 class ContextResolver:
     """Resolves bounded, token-budgeted context for AI spatial and compliance intents."""
 

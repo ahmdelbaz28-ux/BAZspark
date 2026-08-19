@@ -371,11 +371,15 @@ class AIOrchestrationService:
         self.command_bus.set_project_revision(project_id, new_rev)
 
         devices = msg.get("devices", [])
-        self.command_bus._project_canonical_state[project_id] = {
-            "devices": devices,
-            "last_mutation": "user_manual_edit",
-            "revision": new_rev,
-        }
+        self.command_bus.save_canonical_state(
+            project_id=project_id,
+            state={
+                "devices": devices,
+                "last_mutation": "user_manual_edit",
+                "revision": new_rev,
+            },
+            revision=new_rev,
+        )
 
         await websocket.send_json(
             {
