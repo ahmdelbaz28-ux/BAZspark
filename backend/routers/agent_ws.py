@@ -37,6 +37,7 @@ agent_locks: dict[str, asyncio.Lock] = {}
 # Capability ID constants — avoid string literal duplication (SonarCloud S1192)
 CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
 CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
+CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
 
 # Track which futures belong to which websocket (for cleanup on disconnect)
 # Maps websocket id -> set of pending command IDs
@@ -301,6 +302,86 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_electrical_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process an electrical calculation intent: resolve circuit context and return deterministic preview."""
+        project_id = str(msg.get("projectId", "default_project"))
+        circuit_id = str(msg.get("circuit_id", msg.get("circuitId", "nac-circuit-01")))
+        current_a = float(msg.get("current_a", msg.get("currentA", 1.5)))
+        one_way_length_m = float(msg.get("one_way_length_m", msg.get("oneWayLengthM", 30.0)))
+        awg = str(msg.get("awg", "14")).strip()
+        nominal_voltage = float(msg.get("nominal_voltage", msg.get("nominalVoltage", 24.0)))
+        temperature_c = float(msg.get("temperature_c", msg.get("temperatureC", 75.0)))
+
+        current_rev = self.command_bus.get_project_revision(project_id)
+        context_pkt = self.context_resolver.resolve_circuit_context(
+            project_id=project_id,
+            circuit_id=circuit_id,
+            revision=current_rev,
+            circuit_spec={
+                "current_a": current_a,
+                "one_way_length_m": one_way_length_m,
+                "awg": awg,
+                "nominal_voltage": nominal_voltage,
+                "temperature_c": temperature_c,
+            },
+        )
+
+        caps = self.capability_registry.discover(categories=["electrical"], scopes=principal.scopes)
+        if not caps:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "NO_CAPABILITY_AVAILABLE",
+                    "message": "No matching electrical capabilities available for user scopes.",
+                }
+            )
+            return
+
+        command_id = f"cmd-{uuid.uuid4().hex[:12]}"
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        command = DomainCommand(
+            commandId=command_id,
+            correlationId=correlation_id,
+            capabilityId=CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
+            projectId=project_id,
+            expectedRevision=current_rev,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=True,
+            payload={
+                "circuit_id": circuit_id,
+                "current_a": current_a,
+                "one_way_length_m": one_way_length_m,
+                "awg": awg,
+                "nominal_voltage": nominal_voltage,
+                "temperature_c": temperature_c,
+            },
+        )
+
+        result = self.command_bus.execute(command)
+
+        await websocket.send_json(
+            {
+                "type": "ai_electrical_preview",
+                "commandId": command_id,
+                "correlationId": correlation_id,
+                "projectId": project_id,
+                "expectedRevision": current_rev,
+                "capabilityId": CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
+                "circuitId": circuit_id,
+                "voltageDropV": result.resultData.get("voltage_drop_v", 0.0),
+                "voltageDropPct": result.resultData.get("voltage_drop_pct", 0.0),
+                "terminalVoltageV": result.resultData.get("terminal_voltage_v", 24.0),
+                "isCompliant": result.resultData.get("is_compliant", True),
+                "recommendedAwg": result.resultData.get("recommended_awg", awg),
+                "tokenTelemetry": context_pkt.telemetry,
+                "payload": command.payload,
+            }
+        )
+
     async def handle_approval(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
@@ -320,7 +401,7 @@ class AIOrchestrationService:
             expectedRevision=expected_revision,
             timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
-            riskClass="MEDIUM",
+            riskClass="ENGINEERING_MUTATION" if "electrical" in capability_id else "MEDIUM",
             isDryRun=False,
             payload=payload,
         )
@@ -359,6 +440,7 @@ class AIOrchestrationService:
                 "projectId": project_id,
                 "revision": result.revision,
                 "devices": result.resultData.get("devices", []),
+                "circuit": result.resultData if "voltage_drop_v" in result.resultData else None,
                 "event": result.event.to_dict() if result.event else None,
                 "auditReference": result.event.auditReference if result.event else "",
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
@@ -412,6 +494,8 @@ async def _handle_agent_message(
         await _handle_ping_message(websocket)
     elif msg_type in ("ai_intent", "intent_submit") and principal:
         await default_orchestration_service.handle_intent(websocket, principal, msg)
+    elif msg_type in ("ai_electrical_intent", "electrical_intent") and principal:
+        await default_orchestration_service.handle_electrical_intent(websocket, principal, msg)
     elif msg_type in ("ai_approve", "command_approve") and principal:
         await default_orchestration_service.handle_approval(websocket, principal, msg)
     elif msg_type in ("user_mutate", "manual_edit") and principal:

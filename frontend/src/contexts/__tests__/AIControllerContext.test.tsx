@@ -148,4 +148,41 @@ describe("AIControllerContext — Phase 1 Vertical Slice Frontend Suite", () => 
 		expect(result.current.proposedCommand).toBeNull();
 		expect(result.current.isAiActive).toBe(false);
 	});
+
+	it("should submit electrical intent, calculate voltage drop preview, and commit circuit", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		await act(async () => {
+			await result.current.submitElectricalIntent("proj-frontend-elec", "nac-01", {
+				current_a: 1.5,
+				one_way_length_m: 30.0,
+				awg: "14",
+				nominal_voltage: 24.0,
+			});
+		});
+
+		expect(result.current.isAiActive).toBe(true);
+		expect(result.current.proposedCommand).not.toBeNull();
+		expect(result.current.proposedCommand?.capabilityId).toBe("electrical.calculate_voltage_drop");
+		expect(result.current.proposedCommand?.circuitPreview).toBeDefined();
+		expect(result.current.proposedCommand?.circuitPreview?.circuitId).toBe("nac-01");
+		expect(result.current.proposedCommand?.circuitPreview?.isCompliant).toBe(true);
+
+		let committedCircuitId = "";
+		let committedRev = 0;
+
+		await act(async () => {
+			const success = await result.current.approveProposal((_devs, rev, circuit) => {
+				committedRev = rev;
+				committedCircuitId = circuit?.circuitId ?? "";
+			});
+			expect(success).toBe(true);
+		});
+
+		expect(committedRev).toBe(2);
+		expect(committedCircuitId).toBe("nac-01");
+		expect(result.current.currentRevision).toBe(2);
+		expect(result.current.isAiActive).toBe(false);
+	});
 });
+

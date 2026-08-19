@@ -314,6 +314,23 @@ class CommandBus:
         audit_ref = hashlib.sha256(
             json.dumps(audit_payload, sort_keys=True).encode()
         ).hexdigest()
+        if "place_devices" in command.capabilityId:
+            evt_type = "DEVICES_PLACED"
+        elif "voltage_drop" in command.capabilityId:
+            evt_type = "VOLTAGE_DROP_CALCULATED"
+        else:
+            evt_type = "COMPLIANCE_VERIFIED"
+
+        verification_result: dict[str, Any] = {
+            "is_compliant": exec_result.get("is_compliant", True),
+            "violations": exec_result.get("violations", []),
+        }
+        if "coverage_pct" in exec_result:
+            verification_result["coverage_pct"] = exec_result["coverage_pct"]
+        if "voltage_drop_pct" in exec_result:
+            verification_result["voltage_drop_pct"] = exec_result["voltage_drop_pct"]
+        if "recommended_awg" in exec_result:
+            verification_result["recommended_awg"] = exec_result["recommended_awg"]
 
         event = DomainEvent(
             eventId=f"evt-{uuid.uuid4().hex[:12]}",
@@ -323,13 +340,9 @@ class CommandBus:
             projectId=command.projectId,
             revision=new_revision,
             actor=command.principal.user_id,
-            eventType="DEVICES_PLACED" if "place_devices" in command.capabilityId else "COMPLIANCE_VERIFIED",
+            eventType=evt_type,
             timestamp=datetime.now(UTC).isoformat(),
-            verificationResult={
-                "coverage_pct": exec_result.get("coverage_pct", 100.0),
-                "is_compliant": exec_result.get("is_compliant", True),
-                "violations": exec_result.get("violations", []),
-            },
+            verificationResult=verification_result,
             auditReference=audit_ref,
             payload=exec_result,
         )

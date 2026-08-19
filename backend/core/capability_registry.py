@@ -199,13 +199,101 @@ class CapabilityRegistry:
                     "properties": {
                         "verified": {"type": "boolean"},
                         "standard": {"type": "string"},
-                        "violations": {"type": "array"},
                     },
                 },
                 handler=_verify_detector_spacing_handler,
             )
         )
 
+        def _calculate_voltage_drop_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from fireai.core.voltage_drop import (
+                calculate_voltage_drop,
+                recommend_wire_gauge,
+            )
+
+            circuit_id = str(payload.get("circuit_id", "nac-circuit-01"))
+            current_a = float(payload.get("current_a", 1.5))
+            one_way_length_m = float(payload.get("one_way_length_m", 30.0))
+            awg = str(payload.get("awg", "14")).strip()
+            nominal_voltage = float(payload.get("nominal_voltage", 24.0))
+            temperature_c = float(payload.get("temperature_c", 75.0))
+
+            res = calculate_voltage_drop(
+                current_a=current_a,
+                one_way_length_m=one_way_length_m,
+                awg=awg,
+                nominal_voltage=nominal_voltage,
+                temperature_c=temperature_c,
+            )
+            rec = recommend_wire_gauge(
+                current_a=current_a,
+                one_way_length_m=one_way_length_m,
+                nominal_voltage=nominal_voltage,
+            )
+
+            violations: list[str] = []
+            if not res["is_compliant"]:
+                violations.append(
+                    f"Voltage drop {res['voltage_drop_pct']}% exceeds NFPA 72 §27.4.1.2 limit (10.0%). "
+                    f"Recommended wire gauge: AWG {rec['recommended_awg']}."
+                )
+
+            return {
+                "circuit_id": circuit_id,
+                "voltage_drop_v": res["voltage_drop_v"],
+                "voltage_drop_pct": res["voltage_drop_pct"],
+                "terminal_voltage_v": res["terminal_voltage_v"],
+                "resistance_total_ohm": res["resistance_total_ohm"],
+                "is_compliant": res["is_compliant"],
+                "awg": awg,
+                "recommended_awg": str(rec["recommended_awg"]),
+                "length_m": one_way_length_m,
+                "current_a": current_a,
+                "nominal_voltage": nominal_voltage,
+                "temperature_c": temperature_c,
+                "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
+                "violations": violations,
+            }
+
+        # 3. electrical.calculate_voltage_drop (Phase 2B Vertical Slice C)
+        self.register(
+            CapabilityDefinition(
+                capability_id="electrical.calculate_voltage_drop",
+                name="Calculate Circuit Voltage Drop",
+                description="Deterministically calculate voltage drop and verify NFPA 72 compliance for NAC/SLC circuits.",
+                category="electrical",
+                risk_class="ENGINEERING_MUTATION",
+                required_scopes=["electrical:write"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "circuit_id": {"type": "string"},
+                        "current_a": {"type": "number", "minimum": 0.0},
+                        "one_way_length_m": {"type": "number", "minimum": 0.0},
+                        "awg": {"type": "string", "enum": ["18", "16", "14", "12", "10", "8", "6", "4"]},
+                        "nominal_voltage": {"type": "number", "minimum": 1.0, "default": 24.0},
+                        "temperature_c": {"type": "number", "minimum": -40.0, "maximum": 200.0, "default": 75.0},
+                    },
+                    "required": ["current_a", "one_way_length_m", "awg"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "circuit_id": {"type": "string"},
+                        "voltage_drop_v": {"type": "number"},
+                        "voltage_drop_pct": {"type": "number"},
+                        "terminal_voltage_v": {"type": "number"},
+                        "resistance_total_ohm": {"type": "number"},
+                        "is_compliant": {"type": "boolean"},
+                        "recommended_awg": {"type": "string"},
+                        "violations": {"type": "array"},
+                    },
+                },
+                handler=_calculate_voltage_drop_handler,
+            )
+        )
+
 
 # Global singleton instance
 default_capability_registry = CapabilityRegistry()
+

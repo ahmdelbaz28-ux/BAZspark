@@ -278,3 +278,104 @@ async def test_cleanup_agent_with_pending_futures(
         fut.result()
     assert mock_ws not in active_agents.get("autocad", [])
 
+
+@pytest.mark.asyncio
+async def test_handle_electrical_intent_success(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="elec-eng-01",
+        email="elec@bazspark.io",
+        role="engineer",
+        scopes=["electrical:read", "electrical:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_electrical_intent",
+        "projectId": "proj-ws-elec-1",
+        "circuit_id": "nac-01",
+        "current_a": 1.2,
+        "one_way_length_m": 25.0,
+        "awg": "14",
+        "nominal_voltage": 24.0,
+        "correlationId": "corr-elec-1",
+    }
+    await orchestration_service.handle_electrical_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_electrical_preview"
+    assert resp["projectId"] == "proj-ws-elec-1"
+    assert resp["circuitId"] == "nac-01"
+    assert resp["isCompliant"] is True
+    assert resp["voltageDropV"] > 0
+    assert resp["tokenTelemetry"]["measured_tokens"] <= 1500
+
+
+@pytest.mark.asyncio
+async def test_handle_electrical_intent_no_scope(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="viewer-01",
+        email="viewer@bazspark.io",
+        role="viewer",
+        scopes=["spatial:read"],  # Lacks electrical scopes
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_electrical_intent",
+        "projectId": "proj-ws-elec-2",
+        "circuit_id": "nac-02",
+        "current_a": 1.2,
+        "one_way_length_m": 25.0,
+        "awg": "14",
+    }
+    await orchestration_service.handle_electrical_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_error"
+    assert resp["errorCode"] == "NO_CAPABILITY_AVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_handle_electrical_approval_commit(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="elec-eng-02",
+        email="elec2@bazspark.io",
+        role="engineer",
+        scopes=["electrical:read", "electrical:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_approve",
+        "commandId": "cmd-elec-commit-01",
+        "projectId": "proj-ws-elec-commit",
+        "expectedRevision": 1,
+        "capabilityId": "electrical.calculate_voltage_drop",
+        "payload": {
+            "circuit_id": "nac-commit-01",
+            "current_a": 1.5,
+            "one_way_length_m": 30.0,
+            "awg": "14",
+            "nominal_voltage": 24.0,
+        },
+    }
+    await orchestration_service.handle_approval(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_committed"
+    assert resp["projectId"] == "proj-ws-elec-commit"
+    assert resp["revision"] == 2
+    assert resp["circuit"] is not None
+    assert resp["circuit"]["circuit_id"] == "nac-commit-01"
+    assert resp["event"]["eventType"] == "VOLTAGE_DROP_CALCULATED"
+
+
