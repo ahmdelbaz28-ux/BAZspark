@@ -302,8 +302,14 @@ class CommandStateStore:
                     return False, "CONCURRENCY_CONFLICT"
 
                 new_devices = exec_result.get("devices", [])
+                new_circuits = {}
+                if "voltage_drop_v" in exec_result:
+                    cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
+                    new_circuits[cid] = exec_result
+
                 updated_state = {
                     "devices": new_devices,
+                    "circuits": new_circuits,
                     "last_mutation": command.capabilityId,
                     "revision": new_revision,
                 }
@@ -326,16 +332,24 @@ class CommandStateStore:
                     return False, "CONCURRENCY_CONFLICT"
 
                 raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
+                existing_circuits = {}
                 try:
                     loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
                     if isinstance(loaded, dict):
                         existing_devices = loaded.get("devices", [])
+                        existing_circuits = loaded.get("circuits", {})
                 except Exception:
                     existing_devices = []
+                    existing_circuits = {}
 
                 new_devices = exec_result.get("devices", [])
+                if "voltage_drop_v" in exec_result:
+                    cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
+                    existing_circuits[cid] = exec_result
+
                 updated_state = {
                     "devices": new_devices if new_devices else existing_devices,
+                    "circuits": existing_circuits,
                     "last_mutation": command.capabilityId,
                     "revision": new_revision,
                 }

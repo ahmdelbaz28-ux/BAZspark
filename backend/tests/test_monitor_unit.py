@@ -338,7 +338,7 @@ class TestWorkflowPathValidation:
         for ext in [".dxf", ".dwg", ".pdf", ".ifc", ".rvt"]:
             test_path = os.path.join(self.workflow_mod.ALLOWED_DATA_DIRS[0], f"test{ext}")
             result = self.workflow_mod._validate_file_path(test_path)
-            assert result == test_path
+            assert os.path.realpath(result) == os.path.realpath(test_path)
 
     def test_disallowed_extensions_rejected(self) -> None:
         """Test disallowed file extensions are rejected."""

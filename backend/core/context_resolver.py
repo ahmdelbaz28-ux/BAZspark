@@ -27,6 +27,19 @@ class BoundedContextPacket:
     budget_limit: int = 1500
     telemetry: dict[str, Any] = field(default_factory=dict)
 
+@dataclass
+class BoundedCircuitContextPacket:
+    project_id: str
+    circuit_id: str
+    revision: int
+    circuit_spec: dict[str, Any]  # current_a, one_way_length_m, awg, nominal_voltage, temperature_c
+    connected_device_count: int
+    standards: list[str]
+    token_count: int
+    is_within_budget: bool
+    budget_limit: int = 1500
+    telemetry: dict[str, Any] = field(default_factory=dict)
+
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
@@ -55,7 +68,7 @@ class TokenCounter:
 
 
 class ContextResolver:
-    """Resolves bounded, token-budgeted context for AI spatial and compliance intents."""
+    """Resolves bounded, token-budgeted context for AI spatial, electrical, and compliance intents."""
 
     MAX_TOKEN_BUDGET: int = 1500
 
@@ -143,5 +156,68 @@ class ContextResolver:
             telemetry=telemetry,
         )
 
+    def resolve_circuit_context(
+        self,
+        project_id: str,
+        circuit_id: str,
+        revision: int,
+        circuit_spec: dict[str, Any] | None = None,
+        connected_devices: list[dict[str, Any]] | None = None,
+    ) -> BoundedCircuitContextPacket:
+        """Constructs a strictly bounded context packet for an electrical circuit (Phase 2B)."""
+        spec = circuit_spec or {}
+        current_a = float(spec.get("current_a", 1.5))
+        one_way_length_m = float(spec.get("one_way_length_m", 30.0))
+        awg = str(spec.get("awg", "14")).strip()
+        nominal_voltage = float(spec.get("nominal_voltage", 24.0))
+        temperature_c = float(spec.get("temperature_c", 75.0))
+
+        standardized_spec = {
+            "current_a": current_a,
+            "one_way_length_m": one_way_length_m,
+            "awg": awg,
+            "nominal_voltage": nominal_voltage,
+            "temperature_c": temperature_c,
+        }
+
+        devices = connected_devices or []
+        standards = [
+            "NFPA 72-2022 §27.4.1.2 (10% Max Voltage Drop)",
+            "NEC Chapter 9 Table 8 (DC Conductor Resistance at 75°C)",
+        ]
+
+        packet_content = {
+            "project_id": project_id,
+            "circuit_id": circuit_id,
+            "revision": revision,
+            "circuit_spec": standardized_spec,
+            "connected_device_count": len(devices),
+            "standards": standards,
+        }
+
+        measured_tokens = estimate_token_count(packet_content)
+
+        telemetry = {
+            "measured_tokens": measured_tokens,
+            "budget_limit": self.token_budget,
+            "utilization_pct": round((measured_tokens / self.token_budget) * 100, 2),
+            "raw_cad_excluded": True,
+            "whole_project_dump_excluded": True,
+        }
+
+        return BoundedCircuitContextPacket(
+            project_id=project_id,
+            circuit_id=circuit_id,
+            revision=revision,
+            circuit_spec=standardized_spec,
+            connected_device_count=len(devices),
+            standards=standards,
+            token_count=measured_tokens,
+            is_within_budget=measured_tokens <= self.token_budget,
+            budget_limit=self.token_budget,
+            telemetry=telemetry,
+        )
+
 
 default_context_resolver = ContextResolver()
+

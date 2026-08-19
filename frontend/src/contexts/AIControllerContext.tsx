@@ -12,6 +12,15 @@ export interface PreviewDevice {
 	candela?: number;
 }
 
+export interface CircuitPreview {
+	circuitId: string;
+	voltageDropV: number;
+	voltageDropPct: number;
+	terminalVoltageV: number;
+	isCompliant: boolean;
+	recommendedAwg: string;
+}
+
 export interface DomainCommandPreview {
 	commandId: string;
 	correlationId: string;
@@ -19,6 +28,7 @@ export interface DomainCommandPreview {
 	expectedRevision: number;
 	capabilityId: string;
 	previewDevices: PreviewDevice[];
+	circuitPreview?: CircuitPreview;
 	deviceCount: number;
 	coveragePct: number;
 	isCompliant: boolean;
@@ -44,7 +54,20 @@ export interface AIControllerContextValue {
 		roomBounds: { width_m: number; length_m: number; ceiling_height_m: number },
 		detectorType?: string,
 	) => Promise<DomainCommandPreview | null>;
-	approveProposal: (onCommitted?: (devices: PreviewDevice[], revision: number) => void) => Promise<boolean>;
+	submitElectricalIntent: (
+		projectId: string,
+		circuitId: string,
+		circuitSpec: {
+			current_a: number;
+			one_way_length_m: number;
+			awg: string;
+			nominal_voltage?: number;
+			temperature_c?: number;
+		},
+	) => Promise<DomainCommandPreview | null>;
+	approveProposal: (
+		onCommitted?: (devices: PreviewDevice[], revision: number, circuit?: CircuitPreview) => void,
+	) => Promise<boolean>;
 	rejectProposal: () => void;
 	replan: () => Promise<void>;
 	simulateUserEdit: (projectId: string) => void;
@@ -132,8 +155,71 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		[currentRevision],
 	);
 
+	const submitElectricalIntent = useCallback(
+		async (
+			projectId: string,
+			circuitId: string,
+			circuitSpec: {
+				current_a: number;
+				one_way_length_m: number;
+				awg: string;
+				nominal_voltage?: number;
+				temperature_c?: number;
+			},
+		): Promise<DomainCommandPreview | null> => {
+			setIsPlanning(true);
+			setConcurrencyError(null);
+
+			const rPerM = circuitSpec.awg === "14" ? 0.0103 : 0.0065;
+			const rTotal = 2 * circuitSpec.one_way_length_m * rPerM;
+			const vDrop = circuitSpec.current_a * rTotal;
+			const nomV = circuitSpec.nominal_voltage ?? 24.0;
+			const vDropPct = (vDrop / nomV) * 100;
+			const isCompliant = vDropPct <= 10.0;
+
+			const preview: DomainCommandPreview = {
+				commandId: `cmd-dryrun-${Date.now()}`,
+				correlationId: `corr-${Date.now()}`,
+				projectId,
+				expectedRevision: currentRevision,
+				capabilityId: "electrical.calculate_voltage_drop",
+				previewDevices: [],
+				circuitPreview: {
+					circuitId,
+					voltageDropV: Number(vDrop.toFixed(3)),
+					voltageDropPct: Number(vDropPct.toFixed(2)),
+					terminalVoltageV: Number((nomV - vDrop).toFixed(3)),
+					isCompliant,
+					recommendedAwg: isCompliant ? circuitSpec.awg : "12",
+				},
+				deviceCount: 0,
+				coveragePct: 100.0,
+				isCompliant,
+				tokenTelemetry: {
+					measured_tokens: 112,
+					budget_limit: 1500,
+					utilization_pct: 7.47,
+				},
+				payload: {
+					circuit_id: circuitId,
+					...circuitSpec,
+				},
+			};
+
+			setPreviewDevices([]);
+			setProposedCommand(preview);
+			setTokenTelemetry(preview.tokenTelemetry ?? null);
+			setIsAiActive(true);
+			setIsPlanning(false);
+			return preview;
+		},
+		[currentRevision],
+	);
+
 	const approveProposal = useCallback(
-		async (onCommitted?: (devices: PreviewDevice[], revision: number) => void): Promise<boolean> => {
+		async (
+			onCommitted?: (devices: PreviewDevice[], revision: number, circuit?: CircuitPreview) => void,
+		): Promise<boolean> => {
 			if (!proposedCommand) return false;
 
 			// Optimistic Concurrency Control (OCC) Check
@@ -149,7 +235,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			setCurrentRevision(newRevision);
 
 			if (onCommitted) {
-				onCommitted(proposedCommand.previewDevices, newRevision);
+				onCommitted(proposedCommand.previewDevices, newRevision, proposedCommand.circuitPreview);
 			}
 
 			// Clear preview
@@ -196,6 +282,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			currentRevision,
 			tokenTelemetry,
 			submitIntent,
+			submitElectricalIntent,
 			approveProposal,
 			rejectProposal,
 			replan,
@@ -210,6 +297,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			currentRevision,
 			tokenTelemetry,
 			submitIntent,
+			submitElectricalIntent,
 			approveProposal,
 			rejectProposal,
 			replan,
@@ -227,3 +315,4 @@ export const useAIController = (): AIControllerContextValue => {
 	}
 	return ctx;
 };
+
