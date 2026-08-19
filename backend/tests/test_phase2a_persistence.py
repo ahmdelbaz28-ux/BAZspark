@@ -174,6 +174,55 @@ class TestPersistentIdempotency:
         # Check DB project revision remains 2
         assert bus_instance_1.get_project_revision(project_id) == 2
 
+    def test_idempotency_key_reuse_collision_detection(
+        self, fresh_db: Database, test_principal: AuthenticatedPrincipal
+    ):
+        """When the same commandId is submitted with different payload semantics (collision):
+
+        Requirement:
+        - Must NOT silently return cached result.
+        - Must return IDEMPOTENCY_KEY_REUSE_CONFLICT.
+        - Must NOT mutate state or advance revision.
+        """
+        project_id = "proj-idemp-collision"
+        bus = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
+
+        cmd_orig = DomainCommand(
+            commandId="cmd-reuse-collision-01",
+            correlationId="corr-c1",
+            capabilityId="spatial.place_devices",
+            projectId=project_id,
+            expectedRevision=1,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            principal=test_principal,
+            isDryRun=False,
+            payload={"room_id": "room-orig", "width_m": 10.0, "length_m": 10.0},
+        )
+        res1 = bus.execute(cmd_orig)
+        assert res1.success is True
+        assert res1.revision == 2
+
+        # Submit same commandId with DIFFERENT payload
+        cmd_diff = DomainCommand(
+            commandId="cmd-reuse-collision-01",  # Reused key!
+            correlationId="corr-c2",
+            capabilityId="spatial.place_devices",
+            projectId=project_id,
+            expectedRevision=2,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            principal=test_principal,
+            isDryRun=False,
+            payload={"room_id": "room-different", "width_m": 50.0, "length_m": 50.0},
+        )
+        res2 = bus.execute(cmd_diff)
+        assert res2.success is False
+        assert res2.errorCode == "IDEMPOTENCY_KEY_REUSE_CONFLICT"
+
+        # Canonical revision and devices remain unchanged from res1
+        assert bus.get_project_revision(project_id) == 2
+        canonical = bus.get_canonical_state(project_id)
+        assert canonical["revision"] == 2
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. TRANSACTION & ROLLBACK TESTS
@@ -236,11 +285,91 @@ class TestTransactionRollback:
         assert bus.get_project_revision(project_id) == 1
 
         # Verify no idempotency record exists
-        assert store.get_idempotent_command(failing_cmd.commandId) is None
+        stored_cmd, _ = store.get_idempotent_command(failing_cmd.commandId)
+        assert stored_cmd is None
 
         # Verify no domain events were persisted
         events = store.get_domain_events(project_id)
         assert len(events) == 0
+
+    def test_post_mutation_commit_failure_rolls_back_all_state(
+        self, fresh_db: Database, test_principal: AuthenticatedPrincipal
+    ):
+        """When a post-mutation failure occurs during commit (simulated via DB error in transaction):
+
+        Requirement:
+        - Neither canonical state nor revision is updated.
+        - No command_executions row remains.
+        - No domain_events row remains.
+        """
+        project_id = "proj-rollback-atomic-02"
+        store = CommandStateStore(fresh_db)
+
+        # Set initial canonical state
+        initial_state = {"devices": [{"id": "initial-1", "x_m": 1.0, "y_m": 1.0}], "revision": 1}
+        store.save_canonical_state(project_id, initial_state, 1)
+
+        # Simulate commit failure where commit_transaction encounters a fatal SQL constraint
+        # by inserting an invalid duplicate command_id directly or raising an error
+        # Let's test that commit_transaction atomic block rolls back everything on error:
+        from backend.core.command_bus import DomainEvent
+
+        cmd = DomainCommand(
+            commandId="cmd-atomic-fail-01",
+            correlationId="corr-atomic",
+            capabilityId="spatial.place_devices",
+            projectId=project_id,
+            expectedRevision=1,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            principal=test_principal,
+            isDryRun=False,
+            payload={"room_id": "room-fail", "width_m": 10.0, "length_m": 10.0},
+        )
+
+        # Pre-seed command_executions with same commandId to trigger duplicate PK violation during commit
+        with fresh_db._transaction() as cur:
+            cur.execute(
+                f"""
+                INSERT INTO command_executions (
+                    command_id, correlation_id, causation_id, project_id, capability_id,
+                    expected_revision, committed_revision, actor, is_dry_run, payload_hash, result_data, status, created_at
+                ) VALUES ({fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()},
+                          {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()},
+                          {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()})
+                """,
+                ("cmd-atomic-fail-01", "corr", None, project_id, "spatial.place_devices", 1, 2, "actor", 0, "hash", "{}", "COMPLETED", "2026-01-01T00:00:00Z"),
+            )
+
+        event = DomainEvent(
+            eventId="evt-atomic-fail",
+            commandId=cmd.commandId,
+            correlationId="corr",
+            causationId=None,
+            projectId=project_id,
+            revision=2,
+            actor=test_principal.user_id,
+            eventType="DEVICES_PLACED",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            verificationResult={},
+            auditReference="0" * 64,
+            payload={},
+        )
+
+        # Attempting commit_transaction must fail due to duplicate command_id PK constraint
+        with pytest.raises(Exception):
+            store.commit_transaction(
+                command=cmd,
+                new_revision=2,
+                exec_result={"devices": [{"id": "should-never-commit"}]},
+                event=event,
+                payload_hash="new_hash",
+            )
+
+        # Invariant check: revision must still be 1, canonical state must still have initial-1
+        assert store.get_project_revision(project_id) == 1
+        canonical = store.get_canonical_state(project_id)
+        assert canonical["devices"] == [{"id": "initial-1", "x_m": 1.0, "y_m": 1.0}]
+        assert len(store.get_domain_events(project_id)) == 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

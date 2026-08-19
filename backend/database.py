@@ -614,6 +614,7 @@ class Database:
                     committed_revision INTEGER NOT NULL,
                     actor TEXT NOT NULL,
                     is_dry_run BOOLEAN NOT NULL DEFAULT FALSE,
+                    payload_hash TEXT NOT NULL DEFAULT '',
                     result_data TEXT NOT NULL DEFAULT '{}',
                     status TEXT NOT NULL DEFAULT 'COMPLETED',
                     created_at TEXT NOT NULL
@@ -896,6 +897,7 @@ class Database:
                     committed_revision INTEGER NOT NULL,
                     actor TEXT NOT NULL,
                     is_dry_run INTEGER NOT NULL DEFAULT 0,
+                    payload_hash TEXT NOT NULL DEFAULT '',
                     result_data TEXT NOT NULL DEFAULT '{}',
                     status TEXT NOT NULL DEFAULT 'COMPLETED',
                     created_at TEXT NOT NULL

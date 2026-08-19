@@ -216,9 +216,33 @@ class CommandBus:
                     errorMessage=f"Principal '{command.principal.user_id}' lacks required scope: {req_scope}",
                 )
 
-        # 5. Persistent Idempotency Check (for non-dry-run commands)
+        # 5. Persistent Idempotency Check with Collision Detection
+        payload_hash = hashlib.sha256(
+            json.dumps(command.payload, sort_keys=True).encode()
+        ).hexdigest()
+
         if not command.isDryRun:
-            cached_result = self.state_store.get_idempotent_command(command.commandId)
+            cached_result, is_collision = self.state_store.get_idempotent_command(
+                command.commandId, payload_hash
+            )
+            if is_collision:
+                current_rev = self.get_project_revision(command.projectId)
+                logger.warning(
+                    "Idempotency Key Reuse Conflict: commandId '%s' with different payload",
+                    command.commandId,
+                )
+                return CommandResult(
+                    success=False,
+                    commandId=command.commandId,
+                    projectId=command.projectId,
+                    revision=current_rev,
+                    isDryRun=command.isDryRun,
+                    errorCode="IDEMPOTENCY_KEY_REUSE_CONFLICT",
+                    errorMessage=(
+                        f"Idempotency Key Reuse Conflict: commandId '{command.commandId}' "
+                        f"was already executed with a different command payload."
+                    ),
+                )
             if cached_result is not None:
                 logger.info("Idempotent command replay from persistent store: %s", command.commandId)
                 return cached_result
@@ -317,6 +341,7 @@ class CommandBus:
             new_revision=new_revision,
             exec_result=exec_result,
             event=event,
+            payload_hash=payload_hash,
         )
 
         if not committed:

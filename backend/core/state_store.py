@@ -132,8 +132,16 @@ class CommandStateStore:
                     (revision, state_json, now_iso, project_id),
                 )
 
-    def get_idempotent_command(self, command_id: str) -> CommandResult | None:
-        """Look up a previous execution of this commandId across all workers."""
+    def get_idempotent_command(
+        self, command_id: str, current_payload_hash: str | None = None
+    ) -> tuple[CommandResult | None, bool]:
+        """Look up a previous execution of this commandId across all workers.
+
+        Returns (cached_result, is_collision):
+          - If found and payload matches (or no hash provided): (CommandResult, False)
+          - If found and payload hash differs: (None, True) [IDEMPOTENCY_KEY_REUSE_CONFLICT]
+          - If not found: (None, False)
+        """
         from backend.core.command_bus import CommandResult, DomainEvent
 
         ph = self._ph()
@@ -141,7 +149,7 @@ class CommandStateStore:
             cur.execute(
                 f"""
                 SELECT command_id, correlation_id, causation_id, project_id,
-                       expected_revision, committed_revision, is_dry_run, result_data, created_at
+                       expected_revision, committed_revision, is_dry_run, payload_hash, result_data, created_at
                 FROM command_executions
                 WHERE command_id = {ph}
                 """,
@@ -149,7 +157,7 @@ class CommandStateStore:
             )
             row = cur.fetchone()
             if row is None:
-                return None
+                return None, False
 
             if isinstance(row, dict):
                 r_dict = row
@@ -162,9 +170,20 @@ class CommandStateStore:
                     "expected_revision": row[4],
                     "committed_revision": row[5],
                     "is_dry_run": bool(row[6]),
-                    "result_data": row[7],
-                    "created_at": row[8],
+                    "payload_hash": row[7],
+                    "result_data": row[8],
+                    "created_at": row[9],
                 }
+
+            stored_hash = r_dict.get("payload_hash", "")
+            if current_payload_hash and stored_hash and stored_hash != current_payload_hash:
+                logger.warning(
+                    "Idempotency Collision: commandId '%s' reused with different payload hash (stored=%s, current=%s)",
+                    command_id,
+                    stored_hash,
+                    current_payload_hash,
+                )
+                return None, True
 
             result_data = r_dict["result_data"]
             if isinstance(result_data, str):
@@ -233,7 +252,7 @@ class CommandStateStore:
                     payload=pl,
                 )
 
-            return CommandResult(
+            res = CommandResult(
                 success=True,
                 commandId=r_dict["command_id"],
                 projectId=r_dict["project_id"],
@@ -242,6 +261,7 @@ class CommandStateStore:
                 resultData=result_data,
                 event=event,
             )
+            return res, False
 
     def commit_transaction(
         self,
@@ -249,13 +269,14 @@ class CommandStateStore:
         new_revision: int,
         exec_result: dict[str, Any],
         event: DomainEvent,
+        payload_hash: str = "",
     ) -> tuple[bool, str | None]:
         """Execute transactional distributed OCC commit within a single database transaction.
 
         Guarantees:
           1. Atomically validates expectedRevision == current_revision in PostgreSQL/SQLite.
           2. Increments revision (N -> N+1) and updates canonical state.
-          3. Persists command_execution idempotency record.
+          3. Persists command_execution idempotency record with payload_hash.
           4. Persists domain_events audit ledger record.
           5. If expectedRevision does not match, rolls back cleanly and returns CONCURRENCY_CONFLICT.
         """
@@ -335,13 +356,13 @@ class CommandStateStore:
                     )
                     return False, "CONCURRENCY_CONFLICT"
 
-            # 2. Persist Command Execution (enforcing unique commandId across all workers)
+            # 2. Persist Command Execution (enforcing unique commandId and payload_hash across all workers)
             cur.execute(
                 f"""
                 INSERT INTO command_executions (
                     command_id, correlation_id, causation_id, project_id, capability_id,
-                    expected_revision, committed_revision, actor, is_dry_run, result_data, status, created_at
-                ) VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+                    expected_revision, committed_revision, actor, is_dry_run, payload_hash, result_data, status, created_at
+                ) VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})
                 """,
                 (
                     command.commandId,
@@ -353,6 +374,7 @@ class CommandStateStore:
                     new_revision,
                     command.principal.user_id,
                     1 if command.isDryRun else 0,
+                    payload_hash,
                     json.dumps(exec_result),
                     "COMPLETED",
                     now_iso,
