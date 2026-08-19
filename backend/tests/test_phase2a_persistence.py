@@ -12,9 +12,8 @@ Validates:
 from __future__ import annotations
 
 import concurrent.futures
-import json
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 import pytest
 
 from backend.core.capability_registry import (
@@ -88,7 +87,7 @@ class TestDistributedOCC:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-a", "width_m": 8.0, "length_m": 10.0},
@@ -100,7 +99,7 @@ class TestDistributedOCC:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-b", "width_m": 12.0, "length_m": 14.0},
@@ -154,7 +153,7 @@ class TestPersistentIdempotency:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-idemp", "width_m": 6.0, "length_m": 8.0},
@@ -193,7 +192,7 @@ class TestPersistentIdempotency:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-orig", "width_m": 10.0, "length_m": 10.0},
@@ -209,7 +208,7 @@ class TestPersistentIdempotency:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=2,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-different", "width_m": 50.0, "length_m": 50.0},
@@ -271,7 +270,7 @@ class TestTransactionRollback:
             capabilityId="failing.test_tool",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={},
@@ -320,7 +319,7 @@ class TestTransactionRollback:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-fail", "width_m": 10.0, "length_m": 10.0},
@@ -349,7 +348,7 @@ class TestTransactionRollback:
             revision=2,
             actor=test_principal.user_id,
             eventType="DEVICES_PLACED",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             verificationResult={},
             auditReference="0" * 64,
             payload={},
@@ -391,7 +390,7 @@ class TestEventPersistence:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-aud", "width_m": 7.0, "length_m": 9.0},
@@ -431,7 +430,7 @@ class TestRestartRecovery:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-rec", "width_m": 8.0, "length_m": 10.0},
@@ -458,7 +457,7 @@ class TestRestartRecovery:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=2,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-rec", "width_m": 8.0, "length_m": 10.0},

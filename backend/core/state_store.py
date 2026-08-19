@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from backend.database import Database, get_db
@@ -62,7 +62,7 @@ class CommandStateStore:
     def set_project_revision(self, project_id: str, revision: int) -> None:
         """Upsert the canonical project revision in persistent storage."""
         ph = self._ph()
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         with self._db._transaction() as cur:
             cur.execute(
                 f"SELECT revision, canonical_state FROM project_revisions WHERE project_id = {ph}",
@@ -106,7 +106,7 @@ class CommandStateStore:
     ) -> None:
         """Upsert canonical project state and revision atomically in persistent storage."""
         ph = self._ph()
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         state_json = json.dumps(state)
         with self._db._transaction() as cur:
             cur.execute(
@@ -281,7 +281,7 @@ class CommandStateStore:
           5. If expectedRevision does not match, rolls back cleanly and returns CONCURRENCY_CONFLICT.
         """
         ph = self._ph()
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
 
         with self._db._transaction() as cur:
             # 1. Fetch current revision

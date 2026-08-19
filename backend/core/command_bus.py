@@ -11,10 +11,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import time
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.capability_registry import (
@@ -178,7 +177,7 @@ class CommandBus:
             )
 
         # 2. Secret Leakage Prevention in Payload
-        for k in command.payload.keys():
+        for k in command.payload:
             if any(forbidden in k.lower() for forbidden in FORBIDDEN_PAYLOAD_KEYS):
                 return CommandResult(
                     success=False,
@@ -310,7 +309,7 @@ class CommandBus:
             "revision": new_revision,
             "actor": command.principal.user_id,
             "device_count": len(new_devices),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         audit_ref = hashlib.sha256(
             json.dumps(audit_payload, sort_keys=True).encode()
@@ -325,7 +324,7 @@ class CommandBus:
             revision=new_revision,
             actor=command.principal.user_id,
             eventType="DEVICES_PLACED" if "place_devices" in command.capabilityId else "COMPLIANCE_VERIFIED",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             verificationResult={
                 "coverage_pct": exec_result.get("coverage_pct", 100.0),
                 "is_compliant": exec_result.get("is_compliant", True),

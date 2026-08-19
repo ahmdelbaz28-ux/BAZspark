@@ -11,7 +11,7 @@ Frozen Phase 1 Architecture:
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from fireai.core.device_placement import (
@@ -118,16 +118,14 @@ class CapabilityRegistry:
             }
 
         def _verify_detector_spacing_handler(payload: dict[str, Any]) -> dict[str, Any]:
-            width_m = float(payload.get("width_m", 10.0))
-            length_m = float(payload.get("length_m", 15.0))
+            _width_m = float(payload.get("width_m", 10.0))  # reserved for future area calc
+            _length_m = float(payload.get("length_m", 15.0))  # reserved for future area calc
             ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))
             devices = payload.get("devices", [])
 
             # Deterministic coverage & spacing verification per NFPA 72
-            # For standard smoke detector at <= 3.0m ceiling, max spacing is 9.1m (30ft) and radius is 6.37m
-            radius = 6.37
-            if ceiling_height_m > 3.0:
-                radius = 6.37 * 0.9  # height derating
+            # For standard smoke detector at <= 3.0m ceiling, max spacing 9.1m (30ft), radius 6.37m
+            radius = 6.37 if ceiling_height_m <= 3.0 else 6.37 * 0.9  # height derating
 
             # Check point coverage
             violations: list[str] = []
@@ -138,6 +136,7 @@ class CapabilityRegistry:
                 "verified": len(violations) == 0,
                 "standard": "NFPA 72-2022 §17.7",
                 "max_allowable_spacing_m": 9.1,
+                "max_allowable_radius_m": round(radius, 2),
                 "detector_count": len(devices),
                 "violations": violations,
             }

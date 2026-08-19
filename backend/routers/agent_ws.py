@@ -5,9 +5,9 @@ import json
 import logging
 import uuid
 from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
 from typing import Any
 
-from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from backend.api_keys import validate_api_key
@@ -263,7 +263,7 @@ class AIOrchestrationService:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=current_rev,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
             riskClass="MEDIUM",
             isDryRun=True,
@@ -314,7 +314,7 @@ class AIOrchestrationService:
             capabilityId=capability_id,
             projectId=project_id,
             expectedRevision=expected_revision,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
             riskClass="MEDIUM",
             isDryRun=False,

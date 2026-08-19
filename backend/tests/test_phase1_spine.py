@@ -11,12 +11,11 @@ Validates the complete frozen architecture:
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 import pytest
 
 from backend.core.capability_registry import (
-    CapabilityDefinition,
     CapabilityRegistry,
     default_capability_registry,
 )
@@ -24,13 +23,10 @@ from backend.core.command_bus import (
     AuthenticatedPrincipal,
     CommandBus,
     DomainCommand,
-    default_command_bus,
 )
 from backend.core.context_resolver import (
-    BoundedContextPacket,
     ContextResolver,
     default_context_resolver,
-    estimate_token_count,
 )
 
 
@@ -85,7 +81,7 @@ class TestCommandContract:
             capabilityId="spatial.place_devices",
             projectId="proj-contract-01",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             riskClass="MEDIUM",
             isDryRun=False,
@@ -112,7 +108,7 @@ class TestCommandContract:
             capabilityId="unregistered.arbitrary_tool",
             projectId="proj-contract-02",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"action": "mutate_database"},
@@ -129,7 +125,7 @@ class TestCommandContract:
             capabilityId="spatial.place_devices",
             projectId="proj-idempotent-01",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-A", "width_m": 10.0, "length_m": 10.0},
@@ -160,7 +156,7 @@ class TestSecurityBoundary:
             capabilityId="spatial.place_devices",
             projectId="proj-sec-01",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=unauthenticated_principal,
             isDryRun=False,
             payload={"room_id": "room-sec", "width_m": 10.0, "length_m": 10.0},
@@ -178,7 +174,7 @@ class TestSecurityBoundary:
             capabilityId="spatial.place_devices",  # requires spatial:write
             projectId="proj-sec-02",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=readonly_principal,
             isDryRun=False,
             payload={"room_id": "room-sec", "width_m": 10.0, "length_m": 10.0},
@@ -197,7 +193,7 @@ class TestSecurityBoundary:
             capabilityId="spatial.place_devices",
             projectId="proj-sec-03",
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={
@@ -231,7 +227,7 @@ class TestOptimisticConcurrencyControl:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=2,  # Stale! Current is 3
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-occ", "width_m": 10.0, "length_m": 10.0},
@@ -265,7 +261,7 @@ class TestOptimisticConcurrencyControl:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=True,
             payload={"room_id": "room-101", "width_m": 10.0, "length_m": 15.0},
@@ -293,7 +289,7 @@ class TestOptimisticConcurrencyControl:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,  # Stale!
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-101", "width_m": 10.0, "length_m": 15.0},
@@ -313,7 +309,7 @@ class TestOptimisticConcurrencyControl:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=2,  # Current!
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             isDryRun=False,
             payload={"room_id": "room-101", "width_m": 10.0, "length_m": 15.0},
@@ -431,7 +427,7 @@ class TestVerticalSliceBIntegration:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             riskClass="MEDIUM",
             isDryRun=True,
@@ -456,7 +452,7 @@ class TestVerticalSliceBIntegration:
             capabilityId="spatial.place_devices",
             projectId=project_id,
             expectedRevision=1,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             principal=test_principal,
             riskClass="MEDIUM",
             isDryRun=False,
