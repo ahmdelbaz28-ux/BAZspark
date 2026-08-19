@@ -203,3 +203,78 @@ def test_database_sqlite_methods(tmp_path: Path) -> None:
     with db._transaction() as cur:
         cur.execute("SELECT 1")
         assert cur.fetchone()[0] == 1
+
+
+def test_validate_agent_nonce_valid_and_duplicate() -> None:
+    """Test frame nonce validation and replay prevention."""
+    from backend.routers.agent_ws import _validate_agent_nonce
+
+    # No nonce provided (optional)
+    assert _validate_agent_nonce({}) is True
+
+    # Valid fresh nonce
+    msg1 = {"nonce": "nonce-fresh-001"}
+    assert _validate_agent_nonce(msg1) is True
+
+    # Duplicate replay nonce must fail
+    assert _validate_agent_nonce(msg1) is False
+
+
+@pytest.mark.asyncio
+async def test_handle_agent_message_full_dispatch(
+    mock_ws: MockWebSocket,
+    test_principal: AuthenticatedPrincipal,
+) -> None:
+    """Test _handle_agent_message dispatching for all supported message types."""
+    from backend.routers.agent_ws import _handle_agent_message, _seen_agent_nonces
+
+    # Pre-populate a nonce to simulate replay attack
+    _seen_agent_nonces.add("nonce-replayed")
+    await _handle_agent_message(mock_ws, {"type": "ping", "nonce": "nonce-replayed"})
+    assert len(mock_ws.sent_messages) == 0
+
+    # Test valid ping message
+    await _handle_agent_message(mock_ws, {"type": "ping", "nonce": "nonce-ping-01"})
+    assert len(mock_ws.sent_messages) == 1
+    assert mock_ws.sent_messages[0]["type"] == "pong"
+
+    # Test intent_submit alias
+    mock_ws.sent_messages.clear()
+    msg_intent = {
+        "type": "intent_submit",
+        "nonce": "nonce-intent-01",
+        "projectId": "proj-dispatch",
+        "roomBounds": {"width_m": 8.0, "length_m": 10.0, "ceiling_height_m": 3.0},
+    }
+    await _handle_agent_message(mock_ws, msg_intent, test_principal)
+    assert len(mock_ws.sent_messages) == 1
+    assert mock_ws.sent_messages[0]["type"] == "ai_preview"
+
+
+@pytest.mark.asyncio
+async def test_cleanup_agent_with_pending_futures(
+    mock_ws: MockWebSocket,
+) -> None:
+    """Test _cleanup_agent cleans up active registries and fails pending futures."""
+    from backend.routers.agent_ws import (
+        _agent_pending_commands,
+        _cleanup_agent,
+        active_agents,
+        agent_response_futures,
+    )
+
+    ws_id = str(id(mock_ws))
+    cmd_id = "cmd-pending-01"
+    loop = asyncio.get_event_loop()
+    fut: asyncio.Future[Any] = loop.create_future()
+    agent_response_futures[cmd_id] = fut
+    _agent_pending_commands[ws_id] = {cmd_id}
+    active_agents["autocad"] = [mock_ws]
+
+    _cleanup_agent(mock_ws, "autocad")
+
+    assert fut.done()
+    with pytest.raises(ConnectionError):
+        fut.result()
+    assert mock_ws not in active_agents.get("autocad", [])
+
