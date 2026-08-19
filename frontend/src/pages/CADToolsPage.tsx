@@ -84,14 +84,14 @@ function CoordInput({
 }) {
 	return (
 		<div>
-			<label className="block text-[11px] text-slate-500 mb-1 font-mono">
+			<label className="block text-[11px] text-muted-foreground mb-1 font-mono">
 				{label}
 			</label>
 			<input
 				type="text"
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				className="w-full px-2.5 py-1.5 bg-slate-700 border border-slate-600 rounded text-slate-100 text-xs font-mono focus:border-cyan-500 focus:outline-none"
+				className="w-full px-2.5 py-1.5 bg-input border border-border rounded text-foreground text-xs font-mono focus:border-primary focus:outline-none"
 				placeholder="x,y,z"
 			/>
 		</div>
@@ -125,9 +125,9 @@ function ActionButton({
 	color?: "cyan" | "emerald" | "amber";
 }) {
 	const colors = {
-		cyan: "bg-cyan-600 hover:bg-cyan-700",
-		emerald: "bg-emerald-600 hover:bg-emerald-700",
-		amber: "bg-amber-600 hover:bg-amber-700",
+		cyan: "bg-primary text-primary-foreground hover:bg-primary/90",
+		emerald: "bg-emerald-600 text-white hover:bg-emerald-700",
+		amber: "bg-amber-600 text-white hover:bg-amber-700",
 	};
 	return (
 		<div>
@@ -135,7 +135,7 @@ function ActionButton({
 				type="button"
 				onClick={() => mutation.mutate()}
 				disabled={mutation.isPending || disabled}
-				className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${colors[color]} disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors`}
+				className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${colors[color]} disabled:opacity-50 text-xs font-mono font-medium rounded transition-colors`}
 			>
 				{mutation.isPending ? (
 					<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -145,12 +145,12 @@ function ActionButton({
 				{mutation.isPending ? loadingLabel : label}
 			</button>
 			{mutation.isError && (
-				<p className="text-[11px] text-red-400 mt-1">
+				<p className="text-[11px] text-danger mt-1 font-mono">
 					{mutation.error instanceof Error ? mutation.error.message : "Failed"}
 				</p>
 			)}
 			{mutation.isSuccess && mutation.data != null && (
-				<p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+				<p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-mono">
 					<CheckCircle2 className="h-3 w-3" />
 					{(mutation.data as { message?: string })?.message || "Success"}
 				</p>

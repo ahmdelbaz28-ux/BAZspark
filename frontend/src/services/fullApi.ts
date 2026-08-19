@@ -2108,6 +2108,24 @@ export const analyzeApi = {
 			method: "POST",
 			body: JSON.stringify(data),
 		}),
+
+	/** POST /analyze/hydraulic — Darcy-Weisbach hydraulic network calculation */
+	hydraulic: (data: {
+		pipes: Array<{
+			id: string;
+			diameter_mm: number;
+			length_m: number;
+			roughness_mm: number;
+			flow_rate_lpm: number;
+			elevation_change_m?: number;
+		}>;
+		fluid_density_kg_m3?: number;
+		kinematic_viscosity_m2_s?: number;
+	}) =>
+		apiCall("/analyze/hydraulic", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
 };
 
 // ─── Admin Config API (backend/routers/admin_config.py) ────────────────────

@@ -9,7 +9,7 @@ const Table = React.forwardRef<
 	<div className="relative w-full overflow-auto">
 		<table
 			ref={ref}
-			className={cn("w-full caption-bottom text-sm", className)}
+			className={cn("w-full caption-bottom text-xs font-mono", className)}
 			{...props}
 		/>
 	</div>
@@ -20,7 +20,14 @@ const TableHeader = React.forwardRef<
 	HTMLTableSectionElement,
 	React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-	<thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+	<thead
+		ref={ref}
+		className={cn(
+			"sticky top-0 z-10 bg-popover/95 backdrop-blur-sm [&_tr]:border-b border-border",
+			className,
+		)}
+		{...props}
+	/>
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -30,7 +37,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<tbody
 		ref={ref}
-		className={cn("[&_tr:last-child]:border-0", className)}
+		className={cn("[&_tr:last-child]:border-0 divide-y divide-border", className)}
 		{...props}
 	/>
 ));
@@ -58,7 +65,7 @@ const TableRow = React.forwardRef<
 	<tr
 		ref={ref}
 		className={cn(
-			"border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+			"border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted",
 			className,
 		)}
 		{...props}
@@ -68,12 +75,13 @@ TableRow.displayName = "TableRow";
 
 const TableHead = React.forwardRef<
 	HTMLTableCellElement,
-	React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+	React.ThHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }
+>(({ className, numeric, ...props }, ref) => (
 	<th
 		ref={ref}
 		className={cn(
-			"h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+			"h-9 px-2.5 text-left align-middle text-[10px] uppercase font-mono font-semibold text-muted-foreground tracking-wider [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+			numeric && "text-right",
 			className,
 		)}
 		{...props}
@@ -83,12 +91,13 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<
 	HTMLTableCellElement,
-	React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+	React.TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }
+>(({ className, numeric, ...props }, ref) => (
 	<td
 		ref={ref}
 		className={cn(
-			"p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+			"p-2.5 align-middle text-xs font-mono [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+			numeric && "text-right tabular-nums",
 			className,
 		)}
 		{...props}
@@ -102,7 +111,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<caption
 		ref={ref}
-		className={cn("mt-4 text-sm text-muted-foreground", className)}
+		className={cn("mt-4 text-xs text-muted-foreground font-mono", className)}
 		{...props}
 	/>
 ));

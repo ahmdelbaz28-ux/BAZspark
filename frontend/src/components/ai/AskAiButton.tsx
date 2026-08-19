@@ -51,16 +51,16 @@ export function AskAiButton({ onClick, label }: AskAiButtonProps) {
 			onClick={onClick}
 			aria-label={ariaLabel}
 			title={ariaLabel}
-			className={`ask-ai-button fixed bottom-6 ${positionClass} z-50 inline-flex h-12 items-center gap-2 rounded-full px-5 font-medium tracking-wide shadow-lg`}
+			className={`fixed bottom-8 ${positionClass} z-50 inline-flex h-8 items-center gap-2 rounded border border-primary/40 bg-card/95 hover:bg-popover hover:border-primary px-3 text-xs font-mono text-foreground shadow-lg transition-all focus-ring`}
 		>
 			<Sparkles
 				aria-hidden="true"
-				className="ask-ai-sparkle h-4 w-4 text-cyan-300"
+				className="h-3.5 w-3.5 text-primary"
 			/>
-			<span className="hidden text-sm sm:inline">{buttonText}</span>
+			<span className="hidden sm:inline font-semibold">{buttonText}</span>
 			{/* Tiny keyboard-hint chip — visible only on md+ screens */}
 			<kbd
-				className="ml-1 hidden items-center rounded border border-cyan-400/25 bg-cyan-400/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan-300/80 md:inline-flex"
+				className="ml-0.5 hidden items-center rounded border border-border bg-background px-1 py-0.2 font-mono text-[9px] text-muted-foreground md:inline-flex"
 				aria-hidden="true"
 			>
 				{shortcutHint}

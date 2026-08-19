@@ -851,26 +851,26 @@ export function ReportsPage() {
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
-									{batteryCalculation.totalStandbyCurrent}
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
+									{batteryCalculation.totalStandbyCurrent} mA
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.totalStandbyCurrent")}
 								</div>
 							</div>
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
-									{batteryCalculation.totalAlarmCurrent}
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
+									{batteryCalculation.totalAlarmCurrent} mA
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.totalAlarmCurrent")}
 								</div>
 							</div>
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
-									{batteryCalculation.requiredCapacity}
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
+									{batteryCalculation.requiredCapacity} Ah
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.requiredCapacity")}
 								</div>
 							</div>
@@ -879,9 +879,9 @@ export function ReportsPage() {
 							<div className="text-sm font-medium text-foreground/90 mb-2">
 								{t("reports.recommendedBattery")}
 							</div>
-							<div className="text-lg font-semibold text-success">
+							<div className="text-lg font-semibold text-success font-mono tabular-nums">
 								{batteryCalculation.recommendedBattery.voltage}V{" "}
-								{batteryCalculation.recommendedBattery.capacity}Ah
+								{batteryCalculation.recommendedBattery.capacity}Ah ({batteryCalculation.recommendedBattery.type})
 							</div>
 						</div>
 					</CardContent>
@@ -911,34 +911,34 @@ export function ReportsPage() {
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
 									{coverageCalculation.summary.totalRooms}
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.totalRooms")}
 								</div>
 							</div>
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
 									{coverageCalculation.summary.totalDetectors}
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.totalDetectors")}
 								</div>
 							</div>
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-foreground">
+								<div className="text-2xl font-bold text-foreground font-mono tabular-nums">
 									{coverageCalculation.summary.coveragePercentage}%
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.overallCoverage")}
 								</div>
 							</div>
 							<div className="bg-muted/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-success">
+								<div className="text-2xl font-bold text-success font-mono tabular-nums">
 									{coverageCalculation.summary.passedRooms}
 								</div>
-								<div className="text-sm text-muted-foreground">
+								<div className="text-sm text-muted-foreground font-mono">
 									{t("reports.passedRooms")}
 								</div>
 							</div>

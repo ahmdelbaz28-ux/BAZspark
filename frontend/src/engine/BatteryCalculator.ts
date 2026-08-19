@@ -12,10 +12,13 @@ export interface BatteryCalcInput {
 	}[];
 	standbyHours: number; // default: 24
 	alarmMinutes: number; // default: 5
-	safetyFactor: number; // default: 1.2
+	safetyFactor?: number; // legacy alias for agingFactor (default: 1.25)
+	agingFactor?: number; // 1.25 (NFPA 72 Standard), 1.40 (Critical Infrastructure)
+	ambientTempC?: number; // Ambient Temperature in °C (-20 to 60, default: 25)
+	batteryChemistry?: "vrla" | "lifepo4" | "nicad" | "lead-acid"; // default: "vrla"
 }
 
-interface BatteryCalcResult {
+export interface BatteryCalcResult {
 	devices?: {
 		type: string;
 		standbyCurrent: number; // mA
@@ -24,17 +27,23 @@ interface BatteryCalcResult {
 	}[];
 	totalStandbyCurrent: number; // A
 	totalAlarmCurrent: number; // A
-	requiredCapacity: number; // Ah
+	baseCapacity: number; // Ah (before derating factors)
+	requiredCapacity: number; // Ah (with aging & temp derating)
+	ambientTempC: number;
+	agingFactor: number;
+	tempMultiplier: number;
+	batteryChemistry: string;
 	recommendedBattery: {
 		voltage: number; // 12V or 24V
 		capacity: number; // Ah
-		type: string; // "Lead Acid Sealed AGM"
+		type: string; // "Lead Acid Sealed AGM", "LiFePO4", etc.
 	};
 	compliance: {
 		meetsNFPA27_6_2: boolean;
 		standbyDuration: number; // hours
 		alarmDuration: number; // minutes
 		safetyFactor: number;
+		tempDeratingApplied: boolean;
 	};
 }
 
@@ -45,8 +54,43 @@ interface ComplianceResult {
 }
 
 /**
- * Calculates battery capacity requirements per NFPA 72
- * Formula: Battery Capacity = (Standby Current × Standby Hours) + (Alarm Current × Alarm Minutes/60)
+ * Calculates temperature correction multiplier (kt) per IEEE 485 / NFPA 72
+ */
+export function getTemperatureCorrectionFactor(
+	tempC: number,
+	chemistry: "vrla" | "lifepo4" | "nicad" | "lead-acid" = "vrla",
+): number {
+	const clampedTemp = Math.max(-20, Math.min(60, tempC));
+
+	if (chemistry === "lifepo4") {
+		if (clampedTemp < 25) {
+			return Number.parseFloat((1.0 + (25 - clampedTemp) * 0.006).toFixed(3));
+		}
+		return 1.0;
+	}
+
+	if (chemistry === "nicad") {
+		if (clampedTemp < 25) {
+			return Number.parseFloat((1.0 + (25 - clampedTemp) * 0.004).toFixed(3));
+		}
+		return 1.0;
+	}
+
+	// Default: Lead-Acid / VRLA
+	if (clampedTemp < 25) {
+		// Cold capacity degradation: ~1% per °C below 25°C
+		return Number.parseFloat((1.0 + (25 - clampedTemp) * 0.01).toFixed(3));
+	}
+	if (clampedTemp > 25) {
+		// High temp aging / self-discharge allowance
+		return Number.parseFloat((1.0 + (clampedTemp - 25) * 0.005).toFixed(3));
+	}
+	return 1.0;
+}
+
+/**
+ * Calculates battery capacity requirements per NFPA 72 with thermal & aging derating
+ * Formula: Required Capacity = Base Capacity × Aging Factor (k_aging) × Temperature Factor (k_temp)
  *
  * @param input Battery calculation parameters
  * @returns Battery calculation results
@@ -66,20 +110,40 @@ export function calculateBatteryRequirements(
 		0,
 	);
 
-	// Calculate required capacity per NFPA 72 §27.6.2
-	// Capacity = (Standby Current × Standby Hours) + (Alarm Current × Alarm Minutes/60)
+	// Calculate base capacity per NFPA 72 §27.6.2
+	// Base Capacity = (Standby Current × Standby Hours) + (Alarm Current × Alarm Minutes/60)
 	const baseCapacity =
 		totalStandbyCurrent * input.standbyHours +
 		(totalAlarmCurrent * input.alarmMinutes) / 60;
 
-	// Apply safety factor
-	const requiredCapacity = baseCapacity * input.safetyFactor;
+	// Resolve aging derating factor (default: 1.25 for NFPA 72 standard; supports legacy safetyFactor)
+	const agingFactor = input.agingFactor ?? input.safetyFactor ?? 1.25;
+
+	// Resolve ambient temperature and chemistry
+	const ambientTempC = input.ambientTempC ?? 25;
+	const batteryChemistry = input.batteryChemistry ?? "vrla";
+
+	// Calculate temperature correction factor kt
+	const tempMultiplier = getTemperatureCorrectionFactor(ambientTempC, batteryChemistry);
+
+	// Calculate total required capacity with aging & thermal derating:
+	// Ah_required = (I_standby * T_standby + I_alarm * T_alarm) * k_aging * k_temp
+	const requiredCapacity = baseCapacity * agingFactor * tempMultiplier;
+
+	// Determine battery chemistry display name
+	const chemLabelMap: Record<string, string> = {
+		vrla: "Lead Acid Sealed AGM (VRLA)",
+		"lead-acid": "Lead Acid Sealed AGM (VRLA)",
+		lifepo4: "Lithium Iron Phosphate (LiFePO4)",
+		nicad: "Nickel-Cadmium (NiCad)",
+	};
+	const chemistryLabel = chemLabelMap[batteryChemistry] || "Lead Acid Sealed AGM";
 
 	// Recommend battery based on calculated capacity
 	const recommendedBattery = {
 		voltage: 24, // Default to 24V for larger systems
 		capacity: Math.ceil(requiredCapacity / 2) * 2, // Round to nearest even number
-		type: "Lead Acid Sealed AGM",
+		type: chemistryLabel,
 	};
 
 	// Adjust voltage based on capacity if needed
@@ -97,13 +161,19 @@ export function calculateBatteryRequirements(
 		devices: input.devices,
 		totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),
 		totalAlarmCurrent: Number.parseFloat(totalAlarmCurrent.toFixed(2)),
+		baseCapacity: Number.parseFloat(baseCapacity.toFixed(2)),
 		requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
+		ambientTempC,
+		agingFactor,
+		tempMultiplier,
+		batteryChemistry,
 		recommendedBattery,
 		compliance: {
 			meetsNFPA27_6_2,
 			standbyDuration: input.standbyHours,
 			alarmDuration: input.alarmMinutes,
-			safetyFactor: input.safetyFactor,
+			safetyFactor: agingFactor,
+			tempDeratingApplied: tempMultiplier !== 1.0,
 		},
 	};
 }
@@ -165,7 +235,11 @@ export function generateBatteryReport(result: BatteryCalcResult): string {
 	report += `Total Alarm Current:       ${result.totalAlarmCurrent} A\n`;
 	report += `Standby Duration:          ${result.compliance.standbyDuration} hours\n`;
 	report += `Alarm Duration:            ${result.compliance.alarmDuration} minutes\n`;
-	report += `Safety Factor:             ${result.compliance.safetyFactor}x\n\n`;
+	report += `Base Capacity:             ${result.baseCapacity} Ah\n`;
+	report += `Aging Derating Factor:     ${result.agingFactor}x\n`;
+	report += `Ambient Temperature:       ${result.ambientTempC} °C\n`;
+	report += `Thermal Multiplier (kt):   ${result.tempMultiplier}x\n`;
+	report += `Battery Chemistry:         ${result.recommendedBattery.type}\n\n`;
 
 	report += "RESULT:\n";
 	report += "─────────────────────────────────────────────────\n";
