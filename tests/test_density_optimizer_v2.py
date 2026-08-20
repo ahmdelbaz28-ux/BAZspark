@@ -119,3 +119,30 @@ class TestDensityOptimizerV2:
 
     def test_alias_density_optimizer_batch(self):
         assert DensityOptimizerBatch is DensityOptimizerV2
+
+    def test_parallel_fallback_on_unsupported_platform(self):
+        opt = DensityOptimizerV2(n_workers=2)
+        # On Windows or when fork raises error, it falls back to sequential gracefully
+        res = opt.optimize_batch({
+            "room_p1": {"room_name": "P1", "ceiling_height_m": 3.0, "vertices": [[0, 0], [6, 0], [6, 6], [0, 6]]},
+            "room_p2": {"room_name": "P2", "ceiling_height_m": 3.0, "vertices": [[0, 0], [4, 0], [4, 4], [0, 4]]},
+        })
+        assert res.total_rooms == 2
+        assert "room_p1" in res.results
+        assert "room_p2" in res.results
+
+    def test_parallel_pool_execution_with_mock(self):
+        opt = DensityOptimizerV2(n_workers=2)
+        with patch("multiprocessing.get_context") as mock_ctx:
+            mock_pool = mock_ctx.return_value.Pool.return_value.__enter__.return_value
+            mock_async = mock_pool.map_async.return_value
+            mock_async.get.return_value = [("r1", {"coverage": 90.0}), ("r2", {"error": "fail"})]
+            res = opt._optimize_parallel(
+                {"r1": {}, "r2": {}},
+                "smoke",
+                {},
+                0.0,
+            )
+            assert res.total_rooms == 2
+            assert res.successful == 1
+            assert res.failed == 1

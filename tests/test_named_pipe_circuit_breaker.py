@@ -147,3 +147,52 @@ class TestRevitNamedPipeClientCircuitBreaker:
             assert client.send_set_parameter("123", "dia", 25.0)["status"] == "queued"
             assert client.send_set_string_parameter("123", "comments", "test")["status"] == "queued"
             assert client.send_create_wall([0, 0, 0], [10, 0, 0])["status"] == "queued"
+
+    def test_non_windows_platform_behavior(self):
+        client = RevitNamedPipeClient()
+        client._is_windows = False
+        assert client.is_available() is False
+        res = client.send_command({"action": "set_parameter"})
+        assert res["status"] == "error"
+        assert res["error_code"] == "PLATFORM_NOT_SUPPORTED"
+
+    def test_send_command_connection_failure(self):
+        client = RevitNamedPipeClient(failure_threshold=5)
+        client._is_windows = True
+        mock_pywintypes = MagicMock()
+        mock_pywintypes.error = type("pywintypes_error", (Exception,), {})
+        mock_win32file = MagicMock()
+        mock_win32file.CreateFile.side_effect = mock_pywintypes.error("File not found")
+        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}):
+            res = client.send_command({"action": "set_parameter"})
+            assert res["status"] == "error"
+            assert res["error_code"] == "PIPE_CONNECTION_FAILED"
+            assert client.circuit_breaker.failure_count == 1
+
+    def test_send_command_io_error(self):
+        client = RevitNamedPipeClient(failure_threshold=5)
+        client._is_windows = True
+        mock_pywintypes = MagicMock()
+        mock_pywintypes.error = type("pywintypes_error", (Exception,), {})
+        mock_win32file = MagicMock()
+        mock_win32file.CreateFile.return_value = 12345
+        mock_win32file.WriteFile.side_effect = RuntimeError("Pipe broken")
+        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}):
+            res = client.send_command({"action": "set_parameter"})
+            assert res["status"] == "error"
+            assert res["error_code"] == "PIPE_IO_ERROR"
+            assert client.circuit_breaker.failure_count == 1
+
+    def test_send_command_success(self):
+        client = RevitNamedPipeClient(failure_threshold=5)
+        client._is_windows = True
+        mock_pywintypes = MagicMock()
+        mock_pywintypes.error = type("pywintypes_error", (Exception,), {})
+        mock_win32file = MagicMock()
+        mock_win32file.CreateFile.return_value = 12345
+        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}), \
+             patch.object(client, "_read_pipe_response", return_value=b'{"status": "queued", "pending_count": 0}\n'):
+            res = client.send_command({"action": "set_parameter"})
+            assert res["status"] == "queued"
+            assert res["pending_count"] == 0
+            assert client.circuit_breaker.failure_count == 0
