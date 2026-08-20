@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from fireai.core.density_optimizer_v2 import (
     BatchResult,
@@ -99,14 +99,23 @@ class TestDensityOptimizerV2:
             assert room_id == "r1"
             assert "error" in res
 
-    def test_worker_function_handles_exception(self):
-        with patch("fireai.core.density_optimizer_v2.DensityOptimizer") as mock_opt:
-            mock_inst = MagicMock()
-            mock_inst.optimize.side_effect = RuntimeError("Optimization failed")
-            mock_opt.return_value = mock_inst
-            room_id, res = _optimize_room_worker(("r1", {"vertices": [[0, 0], [1, 1]]}, "smoke", {}))
-            assert room_id == "r1"
-            assert "error" in res
+    def test_real_worker_execution(self):
+        room_id, res = _optimize_room_worker((
+            "room_test_real",
+            {"room_name": "Conference", "ceiling_height_m": 3.0, "vertices": [[0, 0], [8, 0], [8, 8], [0, 8]]},
+            "smoke",
+            {},
+        ))
+        assert room_id == "room_test_real"
+        assert res is not None
+
+    def test_real_sequential_batch(self):
+        opt = DensityOptimizerV2(n_workers=1)
+        res = opt.optimize_batch({
+            "room_a": {"room_name": "A", "ceiling_height_m": 3.0, "vertices": [[0, 0], [5, 0], [5, 5], [0, 5]]},
+        })
+        assert res.total_rooms == 1
+        assert "room_a" in res.results
 
     def test_alias_density_optimizer_batch(self):
         assert DensityOptimizerBatch is DensityOptimizerV2

@@ -11,10 +11,12 @@ Tests:
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import patch
 
 import httpx
 import pytest
+from fastapi import WebSocket
 from fastapi.testclient import TestClient
 
 from backend.app import app
@@ -297,7 +299,7 @@ class TestWebSocketDynamicRoutingAndTelemetry:
             },
         }
 
-        await orchestrator.handle_composite_intent(ws, engineer_principal, msg)
+        await orchestrator.handle_composite_intent(cast(WebSocket, ws), engineer_principal, msg)
 
         progress_frames = [m for m in sent_messages if m.get("type") == "ai_progress_frame"]
         previews = [m for m in sent_messages if m.get("type") == "ai_composite_preview"]
@@ -344,9 +346,43 @@ class TestWebSocketDynamicRoutingAndTelemetry:
             },
         }
 
-        await orchestrator.handle_composite_intent(ws, engineer_principal, msg)
+        await orchestrator.handle_composite_intent(cast(WebSocket, ws), engineer_principal, msg)
 
         errors = [m for m in sent_messages if m.get("type") == "ai_error"]
         assert len(errors) == 1
         err_res = errors[0]
         assert err_res["errorCode"] == "PHYSICS_WARNING_ROLLBACK"
+
+    @pytest.mark.asyncio
+    async def test_dynamic_provider_routing_approval_flow(self, engineer_principal):
+        orchestrator = AIOrchestrationService()
+        sent_messages = []
+
+        class MockWebSocket:
+            async def send_json(self, data: dict):
+                sent_messages.append(data)
+
+        ws = MockWebSocket()
+
+        # 1. Invalid payload missing dag
+        await orchestrator.handle_composite_approval(cast(WebSocket, ws), engineer_principal, {"type": "composite_approval"})
+        assert any(m.get("errorCode") == "INVALID_WORKFLOW_PAYLOAD" for m in sent_messages)
+
+        # 2. Valid dag approval
+        msg = {
+            "type": "composite_approval",
+            "projectId": "proj-dyn-route-03",
+            "expectedRevision": 1,
+            "dag": {
+                "nodes": [
+                    {
+                        "node_id": "step_1",
+                        "capability_id": "spatial.place_devices",
+                        "payload_template": {"room_id": "r1", "width_m": 8.0, "length_m": 10.0, "ceiling_height_m": 3.0},
+                        "dependencies": [],
+                    }
+                ]
+            },
+        }
+        await orchestrator.handle_composite_approval(cast(WebSocket, ws), engineer_principal, msg)
+        assert any(m.get("type") == "ai_progress_frame" for m in sent_messages)

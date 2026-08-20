@@ -76,12 +76,12 @@ class TestNamedPipeCircuitBreaker:
         assert cb.can_execute() is True
 
     def test_half_open_failure_trips_back_to_open(self):
-        cb = NamedPipeCircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
+        cb = NamedPipeCircuitBreaker(failure_threshold=2, recovery_timeout=0.01)
         cb.record_failure()
         cb.record_failure()
         assert cb.state == CircuitState.OPEN
 
-        time.sleep(0.06)
+        time.sleep(0.05)
         assert cb.can_execute() is True
         assert cb.state == CircuitState.HALF_OPEN
 

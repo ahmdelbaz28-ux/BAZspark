@@ -339,11 +339,11 @@ class AIOrchestrationService:
         """Process an electrical calculation intent: resolve circuit context and return deterministic preview."""
         project_id = str(msg.get("projectId", "default_project"))
         circuit_id = str(msg.get("circuit_id", msg.get("circuitId", "nac-circuit-01")))
-        current_a = float(msg.get("current_a", msg.get("currentA", 1.5)))
-        one_way_length_m = float(msg.get("one_way_length_m", msg.get("oneWayLengthM", 30.0)))
-        awg = str(msg.get("awg", "14")).strip()
-        nominal_voltage = float(msg.get("nominal_voltage", msg.get("nominalVoltage", 24.0)))
-        temperature_c = float(msg.get("temperature_c", msg.get("temperatureC", 75.0)))
+        current_a = float(msg.get("current_a") or msg.get("currentA") or 1.5)
+        one_way_length_m = float(msg.get("one_way_length_m") or msg.get("oneWayLengthM") or 30.0)
+        awg = str(msg.get("awg") or "14").strip()
+        nominal_voltage = float(msg.get("nominal_voltage") or msg.get("nominalVoltage") or 24.0)
+        temperature_c = float(msg.get("temperature_c") or msg.get("temperatureC") or 75.0)
         provider_config = msg.get("providerConfig") or msg.get("llm") or {}
 
         current_rev = self.command_bus.get_project_revision(project_id)
@@ -704,16 +704,48 @@ class AIOrchestrationService:
             }
         )
 
+    @staticmethod
+    def _create_progress_callback(
+        websocket: WebSocket,
+        loop: asyncio.AbstractEventLoop,
+        workflow_id: str,
+        correlation_id: str,
+    ):
+        """Create a thread-safe WebSocket progress frame dispatcher."""
+        def _cb(
+            step_idx: int,
+            total_steps: int,
+            node_id: str,
+            elapsed_ms: float,
+            status: str = "in_progress",
+        ) -> None:
+            frame = {
+                "type": "ai_progress_frame",
+                "workflowId": workflow_id,
+                "correlationId": correlation_id,
+                "stepIndex": step_idx,
+                "totalSteps": total_steps,
+                "stepId": node_id,
+                "progressPct": round((step_idx / max(1, total_steps)) * 100.0, 1),
+                "elapsedMs": round(elapsed_ms, 2),
+                "status": status,
+            }
+            try:
+                asyncio.run_coroutine_threadsafe(websocket.send_json(frame), loop)
+            except Exception:
+                pass
+
+        return _cb
+
     async def handle_composite_intent(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
-        """Process multi-domain composite workflow intent: plan DAG, dry-run with overlays, and return unified preview."""
+        """Process natural language/composite spec intent into a multi-step DAG proposal."""
         project_id = str(msg.get("projectId", "default_project"))
-        current_rev = self.command_bus.get_project_revision(project_id)
-        composite_spec = msg.get("compositeSpec", {})
-        nodes_data = msg.get("nodes")
+        current_rev = int(msg.get("expectedRevision", 1))
 
         # 1. Bounded Context Resolution (<= 1500 tokens)
+        composite_spec = msg.get("compositeSpec", {})
         context_pkt = self.context_resolver.resolve_composite_context(
             project_id=project_id,
             revision=current_rev,
@@ -721,6 +753,7 @@ class AIOrchestrationService:
         )
 
         # 2. Construct or extract DAG
+        nodes_data = msg.get("nodes")
         if nodes_data and isinstance(nodes_data, list):
             nodes = [WorkflowNode.from_dict(n) for n in nodes_data]
             dag = CompositeWorkflowDAG(nodes=nodes)
@@ -780,23 +813,7 @@ class AIOrchestrationService:
 
         # 3. Dry-run pipeline execution over EphemeralStateOverlay in worker thread
         loop = asyncio.get_running_loop()
-
-        def _progress_cb(step_idx: int, total_steps: int, node_id: str, elapsed_ms: float, status: str = "in_progress") -> None:
-            frame = {
-                "type": "ai_progress_frame",
-                "workflowId": workflow_id,
-                "correlationId": correlation_id,
-                "stepIndex": step_idx,
-                "totalSteps": total_steps,
-                "stepId": node_id,
-                "progressPct": round((step_idx / max(1, total_steps)) * 100.0, 1),
-                "elapsedMs": round(elapsed_ms, 2),
-                "status": status,
-            }
-            try:
-                asyncio.run_coroutine_threadsafe(websocket.send_json(frame), loop)
-            except Exception:
-                pass
+        progress_cb = self._create_progress_callback(websocket, loop, workflow_id, correlation_id)
 
         executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
         res = await asyncio.to_thread(
@@ -810,7 +827,7 @@ class AIOrchestrationService:
             correlation_id=correlation_id,
             auto_rollback_on_warning=auto_rollback,
             governance_policy=governance_policy,
-            on_step_progress=_progress_cb,
+            on_step_progress=progress_cb,
         )
 
         if not res.success:
@@ -864,23 +881,7 @@ class AIOrchestrationService:
 
         dag = CompositeWorkflowDAG.from_dict(dag_data)
         loop = asyncio.get_running_loop()
-
-        def _progress_cb(step_idx: int, total_steps: int, node_id: str, elapsed_ms: float, status: str = "in_progress") -> None:
-            frame = {
-                "type": "ai_progress_frame",
-                "workflowId": workflow_id,
-                "correlationId": correlation_id,
-                "stepIndex": step_idx,
-                "totalSteps": total_steps,
-                "stepId": node_id,
-                "progressPct": round((step_idx / max(1, total_steps)) * 100.0, 1),
-                "elapsedMs": round(elapsed_ms, 2),
-                "status": status,
-            }
-            try:
-                asyncio.run_coroutine_threadsafe(websocket.send_json(frame), loop)
-            except Exception:
-                pass
+        progress_cb = self._create_progress_callback(websocket, loop, workflow_id, correlation_id)
 
         executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
 
@@ -893,7 +894,7 @@ class AIOrchestrationService:
             is_dry_run=False,
             workflow_id=workflow_id,
             correlation_id=correlation_id,
-            on_step_progress=_progress_cb,
+            on_step_progress=progress_cb,
         )
 
         if not res.success:
@@ -972,9 +973,10 @@ async def _handle_response_message(msg: dict) -> None:
     """Handle a response message from the agent."""
     cmd_id = msg.get("id")
     payload = msg.get("payload")
-    future = agent_response_futures.get(cmd_id)
-    if future is not None:
-        future.set_result(payload)
+    if cmd_id is not None:
+        future = agent_response_futures.get(str(cmd_id))
+        if future is not None:
+            future.set_result(payload)
 
 
 async def _handle_ping_message(websocket: WebSocket) -> None:
