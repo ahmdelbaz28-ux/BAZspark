@@ -60,6 +60,21 @@ export interface WorkflowStepResultPreview {
 	errorMessage?: string;
 }
 
+export interface TokenTelemetryPayload {
+	measured_tokens?: number;
+	token_count?: number;
+	prompt_tokens?: number;
+	completion_tokens?: number;
+	total_tokens?: number;
+	budget_limit?: number;
+	token_budget?: number;
+	utilization_pct?: number;
+	provider?: string;
+	model?: string;
+	temperature?: number;
+	baseUrl?: string;
+}
+
 export interface CompositeWorkflowPreview {
 	workflowId: string;
 	correlationId: string;
@@ -76,11 +91,7 @@ export interface CompositeWorkflowPreview {
 	};
 	combinedAuditDigest: string;
 	isCompliant: boolean;
-	tokenTelemetry?: {
-		measured_tokens: number;
-		budget_limit: number;
-		utilization_pct: number;
-	};
+	tokenTelemetry?: TokenTelemetryPayload;
 }
 
 export interface DomainCommandPreview {
@@ -97,11 +108,7 @@ export interface DomainCommandPreview {
 	deviceCount: number;
 	coveragePct: number;
 	isCompliant: boolean;
-	tokenTelemetry?: {
-		measured_tokens: number;
-		budget_limit: number;
-		utilization_pct: number;
-	};
+	tokenTelemetry?: TokenTelemetryPayload;
 	payload: Record<string, unknown>;
 }
 
@@ -113,7 +120,7 @@ export interface AIControllerContextValue {
 	compositeProposal: CompositeWorkflowPreview | null;
 	concurrencyError: string | null;
 	currentRevision: number;
-	tokenTelemetry: { measured_tokens: number; budget_limit: number; utilization_pct: number } | null;
+	tokenTelemetry: TokenTelemetryPayload | null;
 	submitIntent: (
 		projectId: string,
 		roomId: string,
@@ -200,7 +207,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	const [compositeProposal, setCompositeProposal] = useState<CompositeWorkflowPreview | null>(null);
 	const [concurrencyError, setConcurrencyError] = useState<string | null>(null);
 	const [currentRevision, setCurrentRevision] = useState<number>(1);
-	const [tokenTelemetry, setTokenTelemetry] = useState<{ measured_tokens: number; budget_limit: number; utilization_pct: number } | null>(null);
+	const [tokenTelemetry, setTokenTelemetry] = useState<TokenTelemetryPayload | null>(null);
 
 	const [lastIntentParams, setLastIntentParams] = useState<{
 		projectId: string;

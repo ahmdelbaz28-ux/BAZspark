@@ -738,9 +738,186 @@ async def close_llm_service() -> None:
         _llm_service = None
 
 
+# ── Live Provider Ping & SSRF Validation ──────────────────────────────────────
+
+ALLOWED_CLOUD_HOSTS = frozenset({
+    "api.anthropic.com",
+    "generativelanguage.googleapis.com",
+    "api.openai.com",
+    "zenmux.ai",
+    "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
+})
+
+ALLOWED_LOCAL_HOSTS = frozenset({
+    "localhost",
+    "127.0.0.1",
+    "::1",
+    "[::1]",
+})
+
+
+def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, str, str | None]:
+    """Validate and sanitize provider base_url against strict SSRF rules.
+
+    Returns:
+        tuple of (is_valid, resolved_url, error_message).
+    """
+    from urllib.parse import urlparse
+
+    prov = (provider or "").lower().strip()
+    if prov == "ollama":
+        url = (base_url or "http://localhost:11434").strip().rstrip("/")
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False, url, "Invalid scheme for Ollama provider (must be http or https)"
+        host = (parsed.hostname or "").lower()
+        if host not in ALLOWED_LOCAL_HOSTS:
+            return (
+                False,
+                url,
+                f"SSRF_BLOCKED: Local provider (Ollama) can only target localhost/127.0.0.1, got '{host}'",
+            )
+        return True, url, None
+
+    if prov == "anthropic":
+        url = (base_url or "https://api.anthropic.com").strip().rstrip("/")
+        parsed = urlparse(url)
+        if parsed.scheme != "https":
+            return False, url, "HTTPS is required for Anthropic provider"
+        host = (parsed.hostname or "").lower()
+        if not (host == "api.anthropic.com" or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
+            return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
+        return True, url, None
+
+    if prov == "gemini":
+        url = (base_url or "https://generativelanguage.googleapis.com").strip().rstrip("/")
+        parsed = urlparse(url)
+        if parsed.scheme != "https":
+            return False, url, "HTTPS is required for Google Gemini provider"
+        host = (parsed.hostname or "").lower()
+        if not (
+            host == "generativelanguage.googleapis.com"
+            or host.endswith(".googleapis.com")
+            or host in ALLOWED_LOCAL_HOSTS
+        ):
+            return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint"
+        return True, url, None
+
+    if prov == "openai":
+        url = (base_url or "https://api.openai.com/v1").strip().rstrip("/")
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False, url, "Invalid scheme for OpenAI provider"
+        host = (parsed.hostname or "").lower()
+        if not (
+            host in ALLOWED_CLOUD_HOSTS
+            or host.endswith(".openai.com")
+            or host.endswith(".zenmux.ai")
+            or host in ALLOWED_LOCAL_HOSTS
+        ):
+            return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized OpenAI endpoint"
+        return True, url, None
+
+    return False, base_url or "", f"Unsupported provider: '{provider}'"
+
+
+async def ping_provider(
+    provider: str,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    model_name: str | None = None,
+) -> tuple[bool, float, str | None]:
+    """Execute a live lightweight ping/handshake probe to the provider.
+
+    Returns:
+        tuple of (success, latency_ms, error_message).
+    Enforces a strict 5.0-second timeout cap and zero API key leakage in logs.
+    """
+    import time
+    import httpx
+
+    is_valid, resolved_url, err = validate_provider_url(provider, base_url)
+    if not is_valid:
+        return False, 0.0, err
+
+    prov = provider.lower().strip()
+    timeout = httpx.Timeout(5.0, connect=5.0)
+    start_time = time.perf_counter()
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if prov == "ollama":
+                # Probe Ollama tags or version
+                resp = await client.get(f"{resolved_url}/api/tags")
+                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                if resp.status_code == 200:
+                    return True, latency_ms, None
+                # Fallback to version
+                resp_ver = await client.get(f"{resolved_url}/api/version")
+                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                if resp_ver.status_code == 200:
+                    return True, latency_ms, None
+                return False, latency_ms, f"Ollama returned HTTP {resp.status_code}"
+
+            if prov == "anthropic":
+                headers = {"anthropic-version": "2023-06-01"}
+                if api_key:
+                    headers["x-api-key"] = api_key
+                resp = await client.get(f"{resolved_url}/v1/models", headers=headers)
+                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                if resp.status_code in (200, 400, 401, 403):
+                    if resp.status_code == 401 and api_key:
+                        return False, latency_ms, "Authentication failed: Invalid Anthropic API key"
+                    return True, latency_ms, None
+                return False, latency_ms, f"Anthropic returned HTTP {resp.status_code}"
+
+            if prov == "gemini":
+                headers = {}
+                params = {}
+                if api_key:
+                    params["key"] = api_key
+                resp = await client.get(f"{resolved_url}/v1beta/models", headers=headers, params=params)
+                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                if resp.status_code in (200, 400, 401, 403):
+                    if resp.status_code in (400, 401, 403) and api_key:
+                        return False, latency_ms, "Authentication failed: Invalid Gemini API key"
+                    return True, latency_ms, None
+                return False, latency_ms, f"Gemini returned HTTP {resp.status_code}"
+
+            if prov == "openai":
+                headers = {}
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                url = resolved_url if resolved_url.endswith("/models") else f"{resolved_url}/models"
+                resp = await client.get(url, headers=headers)
+                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                if resp.status_code in (200, 400, 401, 403):
+                    if resp.status_code == 401 and api_key:
+                        return False, latency_ms, "Authentication failed: Invalid OpenAI API key"
+                    return True, latency_ms, None
+                return False, latency_ms, f"OpenAI returned HTTP {resp.status_code}"
+
+    except httpx.TimeoutException:
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        return False, latency_ms, "Connection timed out (exceeded 5.0s cap)"
+    except httpx.ConnectError:
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        return False, latency_ms, "Connection refused: Target service is unreachable"
+    except Exception as exc:
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        err_msg = str(exc)
+        if api_key and api_key in err_msg:
+            err_msg = err_msg.replace(api_key, "[REDACTED]")
+        return False, latency_ms, f"Probe error: {err_msg}"
+
+    return False, 0.0, f"Unsupported provider: '{provider}'"
+
+
 __all__ = [
     "LLMResponse",
     "LLMService",
     "close_llm_service",
     "get_llm_service",
+    "ping_provider",
+    "validate_provider_url",
 ]

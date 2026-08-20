@@ -160,4 +160,59 @@ describe("AgentSettingsPage", () => {
 		renderPage();
 		expect(screen.getByTestId("agent-settings-page")).toBeInTheDocument();
 	});
+
+	it("renders endpoint base url input field and updates value", () => {
+		renderPage();
+		const baseUrlInput = screen.getByTestId("base-url-input");
+		expect(baseUrlInput).toBeInTheDocument();
+		fireEvent.change(baseUrlInput, { target: { value: "http://127.0.0.1:11434" } });
+		expect(baseUrlInput).toHaveValue("http://127.0.0.1:11434");
+	});
+
+	it("triggers live connection ping on Test Connection click and displays latency", async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				success: true,
+				latencyMs: 24.5,
+				error: null,
+			}),
+		});
+		globalThis.fetch = mockFetch;
+
+		renderPage();
+		const pingBtn = screen.getByTestId("test-connection-btn");
+		expect(pingBtn).toBeInTheDocument();
+		fireEvent.click(pingBtn);
+
+		const statusBadge = await screen.findByTestId("ping-status-badge");
+		expect(statusBadge).toBeInTheDocument();
+		expect(statusBadge).toHaveTextContent("Connected (24.5 ms)");
+		expect(mockFetch).toHaveBeenCalledWith(
+			"/api/v1/agent/ping-provider",
+			expect.objectContaining({
+				method: "POST",
+			}),
+		);
+	});
+
+	it("displays error status badge when ping fails", async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				success: false,
+				latencyMs: 0,
+				error: "Connection refused: Target service is unreachable",
+			}),
+		});
+		globalThis.fetch = mockFetch;
+
+		renderPage();
+		const pingBtn = screen.getByTestId("test-connection-btn");
+		fireEvent.click(pingBtn);
+
+		const statusBadge = await screen.findByTestId("ping-status-badge");
+		expect(statusBadge).toBeInTheDocument();
+		expect(statusBadge).toHaveTextContent("Connection refused: Target service is unreachable");
+	});
 });

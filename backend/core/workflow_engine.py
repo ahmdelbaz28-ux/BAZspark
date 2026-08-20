@@ -255,9 +255,18 @@ class WorkflowExecutor:
         is_dry_run: bool = True,
         workflow_id: str | None = None,
         correlation_id: str | None = None,
+        auto_rollback_on_warning: bool = False,
+        governance_policy: dict[str, Any] | None = None,
     ) -> CompositeWorkflowResult:
         w_id = workflow_id or f"wf-{datetime.now(UTC).strftime('%Y%m%d%H%M%S%f')}"
         corr_id = correlation_id or f"corr-{w_id}"
+
+        # Resolve auto-rollback policy from governance settings if provided
+        if governance_policy is not None:
+            auto_rollback_on_warning = bool(
+                governance_policy.get("autoRollbackOnPhysicsWarning", auto_rollback_on_warning)
+                or governance_policy.get("autoRollbackOnWarning", auto_rollback_on_warning)
+            )
 
         # 1. Validate topological order & absence of cycles
         try:
@@ -456,6 +465,34 @@ class WorkflowExecutor:
                     combined_audit_digest="",
                     error_code="VERIFICATION_COMPLIANCE_FAILED",
                     error_message=f"Step '{node.node_id}' produced non-compliant result.",
+                )
+
+            # Auto-rollback if physics/compliance warnings emitted and auto_rollback_on_warning enabled
+            if auto_rollback_on_warning and result_data.get("warnings"):
+                step_results.append(
+                    WorkflowExecutionStepResult(
+                        node_id=node.node_id,
+                        capability_id=node.capability_id,
+                        command_id=step_cmd_id,
+                        success=False,
+                        result_data=result_data,
+                        error_code="PHYSICS_WARNING_ROLLBACK",
+                        error_message=f"Step '{node.node_id}' triggered auto-rollback due to physics warnings: {result_data['warnings']}",
+                    )
+                )
+                return CompositeWorkflowResult(
+                    workflow_id=w_id,
+                    correlation_id=corr_id,
+                    project_id=project_id,
+                    expected_revision=expected_revision,
+                    new_revision=expected_revision,
+                    is_dry_run=is_dry_run,
+                    success=False,
+                    step_results=step_results,
+                    projected_state=canonical_state,  # Rollback to original unmutated state
+                    combined_audit_digest="",
+                    error_code="PHYSICS_WARNING_ROLLBACK",
+                    error_message=f"Step '{node.node_id}' triggered auto-rollback due to physics/compliance warning.",
                 )
 
             # Apply delta into ephemeral overlay

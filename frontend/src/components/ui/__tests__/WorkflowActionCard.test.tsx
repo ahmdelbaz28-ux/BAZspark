@@ -267,4 +267,29 @@ describe("WorkflowActionCard", () => {
 		rerender(<WorkflowActionCard lifecycleState="VERIFY" />);
 		expect(screen.getByTestId("workflow-card-verify")).toBeInTheDocument();
 	});
+
+	// ── Token Telemetry ─────────────────────────────────────────────────────────
+
+	it("renders live token telemetry when provided", () => {
+		const telemetry = {
+			prompt_tokens: 350,
+			completion_tokens: 120,
+			total_tokens: 470,
+			provider: "ollama",
+			model: "qwen2.5-coder:7b",
+		};
+		render(
+			<WorkflowActionCard
+				lifecycleState="PREVIEW"
+				tokenTelemetry={telemetry}
+			/>,
+		);
+		expect(screen.getByTestId("workflow-token-telemetry")).toBeInTheDocument();
+		expect(screen.getByText("Live Token Telemetry")).toBeInTheDocument();
+		expect(screen.getByText("350")).toBeInTheDocument();
+		expect(screen.getByText("120")).toBeInTheDocument();
+		expect(screen.getByText("470")).toBeInTheDocument();
+		expect(screen.getByText(/ollama · qwen2.5-coder:7b/)).toBeInTheDocument();
+	});
 });
+

@@ -27,6 +27,7 @@ import type {
 	CompositeWorkflowPreview,
 	HydraulicPreview,
 	PreviewDevice,
+	TokenTelemetryPayload,
 	WorkflowStepResultPreview,
 } from "@/contexts/AIControllerContext";
 
@@ -61,6 +62,8 @@ export interface WorkflowActionCardProps {
 	hydraulicPreview?: HydraulicPreview | null;
 	batteryPreview?: BatteryPreview | null;
 	compositePreview?: CompositeWorkflowPreview | null;
+	/** Live measured token telemetry from context resolver */
+	tokenTelemetry?: TokenTelemetryPayload | null;
 	/** APPROVE: expected revision for OCC gate */
 	expectedRevision?: number;
 	/** VERIFY: compliance results */
@@ -384,6 +387,7 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 	hydraulicPreview,
 	batteryPreview,
 	compositePreview,
+	tokenTelemetry,
 	expectedRevision,
 	complianceBadges,
 	stepResults,
@@ -568,6 +572,58 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 						committedAt={committedAt}
 					/>
 				)}
+
+				{/* Live Token Telemetry */}
+				{(() => {
+					const activeTelemetry = (tokenTelemetry ?? compositePreview?.tokenTelemetry) as TokenTelemetryPayload | undefined;
+					if (!activeTelemetry) return null;
+					const promptTokens = activeTelemetry.prompt_tokens ?? activeTelemetry.token_count ?? activeTelemetry.measured_tokens ?? 0;
+					const completionTokens = activeTelemetry.completion_tokens ?? 0;
+					const totalTokens = activeTelemetry.total_tokens ?? (promptTokens + completionTokens);
+
+					return (
+						<div
+							className="mt-3 pt-3 border-t border-border/40 space-y-1.5"
+							data-testid="workflow-token-telemetry"
+						>
+							<SectionLabel>Live Token Telemetry</SectionLabel>
+							<div className="grid grid-cols-3 gap-2 text-center bg-muted/20 p-2 rounded-md border border-border/30">
+								<div>
+									<span className="text-[10px] text-muted-foreground block">
+										Prompt
+									</span>
+									<span className="text-xs font-mono font-semibold text-foreground">
+										{promptTokens}
+									</span>
+								</div>
+								<div>
+									<span className="text-[10px] text-muted-foreground block">
+										Completion
+									</span>
+									<span className="text-xs font-mono font-semibold text-foreground">
+										{completionTokens}
+									</span>
+								</div>
+								<div>
+									<span className="text-[10px] text-muted-foreground block">
+										Total
+									</span>
+									<span className="text-xs font-mono font-semibold text-cyan-400">
+										{totalTokens}
+									</span>
+								</div>
+							</div>
+							{activeTelemetry.provider && (
+								<div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+									<span>Engine Provider</span>
+									<span className="font-mono text-foreground font-semibold">
+										{activeTelemetry.provider} · {activeTelemetry.model}
+									</span>
+								</div>
+							)}
+						</div>
+					);
+				})()}
 			</div>
 
 			{/* Footer actions */}

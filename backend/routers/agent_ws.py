@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
 
 from backend.api_keys import validate_api_key
 from backend.auth import has_permission
@@ -25,6 +26,7 @@ from backend.core.workflow_engine import (
     WorkflowNode,
 )
 from backend.rbac import Permission
+from backend.services.llm_service import ping_provider
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +234,27 @@ class AIOrchestrationService:
         self.context_resolver = context_resolver or default_context_resolver
         self.capability_registry = capability_registry or default_capability_registry
 
+    def _build_telemetry(
+        self,
+        context_pkt: Any,
+        result_data: dict[str, Any] | None = None,
+        provider_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        telemetry = dict(context_pkt.telemetry) if context_pkt and hasattr(context_pkt, "telemetry") else {}
+        prompt_tokens = getattr(context_pkt, "token_count", 0) if context_pkt else 0
+        telemetry["prompt_tokens"] = prompt_tokens
+        completion_tokens = max(1, len(str(result_data or {})) // 4) if result_data else 0
+        telemetry["completion_tokens"] = completion_tokens
+        telemetry["total_tokens"] = prompt_tokens + completion_tokens
+        if provider_config:
+            telemetry["provider"] = provider_config.get("provider", "anthropic")
+            telemetry["model"] = provider_config.get("model") or provider_config.get("modelName", "claude-sonnet-4-5")
+            if "temperature" in provider_config:
+                telemetry["temperature"] = provider_config["temperature"]
+            if "baseUrl" in provider_config:
+                telemetry["baseUrl"] = provider_config["baseUrl"]
+        return telemetry
+
     async def handle_intent(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
@@ -243,6 +266,7 @@ class AIOrchestrationService:
         )
         existing_devices = msg.get("existingDevices", [])
         detector_type = msg.get("detectorType", "smoke")
+        provider_config = msg.get("providerConfig") or msg.get("llm") or {}
 
         # 1. Context Resolution with hard <=1500 token budget
         current_rev = self.command_bus.get_project_revision(project_id)
@@ -304,7 +328,7 @@ class AIOrchestrationService:
                 "deviceCount": result.resultData.get("device_count", 0),
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
-                "tokenTelemetry": context_pkt.telemetry,
+                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
                 "payload": command.payload,
             }
         )
@@ -320,6 +344,7 @@ class AIOrchestrationService:
         awg = str(msg.get("awg", "14")).strip()
         nominal_voltage = float(msg.get("nominal_voltage", msg.get("nominalVoltage", 24.0)))
         temperature_c = float(msg.get("temperature_c", msg.get("temperatureC", 75.0)))
+        provider_config = msg.get("providerConfig") or msg.get("llm") or {}
 
         current_rev = self.command_bus.get_project_revision(project_id)
         context_pkt = self.context_resolver.resolve_circuit_context(
@@ -384,7 +409,7 @@ class AIOrchestrationService:
                 "terminalVoltageV": result.resultData.get("terminal_voltage_v", 24.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
                 "recommendedAwg": result.resultData.get("recommended_awg", awg),
-                "tokenTelemetry": context_pkt.telemetry,
+                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
                 "payload": command.payload,
             }
         )
@@ -403,6 +428,7 @@ class AIOrchestrationService:
         fluid_type = str(msg.get("fluidType", "water")).strip().lower()
         roughness_mm = msg.get("roughnessMm")
         elevation_m = float(msg.get("elevationM", 0.0))
+        provider_config = msg.get("providerConfig") or msg.get("llm") or {}
 
         context_pkt = self.context_resolver.resolve_hydraulic_context(
             project_id=project_id,
@@ -475,7 +501,7 @@ class AIOrchestrationService:
                 "totalPressureLossPsi": result.resultData.get("total_pressure_loss_psi", 0.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
                 "warnings": result.resultData.get("warnings", []),
-                "tokenTelemetry": context_pkt.telemetry,
+                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
                 "payload": command.payload,
             }
         )
@@ -487,6 +513,7 @@ class AIOrchestrationService:
         project_id = str(msg.get("projectId", "default_project"))
         panel_id = str(msg.get("panelId", "facp-01"))
         spec = msg.get("batterySpec", {})
+        provider_config = msg.get("providerConfig") or msg.get("llm") or {}
 
         current_rev = self.command_bus.get_project_revision(project_id)
 
@@ -575,7 +602,7 @@ class AIOrchestrationService:
                 "isAdequate": result.resultData.get("is_adequate", True),
                 "marginPct": result.resultData.get("margin_pct"),
                 "warnings": result.resultData.get("warnings", []),
-                "tokenTelemetry": context_pkt.telemetry,
+                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
                 "payload": command.payload,
             }
         )
@@ -742,6 +769,13 @@ class AIOrchestrationService:
 
         workflow_id = f"wf-{uuid.uuid4().hex[:12]}"
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        provider_config = msg.get("providerConfig") or msg.get("llm") or {}
+        governance_policy = msg.get("governance") or msg.get("governancePolicy")
+        auto_rollback = (
+            bool(governance_policy.get("autoRollbackOnPhysicsWarning", False))
+            if isinstance(governance_policy, dict)
+            else False
+        )
 
         # 3. Dry-run pipeline execution over EphemeralStateOverlay
         executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
@@ -753,6 +787,8 @@ class AIOrchestrationService:
             is_dry_run=True,
             workflow_id=workflow_id,
             correlation_id=correlation_id,
+            auto_rollback_on_warning=auto_rollback,
+            governance_policy=governance_policy,
         )
 
         if not res.success:
@@ -778,7 +814,7 @@ class AIOrchestrationService:
                 "stepResults": [s.to_dict() for s in res.step_results],
                 "projectedState": res.projected_state,
                 "combinedAuditDigest": res.combined_audit_digest,
-                "tokenTelemetry": context_pkt.telemetry,
+                "tokenTelemetry": self._build_telemetry(context_pkt, res.projected_state, provider_config),
                 "isCompliant": True,
             }
         )
@@ -1109,3 +1145,40 @@ async def send_agent_command(
                 pending.discard(cmd_id)
                 if not pending:
                     _agent_pending_commands.pop(ws_id, None)
+
+
+# ── Live Provider Ping Endpoint (Phase 3.1) ──────────────────────────────────
+
+class PingProviderRequest(BaseModel):
+    provider: str = Field(..., description="Target provider: anthropic, gemini, openai, ollama")
+    baseUrl: str | None = Field(default=None, description="Optional custom base URL")
+    apiKey: str | None = Field(default=None, description="Ephemeral API key (never logged/persisted)")
+    modelName: str | None = Field(default=None, description="Target model name")
+
+
+class PingProviderResponse(BaseModel):
+    success: bool
+    latencyMs: float
+    error: str | None = None
+
+
+@router.post("/ping-provider", response_model=PingProviderResponse)
+async def ping_provider_endpoint(
+    req: PingProviderRequest,
+) -> PingProviderResponse:
+    """Execute a live zero-token probe/ping to the target LLM provider.
+
+    Enforces SSRF protection, hard 5.0-second timeout, and zero API key logging.
+    """
+    success, latency_ms, error = await ping_provider(
+        provider=req.provider,
+        base_url=req.baseUrl,
+        api_key=req.apiKey,
+        model_name=req.modelName,
+    )
+    return PingProviderResponse(
+        success=success,
+        latencyMs=latency_ms,
+        error=error,
+    )
+

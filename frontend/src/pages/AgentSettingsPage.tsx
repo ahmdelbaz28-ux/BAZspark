@@ -34,6 +34,8 @@ import { useCallback, useState } from "react";
 import {
 	type ApprovalRiskLevel,
 	type LLMProvider,
+	type PingProviderResult,
+	pingProvider,
 	useAgentSettings,
 } from "@/contexts/AgentSettingsContext";
 
@@ -190,6 +192,8 @@ export function AgentSettingsPage() {
 
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [resetConfirm, setResetConfirm] = useState(false);
+	const [pingLoading, setPingLoading] = useState(false);
+	const [pingResult, setPingResult] = useState<PingProviderResult | null>(null);
 
 	const selectedProvider = PROVIDERS.find(
 		(p) => p.id === settings.llm.provider,
@@ -204,6 +208,25 @@ export function AgentSettingsPage() {
 			setTimeout(() => setResetConfirm(false), 3000);
 		}
 	}, [resetConfirm, resetToDefaults]);
+
+	const handleTestConnection = useCallback(async () => {
+		setPingLoading(true);
+		setPingResult(null);
+		try {
+			const res = await pingProvider({
+				provider: settings.llm.provider,
+				baseUrl: settings.llm.baseUrl,
+				apiKey: settings.llm.apiKeyLocal,
+				modelName: settings.llm.model,
+			});
+			setPingResult(res);
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			setPingResult({ success: false, latencyMs: 0, error: msg });
+		} finally {
+			setPingLoading(false);
+		}
+	}, [settings.llm]);
 
 	// Token budget utilization meter
 	const budgetPct = Math.round(
@@ -309,6 +332,32 @@ export function AgentSettingsPage() {
 						</select>
 					</div>
 
+					{/* Endpoint Base URL */}
+					<div>
+						<FieldLabel
+							htmlFor="base-url-input"
+							label="Endpoint Base URL"
+							hint={
+								settings.llm.provider === "ollama"
+									? "Local Ollama server address (http://localhost:11434)"
+									: "Target API or proxy base URL"
+							}
+						/>
+						<input
+							id="base-url-input"
+							type="text"
+							value={settings.llm.baseUrl ?? ""}
+							onChange={(e) => updateLLM({ baseUrl: e.target.value })}
+							placeholder={
+								settings.llm.provider === "ollama"
+									? "http://localhost:11434"
+									: "https://api.anthropic.com"
+							}
+							className="w-full px-3 py-2 rounded-md border border-border bg-background text-xs text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder:text-muted-foreground/50"
+							data-testid="base-url-input"
+						/>
+					</div>
+
 					{/* API Key (local only) */}
 					<div>
 						<FieldLabel
@@ -372,6 +421,48 @@ export function AgentSettingsPage() {
 							<span>0.00 (deterministic)</span>
 							<span>0.10</span>
 						</div>
+					</div>
+
+					{/* Live Connection Test Button & Ping Status */}
+					<div className="pt-2 flex items-center justify-between gap-3 border-t border-border/40">
+						<button
+							type="button"
+							id="test-connection-btn"
+							data-testid="test-connection-btn"
+							onClick={() => void handleTestConnection()}
+							disabled={pingLoading}
+							className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
+						>
+							{pingLoading ? (
+								<RefreshCcw className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<Zap className="h-3.5 w-3.5" />
+							)}
+							<span>{pingLoading ? "Testing..." : "Test Connection"}</span>
+						</button>
+
+						{pingResult && (
+							<div
+								data-testid="ping-status-badge"
+								className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border ${
+									pingResult.success
+										? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+										: "bg-red-500/10 border-red-500/30 text-red-400"
+								}`}
+							>
+								{pingResult.success ? (
+									<>
+										<Shield className="h-3.5 w-3.5" />
+										<span>Connected ({pingResult.latencyMs} ms)</span>
+									</>
+								) : (
+									<>
+										<AlertCircle className="h-3.5 w-3.5" />
+										<span>{pingResult.error || "Connection Failed"}</span>
+									</>
+								)}
+							</div>
+						)}
 					</div>
 				</SectionCard>
 

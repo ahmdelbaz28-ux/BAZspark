@@ -27,6 +27,8 @@ export interface LLMProviderConfig {
 	/** Stored locally only — never transmitted to backend */
 	apiKeyLocal: string;
 	model: string;
+	/** Optional custom endpoint / proxy URL */
+	baseUrl?: string;
 	/** Sampling temperature: 0.00–0.10 for deterministic engineering outputs */
 	temperature: number;
 }
@@ -92,11 +94,19 @@ const PROVIDER_MODELS: Record<LLMProvider, string> = {
 	ollama: "qwen2.5-coder:7b",
 };
 
+const PROVIDER_BASE_URLS: Record<LLMProvider, string> = {
+	anthropic: "https://api.anthropic.com",
+	gemini: "https://generativelanguage.googleapis.com",
+	openai: "https://api.openai.com/v1",
+	ollama: "http://localhost:11434",
+};
+
 const DEFAULT_SETTINGS: AgentSettingsState = {
 	llm: {
 		provider: "anthropic",
 		apiKeyLocal: "",
 		model: PROVIDER_MODELS.anthropic,
+		baseUrl: PROVIDER_BASE_URLS.anthropic,
 		temperature: 0.0,
 	},
 	governance: {
@@ -174,9 +184,14 @@ export const AgentSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 	const updateLLM = useCallback((patch: Partial<LLMProviderConfig>) => {
 		setSettings((prev) => {
 			const next = { ...prev, llm: { ...prev.llm, ...patch } };
-			// Auto-update model when provider changes
-			if (patch.provider && !patch.model) {
-				next.llm.model = PROVIDER_MODELS[patch.provider];
+			// Auto-update model and baseUrl when provider changes
+			if (patch.provider && patch.provider !== prev.llm.provider) {
+				if (!patch.model) {
+					next.llm.model = PROVIDER_MODELS[patch.provider];
+				}
+				if (!patch.baseUrl) {
+					next.llm.baseUrl = PROVIDER_BASE_URLS[patch.provider];
+				}
 			}
 			return next;
 		});
@@ -261,5 +276,46 @@ export function useAgentSettings(): AgentSettingsContextValue {
 	return ctx;
 }
 
+export interface PingProviderResult {
+	success: boolean;
+	latencyMs: number;
+	error?: string;
+}
+
+export async function pingProvider(config: {
+	provider: LLMProvider;
+	baseUrl?: string;
+	apiKey?: string;
+	modelName?: string;
+}): Promise<PingProviderResult> {
+	try {
+		const res = await fetch("/api/v1/agent/ping-provider", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				provider: config.provider,
+				baseUrl: config.baseUrl,
+				apiKey: config.apiKey,
+				modelName: config.modelName,
+			}),
+		});
+		if (!res.ok) {
+			return {
+				success: false,
+				latencyMs: 0,
+				error: `HTTP ${res.status}: ${res.statusText}`,
+			};
+		}
+		return (await res.json()) as PingProviderResult;
+	} catch (err: unknown) {
+		const msg = err instanceof Error ? err.message : String(err);
+		return {
+			success: false,
+			latencyMs: 0,
+			error: msg,
+		};
+	}
+}
+
 /** Exported for testing — re-hydrate defaults */
-export { DEFAULT_SETTINGS, PROVIDER_MODELS };
+export { DEFAULT_SETTINGS, PROVIDER_MODELS, PROVIDER_BASE_URLS };
