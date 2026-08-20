@@ -17,14 +17,14 @@ from datetime import UTC
 from typing import Literal, cast
 
 from .audit_trail import AuditTrail
-from .nfpa72_coverage import verify_full_coverage
-from .nfpa72_models import NFPAComplianceError, RoomSpec
 from .density_optimizer_v2 import (
     DETECTOR_RADIUS,
     MAX_SPACING_M,
     DensityOptimizer,
     Room,
 )
+from .nfpa72_coverage import verify_full_coverage
+from .nfpa72_models import NFPAComplianceError, RoomSpec
 
 
 # CRITICAL FIX: InvalidInputError was caught but never imported or defined.

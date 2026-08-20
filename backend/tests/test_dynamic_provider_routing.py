@@ -11,9 +11,7 @@ Tests:
 
 from __future__ import annotations
 
-import asyncio
-import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -23,14 +21,11 @@ from backend.app import app
 from backend.core.command_bus import AuthenticatedPrincipal
 from backend.routers.agent_ws import (
     AIOrchestrationService,
-    PingProviderRequest,
-    PingProviderResponse,
 )
 from backend.services.llm_service import (
     ping_provider,
     validate_provider_url,
 )
-
 
 # ---------------------------------------------------------------------------
 # 1. SSRF & URL Validation Tests

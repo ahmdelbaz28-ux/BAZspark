@@ -59,13 +59,17 @@ from __future__ import annotations
 import logging
 import os
 import threading
+import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
+import httpx
 
 from backend.llm_constants import AI_DISCLAIMER
+
+logger = logging.getLogger(__name__)
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 _DEFAULT_BASE_URL = "https://zenmux.ai/api/v1"
@@ -762,13 +766,12 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
     Returns:
         tuple of (is_valid, resolved_url, error_message).
     """
-    from urllib.parse import urlparse
-
     prov = (provider or "").lower().strip()
     if prov == "ollama":
         url = (base_url or "http://localhost:11434").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
+        scheme = parsed.scheme.lower()
+        if scheme not in ("http", "https"):
             return False, url, "Invalid scheme for Ollama provider (must be http or https)"
         host = (parsed.hostname or "").lower()
         if host not in ALLOWED_LOCAL_HOSTS:
@@ -777,22 +780,30 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
                 url,
                 f"SSRF_BLOCKED: Local provider (Ollama) can only target localhost/127.0.0.1, got '{host}'",
             )
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "anthropic":
         url = (base_url or "https://api.anthropic.com").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme != "https":
+        scheme = parsed.scheme.lower()
+        if scheme != "https":
             return False, url, "HTTPS is required for Anthropic provider"
         host = (parsed.hostname or "").lower()
         if not (host == "api.anthropic.com" or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "gemini":
         url = (base_url or "https://generativelanguage.googleapis.com").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme != "https":
+        scheme = parsed.scheme.lower()
+        if scheme != "https":
             return False, url, "HTTPS is required for Google Gemini provider"
         host = (parsed.hostname or "").lower()
         if not (
@@ -801,12 +812,16 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "openai":
         url = (base_url or "https://api.openai.com/v1").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
+        scheme = parsed.scheme.lower()
+        if scheme not in ("http", "https"):
             return False, url, "Invalid scheme for OpenAI provider"
         host = (parsed.hostname or "").lower()
         if not (
@@ -816,7 +831,10 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized OpenAI endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     return False, base_url or "", f"Unsupported provider: '{provider}'"
 
@@ -833,9 +851,6 @@ async def ping_provider(
         tuple of (success, latency_ms, error_message).
     Enforces a strict 5.0-second timeout cap and zero API key leakage in logs.
     """
-    import time
-    import httpx
-
     is_valid, resolved_url, err = validate_provider_url(provider, base_url)
     if not is_valid:
         return False, 0.0, err
@@ -888,7 +903,11 @@ async def ping_provider(
                 headers = {}
                 if api_key:
                     headers["Authorization"] = f"Bearer {api_key}"
-                url = resolved_url if resolved_url.endswith("/models") else f"{resolved_url}/models"
+                base_clean = resolved_url.rstrip("/")
+                if not base_clean.endswith("/models"):
+                    url = f"{base_clean}/models"
+                else:
+                    url = base_clean
                 resp = await client.get(url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
