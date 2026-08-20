@@ -184,5 +184,60 @@ describe("AIControllerContext — Phase 1 Vertical Slice Frontend Suite", () => 
 		expect(result.current.currentRevision).toBe(2);
 		expect(result.current.isAiActive).toBe(false);
 	});
+
+	it("should submit hydraulic intent, calculate Darcy-Weisbach preview, and commit pipe calculation", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		await act(async () => {
+			await result.current.submitHydraulicIntent("proj-frontend-hyd", "pipe-seg-101", {
+				length_m: 25.0,
+				diameter_mm: 65.0,
+				flow_l_min: 400.0,
+				fluid_type: "water",
+				elevation_m: 2.0,
+			});
+		});
+
+		expect(result.current.isAiActive).toBe(true);
+		expect(result.current.proposedCommand).not.toBeNull();
+		expect(result.current.proposedCommand?.capabilityId).toBe("hydraulics.solve_darcy_weisbach");
+		expect(result.current.proposedCommand?.hydraulicPreview).toBeDefined();
+		expect(result.current.proposedCommand?.hydraulicPreview?.pipeSegmentId).toBe("pipe-seg-101");
+		expect(result.current.proposedCommand?.hydraulicPreview?.flowVelocityMS).toBeGreaterThan(0);
+		expect(result.current.proposedCommand?.hydraulicPreview?.headLossM).toBeGreaterThan(0);
+		expect(result.current.proposedCommand?.hydraulicPreview?.isCompliant).toBe(true);
+		expect(result.current.tokenTelemetry?.measured_tokens).toBeLessThanOrEqual(1500);
+
+		let committedPipeId = "";
+		let committedRev = 0;
+		let committedVelocity = 0;
+
+		await act(async () => {
+			const success = await result.current.approveProposal((_devs, rev, _circuit, hydraulic) => {
+				committedRev = rev;
+				committedPipeId = hydraulic?.pipeSegmentId ?? "";
+				committedVelocity = hydraulic?.flowVelocityMS ?? 0;
+			});
+			expect(success).toBe(true);
+		});
+
+		expect(committedRev).toBe(2);
+		expect(committedPipeId).toBe("pipe-seg-101");
+		expect(committedVelocity).toBeGreaterThan(0);
+		expect(result.current.currentRevision).toBe(2);
+		expect(result.current.isAiActive).toBe(false);
+	});
+
+	it("should submit hydraulic intent with default values when spec is omitted", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		await act(async () => {
+			await result.current.submitHydraulicIntent("proj-frontend-hyd-def", "pipe-seg-default");
+		});
+
+		expect(result.current.isAiActive).toBe(true);
+		expect(result.current.proposedCommand?.hydraulicPreview?.pipeSegmentId).toBe("pipe-seg-default");
+		expect(result.current.proposedCommand?.hydraulicPreview?.flowVelocityMS).toBeGreaterThan(0);
+	});
 });
 

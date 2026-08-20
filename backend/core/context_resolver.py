@@ -248,7 +248,12 @@ class ContextResolver:
         diameter_mm = float(spec.get("diameter_mm", 50.0))
         roughness_mm = float(spec.get("roughness_mm", 0.0457)) if spec.get("roughness_mm") is not None else 0.0457
         flow_rate_kg_s = float(spec["flow_rate_kg_s"]) if spec.get("flow_rate_kg_s") is not None else None
-        flow_l_min = float(spec["flow_l_min"]) if spec.get("flow_l_min") is not None else (None if flow_rate_kg_s is not None else 250.0)
+        if spec.get("flow_l_min") is not None:
+            flow_l_min = float(spec["flow_l_min"])
+        elif flow_rate_kg_s is not None:
+            flow_l_min = None
+        else:
+            flow_l_min = 250.0
         fluid_type = str(spec.get("fluid_type", "water")).strip().lower()
         elevation_m = float(spec.get("elevation_m", 0.0))
 

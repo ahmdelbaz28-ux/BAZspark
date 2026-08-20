@@ -67,17 +67,20 @@ class CapabilityRegistry:
         return results
 
     def _register_default_phase1_capabilities(self) -> None:
-        """Register the exact capabilities permitted for Vertical Slice B."""
+        """Register default capabilities across all active engineering domains."""
+        self._register_spatial_capabilities()
+        self._register_compliance_capabilities()
+        self._register_electrical_capabilities()
+        self._register_hydraulic_capabilities()
 
+    def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
             room_id = str(payload.get("room_id", "default_room"))
             width_m = float(payload.get("width_m", 10.0))
             length_m = float(payload.get("length_m", 15.0))
             ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))
             detector_type_str = str(payload.get("detector_type", "smoke")).lower()
-            det_type = DetectorType.SMOKE
-            if "heat" in detector_type_str:
-                det_type = DetectorType.HEAT
+            det_type = DetectorType.HEAT if "heat" in detector_type_str else DetectorType.SMOKE
 
             room_spec = RoomSpec(
                 room_id=room_id,
@@ -92,19 +95,18 @@ class CapabilityRegistry:
             engine = DetectorPlacementEngine()
             result = engine.place_detectors(room_spec)
 
-            placed = []
-            for d in result.detectors:
-                placed.append(
-                    {
-                        "id": d.device_id,
-                        "x_m": round(d.x_m, 3),
-                        "y_m": round(d.y_m, 3),
-                        "z_m": round(d.z_m, 3),
-                        "type": d.device_type.value,
-                        "coverage_radius_m": round(d.radius_m, 3),
-                        "spacing_m": round(d.spacing_used_m, 3),
-                    }
-                )
+            placed = [
+                {
+                    "id": d.device_id,
+                    "x_m": round(d.x_m, 3),
+                    "y_m": round(d.y_m, 3),
+                    "z_m": round(d.z_m, 3),
+                    "type": d.device_type.value,
+                    "coverage_radius_m": round(d.radius_m, 3),
+                    "spacing_m": round(d.spacing_used_m, 3),
+                }
+                for d in result.detectors
+            ]
 
             return {
                 "room_id": room_id,
@@ -117,31 +119,6 @@ class CapabilityRegistry:
                 "computation_hash": result.computation_hash,
             }
 
-        def _verify_detector_spacing_handler(payload: dict[str, Any]) -> dict[str, Any]:
-            _width_m = float(payload.get("width_m", 10.0))  # reserved for future area calc
-            _length_m = float(payload.get("length_m", 15.0))  # reserved for future area calc
-            ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))
-            devices = payload.get("devices", [])
-
-            # Deterministic coverage & spacing verification per NFPA 72
-            # For standard smoke detector at <= 3.0m ceiling, max spacing 9.1m (30ft), radius 6.37m
-            radius = 6.37 if ceiling_height_m <= 3.0 else 6.37 * 0.9  # height derating
-
-            # Check point coverage
-            violations: list[str] = []
-            if not devices:
-                violations.append("Zero devices present in room.")
-
-            return {
-                "verified": len(violations) == 0,
-                "standard": "NFPA 72-2022 §17.7",
-                "max_allowable_spacing_m": 9.1,
-                "max_allowable_radius_m": round(radius, 2),
-                "detector_count": len(devices),
-                "violations": violations,
-            }
-
-        # 1. spatial.place_devices
         self.register(
             CapabilityDefinition(
                 capability_id="spatial.place_devices",
@@ -174,7 +151,28 @@ class CapabilityRegistry:
             )
         )
 
-        # 2. compliance.verify_detector_spacing
+    def _register_compliance_capabilities(self) -> None:
+        def _verify_detector_spacing_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            _width_m = float(payload.get("width_m", 10.0))
+            _length_m = float(payload.get("length_m", 15.0))
+            ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))
+            devices = payload.get("devices", [])
+
+            radius = 6.37 if ceiling_height_m <= 3.0 else 6.37 * 0.9
+
+            violations: list[str] = []
+            if not devices:
+                violations.append("Zero devices present in room.")
+
+            return {
+                "verified": len(violations) == 0,
+                "standard": "NFPA 72-2022 §17.7",
+                "max_allowable_spacing_m": 9.1,
+                "max_allowable_radius_m": round(radius, 2),
+                "detector_count": len(devices),
+                "violations": violations,
+            }
+
         self.register(
             CapabilityDefinition(
                 capability_id="compliance.verify_detector_spacing",
@@ -205,6 +203,7 @@ class CapabilityRegistry:
             )
         )
 
+    def _register_electrical_capabilities(self) -> None:
         def _calculate_voltage_drop_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from fireai.core.voltage_drop import (
                 calculate_voltage_drop,
@@ -255,7 +254,6 @@ class CapabilityRegistry:
                 "violations": violations,
             }
 
-        # 3. electrical.calculate_voltage_drop (Phase 2B Vertical Slice C)
         self.register(
             CapabilityDefinition(
                 capability_id="electrical.calculate_voltage_drop",
@@ -293,6 +291,7 @@ class CapabilityRegistry:
             )
         )
 
+    def _register_hydraulic_capabilities(self) -> None:
         def _solve_darcy_weisbach_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from fireai.core.darcy_weisbach_solver import (
                 FLUID_PROPERTIES,
@@ -385,7 +384,6 @@ class CapabilityRegistry:
                 "nfpa_reference": res.nfpa_reference,
             }
 
-        # 4. hydraulics.solve_darcy_weisbach (Phase 2C Vertical Slice D)
         self.register(
             CapabilityDefinition(
                 capability_id="hydraulics.solve_darcy_weisbach",

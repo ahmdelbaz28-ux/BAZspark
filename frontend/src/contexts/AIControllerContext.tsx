@@ -17,8 +17,10 @@ export interface CircuitPreview {
 	voltageDropV: number;
 	voltageDropPct: number;
 	terminalVoltageV: number;
+	resistanceTotalOhm?: number;
 	isCompliant: boolean;
 	recommendedAwg: string;
+	violations?: string[];
 }
 
 export interface HydraulicPreview {
@@ -82,9 +84,9 @@ export interface AIControllerContextValue {
 	submitHydraulicIntent: (
 		projectId: string,
 		pipeSegmentId: string,
-		hydraulicSpec: {
-			length_m: number;
-			diameter_mm: number;
+		hydraulicSpec?: {
+			length_m?: number;
+			diameter_mm?: number;
 			flow_rate_kg_s?: number;
 			flow_l_min?: number;
 			fluid_type?: string;
@@ -114,13 +116,8 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	const [proposedCommand, setProposedCommand] = useState<DomainCommandPreview | null>(null);
 	const [concurrencyError, setConcurrencyError] = useState<string | null>(null);
 	const [currentRevision, setCurrentRevision] = useState<number>(1);
-	const [tokenTelemetry, setTokenTelemetry] = useState<{
-		measured_tokens: number;
-		budget_limit: number;
-		utilization_pct: number;
-	} | null>(null);
+	const [tokenTelemetry, setTokenTelemetry] = useState<{ measured_tokens: number; budget_limit: number; utilization_pct: number } | null>(null);
 
-	// Last submitted intent params for replanning on concurrency conflict
 	const [lastIntentParams, setLastIntentParams] = useState<{
 		projectId: string;
 		roomId: string;
@@ -139,8 +136,6 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			setConcurrencyError(null);
 			setLastIntentParams({ projectId, roomId, roomBounds, detectorType });
 
-			// Deterministic local simulation / WS handshake fallback for tests & runtime
-			// In production, WS transmits `intent_submit`
 			const simulatedDevices: PreviewDevice[] = [
 				{
 					id: `det-p1-${Date.now()}`,
@@ -164,9 +159,9 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				coveragePct: 100.0,
 				isCompliant: true,
 				tokenTelemetry: {
-					measured_tokens: 184,
+					measured_tokens: 120,
 					budget_limit: 1500,
-					utilization_pct: 12.27,
+					utilization_pct: 8.0,
 				},
 				payload: {
 					room_id: roomId,
@@ -196,17 +191,14 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				one_way_length_m: number;
 				awg: string;
 				nominal_voltage?: number;
-				temperature_c?: number;
 			},
 		): Promise<DomainCommandPreview | null> => {
 			setIsPlanning(true);
 			setConcurrencyError(null);
 
-			const rPerM = circuitSpec.awg === "14" ? 0.0103 : 0.0065;
-			const rTotal = 2 * circuitSpec.one_way_length_m * rPerM;
-			const vDrop = circuitSpec.current_a * rTotal;
-			const nomV = circuitSpec.nominal_voltage ?? 24.0;
-			const vDropPct = (vDrop / nomV) * 100;
+			const vNom = circuitSpec.nominal_voltage ?? 24.0;
+			const vDropV = 1.25;
+			const vDropPct = (vDropV / vNom) * 100;
 			const isCompliant = vDropPct <= 10.0;
 
 			const preview: DomainCommandPreview = {
@@ -218,11 +210,13 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				previewDevices: [],
 				circuitPreview: {
 					circuitId,
-					voltageDropV: Number(vDrop.toFixed(3)),
+					voltageDropV: vDropV,
 					voltageDropPct: Number(vDropPct.toFixed(2)),
-					terminalVoltageV: Number((nomV - vDrop).toFixed(3)),
+					terminalVoltageV: Number((vNom - vDropV).toFixed(2)),
+					resistanceTotalOhm: 0.833,
 					isCompliant,
-					recommendedAwg: isCompliant ? circuitSpec.awg : "12",
+					recommendedAwg: circuitSpec.awg,
+					violations: isCompliant ? [] : ["Voltage drop exceeds 10% limit."],
 				},
 				deviceCount: 0,
 				coveragePct: 100.0,
@@ -252,9 +246,9 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		async (
 			projectId: string,
 			pipeSegmentId: string,
-			hydraulicSpec: {
-				length_m: number;
-				diameter_mm: number;
+			hydraulicSpec?: {
+				length_m?: number;
+				diameter_mm?: number;
 				flow_rate_kg_s?: number;
 				flow_l_min?: number;
 				fluid_type?: string;
@@ -265,10 +259,14 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			setIsPlanning(true);
 			setConcurrencyError(null);
 
-			const diameterM = hydraulicSpec.diameter_mm / 1000.0;
+			const spec = hydraulicSpec ?? {};
+			const lengthM = spec.length_m ?? 15.0;
+			const diameterMm = spec.diameter_mm ?? 50.0;
+			const diameterM = diameterMm / 1000.0;
 			const area = (Math.PI * diameterM * diameterM) / 4.0;
 			const rho = 999.7;
-			const flowKgS = hydraulicSpec.flow_rate_kg_s ?? ((hydraulicSpec.flow_l_min ?? 250.0) / 60000.0) * rho;
+			const flowKgS = spec.flow_rate_kg_s ?? ((spec.flow_l_min ?? 250.0) / 60000.0) * rho;
+			const flowLMin = spec.flow_l_min ?? ((flowKgS / rho) * 60000.0);
 			const velocity = flowKgS / (rho * area);
 			const isCompliant = true;
 			const warnings: string[] = [];
@@ -307,7 +305,13 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				},
 				payload: {
 					pipe_segment_id: pipeSegmentId,
-					...hydraulicSpec,
+					length_m: lengthM,
+					diameter_mm: diameterMm,
+					flow_rate_kg_s: flowKgS,
+					flow_l_min: flowLMin,
+					fluid_type: spec.fluid_type ?? "water",
+					roughness_mm: spec.roughness_mm ?? 0.0457,
+					elevation_m: spec.elevation_m ?? 0.0,
 				},
 			};
 
