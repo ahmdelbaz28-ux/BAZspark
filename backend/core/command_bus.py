@@ -318,12 +318,15 @@ class CommandBus:
             evt_type = "DEVICES_PLACED"
         elif "voltage_drop" in command.capabilityId:
             evt_type = "VOLTAGE_DROP_CALCULATED"
+        elif "solve_darcy_weisbach" in command.capabilityId or "hydraulics" in command.capabilityId:
+            evt_type = "HYDRAULIC_CALCULATION_SOLVED"
         else:
             evt_type = "COMPLIANCE_VERIFIED"
 
         verification_result: dict[str, Any] = {
             "is_compliant": exec_result.get("is_compliant", True),
             "violations": exec_result.get("violations", []),
+            "warnings": exec_result.get("warnings", []),
         }
         if "coverage_pct" in exec_result:
             verification_result["coverage_pct"] = exec_result["coverage_pct"]
@@ -331,6 +334,18 @@ class CommandBus:
             verification_result["voltage_drop_pct"] = exec_result["voltage_drop_pct"]
         if "recommended_awg" in exec_result:
             verification_result["recommended_awg"] = exec_result["recommended_awg"]
+        if "head_loss_m" in exec_result:
+            verification_result["head_loss_m"] = exec_result["head_loss_m"]
+        if "flow_velocity_m_s" in exec_result:
+            verification_result["flow_velocity_m_s"] = exec_result["flow_velocity_m_s"]
+        if "pressure_loss_psi" in exec_result:
+            verification_result["pressure_loss_psi"] = exec_result["pressure_loss_psi"]
+        if "friction_factor" in exec_result:
+            verification_result["friction_factor"] = exec_result["friction_factor"]
+        if "reynolds_number" in exec_result:
+            verification_result["reynolds_number"] = exec_result["reynolds_number"]
+        if "flow_regime" in exec_result:
+            verification_result["flow_regime"] = exec_result["flow_regime"]
 
         event = DomainEvent(
             eventId=f"evt-{uuid.uuid4().hex[:12]}",

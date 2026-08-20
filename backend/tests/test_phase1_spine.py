@@ -385,8 +385,8 @@ class TestCapabilityDiscovery:
         battery_caps = registry.discover(categories=["battery"])
         assert len(battery_caps) == 0
 
-        hydraulics_caps = registry.discover(categories=["hydraulics"])
-        assert len(hydraulics_caps) == 0
+        acoustics_caps = registry.discover(categories=["acoustics"])
+        assert len(acoustics_caps) == 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

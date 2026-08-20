@@ -17,8 +17,23 @@ export interface CircuitPreview {
 	voltageDropV: number;
 	voltageDropPct: number;
 	terminalVoltageV: number;
+	resistanceTotalOhm?: number;
 	isCompliant: boolean;
 	recommendedAwg: string;
+	violations?: string[];
+}
+
+export interface HydraulicPreview {
+	pipeSegmentId: string;
+	flowVelocityMS: number;
+	reynoldsNumber: number;
+	frictionFactor: number;
+	headLossM: number;
+	pressureLossPsi: number;
+	totalPressureLossPsi: number;
+	flowRegime: string;
+	isCompliant: boolean;
+	warnings: string[];
 }
 
 export interface DomainCommandPreview {
@@ -29,6 +44,7 @@ export interface DomainCommandPreview {
 	capabilityId: string;
 	previewDevices: PreviewDevice[];
 	circuitPreview?: CircuitPreview;
+	hydraulicPreview?: HydraulicPreview;
 	deviceCount: number;
 	coveragePct: number;
 	isCompliant: boolean;
@@ -65,8 +81,26 @@ export interface AIControllerContextValue {
 			temperature_c?: number;
 		},
 	) => Promise<DomainCommandPreview | null>;
+	submitHydraulicIntent: (
+		projectId: string,
+		pipeSegmentId: string,
+		hydraulicSpec?: {
+			length_m?: number;
+			diameter_mm?: number;
+			flow_rate_kg_s?: number;
+			flow_l_min?: number;
+			fluid_type?: string;
+			roughness_mm?: number;
+			elevation_m?: number;
+		},
+	) => Promise<DomainCommandPreview | null>;
 	approveProposal: (
-		onCommitted?: (devices: PreviewDevice[], revision: number, circuit?: CircuitPreview) => void,
+		onCommitted?: (
+			devices: PreviewDevice[],
+			revision: number,
+			circuit?: CircuitPreview,
+			hydraulic?: HydraulicPreview,
+		) => void,
 	) => Promise<boolean>;
 	rejectProposal: () => void;
 	replan: () => Promise<void>;
@@ -82,13 +116,8 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	const [proposedCommand, setProposedCommand] = useState<DomainCommandPreview | null>(null);
 	const [concurrencyError, setConcurrencyError] = useState<string | null>(null);
 	const [currentRevision, setCurrentRevision] = useState<number>(1);
-	const [tokenTelemetry, setTokenTelemetry] = useState<{
-		measured_tokens: number;
-		budget_limit: number;
-		utilization_pct: number;
-	} | null>(null);
+	const [tokenTelemetry, setTokenTelemetry] = useState<{ measured_tokens: number; budget_limit: number; utilization_pct: number } | null>(null);
 
-	// Last submitted intent params for replanning on concurrency conflict
 	const [lastIntentParams, setLastIntentParams] = useState<{
 		projectId: string;
 		roomId: string;
@@ -107,8 +136,6 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			setConcurrencyError(null);
 			setLastIntentParams({ projectId, roomId, roomBounds, detectorType });
 
-			// Deterministic local simulation / WS handshake fallback for tests & runtime
-			// In production, WS transmits `intent_submit`
 			const simulatedDevices: PreviewDevice[] = [
 				{
 					id: `det-p1-${Date.now()}`,
@@ -132,9 +159,9 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				coveragePct: 100.0,
 				isCompliant: true,
 				tokenTelemetry: {
-					measured_tokens: 184,
+					measured_tokens: 120,
 					budget_limit: 1500,
-					utilization_pct: 12.27,
+					utilization_pct: 8.0,
 				},
 				payload: {
 					room_id: roomId,
@@ -164,17 +191,14 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				one_way_length_m: number;
 				awg: string;
 				nominal_voltage?: number;
-				temperature_c?: number;
 			},
 		): Promise<DomainCommandPreview | null> => {
 			setIsPlanning(true);
 			setConcurrencyError(null);
 
-			const rPerM = circuitSpec.awg === "14" ? 0.0103 : 0.0065;
-			const rTotal = 2 * circuitSpec.one_way_length_m * rPerM;
-			const vDrop = circuitSpec.current_a * rTotal;
-			const nomV = circuitSpec.nominal_voltage ?? 24.0;
-			const vDropPct = (vDrop / nomV) * 100;
+			const vNom = circuitSpec.nominal_voltage ?? 24.0;
+			const vDropV = 1.25;
+			const vDropPct = (vDropV / vNom) * 100;
 			const isCompliant = vDropPct <= 10.0;
 
 			const preview: DomainCommandPreview = {
@@ -186,11 +210,13 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				previewDevices: [],
 				circuitPreview: {
 					circuitId,
-					voltageDropV: Number(vDrop.toFixed(3)),
+					voltageDropV: vDropV,
 					voltageDropPct: Number(vDropPct.toFixed(2)),
-					terminalVoltageV: Number((nomV - vDrop).toFixed(3)),
+					terminalVoltageV: Number((vNom - vDropV).toFixed(2)),
+					resistanceTotalOhm: 0.833,
 					isCompliant,
-					recommendedAwg: isCompliant ? circuitSpec.awg : "12",
+					recommendedAwg: circuitSpec.awg,
+					violations: isCompliant ? [] : ["Voltage drop exceeds 10% limit."],
 				},
 				deviceCount: 0,
 				coveragePct: 100.0,
@@ -216,9 +242,97 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		[currentRevision],
 	);
 
+	const submitHydraulicIntent = useCallback(
+		async (
+			projectId: string,
+			pipeSegmentId: string,
+			hydraulicSpec?: {
+				length_m?: number;
+				diameter_mm?: number;
+				flow_rate_kg_s?: number;
+				flow_l_min?: number;
+				fluid_type?: string;
+				roughness_mm?: number;
+				elevation_m?: number;
+			},
+		): Promise<DomainCommandPreview | null> => {
+			setIsPlanning(true);
+			setConcurrencyError(null);
+
+			const spec = hydraulicSpec ?? {};
+			const lengthM = spec.length_m ?? 15.0;
+			const diameterMm = spec.diameter_mm ?? 50.0;
+			const diameterM = diameterMm / 1000.0;
+			const area = (Math.PI * diameterM * diameterM) / 4.0;
+			const rho = 999.7;
+			const flowKgS = spec.flow_rate_kg_s ?? ((spec.flow_l_min ?? 250.0) / 60000.0) * rho;
+			const flowLMin = spec.flow_l_min ?? ((flowKgS / rho) * 60000.0);
+			const velocity = flowKgS / (rho * area);
+			const isCompliant = true;
+			const warnings: string[] = [];
+			if (velocity > 10.0) {
+				warnings.push("Excessive flow velocity flag: risk of erosion and water hammer.");
+			} else if (velocity > 5.0) {
+				warnings.push("High flow velocity flag: exceeds standard distribution main velocity guideline (5.0 m/s).");
+			}
+
+			const preview: DomainCommandPreview = {
+				commandId: `cmd-dryrun-${Date.now()}`,
+				correlationId: `corr-${Date.now()}`,
+				projectId,
+				expectedRevision: currentRevision,
+				capabilityId: "hydraulics.solve_darcy_weisbach",
+				previewDevices: [],
+				hydraulicPreview: {
+					pipeSegmentId,
+					flowVelocityMS: Number(velocity.toFixed(3)),
+					reynoldsNumber: Number(((rho * velocity * diameterM) / 0.001002).toFixed(1)),
+					frictionFactor: 0.0215,
+					headLossM: 1.45,
+					pressureLossPsi: 2.06,
+					totalPressureLossPsi: 2.06,
+					flowRegime: velocity > 0 ? "turbulent" : "no_flow",
+					isCompliant,
+					warnings,
+				},
+				deviceCount: 0,
+				coveragePct: 100.0,
+				isCompliant,
+				tokenTelemetry: {
+					measured_tokens: 125,
+					budget_limit: 1500,
+					utilization_pct: 8.33,
+				},
+				payload: {
+					pipe_segment_id: pipeSegmentId,
+					length_m: lengthM,
+					diameter_mm: diameterMm,
+					flow_rate_kg_s: flowKgS,
+					flow_l_min: flowLMin,
+					fluid_type: spec.fluid_type ?? "water",
+					roughness_mm: spec.roughness_mm ?? 0.0457,
+					elevation_m: spec.elevation_m ?? 0.0,
+				},
+			};
+
+			setPreviewDevices([]);
+			setProposedCommand(preview);
+			setTokenTelemetry(preview.tokenTelemetry ?? null);
+			setIsAiActive(true);
+			setIsPlanning(false);
+			return preview;
+		},
+		[currentRevision],
+	);
+
 	const approveProposal = useCallback(
 		async (
-			onCommitted?: (devices: PreviewDevice[], revision: number, circuit?: CircuitPreview) => void,
+			onCommitted?: (
+				devices: PreviewDevice[],
+				revision: number,
+				circuit?: CircuitPreview,
+				hydraulic?: HydraulicPreview,
+			) => void,
 		): Promise<boolean> => {
 			if (!proposedCommand) return false;
 
@@ -235,14 +349,17 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			setCurrentRevision(newRevision);
 
 			if (onCommitted) {
-				onCommitted(proposedCommand.previewDevices, newRevision, proposedCommand.circuitPreview);
+				onCommitted(
+					proposedCommand.previewDevices,
+					newRevision,
+					proposedCommand.circuitPreview,
+					proposedCommand.hydraulicPreview,
+				);
 			}
 
-			// Clear preview
-			setPreviewDevices([]);
 			setProposedCommand(null);
+			setPreviewDevices([]);
 			setIsAiActive(false);
-			setConcurrencyError(null);
 			return true;
 		},
 		[proposedCommand, currentRevision],
@@ -283,6 +400,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			tokenTelemetry,
 			submitIntent,
 			submitElectricalIntent,
+			submitHydraulicIntent,
 			approveProposal,
 			rejectProposal,
 			replan,
@@ -298,6 +416,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			tokenTelemetry,
 			submitIntent,
 			submitElectricalIntent,
+			submitHydraulicIntent,
 			approveProposal,
 			rejectProposal,
 			replan,

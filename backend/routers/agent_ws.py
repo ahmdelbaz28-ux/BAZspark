@@ -38,6 +38,7 @@ agent_locks: dict[str, asyncio.Lock] = {}
 CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
 CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
 CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
+CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
 
 # Track which futures belong to which websocket (for cleanup on disconnect)
 # Maps websocket id -> set of pending command IDs
@@ -382,6 +383,97 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_hydraulic_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process natural language / structured hydraulic intent into bounded preview proposal (Phase 2C)."""
+        project_id = str(msg.get("projectId", "default_project"))
+        current_rev = self.command_bus.get_project_revision(project_id)
+        pipe_segment_id = str(msg.get("pipeSegmentId", "pipe-seg-01"))
+        length_m = float(msg.get("lengthM", 15.0))
+        diameter_mm = float(msg.get("diameterMm", 50.0))
+        flow_rate_kg_s = msg.get("flowRateKgS")
+        flow_l_min = msg.get("flowLMin", 250.0 if flow_rate_kg_s is None else None)
+        fluid_type = str(msg.get("fluidType", "water")).strip().lower()
+        roughness_mm = msg.get("roughnessMm")
+        elevation_m = float(msg.get("elevationM", 0.0))
+
+        context_pkt = self.context_resolver.resolve_hydraulic_context(
+            project_id=project_id,
+            pipe_segment_id=pipe_segment_id,
+            revision=current_rev,
+            hydraulic_spec={
+                "length_m": length_m,
+                "diameter_mm": diameter_mm,
+                "flow_rate_kg_s": flow_rate_kg_s,
+                "flow_l_min": flow_l_min,
+                "fluid_type": fluid_type,
+                "roughness_mm": roughness_mm,
+                "elevation_m": elevation_m,
+            },
+        )
+
+        caps = self.capability_registry.discover(categories=["hydraulics"], scopes=principal.scopes)
+        if not caps:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "NO_CAPABILITY_AVAILABLE",
+                    "message": "No matching hydraulic capabilities available for user scopes.",
+                }
+            )
+            return
+
+        command_id = f"cmd-{uuid.uuid4().hex[:12]}"
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        command = DomainCommand(
+            commandId=command_id,
+            correlationId=correlation_id,
+            capabilityId=CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH,
+            projectId=project_id,
+            expectedRevision=current_rev,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=True,
+            payload={
+                "pipe_segment_id": pipe_segment_id,
+                "length_m": length_m,
+                "diameter_mm": diameter_mm,
+                "flow_rate_kg_s": flow_rate_kg_s,
+                "flow_l_min": flow_l_min,
+                "fluid_type": fluid_type,
+                "roughness_mm": roughness_mm,
+                "elevation_m": elevation_m,
+            },
+        )
+
+        result = self.command_bus.execute(command)
+
+        await websocket.send_json(
+            {
+                "type": "ai_hydraulic_preview",
+                "commandId": command_id,
+                "correlationId": correlation_id,
+                "projectId": project_id,
+                "expectedRevision": current_rev,
+                "capabilityId": CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH,
+                "pipeSegmentId": pipe_segment_id,
+                "flowVelocityMS": result.resultData.get("flow_velocity_m_s", 0.0),
+                "reynoldsNumber": result.resultData.get("reynolds_number", 0.0),
+                "frictionFactor": result.resultData.get("friction_factor", 0.0),
+                "flowRegime": result.resultData.get("flow_regime", "turbulent"),
+                "headLossM": result.resultData.get("head_loss_m", 0.0),
+                "pressureLossPa": result.resultData.get("pressure_loss_pa", 0.0),
+                "pressureLossPsi": result.resultData.get("pressure_loss_psi", 0.0),
+                "totalPressureLossPsi": result.resultData.get("total_pressure_loss_psi", 0.0),
+                "isCompliant": result.resultData.get("is_compliant", True),
+                "warnings": result.resultData.get("warnings", []),
+                "tokenTelemetry": context_pkt.telemetry,
+                "payload": command.payload,
+            }
+        )
+
     async def handle_approval(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
@@ -401,7 +493,7 @@ class AIOrchestrationService:
             expectedRevision=expected_revision,
             timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
-            riskClass="ENGINEERING_MUTATION" if "electrical" in capability_id else "MEDIUM",
+            riskClass="ENGINEERING_MUTATION" if ("electrical" in capability_id or "hydraulics" in capability_id) else "MEDIUM",
             isDryRun=False,
             payload=payload,
         )
@@ -441,6 +533,7 @@ class AIOrchestrationService:
                 "revision": result.revision,
                 "devices": result.resultData.get("devices", []),
                 "circuit": result.resultData if "voltage_drop_v" in result.resultData else None,
+                "hydraulic": result.resultData if "head_loss_m" in result.resultData else None,
                 "event": result.event.to_dict() if result.event else None,
                 "auditReference": result.event.auditReference if result.event else "",
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
@@ -496,6 +589,8 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_intent(websocket, principal, msg)
     elif msg_type in ("ai_electrical_intent", "electrical_intent") and principal:
         await default_orchestration_service.handle_electrical_intent(websocket, principal, msg)
+    elif msg_type in ("ai_hydraulic_intent", "hydraulic_intent") and principal:
+        await default_orchestration_service.handle_hydraulic_intent(websocket, principal, msg)
     elif msg_type in ("ai_approve", "command_approve") and principal:
         await default_orchestration_service.handle_approval(websocket, principal, msg)
     elif msg_type in ("user_mutate", "manual_edit") and principal:
