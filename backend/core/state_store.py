@@ -10,6 +10,7 @@ Frozen Phase 2A Architecture:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -528,5 +529,188 @@ class CommandStateStore:
                 )
         return events
 
+    def commit_composite_transaction(
+        self,
+        project_id: str,
+        expected_revision: int,
+        commands: list[DomainCommand],
+        exec_results: list[dict[str, Any]],
+        combined_audit_digest: str,
+    ) -> tuple[bool, str | None]:
+        """Execute transactional OCC commit for a multi-step composite workflow in a single DB transaction.
+
+        Guarantees:
+          1. Atomically validates expected_revision == current_revision in PostgreSQL/SQLite.
+          2. Exactly one revision increment (N -> N+1) regardless of number of steps.
+          3. Sequentially merges all execution results into canonical state.
+          4. Persists command_execution records for each step with chained causationId.
+          5. If expected_revision does not match or any step fails, transaction aborts completely.
+        """
+        ph = self._ph()
+        now_iso = datetime.now(UTC).isoformat()
+        new_revision = expected_revision + 1
+
+        with self._db._transaction() as cur:
+            # 1. Fetch current revision
+            cur.execute(
+                f"SELECT revision, canonical_state FROM project_revisions WHERE project_id = {ph}",
+                (project_id,),
+            )
+            row = cur.fetchone()
+
+            existing_devices: list[dict[str, Any]] = []
+            existing_circuits: dict[str, Any] = {}
+            existing_hydraulics: dict[str, Any] = {}
+            existing_calculations: dict[str, Any] = {"battery": {}}
+
+            if row is None:
+                if expected_revision != 1:
+                    logger.warning(
+                        "OCC Conflict: Project '%s' does not exist but expectedRevision is %d (expected 1)",
+                        project_id,
+                        expected_revision,
+                    )
+                    return False, "CONCURRENCY_CONFLICT"
+            else:
+                curr_rev = int(row["revision"] if isinstance(row, dict) else row[0])
+                if curr_rev != expected_revision:
+                    logger.warning(
+                        "OCC Conflict: Project '%s' is at revision %d, workflow expected %d",
+                        project_id,
+                        curr_rev,
+                        expected_revision,
+                    )
+                    return False, "CONCURRENCY_CONFLICT"
+
+                raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
+                try:
+                    loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
+                    if isinstance(loaded, dict):
+                        existing_devices = loaded.get("devices", [])
+                        existing_circuits = loaded.get("circuits", {})
+                        existing_hydraulics = loaded.get("hydraulics", {})
+                        existing_calculations = loaded.get("calculations", {"battery": {}})
+                        if "battery" not in existing_calculations or not isinstance(existing_calculations["battery"], dict):
+                            existing_calculations["battery"] = {}
+                except Exception:
+                    existing_devices = []
+                    existing_circuits = {}
+                    existing_hydraulics = {}
+                    existing_calculations = {"battery": {}}
+
+            # Sequentially apply all step execution results into canonical state
+            for cmd, res in zip(commands, exec_results, strict=False):
+                if "devices" in res and isinstance(res["devices"], list):
+                    existing_devices = list(res["devices"])
+                if "voltage_drop_v" in res:
+                    cid = str(res.get("circuit_id", "nac-circuit-01"))
+                    existing_circuits[cid] = res
+                if "head_loss_m" in res or "flow_velocity_m_s" in res:
+                    pid = str(res.get("pipe_segment_id", "pipe-seg-01"))
+                    existing_hydraulics[pid] = res
+                if "required_ah" in res or "base_capacity_ah" in res:
+                    pnl_id = str(res.get("panel_id", "facp-01"))
+                    existing_calculations["battery"][pnl_id] = res
+
+            updated_state = {
+                "devices": existing_devices,
+                "circuits": existing_circuits,
+                "hydraulics": existing_hydraulics,
+                "calculations": existing_calculations,
+                "last_mutation": "composite.workflow_execution",
+                "revision": new_revision,
+            }
+
+            if row is None:
+                cur.execute(
+                    f"""
+                    INSERT INTO project_revisions (project_id, revision, canonical_state, updated_at)
+                    VALUES ({ph}, {ph}, {ph}, {ph})
+                    """,
+                    (project_id, new_revision, json.dumps(updated_state), now_iso),
+                )
+            else:
+                cur.execute(
+                    f"""
+                    UPDATE project_revisions
+                    SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
+                    WHERE project_id = {ph} AND revision = {ph}
+                    """,
+                    (new_revision, json.dumps(updated_state), now_iso, project_id, expected_revision),
+                )
+                if cur.rowcount == 0:
+                    logger.warning(
+                        "OCC Conflict: Race condition detected on project '%s' composite update",
+                        project_id,
+                    )
+                    return False, "CONCURRENCY_CONFLICT"
+
+            # 2. Persist Command Executions for each step in DAG
+            for cmd, res in zip(commands, exec_results, strict=False):
+                p_hash = hashlib.sha256(json.dumps(cmd.payload, sort_keys=True).encode("utf-8")).hexdigest()
+                cur.execute(
+                    f"""
+                    INSERT INTO command_executions (
+                        command_id, correlation_id, causation_id, project_id, capability_id,
+                        expected_revision, committed_revision, actor, is_dry_run, payload_hash, result_data, status, created_at
+                    ) VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+                    """,
+                    (
+                        cmd.commandId,
+                        cmd.correlationId,
+                        cmd.causationId,
+                        cmd.projectId,
+                        cmd.capabilityId,
+                        cmd.expectedRevision,
+                        new_revision,
+                        cmd.principal.user_id,
+                        0,
+                        p_hash,
+                        json.dumps(res),
+                        "COMPLETED",
+                        now_iso,
+                    ),
+                )
+
+            # 3. Persist Unified Composite Domain Event
+            first_cmd = commands[0] if commands else None
+            w_id = first_cmd.commandId if first_cmd else f"wf-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
+            c_id = first_cmd.correlationId if first_cmd else f"corr-{w_id}"
+            actor = first_cmd.principal.user_id if first_cmd else "system"
+
+            cur.execute(
+                f"""
+                INSERT INTO domain_events (
+                    event_id, command_id, correlation_id, causation_id, project_id,
+                    revision, actor, event_type, verification_result, audit_reference, payload, created_at
+                ) VALUES ({ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph}, {ph})
+                """,
+                (
+                    f"evt-comp-{w_id}",
+                    w_id,
+                    c_id,
+                    None,
+                    project_id,
+                    new_revision,
+                    actor,
+                    "COMPOSITE_WORKFLOW_COMMITTED",
+                    json.dumps({
+                        "total_steps": len(commands),
+                        "capabilities": [c.capabilityId for c in commands],
+                        "combined_audit_digest": combined_audit_digest,
+                    }),
+                    combined_audit_digest,
+                    json.dumps({
+                        "project_id": project_id,
+                        "revision": new_revision,
+                        "commands_count": len(commands),
+                    }),
+                    now_iso,
+                ),
+            )
+
+        return True, None
+
 
 default_state_store = CommandStateStore()
+

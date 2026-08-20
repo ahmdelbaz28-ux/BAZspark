@@ -50,6 +50,39 @@ export interface BatteryPreview {
 	warnings: string[];
 }
 
+export interface WorkflowStepResultPreview {
+	nodeId: string;
+	capabilityId: string;
+	commandId: string;
+	success: boolean;
+	resultData: Record<string, unknown>;
+	errorCode?: string;
+	errorMessage?: string;
+}
+
+export interface CompositeWorkflowPreview {
+	workflowId: string;
+	correlationId: string;
+	projectId: string;
+	expectedRevision: number;
+	dag: { nodes: Array<{ node_id: string; capability_id: string; dependencies?: string[]; payload_template?: Record<string, unknown>; description?: string }> };
+	stepResults: WorkflowStepResultPreview[];
+	projectedState: {
+		devices?: PreviewDevice[];
+		circuits?: Record<string, unknown>;
+		hydraulics?: Record<string, unknown>;
+		calculations?: Record<string, unknown>;
+		revision: number;
+	};
+	combinedAuditDigest: string;
+	isCompliant: boolean;
+	tokenTelemetry?: {
+		measured_tokens: number;
+		budget_limit: number;
+		utilization_pct: number;
+	};
+}
+
 export interface DomainCommandPreview {
 	commandId: string;
 	correlationId: string;
@@ -60,6 +93,7 @@ export interface DomainCommandPreview {
 	circuitPreview?: CircuitPreview;
 	hydraulicPreview?: HydraulicPreview;
 	batteryPreview?: BatteryPreview;
+	compositePreview?: CompositeWorkflowPreview;
 	deviceCount: number;
 	coveragePct: number;
 	isCompliant: boolean;
@@ -76,6 +110,7 @@ export interface AIControllerContextValue {
 	isPlanning: boolean;
 	previewDevices: PreviewDevice[];
 	proposedCommand: DomainCommandPreview | null;
+	compositeProposal: CompositeWorkflowPreview | null;
 	concurrencyError: string | null;
 	currentRevision: number;
 	tokenTelemetry: { measured_tokens: number; budget_limit: number; utilization_pct: number } | null;
@@ -124,6 +159,16 @@ export interface AIControllerContextValue {
 			aging_factor?: number;
 		},
 	) => Promise<DomainCommandPreview | null>;
+	submitCompositeIntent: (
+		projectId: string,
+		compositeSpec?: {
+			room_bounds?: { width_m: number; length_m: number; ceiling_height_m: number };
+			circuit?: { circuit_id: string; current_a: number; one_way_length_m: number; awg: string };
+			hydraulic?: { pipe_segment_id: string; length_m: number; diameter_mm: number; flow_l_min: number };
+			battery?: { panel_id: string; standby_load_amps: number; alarm_load_amps: number; installed_ah?: number };
+		},
+		nodes?: Array<{ node_id: string; capability_id: string; dependencies?: string[]; payload_template?: Record<string, unknown>; description?: string }>,
+	) => Promise<DomainCommandPreview | null>;
 	approveProposal: (
 		onCommitted?: (
 			devices: PreviewDevice[],
@@ -131,6 +176,13 @@ export interface AIControllerContextValue {
 			circuit?: CircuitPreview,
 			hydraulic?: HydraulicPreview,
 			battery?: BatteryPreview,
+		) => void,
+	) => Promise<boolean>;
+	approveCompositeProposal: (
+		onCommitted?: (
+			projectedState: Record<string, unknown>,
+			revision: number,
+			stepResults: WorkflowStepResultPreview[],
 		) => void,
 	) => Promise<boolean>;
 	rejectProposal: () => void;
@@ -145,6 +197,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	const [isPlanning, setIsPlanning] = useState<boolean>(false);
 	const [previewDevices, setPreviewDevices] = useState<PreviewDevice[]>([]);
 	const [proposedCommand, setProposedCommand] = useState<DomainCommandPreview | null>(null);
+	const [compositeProposal, setCompositeProposal] = useState<CompositeWorkflowPreview | null>(null);
 	const [concurrencyError, setConcurrencyError] = useState<string | null>(null);
 	const [currentRevision, setCurrentRevision] = useState<number>(1);
 	const [tokenTelemetry, setTokenTelemetry] = useState<{ measured_tokens: number; budget_limit: number; utilization_pct: number } | null>(null);
@@ -454,6 +507,113 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		[currentRevision],
 	);
 
+	const submitCompositeIntent = useCallback(
+		async (
+			projectId: string,
+			compositeSpec?: {
+				room_bounds?: { width_m: number; length_m: number; ceiling_height_m: number };
+				circuit?: { circuit_id: string; current_a: number; one_way_length_m: number; awg: string };
+				hydraulic?: { pipe_segment_id: string; length_m: number; diameter_mm: number; flow_l_min: number };
+				battery?: { panel_id: string; standby_load_amps: number; alarm_load_amps: number; installed_ah?: number };
+			},
+			nodes?: Array<{ node_id: string; capability_id: string; dependencies?: string[]; payload_template?: Record<string, unknown>; description?: string }>,
+		): Promise<DomainCommandPreview | null> => {
+			setIsPlanning(true);
+			setConcurrencyError(null);
+
+			const spec = compositeSpec ?? {};
+			const rb = spec.room_bounds ?? { width_m: 12.0, length_m: 16.0, ceiling_height_m: 3.2 };
+			const circ = spec.circuit ?? { circuit_id: "nac-01", current_a: 2.0, one_way_length_m: 35.0, awg: "14" };
+			const bat = spec.battery ?? { panel_id: "facp-01", standby_load_amps: 0.8, alarm_load_amps: 3.0, installed_ah: 55.0 };
+
+			const workflowDag = {
+				nodes: nodes ?? [
+					{ node_id: "step-1-spatial", capability_id: "spatial.place_devices", dependencies: [], payload_template: rb },
+					{ node_id: "step-2-electrical", capability_id: "electrical.calculate_voltage_drop", dependencies: ["step-1-spatial"], payload_template: circ },
+					{ node_id: "step-3-battery", capability_id: "electrical.calculate_battery", dependencies: ["step-2-electrical"], payload_template: bat },
+				],
+			};
+
+			const simulatedDevices: PreviewDevice[] = [
+				{ id: "dev-comp-01", type: "smoke", x_m: 3.0, y_m: 4.0, z_m: 3.2, coverage_radius_m: 6.4, spacing_m: 9.1 },
+				{ id: "dev-comp-02", type: "smoke", x_m: 9.0, y_m: 4.0, z_m: 3.2, coverage_radius_m: 6.4, spacing_m: 9.1 },
+				{ id: "dev-comp-03", type: "smoke", x_m: 3.0, y_m: 12.0, z_m: 3.2, coverage_radius_m: 6.4, spacing_m: 9.1 },
+				{ id: "dev-comp-04", type: "smoke", x_m: 9.0, y_m: 12.0, z_m: 3.2, coverage_radius_m: 6.4, spacing_m: 9.1 },
+			];
+
+			const stepResults: WorkflowStepResultPreview[] = [
+				{
+					nodeId: "step-1-spatial",
+					capabilityId: "spatial.place_devices",
+					commandId: `cmd-step1-${Date.now()}`,
+					success: true,
+					resultData: { devices: simulatedDevices, device_count: 4, coverage_pct: 100.0, is_compliant: true },
+				},
+				{
+					nodeId: "step-2-electrical",
+					capabilityId: "electrical.calculate_voltage_drop",
+					commandId: `cmd-step2-${Date.now()}`,
+					success: true,
+					resultData: { circuit_id: circ.circuit_id, voltage_drop_v: 0.62, voltage_drop_pct: 2.58, is_compliant: true },
+				},
+				{
+					nodeId: "step-3-battery",
+					capabilityId: "electrical.calculate_battery",
+					commandId: `cmd-step3-${Date.now()}`,
+					success: true,
+					resultData: { panel_id: bat.panel_id, required_ah: 28.5, installed_ah: bat.installed_ah ?? 55.0, is_adequate: true },
+				},
+			];
+
+			const compPreview: CompositeWorkflowPreview = {
+				workflowId: `wf-${Date.now()}`,
+				correlationId: `corr-comp-${Date.now()}`,
+				projectId,
+				expectedRevision: currentRevision,
+				dag: workflowDag,
+				stepResults,
+				projectedState: {
+					devices: simulatedDevices,
+					circuits: { [circ.circuit_id]: stepResults[1].resultData },
+					hydraulics: {},
+					calculations: { battery: { [bat.panel_id]: stepResults[2].resultData } },
+					revision: currentRevision,
+				},
+				combinedAuditDigest: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				isCompliant: true,
+				tokenTelemetry: {
+					measured_tokens: 185,
+					budget_limit: 1500,
+					utilization_pct: 12.33,
+				},
+			};
+
+			const preview: DomainCommandPreview = {
+				commandId: compPreview.workflowId,
+				correlationId: compPreview.correlationId,
+				projectId,
+				expectedRevision: currentRevision,
+				capabilityId: "composite.workflow_execution",
+				previewDevices: simulatedDevices,
+				compositePreview: compPreview,
+				deviceCount: simulatedDevices.length,
+				coveragePct: 100.0,
+				isCompliant: true,
+				tokenTelemetry: compPreview.tokenTelemetry,
+				payload: { composite_spec: spec, dag: workflowDag },
+			};
+
+			setPreviewDevices(simulatedDevices);
+			setProposedCommand(preview);
+			setCompositeProposal(compPreview);
+			setTokenTelemetry(compPreview.tokenTelemetry ?? null);
+			setIsAiActive(true);
+			setIsPlanning(false);
+			return preview;
+		},
+		[currentRevision],
+	);
+
 	const approveProposal = useCallback(
 		async (
 			onCommitted?: (
@@ -489,6 +649,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			}
 
 			setProposedCommand(null);
+			setCompositeProposal(null);
 			setPreviewDevices([]);
 			setIsAiActive(false);
 			return true;
@@ -496,9 +657,47 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		[proposedCommand, currentRevision],
 	);
 
+	const approveCompositeProposal = useCallback(
+		async (
+			onCommitted?: (
+				projectedState: Record<string, unknown>,
+				revision: number,
+				stepResults: WorkflowStepResultPreview[],
+			) => void,
+		): Promise<boolean> => {
+			if (!compositeProposal) return false;
+
+			if (compositeProposal.expectedRevision !== currentRevision) {
+				setConcurrencyError(
+					`CONCURRENCY_CONFLICT: AI proposal expected revision ${compositeProposal.expectedRevision}, but project is at revision ${currentRevision}.`,
+				);
+				return false;
+			}
+
+			const newRevision = currentRevision + 1;
+			setCurrentRevision(newRevision);
+
+			if (onCommitted) {
+				onCommitted(
+					compositeProposal.projectedState,
+					newRevision,
+					compositeProposal.stepResults,
+				);
+			}
+
+			setCompositeProposal(null);
+			setProposedCommand(null);
+			setPreviewDevices([]);
+			setIsAiActive(false);
+			return true;
+		},
+		[compositeProposal, currentRevision],
+	);
+
 	const rejectProposal = useCallback(() => {
 		setPreviewDevices([]);
 		setProposedCommand(null);
+		setCompositeProposal(null);
 		setIsAiActive(false);
 		setConcurrencyError(null);
 	}, []);
@@ -526,6 +725,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			isPlanning,
 			previewDevices,
 			proposedCommand,
+			compositeProposal,
 			concurrencyError,
 			currentRevision,
 			tokenTelemetry,
@@ -533,7 +733,9 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			submitElectricalIntent,
 			submitHydraulicIntent,
 			submitBatteryIntent,
+			submitCompositeIntent,
 			approveProposal,
+			approveCompositeProposal,
 			rejectProposal,
 			replan,
 			simulateUserEdit,
@@ -543,6 +745,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			isPlanning,
 			previewDevices,
 			proposedCommand,
+			compositeProposal,
 			concurrencyError,
 			currentRevision,
 			tokenTelemetry,
@@ -550,7 +753,9 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			submitElectricalIntent,
 			submitHydraulicIntent,
 			submitBatteryIntent,
+			submitCompositeIntent,
 			approveProposal,
+			approveCompositeProposal,
 			rejectProposal,
 			replan,
 			simulateUserEdit,

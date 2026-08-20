@@ -291,5 +291,63 @@ describe("AIControllerContext — Phase 1 Vertical Slice Frontend Suite", () => 
 		expect(result.current.proposedCommand?.batteryPreview?.warnings.length).toBeGreaterThan(0);
 		expect(result.current.proposedCommand?.batteryPreview?.warnings[0]).toContain("LiFePO4");
 	});
+
+	it("should submit composite intent, render multi-domain previews, and atomically approve", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		await act(async () => {
+			await result.current.submitCompositeIntent("proj-frontend-comp-01", {
+				room_bounds: { width_m: 12.0, length_m: 16.0, ceiling_height_m: 3.2 },
+				circuit: { circuit_id: "nac-comp-01", current_a: 2.0, one_way_length_m: 35.0, awg: "14" },
+				battery: { panel_id: "facp-comp-01", standby_load_amps: 0.8, alarm_load_amps: 3.0, installed_ah: 55.0 },
+			});
+		});
+
+		expect(result.current.isAiActive).toBe(true);
+		expect(result.current.compositeProposal).not.toBeNull();
+		expect(result.current.compositeProposal?.stepResults).toHaveLength(3);
+		expect(result.current.compositeProposal?.isCompliant).toBe(true);
+		expect(result.current.compositeProposal?.tokenTelemetry?.measured_tokens).toBeLessThanOrEqual(1500);
+
+		let committedRev = 0;
+		let committedStepCount = 0;
+
+		await act(async () => {
+			const success = await result.current.approveCompositeProposal((_projState, rev, stepResults) => {
+				committedRev = rev;
+				committedStepCount = stepResults.length;
+			});
+			expect(success).toBe(true);
+		});
+
+		expect(committedRev).toBe(2);
+		expect(committedStepCount).toBe(3);
+		expect(result.current.currentRevision).toBe(2);
+		expect(result.current.compositeProposal).toBeNull();
+		expect(result.current.isAiActive).toBe(false);
+	});
+
+	it("should block composite approval on OCC collision", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		// 1. Submit composite intent at rev 1
+		await act(async () => {
+			await result.current.submitCompositeIntent("proj-frontend-comp-occ", {});
+		});
+
+		// 2. Concurrently user modifies state -> revision becomes 2
+		act(() => {
+			result.current.simulateUserEdit("proj-frontend-comp-occ");
+		});
+		expect(result.current.currentRevision).toBe(2);
+
+		// 3. Approving composite proposal with expectedRevision=1 must fail
+		await act(async () => {
+			const success = await result.current.approveCompositeProposal();
+			expect(success).toBe(false);
+		});
+
+		expect(result.current.concurrencyError).toContain("CONCURRENCY_CONFLICT");
+	});
 });
 

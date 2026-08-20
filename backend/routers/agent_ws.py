@@ -19,6 +19,11 @@ from backend.core.command_bus import (
     default_command_bus,
 )
 from backend.core.context_resolver import default_context_resolver
+from backend.core.workflow_engine import (
+    CompositeWorkflowDAG,
+    WorkflowExecutor,
+    WorkflowNode,
+)
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -671,6 +676,185 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_composite_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process multi-domain composite workflow intent: plan DAG, dry-run with overlays, and return unified preview."""
+        project_id = str(msg.get("projectId", "default_project"))
+        current_rev = self.command_bus.get_project_revision(project_id)
+        composite_spec = msg.get("compositeSpec", {})
+        nodes_data = msg.get("nodes")
+
+        # 1. Bounded Context Resolution (<= 1500 tokens)
+        context_pkt = self.context_resolver.resolve_composite_context(
+            project_id=project_id,
+            revision=current_rev,
+            composite_spec=composite_spec,
+        )
+
+        # 2. Construct or extract DAG
+        if nodes_data and isinstance(nodes_data, list):
+            nodes = [WorkflowNode.from_dict(n) for n in nodes_data]
+            dag = CompositeWorkflowDAG(nodes=nodes)
+        else:
+            rb = composite_spec.get("room_bounds", {"width_m": 12.0, "length_m": 16.0, "ceiling_height_m": 3.2})
+            circ = composite_spec.get("circuit", {"circuit_id": "nac-01", "current_a": 2.0, "one_way_length_m": 35.0, "awg": "14"})
+            bat = composite_spec.get("battery", {"panel_id": "facp-01", "standby_load_amps": 0.8, "alarm_load_amps": 3.0, "installed_ah": 55.0})
+
+            dag = CompositeWorkflowDAG([
+                WorkflowNode(
+                    node_id="step-1-spatial",
+                    capability_id=CAP_SPATIAL_PLACE_DEVICES,
+                    dependencies=[],
+                    payload_template={
+                        "room_id": "main-hall",
+                        "width_m": rb.get("width_m", 12.0),
+                        "length_m": rb.get("length_m", 16.0),
+                        "ceiling_height_m": rb.get("ceiling_height_m", 3.2),
+                    },
+                    description="Place initiating devices per NFPA 72 §17",
+                ),
+                WorkflowNode(
+                    node_id="step-2-electrical",
+                    capability_id=CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
+                    dependencies=["step-1-spatial"],
+                    payload_template={
+                        "circuit_id": circ.get("circuit_id", "nac-01"),
+                        "current_a": circ.get("current_a", 2.0),
+                        "one_way_length_m": circ.get("one_way_length_m", 35.0),
+                        "awg": circ.get("awg", "14"),
+                    },
+                    description="Calculate NAC circuit voltage drop",
+                ),
+                WorkflowNode(
+                    node_id="step-3-battery",
+                    capability_id=CAP_ELECTRICAL_CALCULATE_BATTERY,
+                    dependencies=["step-2-electrical"],
+                    payload_template={
+                        "panel_id": bat.get("panel_id", "facp-01"),
+                        "standby_load_amps": bat.get("standby_load_amps", 0.8),
+                        "alarm_load_amps": bat.get("alarm_load_amps", 3.0),
+                        "installed_ah": bat.get("installed_ah", 55.0),
+                    },
+                    description="Size secondary battery power supply",
+                ),
+            ])
+
+        workflow_id = f"wf-{uuid.uuid4().hex[:12]}"
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+
+        # 3. Dry-run pipeline execution over EphemeralStateOverlay
+        executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
+        res = executor.execute(
+            dag=dag,
+            project_id=project_id,
+            expected_revision=current_rev,
+            principal=principal,
+            is_dry_run=True,
+            workflow_id=workflow_id,
+            correlation_id=correlation_id,
+        )
+
+        if not res.success:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "workflowId": workflow_id,
+                    "errorCode": res.error_code or "WORKFLOW_EXECUTION_FAILED",
+                    "message": res.error_message or "Composite workflow dry-run failed.",
+                }
+            )
+            return
+
+        # 4. Send composite preview to client
+        await websocket.send_json(
+            {
+                "type": "ai_composite_preview",
+                "workflowId": workflow_id,
+                "correlationId": correlation_id,
+                "projectId": project_id,
+                "expectedRevision": current_rev,
+                "dag": dag.to_dict(),
+                "stepResults": [s.to_dict() for s in res.step_results],
+                "projectedState": res.projected_state,
+                "combinedAuditDigest": res.combined_audit_digest,
+                "tokenTelemetry": context_pkt.telemetry,
+                "isCompliant": True,
+            }
+        )
+
+    async def handle_composite_approval(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process user approval for composite workflow: atomically commit all steps at expectedRevision."""
+        project_id = str(msg.get("projectId", "default_project"))
+        expected_revision = int(msg.get("expectedRevision", 1))
+        workflow_id = str(msg.get("workflowId", f"wf-{uuid.uuid4().hex[:12]}"))
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        dag_data = msg.get("dag", {})
+
+        if not dag_data or "nodes" not in dag_data:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "workflowId": workflow_id,
+                    "errorCode": "INVALID_WORKFLOW_PAYLOAD",
+                    "message": "Approval message missing DAG structure.",
+                }
+            )
+            return
+
+        dag = CompositeWorkflowDAG.from_dict(dag_data)
+        executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
+
+        res = executor.execute(
+            dag=dag,
+            project_id=project_id,
+            expected_revision=expected_revision,
+            principal=principal,
+            is_dry_run=False,
+            workflow_id=workflow_id,
+            correlation_id=correlation_id,
+        )
+
+        if not res.success:
+            if res.error_code == "CONCURRENCY_CONFLICT":
+                await websocket.send_json(
+                    {
+                        "type": "ai_conflict",
+                        "workflowId": workflow_id,
+                        "projectId": project_id,
+                        "expectedRevision": expected_revision,
+                        "currentRevision": res.new_revision,
+                        "errorCode": res.error_code,
+                        "message": res.error_message,
+                    }
+                )
+            else:
+                await websocket.send_json(
+                    {
+                        "type": "ai_error",
+                        "workflowId": workflow_id,
+                        "errorCode": res.error_code or "COMPOSITE_COMMIT_FAILED",
+                        "message": res.error_message or "Composite workflow commit failed.",
+                    }
+                )
+            return
+
+        # Success: emit composite committed state & audit event
+        await websocket.send_json(
+            {
+                "type": "ai_composite_committed",
+                "workflowId": workflow_id,
+                "projectId": project_id,
+                "revision": res.new_revision,
+                "projectedState": res.projected_state,
+                "stepResults": [s.to_dict() for s in res.step_results],
+                "combinedAuditDigest": res.combined_audit_digest,
+                "event": res.event.to_dict() if res.event else None,
+            }
+        )
+
 
 default_orchestration_service = AIOrchestrationService()
 
@@ -695,6 +879,10 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_battery_intent(websocket, principal, msg)
     elif msg_type in ("ai_hydraulic_intent", "hydraulic_intent") and principal:
         await default_orchestration_service.handle_hydraulic_intent(websocket, principal, msg)
+    elif msg_type in ("ai_composite_intent", "composite_intent") and principal:
+        await default_orchestration_service.handle_composite_intent(websocket, principal, msg)
+    elif msg_type in ("ai_approve_composite", "approve_composite") and principal:
+        await default_orchestration_service.handle_composite_approval(websocket, principal, msg)
     elif msg_type in ("ai_approve", "command_approve") and principal:
         await default_orchestration_service.handle_approval(websocket, principal, msg)
     elif msg_type in ("user_mutate", "manual_edit") and principal:

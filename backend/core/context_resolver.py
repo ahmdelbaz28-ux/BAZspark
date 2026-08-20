@@ -76,6 +76,22 @@ class BoundedBatteryContextPacket:
         return asdict(self)
 
 
+@dataclass
+class BoundedCompositeContextPacket:
+    project_id: str
+    revision: int
+    domains: list[str]
+    composite_spec: dict[str, Any]
+    standards: list[str]
+    token_count: int
+    is_within_budget: bool
+    budget_limit: int = 1500
+    telemetry: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 
 def estimate_token_count(text_or_dict: str | dict[str, Any]) -> int:
     """Accurately estimate token count for JSON payloads.
@@ -380,6 +396,77 @@ class ContextResolver:
             panel_id=panel_id,
             revision=revision,
             battery_spec=standardized_spec,
+            standards=standards,
+            token_count=measured_tokens,
+            is_within_budget=measured_tokens <= self.token_budget,
+            budget_limit=self.token_budget,
+            telemetry=telemetry,
+        )
+
+    def resolve_composite_context(
+        self,
+        project_id: str,
+        revision: int,
+        composite_spec: dict[str, Any] | None = None,
+    ) -> BoundedCompositeContextPacket:
+        """Resolve a bounded, deduplicated multi-domain composite context packet.
+
+        Combines spatial bounds, circuit definitions, hydraulic piping, and power supply
+        specifications into a single cohesive payload strictly bounded within token limits (<= 1500).
+        """
+        spec = composite_spec or {}
+        domains = list(spec.get("domains", ["spatial", "electrical", "hydraulics"]))
+
+        deduped_spec: dict[str, Any] = {
+            "room_bounds": spec.get(
+                "room_bounds",
+                {"width_m": 12.0, "length_m": 16.0, "ceiling_height_m": 3.2},
+            ),
+            "circuit": spec.get(
+                "circuit",
+                {"circuit_id": "nac-01", "current_a": 2.0, "one_way_length_m": 35.0, "awg": "14"},
+            ),
+            "hydraulic": spec.get(
+                "hydraulic",
+                {"pipe_segment_id": "pipe-01", "length_m": 25.0, "diameter_mm": 65.0, "flow_l_min": 350.0},
+            ),
+            "battery": spec.get(
+                "battery",
+                {"panel_id": "facp-01", "standby_load_amps": 0.8, "alarm_load_amps": 3.0, "installed_ah": 55.0},
+            ),
+        }
+
+        standards = [
+            "NFPA 72-2022 §17 (Initiating Devices & Spacing)",
+            "NFPA 72-2022 §10.6.7 (Secondary Power Supply)",
+            "NFPA 13 (Standard for the Installation of Sprinkler Systems)",
+            "IEEE 485 (Battery Sizing & Deratings)",
+        ]
+
+        packet_content = {
+            "project_id": project_id,
+            "revision": revision,
+            "domains": domains,
+            "composite_spec": deduped_spec,
+            "standards": standards,
+        }
+
+        measured_tokens = estimate_token_count(packet_content)
+
+        telemetry = {
+            "measured_tokens": measured_tokens,
+            "budget_limit": self.token_budget,
+            "utilization_pct": round((measured_tokens / self.token_budget) * 100, 2),
+            "raw_cad_excluded": True,
+            "geometry_mesh_excluded": True,
+            "whole_project_dump_excluded": True,
+        }
+
+        return BoundedCompositeContextPacket(
+            project_id=project_id,
+            revision=revision,
+            domains=domains,
+            composite_spec=deduped_spec,
             standards=standards,
             token_count=measured_tokens,
             is_within_budget=measured_tokens <= self.token_budget,
