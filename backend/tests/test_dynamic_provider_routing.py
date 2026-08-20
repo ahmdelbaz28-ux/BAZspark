@@ -25,6 +25,9 @@ from backend.routers.agent_ws import (
     AIOrchestrationService,
 )
 from backend.services.llm_service import (
+    _get_transient_errors,
+    close_llm_service,
+    get_llm_service,
     ping_provider,
     validate_provider_url,
 )
@@ -386,3 +389,113 @@ class TestWebSocketDynamicRoutingAndTelemetry:
         }
         await orchestrator.handle_composite_approval(cast(WebSocket, ws), engineer_principal, msg)
         assert any(m.get("type") == "ai_progress_frame" for m in sent_messages)
+
+    @pytest.mark.asyncio
+    async def test_handle_room_intent(self, engineer_principal):
+        orchestrator = AIOrchestrationService()
+        sent = []
+
+        class MockWebSocket:
+            async def send_json(self, data: dict):
+                sent.append(data)
+
+        ws = MockWebSocket()
+        msg = {
+            "type": "room_intent",
+            "projectId": "proj-room-01",
+            "roomId": "hallway-01",
+            "roomBounds": {"width_m": 6.0, "length_m": 12.0, "ceiling_height_m": 3.0},
+            "detectorType": "smoke",
+            "providerConfig": {"provider": "ollama", "modelName": "qwen2.5-coder:7b"},
+        }
+        await orchestrator.handle_intent(cast(WebSocket, ws), engineer_principal, msg)
+        assert len(sent) == 1
+        assert sent[0].get("type") == "ai_preview"
+        assert sent[0].get("deviceCount", 0) > 0
+
+    @pytest.mark.asyncio
+    async def test_handle_electrical_intent(self, engineer_principal):
+        orchestrator = AIOrchestrationService()
+        sent = []
+
+        class MockWebSocket:
+            async def send_json(self, data: dict):
+                sent.append(data)
+
+        ws = MockWebSocket()
+        msg = {
+            "type": "electrical_intent",
+            "projectId": "proj-elec-01",
+            "circuitId": "nac-01",
+            "current_a": 1.2,
+            "one_way_length_m": 25.0,
+            "awg": "14",
+            "providerConfig": {"provider": "ollama", "modelName": "qwen2.5-coder:7b"},
+        }
+        await orchestrator.handle_electrical_intent(cast(WebSocket, ws), engineer_principal, msg)
+        assert len(sent) == 1
+        assert sent[0].get("type") == "ai_electrical_preview"
+        assert "voltageDropV" in sent[0]
+
+    @pytest.mark.asyncio
+    async def test_handle_hydraulic_intent(self, engineer_principal):
+        orchestrator = AIOrchestrationService()
+        sent = []
+
+        class MockWebSocket:
+            async def send_json(self, data: dict):
+                sent.append(data)
+
+        ws = MockWebSocket()
+        msg = {
+            "type": "hydraulic_intent",
+            "projectId": "proj-hyd-01",
+            "pipeSegmentId": "pipe-01",
+            "lengthM": 20.0,
+            "diameterMm": 65.0,
+            "flowLMin": 300.0,
+            "fluidType": "water",
+            "providerConfig": {"provider": "ollama", "modelName": "qwen2.5-coder:7b"},
+        }
+        await orchestrator.handle_hydraulic_intent(cast(WebSocket, ws), engineer_principal, msg)
+        assert len(sent) == 1
+        assert sent[0].get("type") == "ai_hydraulic_preview"
+        assert "frictionFactor" in sent[0]
+
+    @pytest.mark.asyncio
+    async def test_handle_battery_intent(self, engineer_principal):
+        orchestrator = AIOrchestrationService()
+        sent = []
+
+        class MockWebSocket:
+            async def send_json(self, data: dict):
+                sent.append(data)
+
+        ws = MockWebSocket()
+        msg = {
+            "type": "battery_intent",
+            "projectId": "proj-bat-01",
+            "panelId": "facp-01",
+            "batterySpec": {
+                "standby_load_amps": 0.5,
+                "alarm_load_amps": 2.0,
+                "standby_hours": 24.0,
+                "alarm_hours": 0.0833,
+                "installed_ah": 50.0,
+            },
+            "providerConfig": {"provider": "ollama", "modelName": "qwen2.5-coder:7b"},
+        }
+        await orchestrator.handle_battery_intent(cast(WebSocket, ws), engineer_principal, msg)
+        assert len(sent) == 1
+        assert sent[0].get("type") == "ai_battery_preview"
+        assert "requiredAh" in sent[0]
+
+    @pytest.mark.asyncio
+    async def test_llm_service_singleton_lifecycle(self):
+        svc1 = get_llm_service()
+        svc2 = get_llm_service()
+        assert svc1 is svc2
+        await close_llm_service()
+        # Verify transient errors helper
+        exc_types = _get_transient_errors()
+        assert len(exc_types) >= 2
