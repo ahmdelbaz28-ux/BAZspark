@@ -861,24 +861,39 @@ async def ping_provider(
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
+            parsed = urlparse(resolved_url)
+            host = (parsed.hostname or "").lower()
+            scheme = parsed.scheme.lower()
+            port_str = f":{parsed.port}" if parsed.port else ""
+
             if prov == "ollama":
-                # Probe Ollama tags or version
-                resp = await client.get(f"{resolved_url}/api/tags")
+                if host not in ALLOWED_LOCAL_HOSTS or scheme not in ("http", "https"):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Ollama host '{host}'"
+                safe_url = f"{scheme}://{host}{port_str}/api/tags"
+                resp = await client.get(safe_url)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code == 200:
                     return True, latency_ms, None
                 # Fallback to version
-                resp_ver = await client.get(f"{resolved_url}/api/version")
+                safe_ver_url = f"{scheme}://{host}{port_str}/api/version"
+                resp_ver = await client.get(safe_ver_url)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp_ver.status_code == 200:
                     return True, latency_ms, None
                 return False, latency_ms, f"Ollama returned HTTP {resp.status_code}"
 
             if prov == "anthropic":
+                if scheme != "https" or not (
+                    host == "api.anthropic.com"
+                    or host.endswith(".anthropic.com")
+                    or host in ALLOWED_LOCAL_HOSTS
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Anthropic host '{host}'"
                 headers = {"anthropic-version": "2023-06-01"}
                 if api_key:
                     headers["x-api-key"] = api_key
-                resp = await client.get(f"{resolved_url}/v1/models", headers=headers)
+                safe_url = f"{scheme}://{host}{port_str}/v1/models"
+                resp = await client.get(safe_url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:
@@ -887,11 +902,18 @@ async def ping_provider(
                 return False, latency_ms, f"Anthropic returned HTTP {resp.status_code}"
 
             if prov == "gemini":
+                if scheme != "https" or not (
+                    host == "generativelanguage.googleapis.com"
+                    or host.endswith(".googleapis.com")
+                    or host in ALLOWED_LOCAL_HOSTS
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Gemini host '{host}'"
                 headers = {}
                 params = {}
                 if api_key:
                     params["key"] = api_key
-                resp = await client.get(f"{resolved_url}/v1beta/models", headers=headers, params=params)
+                safe_url = f"{scheme}://{host}{port_str}/v1beta/models"
+                resp = await client.get(safe_url, headers=headers, params=params)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code in (400, 401, 403) and api_key:
@@ -900,15 +922,20 @@ async def ping_provider(
                 return False, latency_ms, f"Gemini returned HTTP {resp.status_code}"
 
             if prov == "openai":
+                if scheme not in ("http", "https") or not (
+                    host in ALLOWED_CLOUD_HOSTS
+                    or host in ALLOWED_LOCAL_HOSTS
+                    or host.endswith(".openai.com")
+                    or host.endswith(".zenmux.ai")
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized OpenAI host '{host}'"
                 headers = {}
                 if api_key:
                     headers["Authorization"] = f"Bearer {api_key}"
-                base_clean = resolved_url.rstrip("/")
-                if not base_clean.endswith("/models"):
-                    url = f"{base_clean}/models"
-                else:
-                    url = base_clean
-                resp = await client.get(url, headers=headers)
+                base_path = parsed.path.rstrip("/")
+                target_path = base_path if base_path.endswith("/models") else f"{base_path}/models"
+                safe_url = f"{scheme}://{host}{port_str}{target_path}"
+                resp = await client.get(safe_url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:

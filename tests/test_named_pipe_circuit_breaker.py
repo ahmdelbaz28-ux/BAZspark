@@ -15,8 +15,6 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from fireai.mcp_server.named_pipe_client import (
     CircuitState,
     NamedPipeCircuitBreaker,
@@ -116,3 +114,36 @@ class TestRevitNamedPipeClientCircuitBreaker:
         assert stats["circuit_breaker_state"] == "CLOSED"
         assert stats["consecutive_failures"] == 0
         assert stats["circuit_breaker_enabled"] is True
+
+    def test_parse_pipe_response_empty(self):
+        client = RevitNamedPipeClient()
+        res = client._parse_pipe_response("")
+        assert res["status"] == "error"
+        assert res["error_code"] == "EMPTY_RESPONSE"
+
+    def test_parse_pipe_response_invalid_json(self):
+        client = RevitNamedPipeClient()
+        res = client._parse_pipe_response("invalid json string")
+        assert res["status"] == "error"
+        assert res["error_code"] == "INVALID_JSON_RESPONSE"
+
+    def test_parse_pipe_response_valid_json(self):
+        client = RevitNamedPipeClient()
+        res = client._parse_pipe_response('{"status": "queued", "pending_count": 1}')
+        assert res["status"] == "queued"
+        assert res["pending_count"] == 1
+
+    def test_read_pipe_response_with_mock_handle(self):
+        client = RevitNamedPipeClient()
+        mock_win32file = MagicMock()
+        mock_win32file.ReadFile.side_effect = [(0, b'{"status":"ok"}\n')]
+        data = client._read_pipe_response(mock_win32file, MagicMock())
+        assert b'{"status":"ok"}\n' in data
+
+    def test_convenience_methods(self):
+        client = RevitNamedPipeClient()
+        with patch.object(client, "send_command") as mock_send:
+            mock_send.return_value = {"status": "queued"}
+            assert client.send_set_parameter("123", "dia", 25.0)["status"] == "queued"
+            assert client.send_set_string_parameter("123", "comments", "test")["status"] == "queued"
+            assert client.send_create_wall([0, 0, 0], [10, 0, 0])["status"] == "queued"
