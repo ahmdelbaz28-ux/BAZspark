@@ -338,14 +338,14 @@ jobs:
           pip install --only-binary :all: -e ".[dev]"
           pip install --only-binary :all: psycopg2-binary pytest==8.3.4 pytest-asyncio==0.25.2 pytest-timeout==2.3.1
 
-      - name: Run Phase 2A, Phase 2B, and Phase 2C Persistence Suites on Real PostgreSQL
+      - name: Run Phase 2A, Phase 2B, Phase 2C, and Phase 2D Persistence Suites on Real PostgreSQL
         env:
           DATABASE_URL: "postgresql://fireai_test_user:fireai_test_password@localhost:5432/fireai_test_db"
           FIREAI_SESSION_SECRET: "ci-postgres-session-secret-at-least-32-chars-long"
           FIREAI_ENV: "test"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
         run: |
-          python -m pytest backend/tests/test_phase2a_persistence.py backend/tests/test_phase2b_electrical_spine.py backend/tests/test_phase2c_hydraulics_spine.py -v --tb=short --no-cov -p no:cacheprovider
+          python -m pytest backend/tests/test_phase2a_persistence.py backend/tests/test_phase2b_electrical_spine.py backend/tests/test_phase2c_hydraulics_spine.py backend/tests/test_phase2d_battery_spine.py -v --tb=short --no-cov -p no:cacheprovider
 
   # ── Gate 4: Frontend Build ────────────────────────────────────────────────
   frontend-build:

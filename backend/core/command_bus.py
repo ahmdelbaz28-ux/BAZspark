@@ -318,6 +318,8 @@ class CommandBus:
             evt_type = "DEVICES_PLACED"
         elif "voltage_drop" in command.capabilityId:
             evt_type = "VOLTAGE_DROP_CALCULATED"
+        elif "calculate_battery" in command.capabilityId or "battery" in command.capabilityId:
+            evt_type = "BATTERY_CALCULATION_SOLVED"
         elif "solve_darcy_weisbach" in command.capabilityId or "hydraulics" in command.capabilityId:
             evt_type = "HYDRAULIC_CALCULATION_SOLVED"
         else:
@@ -346,6 +348,24 @@ class CommandBus:
             verification_result["reynolds_number"] = exec_result["reynolds_number"]
         if "flow_regime" in exec_result:
             verification_result["flow_regime"] = exec_result["flow_regime"]
+        if "required_ah" in exec_result:
+            verification_result["required_ah"] = exec_result["required_ah"]
+        if "base_capacity_ah" in exec_result:
+            verification_result["base_capacity_ah"] = exec_result["base_capacity_ah"]
+        if "temperature_derating" in exec_result:
+            verification_result["temperature_derating"] = exec_result["temperature_derating"]
+        if "aging_derating" in exec_result:
+            verification_result["aging_derating"] = exec_result["aging_derating"]
+        if "discharge_rate_correction" in exec_result:
+            verification_result["discharge_rate_correction"] = exec_result["discharge_rate_correction"]
+        if "installed_ah" in exec_result:
+            verification_result["installed_ah"] = exec_result["installed_ah"]
+        if "usable_ah" in exec_result:
+            verification_result["usable_ah"] = exec_result["usable_ah"]
+        if "is_adequate" in exec_result:
+            verification_result["is_adequate"] = exec_result["is_adequate"]
+        if "margin_pct" in exec_result:
+            verification_result["margin_pct"] = exec_result["margin_pct"]
 
         event = DomainEvent(
             eventId=f"evt-{uuid.uuid4().hex[:12]}",

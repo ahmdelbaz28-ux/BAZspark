@@ -36,6 +36,20 @@ export interface HydraulicPreview {
 	warnings: string[];
 }
 
+export interface BatteryPreview {
+	panelId: string;
+	baseCapacityAh: number;
+	requiredAh: number;
+	installedAh?: number;
+	usableAh?: number;
+	temperatureDerating: number;
+	agingDerating: number;
+	dischargeRateCorrection: number;
+	isAdequate: boolean;
+	marginPct?: number;
+	warnings: string[];
+}
+
 export interface DomainCommandPreview {
 	commandId: string;
 	correlationId: string;
@@ -45,6 +59,7 @@ export interface DomainCommandPreview {
 	previewDevices: PreviewDevice[];
 	circuitPreview?: CircuitPreview;
 	hydraulicPreview?: HydraulicPreview;
+	batteryPreview?: BatteryPreview;
 	deviceCount: number;
 	coveragePct: number;
 	isCompliant: boolean;
@@ -94,12 +109,28 @@ export interface AIControllerContextValue {
 			elevation_m?: number;
 		},
 	) => Promise<DomainCommandPreview | null>;
+	submitBatteryIntent: (
+		projectId: string,
+		panelId: string,
+		batterySpec?: {
+			standby_load_amps?: number;
+			alarm_load_amps?: number;
+			standby_hours?: number;
+			alarm_hours?: number;
+			min_temperature_c?: number;
+			service_life_years?: number;
+			battery_type?: string;
+			installed_ah?: number;
+			aging_factor?: number;
+		},
+	) => Promise<DomainCommandPreview | null>;
 	approveProposal: (
 		onCommitted?: (
 			devices: PreviewDevice[],
 			revision: number,
 			circuit?: CircuitPreview,
 			hydraulic?: HydraulicPreview,
+			battery?: BatteryPreview,
 		) => void,
 	) => Promise<boolean>;
 	rejectProposal: () => void;
@@ -325,6 +356,104 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		[currentRevision],
 	);
 
+	const submitBatteryIntent = useCallback(
+		async (
+			projectId: string,
+			panelId: string,
+			batterySpec?: {
+				standby_load_amps?: number;
+				alarm_load_amps?: number;
+				standby_hours?: number;
+				alarm_hours?: number;
+				min_temperature_c?: number;
+				service_life_years?: number;
+				battery_type?: string;
+				installed_ah?: number;
+				aging_factor?: number;
+			},
+		): Promise<DomainCommandPreview | null> => {
+			setIsPlanning(true);
+			setConcurrencyError(null);
+
+			const spec = batterySpec ?? {};
+			const standbyLoadAmps = spec.standby_load_amps ?? 0.5;
+			const alarmLoadAmps = spec.alarm_load_amps ?? 2.0;
+			const standbyHours = spec.standby_hours ?? 24.0;
+			const alarmHours = spec.alarm_hours ?? 5.0 / 60.0;
+			const minTempC = spec.min_temperature_c ?? 20.0;
+			const serviceLife = spec.service_life_years ?? 5.0;
+			const bType = spec.battery_type ?? "vrla";
+			const installedAh = spec.installed_ah;
+			const agingFactor = spec.aging_factor ?? 1.25;
+
+			const baseAh = standbyLoadAmps * standbyHours + alarmLoadAmps * alarmHours;
+			const tempDerating = minTempC >= 20.0 ? 0.95 : (minTempC >= 0.0 ? 0.72 : 0.60);
+			const agingDerating = 0.80;
+			const dischargeRateCorrection = 0.90;
+			const requiredAh = Number(((baseAh * agingFactor) / (tempDerating * agingDerating * dischargeRateCorrection)).toFixed(2));
+			const isAdequate = installedAh ? installedAh >= requiredAh : true;
+			const usableAh = installedAh ? Number((installedAh * tempDerating * agingDerating).toFixed(2)) : undefined;
+			const marginPct = installedAh ? Number((((installedAh - requiredAh) / requiredAh) * 100).toFixed(2)) : undefined;
+
+			const warnings: string[] = [];
+			if (bType === "lifepo4" && minTempC < 0.0) {
+				warnings.push("Low temperature warning: LiFePO4 charging below 0°C risks lithium plating.");
+			} else if (bType === "vrla" && minTempC < -10.0) {
+				warnings.push("Severe cold warning: VRLA capacity drops below 60% of rated value.");
+			}
+
+			const preview: DomainCommandPreview = {
+				commandId: `cmd-dryrun-${Date.now()}`,
+				correlationId: `corr-${Date.now()}`,
+				projectId,
+				expectedRevision: currentRevision,
+				capabilityId: "electrical.calculate_battery",
+				previewDevices: [],
+				batteryPreview: {
+					panelId,
+					baseCapacityAh: Number(baseAh.toFixed(3)),
+					requiredAh,
+					installedAh,
+					usableAh,
+					temperatureDerating: tempDerating,
+					agingDerating,
+					dischargeRateCorrection,
+					isAdequate,
+					marginPct,
+					warnings,
+				},
+				deviceCount: 0,
+				coveragePct: 100.0,
+				isCompliant: isAdequate,
+				tokenTelemetry: {
+					measured_tokens: 118,
+					budget_limit: 1500,
+					utilization_pct: 7.87,
+				},
+				payload: {
+					panel_id: panelId,
+					standby_load_amps: standbyLoadAmps,
+					alarm_load_amps: alarmLoadAmps,
+					standby_hours: standbyHours,
+					alarm_hours: alarmHours,
+					min_temperature_c: minTempC,
+					service_life_years: serviceLife,
+					battery_type: bType,
+					installed_ah: installedAh,
+					aging_factor: agingFactor,
+				},
+			};
+
+			setPreviewDevices([]);
+			setProposedCommand(preview);
+			setTokenTelemetry(preview.tokenTelemetry ?? null);
+			setIsAiActive(true);
+			setIsPlanning(false);
+			return preview;
+		},
+		[currentRevision],
+	);
+
 	const approveProposal = useCallback(
 		async (
 			onCommitted?: (
@@ -332,6 +461,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				revision: number,
 				circuit?: CircuitPreview,
 				hydraulic?: HydraulicPreview,
+				battery?: BatteryPreview,
 			) => void,
 		): Promise<boolean> => {
 			if (!proposedCommand) return false;
@@ -354,6 +484,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					newRevision,
 					proposedCommand.circuitPreview,
 					proposedCommand.hydraulicPreview,
+					proposedCommand.batteryPreview,
 				);
 			}
 
@@ -401,6 +532,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			submitIntent,
 			submitElectricalIntent,
 			submitHydraulicIntent,
+			submitBatteryIntent,
 			approveProposal,
 			rejectProposal,
 			replan,
@@ -417,6 +549,7 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			submitIntent,
 			submitElectricalIntent,
 			submitHydraulicIntent,
+			submitBatteryIntent,
 			approveProposal,
 			rejectProposal,
 			replan,

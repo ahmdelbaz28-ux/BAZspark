@@ -228,16 +228,68 @@ describe("AIControllerContext — Phase 1 Vertical Slice Frontend Suite", () => 
 		expect(result.current.isAiActive).toBe(false);
 	});
 
-	it("should submit hydraulic intent with default values when spec is omitted", async () => {
+	it("should submit battery intent, calculate battery capacity preview, and commit calculation", async () => {
 		const { result } = renderHook(() => useAIController(), { wrapper });
 
 		await act(async () => {
-			await result.current.submitHydraulicIntent("proj-frontend-hyd-def", "pipe-seg-default");
+			await result.current.submitBatteryIntent("proj-frontend-bat", "facp-main-01", {
+				standby_load_amps: 0.8,
+				alarm_load_amps: 3.5,
+				standby_hours: 24.0,
+				alarm_hours: 5 / 60,
+				min_temperature_c: 20.0,
+				service_life_years: 5.0,
+				battery_type: "vrla",
+				installed_ah: 40.0,
+				aging_factor: 1.25,
+			});
 		});
 
 		expect(result.current.isAiActive).toBe(true);
-		expect(result.current.proposedCommand?.hydraulicPreview?.pipeSegmentId).toBe("pipe-seg-default");
-		expect(result.current.proposedCommand?.hydraulicPreview?.flowVelocityMS).toBeGreaterThan(0);
+		expect(result.current.proposedCommand).not.toBeNull();
+		expect(result.current.proposedCommand?.capabilityId).toBe("electrical.calculate_battery");
+		expect(result.current.proposedCommand?.batteryPreview).toBeDefined();
+		expect(result.current.proposedCommand?.batteryPreview?.panelId).toBe("facp-main-01");
+		expect(result.current.proposedCommand?.batteryPreview?.baseCapacityAh).toBeGreaterThan(19.0);
+		expect(result.current.proposedCommand?.batteryPreview?.requiredAh).toBeGreaterThan(20.0);
+		expect(result.current.proposedCommand?.batteryPreview?.installedAh).toBe(40.0);
+		expect(result.current.proposedCommand?.batteryPreview?.isAdequate).toBe(true);
+		expect(result.current.tokenTelemetry?.measured_tokens).toBeLessThanOrEqual(1500);
+
+		let committedPanelId = "";
+		let committedRev = 0;
+		let committedReqAh = 0;
+
+		await act(async () => {
+			const success = await result.current.approveProposal((_devs, rev, _circuit, _hydraulic, battery) => {
+				committedRev = rev;
+				committedPanelId = battery?.panelId ?? "";
+				committedReqAh = battery?.requiredAh ?? 0;
+			});
+			expect(success).toBe(true);
+		});
+
+		expect(committedRev).toBe(2);
+		expect(committedPanelId).toBe("facp-main-01");
+		expect(committedReqAh).toBeGreaterThan(0);
+		expect(result.current.currentRevision).toBe(2);
+		expect(result.current.isAiActive).toBe(false);
+	});
+
+	it("should submit battery intent with default values and flag low temperature warning for lifepo4 below 0C", async () => {
+		const { result } = renderHook(() => useAIController(), { wrapper });
+
+		await act(async () => {
+			await result.current.submitBatteryIntent("proj-frontend-bat-def", "facp-cold-01", {
+				min_temperature_c: -5.0,
+				battery_type: "lifepo4",
+			});
+		});
+
+		expect(result.current.isAiActive).toBe(true);
+		expect(result.current.proposedCommand?.batteryPreview?.panelId).toBe("facp-cold-01");
+		expect(result.current.proposedCommand?.batteryPreview?.warnings.length).toBeGreaterThan(0);
+		expect(result.current.proposedCommand?.batteryPreview?.warnings[0]).toContain("LiFePO4");
 	});
 });
 
