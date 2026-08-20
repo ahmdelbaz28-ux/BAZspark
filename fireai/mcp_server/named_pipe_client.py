@@ -214,7 +214,50 @@ class RevitNamedPipeClient:
             )
             return False
 
-    def send_command(self, command: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
+    def _read_pipe_response(self, win32file: Any, handle: Any) -> bytes:
+        """Read newline-delimited bytes from pipe handle."""
+        response_bytes = b""
+        while True:
+            try:
+                result, data = win32file.ReadFile(handle, 4096)
+                if data:
+                    response_bytes += data
+                    if b"\n" in data:
+                        break
+                if result != 0:
+                    break
+            except Exception:
+                break
+        return response_bytes
+
+    def _parse_pipe_response(self, response_str: str) -> dict[str, Any]:
+        """Parse pipe response string into JSON or error envelope."""
+        if not response_str:
+            self.circuit_breaker.record_failure()
+            return {
+                "status": "error",
+                "error_code": "EMPTY_RESPONSE",
+                "message": "Empty response from C# add-in",
+                "circuit_state": self.circuit_breaker.state.value,
+                "consecutive_failures": self.circuit_breaker.failure_count,
+            }
+
+        try:
+            parsed = json.loads(response_str)
+            self.circuit_breaker.record_success()
+            return parsed
+        except json.JSONDecodeError as je:
+            self.circuit_breaker.record_failure()
+            return {
+                "status": "error",
+                "error_code": "INVALID_JSON_RESPONSE",
+                "message": f"Invalid JSON response: {je}",
+                "raw_response": response_str[:200],
+                "circuit_state": self.circuit_breaker.state.value,
+                "consecutive_failures": self.circuit_breaker.failure_count,
+            }
+
+    def send_command(self, command: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:  # NOSONAR — S3776: Multi-stage named pipe IPC lifecycle
         """
         Send a JSON command to the C# Revit add-in via named pipe with circuit breaker protection.
 
@@ -231,17 +274,7 @@ class RevitNamedPipeClient:
                 - {"status": "error", "error_code": "BRIDGE_PROCESS_UNRESPONSIVE", ...} on circuit open
                 - {"status": "error", "message": "..."} on failure
         """
-        if not self._is_windows:
-            return {
-                "status": "error",
-                "message": (
-                    "Named pipes not available on this platform. "
-                    "Use the IFC pipeline (fireai.bridges.ifc_pipeline) for "
-                    "cross-platform Revit integration."
-                ),
-            }
-
-        # Circuit breaker gate
+        # Circuit breaker gate — fast-fail immediately if circuit is OPEN
         if not self.circuit_breaker.can_execute():
             return {
                 "status": "error",
@@ -249,6 +282,17 @@ class RevitNamedPipeClient:
                 "message": "Native bridge process is unresponsive (circuit breaker OPEN)",
                 "circuit_state": self.circuit_breaker.state.value,
                 "consecutive_failures": self.circuit_breaker.failure_count,
+            }
+
+        if not self._is_windows:
+            return {
+                "status": "error",
+                "error_code": "PLATFORM_NOT_SUPPORTED",
+                "message": (
+                    "Named pipes not available on this platform. "
+                    "Use the IFC pipeline (fireai.bridges.ifc_pipeline) for "
+                    "cross-platform Revit integration."
+                ),
             }
 
         try:
@@ -262,8 +306,7 @@ class RevitNamedPipeClient:
             }
 
         # Serialize command as newline-delimited JSON
-        message = json.dumps(command) + "\n"
-        message_bytes = message.encode("utf-8")
+        message_bytes = (json.dumps(command) + "\n").encode("utf-8")
 
         try:
             # Connect to the pipe with 2.0s heartbeat cap
@@ -291,49 +334,10 @@ class RevitNamedPipeClient:
             }
 
         try:
-            # Send the command
             win32file.WriteFile(handle, message_bytes)
-
-            # Read the response (newline-delimited JSON)
-            response_bytes = b""
-            while True:
-                try:
-                    result, data = win32file.ReadFile(handle, 4096)
-                    if data:
-                        response_bytes += data
-                        if b"\n" in data:
-                            break
-                    if result != 0:  # 0 = more data, non-zero = done
-                        break
-                except pywintypes.error:
-                    break
-
+            response_bytes = self._read_pipe_response(win32file, handle)
             response_str = response_bytes.decode("utf-8", errors="ignore").strip()
-            if not response_str:
-                self.circuit_breaker.record_failure()
-                return {
-                    "status": "error",
-                    "error_code": "EMPTY_RESPONSE",
-                    "message": "Empty response from C# add-in",
-                    "circuit_state": self.circuit_breaker.state.value,
-                    "consecutive_failures": self.circuit_breaker.failure_count,
-                }
-
-            try:
-                parsed = json.loads(response_str)
-                self.circuit_breaker.record_success()
-                return parsed
-            except json.JSONDecodeError as je:
-                self.circuit_breaker.record_failure()
-                return {
-                    "status": "error",
-                    "error_code": "INVALID_JSON_RESPONSE",
-                    "message": f"Invalid JSON response: {je}",
-                    "raw_response": response_str[:200],
-                    "circuit_state": self.circuit_breaker.state.value,
-                    "consecutive_failures": self.circuit_breaker.failure_count,
-                }
-
+            return self._parse_pipe_response(response_str)
         except Exception as ex:
             self.circuit_breaker.record_failure()
             return {
