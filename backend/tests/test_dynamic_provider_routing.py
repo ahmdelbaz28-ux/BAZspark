@@ -145,6 +145,66 @@ class TestPingProbesAndSecretSafety:
             assert secret_key not in (err or "")
             assert "[REDACTED]" in (err or "")
 
+    @pytest.mark.asyncio
+    async def test_anthropic_ping_success_and_auth_fail(self):
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_get.return_value = httpx.Response(200, json={"data": []})
+            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="valid")
+            assert success is True
+            assert err is None
+
+            mock_get.return_value = httpx.Response(401, json={"error": "unauthorized"})
+            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="invalid")
+            assert success is False
+            assert "Invalid Anthropic API key" in (err or "")
+
+            mock_get.return_value = httpx.Response(500, text="Internal Error")
+            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com")
+            assert success is False
+            assert "HTTP 500" in (err or "")
+
+    @pytest.mark.asyncio
+    async def test_gemini_ping_success_and_auth_fail(self):
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_get.return_value = httpx.Response(200, json={"models": []})
+            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="valid")
+            assert success is True
+            assert err is None
+
+            mock_get.return_value = httpx.Response(400, json={"error": "bad request"})
+            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="invalid")
+            assert success is False
+            assert "Invalid Gemini API key" in (err or "")
+
+            mock_get.return_value = httpx.Response(502, text="Bad Gateway")
+            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com")
+            assert success is False
+            assert "HTTP 502" in (err or "")
+
+    @pytest.mark.asyncio
+    async def test_openai_ping_success_and_auth_fail(self):
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_get.return_value = httpx.Response(200, json={"data": []})
+            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="valid")
+            assert success is True
+            assert err is None
+
+            mock_get.return_value = httpx.Response(401, json={"error": "invalid_api_key"})
+            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="invalid")
+            assert success is False
+            assert "Invalid OpenAI API key" in (err or "")
+
+            mock_get.return_value = httpx.Response(503, text="Service Unavailable")
+            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1")
+            assert success is False
+            assert "HTTP 503" in (err or "")
+
+    @pytest.mark.asyncio
+    async def test_unsupported_provider(self):
+        success, latency, err = await ping_provider("unknown_prov", "https://foo.com")
+        assert success is False
+        assert "Unsupported provider" in (err or "")
+
 
 # ---------------------------------------------------------------------------
 # 3. FastAPI HTTP Endpoint Tests

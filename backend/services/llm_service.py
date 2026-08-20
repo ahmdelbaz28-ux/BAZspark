@@ -744,9 +744,12 @@ async def close_llm_service() -> None:
 
 # ── Live Provider Ping & SSRF Validation ──────────────────────────────────────
 
+_ANTHROPIC_DEFAULT_HOST = "api.anthropic.com"
+_GEMINI_DEFAULT_HOST = "generativelanguage.googleapis.com"
+
 ALLOWED_CLOUD_HOSTS = frozenset({
-    "api.anthropic.com",
-    "generativelanguage.googleapis.com",
+    _ANTHROPIC_DEFAULT_HOST,
+    _GEMINI_DEFAULT_HOST,
     "api.openai.com",
     "zenmux.ai",
     "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
@@ -786,13 +789,13 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         return True, clean_url, None
 
     if prov == "anthropic":
-        url = (base_url or "https://api.anthropic.com").strip().rstrip("/")
+        url = (base_url or f"https://{_ANTHROPIC_DEFAULT_HOST}").strip().rstrip("/")
         parsed = urlparse(url)
         scheme = parsed.scheme.lower()
         if scheme != "https":
             return False, url, "HTTPS is required for Anthropic provider"
         host = (parsed.hostname or "").lower()
-        if not (host == "api.anthropic.com" or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
+        if not (host == _ANTHROPIC_DEFAULT_HOST or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
         port_str = f":{parsed.port}" if parsed.port else ""
         path = parsed.path.rstrip("/")
@@ -800,14 +803,14 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         return True, clean_url, None
 
     if prov == "gemini":
-        url = (base_url or "https://generativelanguage.googleapis.com").strip().rstrip("/")
+        url = (base_url or f"https://{_GEMINI_DEFAULT_HOST}").strip().rstrip("/")
         parsed = urlparse(url)
         scheme = parsed.scheme.lower()
         if scheme != "https":
             return False, url, "HTTPS is required for Google Gemini provider"
         host = (parsed.hostname or "").lower()
         if not (
-            host == "generativelanguage.googleapis.com"
+            host == _GEMINI_DEFAULT_HOST
             or host.endswith(".googleapis.com")
             or host in ALLOWED_LOCAL_HOSTS
         ):
@@ -884,7 +887,7 @@ async def ping_provider(
 
             if prov == "anthropic":
                 if scheme != "https" or not (
-                    host == "api.anthropic.com"
+                    host == _ANTHROPIC_DEFAULT_HOST
                     or host.endswith(".anthropic.com")
                     or host in ALLOWED_LOCAL_HOSTS
                 ):
@@ -903,7 +906,7 @@ async def ping_provider(
 
             if prov == "gemini":
                 if scheme != "https" or not (
-                    host == "generativelanguage.googleapis.com"
+                    host == _GEMINI_DEFAULT_HOST
                     or host.endswith(".googleapis.com")
                     or host in ALLOWED_LOCAL_HOSTS
                 ):
