@@ -60,16 +60,30 @@ from fireai.version import FIREAI_VERSION
 
 log = logging.getLogger(__name__)
 
-# ── Import DensityOptimizer with fallback ──────────────────────────────────
+# ── Import DensityOptimizer and models with fallback ───────────────────────
 try:
-    from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+    from fireai.core.spatial_engine.density_optimizer import (
+        DETECTOR_RADIUS,
+        MAX_SPACING_M,
+        DensityOptimizer,
+        DetectorLayout,
+        Room,
+    )
 except ImportError:
     try:
         from core.spatial_engine.density_optimizer import (  # type: ignore[no-redef]
+            DETECTOR_RADIUS,  # type: ignore[no-redef]
+            MAX_SPACING_M,  # type: ignore[no-redef]
             DensityOptimizer,  # type: ignore[no-redef,import-untyped]
+            DetectorLayout,  # type: ignore[no-redef]
+            Room,  # type: ignore[no-redef]
         )
     except ImportError:
         DensityOptimizer = None  # type: ignore[assignment,no-redef, misc]
+        DetectorLayout = None  # type: ignore[assignment,no-redef, misc]
+        Room = None  # type: ignore[assignment,no-redef, misc]
+        DETECTOR_RADIUS = 4.572  # 15 ft in meters
+        MAX_SPACING_M = 9.144  # 30 ft in meters
 
 # ── Import models with fallback ────────────────────────────────────────────
 # Geometry and Point3D are not defined anywhere in the codebase as standalone
@@ -573,3 +587,14 @@ def _self_test():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     _self_test()
+
+__all__ = [
+    "DETECTOR_RADIUS",
+    "MAX_SPACING_M",
+    "BatchResult",
+    "DensityOptimizer",
+    "DensityOptimizerBatch",
+    "DensityOptimizerV2",
+    "DetectorLayout",
+    "Room",
+]

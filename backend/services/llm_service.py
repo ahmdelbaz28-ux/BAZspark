@@ -59,13 +59,17 @@ from __future__ import annotations
 import logging
 import os
 import threading
+import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
+import httpx
 
 from backend.llm_constants import AI_DISCLAIMER
+
+logger = logging.getLogger(__name__)
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 _DEFAULT_BASE_URL = "https://zenmux.ai/api/v1"
@@ -740,9 +744,12 @@ async def close_llm_service() -> None:
 
 # ── Live Provider Ping & SSRF Validation ──────────────────────────────────────
 
+_ANTHROPIC_DEFAULT_HOST = "api.anthropic.com"
+_GEMINI_DEFAULT_HOST = "generativelanguage.googleapis.com"
+
 ALLOWED_CLOUD_HOSTS = frozenset({
-    "api.anthropic.com",
-    "generativelanguage.googleapis.com",
+    _ANTHROPIC_DEFAULT_HOST,
+    _GEMINI_DEFAULT_HOST,
     "api.openai.com",
     "zenmux.ai",
     "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
@@ -762,13 +769,12 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
     Returns:
         tuple of (is_valid, resolved_url, error_message).
     """
-    from urllib.parse import urlparse
-
     prov = (provider or "").lower().strip()
     if prov == "ollama":
         url = (base_url or "http://localhost:11434").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
+        scheme = parsed.scheme.lower()
+        if scheme not in ("http", "https"):
             return False, url, "Invalid scheme for Ollama provider (must be http or https)"
         host = (parsed.hostname or "").lower()
         if host not in ALLOWED_LOCAL_HOSTS:
@@ -777,36 +783,48 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
                 url,
                 f"SSRF_BLOCKED: Local provider (Ollama) can only target localhost/127.0.0.1, got '{host}'",
             )
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "anthropic":
-        url = (base_url or "https://api.anthropic.com").strip().rstrip("/")
+        url = (base_url or f"https://{_ANTHROPIC_DEFAULT_HOST}").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme != "https":
+        scheme = parsed.scheme.lower()
+        if scheme != "https":
             return False, url, "HTTPS is required for Anthropic provider"
         host = (parsed.hostname or "").lower()
-        if not (host == "api.anthropic.com" or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
+        if not (host == _ANTHROPIC_DEFAULT_HOST or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "gemini":
-        url = (base_url or "https://generativelanguage.googleapis.com").strip().rstrip("/")
+        url = (base_url or f"https://{_GEMINI_DEFAULT_HOST}").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme != "https":
+        scheme = parsed.scheme.lower()
+        if scheme != "https":
             return False, url, "HTTPS is required for Google Gemini provider"
         host = (parsed.hostname or "").lower()
         if not (
-            host == "generativelanguage.googleapis.com"
+            host == _GEMINI_DEFAULT_HOST
             or host.endswith(".googleapis.com")
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     if prov == "openai":
         url = (base_url or "https://api.openai.com/v1").strip().rstrip("/")
         parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
+        scheme = parsed.scheme.lower()
+        if scheme not in ("http", "https"):
             return False, url, "Invalid scheme for OpenAI provider"
         host = (parsed.hostname or "").lower()
         if not (
@@ -816,7 +834,10 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized OpenAI endpoint"
-        return True, url, None
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        clean_url = f"{scheme}://{host}{port_str}{path}"
+        return True, clean_url, None
 
     return False, base_url or "", f"Unsupported provider: '{provider}'"
 
@@ -833,9 +854,6 @@ async def ping_provider(
         tuple of (success, latency_ms, error_message).
     Enforces a strict 5.0-second timeout cap and zero API key leakage in logs.
     """
-    import time
-    import httpx
-
     is_valid, resolved_url, err = validate_provider_url(provider, base_url)
     if not is_valid:
         return False, 0.0, err
@@ -846,24 +864,39 @@ async def ping_provider(
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
+            parsed = urlparse(resolved_url)
+            host = (parsed.hostname or "").lower()
+            scheme = parsed.scheme.lower()
+            port_str = f":{parsed.port}" if parsed.port else ""
+
             if prov == "ollama":
-                # Probe Ollama tags or version
-                resp = await client.get(f"{resolved_url}/api/tags")
+                if host not in ALLOWED_LOCAL_HOSTS or scheme not in ("http", "https"):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Ollama host '{host}'"
+                safe_url = f"{scheme}://{host}{port_str}/api/tags"
+                resp = await client.get(safe_url)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code == 200:
                     return True, latency_ms, None
                 # Fallback to version
-                resp_ver = await client.get(f"{resolved_url}/api/version")
+                safe_ver_url = f"{scheme}://{host}{port_str}/api/version"
+                resp_ver = await client.get(safe_ver_url)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp_ver.status_code == 200:
                     return True, latency_ms, None
                 return False, latency_ms, f"Ollama returned HTTP {resp.status_code}"
 
             if prov == "anthropic":
+                if scheme != "https" or not (
+                    host == _ANTHROPIC_DEFAULT_HOST
+                    or host.endswith(".anthropic.com")
+                    or host in ALLOWED_LOCAL_HOSTS
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Anthropic host '{host}'"
                 headers = {"anthropic-version": "2023-06-01"}
                 if api_key:
                     headers["x-api-key"] = api_key
-                resp = await client.get(f"{resolved_url}/v1/models", headers=headers)
+                safe_url = f"{scheme}://{host}{port_str}/v1/models"
+                resp = await client.get(safe_url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:
@@ -872,11 +905,18 @@ async def ping_provider(
                 return False, latency_ms, f"Anthropic returned HTTP {resp.status_code}"
 
             if prov == "gemini":
+                if scheme != "https" or not (
+                    host == _GEMINI_DEFAULT_HOST
+                    or host.endswith(".googleapis.com")
+                    or host in ALLOWED_LOCAL_HOSTS
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized Gemini host '{host}'"
                 headers = {}
                 params = {}
                 if api_key:
                     params["key"] = api_key
-                resp = await client.get(f"{resolved_url}/v1beta/models", headers=headers, params=params)
+                safe_url = f"{scheme}://{host}{port_str}/v1beta/models"
+                resp = await client.get(safe_url, headers=headers, params=params)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code in (400, 401, 403) and api_key:
@@ -885,11 +925,20 @@ async def ping_provider(
                 return False, latency_ms, f"Gemini returned HTTP {resp.status_code}"
 
             if prov == "openai":
+                if scheme not in ("http", "https") or not (
+                    host in ALLOWED_CLOUD_HOSTS
+                    or host in ALLOWED_LOCAL_HOSTS
+                    or host.endswith(".openai.com")
+                    or host.endswith(".zenmux.ai")
+                ):
+                    return False, 0.0, f"SSRF_BLOCKED: Unauthorized OpenAI host '{host}'"
                 headers = {}
                 if api_key:
                     headers["Authorization"] = f"Bearer {api_key}"
-                url = resolved_url if resolved_url.endswith("/models") else f"{resolved_url}/models"
-                resp = await client.get(url, headers=headers)
+                base_path = parsed.path.rstrip("/")
+                target_path = base_path if base_path.endswith("/models") else f"{base_path}/models"
+                safe_url = f"{scheme}://{host}{port_str}{target_path}"
+                resp = await client.get(safe_url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:

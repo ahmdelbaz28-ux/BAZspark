@@ -15,7 +15,6 @@ TIER 3: Context Bounding & Telemetry Overflow Stress
 from __future__ import annotations
 
 import concurrent.futures
-import json
 import math
 import os
 import tempfile
@@ -35,7 +34,6 @@ from backend.core.command_bus import (
 )
 from backend.core.context_resolver import (
     ContextResolver,
-    default_context_resolver,
 )
 from backend.core.state_store import CommandStateStore
 from backend.core.workflow_engine import (
@@ -44,19 +42,10 @@ from backend.core.workflow_engine import (
     WorkflowNode,
 )
 from backend.database import Database
-from fireai.core.battery_aging_derating import (
-    BatterySpec,
-    get_temperature_derating_factor,
-    size_battery,
-)
 from fireai.core.darcy_weisbach_solver import (
     FluidType,
     calculate_darcy_weisbach_friction_loss,
 )
-from fireai.core.voltage_drop import (
-    calculate_voltage_drop,
-)
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
