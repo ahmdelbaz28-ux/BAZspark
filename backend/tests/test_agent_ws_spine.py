@@ -476,3 +476,107 @@ async def test_handle_hydraulic_approval_commit(
     assert resp["hydraulic"]["pipe_segment_id"] == "pipe-commit-01"
     assert resp["event"]["eventType"] == "HYDRAULIC_CALCULATION_SOLVED"
 
+
+@pytest.mark.asyncio
+async def test_handle_battery_intent_success(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="elec-eng-bat",
+        email="elec-bat@bazspark.io",
+        role="engineer",
+        scopes=["electrical:read", "electrical:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_battery_intent",
+        "projectId": "proj-ws-bat-1",
+        "panelId": "facp-ws-01",
+        "batterySpec": {
+            "standby_load_amps": 0.8,
+            "alarm_load_amps": 3.0,
+            "standby_hours": 24.0,
+            "alarm_hours": 5 / 60,
+            "min_temperature_c": 18.0,
+            "installed_ah": 55.0,
+        },
+    }
+    await orchestration_service.handle_battery_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_battery_preview"
+    assert resp["panelId"] == "facp-ws-01"
+    assert resp["requiredAh"] > 0.0
+    assert resp["baseCapacityAh"] > 19.0
+    assert resp["tokenTelemetry"]["measured_tokens"] <= 1500
+
+
+@pytest.mark.asyncio
+async def test_handle_battery_intent_no_scope(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="viewer-bat-02",
+        email="viewer-bat@bazspark.io",
+        role="viewer",
+        scopes=["spatial:read"],  # Lacks electrical scopes
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_battery_intent",
+        "projectId": "proj-ws-bat-2",
+        "panelId": "facp-ws-02",
+        "batterySpec": {
+            "standby_load_amps": 0.5,
+            "alarm_load_amps": 2.0,
+        },
+    }
+    await orchestration_service.handle_battery_intent(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_error"
+    assert resp["errorCode"] == "NO_CAPABILITY_AVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_handle_battery_approval_commit(
+    orchestration_service: AIOrchestrationService,
+    mock_ws: MockWebSocket,
+) -> None:
+    principal = AuthenticatedPrincipal(
+        user_id="elec-eng-bat-03",
+        email="elec-bat3@bazspark.io",
+        role="engineer",
+        scopes=["electrical:read", "electrical:write"],
+        is_authenticated=True,
+    )
+    msg = {
+        "type": "ai_approve",
+        "commandId": "cmd-bat-commit-01",
+        "projectId": "proj-ws-bat-commit",
+        "expectedRevision": 1,
+        "capabilityId": "electrical.calculate_battery",
+        "payload": {
+            "panel_id": "facp-ws-commit-01",
+            "standby_load_amps": 0.9,
+            "alarm_load_amps": 3.2,
+            "standby_hours": 24.0,
+            "alarm_hours": 5 / 60,
+            "installed_ah": 55.0,
+        },
+    }
+    await orchestration_service.handle_approval(mock_ws, principal, msg)
+
+    assert len(mock_ws.sent_messages) == 1
+    resp = mock_ws.sent_messages[0]
+    assert resp["type"] == "ai_committed"
+    assert resp["projectId"] == "proj-ws-bat-commit"
+    assert resp["revision"] == 2
+    assert resp["battery"] is not None
+    assert resp["battery"]["panel_id"] == "facp-ws-commit-01"
+    assert resp["event"]["eventType"] == "BATTERY_CALCULATION_SOLVED"
+

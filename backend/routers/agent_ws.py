@@ -38,6 +38,7 @@ agent_locks: dict[str, asyncio.Lock] = {}
 CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
 CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
 CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
+CAP_ELECTRICAL_CALCULATE_BATTERY = "electrical.calculate_battery"
 CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
 
 # Track which futures belong to which websocket (for cleanup on disconnect)
@@ -474,6 +475,106 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_battery_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process an electrical battery calculation intent: resolve bounded context and return dry-run preview."""
+        project_id = str(msg.get("projectId", "default_project"))
+        panel_id = str(msg.get("panelId", "facp-01"))
+        spec = msg.get("batterySpec", {})
+
+        current_rev = self.command_bus.get_project_revision(project_id)
+
+        standby_load_amps = float(spec.get("standby_load_amps", 0.5))
+        alarm_load_amps = float(spec.get("alarm_load_amps", 2.0))
+        standby_hours = float(spec.get("standby_hours", 24.0))
+        alarm_hours = float(spec.get("alarm_hours", 5.0 / 60.0))
+        min_temperature_c = float(spec.get("min_temperature_c", 20.0))
+        service_life_years = float(spec.get("service_life_years", 5.0))
+        battery_type = str(spec.get("battery_type", "vrla")).strip().lower()
+        installed_ah = float(spec["installed_ah"]) if spec.get("installed_ah") is not None else None
+        aging_factor = float(spec.get("aging_factor", 1.25))
+
+        context_pkt = self.context_resolver.resolve_battery_context(
+            project_id=project_id,
+            panel_id=panel_id,
+            revision=current_rev,
+            battery_spec={
+                "standby_load_amps": standby_load_amps,
+                "alarm_load_amps": alarm_load_amps,
+                "standby_hours": standby_hours,
+                "alarm_hours": alarm_hours,
+                "min_temperature_c": min_temperature_c,
+                "service_life_years": service_life_years,
+                "battery_type": battery_type,
+                "installed_ah": installed_ah,
+                "aging_factor": aging_factor,
+            },
+        )
+
+        caps = self.capability_registry.discover(categories=["electrical"], scopes=principal.scopes)
+        if not any(c.capability_id == CAP_ELECTRICAL_CALCULATE_BATTERY for c in caps):
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "NO_CAPABILITY_AVAILABLE",
+                    "message": "No matching electrical battery capabilities available for user scopes.",
+                }
+            )
+            return
+
+        command_id = f"cmd-{uuid.uuid4().hex[:12]}"
+        correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
+        command = DomainCommand(
+            commandId=command_id,
+            correlationId=correlation_id,
+            capabilityId=CAP_ELECTRICAL_CALCULATE_BATTERY,
+            projectId=project_id,
+            expectedRevision=current_rev,
+            timestamp=datetime.now(UTC).isoformat(),
+            principal=principal,
+            riskClass="ENGINEERING_MUTATION",
+            isDryRun=True,
+            payload={
+                "panel_id": panel_id,
+                "standby_load_amps": standby_load_amps,
+                "alarm_load_amps": alarm_load_amps,
+                "standby_hours": standby_hours,
+                "alarm_hours": alarm_hours,
+                "min_temperature_c": min_temperature_c,
+                "service_life_years": service_life_years,
+                "battery_type": battery_type,
+                "installed_ah": installed_ah,
+                "aging_factor": aging_factor,
+            },
+        )
+
+        result = self.command_bus.execute(command)
+
+        await websocket.send_json(
+            {
+                "type": "ai_battery_preview",
+                "commandId": command_id,
+                "correlationId": correlation_id,
+                "projectId": project_id,
+                "expectedRevision": current_rev,
+                "capabilityId": CAP_ELECTRICAL_CALCULATE_BATTERY,
+                "panelId": panel_id,
+                "baseCapacityAh": result.resultData.get("base_capacity_ah", 0.0),
+                "requiredAh": result.resultData.get("required_ah", 0.0),
+                "installedAh": result.resultData.get("installed_ah"),
+                "usableAh": result.resultData.get("usable_ah"),
+                "temperatureDerating": result.resultData.get("temperature_derating", 1.0),
+                "agingDerating": result.resultData.get("aging_derating", 1.0),
+                "dischargeRateCorrection": result.resultData.get("discharge_rate_correction", 1.0),
+                "isAdequate": result.resultData.get("is_adequate", True),
+                "marginPct": result.resultData.get("margin_pct"),
+                "warnings": result.resultData.get("warnings", []),
+                "tokenTelemetry": context_pkt.telemetry,
+                "payload": command.payload,
+            }
+        )
+
     async def handle_approval(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
@@ -534,6 +635,7 @@ class AIOrchestrationService:
                 "devices": result.resultData.get("devices", []),
                 "circuit": result.resultData if "voltage_drop_v" in result.resultData else None,
                 "hydraulic": result.resultData if "head_loss_m" in result.resultData else None,
+                "battery": result.resultData if ("required_ah" in result.resultData or "base_capacity_ah" in result.resultData) else None,
                 "event": result.event.to_dict() if result.event else None,
                 "auditReference": result.event.auditReference if result.event else "",
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
@@ -589,6 +691,8 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_intent(websocket, principal, msg)
     elif msg_type in ("ai_electrical_intent", "electrical_intent") and principal:
         await default_orchestration_service.handle_electrical_intent(websocket, principal, msg)
+    elif msg_type in ("ai_battery_intent", "battery_intent") and principal:
+        await default_orchestration_service.handle_battery_intent(websocket, principal, msg)
     elif msg_type in ("ai_hydraulic_intent", "hydraulic_intent") and principal:
         await default_orchestration_service.handle_hydraulic_intent(websocket, principal, msg)
     elif msg_type in ("ai_approve", "command_approve") and principal:

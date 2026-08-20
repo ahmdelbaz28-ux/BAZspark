@@ -36,6 +36,14 @@ class CapabilityDefinition:
     handler: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
 
+# Capability ID constants
+CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
+CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
+CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
+CAP_ELECTRICAL_CALCULATE_BATTERY = "electrical.calculate_battery"
+CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
+
+
 class CapabilityRegistry:
     """Registry managing capability definitions, discovery, and schema validation."""
 
@@ -72,6 +80,7 @@ class CapabilityRegistry:
         self._register_compliance_capabilities()
         self._register_electrical_capabilities()
         self._register_hydraulic_capabilities()
+        self._register_battery_capabilities()
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
@@ -427,6 +436,139 @@ class CapabilityRegistry:
                     },
                 },
                 handler=_solve_darcy_weisbach_handler,
+            )
+        )
+
+    def _register_battery_capabilities(self) -> None:
+        def _calculate_battery_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from fireai.core.battery_aging_derating import (
+                BatterySpec,
+                get_temperature_derating_factor,
+                size_battery,
+            )
+
+            panel_id = str(payload.get("panel_id", "facp-01"))
+            standby_load_amps = float(payload.get("standby_load_amps", 0.5))
+            alarm_load_amps = float(payload.get("alarm_load_amps", 2.0))
+            standby_hours = float(payload.get("standby_hours", 24.0))
+            alarm_hours = float(payload.get("alarm_hours", 5.0 / 60.0))
+            min_temperature_c = float(payload.get("min_temperature_c", 20.0))
+            service_life_years = float(payload.get("service_life_years", 5.0))
+            battery_type = str(payload.get("battery_type", "vrla")).strip().lower()
+            installed_ah_raw = payload.get("installed_ah")
+            installed_ah = float(installed_ah_raw) if installed_ah_raw is not None else None
+            safety_margin_pct = float(payload.get("safety_margin_pct", 0.0))
+            aging_factor = float(payload.get("aging_factor", 1.25))
+
+            if standby_load_amps < 0 or alarm_load_amps < 0:
+                raise ValueError("Current loads cannot be negative.")
+            if standby_hours < 0 or alarm_hours < 0:
+                raise ValueError("Discharge durations cannot be negative.")
+            if min_temperature_c < -40.0 or min_temperature_c > 70.0:
+                raise ValueError(
+                    f"Ambient temperature {min_temperature_c}°C outside physical operating boundary (-40°C to 70°C)."
+                )
+
+            battery_spec_obj = None
+            if installed_ah is not None and installed_ah > 0:
+                battery_spec_obj = BatterySpec(
+                    amp_hour_20h=installed_ah,
+                    cells=int(payload.get("cells", 12)),
+                    battery_type=battery_type,
+                )
+
+            result = size_battery(
+                standby_load_amps=standby_load_amps,
+                alarm_load_amps=alarm_load_amps,
+                standby_hours=standby_hours,
+                alarm_hours=alarm_hours,
+                battery=battery_spec_obj,
+                min_temperature_c=min_temperature_c,
+                service_life_years=service_life_years,
+                safety_margin_pct=safety_margin_pct,
+            )
+
+            warnings: list[str] = [v.get("message", "") for v in result.violations if isinstance(v, dict)]
+            if battery_type == "lifepo4" and min_temperature_c < 0.0:
+                warnings.append("Low temperature warning: LiFePO4 charging below 0°C risks lithium plating.")
+            elif battery_type == "vrla" and min_temperature_c < -10.0:
+                warnings.append("Severe cold warning: VRLA capacity drops below 60% of rated value.")
+
+            temp_derating = result.temperature_derating
+            if battery_type == "lifepo4":
+                if min_temperature_c < 0.0:
+                    temp_derating = max(0.50, 0.70 + (min_temperature_c / 100.0))
+            elif battery_type == "nicad":
+                temp_derating = max(0.75, get_temperature_derating_factor(min_temperature_c) * 1.1)
+
+            base_capacity_ah = (standby_load_amps * standby_hours) + (alarm_load_amps * alarm_hours)
+            required_ah = result.required_ah
+
+            return {
+                "panel_id": panel_id,
+                "standby_load_amps": standby_load_amps,
+                "alarm_load_amps": alarm_load_amps,
+                "standby_hours": standby_hours,
+                "alarm_hours": round(alarm_hours, 4),
+                "battery_type": battery_type,
+                "min_temperature_c": min_temperature_c,
+                "service_life_years": service_life_years,
+                "aging_factor": aging_factor,
+                "base_capacity_ah": round(base_capacity_ah, 4),
+                "temperature_derating": round(temp_derating, 4),
+                "aging_derating": round(result.aging_derating, 4),
+                "discharge_rate_correction": round(result.discharge_rate_correction, 4),
+                "required_ah": round(required_ah, 2),
+                "installed_ah": installed_ah,
+                "usable_ah": round(result.usable_ah, 2) if installed_ah else None,
+                "is_adequate": result.is_adequate if installed_ah else True,
+                "margin_pct": round(result.margin_pct, 2) if installed_ah else None,
+                "warnings": warnings,
+                "nfpa_reference": result.nfpa_reference,
+            }
+
+        self.register(
+            CapabilityDefinition(
+                capability_id="electrical.calculate_battery",
+                name="Calculate Battery Capacity and Thermal Derating",
+                description="Deterministically calculate secondary power supply battery capacity with temperature and aging deratings per NFPA 72 §10.6.7.",
+                category="electrical",
+                risk_class="ENGINEERING_MUTATION",
+                required_scopes=["electrical:write"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "panel_id": {"type": "string"},
+                        "standby_load_amps": {"type": "number", "minimum": 0.0},
+                        "alarm_load_amps": {"type": "number", "minimum": 0.0},
+                        "standby_hours": {"type": "number", "minimum": 0.0, "default": 24.0},
+                        "alarm_hours": {"type": "number", "minimum": 0.0, "default": 0.0833},
+                        "min_temperature_c": {"type": "number", "minimum": -40.0, "maximum": 70.0, "default": 20.0},
+                        "service_life_years": {"type": "number", "minimum": 1.0, "default": 5.0},
+                        "battery_type": {"type": "string", "enum": ["vrla", "flooded", "lifepo4", "nicad"], "default": "vrla"},
+                        "installed_ah": {"type": "number", "minimum": 0.0},
+                        "cells": {"type": "integer", "minimum": 1, "default": 12},
+                        "safety_margin_pct": {"type": "number", "minimum": 0.0, "maximum": 100.0, "default": 0.0},
+                        "aging_factor": {"type": "number", "minimum": 1.0, "default": 1.25},
+                    },
+                    "required": ["standby_load_amps", "alarm_load_amps"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "panel_id": {"type": "string"},
+                        "base_capacity_ah": {"type": "number"},
+                        "temperature_derating": {"type": "number"},
+                        "aging_derating": {"type": "number"},
+                        "required_ah": {"type": "number"},
+                        "installed_ah": {"type": "number"},
+                        "usable_ah": {"type": "number"},
+                        "is_adequate": {"type": "boolean"},
+                        "margin_pct": {"type": "number"},
+                        "warnings": {"type": "array"},
+                    },
+                },
+                handler=_calculate_battery_handler,
             )
         )
 

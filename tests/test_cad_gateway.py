@@ -114,6 +114,11 @@ class TestCADGatewayEndpoints:
     @patch("backend.services.autocad_service.AutoCADService.write_dwg")
     def test_cad_read_drawing_autocad(self, mock_write, mock_read, client):
         """Verify reading drawing elements from AutoCAD DWG/DXF."""
+        gateway = CADGateway()
+        service = gateway.get_service("autocad")
+        service.connected = True
+        service.simulation_mode = True
+
         mock_write.return_value = True
         mock_read.return_value = {
             "success": True,
@@ -149,6 +154,11 @@ class TestCADGatewayEndpoints:
     @patch("backend.services.autocad_service.AutoCADService.draw_text")
     def test_cad_draw_primitives(self, mock_text, mock_circle, mock_polyline, mock_line, client):
         """Verify CAD drawing endpoints."""
+        gateway = CADGateway()
+        service = gateway.get_service("autocad")
+        service.connected = True
+        service.simulation_mode = True
+
         mock_line.return_value = "LINE_HANDLE"
         mock_polyline.return_value = "POLYLINE_HANDLE"
         mock_circle.return_value = "CIRCLE_HANDLE"

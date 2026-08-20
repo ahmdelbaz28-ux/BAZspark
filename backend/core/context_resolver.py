@@ -60,6 +60,22 @@ class BoundedHydraulicContextPacket:
         return asdict(self)
 
 
+@dataclass
+class BoundedBatteryContextPacket:
+    project_id: str
+    panel_id: str
+    revision: int
+    battery_spec: dict[str, Any]  # standby_load_amps, alarm_load_amps, standby_hours, alarm_hours, min_temperature_c, service_life_years, battery_type, installed_ah, aging_factor
+    standards: list[str]
+    token_count: int
+    is_within_budget: bool
+    budget_limit: int = 1500
+    telemetry: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 
 def estimate_token_count(text_or_dict: str | dict[str, Any]) -> int:
     """Accurately estimate token count for JSON payloads.
@@ -296,6 +312,74 @@ class ContextResolver:
             pipe_segment_id=pipe_segment_id,
             revision=revision,
             hydraulic_spec=standardized_spec,
+            standards=standards,
+            token_count=measured_tokens,
+            is_within_budget=measured_tokens <= self.token_budget,
+            budget_limit=self.token_budget,
+            telemetry=telemetry,
+        )
+
+    def resolve_battery_context(
+        self,
+        project_id: str,
+        panel_id: str,
+        revision: int,
+        battery_spec: dict[str, Any] | None = None,
+    ) -> BoundedBatteryContextPacket:
+        """Constructs a strictly bounded context packet for an electrical battery sizing calculation (Phase 2D)."""
+        spec = battery_spec or {}
+        standby_load_amps = float(spec.get("standby_load_amps", 0.5))
+        alarm_load_amps = float(spec.get("alarm_load_amps", 2.0))
+        standby_hours = float(spec.get("standby_hours", 24.0))
+        alarm_hours = float(spec.get("alarm_hours", 5.0 / 60.0))
+        min_temperature_c = float(spec.get("min_temperature_c", 20.0))
+        service_life_years = float(spec.get("service_life_years", 5.0))
+        battery_type = str(spec.get("battery_type", "vrla")).strip().lower()
+        installed_ah = float(spec["installed_ah"]) if spec.get("installed_ah") is not None else None
+        aging_factor = float(spec.get("aging_factor", 1.25))
+
+        standardized_spec = {
+            "standby_load_amps": standby_load_amps,
+            "alarm_load_amps": alarm_load_amps,
+            "standby_hours": standby_hours,
+            "alarm_hours": alarm_hours,
+            "min_temperature_c": min_temperature_c,
+            "service_life_years": service_life_years,
+            "battery_type": battery_type,
+            "installed_ah": installed_ah,
+            "aging_factor": aging_factor,
+        }
+
+        standards = [
+            "NFPA 72-2022 §10.6.7 (Secondary Power Supply Requirements)",
+            "IEEE 485 (Recommended Practice for Sizing Lead-Acid Batteries)",
+            "IEEE 1188 (VRLA Maintenance, Testing, and Replacement)",
+        ]
+
+        packet_content = {
+            "project_id": project_id,
+            "panel_id": panel_id,
+            "revision": revision,
+            "battery_spec": standardized_spec,
+            "standards": standards,
+        }
+
+        measured_tokens = estimate_token_count(packet_content)
+
+        telemetry = {
+            "measured_tokens": measured_tokens,
+            "budget_limit": self.token_budget,
+            "utilization_pct": round((measured_tokens / self.token_budget) * 100, 2),
+            "raw_cad_excluded": True,
+            "geometry_mesh_excluded": True,
+            "whole_project_dump_excluded": True,
+        }
+
+        return BoundedBatteryContextPacket(
+            project_id=project_id,
+            panel_id=panel_id,
+            revision=revision,
+            battery_spec=standardized_spec,
             standards=standards,
             token_count=measured_tokens,
             is_within_budget=measured_tokens <= self.token_budget,

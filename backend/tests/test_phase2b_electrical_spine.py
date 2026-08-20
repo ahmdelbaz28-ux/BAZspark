@@ -86,11 +86,12 @@ class TestCapabilityDiscovery:
     def test_discover_electrical_capability(self, authorized_principal: AuthenticatedPrincipal) -> None:
         registry = default_capability_registry
         caps = registry.discover(categories=["electrical"], scopes=authorized_principal.scopes)
-        assert len(caps) == 1
-        assert caps[0].capability_id == "electrical.calculate_voltage_drop"
-        assert caps[0].category == "electrical"
-        assert caps[0].risk_class == "ENGINEERING_MUTATION"
-        assert "electrical:write" in caps[0].required_scopes
+        assert len(caps) >= 1
+        voltage_drop_cap = next((c for c in caps if c.capability_id == "electrical.calculate_voltage_drop"), None)
+        assert voltage_drop_cap is not None
+        assert voltage_drop_cap.category == "electrical"
+        assert voltage_drop_cap.risk_class == "ENGINEERING_MUTATION"
+        assert "electrical:write" in voltage_drop_cap.required_scopes
 
     def test_filter_excludes_unrelated_categories(self, authorized_principal: AuthenticatedPrincipal) -> None:
         registry = default_capability_registry

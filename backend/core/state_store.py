@@ -304,17 +304,22 @@ class CommandStateStore:
                 new_devices = exec_result.get("devices", [])
                 new_circuits = {}
                 new_hydraulics = {}
+                new_calculations = {"battery": {}}
                 if "voltage_drop_v" in exec_result:
                     cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
                     new_circuits[cid] = exec_result
                 if "head_loss_m" in exec_result:
                     pid = str(exec_result.get("pipe_segment_id", "pipe-seg-01"))
                     new_hydraulics[pid] = exec_result
+                if "required_ah" in exec_result or "base_capacity_ah" in exec_result:
+                    pnl_id = str(exec_result.get("panel_id", "facp-01"))
+                    new_calculations["battery"][pnl_id] = exec_result
 
                 updated_state = {
                     "devices": new_devices,
                     "circuits": new_circuits,
                     "hydraulics": new_hydraulics,
+                    "calculations": new_calculations,
                     "last_mutation": command.capabilityId,
                     "revision": new_revision,
                 }
@@ -339,16 +344,21 @@ class CommandStateStore:
                 raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
                 existing_circuits = {}
                 existing_hydraulics = {}
+                existing_calculations = {"battery": {}}
                 try:
                     loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
                     if isinstance(loaded, dict):
                         existing_devices = loaded.get("devices", [])
                         existing_circuits = loaded.get("circuits", {})
                         existing_hydraulics = loaded.get("hydraulics", {})
+                        existing_calculations = loaded.get("calculations", {"battery": {}})
+                        if "battery" not in existing_calculations or not isinstance(existing_calculations["battery"], dict):
+                            existing_calculations["battery"] = {}
                 except Exception:
                     existing_devices = []
                     existing_circuits = {}
                     existing_hydraulics = {}
+                    existing_calculations = {"battery": {}}
 
                 new_devices = exec_result.get("devices", [])
                 if "voltage_drop_v" in exec_result:
@@ -357,11 +367,15 @@ class CommandStateStore:
                 if "head_loss_m" in exec_result:
                     pid = str(exec_result.get("pipe_segment_id", "pipe-seg-01"))
                     existing_hydraulics[pid] = exec_result
+                if "required_ah" in exec_result or "base_capacity_ah" in exec_result:
+                    pnl_id = str(exec_result.get("panel_id", "facp-01"))
+                    existing_calculations["battery"][pnl_id] = exec_result
 
                 updated_state = {
                     "devices": new_devices if new_devices else existing_devices,
                     "circuits": existing_circuits,
                     "hydraulics": existing_hydraulics,
+                    "calculations": existing_calculations,
                     "last_mutation": command.capabilityId,
                     "revision": new_revision,
                 }
