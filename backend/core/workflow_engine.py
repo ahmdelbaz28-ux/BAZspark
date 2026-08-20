@@ -12,7 +12,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -257,6 +259,7 @@ class WorkflowExecutor:
         correlation_id: str | None = None,
         auto_rollback_on_warning: bool = False,
         governance_policy: dict[str, Any] | None = None,
+        on_step_progress: Callable[[int, int, str, float, str], None] | None = None,
     ) -> CompositeWorkflowResult:
         w_id = workflow_id or f"wf-{datetime.now(UTC).strftime('%Y%m%d%H%M%S%f')}"
         corr_id = correlation_id or f"corr-{w_id}"
@@ -374,7 +377,8 @@ class WorkflowExecutor:
         last_command_id: str | None = None
 
         # 5. Execute Steps sequentially over Ephemeral State Overlay
-        for node in ordered_nodes:
+        for step_idx, node in enumerate(ordered_nodes, 1):
+            t_step_start = time.perf_counter()
             cap = self.registry.get(node.capability_id)
             if not cap or not cap.handler:
                 return CompositeWorkflowResult(
@@ -511,6 +515,19 @@ class WorkflowExecutor:
             commands_to_commit.append(cmd)
             exec_results_to_commit.append(result_data)
             last_command_id = step_cmd_id
+
+            t_step_elapsed_ms = (time.perf_counter() - t_step_start) * 1000.0
+            if on_step_progress is not None:
+                try:
+                    on_step_progress(
+                        step_idx,
+                        len(ordered_nodes),
+                        node.node_id,
+                        t_step_elapsed_ms,
+                        "in_progress" if step_idx < len(ordered_nodes) else "completed",
+                    )
+                except Exception as cb_err:
+                    logger.debug("Progress callback error: %s", cb_err)
 
         # 6. Compute Combined Cryptographic SHA-256 Audit Digest
         combined_payload = {

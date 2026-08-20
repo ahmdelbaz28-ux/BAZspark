@@ -19,7 +19,7 @@ from typing import Literal, cast
 from .audit_trail import AuditTrail
 from .nfpa72_coverage import verify_full_coverage
 from .nfpa72_models import NFPAComplianceError, RoomSpec
-from .spatial_engine.density_optimizer import (
+from .density_optimizer_v2 import (
     DETECTOR_RADIUS,
     MAX_SPACING_M,
     DensityOptimizer,

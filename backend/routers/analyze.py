@@ -15,6 +15,7 @@ can choose between (a) low-level kernel calls (/api/qomn/...) or
 (b) project-scoped analyze calls (this router).
 """
 
+import asyncio
 import logging
 from typing import Any
 
@@ -137,7 +138,8 @@ async def analyze_battery(request: Request, req: BatteryRequest) -> dict[str, An
     """
     try:
         kernel = QOMNKernel()
-        result = kernel.battery_capacity(
+        result = await asyncio.to_thread(
+            kernel.battery_capacity,
             standby_load_a=req.standby_load_a,
             alarm_load_a=req.alarm_load_a,
             standby_hours=req.standby_hours,
@@ -176,7 +178,8 @@ async def analyze_voltage(request: Request, req: VoltageRequest) -> dict[str, An
     """
     try:
         kernel = QOMNKernel()
-        result = kernel.voltage_drop(
+        result = await asyncio.to_thread(
+            kernel.voltage_drop,
             current_a=req.current_a,
             length_m=req.length_m,
             awg_gauge=req.awg_gauge,
@@ -220,7 +223,8 @@ async def analyze_project_room(
         )  # NOSONAR
 
     try:
-        result = analyze_room(
+        result = await asyncio.to_thread(
+            analyze_room,
             {
                 "room_id": req.room_id,
                 "room_polygon": req.room_polygon,

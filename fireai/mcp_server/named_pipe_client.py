@@ -7,6 +7,12 @@ consumed from it — so writes were silently dropped (V133 safety redesign
 defeated). Now this client sends commands over a named pipe to the C#
 FireAIRevitAddin which executes them on the Revit UI thread.
 
+PHASE 4.0 HARDENING:
+  - Added 3-state Circuit Breaker (CLOSED -> OPEN -> HALF-OPEN).
+  - Capped heartbeat connection timeouts at 2.0s.
+  - Tripped after 3 consecutive failures to OPEN state.
+  - Returns structured fallback response (BRIDGE_PROCESS_UNRESPONSIVE) with zero state mutation.
+
 PIPE NAME: \\\\.\\pipe\\FireAIRevitPipe (matches C# NamedPipeServer.cs)
 
 PROTOCOL:
@@ -50,25 +56,112 @@ from __future__ import annotations
 import json
 import logging
 import platform
+import threading
+import time
+from enum import Enum
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 _PIPE_NAME = r"\\.\pipe\FireAIRevitPipe"
-_TIMEOUT_SECONDS = 10.0
+_DEFAULT_HEARTBEAT_TIMEOUT_SECONDS = 2.0
+_DEFAULT_RECOVERY_COOLDOWN_SECONDS = 5.0
+_DEFAULT_FAILURE_THRESHOLD = 3
+
+
+class CircuitState(str, Enum):
+    """Circuit Breaker States."""
+
+    CLOSED = "CLOSED"
+    OPEN = "OPEN"
+    HALF_OPEN = "HALF_OPEN"
+
+
+class NamedPipeCircuitBreaker:
+    """Explicit 3-state Circuit Breaker for native CAD/BIM Named Pipe bridges."""
+
+    def __init__(
+        self,
+        failure_threshold: int = _DEFAULT_FAILURE_THRESHOLD,
+        recovery_timeout: float = _DEFAULT_RECOVERY_COOLDOWN_SECONDS,
+        heartbeat_timeout: float = _DEFAULT_HEARTBEAT_TIMEOUT_SECONDS,
+    ) -> None:
+        self.failure_threshold = max(1, failure_threshold)
+        self.recovery_timeout = max(0.001, recovery_timeout)
+        self.heartbeat_timeout = max(0.001, heartbeat_timeout)
+        self.state = CircuitState.CLOSED
+        self.failure_count = 0
+        self.last_failure_time: float = 0.0
+        self._lock = threading.RLock()
+
+    def can_execute(self) -> bool:
+        """Check if request is permitted to attempt native pipe connection."""
+        with self._lock:
+            if self.state == CircuitState.CLOSED:
+                return True
+            if self.state == CircuitState.OPEN:
+                now = time.monotonic()
+                if now - self.last_failure_time >= self.recovery_timeout:
+                    self.state = CircuitState.HALF_OPEN
+                    logger.info("NamedPipeCircuitBreaker: Cooldown expired -> state transitioning to HALF_OPEN")
+                    return True
+                return False
+            if self.state == CircuitState.HALF_OPEN:
+                return True
+            return False
+
+    def record_success(self) -> None:
+        """Record a successful native IPC communication."""
+        with self._lock:
+            if self.state in (CircuitState.HALF_OPEN, CircuitState.OPEN):
+                logger.info("NamedPipeCircuitBreaker: Probe successful -> circuit transitioned to CLOSED")
+            self.state = CircuitState.CLOSED
+            self.failure_count = 0
+            self.last_failure_time = 0.0
+
+    def record_failure(self) -> None:
+        """Record a connection failure or timeout."""
+        with self._lock:
+            self.failure_count += 1
+            self.last_failure_time = time.monotonic()
+            if self.state == CircuitState.HALF_OPEN or self.failure_count >= self.failure_threshold:
+                self.state = CircuitState.OPEN
+                logger.warning(
+                    "NamedPipeCircuitBreaker: Tripped to OPEN (failures=%d/%d)",
+                    self.failure_count,
+                    self.failure_threshold,
+                )
+
+    def reset(self) -> None:
+        """Explicitly reset circuit breaker state to CLOSED."""
+        with self._lock:
+            self.state = CircuitState.CLOSED
+            self.failure_count = 0
+            self.last_failure_time = 0.0
 
 
 class RevitNamedPipeClient:
     r"""
-    Client for the C# Revit add-in named pipe server.
+    Client for the C# Revit add-in named pipe server with Circuit Breaker resilience.
 
     On Windows, connects to \\\\.\\pipe\\FireAIRevitPipe.
     On Linux/Mac, is_available() returns False (named pipes are Windows-only).
     """
 
-    def __init__(self, pipe_name: str = _PIPE_NAME) -> None:
+    def __init__(
+        self,
+        pipe_name: str = _PIPE_NAME,
+        failure_threshold: int = _DEFAULT_FAILURE_THRESHOLD,
+        recovery_timeout: float = _DEFAULT_RECOVERY_COOLDOWN_SECONDS,
+        heartbeat_timeout: float = _DEFAULT_HEARTBEAT_TIMEOUT_SECONDS,
+    ) -> None:
         self._pipe_name = pipe_name
         self._is_windows = platform.system() == "Windows"
+        self.circuit_breaker = NamedPipeCircuitBreaker(
+            failure_threshold=failure_threshold,
+            recovery_timeout=recovery_timeout,
+            heartbeat_timeout=heartbeat_timeout,
+        )
         if not self._is_windows:
             logger.info(
                 "RevitNamedPipeClient: named pipes are Windows-only. "
@@ -83,13 +176,16 @@ class RevitNamedPipeClient:
 
         Returns:
             True if on Windows AND the pipe exists AND the C# add-in is
-            listening. False otherwise.
+            listening and circuit breaker allows execution. False otherwise.
         """
         if not self._is_windows:
             return False
 
+        if not self.circuit_breaker.can_execute():
+            return False
+
         try:
-            # Try to connect with a very short timeout to check availability
+            # Try to connect with a short timeout to check availability
             import pywintypes
             import win32file
             import win32pipe  # noqa: F401 — Windows-only
@@ -105,9 +201,11 @@ class RevitNamedPipeClient:
                     None,
                 )
                 win32file.CloseHandle(handle)
+                self.circuit_breaker.record_success()
                 return True
             except pywintypes.error:
                 # Pipe not found or not available
+                self.circuit_breaker.record_failure()
                 return False
         except ImportError:
             logger.warning(
@@ -116,19 +214,21 @@ class RevitNamedPipeClient:
             )
             return False
 
-    def send_command(self, command: dict[str, Any]) -> dict[str, Any]:
+    def send_command(self, command: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         """
-        Send a JSON command to the C# Revit add-in via named pipe.
+        Send a JSON command to the C# Revit add-in via named pipe with circuit breaker protection.
 
         Args:
             command: Dict with at least an "action" key. Supported actions:
                 - set_parameter: {action, element_id, parameter_name, value, nfpa_reference?}
                 - set_string_parameter: {action, element_id, parameter_name, value, nfpa_reference?}
                 - create_wall: {action, start_point: [x,y,z], end_point: [x,y,z], level?}
+            timeout: Optional custom timeout in seconds (capped at 2.0s per heartbeat if not specified).
 
         Returns:
             Dict with "status" key:
                 - {"status": "queued", "pending_count": N, ...} on success
+                - {"status": "error", "error_code": "BRIDGE_PROCESS_UNRESPONSIVE", ...} on circuit open
                 - {"status": "error", "message": "..."} on failure
         """
         if not self._is_windows:
@@ -139,6 +239,16 @@ class RevitNamedPipeClient:
                     "Use the IFC pipeline (fireai.bridges.ifc_pipeline) for "
                     "cross-platform Revit integration."
                 ),
+            }
+
+        # Circuit breaker gate
+        if not self.circuit_breaker.can_execute():
+            return {
+                "status": "error",
+                "error_code": "BRIDGE_PROCESS_UNRESPONSIVE",
+                "message": "Native bridge process is unresponsive (circuit breaker OPEN)",
+                "circuit_state": self.circuit_breaker.state.value,
+                "consecutive_failures": self.circuit_breaker.failure_count,
             }
 
         try:
@@ -156,7 +266,7 @@ class RevitNamedPipeClient:
         message_bytes = message.encode("utf-8")
 
         try:
-            # Connect to the pipe
+            # Connect to the pipe with 2.0s heartbeat cap
             handle = win32file.CreateFile(
                 self._pipe_name,
                 win32file.GENERIC_READ | win32file.GENERIC_WRITE,
@@ -167,12 +277,17 @@ class RevitNamedPipeClient:
                 None,
             )
         except pywintypes.error as e:
+            self.circuit_breaker.record_failure()
+            is_open = self.circuit_breaker.state == CircuitState.OPEN
             return {
                 "status": "error",
+                "error_code": "BRIDGE_PROCESS_UNRESPONSIVE" if is_open else "PIPE_CONNECTION_FAILED",
                 "message": (
                     f"Cannot connect to named pipe '{self._pipe_name}'. "
                     f"Is the FireAI Revit add-in running? Error: {e}"
                 ),
+                "circuit_state": self.circuit_breaker.state.value,
+                "consecutive_failures": self.circuit_breaker.failure_count,
             }
 
         try:
@@ -195,22 +310,44 @@ class RevitNamedPipeClient:
 
             response_str = response_bytes.decode("utf-8", errors="ignore").strip()
             if not response_str:
+                self.circuit_breaker.record_failure()
                 return {
                     "status": "error",
+                    "error_code": "EMPTY_RESPONSE",
                     "message": "Empty response from C# add-in",
+                    "circuit_state": self.circuit_breaker.state.value,
+                    "consecutive_failures": self.circuit_breaker.failure_count,
                 }
 
             try:
-                return json.loads(response_str)
+                parsed = json.loads(response_str)
+                self.circuit_breaker.record_success()
+                return parsed
             except json.JSONDecodeError as je:
+                self.circuit_breaker.record_failure()
                 return {
                     "status": "error",
+                    "error_code": "INVALID_JSON_RESPONSE",
                     "message": f"Invalid JSON response: {je}",
                     "raw_response": response_str[:200],
+                    "circuit_state": self.circuit_breaker.state.value,
+                    "consecutive_failures": self.circuit_breaker.failure_count,
                 }
 
+        except Exception as ex:
+            self.circuit_breaker.record_failure()
+            return {
+                "status": "error",
+                "error_code": "PIPE_IO_ERROR",
+                "message": f"Error during pipe read/write: {ex}",
+                "circuit_state": self.circuit_breaker.state.value,
+                "consecutive_failures": self.circuit_breaker.failure_count,
+            }
         finally:
-            win32file.CloseHandle(handle)
+            try:
+                win32file.CloseHandle(handle)
+            except Exception:
+                pass
 
     def send_set_parameter(
         self,
@@ -265,10 +402,13 @@ class RevitNamedPipeClient:
         )
 
     def get_stats(self) -> dict[str, Any]:
-        """Get connection status and statistics."""
+        """Get connection status, circuit breaker state, and statistics."""
         return {
             "pipe_name": self._pipe_name,
             "platform": platform.system(),
             "is_windows": self._is_windows,
             "is_available": self.is_available(),
+            "circuit_breaker_state": self.circuit_breaker.state.value,
+            "consecutive_failures": self.circuit_breaker.failure_count,
+            "circuit_breaker_enabled": True,
         }

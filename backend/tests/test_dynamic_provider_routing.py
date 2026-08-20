@@ -244,9 +244,11 @@ class TestWebSocketDynamicRoutingAndTelemetry:
 
         await orchestrator.handle_composite_intent(ws, engineer_principal, msg)
 
-        assert len(sent_messages) == 1
-        preview = sent_messages[0]
-        assert preview["type"] == "ai_composite_preview"
+        progress_frames = [m for m in sent_messages if m.get("type") == "ai_progress_frame"]
+        previews = [m for m in sent_messages if m.get("type") == "ai_composite_preview"]
+        assert len(previews) == 1
+        assert len(progress_frames) == 3
+        preview = previews[0]
 
         # Verify real token telemetry
         telemetry = preview.get("tokenTelemetry", {})
@@ -289,7 +291,7 @@ class TestWebSocketDynamicRoutingAndTelemetry:
 
         await orchestrator.handle_composite_intent(ws, engineer_principal, msg)
 
-        assert len(sent_messages) == 1
-        err_res = sent_messages[0]
-        assert err_res["type"] == "ai_error"
+        errors = [m for m in sent_messages if m.get("type") == "ai_error"]
+        assert len(errors) == 1
+        err_res = errors[0]
         assert err_res["errorCode"] == "PHYSICS_WARNING_ROLLBACK"

@@ -312,8 +312,8 @@ class AIOrchestrationService:
             },
         )
 
-        # 4. Execute Dry-Run via CommandBus
-        result = self.command_bus.execute(command)
+        # 4. Execute Dry-Run via CommandBus in worker thread
+        result = await asyncio.to_thread(self.command_bus.execute, command)
 
         # 5. Send Preview to Client via WS
         await websocket.send_json(
@@ -393,7 +393,7 @@ class AIOrchestrationService:
             },
         )
 
-        result = self.command_bus.execute(command)
+        result = await asyncio.to_thread(self.command_bus.execute, command)
 
         await websocket.send_json(
             {
@@ -480,7 +480,7 @@ class AIOrchestrationService:
             },
         )
 
-        result = self.command_bus.execute(command)
+        result = await asyncio.to_thread(self.command_bus.execute, command)
 
         await websocket.send_json(
             {
@@ -581,7 +581,7 @@ class AIOrchestrationService:
             },
         )
 
-        result = self.command_bus.execute(command)
+        result = await asyncio.to_thread(self.command_bus.execute, command)
 
         await websocket.send_json(
             {
@@ -631,7 +631,7 @@ class AIOrchestrationService:
             payload=payload,
         )
 
-        result = self.command_bus.execute(command)
+        result = await asyncio.to_thread(self.command_bus.execute, command)
 
         if not result.success:
             if result.errorCode == "CONCURRENCY_CONFLICT":
@@ -684,7 +684,8 @@ class AIOrchestrationService:
         self.command_bus.set_project_revision(project_id, new_rev)
 
         devices = msg.get("devices", [])
-        self.command_bus.save_canonical_state(
+        await asyncio.to_thread(
+            self.command_bus.save_canonical_state,
             project_id=project_id,
             state={
                 "devices": devices,
@@ -777,9 +778,29 @@ class AIOrchestrationService:
             else False
         )
 
-        # 3. Dry-run pipeline execution over EphemeralStateOverlay
+        # 3. Dry-run pipeline execution over EphemeralStateOverlay in worker thread
+        loop = asyncio.get_running_loop()
+
+        def _progress_cb(step_idx: int, total_steps: int, node_id: str, elapsed_ms: float, status: str = "in_progress") -> None:
+            frame = {
+                "type": "ai_progress_frame",
+                "workflowId": workflow_id,
+                "correlationId": correlation_id,
+                "stepIndex": step_idx,
+                "totalSteps": total_steps,
+                "stepId": node_id,
+                "progressPct": round((step_idx / max(1, total_steps)) * 100.0, 1),
+                "elapsedMs": round(elapsed_ms, 2),
+                "status": status,
+            }
+            try:
+                asyncio.run_coroutine_threadsafe(websocket.send_json(frame), loop)
+            except Exception:
+                pass
+
         executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
-        res = executor.execute(
+        res = await asyncio.to_thread(
+            executor.execute,
             dag=dag,
             project_id=project_id,
             expected_revision=current_rev,
@@ -789,6 +810,7 @@ class AIOrchestrationService:
             correlation_id=correlation_id,
             auto_rollback_on_warning=auto_rollback,
             governance_policy=governance_policy,
+            on_step_progress=_progress_cb,
         )
 
         if not res.success:
@@ -841,9 +863,29 @@ class AIOrchestrationService:
             return
 
         dag = CompositeWorkflowDAG.from_dict(dag_data)
+        loop = asyncio.get_running_loop()
+
+        def _progress_cb(step_idx: int, total_steps: int, node_id: str, elapsed_ms: float, status: str = "in_progress") -> None:
+            frame = {
+                "type": "ai_progress_frame",
+                "workflowId": workflow_id,
+                "correlationId": correlation_id,
+                "stepIndex": step_idx,
+                "totalSteps": total_steps,
+                "stepId": node_id,
+                "progressPct": round((step_idx / max(1, total_steps)) * 100.0, 1),
+                "elapsedMs": round(elapsed_ms, 2),
+                "status": status,
+            }
+            try:
+                asyncio.run_coroutine_threadsafe(websocket.send_json(frame), loop)
+            except Exception:
+                pass
+
         executor = WorkflowExecutor(self.capability_registry, self.command_bus.state_store)
 
-        res = executor.execute(
+        res = await asyncio.to_thread(
+            executor.execute,
             dag=dag,
             project_id=project_id,
             expected_revision=expected_revision,
@@ -851,6 +893,7 @@ class AIOrchestrationService:
             is_dry_run=False,
             workflow_id=workflow_id,
             correlation_id=correlation_id,
+            on_step_progress=_progress_cb,
         )
 
         if not res.success:
