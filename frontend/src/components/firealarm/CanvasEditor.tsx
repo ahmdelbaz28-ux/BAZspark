@@ -47,6 +47,29 @@ export interface PreviewGhostDevice {
 	coverage_radius_m?: number;
 }
 
+/** Ghost overlay: proposed circuit wiring polyline (pointer-events:none) */
+export interface CircuitGhostSegment {
+	id: string;
+	/** Canvas pixel coordinates for the polyline points */
+	points: Array<{ x: number; y: number }>;
+	/** Voltage drop % — used to choose stroke colour */
+	voltageDropPct?: number;
+	isCompliant?: boolean;
+}
+
+/** Ghost overlay: proposed hydraulic pipe segment (pointer-events:none) */
+export interface HydraulicGhostSegment {
+	id: string;
+	x1: number;
+	y1: number;
+	x2: number;
+	y2: number;
+	/** m/s — determines colour coding: >5.0 red, >3.0 orange, else blue */
+	flowVelocityMS?: number;
+	/** Shows inline velocity label if true */
+	showLabel?: boolean;
+}
+
 interface CanvasEditorProps {
 	floorPlanImage?: string;
 	detectors: Detector[];
@@ -54,6 +77,10 @@ interface CanvasEditorProps {
 	circuitTopology?: "class_a" | "class_b";
 	onTopologyChange?: (topology: "class_a" | "class_b") => void;
 	previewDevices?: PreviewGhostDevice[];
+	/** Phase 3: AI-proposed circuit wiring overlays (ephemeral, pointer-events:none) */
+	circuitGhostSegments?: CircuitGhostSegment[];
+	/** Phase 3: AI-proposed hydraulic pipe overlays (ephemeral, pointer-events:none) */
+	hydraulicGhostSegments?: HydraulicGhostSegment[];
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
@@ -63,6 +90,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 	circuitTopology: externalTopology,
 	onTopologyChange,
 	previewDevices = [],
+	circuitGhostSegments = [],
+	hydraulicGhostSegments = [],
 }) => {
 	const { t } = useTranslation();
 	const canvasRef = useRef<HTMLDivElement>(null);
@@ -428,45 +457,108 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 						/>
 					)}
 
-					{/* AI Proposal Preview Ghost Layer (Transient Projection) */}
-					{previewDevices.map((pDev) => {
-						const px = pDev.x ?? (pDev.x_m || 0) * 20 + 50;
-						const py = pDev.y ?? (pDev.y_m || 0) * 20 + 50;
-						const rad = (pDev.coverage_radius_m || 6.37) * 10;
-						return (
-							<g key={`preview-ghost-${pDev.id}`} opacity="0.85">
-								<circle
-									cx={px}
-									cy={py}
-									r={rad}
-									fill="rgba(6, 182, 212, 0.08)"
-									stroke="#06b6d4"
-									strokeWidth="1.5"
-									strokeDasharray="4 2"
-								/>
-								<circle
-									cx={px}
-									cy={py}
-									r="10"
-									fill="rgba(6, 182, 212, 0.25)"
-									stroke="#06b6d4"
+					{/* ── Phase 3: AI Ghost Layers (pointer-events:none) ───────────────────── */}
+					<g className="ephemeral-ghost-layer" pointerEvents="none">
+						{/* Proposed device placements with dashed cyan coverage circles */}
+						{previewDevices.map((pDev) => {
+							const px = pDev.x ?? (pDev.x_m || 0) * 20 + 50;
+							const py = pDev.y ?? (pDev.y_m || 0) * 20 + 50;
+							const rad = (pDev.coverage_radius_m || 6.37) * 10;
+							return (
+								<g key={`preview-ghost-${pDev.id}`} opacity="0.85">
+									<circle
+										cx={px}
+										cy={py}
+										r={rad}
+										fill="rgba(6, 182, 212, 0.08)"
+										stroke="#06b6d4"
+										strokeWidth="1.5"
+										strokeDasharray="4 2"
+									/>
+									<circle
+										cx={px}
+										cy={py}
+										r="10"
+										fill="rgba(6, 182, 212, 0.25)"
+										stroke="#06b6d4"
+										strokeWidth="2"
+										strokeDasharray="3 2"
+									/>
+									<text
+										x={px}
+										y={py + 3}
+										textAnchor="middle"
+										fill="#06b6d4"
+										fontSize="8"
+										fontWeight="bold"
+										fontFamily="monospace"
+									>
+										AI
+									</text>
+								</g>
+							);
+						})}
+
+						{/* Proposed circuit wiring polylines — dashed cyan (non-compliant = amber) */}
+						{circuitGhostSegments.map((seg) => {
+							const pts = seg.points.map((p) => `${p.x},${p.y}`).join(" ");
+							const stroke =
+								seg.isCompliant === false
+									? "#f59e0b" // amber — non-compliant
+									: "#06b6d4"; // cyan — compliant
+							return (
+								<polyline
+									key={`circuit-ghost-${seg.id}`}
+									points={pts}
+									fill="none"
+									stroke={stroke}
 									strokeWidth="2"
-									strokeDasharray="3 2"
+									strokeDasharray="6 3"
+									strokeOpacity="0.85"
 								/>
-								<text
-									x={px}
-									y={py + 3}
-									textAnchor="middle"
-									fill="#06b6d4"
-									fontSize="8"
-									fontWeight="bold"
-									fontFamily="monospace"
-								>
-									AI
-								</text>
-							</g>
-						);
-					})}
+							);
+						})}
+
+						{/* Proposed hydraulic pipe segments — colour-coded by flow velocity */}
+						{hydraulicGhostSegments.map((seg) => {
+							const v = seg.flowVelocityMS ?? 0;
+							// NFPA 13 §6.5: velocities >5.0 m/s are non-compliant (red flag)
+							const stroke =
+								v > 5.0
+									? "#ef4444" // red — over-velocity
+									: v > 3.0
+										? "#f97316" // orange — high velocity
+										: "#3b82f6"; // blue — nominal
+							return (
+								<g key={`hydraulic-ghost-${seg.id}`}>
+									<line
+										x1={seg.x1}
+										y1={seg.y1}
+										x2={seg.x2}
+										y2={seg.y2}
+										stroke={stroke}
+										strokeWidth="3"
+										strokeDasharray="8 4"
+										strokeOpacity="0.8"
+									/>
+									{/* Velocity label */}
+									{seg.showLabel && v > 0 && (
+										<text
+											x={(seg.x1 + seg.x2) / 2}
+											y={(seg.y1 + seg.y2) / 2 - 6}
+											textAnchor="middle"
+											fill={stroke}
+											fontSize="8"
+											fontWeight="bold"
+											fontFamily="monospace"
+										>
+											{v.toFixed(1)}m/s{v > 5.0 ? " ⚠" : ""}
+										</text>
+									)}
+								</g>
+							);
+						})}
+					</g>
 
 					{/* Detectors & Isolators */}
 					{detectors.map(renderDetector)}

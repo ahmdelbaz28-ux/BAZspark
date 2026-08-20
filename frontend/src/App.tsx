@@ -18,6 +18,7 @@ import { SmoothScroll } from "@/components/interaction/SmoothScroll";
 // F-08 FIX (Engineering Review): visible banner when running on mock data.
 import { DemoDataBanner } from "@/components/shared/DemoDataBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApiQuery";
@@ -320,6 +321,11 @@ const SecurityAlertsPage = lazy(() =>
 const SyncPage = lazy(() =>
 	import("./pages/SyncPage").then((m) => ({ default: m.SyncPage })),
 );
+const AgentSettingsPage = lazy(() =>
+	import("./pages/AgentSettingsPage").then((m) => ({
+		default: m.AgentSettingsPage,
+	})),
+);
 
 // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
 // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
@@ -534,6 +540,8 @@ function App() {
 			},
 			{ path: "/sync", element: <SyncPage /> },
 			{ path: "/multi-db", element: <MultiDBPage />, requiredRole: "admin" },
+			// Phase 3: AI Agent Settings Workspace
+			{ path: "/settings/ai-agents", element: <AgentSettingsPage /> },
 		],
 		[],
 	);
@@ -543,6 +551,7 @@ function App() {
 
 	return (
 		<AuthProvider>
+			<AgentSettingsProvider>
 			<SmoothScroll>
 				<Suspense fallback={null}>
 					<MagneticCursor />
@@ -650,6 +659,7 @@ function App() {
 					<Toaster position="top-right" />
 				</div>
 			</SmoothScroll>
+			</AgentSettingsProvider>
 		</AuthProvider>
 	);
 }

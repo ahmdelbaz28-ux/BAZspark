@@ -14,6 +14,9 @@ interface AppShellProps {
 	onSearchOpen?: () => void;
 	currentLanguage: string;
 	onLanguageChange: (lang: string) => void;
+	/** Phase 3: optional docked AI Workflow drawer (380px, right side) */
+	workflowDrawer?: React.ReactNode;
+	workflowDrawerOpen?: boolean;
 }
 
 const AppShell: React.FC<AppShellProps> = ({
@@ -25,6 +28,8 @@ const AppShell: React.FC<AppShellProps> = ({
 	onSearchOpen,
 	currentLanguage,
 	onLanguageChange,
+	workflowDrawer,
+	workflowDrawerOpen = false,
 }) => {
 	const isRTL = document.documentElement.dir === "rtl";
 
@@ -67,12 +72,25 @@ const AppShell: React.FC<AppShellProps> = ({
 
 				<main
 					id="main-content"
-					className="flex-1 overflow-auto bg-background relative"
+					className="flex-1 overflow-auto bg-background relative min-w-0"
 				>
 					<div className="relative z-10">
 						<PageAnimator>{children}</PageAnimator>
 					</div>
 				</main>
+
+				{/* Phase 3: Docked AI Workflow Drawer (380px fixed, right side).
+                             pointer-events:none on all ephemeral SVG overlays inside.
+                             flex-shrink-0 keeps it from collapsing on narrow viewports. */}
+				{workflowDrawer && workflowDrawerOpen && (
+					<div
+						className="w-[380px] shrink-0 flex flex-col border-l border-border bg-card overflow-y-auto"
+						aria-label="AI Workflow Surface"
+						role="complementary"
+					>
+						{workflowDrawer}
+					</div>
+				)}
 
 				<StatusBar
 					backendUrl={backendUrl}
