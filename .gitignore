@@ -338,3 +338,7 @@ audit_master.json
 # AI prompt files — should never be committed to the repo
 /agent.md
 /agent_*.md
+
+# Agent scratch scripts (temporary, not part of codebase)
+scratch/
+*.json.tmp
