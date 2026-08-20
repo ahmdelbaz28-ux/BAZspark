@@ -482,8 +482,11 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 			className="workflow-action-card rounded-xl border border-border bg-card overflow-hidden"
 			data-testid={`workflow-card-${lifecycleState.toLowerCase()}`}
 		>
-			{/* Header — step progress */}
-			<div className="flex items-center gap-1 px-4 py-3 border-b border-border bg-card/80">
+			{/* Header — step progress (UX: progress indicator for multi-step process, WCAG 2.2) */}
+			<nav
+				className="flex items-center gap-1 px-4 py-3 border-b border-border bg-card/80"
+				aria-label="Workflow progress"
+			>
 				{STATE_ORDER.map((state, idx) => {
 					const isDone = idx < currentIdx;
 					const isActive = idx === currentIdx;
@@ -497,25 +500,28 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 											? "bg-emerald-500/15 text-emerald-400"
 											: "text-muted-foreground"
 								}`}
+								aria-current={isActive ? "step" : undefined}
+								aria-label={`${STATE_LABELS[state]}${isDone ? " (completed)" : isActive ? " (current)" : " (pending)"}`}
 							>
 								{isDone ? (
-									<Circle className="h-2 w-2 fill-emerald-400 text-emerald-400" />
+									<Circle className="h-2 w-2 fill-emerald-400 text-emerald-400" aria-hidden="true" />
 								) : isActive && isLoading ? (
-									<Loader2 className="h-2 w-2 animate-spin" />
+									<Loader2 className="h-2 w-2 animate-spin" aria-hidden="true" />
 								) : (
-									<Circle className="h-2 w-2" />
+									<Circle className="h-2 w-2" aria-hidden="true" />
 								)}
 								{STATE_LABELS[state]}
 							</div>
 							{idx < STATE_ORDER.length - 1 && (
 								<div
 									className={`w-3 h-px ${isDone ? "bg-emerald-400/50" : "bg-border"}`}
+									aria-hidden="true"
 								/>
 							)}
 						</div>
 					);
 				})}
-			</div>
+			</nav>
 
 			{/* Content */}
 			<div className="p-4 space-y-3">
@@ -575,7 +581,8 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 							id="workflow-approve-btn"
 							onClick={() => void handleApprove()}
 							disabled={approving || isLoading}
-							className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
+							aria-describedby={expectedRevision !== undefined ? "workflow-revision-info" : undefined}
+							className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-background"
 						>
 							{approving ? (
 								<Loader2 className="h-3 w-3 animate-spin" />

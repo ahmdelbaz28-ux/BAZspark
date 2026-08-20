@@ -234,18 +234,19 @@ export function AgentSettingsPage() {
 							</p>
 						</div>
 						<button
-							type="button"
-							id="agent-settings-reset-btn"
-							onClick={handleReset}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors shrink-0 ${
-								resetConfirm
-									? "bg-red-500/15 border-red-500/40 text-red-400 hover:bg-red-500/25"
-									: "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
-							}`}
-						>
-							<RefreshCcw className="h-3 w-3" />
-							{resetConfirm ? "Confirm Reset" : "Reset Defaults"}
-						</button>
+					type="button"
+					id="agent-settings-reset-btn"
+					onClick={handleReset}
+					aria-label={resetConfirm ? "Confirm Reset" : "Reset Defaults"}
+					className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background ${
+						resetConfirm
+							? "bg-red-500/15 border-red-500/40 text-red-400 hover:bg-red-500/25 focus:ring-red-400"
+							: "border-border text-muted-foreground hover:text-foreground hover:border-border/80 focus:ring-cyan-500"
+					}`}
+				>
+					<RefreshCcw className="h-3 w-3" aria-hidden="true" />
+					{resetConfirm ? "Confirm Reset" : "Reset Defaults"}
+				</button>
 					</div>
 				</div>
 			</div>
@@ -270,7 +271,7 @@ export function AgentSettingsPage() {
 									role="radio"
 									aria-checked={settings.llm.provider === p.id}
 									onClick={() => updateLLM({ provider: p.id })}
-									className={`relative flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border text-left transition-colors ${
+									className={`relative flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border text-left transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 focus:ring-offset-background ${
 										settings.llm.provider === p.id
 											? "border-cyan-500/60 bg-cyan-500/10 text-foreground"
 											: "border-border bg-muted/30 text-muted-foreground hover:border-border/80 hover:text-foreground"
