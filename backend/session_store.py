@@ -68,21 +68,46 @@ _redis_checked = False
 _redis_available = False
 
 
+def _is_production() -> bool:
+    env = os.getenv("FIREAI_ENV", os.getenv("ENVIRONMENT", "production")).lower()
+    return env in ("production", "prod")
+
+
+def _raise_if_production(msg: str, cause: Exception | None = None) -> None:
+    validation_mode = os.getenv("FIREAI_ENV_VALIDATION", "strict").strip().lower()
+    if _is_production() and validation_mode not in ("warn", "soft", "false", "0"):
+        from backend.env_validator import ConfigurationError
+
+        if cause is not None:
+            raise ConfigurationError(msg) from cause
+        raise ConfigurationError(msg)
+
+
 def _get_redis() -> Any:
     """
     Lazily initialize the Redis client. Returns None if:
       - REDIS_URL is not set
       - Redis is unreachable
+    In production mode (unless FIREAI_ENV_VALIDATION=warn), failing to obtain Redis
+    raises ConfigurationError.
     """
     global _redis_client, _redis_checked, _redis_available
 
     if _redis_checked:
-        return _redis_client if _redis_available else None
+        if _redis_available:
+            return _redis_client
+        _raise_if_production(
+            "Redis session store is required in production mode, but Redis is not available."
+        )
+        return None
 
     _redis_checked = True
 
     redis_url = os.getenv("REDIS_URL")
     if not redis_url:
+        _raise_if_production(
+            "REDIS_URL is not set. In-memory session store is strictly forbidden in production mode."
+        )
         logger.info("REDIS_URL not set — using in-memory session store (dev mode)")
         return None
 
@@ -104,12 +129,20 @@ def _get_redis() -> Any:
             _redis_client.redis_url if hasattr(_redis_client, "redis_url") else redis_url,
         )
         return _redis_client
-    except ImportError:
+    except ImportError as e:
+        _raise_if_production(
+            "redis package not installed — required for production session store.",
+            cause=e,
+        )
         logger.warning(
             "redis package not installed — falling back to in-memory session store. Install with: pip install redis"
         )
         return None
     except Exception as e:
+        _raise_if_production(
+            f"Redis connection failed ({e}) in production mode.",
+            cause=e,
+        )
         logger.warning("Redis connection failed (%s) — falling back to in-memory session store", e)
         return None
 
@@ -145,7 +178,11 @@ class SessionStore:
                 return
             except Exception as e:
                 logger.warning("Redis SET failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis SET failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             # Deep-copy to prevent external mutation
@@ -167,7 +204,11 @@ class SessionStore:
                 return session
             except Exception as e:
                 logger.warning("Redis GET failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis GET failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             session = _mem_sessions.get(key)
@@ -188,7 +229,11 @@ class SessionStore:
                 return
             except Exception as e:
                 logger.warning("Redis DELETE failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis DELETE failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             _mem_sessions.pop(key, None)
@@ -209,7 +254,11 @@ class SessionStore:
                 return
             except Exception as e:
                 logger.warning("Redis LPUSH failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis LPUSH failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             if client_ip not in _mem_failed:
@@ -241,7 +290,11 @@ class SessionStore:
                 return valid
             except Exception as e:
                 logger.warning("Redis LRANGE failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis LRANGE failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             if client_ip not in _mem_failed:
@@ -260,7 +313,11 @@ class SessionStore:
                 return
             except Exception as e:
                 logger.warning("Redis DELETE failed (%s) — falling back to in-memory", e)
+                _raise_if_production(f"Redis DELETE failed in production: {e}", cause=e)
 
+        _raise_if_production(
+            "In-memory session store fallback is strictly forbidden in production mode."
+        )
         # In-memory fallback
         with _mem_lock:
             _mem_failed.pop(client_ip, None)

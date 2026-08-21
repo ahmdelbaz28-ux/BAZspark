@@ -69,7 +69,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _COOKIE_NAME = "__Host-fireai_session"
-_COOKIE_MAX_AGE_SECONDS = 8 * 3600  # 8 hours
+_COOKIE_MAX_AGE_SECONDS = int(os.getenv("FIREAI_SESSION_TTL", str(24 * 3600)))  # 24 hours default
 _SESSION_ID_BYTES = 32  # 256 bits of entropy
 
 # Session secret manager: handles loading, validation, and rotation.

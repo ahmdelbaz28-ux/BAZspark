@@ -111,6 +111,12 @@ def _mask(value: str | None) -> str:
     return f"{v[:4]}*** (len={len(v)})"
 
 
+class ConfigurationError(RuntimeError):
+    """Raised when environment or database configuration is invalid for production."""
+
+    pass
+
+
 class Severity(StrEnum):
     HARD = "HARD"  # launch blocker in production
     SOFT = "SOFT"  # warning only (degraded mode acceptable in dev)
@@ -185,14 +191,41 @@ def _bool_like(value: str | None) -> tuple[bool, str]:
     return True, "boolean"
 
 
+def _database_url_valid(value: str | None) -> tuple[bool, str]:
+    """Validate DATABASE_URL and reject SQLite in production."""
+    ok, msg = _present(value)
+    if not ok:
+        return ok, msg
+    v = (value or "").strip().lower()
+    if v.startswith("sqlite://") or v.startswith("sqlite:"):
+        return False, (
+            "SQLite is strictly forbidden in production mode (DATABASE_URL starts with sqlite://). "
+            "Please configure the managed PostgreSQL instance (e.g. Supabase, Neon, AWS RDS) "
+            "in your secrets manager."
+        )
+    return True, "valid database URL"
+
+
+def _redis_url_valid(value: str | None) -> tuple[bool, str]:
+    """Validate REDIS_URL for production session persistence."""
+    ok, msg = _present(value)
+    if not ok:
+        return ok, msg
+    v = (value or "").strip().lower()
+    if not (v.startswith("redis://") or v.startswith("rediss://")):
+        return False, "must start with redis:// or rediss://"
+    return True, "valid Redis URL"
+
+
 # Registry — single source of truth. Mirrors .env.production.example sections.
 _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     # ── 0. Runtime ──
     ("FIREAI_ENV", Severity.SOFT, _present),
     ("FIREAI_API_KEY", Severity.HARD, _present),
     ("FIREAI_SESSION_SECRET", Severity.HARD, _min_len(43)),
-    # ── 1. Database ──
-    ("DATABASE_URL", Severity.HARD, _present),
+    # ── 1. Database & Cache ──
+    ("DATABASE_URL", Severity.HARD, _database_url_valid),
+    ("REDIS_URL", Severity.HARD, _redis_url_valid),
     # ── 2. Supabase Auth + REST ──
     # NOTE (audit P0-2 fix + self-critique M2): The backend currently uses
     # Supabase ONLY as a PostgreSQL connection pooler via DATABASE_URL (section 1).
@@ -399,7 +432,7 @@ def assert_environment(prod_mode: bool | None = None) -> None:
     if prod_mode is None:
         # V246 fail-safe: default "production" — mirrors config.py, app.py,
         # and all 12+ V246-hardened files across the codebase.
-        fireai_env = os.getenv("FIREAI_ENV")
+        fireai_env = os.getenv("FIREAI_ENV", os.getenv("ENVIRONMENT"))
         if fireai_env is None:
             # FIREAI_ENV is UNSET — we're using the default. Log which default.
             prod_indicators = _detect_production_indicators()
@@ -446,7 +479,7 @@ def assert_environment(prod_mode: bool | None = None) -> None:
     validation_mode = os.getenv("FIREAI_ENV_VALIDATION", "strict").strip().lower()
     if prod_mode and hard and validation_mode not in ("warn", "soft", "false", "0"):
         preview = "\n  - ".join(str(i) for i in hard)
-        raise RuntimeError(
+        raise ConfigurationError(
             f"BAZspark environment validation FAILED in production mode — "
             f"{len(hard)} required variable(s) missing/invalid:\n  - {preview}\n"
             "set them in Vercel/HF Space/GitHub Secrets (see "
@@ -463,3 +496,12 @@ def assert_environment(prod_mode: bool | None = None) -> None:
             validation_mode,
             len(hard),
         )
+
+
+__all__ = [
+    "ConfigurationError",
+    "Severity",
+    "ValidationIssue",
+    "assert_environment",
+    "validate_environment",
+]

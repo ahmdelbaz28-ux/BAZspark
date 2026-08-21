@@ -91,6 +91,15 @@ class CheckoutRequest(BaseModel):
     )
 
 
+class DirectCheckoutRequest(BaseModel):
+    order_id: str | None = None
+    amount_cents: int | None = Field(default=None, gt=0, le=100_000_000)
+    description: str = Field(default="Subscription checkout", max_length=500)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    currency: str | None = None
+    billing_data: dict[str, Any] = Field(default_factory=dict)
+
+
 class OrderResponse(BaseModel):
     id: str
     user_principal: str
@@ -277,7 +286,55 @@ async def initiate_checkout(
         ) from exc
 
 
-# ── Direct Meeza Gateway Endpoints (Removed: Legacy unauthenticated stubs replaced by secure /orders/{id}/checkout) ──
+@router.post(
+    "/checkout",
+    response_model=CheckoutResponse,
+    summary="Direct checkout intent creation and initialization",
+    responses={
+        401: _ERROR_401,
+        400: _ERROR_400,
+        501: _ERROR_501,
+        502: _ERROR_502,
+    },
+)
+async def direct_checkout(
+    body: DirectCheckoutRequest,
+    principal: Principal,
+) -> dict[str, Any]:
+    user = _require_principal(principal)
+    try:
+        target_order_id = body.order_id
+        if not target_order_id:
+            if not body.amount_cents:
+                raise HTTPException(status_code=400, detail="Either order_id or amount_cents is required")
+            order = svc.create_order(
+                user_principal=user,
+                amount_cents=body.amount_cents,
+                description=body.description,
+                metadata=body.metadata,
+                currency=body.currency,
+            )
+            target_order_id = order["id"]
+        return svc.initiate_checkout(
+            order_id=target_order_id,
+            user_principal=user,
+            billing_data=body.billing_data,
+        )
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
+    except Exception as exc:  # NOSONAR — top-level guard for PSP HTTP errors
+        logger.exception("Direct checkout failed for user %s", user)
+        raise HTTPException(
+            status_code=502,
+            detail=f"PSP communication error: {type(exc).__name__}",
+        ) from exc
+
+
+# ── Direct Meeza Gateway Endpoints ──
 
 
 # ── Transaction / event audit endpoints ─────────────────────────────────────
@@ -369,11 +426,28 @@ async def meeza_webhook(
         sig_header = request.headers.get("X-Paymob-Signature", "")
     result = svc.handle_meeza_webhook(payload_raw, sig_header)
     http_status = result.get("http_status", 200)
-    if http_status == 401:
-        raise HTTPException(status_code=401, detail=result.get("reason", "unauthorized"))
-    if http_status == 400:
-        raise HTTPException(status_code=400, detail=result.get("reason", "bad_request"))
+    if http_status != 200:
+        raise HTTPException(
+            status_code=http_status,
+            detail=result.get("reason", "webhook_error"),
+        )
     return result
+
+
+@router.post(
+    "/webhook",
+    response_model=WebhookResponse,
+    summary="Meeza PSP webhook receiver alias",
+    include_in_schema=False,
+    responses={400: _ERROR_400, 401: _ERROR_401},
+)
+async def meeza_webhook_alias(
+    request: Request,
+    x_meeza_signature: Annotated[str, Header(alias="X-Meeza-Signature")] = "",
+    signature: Annotated[str, Header()] = "",
+) -> dict[str, Any]:
+    """Alias for /webhooks/meeza for webhook dispatchers configured with /webhook."""
+    return await meeza_webhook(request=request, x_meeza_signature=x_meeza_signature, signature=signature)
 
 
 # ── Sandbox-only simulate endpoint (gated behind BILLING_MANAGE) ────────────

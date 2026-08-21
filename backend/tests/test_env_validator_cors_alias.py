@@ -20,6 +20,7 @@ _HARD_KEYS = (
     "FIREAI_API_KEY",
     "FIREAI_SESSION_SECRET",
     "DATABASE_URL",
+    "REDIS_URL",
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
@@ -49,6 +50,8 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
         if key in ("SUPABASE_URL", "LANGFUSE_HOST"):
             prefix = key.lower().split("_")[0]
             monkeypatch.setenv(key, f"https://{prefix}.example.co")
+        elif key == "REDIS_URL":
+            monkeypatch.setenv(key, "redis://localhost:6379/0")
         else:
             monkeypatch.setenv(key, "x" * 64)
     # CORS handled per-test.

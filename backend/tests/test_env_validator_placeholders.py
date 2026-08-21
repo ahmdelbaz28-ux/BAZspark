@@ -23,6 +23,7 @@ _HARD_KEYS = (
     "FIREAI_API_KEY",
     "FIREAI_SESSION_SECRET",
     "DATABASE_URL",
+    "REDIS_URL",
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
@@ -45,7 +46,10 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FIREAI_ENV", "production")
     monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     for key in _HARD_KEYS:
-        monkeypatch.setenv(key, "x" * 64)
+        if key == "REDIS_URL":
+            monkeypatch.setenv(key, "redis://localhost:6379/0")
+        else:
+            monkeypatch.setenv(key, "x" * 64)
 
 
 def _hard_for(name: str) -> set[str]:
