@@ -143,7 +143,7 @@ class PgCursor:
     def __init__(self, real: Any) -> None:
         self._real = real
 
-    def execute(self, sql: str, params: Any = None) -> "PgCursor":
+    def execute(self, sql: str, params: Any = None) -> PgCursor:
         self._real.execute(sql_to_pg(sql), params or ())
         return self
 
@@ -195,7 +195,7 @@ class PgConnection:
             self._raw = self._pool.getconn()
         return self._raw
 
-    def __enter__(self) -> "PgConnection":
+    def __enter__(self) -> PgConnection:
         return self
 
     def __exit__(
@@ -237,7 +237,7 @@ class PgConnection:
         self._pool.putconn(self._raw)
 
 
-def pg_connection() -> "PgConnection | None":
+def pg_connection() -> PgConnection | None:
     """Return a pooled PostgreSQL-backed connection, or `None` so the caller
     can fall back to its local SQLite file.
 

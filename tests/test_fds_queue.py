@@ -116,7 +116,7 @@ def test_fds_persistence_survives_restart(monkeypatch, tmp_path):
     the "restart" must still be queryable after.
     """
     import json
-    from pathlib import Path
+
     from backend.services import fds_queue_service as fds_svc
 
     # Isolate this test's DB file

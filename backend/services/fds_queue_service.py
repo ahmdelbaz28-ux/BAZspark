@@ -97,7 +97,7 @@ def _job_db_path() -> str:
     """
     return os.environ.get("FDS_JOB_DB_PATH", os.path.join(_JOB_DB_DIR, "fds_jobs.sqlite"))
 
-_JOB_DB_LOCK = threading.Lock()
+_JOB_DB_LOCK = threading.RLock()
 _JOB_DB_INITIALIZED = False
 _JOB_DB_CACHE_LOADED = False
 

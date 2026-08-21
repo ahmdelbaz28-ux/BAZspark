@@ -58,7 +58,7 @@ import logging
 import platform
 import threading
 import time
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ _DEFAULT_RECOVERY_COOLDOWN_SECONDS = 5.0
 _DEFAULT_FAILURE_THRESHOLD = 3
 
 
-class CircuitState(str, Enum):
+class CircuitState(StrEnum):
     """Circuit Breaker States."""
 
     CLOSED = "CLOSED"
