@@ -21,6 +21,7 @@ RUNTIME_MINIMAL = {
     "FIREAI_API_KEY": "k" * 40,
     "FIREAI_SESSION_SECRET": "s" * 64,
     "DATABASE_URL": "postgresql://u:p@host:5432/db?sslmode=require",
+    "REDIS_URL": "redis://localhost:6379/0",
     "SUPABASE_URL": "https://x.supabase.co",
     "SUPABASE_ANON_KEY": "a" * 50,
     "SUPABASE_SERVICE_ROLE_KEY": "b" * 50,
