@@ -51,10 +51,15 @@ Security
 
 Persistence
 -----------
-Uses the project-wide SQLite database (core/database.py). Tables are created
-lazily on first call via `CREATE TABLE IF NOT EXISTS`, mirroring the existing
-fds_queue_service pattern. Alembic ORM models live in backend/db_models.py
-for migration autogeneration.
+Backend-aware: when the platform is configured with a reachable PostgreSQL
+(DATABASE_URL / NEON_DATABASE_URL) and psycopg2 is installed, billing tables
+live in the same managed database as the rest of the platform (connection
+pooling via backend/services/db_backend.py). Otherwise the service degrades
+to the project-local SQLite database (core/database.py), exactly like the
+backend/database.py pattern. Tables are created lazily on first call via
+`CREATE TABLE IF NOT EXISTS`, mirroring the existing fds_queue_service
+pattern. Alembic ORM models live in backend/db_models.py (migration 006) for
+managed-DB deployments that run schema migrations exclusively.
 
 Demo mode
 ---------
@@ -196,7 +201,7 @@ def get_config() -> MeezaConfig:
     return _CONFIG
 
 
-# ── SQLite connection (shared with project DB) ──────────────────────────────
+# ── Backend-aware connection (PostgreSQL pool or SQLite fallback) ─────────────
 
 _DB_PATH = os.environ.get(
     "FIREAI_DATA_DIR",
@@ -213,18 +218,43 @@ _SCHEMA_LOCK = threading.Lock()
 _SCHEMA_INITIALIZED = False
 
 
-def _get_conn() -> sqlite3.Connection:
-    """Return a SQLite connection with WAL mode + reasonable defaults.
+def _get_conn() -> Any:
+    """Return a SQLite-compatible connection for the billing tables.
 
-    WAL allows concurrent readers while a writer holds the lock — critical
-    for the atomic UPDATE pattern used in fulfillment.
+    When the platform is configured with a reachable PostgreSQL
+    (DATABASE_URL / NEON_DATABASE_URL) and psycopg2 is installed, the
+    connection is served from the shared PostgreSQL pool (db_backend) so
+    payment data lives in the same managed database as the rest of the
+    platform. Otherwise — dev builds, slim containers, or a transient
+    PostgreSQL outage — the service degrades to its local SQLite file
+    (WAL mode, which allows concurrent readers while a writer holds the
+    lock — critical for the atomic UPDATE pattern used in fulfillment),
+    exactly like backend/database.py.
     """
+    from backend.services import db_backend as _db
+
+    pg = _db.pg_connection()
+    if pg is not None:
+        return pg
+
     conn = sqlite3.connect(_BILLING_DB_PATH, timeout=30.0, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
     conn.execute("PRAGMA busy_timeout=30000;")
     return conn
+
+
+def _integrity_errors() -> tuple[type[Exception], ...]:
+    """Return the IntegrityError types to catch for the active backend.
+
+    SQLite raises `sqlite3.IntegrityError`; PostgreSQL raises
+    `psycopg2.IntegrityError`. Catching both keeps the idempotency / UNIQUE
+    constraint handling identical on either backend.
+    """
+    from backend.services import db_backend as _db
+
+    return _db.INTEGRITY_ERRORS
 
 
 def _init_schema() -> None:
@@ -1029,7 +1059,7 @@ def _persist_webhook_event(
                         now,
                     ),
                 )
-            except sqlite3.IntegrityError:
+            except _integrity_errors():
                 # Duplicate — already processed. Return cached success.
                 logger.info(
                     "Meeza Payment: duplicate webhook suppressed (order=%s, idem=%s...)",
@@ -1086,7 +1116,7 @@ def _persist_webhook_event(
 
 def _apply_order_status_transition(
     *,
-    conn: sqlite3.Connection,
+    conn: Any,
     merchant_order_id: str,
     txn_status: TxnStatus,
     order_status: str,
@@ -1244,7 +1274,7 @@ def list_events_for_order(order_id: str) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def _row_to_order_dict(row: sqlite3.Row) -> dict[str, Any]:
+def _row_to_order_dict(row: Any) -> dict[str, Any]:
     d = dict(row)
     try:
         d["metadata"] = json.loads(d.get("metadata") or "{}")

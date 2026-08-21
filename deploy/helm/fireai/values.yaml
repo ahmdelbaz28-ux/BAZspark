@@ -4,6 +4,16 @@
 # `ghcr.io/${{ github.repository }}/{api,worker,nginx}`.
 # Override per-environment via `helm install --set images.api.repository=...`
 # or by maintaining separate values files per environment.
+#
+# V300 FIX (Production Audit Blocker 3): Default image tag is now "latest"
+# instead of a hardcoded "1.0.0". The CI/CD deploy workflow ALWAYS overrides
+# this with `--set images.api.tag=${{ env.VERSION }}` (Git SHA) and
+# `--set images.worker.tag=${{ env.VERSION }}` and
+# `--set images.nginx.tag=${{ env.VERSION }}`. The "latest" default is a
+# safety net so that an accidental `helm upgrade --install` without the
+# `--set` flags will pull the most recent image rather than a stale 1.0.0.
+# DO NOT change this back to a hardcoded version — it bypasses CI image
+# promotion and can deploy outdated code.
 
 global:
   environment: production
@@ -16,15 +26,15 @@ global:
 images:
   api:
     repository: ghcr.io/ahmdelbaz28-ux/BAZspark/api
-    tag: "1.0.0"
+    tag: "latest"
     pullPolicy: Always
   worker:
     repository: ghcr.io/ahmdelbaz28-ux/BAZspark/worker
-    tag: "1.0.0"
+    tag: "latest"
     pullPolicy: Always
   nginx:
     repository: ghcr.io/ahmdelbaz28-ux/BAZspark/nginx
-    tag: "1.0.0"
+    tag: "latest"
     pullPolicy: Always
 
 # ── Namespace ────────────────────────────────────────────────────────────────
@@ -54,7 +64,7 @@ api:
   enabled: true
   image:
     repository: ghcr.io/ahmdelbaz28-ux/BAZspark/api
-    tag: "1.0.0"
+    tag: "latest"
     pullPolicy: Always
   replicaCount: 3
   containerPort: 8000

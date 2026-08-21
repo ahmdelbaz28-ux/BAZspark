@@ -21,8 +21,11 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import logging
 import os
+import sqlite3
+import threading
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -56,17 +59,130 @@ class FDSJobStatus(StrEnum):
     SIMULATED = "simulated"  # Completed locally (demo mode)
 
 
-# ── In-memory job store (replace with DB calls when Supabase migration done) ──
+# ── In-memory job store (cache layer — source of truth is fds_jobs table) ─────
 # Keys: job_id (str) → job dict
 # IMPORTANT: defined at module level so it is a true singleton across all
 # FastAPI routes and test clients that import this module. Never reassign the
 # dict itself — only mutate it (add/update keys) so all references stay live.
+# The store is hydrated from persistent storage on first access and every
+# mutation is mirrored to the `fds_jobs` table, so jobs survive pod restarts.
 _JOB_STORE: dict[str, dict[str, Any]] = {}
 
 
 def _get_job_store() -> dict[str, dict[str, Any]]:
     """Return the singleton job store. Always use this instead of _JOB_STORE directly."""
     return _JOB_STORE
+
+
+# ── Persistent job storage (backend-aware: PostgreSQL pool or SQLite file) ────
+# The in-memory store above is a cache; `fds_jobs` is the durable source of
+# truth so submitted jobs survive pod restarts. When the platform uses a
+# managed PostgreSQL (DATABASE_URL), jobs go there via db_backend; otherwise a
+# local SQLite file (FDS_JOB_DB_PATH, default under FIREAI_DATA_DIR which the
+# Helm chart mounts as a PVC at /app/data) is used.
+
+_JOB_DB_DIR = os.environ.get(
+    "FIREAI_DATA_DIR",
+    os.path.join(os.path.dirname(__file__), "..", "..", "data"),
+)
+_JOB_DB_DIR = os.path.abspath(_JOB_DB_DIR)
+os.makedirs(_JOB_DB_DIR, exist_ok=True)
+
+
+def _job_db_path() -> str:
+    """Resolve the SQLite fallback path for the `fds_jobs` table.
+
+    Read at call-time (not import-time) so tests can redirect it via the
+    environment with monkeypatch before exercising the service.
+    """
+    return os.environ.get("FDS_JOB_DB_PATH", os.path.join(_JOB_DB_DIR, "fds_jobs.sqlite"))
+
+_JOB_DB_LOCK = threading.RLock()
+_JOB_DB_INITIALIZED = False
+_JOB_DB_CACHE_LOADED = False
+
+_FDS_JOBS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS fds_jobs (
+    job_id  TEXT PRIMARY KEY,
+    payload TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_fds_jobs_job_id ON fds_jobs(job_id);
+"""
+
+
+def _get_db_conn() -> Any:
+    """Return a SQLite-compatible connection for the `fds_jobs` table.
+
+    Prefers the shared PostgreSQL pool when configured and reachable
+    (db_backend); otherwise the local SQLite file with WAL mode.
+    """
+    from backend.services import db_backend as _db
+
+    pg = _db.pg_connection()
+    if pg is not None:
+        return pg
+
+    conn = sqlite3.connect(_job_db_path(), timeout=30.0, isolation_level=None)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=30000;")
+    return conn
+
+
+def _ensure_job_schema() -> None:
+    """Create the `fds_jobs` table if missing. Idempotent — safe to call often."""
+    global _JOB_DB_INITIALIZED
+    if _JOB_DB_INITIALIZED:
+        return
+    with _JOB_DB_LOCK:
+        if _JOB_DB_INITIALIZED:
+            return
+        with _get_db_conn() as conn:
+            conn.executescript(_FDS_JOBS_SCHEMA)
+        _JOB_DB_INITIALIZED = True
+
+
+def _load_jobs_from_db() -> None:
+    """Hydrate the in-memory store from persistent storage (once).
+
+    Runs lazily on the first status/list/webhook access so jobs submitted
+    before a pod restart remain queryable and their webhooks still apply.
+    """
+    global _JOB_DB_CACHE_LOADED
+    if _JOB_DB_CACHE_LOADED:
+        return
+    with _JOB_DB_LOCK:
+        if _JOB_DB_CACHE_LOADED:
+            return
+        _ensure_job_schema()
+        try:
+            with _get_db_conn() as conn:
+                rows = conn.execute("SELECT job_id, payload FROM fds_jobs").fetchall()
+            store = _get_job_store()
+            for row in rows:
+                try:
+                    job_id = row["job_id"]
+                    if job_id in store:
+                        continue
+                    store[job_id] = json.loads(row["payload"])
+                except (TypeError, ValueError):
+                    # Corrupt/legacy row — never let one bad record break startup.
+                    logger.warning("FDS Queue: skipping unparseable persisted job row")
+                    continue
+        finally:
+            _JOB_DB_CACHE_LOADED = True
+
+
+def _persist_job(job: dict[str, Any]) -> None:
+    """Insert or upsert a job record (durable across restarts)."""
+    _ensure_job_schema()
+    payload = json.dumps(job, default=str)
+    with _get_db_conn() as conn:
+        conn.execute(
+            "INSERT INTO fds_jobs (job_id, payload) VALUES (?, ?) "
+            "ON CONFLICT(job_id) DO UPDATE SET payload = excluded.payload",
+            (job["job_id"], payload),
+        )
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -123,6 +239,9 @@ def submit_fds_job(
     else:
         _run_local_simulation(job_id, fds_input)
 
+    # Mirror the final job state into durable storage (survives restarts).
+    _persist_job(job)
+
     logger.info(
         "FDS Job %s submitted (modal=%s)",  # nosec: S5145 — job_id is server-generated UUID
         job_id,
@@ -139,6 +258,7 @@ def submit_fds_job(
 
 def get_fds_job_status(job_id: str) -> dict[str, Any]:
     """Return the current status and result of a job."""
+    _load_jobs_from_db()
     job = _get_job_store().get(job_id)
     if not job:
         return {"error": f"Job {job_id} not found"}
@@ -156,6 +276,7 @@ def get_fds_job_status(job_id: str) -> dict[str, Any]:
 
 def list_fds_jobs(user_id: str = "", limit: int = 20) -> dict[str, Any]:
     """list recent FDS jobs for a user."""
+    _load_jobs_from_db()
     jobs = [
         {k: v for k, v in j.items() if k != "fds_checksum"}
         for j in _get_job_store().values()
@@ -195,6 +316,8 @@ def handle_fds_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         logger.warning("FDS Webhook: invalid secret for job (len=%d)", len(job_id))
         return {"error": "Invalid webhook secret"}
 
+    # Recover jobs submitted before a possible pod restart, then locate it.
+    _load_jobs_from_db()
     job = _get_job_store().get(job_id)
     if not job:
         return {"error": f"Job {job_id} not found"}
@@ -203,6 +326,9 @@ def handle_fds_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     job["completed_at"] = datetime.now(UTC).isoformat()
     job["result"] = payload.get("result")
     job["error"] = payload.get("error")
+    # Persist the new state so the result survives even if the pod restarts
+    # again before the client polls.
+    _persist_job(job)
 
     logger.info("FDS Job %s → %s", job_id, status)
 
@@ -290,3 +416,21 @@ def _run_local_simulation(job_id: str, fds_input: str) -> None:
     _get_job_store()[job_id]["status"] = FDSJobStatus.SIMULATED
     _get_job_store()[job_id]["completed_at"] = datetime.now(UTC).isoformat()
     _get_job_store()[job_id]["result"] = simulated_result
+
+
+def reset_for_tests() -> None:
+    """Reset the in-memory store and drop persisted jobs. TEST-ONLY.
+
+    Clears the module-level cache and deletes the `fds_jobs` table from the
+    active database so each test starts clean (mirrors Meeza's reset helper).
+    Never call from production code.
+    """
+    global _JOB_DB_INITIALIZED, _JOB_DB_CACHE_LOADED
+    _get_job_store().clear()
+    try:
+        with _get_db_conn() as conn:
+            conn.executescript("DROP TABLE IF EXISTS fds_jobs;")
+    except Exception:  # NOSONAR — best-effort cleanup of a test database
+        logger.debug("FDS Queue: reset_for_tests DROP ignored", exc_info=True)
+    _JOB_DB_INITIALIZED = False
+    _JOB_DB_CACHE_LOADED = False

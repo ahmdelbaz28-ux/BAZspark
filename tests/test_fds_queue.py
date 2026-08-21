@@ -106,3 +106,54 @@ def test_fds_webhook_invalid_secret(monkeypatch):
     assert response.status_code == 400, (
         f"Expected 400 for bad secret, got: {response.status_code} — {response.text}"
     )
+
+
+def test_fds_persistence_survives_restart(monkeypatch, tmp_path):
+    """Regression test: FDS jobs persist across pod restarts (DB durability).
+
+    Simulates a pod restart by clearing the in-memory store and forcing
+    a reload from the persistent `fds_jobs` table. The job submitted before
+    the "restart" must still be queryable after.
+    """
+    import json
+
+    from backend.services import fds_queue_service as fds_svc
+
+    # Isolate this test's DB file
+    test_db = tmp_path / "fds_persistence_test.sqlite"
+    monkeypatch.setenv("FDS_JOB_DB_PATH", str(test_db))
+    monkeypatch.setenv("FIREAI_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("FDS_WEBHOOK_SECRET", "test-secret-persistence")
+
+    # Reset to a clean state
+    fds_svc.reset_for_tests()
+
+    # 1. Submit a job (pre-restart)
+    fds_input = """&HEAD CHID='persist_test' / &TIME T_END=1.0 / &TAIL /"""
+    res = fds_svc.submit_fds_job(
+        fds_input, project_id="proj-persist", user_id="user-persist"
+    )
+    job_id = res["job_id"]
+    assert res["status"] == "simulated"
+
+    # 2. Simulate pod restart: clear in-memory cache and force reload
+    fds_svc._JOB_STORE.clear()
+    fds_svc._JOB_DB_CACHE_LOADED = False
+    fds_svc._JOB_DB_INITIALIZED = False
+
+    # 3. Query status — should reload from DB and return the job
+    status_res = fds_svc.get_fds_job_status(job_id)
+    assert status_res["job_id"] == job_id
+    assert status_res["project_id"] == "proj-persist"
+    assert status_res["status"] == "simulated"
+    assert status_res["result"]["simulation_type"] == "LOCAL_SIMULATION"
+
+    # 4. Verify the underlying DB actually has the record
+    with fds_svc._get_db_conn() as conn:
+        row = conn.execute(
+            "SELECT job_id, payload FROM fds_jobs WHERE job_id = ?", (job_id,)
+        ).fetchone()
+    assert row is not None
+    persisted = json.loads(row["payload"])
+    assert persisted["job_id"] == job_id
+    assert persisted["project_id"] == "proj-persist"
