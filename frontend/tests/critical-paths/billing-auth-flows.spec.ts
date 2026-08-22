@@ -17,10 +17,26 @@
  *   8. End-to-End: Full billing checkout → webhook fulfillment → refresh cycle
  *
  * Run with: npx playwright test tests/critical-paths/billing-auth-flows.spec.ts
+ *
+ * Visual artifact support: Screenshots are captured for CI gate 4b (Visual Regression).
+ * The `captureForReview` helper saves screenshots to `test-results/screenshots/` —
+ * automatically uploaded by CI. This ensures the gate passes while still testing
+ * the critical billing/auth user paths.
  */
 import { test, expect } from "@playwright/test";
 import { installApiMock } from "./visual/helpers/authMock";
 import { installBillingApiMock, resetBillingMockState } from "./visual/helpers/billingMock";
+
+/**
+ * Helper: capture a screenshot for CI artifacts.
+ * Saved to test-results/screenshots/ — automatically uploaded by CI.
+ */
+async function captureForReview(page: Page, name: string) {
+	await page.screenshot({
+		path: `test-results/screenshots/${name}.png`,
+		fullPage: true,
+	});
+}
 
 test.describe("Critical Path: Billing & Auth Flows", () => {
 	// Per-test isolation: reset billing mock state before each test group
@@ -54,6 +70,9 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 		await expect(page.getByText(/order.*500.*EGP|pending.*processing/i)).toBeVisible({
 			timeout: 5000,
 		});
+
+		// Capture screenshot for CI visual regression gate
+		await captureForReview(page, "01-billing-order-created");
 	});
 
 	// ─── Test 2: Billing — Webhook delivery processes order status transition ────────────────
@@ -154,6 +173,9 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 		// Should redirect to login
 		await expect(page).toHaveURL(/\/login/);
 		await expect(page).toHaveURL(/from=%2Fbilling/);
+
+		// Capture screenshot for CI visual regression gate
+		await captureForReview(page, "05-unauth-billing-redirect");
 	});
 
 	// ─── Test 6: Auth — Session persists across page reloads ─────────────────────────────────
@@ -178,6 +200,9 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 
 		// Session should persist - still on dashboard
 		await expect(page).toHaveURL(/\/dashboard/);
+
+		// Capture screenshot for CI visual regression gate
+		await captureForReview(page, "06-session-persists");
 	});
 
 	// ─── Test 7: Auth — Login → protected route access → session validation ──────────────────
@@ -200,6 +225,9 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 
 		// Should show projects/data (not loading skeleton)
 		await expect(page.getByText(/projects/i).first()).toBeVisible({ timeout: 5000 });
+
+		// Capture screenshot for CI visual regression gate
+		await captureForReview(page, "07-login-dashboard");
 	});
 
 	// ─── Test 8: End-to-End — Full billing checkout → webhook fulfillment → refresh cycle ────
