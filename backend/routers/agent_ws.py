@@ -1020,11 +1020,17 @@ async def _run_operation(websocket: WebSocket, principal: AuthenticatedPrincipal
         run = await asyncio.to_thread(op)
     except Exception as exc:
         logger.warning("Agent Run operation failed: %s", exc)
+        # Sanitize unexpected (non-domain) errors before echoing to the wire,
+        # mirroring the REST surface's stack-trace-exposure posture.
+        if _run_error_code(exc) == "RUN_OPERATION_FAILED":
+            detail = "Agent Run operation failed (details sanitized)"
+        else:
+            detail = str(exc)[:300]
         await websocket.send_json(
             {
                 "type": "run_error",
                 "errorCode": _run_error_code(exc),
-                "message": str(exc)[:300],
+                "message": detail,
             }
         )
         return
@@ -1046,7 +1052,7 @@ async def _handle_run_start(
         )
         return
 
-    async def _op():
+    def _op():
         return default_agent_run_orchestrator.start_run(
             principal,
             project_id=str(msg.get("projectId", "default_project")),

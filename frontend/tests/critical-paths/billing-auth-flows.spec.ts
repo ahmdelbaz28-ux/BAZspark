@@ -24,8 +24,44 @@
  * the critical billing/auth user paths.
  */
 import { test, expect } from "@playwright/test";
-import { installApiMock } from "./visual/helpers/authMock";
-import { installBillingApiMock, resetBillingMockState } from "./visual/helpers/billingMock";
+import { installApiMock } from "../visual/helpers/authMock";
+import { installBillingApiMock, resetBillingMockState } from "../visual/helpers/billingMock";
+
+/**
+ * Expose billing mock helpers on window so in-page evaluate scripts can call them.
+ * Must be called AFTER page navigation so fetch has a valid baseURL.
+ */
+async function exposeBillingMock(page: Page) {
+	await page.evaluate(() => {
+		(window as any).__billingMockState = {
+			orders: new Map(),
+			webhookDelivered: new Map(),
+		};
+		(window as any).billingMock = {
+			createOrder: (amountCents: number) =>
+				fetch("/api/v1/billing/orders", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ amount_cents: amountCents }),
+				}).then((r) => r.json()),
+			initiateCheckout: (orderId: string) =>
+				fetch(`/api/v1/billing/orders/${orderId}/checkout`, {
+					method: "POST",
+				}).then((r) => r.json()),
+			submitWebhook: (orderId: string, signature: string, txnId: string) =>
+				fetch("/api/v1/billing/webhooks/meeza", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ order_id: orderId, signature, txn_id: txnId }),
+				}).then((r) => r.json()),
+			getState: () => (window as any).__billingMockState,
+			getOrder: (orderId: string) =>
+				fetch(`/api/v1/billing/orders/${orderId}`).then((r) => r.json()),
+			getEvents: (orderId: string) =>
+				fetch(`/api/v1/billing/orders/${orderId}/events`).then((r) => r.json()),
+		};
+	});
+}
 
 /**
  * Helper: capture a screenshot for CI artifacts.
@@ -38,18 +74,24 @@ async function captureForReview(page: Page, name: string) {
 	});
 }
 
-test.describe("Critical Path: Billing & Auth Flows", () => {
-	// Per-test isolation: reset billing mock state before each test group
-	beforeEach(() => {
-		resetBillingMockState();
-	});
+	test.describe("Critical Path: Billing & Auth Flows", () => {
+		// Per-test isolation: reset billing mock state before each test group
+		test.beforeEach(() => {
+			resetBillingMockState();
+		});
 
 	// ─── Test 1: Billing — Authenticated user creates order and initiates checkout ─────────────
 	test("billing: authenticated user creates order and initiates checkout", async ({
 		page,
 	}) => {
 		// Auth mock — pre-authenticate so billing endpoints see an authenticated user
-		await installApiMock(page, { preAuthenticated: true });
+		const apiMock = await installApiMock(page, { preAuthenticated: true });
+		await installBillingApiMock(page);
+
+		// Navigate to a page first so fetch has a valid baseURL
+		await page.goto("/login");
+		await apiMock.login();
+		await exposeBillingMock(page);
 
 		// Create an order via the mock API
 		await page.evaluate(async () => {
@@ -78,6 +120,11 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 	// ─── Test 2: Billing — Webhook delivery processes order status transition ────────────────
 	test("billing: webhook delivery processes order status transition", async ({ page }) => {
 		await installApiMock(page, { preAuthenticated: true });
+		await installBillingApiMock(page);
+
+		// Navigate to a page first so fetch has a valid baseURL
+		await page.goto("/login");
+		await exposeBillingMock(page);
 
 		// Create order and initiate checkout
 		await page.evaluate(async () => {
@@ -106,6 +153,11 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 	// ─── Test 3: Billing — Idempotent webhook delivery (duplicate detection) ────────────────
 	test("billing: idempotent webhook delivery (duplicate detection)", async ({ page }) => {
 		await installApiMock(page, { preAuthenticated: true });
+		await installBillingApiMock(page);
+
+		// Navigate to a page first so fetch has a valid baseURL
+		await page.goto("/login");
+		await exposeBillingMock(page);
 
 		// Create order
 		await page.evaluate(async () => {
@@ -140,6 +192,11 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 	// ─── Test 4: Billing — Authenticated user views order events audit trail ─────────────────
 	test("billing: authenticated user views order events audit trail", async ({ page }) => {
 		await installApiMock(page, { preAuthenticated: true });
+		await installBillingApiMock(page);
+
+		// Navigate to a page first so fetch has a valid baseURL
+		await page.goto("/login");
+		await exposeBillingMock(page);
 
 		// Create order with events
 		await page.evaluate(async () => {

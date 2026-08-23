@@ -250,7 +250,7 @@ export async function installBillingApiMock(page: Page) {
 		}
 
 		// ── Billing: POST /api/v1/billing/orders/{id}/checkout ─────
-		if (url.match(/\/api\/v1\/billing\/orders\/[^?+&]+\\/checkout/) && method === "POST") {
+		if (url.match(/\/api\/v1\/billing\/orders\/[^/]+\/checkout/) && method === "POST") {
 			try {
 				const body = route.request().postDataJSON();
 				const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
@@ -276,13 +276,13 @@ export async function installBillingApiMock(page: Page) {
 					contentType: "application/json",
 					body: JSON.stringify({
 						success: true,
-						data: {
-							order_id: order.id,
-							checkout_url: `https://accept.paymob.com/api/authorize?order_id=${order.id}`,
-							method: "iframe",
-							raw: { order_id: order.id, amount_cents: order.amount_cents },
-						}),
-					}),
+					data: {
+						order_id: order.id,
+						checkout_url: `https://accept.paymob.com/api/authorize?order_id=${order.id}`,
+						method: "iframe",
+						raw: { order_id: order.id, amount_cents: order.amount_cents },
+					},
+				}),
 				});
 			} catch {
 				return route.fulfill({
@@ -297,7 +297,7 @@ export async function installBillingApiMock(page: Page) {
 		}
 
 		// ── Billing: GET /api/v1/billing/orders/{id}/events ───────────
-		if (url.match(/\/api\/v1\/billing\/orders\/[^?+&]+\\/events/) && method === "GET") {
+		if (url.match(/\/api\/v1\/billing\/orders\/[^/]+\/events/) && method === "GET") {
 			const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
 			if (orderIdMatch && state.orders.has(orderIdMatch[1])) {
 				const order = state.orders.get(orderIdMatch[1])!;
