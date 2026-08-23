@@ -17,15 +17,28 @@ LIFE-SAFETY NOTE:
   - Audit trails are append-only (no deletion or modification)
 """
 
+import asyncio
 import hmac
 import logging
 import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from pydantic import BaseModel
 
-from backend.auth import require_permission
+from backend.auth import get_current_principal, require_permission
+from backend.core.agent_run_orchestrator import (
+    InvalidRunStateError,
+    RunNotFoundError,
+    RunPermissionError,
+    StaleApprovalError,
+    default_agent_run_orchestrator,
+)
+from backend.core.agent_run_store import (
+    ApprovalAlreadyDecidedError,
+    PendingApprovalNotFoundError,
+)
 from backend.limiter import limiter
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 from backend.services.workflow_service import (
     get_workflow_service,
 )
@@ -397,3 +410,149 @@ async def get_audit_trail(
             "transitions": result,
         },
     }
+
+
+# ── Durable Agent Run lifecycle endpoints (Phase 1) ─────────────────────────
+#
+# Server-authoritative REST surface for the persistent Agent Run lifecycle.
+# All operations authenticate via the existing X-API-Key middleware chain and
+# reuse the existing RBAC dependencies. Authorization against the run itself
+# (owner-or-admin binding) is enforced server-side by the orchestrator.
+#
+# NOTE: These endpoints do NOT touch the FireAI LangGraph workflow service
+# above; they expose the durable Agent Run store exclusively.
+
+
+def _agent_run_http_error(exc: Exception) -> HTTPException:
+    """Map orchestrator domain errors to HTTP status codes."""
+    if isinstance(exc, RunNotFoundError | PendingApprovalNotFoundError):
+        return HTTPException(status_code=404, detail=str(exc)[:300])
+    if isinstance(exc, RunPermissionError):
+        return HTTPException(status_code=403, detail=str(exc)[:300])
+    if isinstance(
+        exc, InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError
+    ):
+        return HTTPException(status_code=409, detail=str(exc)[:300])
+    if isinstance(exc, ValueError):
+        return HTTPException(status_code=400, detail=str(exc)[:300])
+    # CodeQL: py/stack-trace-exposure — sanitize unexpected errors
+    return HTTPException(status_code=500, detail="Internal agent run error (details sanitized)")
+
+
+def _run_caller_context(request: Request, role: Role) -> tuple[str, bool]:
+    """Extract (caller_id, caller_is_admin) from the authenticated request."""
+    caller_id = get_current_principal(request) or ""
+    return caller_id, role == Role.ADMIN
+
+
+@router.get(
+    "/runs/{run_id}/status",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))],
+)
+async def get_agent_run_status(run_id: str, request: Request):
+    """Get persisted Agent Run status (durable across disconnects/restarts)."""
+    role = require_permission(Permission.WORKFLOW_READ)(request)
+    caller_id, is_admin = _run_caller_context(request, role)
+    try:
+        run = await asyncio.to_thread(
+            default_agent_run_orchestrator.get_run_status, caller_id, run_id, is_admin
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+    return {"success": True, "data": run.to_dict()}
+
+
+@router.post(
+    "/runs/{run_id}/resume",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))],
+)
+@limiter.limit("30/minute")
+async def resume_agent_run(run_id: str, request: Request):
+    """Resume a paused/interrupted Agent Run from its persisted position."""
+    role = require_permission(Permission.WORKFLOW_MANAGE)(request)
+    caller_id, is_admin = _run_caller_context(request, role)
+    try:
+        run = await asyncio.to_thread(
+            default_agent_run_orchestrator.resume_run, caller_id, run_id, is_admin
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+    return {"success": True, "data": run.to_dict()}
+
+
+@router.post(
+    "/runs/{run_id}/cancel",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))],
+)
+@limiter.limit("30/minute")
+async def cancel_agent_run(run_id: str, request: Request):
+    """Cancel an Agent Run server-side (terminal; pending approvals invalidated)."""
+    role = require_permission(Permission.WORKFLOW_MANAGE)(request)
+    caller_id, is_admin = _run_caller_context(request, role)
+    try:
+        run = await asyncio.to_thread(
+            default_agent_run_orchestrator.cancel_run, caller_id, run_id, is_admin
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+    return {"success": True, "data": run.to_dict()}
+
+
+@router.post(
+    "/runs/{run_id}/retry",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))],
+)
+@limiter.limit("30/minute")
+async def retry_agent_run(run_id: str, request: Request):
+    """Retry a FAILED Agent Run from its failed step (idempotency-safe)."""
+    role = require_permission(Permission.WORKFLOW_MANAGE)(request)
+    caller_id, is_admin = _run_caller_context(request, role)
+    try:
+        run = await asyncio.to_thread(
+            default_agent_run_orchestrator.retry_run, caller_id, run_id, is_admin
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+    return {"success": True, "data": run.to_dict()}
+
+
+class AgentRunApprovalDecisionRequest(BaseModel):
+    decision: str  # APPROVED | REJECTED
+    reason: str | None = None
+
+
+@router.post(
+    "/runs/{run_id}/approvals/{approval_id}/decide",
+    dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))],
+)
+@limiter.limit("30/minute")
+async def decide_agent_run_approval(
+    run_id: str,
+    approval_id: str,
+    request: Request,
+    body: AgentRunApprovalDecisionRequest,
+):
+    """Record an immutable approval decision for a pending Agent Run step."""
+    decision = body.decision.strip().upper()
+    if decision not in ("APPROVED", "REJECTED"):
+        raise HTTPException(
+            status_code=400, detail="decision must be APPROVED or REJECTED"
+        )
+    role = require_permission(Permission.WORKFLOW_MANAGE)(request)
+    caller_id, is_admin = _run_caller_context(request, role)
+    try:
+        run = await asyncio.to_thread(
+            default_agent_run_orchestrator.decide_approval,
+            caller_id,
+            approval_id,
+            decision,
+            reason=(body.reason or "")[:2000],
+            caller_is_admin=is_admin,
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+    if run.run_id != run_id:
+        raise HTTPException(
+            status_code=409, detail="Approval does not belong to the specified run"
+        )
+    return {"success": True, "data": run.to_dict()}
