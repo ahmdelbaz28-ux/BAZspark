@@ -185,10 +185,10 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 		// Billing page documents the webhook security model
 		await page.goto("/billing");
 		await page.waitForLoadState("networkidle");
-		await expect(page.getByText(/HMAC-signed webhooks/i)).toBeVisible({
+		await expect(page.getByText(/HMAC-signed webhooks/i).first()).toBeVisible({
 			timeout: 5000,
 		});
-		await expect(page.getByText(/duplicate webhook deliveries/i)).toBeVisible({
+		await expect(page.getByText(/duplicate webhook deliveries/i).first()).toBeVisible({
 			timeout: 5000,
 		});
 	});
@@ -252,7 +252,7 @@ test.describe("Critical Path: Billing & Auth Flows", () => {
 		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Dashboard should be visible with brand
-		await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 5000 });
+		await expect(page.getByLabel(/BAZSPARK logo/i).first()).toBeVisible({ timeout: 5000 });
 
 		// Should show projects/data (not loading skeleton)
 		await expect(page.getByText(/projects/i).first()).toBeVisible({ timeout: 5000 });
