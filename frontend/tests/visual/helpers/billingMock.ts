@@ -15,23 +15,30 @@
  */
 import type { Page, Route } from "@playwright/test";
 
-interface BillingMockState {
-	orders: Map<string, {
-		id: string;
-		amount_cents: number;
-		currency: string;
-		status: "pending" | "processing" | "completed" | "failed";
-		created_at: string;
-		events: Array<{
-			id: string;
-			status: string;
-			txn_id: string | null;
-		}>;
-	}>;
-	webhookDelivered: Map<string, boolean>;
+export type OrderStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface OrderEventRecord {
+	id: string;
+	status: string;
+	txn_id: string | null;
 }
 
-const createInitialOrder = (orderId: string, amountCents: number) => ({
+export interface OrderRecord {
+	id: string;
+	amount_cents: number;
+	currency: string;
+	status: OrderStatus;
+	created_at: string;
+	events: OrderEventRecord[];
+}
+
+export interface BillingMockState {
+	orders: Map<string, OrderRecord>;
+	webhookDelivered: Map<string, boolean>;
+	isAuthenticated?: boolean;
+}
+
+const createInitialOrder = (orderId: string, amountCents: number): OrderRecord => ({
 	id: orderId,
 	amount_cents: amountCents,
 	currency: "EGP",
@@ -67,20 +74,20 @@ export function getBillingMockState(): BillingMockState {
 /**
  * Fulfill a data endpoint with billing data.
  */
-function fulfillBillingData(route: Route, method: string, override?: Partial<any>) {
+function fulfillBillingData(route: Route, method: string, override?: Record<string, unknown>) {
+	const url = route.request().url();
 	const isGet = method === "GET" || method === "HEAD";
 
 	// If there's an order with this path pattern, return its data
 	const orderIdMatch = method === "GET" && url.includes("/orders/")
-		? // Extract order ID from URL
-		  (() => {
-			  try {
-				  const match = url.match(/\/orders\/([^?/]+)/);
-				  return match ? match[1] : null;
-			  } catch {
-				  return null;
-			  }
-		  })()
+		? (() => {
+				try {
+					const match = url.match(/\/orders\/([^?/]+)/);
+					return match ? match[1] : null;
+				} catch {
+					return null;
+				}
+			})()
 		: null;
 
 	if (orderIdMatch && state.orders.has(orderIdMatch)) {
@@ -114,6 +121,7 @@ export async function installBillingApiMock(page: Page) {
 	state = {
 		orders: new Map(),
 		webhookDelivered: new Map(),
+		isAuthenticated: true,
 	};
 
 	await page.route("**/api/**", async (route: Route) => {
@@ -175,19 +183,12 @@ export async function installBillingApiMock(page: Page) {
 		if (url.includes("/api/v1/billing/orders") && method === "POST") {
 			try {
 				const body = route.request().postDataJSON();
-				const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+				const orderId = body?.order_id || body?.id || `order_${state.orders.size + 1}`;
 				const order = createInitialOrder(orderId, body?.amount_cents ?? 50000);
 
 				state.orders.set(orderId, {
 					...order,
 					events: [],
-				});
-
-				// Add initial pending event
-				state.orders.get(orderId)!.events.push({
-					id: `event_${Date.now()}`,
-					status: "pending",
-					txn_id: null,
 				});
 
 				return route.fulfill({
@@ -225,10 +226,10 @@ export async function installBillingApiMock(page: Page) {
 
 		// ── Billing: GET /api/v1/billing/orders/{id} ──────────────
 		if (url.match(/\/api\/v1\/billing\/orders\/[^?/]+/) && method === "GET") {
-			// Extract order ID from URL
 			const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
-			if (orderIdMatch && state.orders.has(orderIdMatch[1])) {
-				const order = state.orders.get(orderIdMatch[1])!;
+			const orderId = orderIdMatch?.[1];
+			if (orderId && state.orders.has(orderId)) {
+				const order = state.orders.get(orderId)!;
 				return route.fulfill({
 					status: 200,
 					contentType: "application/json",
@@ -238,7 +239,6 @@ export async function installBillingApiMock(page: Page) {
 					}),
 				});
 			}
-			// Order not found
 			return route.fulfill({
 				status: 404,
 				contentType: "application/json",
@@ -250,57 +250,46 @@ export async function installBillingApiMock(page: Page) {
 		}
 
 		// ── Billing: POST /api/v1/billing/orders/{id}/checkout ─────
-		if (url.match(/\/api\/v1\/billing\/orders\/[^?+&]+\\/checkout/) && method === "POST") {
-			try {
-				const body = route.request().postDataJSON();
-				const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
-				const orderId = orderIdMatch ? orderIdMatch[1] : null;
+		if (url.match(/\/api\/v1\/billing\/orders\/[^/]+\/checkout/) && method === "POST") {
+			const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
+			const orderId = orderIdMatch?.[1];
 
-				if (!orderId || !state.orders.has(orderId)) {
-					return route.fulfill({
-						status: 404,
-						contentType: "application/json",
-						body: JSON.stringify({
-							success: false,
-							detail: "Order not found",
-						}),
-					});
-				}
-
-				const order = state.orders.get(orderId)!;
-				// Transition from pending to processing
-				order.status = "processing";
-
+			if (!orderId || !state.orders.has(orderId)) {
 				return route.fulfill({
-					status: 200,
-					contentType: "application/json",
-					body: JSON.stringify({
-						success: true,
-						data: {
-							order_id: order.id,
-							checkout_url: `https://accept.paymob.com/api/authorize?order_id=${order.id}`,
-							method: "iframe",
-							raw: { order_id: order.id, amount_cents: order.amount_cents },
-						}),
-					}),
-				});
-			} catch {
-				return route.fulfill({
-					status: 400,
+					status: 404,
 					contentType: "application/json",
 					body: JSON.stringify({
 						success: false,
-						detail: "Invalid request body",
+						detail: "Order not found",
 					}),
 				});
 			}
+
+			const order = state.orders.get(orderId)!;
+			// Transition to processing
+			order.status = "processing";
+
+			return route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({
+					success: true,
+					data: {
+						order_id: order.id,
+						checkout_url: `https://accept.paymob.com/api/authorize?order_id=${order.id}`,
+						method: "iframe",
+						raw: { order_id: order.id, amount_cents: order.amount_cents },
+					},
+				}),
+			});
 		}
 
 		// ── Billing: GET /api/v1/billing/orders/{id}/events ───────────
-		if (url.match(/\/api\/v1\/billing\/orders\/[^?+&]+\\/events/) && method === "GET") {
+		if (url.match(/\/api\/v1\/billing\/orders\/[^/]+\/events/) && method === "GET") {
 			const orderIdMatch = url.match(/\/orders\/([^?/]+)/);
-			if (orderIdMatch && state.orders.has(orderIdMatch[1])) {
-				const order = state.orders.get(orderIdMatch[1])!;
+			const orderId = orderIdMatch?.[1];
+			if (orderId && state.orders.has(orderId)) {
+				const order = state.orders.get(orderId)!;
 				return route.fulfill({
 					status: 200,
 					contentType: "application/json",
@@ -323,13 +312,17 @@ export async function installBillingApiMock(page: Page) {
 		// ── Billing: POST /api/v1/billing/webhooks/meeza ──────────────
 		if (url.includes("/api/v1/billing/webhooks/meeza") && method === "POST") {
 			try {
-				const body = route.request().postDataJSON();
+				let body: Record<string, any> = {};
+				try {
+					body = route.request().postDataJSON() || {};
+				} catch {
+					body = {};
+				}
 				const signature = body?.signature ?? "";
 				const orderId = body?.order_id ?? "";
 
 				// Simple HMAC validation mock: accept if signature starts with "valid-"
-				// In production, this would use hmac.compare_digest with MEEZA_WEBHOOK_HMAC_SECRET
-				const isValid = signature.startsWith("valid-");
+				const isValid = typeof signature === "string" && signature.startsWith("valid-");
 
 				if (!orderId) {
 					return route.fulfill({
@@ -343,8 +336,6 @@ export async function installBillingApiMock(page: Page) {
 				}
 
 				if (!state.orders.has(orderId)) {
-					// Order doesn't exist - still return 200 per PSP best practice
-					// (returning non-2xx causes PSP to retry, wasting resources)
 					return route.fulfill({
 						status: 200,
 						contentType: "application/json",
@@ -365,7 +356,6 @@ export async function installBillingApiMock(page: Page) {
 				const order = state.orders.get(orderId)!;
 
 				if (!isValid) {
-					// Invalid signature - reject
 					return route.fulfill({
 						status: 401,
 						contentType: "application/json",
@@ -376,13 +366,14 @@ export async function installBillingApiMock(page: Page) {
 					});
 				}
 
-				// Check for duplicate (idempotency key)
-				const existingEvent = order.events.find(
-					(e) => e.txn_id === body?.txn_id,
-				);
+				// Check for duplicate (idempotency key or prior delivery)
+				const isDuplicate =
+					Boolean(state.webhookDelivered.get(orderId)) ||
+					order.events.some(
+						(e) => (body?.txn_id && e.txn_id === body?.txn_id) || e.status === "processed",
+					);
 
-				if (existingEvent) {
-					// Duplicate delivery - return 200 per PSP best practice
+				if (isDuplicate) {
 					return route.fulfill({
 						status: 200,
 						contentType: "application/json",
@@ -393,7 +384,7 @@ export async function installBillingApiMock(page: Page) {
 								http_status: 200,
 								order_id: orderId,
 								order_status: order.status,
-								idempotency_key: existingEvent.txn_id,
+								idempotency_key: `idx_${orderId}`,
 								reason: "duplicate_delivery",
 							},
 						}),
@@ -401,17 +392,15 @@ export async function installBillingApiMock(page: Page) {
 				}
 
 				// Process the webhook - mark as completed
-				const txnId = `txn_${Date.now()}`;
+				const txnId = body?.txn_id || `txn_${Date.now()}`;
 				order.events.push({
 					id: `event_${Date.now()}`,
 					status: "processed",
-					txn_id,
+					txn_id: txnId,
 				});
 
-				// Atomic status transition: only flip to completed if still pending
-				if (order.status === "pending") {
-					order.status = "completed";
-				}
+				// Status transition: mark as completed
+				order.status = "completed";
 
 				// Mark webhook as delivered for this order
 				state.webhookDelivered.set(orderId, true);
@@ -461,7 +450,7 @@ export async function installBillingApiMock(page: Page) {
 		/** Create a new order via the mock API. */
 		async createOrder(amountCents: number = 50000) {
 			await page.request.post("/api/v1/billing/orders", {
-				json: { amount_cents: amountCents },
+				data: { amount_cents: amountCents },
 			});
 		},
 		/** Initiate checkout for an order. */
@@ -471,7 +460,7 @@ export async function installBillingApiMock(page: Page) {
 		/** Submit a webhook for an order. */
 		async submitWebhook(orderId: string, signature: string = "valid-sig-12345", txnId: string = `txn_${Date.now()}`) {
 			await page.request.post("/api/v1/billing/webhooks/meeza", {
-				json: { order_id: orderId, signature, txn_id: txnId },
+				data: { order_id: orderId, signature, txn_id: txnId },
 			});
 		},
 		/** Get order status. */

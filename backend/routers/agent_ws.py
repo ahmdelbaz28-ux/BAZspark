@@ -13,6 +13,17 @@ from pydantic import BaseModel, Field
 
 from backend.api_keys import validate_api_key
 from backend.auth import has_permission
+from backend.core.agent_run_orchestrator import (
+    AgentRunOrchestrator,
+    InvalidRunStateError,
+    RunNotFoundError,
+    RunPermissionError,
+    StaleApprovalError,
+)
+from backend.core.agent_run_store import (
+    ApprovalAlreadyDecidedError,
+    PendingApprovalNotFoundError,
+)
 from backend.core.capability_registry import default_capability_registry
 from backend.core.command_bus import (
     AuthenticatedPrincipal,
@@ -938,6 +949,201 @@ class AIOrchestrationService:
 
 default_orchestration_service = AIOrchestrationService()
 
+# Phase 1: durable Agent Run lifecycle orchestrator (server-authoritative).
+# Shares the same default CommandBus / capability registry as the orchestration
+# service above so both pipelines operate on one canonical revision ledger.
+default_agent_run_orchestrator = AgentRunOrchestrator()
+
+_RUN_ERROR_MAP: tuple[tuple[type[Exception], str], ...] = (
+    (RunNotFoundError, "RUN_NOT_FOUND"),
+    (RunPermissionError, "RUN_FORBIDDEN"),
+    (InvalidRunStateError, "INVALID_RUN_STATE"),
+    (StaleApprovalError, "STALE_APPROVAL"),
+    (ApprovalAlreadyDecidedError, "APPROVAL_ALREADY_DECIDED"),
+    (PendingApprovalNotFoundError, "APPROVAL_NOT_FOUND"),
+)
+
+
+def _run_error_code(exc: Exception) -> str:
+    for exc_type, code in _RUN_ERROR_MAP:
+        if isinstance(exc, exc_type):
+            return code
+    if isinstance(exc, ValueError):
+        return "INVALID_RUN_PLAN"
+    return "RUN_OPERATION_FAILED"
+
+
+def _run_state_frame(run) -> dict[str, Any]:
+    """Build a wire frame describing persisted Agent Run state."""
+    return {
+        "type": "run_status_update",
+        "runId": run.run_id,
+        "projectId": run.project_id,
+        "status": run.status.value,
+        "approvalMode": run.approval_mode.value,
+        "currentStep": run.current_step,
+        "completedSteps": list(run.completed_steps),
+        "failedSteps": list(run.failed_steps),
+        "pendingApprovalId": run.pending_approval_id,
+        "recoveryState": dict(run.recovery_state),
+        "auditReference": run.audit_reference,
+        "version": run.version,
+    }
+
+
+async def _emit_run_state(websocket: WebSocket, run) -> None:
+    """Emit the run state frame plus an approval_request frame when halted."""
+    await websocket.send_json(_run_state_frame(run))
+    if run.status.value == "WAITING_APPROVAL" and run.pending_approval_id:
+        pa = default_agent_run_orchestrator._store.get_pending_approval(
+            run.pending_approval_id
+        )
+        if pa is not None:
+            await websocket.send_json(
+                {
+                    "type": "approval_request",
+                    "approvalId": pa.approval_id,
+                    "runId": pa.run_id,
+                    "stepId": pa.step_id,
+                    "projectId": pa.project_id,
+                    "projectRevision": pa.project_revision,
+                    "capabilityId": pa.capability_id,
+                    "policyResult": pa.policy_result,
+                    "stepPayloadHash": pa.step_payload_hash,
+                }
+            )
+
+
+async def _run_operation(websocket: WebSocket, principal: AuthenticatedPrincipal, op) -> None:
+    """Execute a synchronous run-lifecycle operation off the event loop."""
+    try:
+        run = await asyncio.to_thread(op)
+    except Exception as exc:
+        logger.warning("Agent Run operation failed: %s", exc)
+        # Sanitize unexpected (non-domain) errors before echoing to the wire,
+        # mirroring the REST surface's stack-trace-exposure posture.
+        if _run_error_code(exc) == "RUN_OPERATION_FAILED":
+            detail = "Agent Run operation failed (details sanitized)"
+        else:
+            detail = str(exc)[:300]
+        await websocket.send_json(
+            {
+                "type": "run_error",
+                "errorCode": _run_error_code(exc),
+                "message": detail,
+            }
+        )
+        return
+    await _emit_run_state(websocket, run)
+
+
+async def _handle_run_start(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    """run_start: create a durable Agent Run and begin policy-gated execution."""
+    steps = msg.get("steps")
+    if not isinstance(steps, list) or not steps:
+        await websocket.send_json(
+            {
+                "type": "run_error",
+                "errorCode": "INVALID_RUN_PLAN",
+                "message": "run_start requires a non-empty 'steps' array.",
+            }
+        )
+        return
+
+    def _op():
+        return default_agent_run_orchestrator.start_run(
+            principal,
+            project_id=str(msg.get("projectId", "default_project")),
+            steps=steps,
+            approval_mode=str(msg.get("approvalMode", "AUTO")),
+            conversation_id=str(msg.get("conversationId", "")),
+            plan=msg.get("plan") or None,
+            governance_policy=msg.get("governance") or msg.get("governancePolicy") or None,
+        )
+
+    await _run_operation(websocket, principal, _op)
+
+
+async def _handle_run_status(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    run_id = str(msg.get("runId", ""))
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.get_run_status(principal.user_id, run_id),
+    )
+
+
+async def _handle_run_resume(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    run_id = str(msg.get("runId", ""))
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.resume_run(principal.user_id, run_id),
+    )
+
+
+async def _handle_run_pause(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    run_id = str(msg.get("runId", ""))
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.pause_run(principal.user_id, run_id),
+    )
+
+
+async def _handle_run_cancel(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    run_id = str(msg.get("runId", ""))
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.cancel_run(principal.user_id, run_id),
+    )
+
+
+async def _handle_run_retry(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    run_id = str(msg.get("runId", ""))
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.retry_run(principal.user_id, run_id),
+    )
+
+
+async def _handle_approval_decision(
+    websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+) -> None:
+    approval_id = str(msg.get("approvalId", ""))
+    decision = str(msg.get("decision", "")).upper()
+    reason = str(msg.get("reason", ""))[:2000]
+    if decision not in ("APPROVED", "REJECTED"):
+        await websocket.send_json(
+            {
+                "type": "run_error",
+                "errorCode": "INVALID_APPROVAL_DECISION",
+                "message": "approval_decision requires decision APPROVED or REJECTED.",
+            }
+        )
+        return
+    await _run_operation(
+        websocket,
+        principal,
+        lambda: default_agent_run_orchestrator.decide_approval(
+            principal.user_id, approval_id, decision, reason=reason
+        ),
+    )
+
 
 async def _handle_agent_message(
     websocket: WebSocket, msg: dict, principal: AuthenticatedPrincipal | None = None
@@ -967,6 +1173,20 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_approval(websocket, principal, msg)
     elif msg_type in ("user_mutate", "manual_edit") and principal:
         await default_orchestration_service.handle_user_mutation(websocket, msg)
+    elif msg_type == "run_start" and principal:
+        await _handle_run_start(websocket, principal, msg)
+    elif msg_type == "run_status" and principal:
+        await _handle_run_status(websocket, principal, msg)
+    elif msg_type == "run_resume" and principal:
+        await _handle_run_resume(websocket, principal, msg)
+    elif msg_type == "run_pause" and principal:
+        await _handle_run_pause(websocket, principal, msg)
+    elif msg_type == "run_cancel" and principal:
+        await _handle_run_cancel(websocket, principal, msg)
+    elif msg_type == "run_retry" and principal:
+        await _handle_run_retry(websocket, principal, msg)
+    elif msg_type == "approval_decision" and principal:
+        await _handle_approval_decision(websocket, principal, msg)
 
 
 async def _handle_response_message(msg: dict) -> None:
