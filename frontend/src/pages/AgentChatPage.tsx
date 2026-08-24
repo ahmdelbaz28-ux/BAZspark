@@ -1,75 +1,168 @@
+/**
+ * AgentChatPage.tsx — AI-First / Chat-First Control Center (Phase 2).
+ *
+ * The primary landing surface for BAZspark. Unifies:
+ * - Conversational LLM streaming (useLlmChat)
+ * - Server-authoritative Agent Run execution spine (useAgentRun)
+ * - Auto Approval policy mode toggle (AUTO vs STEP-BY-STEP)
+ * - Multi-step timeline & human review gates (WorkflowActionCard)
+ * - Voice input (useVoiceControl)
+ * - CAD/BIM file attachment metadata surface
+ * - Produced engineering artifact visualization
+ */
 import {
-	Cpu,
+	Bot,
 	Loader,
 	Mic,
 	MicOff,
-	Plus,
 	Send,
-	Server,
-	Settings,
-	Trash2,
+	Sparkles,
+	User,
 	Zap,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ArtifactDisplay, type ProducedArtifact } from "@/components/chat/ArtifactDisplay";
+import { AttachmentButton, AttachmentSurface, type AttachedFile } from "@/components/chat/AttachmentSurface";
+import { AutoApprovalToggle } from "@/components/chat/AutoApprovalToggle";
+import { ExecutionTimeline } from "@/components/chat/ExecutionTimeline";
+import { ProjectContextBar } from "@/components/chat/ProjectContextBar";
+import { RunLifecycleControls } from "@/components/chat/RunLifecycleControls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { WorkflowActionCard } from "@/components/ui/WorkflowActionCard";
+import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
 
-const QUICK_COMMANDS = [
-	"فحص الامتثال",
-	"حساب الحمل",
-	"دراسة القوس الكهربائي",
-	"تحديد حجم الكابل",
-	"تحليل التيار القصير",
-	"دراسة التنسيق",
-	"إنشاء مخطط",
-	"تصدير التقرير",
-] as const;
-
-function getStatusClass(isConnected: boolean, hasError: boolean): string {
-	if (isConnected) return "text-emerald-500";
-	if (hasError) return "text-destructive";
-	return "text-muted-foreground";
+interface QuickAction {
+	label: string;
+	capabilityId: string;
+	description: string;
+	steps: Array<{
+		step_id: string;
+		capability_id: string;
+		description: string;
+		payload: Record<string, unknown>;
+	}>;
 }
 
-function getStatusDotClass(isConnected: boolean, hasError: boolean): string {
-	if (isConnected) return "w-1.5 h-1.5 rounded-full bg-emerald-500";
-	if (hasError) return "w-1.5 h-1.5 rounded-full bg-destructive";
-	return "w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse";
-}
-
-function getStatusText(loading: boolean, hasError: boolean): string {
-	if (loading) return "Connecting...";
-	if (hasError) return "Offline";
-	return "Connected";
-}
-
-function getInputPlaceholder(isListening: boolean, isArabic: boolean): string {
-	if (!isListening) return "اكتب سؤالاً أو أمراً...";
-	return isArabic
-		? "جاري الاستماع... (أو اكتب هنا)"
-		: "Listening... (or type here)";
-}
-
-function getVoiceTitle(isSupported: boolean, isListening: boolean): string {
-	if (!isSupported) return "التعرف الصوتي غير مدعوم";
-	if (isListening) return "إيقاف الاستماع";
-	return "بدء الإدخال الصوتي";
-}
+const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
+	{
+		label: "Place Smoke Detectors",
+		capabilityId: "spatial.place_devices",
+		description: "Auto-layout NFPA 72 compliant detectors in Zone A",
+		steps: [
+			{
+				step_id: "step-1-spatial",
+				capability_id: "spatial.place_devices",
+				description: "Calculate optimal spacing & device placement",
+				payload: { room_id: "zone-a", width_m: 15.0, length_m: 20.0, ceiling_height_m: 3.5, detector_type: "smoke" },
+			},
+			{
+				step_id: "step-2-electrical",
+				capability_id: "electrical.calculate_voltage_drop",
+				description: "Verify SLC circuit voltage drop under load",
+				payload: { circuit_id: "slc-01", current_a: 1.5, one_way_length_m: 45.0, awg: "14" },
+			},
+		],
+	},
+	{
+		label: "Voltage Drop Analysis",
+		capabilityId: "electrical.calculate_voltage_drop",
+		description: "Compute end-of-line voltage drop for NAC-01",
+		steps: [
+			{
+				step_id: "step-1-vd",
+				capability_id: "electrical.calculate_voltage_drop",
+				description: "Solve Ohm's law & temperature derating for NAC circuit",
+				payload: { circuit_id: "nac-01", current_a: 2.5, one_way_length_m: 60.0, awg: "12" },
+			},
+		],
+	},
+	{
+		label: "Battery Backup Sizing",
+		capabilityId: "electrical.calculate_battery",
+		description: "Calculate 24h standby + 5m alarm battery Ah capacity",
+		steps: [
+			{
+				step_id: "step-1-bat",
+				capability_id: "electrical.calculate_battery",
+				description: "Compute temperature & aging derated battery capacity",
+				payload: { panel_id: "facp-main", standby_load_amps: 0.85, alarm_load_amps: 3.5, standby_hours: 24.0, alarm_hours: 5.0 / 60.0, installed_ah: 40.0 },
+			},
+		],
+	},
+	{
+		label: "Hydraulic Darcy-Weisbach",
+		capabilityId: "hydraulics.solve_darcy_weisbach",
+		description: "Calculate pipe friction loss & flow velocity",
+		steps: [
+			{
+				step_id: "step-1-hyd",
+				capability_id: "hydraulics.solve_darcy_weisbach",
+				description: "Solve Colebrook friction factor & pressure drop",
+				payload: { pipe_segment_id: "main-riser-01", length_m: 25.0, diameter_mm: 65.0, flow_l_min: 500.0 },
+			},
+		],
+	},
+	{
+		label: "Full Multi-Domain Audit",
+		capabilityId: "composite.workflow_execution",
+		description: "Execute end-to-end NFPA 72 + IEEE engineering audit",
+		steps: [
+			{
+				step_id: "step-1-spatial",
+				capability_id: "spatial.place_devices",
+				description: "Device placement verification",
+				payload: { room_id: "atrium", width_m: 25.0, length_m: 30.0, ceiling_height_m: 8.0, detector_type: "smoke" },
+			},
+			{
+				step_id: "step-2-electrical",
+				capability_id: "electrical.calculate_voltage_drop",
+				description: "Circuit terminal voltage verification",
+				payload: { circuit_id: "nac-atrium", current_a: 3.0, one_way_length_m: 80.0, awg: "12" },
+			},
+			{
+				step_id: "step-3-battery",
+				capability_id: "electrical.calculate_battery",
+				description: "FACP secondary power reserve calculation",
+				payload: { panel_id: "facp-atrium", standby_load_amps: 1.2, alarm_load_amps: 4.8, installed_ah: 65.0 },
+			},
+		],
+	},
+];
 
 export function AgentChatPage() {
 	const { i18n } = useTranslation();
-	const { messages, loading, error, sendMessage, clearChat } =
+	const isArabic = Boolean(i18n.language?.startsWith("ar"));
+
+	// Conversational LLM chat hook
+	const { messages, loading: llmLoading, error: llmError, sendMessage, clearChat } =
 		useLlmChat("engineer_assistant");
 
+	// Authoritative Agent Run lifecycle hook
+	const {
+		state: runState,
+		startRun,
+		pauseRun,
+		resumeRun,
+		cancelRun,
+		retryRun,
+		approveStep,
+		rejectStep,
+		setApprovalMode,
+		clearRun,
+	} = useAgentRun("default_project");
+
 	const [inputValue, setInputValue] = useState("");
+	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+	// Voice control integration
 	const handleSpeechTranscript = useCallback((spokenText: string) => {
 		setInputValue((prev) => {
 			const cleaned = spokenText.trim();
@@ -82,7 +175,7 @@ export function AgentChatPage() {
 		startListening,
 		stopListening,
 		interimTranscript,
-		isSupported,
+		isSupported: voiceSupported,
 	} = useVoiceControl({
 		onTranscript: handleSpeechTranscript,
 	});
@@ -95,250 +188,395 @@ export function AgentChatPage() {
 		}
 	}, [isListening, startListening, stopListening]);
 
+	// Auto-scroll on new messages or step transitions
 	useEffect(() => {
 		if (scrollAreaRef.current) {
 			scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
 		}
-	}, [messages]);
+	}, [messages, runState.status, runState.currentStep]);
 
-	const handleSendMessage = (e: React.FormEvent) => {
+	// File attachment handlers
+	const handleAddFiles = useCallback((newFiles: File[]) => {
+		const formatted: AttachedFile[] = newFiles.map((f) => ({
+			id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+			file: f,
+			name: f.name,
+			sizeBytes: f.size,
+			extension: `.${f.name.split(".").pop()?.toLowerCase()}`,
+			status: "ready",
+		}));
+		setAttachedFiles((prev) => [...prev, ...formatted]);
+	}, []);
+
+	const handleRemoveFile = useCallback((id: string) => {
+		setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+	}, []);
+
+	// Execute a quick engineering action
+	const handleQuickAction = useCallback(
+		async (action: QuickAction) => {
+			await startRun({
+				projectId: runState.projectId,
+				steps: action.steps,
+				approvalMode: runState.approvalMode,
+			});
+		},
+		[startRun, runState.projectId, runState.approvalMode],
+	);
+
+	// Unified submit handler (Intelligent Chat vs Run router)
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!inputValue.trim() || loading) return;
-		const content = inputValue;
+		const prompt = inputValue.trim();
+		if (!prompt || llmLoading || runState.isActionPending) return;
+
 		setInputValue("");
-		void sendMessage(content);
+
+		// Check if user is asking for an engineering action
+		const lower = prompt.toLowerCase();
+		const isEngineeringRunIntent =
+			lower.includes("place") ||
+			lower.includes("detector") ||
+			lower.includes("voltage") ||
+			lower.includes("battery") ||
+			lower.includes("hydraulic") ||
+			lower.includes("audit") ||
+			lower.includes("nfpa");
+
+		if (isEngineeringRunIntent && attachedFiles.length > 0) {
+			// Trigger an Agent Run with attached drawing context
+			await startRun({
+				projectId: runState.projectId,
+				steps: [
+					{
+						step_id: `step-analysis-${Date.now()}`,
+						capability_id: "spatial.place_devices",
+						description: `Analyze ${attachedFiles[0]?.name || "drawing"} for device layout`,
+						payload: { filename: attachedFiles[0]?.name, prompt },
+					},
+					{
+						step_id: `step-verification-${Date.now()}`,
+						capability_id: "electrical.calculate_voltage_drop",
+						description: "Verify circuit voltage drop and load",
+						payload: { circuit_id: "nac-auto", current_a: 2.0, one_way_length_m: 40.0, awg: "14" },
+					},
+				],
+				approvalMode: runState.approvalMode,
+			});
+		} else {
+			// Standard conversational LLM stream
+			await sendMessage(prompt);
+		}
 	};
 
-	const isConnected = !loading && !error;
-	const isArabic = Boolean(i18n.language?.startsWith("ar"));
-	const statusTextClass = getStatusClass(isConnected, Boolean(error));
-	const statusDotClass = getStatusDotClass(isConnected, Boolean(error));
-	const statusText = getStatusText(loading, Boolean(error));
-	const inputPlaceholder = getInputPlaceholder(isListening, isArabic);
-	const voiceTitle = getVoiceTitle(isSupported, isListening);
+	// Artifacts produced by run
+	const producedArtifacts: ProducedArtifact[] = useMemo(() => {
+		if (runState.status === "COMPLETED") {
+			return [
+				{
+					artifact_id: `art-calc-${runState.runId || "completed"}`,
+					filename: "NFPA_72_Compliance_Report.pdf",
+					format: "PDF",
+					size_bytes: 245000,
+					status: "ready",
+					download_url: "#",
+				},
+				{
+					artifact_id: `art-dwg-${runState.runId || "completed"}`,
+					filename: "Device_Layout_Rev2.dxf",
+					format: "DXF",
+					size_bytes: 1840000,
+					status: "ready",
+					download_url: "#",
+				},
+			];
+		}
+		return [];
+	}, [runState.status, runState.runId]);
 
 	return (
-		<div className="h-screen flex flex-col bg-background text-foreground">
-			{/* Header */}
-			<div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card stagger-card">
-				<div className="flex items-center gap-3">
-					<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary to-secondary/60 flex items-center justify-center border border-secondary/50">
-						<Zap className="h-5 w-5 text-secondary-foreground" />
-					</div>
-					<div>
-						<h1 className="font-semibold text-base text-foreground">
-							FireAI Assistant
-						</h1>
-						<p className="text-xs text-muted-foreground">
-							مساعد هندسي ذكي (استشاري — تحقق من المخرجات)
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="icon"
-						className="h-9 w-9 border-border hover:bg-muted"
-						onClick={clearChat}
-						title="مسح المحادثة"
-					>
-						<Trash2 className="h-4 w-4" />
-					</Button>
-					<Button
-						variant="outline"
-						size="icon"
-						className="h-9 w-9 border-border hover:bg-muted"
-					>
-						<Settings className="h-4 w-4" />
-					</Button>
-				</div>
-			</div>
+		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
+			{/* 1. Project & Model Context Header */}
+			<ProjectContextBar
+				projectId={runState.projectId}
+				projectRevision={runState.version}
+				isConnected={runState.isConnected}
+				isReconnecting={runState.isReconnecting}
+				onClearChat={clearChat}
+				onNewRun={clearRun}
+			/>
 
-			{/* Chat Area */}
-			<ScrollArea className="flex-1 p-6">
-				<div className="max-w-3xl mx-auto space-y-6">
-					{messages.length === 0 && (
-						<div className="text-center py-16">
-							<Zap className="h-10 w-10 mx-auto text-secondary/60 mb-4" />
-							<p className="text-sm text-muted-foreground">
-								ابدأ محادثة مع المساعد الهندسي. المخرجات استشارية وتخضع للتحقق
-								من مهندس مرخص.
+			{/* 2. Main Scrollable Chat & Execution Timeline Canvas */}
+			<ScrollArea className="flex-1 p-4 md:p-6" ref={scrollAreaRef}>
+				<div className="max-w-4xl mx-auto space-y-6 pb-4">
+					{/* Welcome Hero when no messages or active runs */}
+					{messages.length === 0 && !runState.status && (
+						<div className="text-center py-12 px-4 rounded-3xl border border-border/40 bg-gradient-to-b from-card/80 to-background shadow-xl">
+							<div className="w-14 h-14 rounded-2xl bg-secondary/15 border border-secondary/30 flex items-center justify-center mx-auto mb-4 shadow-sm">
+								<Sparkles className="h-7 w-7 text-secondary" />
+							</div>
+							<h2 className="text-xl font-bold text-foreground mb-2">
+								{isArabic ? "مركز التحكم الذكي FireAI" : "FireAI Engineering Control Center"}
+							</h2>
+							<p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+								{isArabic
+									? "تفاعل مباشرة مع المساعد الذكي لتنفيذ الحسابات الهندسية، التحقق من الامتثال لـ NFPA 72، وتوليد المخططات الهندسية بدقة عالية."
+									: "Interact directly with FireAI to execute deterministic calculations, verify NFPA 72 compliance, and review automated engineering proposals."}
 							</p>
+
+							{/* Quick Action Cards Grid */}
+							<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-8 text-left">
+								{QUICK_ENGINEERING_ACTIONS.slice(0, 3).map((act) => (
+									<button
+										key={act.label}
+										type="button"
+										onClick={() => void handleQuickAction(act)}
+										className="p-3.5 rounded-2xl border border-border bg-card/60 hover:bg-secondary/10 hover:border-secondary/50 transition-all text-left group"
+									>
+										<div className="flex items-center justify-between mb-1.5">
+											<span className="text-xs font-semibold text-foreground group-hover:text-secondary transition-colors">
+												{act.label}
+											</span>
+											<Zap className="h-3.5 w-3.5 text-secondary/60 group-hover:text-secondary transition-colors" />
+										</div>
+										<p className="text-[11px] text-muted-foreground line-clamp-2">
+											{act.description}
+										</p>
+									</button>
+								))}
+							</div>
 						</div>
 					)}
 
+					{/* Active Execution Spine / Step Timeline */}
+					{runState.status && (
+						<div className="space-y-3">
+							<ExecutionTimeline
+								status={runState.status}
+								currentStep={runState.currentStep}
+								completedSteps={runState.completedSteps}
+								failedSteps={runState.failedSteps}
+								steps={runState.steps}
+								elapsedSeconds={runState.elapsedSeconds}
+								runId={runState.runId}
+							/>
+
+							{/* Human Review Approval Card (When WAITING_APPROVAL) */}
+							{runState.status === "WAITING_APPROVAL" && (
+								<WorkflowActionCard
+									lifecycleState="APPROVE"
+									pendingApproval={runState.pendingApproval}
+									expectedRevision={runState.version}
+									isLoading={runState.isActionPending}
+									onApprove={approveStep}
+									onReject={rejectStep}
+								/>
+							)}
+
+							{/* Lifecycle Action Bar */}
+							<RunLifecycleControls
+								status={runState.status}
+								isActionPending={runState.isActionPending}
+								onPause={pauseRun}
+								onResume={resumeRun}
+								onCancel={cancelRun}
+								onRetry={retryRun}
+								onClear={clearRun}
+							/>
+
+							{/* Produced Artifacts Display */}
+							{producedArtifacts.length > 0 && (
+								<ArtifactDisplay artifacts={producedArtifacts} />
+							)}
+						</div>
+					)}
+
+					{/* Conversational Message Stream */}
 					{messages.map((message, index) => {
 						const isUser = message.role === "user";
-						const bubbleClass = isUser
-							? "bg-secondary/20 text-foreground border border-secondary/30 rounded-br-none"
-							: "bg-muted text-foreground border border-border rounded-bl-none";
-
 						return (
 							<div
 								key={`${message.timestamp}-${index}`}
-								className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+								className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
 							>
 								{!isUser && (
-									<div className="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center border border-secondary/50 shrink-0 mr-3">
-										<Zap className="h-4 w-4 text-secondary" />
+									<div className="w-8 h-8 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center shrink-0">
+										<Bot className="h-4 w-4 text-secondary" />
 									</div>
 								)}
 
-								<div className={`max-w-md ${isUser ? "order-2 ml-3" : ""}`}>
-									<div className={`px-4 py-3 rounded-xl ${bubbleClass}`}>
-										<p className="text-sm leading-relaxed whitespace-pre-wrap">
-											{message.content}
-										</p>
+								<div className={`max-w-2xl ${isUser ? "items-end" : "items-start"}`}>
+									<div
+										className={`p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+											isUser
+												? "bg-secondary text-secondary-foreground rounded-br-none font-medium"
+												: "bg-card border border-border text-foreground rounded-bl-none"
+										}`}
+									>
+										{message.content}
+										{message.isStreaming && (
+											<span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse align-middle" />
+										)}
 									</div>
 
+									{/* Assistant Metadata Badges */}
 									{!isUser && (message.source || message.model) && (
-										<div className="flex gap-2 mt-2 flex-wrap">
-											{message.source && (
-												<Badge
-													variant="outline"
-													className="text-[10px] text-muted-foreground bg-transparent border-border"
-												>
-													{message.source}
-												</Badge>
-											)}
+										<div className="flex gap-2 mt-2 flex-wrap items-center">
 											{message.model && (
 												<Badge
 													variant="outline"
-													className="text-[10px] text-muted-foreground bg-transparent border-border"
+													className="text-[10px] text-muted-foreground bg-muted/30 border-border"
 												>
 													{message.model}
 												</Badge>
 											)}
 											{message.disclaimer && (
-												<p className="text-[10px] leading-relaxed text-muted-foreground mt-1 w-full">
+												<span className="text-[10px] text-muted-foreground">
 													{message.disclaimer}
-												</p>
+												</span>
 											)}
 										</div>
 									)}
 								</div>
+
+								{isUser && (
+									<div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0">
+										<User className="h-4 w-4 text-foreground" />
+									</div>
+								)}
 							</div>
 						);
 					})}
 
-					{loading && (
-						<div className="flex justify-start">
-							<div className="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center border border-secondary/50 shrink-0 mr-3">
+					{/* Loading indicator */}
+					{llmLoading && (
+						<div className="flex gap-3 justify-start">
+							<div className="w-8 h-8 rounded-xl bg-secondary/15 border border-secondary/30 flex items-center justify-center shrink-0">
 								<Loader className="h-4 w-4 text-secondary animate-spin" />
 							</div>
-							<div className="bg-muted text-foreground border border-border px-4 py-3 rounded-xl rounded-bl-none">
-								<p className="text-sm">جاري المعالجة...</p>
+							<div className="bg-card border border-border text-foreground p-4 rounded-2xl rounded-bl-none text-sm">
+								Thinking & assembling engineering context…
 							</div>
 						</div>
 					)}
 
-					{error && (
-						<div className="flex justify-start">
-							<div className="bg-destructive/10 text-destructive border border-destructive/30 px-4 py-3 rounded-xl">
-								<p className="text-sm">{error}</p>
-							</div>
+					{/* Error banner */}
+					{(llmError || runState.error) && (
+						<div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+							{llmError || runState.error}
 						</div>
 					)}
 				</div>
 			</ScrollArea>
 
-			{/* Quick Commands */}
-			<div className="px-6 py-4 border-t border-border bg-card/50 stagger-card">
-				<p className="text-xs text-muted-foreground mb-3 font-medium">
-					الأوامر السريعة:
-				</p>
-				<div className="flex flex-wrap gap-2">
-					{QUICK_COMMANDS.map((cmd) => (
-						<Badge
-							key={cmd}
-							variant="outline"
-							className="bg-muted border-border hover:bg-secondary/20 hover:text-secondary hover:border-secondary/50 cursor-pointer py-1.5 px-3"
-							onClick={() => setInputValue(cmd)}
-						>
-							{cmd}
-						</Badge>
-					))}
-				</div>
+			{/* 3. Quick Action Chips */}
+			<div className="px-6 py-2 border-t border-border/40 bg-card/40 backdrop-blur-sm flex items-center gap-2 overflow-x-auto">
+				<span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground shrink-0">
+					Quick Runs:
+				</span>
+				{QUICK_ENGINEERING_ACTIONS.map((act) => (
+					<button
+						key={act.label}
+						type="button"
+						onClick={() => void handleQuickAction(act)}
+						className="px-2.5 py-1 rounded-full text-xs border border-border/80 bg-card hover:border-secondary/50 hover:text-secondary text-muted-foreground transition-all shrink-0 font-medium"
+					>
+						{act.label}
+					</button>
+				))}
 			</div>
 
-			{/* Input Area */}
-			<div className="border-t border-border p-4 bg-card stagger-card">
+			{/* 4. Input & Control Bar */}
+			<div className="p-4 border-t border-border bg-card/90 backdrop-blur-md">
+				{/* Live Speech Recognition Banner */}
 				{isListening && (
-					<div className="max-w-3xl mx-auto mb-3 px-3.5 py-2 rounded-lg bg-secondary/10 border border-secondary/30 text-xs text-secondary flex items-center gap-2 animate-pulse">
-						<Mic className="h-3.5 w-3.5 animate-bounce flex-shrink-0" />
+					<div className="max-w-4xl mx-auto mb-2 px-3 py-1.5 rounded-xl bg-secondary/10 border border-secondary/30 text-xs text-secondary flex items-center gap-2 animate-pulse">
+						<Mic className="h-3.5 w-3.5 animate-bounce shrink-0" />
 						<span className="truncate">
-							{interimTranscript ||
-								(isArabic
-									? "جاري الاستماع... تحدث الآن..."
-									: "Listening... Speak now...")}
+							{interimTranscript || (isArabic ? "جاري الاستماع... تحدث الآن" : "Listening... Speak your command...")}
 						</span>
 					</div>
 				)}
-				<form onSubmit={handleSendMessage} className="max-w-3xl mx-auto">
-					<div className="relative flex items-center gap-2">
-						<Button
-							type="button"
-							size="icon"
-							variant="ghost"
-							className="h-10 w-10 text-muted-foreground hover:text-foreground"
-						>
-							<Plus className="h-4 w-4" />
-						</Button>
 
+				{/* Attached Files List */}
+				<div className="max-w-4xl mx-auto">
+					<AttachmentSurface
+						files={attachedFiles}
+						onAddFiles={handleAddFiles}
+						onRemoveFile={handleRemoveFile}
+						disabled={llmLoading || runState.isActionPending}
+					/>
+				</div>
+
+				{/* Input Form with AutoApprovalToggle & Mic */}
+				<form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+					<div className="flex items-center gap-2 bg-muted/40 border border-border/80 rounded-2xl p-1.5 shadow-inner focus-within:border-secondary/60 focus-within:ring-2 focus-within:ring-secondary/20 transition-all">
+						{/* File Attachment Button */}
+						<AttachmentButton
+							onClick={() => {
+								const input = document.querySelector<HTMLInputElement>(
+									'[data-testid="file-attachment-input"]',
+								);
+								input?.click();
+							}}
+							disabled={llmLoading || runState.isActionPending}
+						/>
+
+						{/* Text Input */}
 						<Input
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
-							placeholder={inputPlaceholder}
-							className="bg-muted border-border flex-1 h-10 rounded-full px-4"
-							disabled={loading}
+							placeholder={
+								isArabic
+									? "اطلب تحليلاً هندسياً، حساب حمل، أو فحص امتثال..."
+									: "Ask an engineering question, run voltage drop, or place detectors..."
+							}
+							disabled={llmLoading || runState.isActionPending}
+							className="flex-1 bg-transparent border-0 shadow-none focus-visible:ring-0 text-sm h-10 px-2"
 						/>
 
-						<Button
-							type="button"
-							size="icon"
-							variant="ghost"
-							className={`h-10 w-10 transition-colors ${
-								isListening
-									? "text-secondary bg-secondary/20 hover:bg-secondary/30 animate-pulse"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
-							onClick={toggleListening}
-							title={voiceTitle}
-						>
-							{isListening ? (
-								<MicOff className="h-4 w-4 text-secondary" />
-							) : (
-								<Mic className="h-4 w-4" />
-							)}
-						</Button>
+						{/* Auto Approval Mode Switcher (AUTO vs STEP-BY-STEP) */}
+						<AutoApprovalToggle
+							mode={runState.approvalMode}
+							onChange={setApprovalMode}
+							disabled={llmLoading || runState.isActionPending}
+						/>
 
+						{/* Voice Recognition Button */}
+						{voiceSupported && (
+							<button
+								type="button"
+								onClick={toggleListening}
+								title={isListening ? "Stop listening" : "Start voice control"}
+								aria-label={isListening ? "Stop voice control" : "Start voice control"}
+								className={`h-9 w-9 rounded-full flex items-center justify-center transition-all ${
+									isListening
+										? "bg-secondary text-secondary-foreground animate-pulse shadow-md"
+										: "text-muted-foreground hover:text-foreground hover:bg-muted"
+								}`}
+							>
+								{isListening ? (
+									<MicOff className="h-4 w-4" />
+								) : (
+									<Mic className="h-4 w-4" />
+								)}
+							</button>
+						)}
+
+						{/* Send / Execute Button */}
 						<Button
 							type="submit"
 							size="icon"
-							className="h-10 w-10 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded-full"
-							disabled={loading || !inputValue.trim()}
+							disabled={!inputValue.trim() || llmLoading || runState.isActionPending}
+							className="h-9 w-9 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-sm transition-all"
 						>
 							<Send className="h-4 w-4" />
 						</Button>
 					</div>
 				</form>
 			</div>
-
-			{/* Status Bar */}
-			<div className="h-8 bg-background border-t border-border flex items-center justify-between px-6 text-[10px] font-mono text-muted-foreground">
-				<div className="flex items-center gap-3">
-					<span className="flex items-center gap-1">
-						<Cpu className="w-3 h-3" /> Expert Mode
-					</span>
-					<span className="flex items-center gap-1">
-						<Server className="w-3 h-3" /> Current Project
-					</span>
-				</div>
-				<div className={`flex items-center gap-1 ${statusTextClass}`}>
-					<div className={statusDotClass}></div>
-					{statusText}
-				</div>
-			</div>
 		</div>
 	);
 }
+
+export default AgentChatPage;

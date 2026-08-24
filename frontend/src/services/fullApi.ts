@@ -866,6 +866,72 @@ export const workflowApi = {
 	getAudit: (workflowId: string) => apiCall(`/workflow/${workflowId}/audit`),
 };
 
+// ─── Agent Runs API (Phase 1/2 Authoritative Lifecycle) ──────────────────────
+
+export interface AgentRunResponse {
+	run_id: string;
+	project_id: string;
+	status: string;
+	approval_mode: string;
+	current_step: number;
+	completed_steps: number[];
+	failed_steps: number[];
+	pending_approval_id: string | null;
+	plan?: {
+		steps: Array<{
+			step_id: string;
+			capability_id: string;
+			description?: string;
+			status?: string;
+			result_data?: Record<string, unknown>;
+			error_message?: string;
+			[key: string]: unknown;
+		}>;
+	} | null;
+	recovery_state?: Record<string, unknown>;
+	audit_reference?: string;
+	version: number;
+	error?: string | null;
+}
+
+export const agentRunsApi = {
+	/** GET /workflow/runs/{run_id}/status */
+	getStatus: (runId: string) =>
+		apiCall<ApiResponse<AgentRunResponse>>(`/workflow/runs/${runId}/status`),
+
+	/** POST /workflow/runs/{run_id}/resume */
+	resume: (runId: string) =>
+		apiCall<ApiResponse<AgentRunResponse>>(`/workflow/runs/${runId}/resume`, {
+			method: "POST",
+		}),
+
+	/** POST /workflow/runs/{run_id}/cancel */
+	cancel: (runId: string) =>
+		apiCall<ApiResponse<AgentRunResponse>>(`/workflow/runs/${runId}/cancel`, {
+			method: "POST",
+		}),
+
+	/** POST /workflow/runs/{run_id}/retry */
+	retry: (runId: string) =>
+		apiCall<ApiResponse<AgentRunResponse>>(`/workflow/runs/${runId}/retry`, {
+			method: "POST",
+		}),
+
+	/** POST /workflow/runs/{run_id}/approvals/{approval_id}/decide */
+	decideApproval: (
+		runId: string,
+		approvalId: string,
+		data: { decision: "APPROVED" | "REJECTED"; reason?: string },
+	) =>
+		apiCall<ApiResponse<AgentRunResponse>>(
+			`/workflow/runs/${runId}/approvals/${approvalId}/decide`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+};
+
 // ─── Memory API ─────────────────────────────────────────────────────────────
 
 export const memoryApi = {
