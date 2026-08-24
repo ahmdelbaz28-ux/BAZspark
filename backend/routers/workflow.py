@@ -556,3 +556,105 @@ async def decide_agent_run_approval(
             status_code=409, detail="Approval does not belong to the specified run"
         )
     return {"success": True, "data": run.to_dict()}
+
+
+class PlanWorkflowRequest(BaseModel):
+    prompt: str = ""
+    project_id: str = "default_project"
+    expected_revision: int | None = None
+    composite_spec: dict | None = None
+    approval_mode: str = "AUTO"
+    governance_policy: dict | None = None
+
+
+@router.post(
+    "/runs/plan",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
+@limiter.limit("30/minute")
+async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
+    """Synthesize a natural language or structured intent into a validated, policy-evaluated autonomous plan."""
+    from backend.core.command_bus import AuthenticatedPrincipal
+    from backend.core.workflow_planner import default_workflow_planner
+
+    role = require_permission(Permission.CALCULATION_EXECUTE)(request)
+    caller_id, _ = _run_caller_context(request, role)
+    principal = AuthenticatedPrincipal(
+        user_id=caller_id or "anonymous",
+        email=f"{caller_id or 'anonymous'}@bazspark.com",
+        role=role.value,
+        scopes=["*"],
+    )
+
+    try:
+        plan = await asyncio.to_thread(
+            default_workflow_planner.plan_workflow,
+            prompt=body.prompt or "Autonomous engineering workflow",
+            principal=principal,
+            project_id=body.project_id,
+            expected_revision=body.expected_revision,
+            composite_spec=body.composite_spec,
+            approval_mode=body.approval_mode,
+            governance_policy=body.governance_policy,
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+
+    return {"success": True, "data": plan.to_dict()}
+
+
+class StartPlannedWorkflowRequest(BaseModel):
+    prompt: str = ""
+    project_id: str = "default_project"
+    expected_revision: int | None = None
+    composite_spec: dict | None = None
+    approval_mode: str = "AUTO"
+    conversation_id: str = ""
+    governance_policy: dict | None = None
+
+
+@router.post(
+    "/runs/start-plan",
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
+@limiter.limit("30/minute")
+async def start_planned_autonomous_workflow(
+    request: Request, body: StartPlannedWorkflowRequest
+):
+    """Plan an autonomous workflow and immediately dispatch it to the durable AgentRunOrchestrator."""
+    from backend.core.command_bus import AuthenticatedPrincipal
+    from backend.core.workflow_planner import default_workflow_planner
+
+    role = require_permission(Permission.CALCULATION_EXECUTE)(request)
+    caller_id, _ = _run_caller_context(request, role)
+    principal = AuthenticatedPrincipal(
+        user_id=caller_id or "anonymous",
+        email=f"{caller_id or 'anonymous'}@bazspark.com",
+        role=role.value,
+        scopes=["*"],
+    )
+
+    try:
+        plan = await asyncio.to_thread(
+            default_workflow_planner.plan_workflow,
+            prompt=body.prompt or "Autonomous engineering workflow",
+            principal=principal,
+            project_id=body.project_id,
+            expected_revision=body.expected_revision,
+            composite_spec=body.composite_spec,
+            approval_mode=body.approval_mode,
+            governance_policy=body.governance_policy,
+        )
+        run = await asyncio.to_thread(
+            default_workflow_planner.execute_plan,
+            plan,
+            principal=principal,
+            approval_mode=body.approval_mode,
+            conversation_id=body.conversation_id,
+            governance_policy=body.governance_policy,
+        )
+    except Exception as exc:
+        raise _agent_run_http_error(exc) from exc
+
+    return {"success": True, "data": run.to_dict(), "plan": plan.to_dict()}
+
