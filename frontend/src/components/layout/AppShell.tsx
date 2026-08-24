@@ -1,4 +1,6 @@
 import type React from "react";
+import { useLocation } from "react-router";
+import { AgentWorkspaceBar } from "@/components/layout/AgentWorkspaceBar";
 import { PageAnimator } from "@/components/layout/PageAnimator";
 import TopBar from "@/components/layout/TopBar";
 import Sidebar from "./Sidebar";
@@ -32,6 +34,11 @@ const AppShell: React.FC<AppShellProps> = ({
 	workflowDrawerOpen = false,
 }) => {
 	const isRTL = document.documentElement.dir === "rtl";
+	const location = useLocation();
+	const isAgentControlCenter =
+		location.pathname === "/" ||
+		location.pathname === "/agent" ||
+		location.pathname === "/monitor/agent";
 
 	return (
 		<div
@@ -69,6 +76,8 @@ const AppShell: React.FC<AppShellProps> = ({
 					currentLanguage={currentLanguage}
 					onLanguageChange={onLanguageChange}
 				/>
+
+				{!isAgentControlCenter && <AgentWorkspaceBar />}
 
 				<main
 					id="main-content"
