@@ -770,6 +770,17 @@ def _register_v2_router() -> None:
     except Exception as e:
         logger.warning("APS router registration failed: %s", e)
 
+    # Phase 3: Unified Import Orchestrator router
+    try:
+        from backend.routers.import_router import router as import_v2_router
+
+        app.include_router(import_v2_router, prefix="/api/v2", tags=["Import Orchestrator v2"])
+        logger.info("Unified Import Orchestrator router mounted at /api/v2/import")
+    except ImportError as e:
+        logger.warning("Import router skipped (optional dependency missing): %s", e)
+    except Exception as e:
+        logger.warning("Import router registration failed: %s", e)
+
 
 _register_v2_router()
 

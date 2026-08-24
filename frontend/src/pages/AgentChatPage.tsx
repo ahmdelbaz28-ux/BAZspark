@@ -27,6 +27,7 @@ import { ArtifactDisplay, type ProducedArtifact } from "@/components/chat/Artifa
 import { AttachmentButton, AttachmentSurface, type AttachedFile } from "@/components/chat/AttachmentSurface";
 import { AutoApprovalToggle } from "@/components/chat/AutoApprovalToggle";
 import { ExecutionTimeline } from "@/components/chat/ExecutionTimeline";
+import { ImportPreviewCard } from "@/components/chat/ImportPreviewCard";
 import { ProjectContextBar } from "@/components/chat/ProjectContextBar";
 import { RunLifecycleControls } from "@/components/chat/RunLifecycleControls";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import { WorkflowActionCard } from "@/components/ui/WorkflowActionCard";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
+import { importApi, type ImportPlan, type StagedFileRecord } from "@/services/importApi";
 
 interface QuickAction {
 	label: string;
@@ -160,6 +162,11 @@ export function AgentChatPage() {
 
 	const [inputValue, setInputValue] = useState("");
 	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+	const [stagedImport, setStagedImport] = useState<{
+		stagedFile: StagedFileRecord;
+		plan: ImportPlan | null;
+		isExecuting: boolean;
+	} | null>(null);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 	// Voice control integration
@@ -195,22 +202,94 @@ export function AgentChatPage() {
 		}
 	}, [messages, runState.status, runState.currentStep]);
 
-	// File attachment handlers
-	const handleAddFiles = useCallback((newFiles: File[]) => {
-		const formatted: AttachedFile[] = newFiles.map((f) => ({
-			id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-			file: f,
-			name: f.name,
-			sizeBytes: f.size,
-			extension: `.${f.name.split(".").pop()?.toLowerCase()}`,
-			status: "ready",
-		}));
-		setAttachedFiles((prev) => [...prev, ...formatted]);
-	}, []);
+	// File attachment handlers with Phase 3 Import auto-staging
+	const handleAddFiles = useCallback(
+		async (newFiles: File[]) => {
+			const formatted: AttachedFile[] = newFiles.map((f) => ({
+				id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+				file: f,
+				name: f.name,
+				sizeBytes: f.size,
+				extension: `.${f.name.split(".").pop()?.toLowerCase()}`,
+				status: "ready",
+			}));
+			setAttachedFiles((prev) => [...prev, ...formatted]);
+
+			if (newFiles.length > 0) {
+				const targetFile = newFiles[0];
+				try {
+					const staged = await importApi.uploadDrawingFile(targetFile);
+					const plan = await importApi.planImport(staged.file_id, runState.projectId);
+					setStagedImport({ stagedFile: staged, plan, isExecuting: false });
+				} catch (err) {
+					console.warn("Auto-staging file for import preview failed:", err);
+				}
+			}
+		},
+		[runState.projectId],
+	);
 
 	const handleRemoveFile = useCallback((id: string) => {
 		setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+		setStagedImport(null);
 	}, []);
+
+	const handleStartImportRun = useCallback(
+		async (staged: StagedFileRecord, mode: "AUTO" | "STEP_BY_STEP") => {
+			setStagedImport((prev) => (prev ? { ...prev, isExecuting: true } : null));
+			try {
+				await startRun({
+					projectId: runState.projectId,
+					steps: [
+						{
+							step_id: "step-1-inspect",
+							capability_id: "import.inspect_file",
+							description: `Inspect ${staged.detected_format.toUpperCase()} drawing layout and entities`,
+							payload: { file_id: staged.file_id },
+						},
+						{
+							step_id: "step-2-plan",
+							capability_id: "import.plan_import",
+							description: `Generate deterministic ${staged.detected_format.toUpperCase()} import plan`,
+							payload: { file_id: staged.file_id, project_id: runState.projectId },
+						},
+						{
+							step_id: "step-3-execute",
+							capability_id: "import.execute_import",
+							description: `Commit parsed ${staged.detected_format.toUpperCase()} entities to canonical state`,
+							payload: { file_id: staged.file_id, project_id: runState.projectId },
+						},
+					],
+					approvalMode: mode,
+				});
+			} finally {
+				setStagedImport(null);
+			}
+		},
+		[startRun, runState.projectId],
+	);
+
+	const handleDirectExecuteImport = useCallback(
+		async (staged: StagedFileRecord) => {
+			if (!stagedImport?.plan) return;
+			setStagedImport((prev) => (prev ? { ...prev, isExecuting: true } : null));
+			try {
+				const res = await importApi.executeImport(
+					staged.file_id,
+					runState.projectId,
+					stagedImport.plan.expected_revision,
+				);
+				await sendMessage(
+					`Import committed successfully for ${staged.sanitized_filename}: Rev ${res.previous_revision} → ${res.new_revision}, ${res.imported_devices} devices ingested. Audit Hash: ${res.audit_hash.slice(0, 12)}…`,
+				);
+			} catch (err: unknown) {
+				console.error("Direct import failed", err);
+			} finally {
+				setStagedImport(null);
+			}
+		},
+		[stagedImport, runState.projectId, sendMessage],
+	);
 
 	// Execute a quick engineering action
 	const handleQuickAction = useCallback(
@@ -346,6 +425,18 @@ export function AgentChatPage() {
 								))}
 							</div>
 						</div>
+					)}
+
+					{/* Staged Import Inspection / Plan Preview */}
+					{stagedImport && (
+						<ImportPreviewCard
+							stagedFile={stagedImport.stagedFile}
+							plan={stagedImport.plan}
+							isExecuting={stagedImport.isExecuting}
+							onStartAgentRun={handleStartImportRun}
+							onDirectExecute={handleDirectExecuteImport}
+							onDismiss={() => setStagedImport(null)}
+						/>
 					)}
 
 					{/* Active Execution Spine / Step Timeline */}
