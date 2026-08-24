@@ -239,7 +239,9 @@ def detect_file_format(content: bytes, filename: str) -> str:
 
 def sanitize_filename(filename: str) -> str:
     """Sanitize user-provided filename against path traversal and unsafe characters."""
-    clean = Path(filename).name
+    # Normalize both Windows and POSIX directory separators
+    normalized = filename.replace("\\", "/")
+    clean = Path(normalized).name
     # Strip null bytes and control chars
     clean = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", clean)
     # Strip directory traversal patterns
