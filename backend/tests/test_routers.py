@@ -736,7 +736,8 @@ class TestV213ExportsExcel:
         """The response must start with the ZIP magic bytes ``PK`` (XLSX is a
         ZIP container). The previous mock returned plain ASCII text.
         """
-        response = client.post("/api/exports", json={"exportType": "excel"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "excel", "projectId": pid})
         assert response.status_code == 200
         body = response.content
         # XLSX files are ZIP archives — they must start with b"PK\x03\x04"
@@ -751,7 +752,8 @@ class TestV213ExportsExcel:
         """
         from openpyxl import load_workbook
 
-        response = client.post("/api/exports", json={"exportType": "excel"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "excel", "projectId": pid})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
         sheet_names = wb.sheetnames
@@ -768,7 +770,8 @@ class TestV213ExportsExcel:
         """
         from openpyxl import load_workbook
 
-        response = client.post("/api/exports", json={"exportType": "excel"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "excel", "projectId": pid})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
         ws = wb["Devices"]
@@ -791,18 +794,11 @@ class TestV213ExportsExcel:
     ) -> None:
         """The Bill of Quantities sheet must contain real aggregated counts,
         not random or hardcoded numbers.
-
-        NOTE: The export endpoint picks the most-recently-created project via
-        list_projects(page=1, limit=1, sort=created_at, order=desc). Because
-        other tests in the same module-scoped DB may create projects concurrently,
-        we cannot assert an exact total count. Instead we verify:
-          1. At least one non-cable device row exists.
-          2. Every count value is a positive integer (no mock/random values).
-          3. At least as many devices exist as were added by project_with_devices.
         """
         from openpyxl import load_workbook
 
-        response = client.post("/api/exports", json={"exportType": "excel"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "excel", "projectId": pid})
         assert response.status_code == 200
         wb = load_workbook(io.BytesIO(response.content))
         ws = wb["Bill of Quantities"]
@@ -825,7 +821,8 @@ class TestV213ExportsExcel:
 
     def test_excel_export_content_type_is_xlsx(self, client, project_with_devices) -> None:
         """Content-Type must be the official XLSX MIME type."""
-        response = client.post("/api/exports", json={"exportType": "excel"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "excel", "projectId": pid})
         assert response.status_code == 200
         ct = response.headers.get("content-type", "")
         assert "spreadsheetml" in ct, f"Expected XLSX content-type, got: {ct}"
@@ -837,7 +834,8 @@ class TestV213ExportsExcel:
         manifest (with project info + available endpoints), NOT the previous
         ``b"MOCK EXPORT DATA"`` bytes.
         """
-        response = client.post("/api/exports", json={"exportType": "csv"})
+        pid, _, _ = project_with_devices
+        response = client.post("/api/exports", json={"exportType": "csv", "projectId": pid})
         assert response.status_code == 200
         body = response.content
         # Must NOT contain the old mock strings
