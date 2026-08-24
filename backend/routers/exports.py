@@ -240,6 +240,7 @@ def _generate_manifest_export(project, devices, connections, export_type, projec
 
 class ExportDataInput(BaseModel):
     exportType: str
+    projectId: str | None = None
     dataIds: list | None = None
 
 
@@ -255,7 +256,7 @@ class ExportDataInput(BaseModel):
 @limiter.limit("10/minute")
 async def export_data_global(request: Request, input_data: ExportDataInput):  # NOSONAR — S3776
     """
-    Export project data globally using the first available project for compatibility.
+    Export project data globally using the requested project or the first available project for compatibility.
 
     V213 FIX (Rule 1 — Truthfulness): Previously this endpoint returned
     ``b"MOCK EXCEL EXPORT DATA"`` (13 bytes of plain text) with a fake
@@ -271,14 +272,24 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     ``b"MOCK EXPORT DATA"``) so the client can see what was exported.
     """
     db = get_db()
-    projects = db.list_projects(page=1, limit=1)
-    if not projects or not projects.get("data"):
-        raise HTTPException(
-            status_code=404, detail="No projects found to export data"
-        )  # NOSONAR — S8415
+    project_id = input_data.projectId
+    project = None
+    if project_id:
+        project = db.get_project(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=404, detail=f"Project '{project_id}' not found"
+            )
+    else:
+        projects = db.list_projects(page=1, limit=1)
+        if not projects or not projects.get("data"):
+            raise HTTPException(
+                status_code=404, detail="No projects found to export data"
+            )  # NOSONAR — S8415
 
-    project_id = projects["data"][0]["id"]
-    project = projects["data"][0]
+        project_id = projects["data"][0]["id"]
+        project = projects["data"][0]
+
     export_type = input_data.exportType.lower()
 
     # Pull the same data the real DXF/IFC exports use — no fabrication
