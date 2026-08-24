@@ -5,6 +5,16 @@ All notable changes to FireAI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.0] — 2026-08-24
+
+### Added — Phase 7: Final Forensic Release Gate & Production Release
+
+- **Forensic Release Certification**: Complete architectural, security, state, and engineering forensic audit across Phases 0–7.
+- **Deterministic Engineering & AI Orchestration Boundary**: Full separation of AI intent interpretation/planning from deterministic engineering calculation engines (NFPA 72, NEC, Darcy-Weisbach).
+- **Security & Concurrency Hardening**: Header-based authentication, granular RBAC, path traversal prevention, magic-byte format validation, OCC atomic revisions, and immutable domain event logging.
+- **Autonomous Workflow Pipeline**: Verified DAG validation with cycle detection, dry-run ephemeral overlays, and mandatory human review gates for high-risk capabilities.
+- **Comprehensive Test Suite**: 8,709 passed test cases across backend and integration suites under Python 3.12, with zero lint or build errors.
+
 ## [1.56.0] — 2026-07-01
 
 ### Added — V152: Multi-Provider + Key Expiry + Bulk Delete + Error Boundary
