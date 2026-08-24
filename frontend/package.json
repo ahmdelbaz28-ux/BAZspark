@@ -128,7 +128,7 @@
                 "eslint": "^10.8.1",
                 "eslint-plugin-react-hooks": "^7.1.1",
                 "fast-glob": "^3.3.3",
-                "globals": "^17.7.0",
+                "globals": "^17.11.0",
                 "jsdom": "^30.0.1",
                 "tailwindcss": "^4.0.0",
                 "terser": "^5.49.2",
