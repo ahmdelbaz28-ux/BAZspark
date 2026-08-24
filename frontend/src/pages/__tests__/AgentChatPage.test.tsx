@@ -1,0 +1,79 @@
+/**
+ * AgentChatPage.test.tsx — Integration tests for AI-First Control Center (Phase 2).
+ */
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
+import { AgentChatPage } from "@/pages/AgentChatPage";
+
+// Mock useLlmChat
+const mockSendMessage = vi.fn().mockResolvedValue(undefined);
+const mockClearChat = vi.fn();
+vi.mock("@/hooks/useLlmChat", () => ({
+	useLlmChat: () => ({
+		messages: [],
+		loading: false,
+		error: null,
+		sendMessage: mockSendMessage,
+		clearChat: mockClearChat,
+	}),
+}));
+
+// Mock useVoiceControl
+vi.mock("@/hooks/useVoiceControl", () => ({
+	useVoiceControl: () => ({
+		isListening: false,
+		startListening: vi.fn(),
+		stopListening: vi.fn(),
+		interimTranscript: "",
+		isSupported: true,
+	}),
+}));
+
+describe("AgentChatPage", () => {
+	beforeEach(() => {
+		vi.restoreAllMocks();
+		localStorage.clear();
+		sessionStorage.clear();
+	});
+
+	const renderComponent = () =>
+		render(
+			<MemoryRouter>
+				<AgentSettingsProvider>
+					<AgentChatPage />
+				</AgentSettingsProvider>
+			</MemoryRouter>,
+		);
+
+	it("renders the AI-First Control Center layout and header", () => {
+		renderComponent();
+
+		expect(screen.getByTestId("project-context-bar")).toBeInTheDocument();
+		expect(screen.getByText("FireAI Control Center")).toBeInTheDocument();
+		expect(screen.getByText("AI-First")).toBeInTheDocument();
+		expect(screen.getByTestId("auto-approval-toggle-btn")).toBeInTheDocument();
+	});
+
+	it("renders quick engineering action cards when chat is empty", () => {
+		renderComponent();
+
+		expect(screen.getByText(/FireAI Engineering Control Center/i)).toBeInTheDocument();
+		expect(screen.getAllByText("Place Smoke Detectors").length).toBeGreaterThanOrEqual(1);
+		expect(screen.getAllByText("Voltage Drop Analysis").length).toBeGreaterThanOrEqual(1);
+		expect(screen.getAllByText("Battery Backup Sizing").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("allows user to type into input and submit chat message", async () => {
+		renderComponent();
+
+		const input = screen.getByPlaceholderText(/Ask an engineering question/i);
+		fireEvent.change(input, { target: { value: "How do I calculate cable size?" } });
+		fireEvent.submit(input.closest("form")!);
+
+		await waitFor(() => {
+			expect(mockSendMessage).toHaveBeenCalledWith("How do I calculate cable size?");
+		});
+	});
+});

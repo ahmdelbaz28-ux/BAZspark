@@ -10,7 +10,7 @@ import {
 	useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, Route, Routes, useLocation } from "react-router";
+import { Route, Routes, useLocation } from "react-router";
 import { Toaster } from "sonner";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { PageErrorBoundary } from "@/components/core/PageErrorBoundary";
@@ -438,7 +438,8 @@ function App() {
 	// PROTECTED routes — wrapped in RouteGuard, rendered inside AppShell
 	const protectedRoutes: ProtectedRoute[] = useMemo(
 		() => [
-			{ path: "/", element: <Navigate to="/dashboard" /> },
+			{ path: "/", element: <AgentChatPage /> },
+			{ path: "/agent", element: <AgentChatPage /> },
 			{ path: "/dashboard", element: <DashboardPage /> },
 			{ path: "/projects", element: <ProjectsPage /> },
 			{ path: "/engineering", element: <EngineeringPage /> },

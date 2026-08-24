@@ -175,6 +175,36 @@ describe("WorkflowActionCard", () => {
 		expect(mockReject).toHaveBeenCalledTimes(1);
 	});
 
+	it("renders APPROVE state with pendingApproval details and safety badges", () => {
+		const pendingApproval = {
+			approvalId: "appr-pe-01",
+			runId: "run-01",
+			stepId: "step-spatial",
+			projectId: "proj-alpha",
+			projectRevision: 4,
+			capabilityId: "spatial.place_devices",
+			policyResult: {
+				risk_class: "SAFETY_CRITICAL",
+				reason: "Device count modification requires PE sign-off",
+				validation_status: "PASSED",
+				expected_impact: "Adds 12 smoke detectors to Zone 1",
+			},
+		};
+
+		render(
+			<WorkflowActionCard
+				lifecycleState="APPROVE"
+				pendingApproval={pendingApproval}
+			/>,
+		);
+
+		expect(screen.getByTestId("workflow-approve-view")).toBeInTheDocument();
+		expect(screen.getByText("SAFETY_CRITICAL")).toBeInTheDocument();
+		expect(screen.getByText("Device count modification requires PE sign-off")).toBeInTheDocument();
+		expect(screen.getByText(/Adds 12 smoke detectors to Zone 1/)).toBeInTheDocument();
+		expect(screen.getByText(/N=4/)).toBeInTheDocument();
+	});
+
 	// ── VERIFY ─────────────────────────────────────────────────────────────────
 
 	it("renders VERIFY state with compliance badges", () => {

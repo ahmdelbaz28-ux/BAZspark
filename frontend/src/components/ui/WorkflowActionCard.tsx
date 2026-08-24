@@ -30,6 +30,7 @@ import type {
 	TokenTelemetryPayload,
 	WorkflowStepResultPreview,
 } from "@/contexts/AIControllerContext";
+import type { PendingApprovalData } from "@/hooks/useAgentRun";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,8 @@ interface ComplianceBadge {
 export interface WorkflowActionCardProps {
 	lifecycleState: WorkflowLifecycleState;
 	isLoading?: boolean;
+	/** Server-authoritative pending approval data from backend Agent Run */
+	pendingApproval?: PendingApprovalData | null;
 	/** PLAN: DAG topology — ordered list of [nodeId, capabilityId] pairs */
 	dagNodes?: Array<{
 		node_id: string;
@@ -358,6 +361,93 @@ const LineageView: React.FC<{
 	);
 };
 
+// ─── DOMAIN BADGES & HELPERS ──────────────────────────────────────────────────
+
+function riskBadgeClass(riskClass?: string): string {
+	switch (riskClass?.toUpperCase()) {
+		case "SAFETY_CRITICAL":
+			return "bg-red-500/15 text-red-400 border-red-500/40";
+		case "ENGINEERING_MUTATION":
+			return "bg-amber-500/15 text-amber-300 border-amber-500/40";
+		case "REVERSIBLE_VISUAL":
+			return "bg-cyan-500/15 text-cyan-300 border-cyan-500/40";
+		default:
+			return "bg-slate-500/15 text-slate-300 border-slate-500/40";
+	}
+}
+
+// ─── APPROVE state ────────────────────────────────────────────────────────────
+
+const ApproveView: React.FC<{
+	pendingApproval?: PendingApprovalData | null;
+	expectedRevision?: number;
+}> = ({ pendingApproval, expectedRevision }) => {
+	const riskClass =
+		pendingApproval?.policyResult?.risk_class || "ENGINEERING_MUTATION";
+	const reason =
+		pendingApproval?.policyResult?.reason ||
+		"Governed mutation requires Professional Engineer sign-off before committing.";
+	const capabilityId = pendingApproval?.capabilityId;
+	const validationStatus =
+		pendingApproval?.policyResult?.validation_status || "PASSED";
+	const expectedImpact = pendingApproval?.policyResult?.expected_impact;
+	const rev = pendingApproval?.projectRevision ?? expectedRevision;
+
+	return (
+		<div className="space-y-3" data-testid="workflow-approve-view">
+			<div className="flex items-center justify-between">
+				<SectionLabel>Human Review Gate (NFPA 72 PE)</SectionLabel>
+				<span
+					className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${riskBadgeClass(riskClass)}`}
+				>
+					{riskClass}
+				</span>
+			</div>
+
+			{capabilityId && (
+				<div className="flex items-center gap-2">
+					<span className="text-xs text-muted-foreground">
+						Target Capability:
+					</span>
+					<span
+						className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${domainBadgeClass(capabilityId)}`}
+					>
+						{domainLabel(capabilityId)}
+					</span>
+				</div>
+			)}
+
+			<div className="bg-muted/40 border border-border/60 rounded-xl p-3 space-y-2">
+				<p className="text-xs text-foreground font-medium leading-relaxed">
+					{reason}
+				</p>
+				{expectedImpact && (
+					<p className="text-[11px] text-muted-foreground">
+						<span className="font-semibold text-foreground">Impact: </span>
+						{expectedImpact}
+					</p>
+				)}
+				<div className="flex items-center justify-between pt-1.5 border-t border-border/30 text-[10px] font-mono text-muted-foreground">
+					<span>
+						Validation:{" "}
+						<strong className="text-emerald-400">{validationStatus}</strong>
+					</span>
+					{rev !== undefined && (
+						<span>
+							Revision: <strong className="text-cyan-400">N={rev}</strong>
+						</span>
+					)}
+				</div>
+			</div>
+
+			<p className="text-[11px] text-muted-foreground leading-relaxed">
+				Approving will commit changes to project revision N+1. This action is
+				immutable and logged to the Merkle audit ledger.
+			</p>
+		</div>
+	);
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const STATE_LABELS: Record<WorkflowLifecycleState, string> = {
@@ -381,6 +471,7 @@ const STATE_ORDER: WorkflowLifecycleState[] = [
 export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 	lifecycleState,
 	isLoading = false,
+	pendingApproval,
 	dagNodes,
 	previewDevices,
 	circuitPreview,
@@ -541,19 +632,10 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 				)}
 
 				{lifecycleState === "APPROVE" && (
-					<div className="space-y-3">
-						<SectionLabel>Single-Action Commit Gate</SectionLabel>
-						{expectedRevision !== undefined && (
-							<div className="text-[10px] font-mono text-muted-foreground">
-								Expected revision:{" "}
-								<span className="text-cyan-400">N={expectedRevision}</span>
-							</div>
-						)}
-						<p className="text-xs text-muted-foreground leading-relaxed">
-							Approving will atomically commit the proposed changes. This action
-							is deterministic and traceable via SHA-256 audit chain.
-						</p>
-					</div>
+					<ApproveView
+						pendingApproval={pendingApproval}
+						expectedRevision={expectedRevision}
+					/>
 				)}
 
 				{lifecycleState === "VERIFY" && (
