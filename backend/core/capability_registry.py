@@ -42,6 +42,9 @@ CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
 CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
 CAP_ELECTRICAL_CALCULATE_BATTERY = "electrical.calculate_battery"
 CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
+CAP_IMPORT_INSPECT_FILE = "import.inspect_file"
+CAP_IMPORT_PLAN_IMPORT = "import.plan_import"
+CAP_IMPORT_EXECUTE_IMPORT = "import.execute_import"
 
 
 class CapabilityRegistry:
@@ -81,6 +84,7 @@ class CapabilityRegistry:
         self._register_electrical_capabilities()
         self._register_hydraulic_capabilities()
         self._register_battery_capabilities()
+        self._register_import_capabilities()
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
@@ -569,6 +573,125 @@ class CapabilityRegistry:
                     },
                 },
                 handler=_calculate_battery_handler,
+            )
+        )
+
+    def _register_import_capabilities(self) -> None:
+        def _inspect_file_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from backend.core.import_orchestrator import default_import_orchestrator
+
+            file_id = str(payload.get("file_id", ""))
+            return default_import_orchestrator.inspect_file(file_id)
+
+        def _plan_import_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from backend.core.import_orchestrator import default_import_orchestrator
+
+            file_id = str(payload.get("file_id", ""))
+            project_id = str(payload.get("project_id", "default_project"))
+            options = payload.get("options") or {}
+            plan = default_import_orchestrator.plan_import(file_id, project_id, options=options)
+            return plan.to_dict()
+
+        def _execute_import_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from backend.core.import_orchestrator import default_import_orchestrator
+
+            file_id = str(payload.get("file_id", ""))
+            project_id = str(payload.get("project_id", "default_project"))
+            options = payload.get("options") or {}
+            return default_import_orchestrator.prepare_import_commit(
+                file_id, project_id, options=options
+            )
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_IMPORT_INSPECT_FILE,
+                name="Inspect Drawing or BIM File",
+                description="Deterministically inspect staged drawing/BIM file and extract entity metadata and layout confidence.",
+                category="import",
+                risk_class="LOW",
+                required_scopes=["import:read", "project:read"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_id": {"type": "string"},
+                    },
+                    "required": ["file_id"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_id": {"type": "string"},
+                        "detected_format": {"type": "string"},
+                        "rooms_count": {"type": "integer"},
+                        "devices_count": {"type": "integer"},
+                        "confidence_score": {"type": "number"},
+                    },
+                },
+                handler=_inspect_file_handler,
+            )
+        )
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_IMPORT_PLAN_IMPORT,
+                name="Plan Drawing Import",
+                description="Build a deterministic import plan bound to target project's canonical revision.",
+                category="import",
+                risk_class="LOW",
+                required_scopes=["import:read", "project:read"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_id": {"type": "string"},
+                        "project_id": {"type": "string"},
+                        "options": {"type": "object"},
+                    },
+                    "required": ["file_id", "project_id"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "plan_id": {"type": "string"},
+                        "file_id": {"type": "string"},
+                        "project_id": {"type": "string"},
+                        "expected_revision": {"type": "integer"},
+                        "summary": {"type": "string"},
+                    },
+                },
+                handler=_plan_import_handler,
+            )
+        )
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_IMPORT_EXECUTE_IMPORT,
+                name="Execute Drawing / BIM Ingestion",
+                description="Atomically ingest parsed drawing/BIM elements into canonical project state with OCC verification.",
+                category="import",
+                risk_class="MEDIUM",
+                required_scopes=["import:write", "project:write"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_id": {"type": "string"},
+                        "project_id": {"type": "string"},
+                        "expected_revision": {"type": "integer"},
+                        "options": {"type": "object"},
+                    },
+                    "required": ["file_id", "project_id", "expected_revision"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "import_id": {"type": "string"},
+                        "project_id": {"type": "string"},
+                        "new_revision": {"type": "integer"},
+                        "imported_devices": {"type": "integer"},
+                        "audit_hash": {"type": "string"},
+                        "success": {"type": "boolean"},
+                    },
+                },
+                handler=_execute_import_handler,
             )
         )
 

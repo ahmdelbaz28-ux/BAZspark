@@ -618,6 +618,45 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_import_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process an import intent: inspect staged file, generate import plan, evaluate execution policy, and return preview."""
+        from backend.core.import_orchestrator import default_import_orchestrator
+
+        file_id = str(msg.get("fileId", msg.get("file_id", "")))
+        project_id = str(msg.get("projectId", "default_project"))
+
+        try:
+            record = default_import_orchestrator.get_staged_file(file_id)
+            plan = default_import_orchestrator.plan_import(file_id, project_id, principal=principal)
+
+            await websocket.send_json(
+                {
+                    "type": "import_preview",
+                    "fileId": file_id,
+                    "projectId": project_id,
+                    "filename": record.sanitized_filename,
+                    "detectedFormat": record.detected_format,
+                    "estimatedRooms": plan.estimated_rooms,
+                    "estimatedDevices": plan.estimated_devices,
+                    "estimatedLayers": plan.estimated_layers,
+                    "warnings": plan.warnings,
+                    "requiredPolicy": plan.required_policy,
+                    "expectedRevision": plan.expected_revision,
+                    "summary": plan.summary,
+                }
+            )
+        except Exception as exc:
+            logger.warning("Import intent handling failed: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "IMPORT_INTENT_FAILED",
+                    "message": str(exc),
+                }
+            )
+
     async def handle_approval(
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
@@ -1167,6 +1206,8 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_hydraulic_intent(websocket, principal, msg)
     elif msg_type in ("ai_composite_intent", "composite_intent") and principal:
         await default_orchestration_service.handle_composite_intent(websocket, principal, msg)
+    elif msg_type in ("ai_import_intent", "import_intent") and principal:
+        await default_orchestration_service.handle_import_intent(websocket, principal, msg)
     elif msg_type in ("ai_approve_composite", "approve_composite") and principal:
         await default_orchestration_service.handle_composite_approval(websocket, principal, msg)
     elif msg_type in ("ai_approve", "command_approve") and principal:
