@@ -534,7 +534,7 @@ def test_cancel_vs_approve_race_is_deterministic(
     if final.status == RunStatus.CANCELLED:
         assert revision == 1 or revision == 2  # commit either pre-ceded cancel or never happened
     for err in errors:
-        assert isinstance(err, (InvalidRunStateError, ApprovalAlreadyDecidedError, InvalidTransitionError))
+        assert isinstance(err, InvalidRunStateError | ApprovalAlreadyDecidedError | InvalidTransitionError)
 
 
 def test_resume_vs_cancel_race_is_deterministic(
