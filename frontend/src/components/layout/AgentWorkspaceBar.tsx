@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquareText } from "lucide-react";
+import { MessageSquareText } from "lucide-react";
 import { Link } from "react-router";
 
 /**
@@ -28,10 +28,9 @@ export function AgentWorkspaceBar() {
 				<Link
 					to="/agent"
 					aria-label="Open AI Control Center"
-					className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="inline-flex shrink-0 items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
-					<span>Open</span>
-					<ArrowRight aria-hidden="true" className="h-4 w-4" />
+					Open
 				</Link>
 			</div>
 		</section>
