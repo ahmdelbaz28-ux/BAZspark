@@ -38,7 +38,8 @@ class CapabilityDefinition:
 
 # Capability ID constants
 CAP_SPATIAL_PLACE_DEVICES = "spatial.place_devices"
-CAP_SPATIAL_VERIFY_SPACING = "spatial.verify_detector_spacing"
+CAP_COMPLIANCE_VERIFY_SPACING = "compliance.verify_detector_spacing"
+CAP_SPATIAL_VERIFY_SPACING = "compliance.verify_detector_spacing"
 CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP = "electrical.calculate_voltage_drop"
 CAP_ELECTRICAL_CALCULATE_BATTERY = "electrical.calculate_battery"
 CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
@@ -207,7 +208,7 @@ class CapabilityRegistry:
                         "ceiling_height_m": {"type": "number"},
                         "devices": {"type": "array"},
                     },
-                    "required": ["width_m", "length_m", "devices"],
+                    "required": ["width_m", "length_m"],
                 },
                 output_schema={
                     "type": "object",

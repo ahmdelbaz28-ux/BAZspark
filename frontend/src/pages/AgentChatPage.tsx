@@ -41,6 +41,7 @@ import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
 import { exportApi, type ExportPlan, type ExportTargetFormat } from "@/services/exportApi";
 import { importApi, type ImportPlan, type StagedFileRecord } from "@/services/importApi";
+import { agentWorkflowApi } from "@/services/agentWorkflowApi";
 
 interface QuickAction {
 	label: string;
@@ -446,32 +447,48 @@ export function AgentChatPage() {
 			lower.includes("battery") ||
 			lower.includes("hydraulic") ||
 			lower.includes("audit") ||
-			lower.includes("nfpa");
+			lower.includes("nfpa") ||
+			lower.includes("layout") ||
+			lower.includes("circuit");
 
-		if (isEngineeringRunIntent && attachedFiles.length > 0) {
-			// Trigger an Agent Run with attached drawing context
-			await startRun({
-				projectId: runState.projectId,
-				steps: [
-					{
-						step_id: `step-analysis-${Date.now()}`,
-						capability_id: "spatial.place_devices",
-						description: `Analyze ${attachedFiles[0]?.name || "drawing"} for device layout`,
-						payload: { filename: attachedFiles[0]?.name, prompt },
-					},
-					{
-						step_id: `step-verification-${Date.now()}`,
-						capability_id: "electrical.calculate_voltage_drop",
-						description: "Verify circuit voltage drop and load",
-						payload: { circuit_id: "nac-auto", current_a: 2.0, one_way_length_m: 40.0, awg: "14" },
-					},
-				],
-				approvalMode: runState.approvalMode,
-			});
-		} else {
-			// Standard conversational LLM stream
-			await sendMessage(prompt);
+		if (isEngineeringRunIntent) {
+			try {
+				const plan = await agentWorkflowApi.planWorkflow({
+					prompt,
+					projectId: runState.projectId,
+					approvalMode: runState.approvalMode,
+					compositeSpec: attachedFiles.length > 0 ? { file_id: attachedFiles[0].id, filename: attachedFiles[0].name } : undefined,
+				});
+
+				if (plan.steps && plan.steps.length > 0) {
+					await startRun({
+						projectId: runState.projectId,
+						steps: plan.steps.map((s) => ({
+							step_id: s.step_id,
+							capability_id: s.capability_id,
+							description: s.description,
+							payload: s.payload,
+						})),
+						approvalMode: runState.approvalMode,
+						plan: {
+							plan_id: plan.plan_id,
+							intent_summary: plan.intent_summary,
+							dag: plan.dag,
+						},
+					});
+
+					await sendMessage(
+						`⚡ Autonomous Engineering Workflow Initiated: ${plan.intent_summary} (${plan.steps.length} steps). Execution Policy: ${plan.overall_policy_decision}. Requires Approval: ${plan.requires_human_approval ? "YES" : "NO"}.`,
+					);
+					return;
+				}
+			} catch (err) {
+				console.warn("Autonomous planner fallback to LLM stream:", err);
+			}
 		}
+
+		// Standard conversational LLM stream
+		await sendMessage(prompt);
 	};
 
 	// Artifacts produced by run or direct export

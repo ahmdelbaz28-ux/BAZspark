@@ -985,6 +985,84 @@ class AIOrchestrationService:
             }
         )
 
+    async def handle_autonomous_workflow_intent(
+        self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
+    ) -> None:
+        """Process natural language or structured autonomous workflow intent (Phase 6).
+        Synthesizes DAG plan, evaluates policy, generates dry-run preview, and emits ai_autonomous_plan.
+        """
+        from backend.core.workflow_planner import AutonomousPlannerError, default_workflow_planner
+
+        prompt = str(msg.get("prompt") or msg.get("message") or "").strip()
+        project_id = str(msg.get("projectId", "default_project"))
+        expected_rev = msg.get("expectedRevision")
+        expected_revision = int(expected_rev) if expected_rev is not None else None
+        composite_spec = msg.get("compositeSpec") or msg.get("spec") or {}
+        approval_mode = str(msg.get("approvalMode", "AUTO"))
+        governance_policy = msg.get("governance") or msg.get("governancePolicy")
+
+        try:
+            plan = await asyncio.to_thread(
+                default_workflow_planner.plan_workflow,
+                prompt=prompt or "Autonomous engineering analysis and layout",
+                principal=principal,
+                project_id=project_id,
+                expected_revision=expected_revision,
+                composite_spec=composite_spec,
+                approval_mode=approval_mode,
+                governance_policy=governance_policy,
+            )
+
+            await websocket.send_json(
+                {
+                    "type": "ai_autonomous_plan",
+                    "plan": plan.to_dict(),
+                    "planId": plan.plan_id,
+                    "projectId": plan.project_id,
+                    "expectedRevision": plan.expected_revision,
+                    "intentSummary": plan.intent_summary,
+                    "intentCategory": plan.intent_category,
+                    "steps": [s.to_dict() for s in plan.steps],
+                    "dag": plan.dag,
+                    "requiresHumanApproval": plan.requires_human_approval,
+                    "overallPolicyDecision": plan.overall_policy_decision,
+                    "projectedState": plan.projected_state,
+                    "combinedAuditDigest": plan.combined_audit_digest,
+                    "telemetry": plan.token_telemetry,
+                }
+            )
+
+            # If autoExecute flag is set and all steps are AUTO_APPROVED, launch AgentRun immediately
+            if msg.get("autoExecute") and not plan.requires_human_approval and plan.overall_policy_decision == "AUTO_APPROVED":
+                run = await asyncio.to_thread(
+                    default_workflow_planner.execute_plan,
+                    plan,
+                    principal=principal,
+                    approval_mode=approval_mode,
+                    conversation_id=str(msg.get("conversationId", "")),
+                    governance_policy=governance_policy,
+                )
+                await _emit_run_state(websocket, run)
+
+        except AutonomousPlannerError as exc:
+            logger.warning("Autonomous workflow planning failed: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "AUTONOMOUS_PLANNING_FAILED",
+                    "message": str(exc),
+                }
+            )
+        except Exception as exc:
+            logger.exception("Unexpected error in autonomous workflow planning: %s", exc)
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "errorCode": "PLANNING_ERROR",
+                    "message": "Autonomous workflow planning failed.",
+                }
+            )
+
 
 default_orchestration_service = AIOrchestrationService()
 
@@ -1196,6 +1274,8 @@ async def _handle_agent_message(
         await _handle_response_message(msg)
     elif msg_type == "ping":
         await _handle_ping_message(websocket)
+    elif msg_type in ("ai_plan_workflow", "plan_workflow", "ai_autonomous_intent", "autonomous_intent") and principal:
+        await default_orchestration_service.handle_autonomous_workflow_intent(websocket, principal, msg)
     elif msg_type in ("ai_intent", "intent_submit") and principal:
         await default_orchestration_service.handle_intent(websocket, principal, msg)
     elif msg_type in ("ai_electrical_intent", "electrical_intent") and principal:
