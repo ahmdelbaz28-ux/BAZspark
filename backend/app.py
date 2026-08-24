@@ -781,6 +781,17 @@ def _register_v2_router() -> None:
     except Exception as e:
         logger.warning("Import router registration failed: %s", e)
 
+    # Phase 4: Unified Export Orchestrator router
+    try:
+        from backend.routers.export_router import router as export_v2_router
+
+        app.include_router(export_v2_router, prefix="/api/v2", tags=["Export Orchestrator v2"])
+        logger.info("Unified Export Orchestrator router mounted at /api/v2/export")
+    except ImportError as e:
+        logger.warning("Export router skipped (optional dependency missing): %s", e)
+    except Exception as e:
+        logger.warning("Export router registration failed: %s", e)
+
 
 _register_v2_router()
 

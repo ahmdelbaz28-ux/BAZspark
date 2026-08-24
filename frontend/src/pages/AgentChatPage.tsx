@@ -27,6 +27,7 @@ import { ArtifactDisplay, type ProducedArtifact } from "@/components/chat/Artifa
 import { AttachmentButton, AttachmentSurface, type AttachedFile } from "@/components/chat/AttachmentSurface";
 import { AutoApprovalToggle } from "@/components/chat/AutoApprovalToggle";
 import { ExecutionTimeline } from "@/components/chat/ExecutionTimeline";
+import { ExportPlanCard } from "@/components/chat/ExportPlanCard";
 import { ImportPreviewCard } from "@/components/chat/ImportPreviewCard";
 import { ProjectContextBar } from "@/components/chat/ProjectContextBar";
 import { RunLifecycleControls } from "@/components/chat/RunLifecycleControls";
@@ -38,6 +39,7 @@ import { WorkflowActionCard } from "@/components/ui/WorkflowActionCard";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
+import { exportApi, type ExportPlan, type ExportTargetFormat } from "@/services/exportApi";
 import { importApi, type ImportPlan, type StagedFileRecord } from "@/services/importApi";
 
 interface QuickAction {
@@ -136,6 +138,25 @@ const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
 			},
 		],
 	},
+	{
+		label: "Export DXF / BIM Deliverable",
+		capabilityId: "export.execute_export",
+		description: "Export project canonical devices & circuits to DXF CAD",
+		steps: [
+			{
+				step_id: "step-1-plan-export",
+				capability_id: "export.plan_export",
+				description: "Analyze mapping and plan DXF export",
+				payload: { target_format: "dxf" },
+			},
+			{
+				step_id: "step-2-exec-export",
+				capability_id: "export.execute_export",
+				description: "Generate validated DXF engineering deliverable",
+				payload: { target_format: "dxf" },
+			},
+		],
+	},
 ];
 
 export function AgentChatPage() {
@@ -167,6 +188,11 @@ export function AgentChatPage() {
 		plan: ImportPlan | null;
 		isExecuting: boolean;
 	} | null>(null);
+	const [stagedExport, setStagedExport] = useState<{
+		plan: ExportPlan;
+		isExecuting: boolean;
+	} | null>(null);
+	const [exportedArtifacts, setExportedArtifacts] = useState<ProducedArtifact[]>([]);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 	// Voice control integration
@@ -291,16 +317,93 @@ export function AgentChatPage() {
 		[stagedImport, runState.projectId, sendMessage],
 	);
 
+	// Export planning and execution handlers (Phase 4)
+	const handlePlanExport = useCallback(
+		async (targetFormat: ExportTargetFormat) => {
+			try {
+				const plan = await exportApi.planExport(runState.projectId, targetFormat);
+				setStagedExport({ plan, isExecuting: false });
+			} catch (err: unknown) {
+				console.error("Export planning failed", err);
+			}
+		},
+		[runState.projectId],
+	);
+
+	const handleStartExportRun = useCallback(async () => {
+		if (!stagedExport) return;
+		const fmt = stagedExport.plan.target_format;
+		const expectedRev = stagedExport.plan.expected_revision;
+		setStagedExport(null);
+		await startRun({
+			projectId: runState.projectId,
+			steps: [
+				{
+					step_id: "step-1-plan-export",
+					capability_id: "export.plan_export",
+					description: `Analyze mapping & plan ${fmt.toUpperCase()} export`,
+					payload: { project_id: runState.projectId, target_format: fmt },
+				},
+				{
+					step_id: "step-2-execute-export",
+					capability_id: "export.execute_export",
+					description: `Generate and validate ${fmt.toUpperCase()} deliverable with OCC check`,
+					payload: {
+						project_id: runState.projectId,
+						expected_revision: expectedRev,
+						target_format: fmt,
+					},
+				},
+			],
+			approvalMode: runState.approvalMode,
+		});
+	}, [stagedExport, startRun, runState.projectId, runState.approvalMode]);
+
+	const handleDirectExecuteExport = useCallback(async () => {
+		if (!stagedExport) return;
+		const { plan } = stagedExport;
+		setStagedExport((prev) => (prev ? { ...prev, isExecuting: true } : null));
+		try {
+			const res = await exportApi.executeExport(
+				runState.projectId,
+				plan.expected_revision,
+				plan.target_format,
+			);
+			setExportedArtifacts((prev) => [
+				{
+					artifact_id: res.artifact.artifact_id,
+					filename: res.artifact.filename,
+					format: res.artifact.target_format.toUpperCase(),
+					size_bytes: res.artifact.file_size_bytes,
+					status: "ready",
+					download_url: exportApi.getDownloadUrl(res.artifact.artifact_id),
+				},
+				...prev,
+			]);
+			await sendMessage(
+				`Export generated successfully: ${res.artifact.filename} (${plan.target_format.toUpperCase()}). SHA-256: ${res.artifact.sha256_hash.slice(0, 12)}… Revision: ${res.artifact.revision}.`,
+			);
+		} catch (err: unknown) {
+			console.error("Direct export execution failed", err);
+		} finally {
+			setStagedExport(null);
+		}
+	}, [stagedExport, runState.projectId, sendMessage]);
+
 	// Execute a quick engineering action
 	const handleQuickAction = useCallback(
 		async (action: QuickAction) => {
+			if (action.capabilityId === "export.execute_export") {
+				await handlePlanExport("dxf");
+				return;
+			}
 			await startRun({
 				projectId: runState.projectId,
 				steps: action.steps,
 				approvalMode: runState.approvalMode,
 			});
 		},
-		[startRun, runState.projectId, runState.approvalMode],
+		[startRun, runState.projectId, runState.approvalMode, handlePlanExport],
 	);
 
 	// Unified submit handler (Intelligent Chat vs Run router)
@@ -311,8 +414,31 @@ export function AgentChatPage() {
 
 		setInputValue("");
 
-		// Check if user is asking for an engineering action
 		const lower = prompt.toLowerCase();
+
+		// Check for export intent
+		if (
+			lower.includes("export") ||
+			lower.includes("download dxf") ||
+			lower.includes("download ifc") ||
+			lower.includes("download revit") ||
+			lower.includes("download boq") ||
+			lower.includes("download excel")
+		) {
+			let targetFmt: ExportTargetFormat = "dxf";
+			if (lower.includes("ifc")) targetFmt = "ifc";
+			else if (lower.includes("revit")) targetFmt = "revit";
+			else if (lower.includes("excel") || lower.includes("xlsx") || lower.includes("boq"))
+				targetFmt = "xlsx";
+			else if (lower.includes("csv")) targetFmt = "csv";
+			else if (lower.includes("pdf") || lower.includes("report")) targetFmt = "pdf";
+			else if (lower.includes("json")) targetFmt = "json";
+
+			await handlePlanExport(targetFmt);
+			return;
+		}
+
+		// Check if user is asking for an engineering action
 		const isEngineeringRunIntent =
 			lower.includes("place") ||
 			lower.includes("detector") ||
@@ -348,10 +474,11 @@ export function AgentChatPage() {
 		}
 	};
 
-	// Artifacts produced by run
+	// Artifacts produced by run or direct export
 	const producedArtifacts: ProducedArtifact[] = useMemo(() => {
+		const list: ProducedArtifact[] = [...exportedArtifacts];
 		if (runState.status === "COMPLETED") {
-			return [
+			list.push(
 				{
 					artifact_id: `art-calc-${runState.runId || "completed"}`,
 					filename: "NFPA_72_Compliance_Report.pdf",
@@ -368,10 +495,10 @@ export function AgentChatPage() {
 					status: "ready",
 					download_url: "#",
 				},
-			];
+			);
 		}
-		return [];
-	}, [runState.status, runState.runId]);
+		return list;
+	}, [runState.status, runState.runId, exportedArtifacts]);
 
 	return (
 		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -436,6 +563,18 @@ export function AgentChatPage() {
 							onStartAgentRun={handleStartImportRun}
 							onDirectExecute={handleDirectExecuteImport}
 							onDismiss={() => setStagedImport(null)}
+						/>
+					)}
+
+					{/* Staged Export Planning / Loss Preview Card (Phase 4) */}
+					{stagedExport && (
+						<ExportPlanCard
+							plan={stagedExport.plan}
+							isExecuting={stagedExport.isExecuting}
+							onFormatChange={(fmt) => void handlePlanExport(fmt)}
+							onStartAgentRun={() => void handleStartExportRun()}
+							onDirectExecute={() => void handleDirectExecuteExport()}
+							onDismiss={() => setStagedExport(null)}
 						/>
 					)}
 

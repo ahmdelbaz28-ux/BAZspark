@@ -45,6 +45,9 @@ CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH = "hydraulics.solve_darcy_weisbach"
 CAP_IMPORT_INSPECT_FILE = "import.inspect_file"
 CAP_IMPORT_PLAN_IMPORT = "import.plan_import"
 CAP_IMPORT_EXECUTE_IMPORT = "import.execute_import"
+CAP_EXPORT_PLAN_EXPORT = "export.plan_export"
+CAP_EXPORT_EXECUTE_EXPORT = "export.execute_export"
+CAP_EXPORT_VALIDATE_ARTIFACT = "export.validate_artifact"
 
 
 class CapabilityRegistry:
@@ -85,6 +88,7 @@ class CapabilityRegistry:
         self._register_hydraulic_capabilities()
         self._register_battery_capabilities()
         self._register_import_capabilities()
+        self._register_export_capabilities()
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
@@ -692,6 +696,131 @@ class CapabilityRegistry:
                     },
                 },
                 handler=_execute_import_handler,
+            )
+        )
+
+    def _register_export_capabilities(self) -> None:
+        def _plan_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from backend.core.export_orchestrator import default_export_orchestrator
+
+            project_id = str(payload.get("project_id", "default_project"))
+            target_format = str(payload.get("target_format", "dxf"))
+            options = payload.get("options") or {}
+            plan = default_export_orchestrator.plan_export(project_id, target_format, options=options)
+            return plan.to_dict()
+
+        def _execute_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from backend.core.export_orchestrator import default_export_orchestrator
+
+            project_id = str(payload.get("project_id", "default_project"))
+            target_format = str(payload.get("target_format", "dxf"))
+            expected_revision = int(payload.get("expected_revision", 0))
+            options = payload.get("options") or {}
+            res = default_export_orchestrator.execute_export(
+                project_id=project_id,
+                expected_revision=expected_revision,
+                target_format=target_format,
+                options=options,
+            )
+            return res.to_dict()
+
+        def _validate_artifact_handler(payload: dict[str, Any]) -> dict[str, Any]:
+            from pathlib import Path
+
+            from backend.core.export_orchestrator import default_export_orchestrator
+
+            artifact_path = Path(str(payload.get("artifact_path", "")))
+            target_format = str(payload.get("target_format", "dxf"))
+            return default_export_orchestrator.validate_artifact(artifact_path, target_format)
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_EXPORT_PLAN_EXPORT,
+                name="Plan Engineering Export",
+                description="Deterministic export planning and format-loss impact analysis bound to project revision.",
+                category="export",
+                risk_class="LOW",
+                required_scopes=["export:read", "project:read"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "project_id": {"type": "string"},
+                        "target_format": {"type": "string"},
+                        "options": {"type": "object"},
+                    },
+                    "required": ["project_id", "target_format"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "plan_id": {"type": "string"},
+                        "project_id": {"type": "string"},
+                        "expected_revision": {"type": "integer"},
+                        "target_format": {"type": "string"},
+                        "mapping_status": {"type": "string"},
+                        "summary": {"type": "string"},
+                    },
+                },
+                handler=_plan_export_handler,
+            )
+        )
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_EXPORT_EXECUTE_EXPORT,
+                name="Execute Engineering Export",
+                description="Deterministically generate format artifact (DXF, Revit, IFC, XLSX, CSV, JSON, PDF) with OCC check.",
+                category="export",
+                risk_class="MEDIUM",
+                required_scopes=["export:read", "project:read"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "project_id": {"type": "string"},
+                        "expected_revision": {"type": "integer"},
+                        "target_format": {"type": "string"},
+                        "options": {"type": "object"},
+                    },
+                    "required": ["project_id", "expected_revision", "target_format"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "export_id": {"type": "string"},
+                        "artifact": {"type": "object"},
+                        "audit_hash": {"type": "string"},
+                        "success": {"type": "boolean"},
+                    },
+                },
+                handler=_execute_export_handler,
+            )
+        )
+
+        self.register(
+            CapabilityDefinition(
+                capability_id=CAP_EXPORT_VALIDATE_ARTIFACT,
+                name="Validate Export Artifact",
+                description="Verify structural integrity, checksum, and format compliance of generated export artifacts.",
+                category="export",
+                risk_class="LOW",
+                required_scopes=["export:read"],
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "artifact_path": {"type": "string"},
+                        "target_format": {"type": "string"},
+                    },
+                    "required": ["artifact_path", "target_format"],
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "valid": {"type": "boolean"},
+                        "size_bytes": {"type": "integer"},
+                        "format": {"type": "string"},
+                    },
+                },
+                handler=_validate_artifact_handler,
             )
         )
 
