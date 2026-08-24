@@ -27,6 +27,8 @@ from backend.core.agent_run_store import (
     RunStatus,
 )
 from backend.core.capability_registry import (
+    CAP_ELECTRICAL_CALCULATE_BATTERY,
+    CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH,
     CAP_SPATIAL_PLACE_DEVICES,
     CAP_SPATIAL_VERIFY_SPACING,
     CapabilityRegistry,
@@ -40,6 +42,7 @@ from backend.core.context_resolver import default_context_resolver
 from backend.core.execution_policy import PolicyResult
 from backend.core.state_store import CommandStateStore
 from backend.core.workflow_planner import (
+    AutonomousPlan,
     AutonomousWorkflowPlanner,
     CapabilityUnavailableError,
 )
@@ -392,3 +395,129 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     assert start_data["success"] is True
     assert start_data["data"]["status"] in ("COMPLETED", "WAITING_APPROVAL")
     assert "runId" in start_data["data"]
+
+
+def test_import_and_export_workflow_planning(
+    planner: AutonomousWorkflowPlanner, engineer_principal: AuthenticatedPrincipal
+) -> None:
+    """Verify autonomous planning and synthesis for import and export intents."""
+    # 1. Import intent
+    import_plan = planner.plan_workflow(
+        "Import AutoCAD DWG architectural drawing floor_plan.dwg",
+        principal=engineer_principal,
+        project_id="proj-import-test",
+        composite_spec={"filename": "floor_plan.dwg"},
+    )
+    assert any(s.capability_id.startswith("import.") for s in import_plan.steps)
+    assert import_plan.intent_category in ("import", "composite")
+
+    # 2. Export intent
+    export_plan = planner.plan_workflow(
+        "Export deliverable as IFC format",
+        principal=engineer_principal,
+        project_id="proj-export-test",
+    )
+    assert any(s.capability_id.startswith("export.") for s in export_plan.steps)
+    assert export_plan.intent_category in ("export", "composite")
+
+
+def test_hydraulic_and_battery_workflow_planning_and_execution(
+    planner: AutonomousWorkflowPlanner,
+    orchestrator: AgentRunOrchestrator,
+    engineer_principal: AuthenticatedPrincipal,
+) -> None:
+    """Verify hydraulic calculation and battery sizing workflows with human approval."""
+    prompt = "Solve hydraulic pipe flow on pipe-01 length 30m flow 200 gpm, and size battery backup for FACP-01"
+    plan = planner.plan_workflow(
+        prompt,
+        principal=engineer_principal,
+        project_id="proj-hyd-bat",
+        approval_mode=ApprovalMode.AUTO,
+    )
+    assert len(plan.steps) >= 2
+    assert any(s.capability_id == CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH for s in plan.steps)
+    assert any(s.capability_id == CAP_ELECTRICAL_CALCULATE_BATTERY for s in plan.steps)
+
+    run = planner.execute_plan(
+        plan,
+        principal=engineer_principal,
+        approval_mode=ApprovalMode.AUTO,
+    )
+    while run.status == RunStatus.WAITING_APPROVAL and run.pending_approval_id:
+        run = orchestrator.decide_approval(
+            engineer_principal.user_id, run.pending_approval_id, "APPROVED"
+        )
+    assert run.status == RunStatus.COMPLETED
+
+
+def test_invalid_workflow_intent_rejection(
+    planner: AutonomousWorkflowPlanner, engineer_principal: AuthenticatedPrincipal
+) -> None:
+    """Verify non-engineering conversational messages raise InvalidWorkflowIntentError."""
+    from backend.core.workflow_planner import InvalidWorkflowIntentError
+
+    with pytest.raises(InvalidWorkflowIntentError):
+        planner.plan_workflow(
+            "xyz 123 conversational query without engineering actions",
+            principal=engineer_principal,
+            project_id="proj-invalid",
+        )
+
+
+@pytest.mark.asyncio
+async def test_websocket_orchestration_service_autonomous_planning(
+    fresh_db: Database, engineer_principal: AuthenticatedPrincipal
+) -> None:
+    """Verify AIOrchestrationService handles ai_plan_workflow message."""
+    from backend.routers.agent_ws import AIOrchestrationService
+
+    class MockWebSocket:
+        def __init__(self):
+            self.sent_messages = []
+
+        async def send_json(self, data):
+            self.sent_messages.append(data)
+
+    service = AIOrchestrationService()
+    ws = MockWebSocket()
+
+    await service.handle_autonomous_workflow_intent(
+        ws,
+        engineer_principal,
+        {
+            "type": "ai_plan_workflow",
+            "prompt": "Layout smoke detectors in room 12x15m and calculate voltage drop",
+            "projectId": "proj-ws-plan",
+            "approvalMode": "AUTO",
+        },
+    )
+
+    assert len(ws.sent_messages) == 1
+    msg = ws.sent_messages[0]
+    assert msg["type"] == "ai_autonomous_plan"
+    assert "plan" in msg
+    assert "planId" in msg
+    assert len(msg["plan"]["steps"]) >= 2
+
+
+def test_autonomous_plan_serialization_roundtrip(
+    planner: AutonomousWorkflowPlanner, engineer_principal: AuthenticatedPrincipal
+) -> None:
+    """Verify serialization to dict and deserialization from dict."""
+    plan = planner.plan_workflow(
+        "Layout smoke detectors in room 10x12m and verify spacing",
+        principal=engineer_principal,
+        project_id="proj-serde",
+    )
+
+    data = plan.to_dict()
+    assert isinstance(data, dict)
+    assert data["plan_id"] == plan.plan_id
+    assert data["project_id"] == "proj-serde"
+    assert len(data["steps"]) == len(plan.steps)
+
+    reconstructed = AutonomousPlan.from_dict(data)
+    assert reconstructed.plan_id == plan.plan_id
+    assert reconstructed.project_id == plan.project_id
+    assert len(reconstructed.steps) == len(plan.steps)
+    assert reconstructed.overall_policy_decision == plan.overall_policy_decision

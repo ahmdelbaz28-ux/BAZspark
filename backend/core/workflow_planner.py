@@ -129,6 +129,28 @@ class AutonomousPlan:
         data["steps"] = [s.to_dict() if hasattr(s, "to_dict") else s for s in self.steps]
         return data
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AutonomousPlan:
+        steps_data = data.get("steps", [])
+        steps = [
+            PlannedStep(**s) if isinstance(s, dict) else s for s in steps_data
+        ]
+        return cls(
+            plan_id=str(data.get("plan_id", "")),
+            project_id=str(data.get("project_id", "")),
+            expected_revision=int(data.get("expected_revision", 1)),
+            intent_summary=str(data.get("intent_summary", "")),
+            intent_category=str(data.get("intent_category", "composite")),
+            steps=steps,
+            dag=dict(data.get("dag", {})),
+            requires_human_approval=bool(data.get("requires_human_approval", False)),
+            overall_policy_decision=str(data.get("overall_policy_decision", "AUTO_APPROVED")),
+            projected_state=dict(data.get("projected_state", {})),
+            combined_audit_digest=str(data.get("combined_audit_digest", "")),
+            token_telemetry=dict(data.get("token_telemetry", {})),
+            created_at=str(data.get("created_at", "")),
+        )
+
     def to_agent_run_steps(self) -> list[dict[str, Any]]:
         """Format steps for consumption by AgentRunOrchestrator.start_run."""
         return [
@@ -375,6 +397,20 @@ class AutonomousWorkflowPlanner:
 
         # Multi-step Engineering Analysis & Placement Pipeline
         else:
+            is_spatial = any(
+                k in lower_prompt
+                for k in ("place", "layout", "detector", "room", "spacing", "smoke", "heat", "area", "zone", "device", "coverage")
+            )
+            is_electrical = any(k in lower_prompt for k in ("voltage", "drop", "wire", "awg", "nac", "slc", "circuit", "cable"))
+            is_battery = any(k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp"))
+            is_hydraulic = any(k in lower_prompt for k in ("hydraulic", "pipe", "flow", "pressure", "darcy", "head loss", "sprinkler"))
+            is_export = any(k in lower_prompt for k in ("export", "download", "deliverable", "ifc", "dxf", "revit", "report"))
+
+            if not (is_spatial or is_electrical or is_battery or is_hydraulic or is_export or spec):
+                raise InvalidWorkflowIntentError(
+                    f"Prompt '{prompt_clean}' does not contain recognized engineering intent keywords."
+                )
+
             intent_category = "engineering_workflow"
             # Node 1: Spatial Placement
             sp_spec = self._extract_spatial_spec(lower_prompt, spec)
@@ -528,16 +564,25 @@ class AutonomousWorkflowPlanner:
 
         # Dry-run execution to project state & create audit digest
         executor = WorkflowExecutor(self._registry, self._bus.state_store)
-        dry_run_res = executor.execute(
-            dag=dag,
-            project_id=project_id,
-            expected_revision=expected_revision,
-            principal=principal,
-            is_dry_run=True,
-            workflow_id=f"wf-plan-{uuid.uuid4().hex[:8]}",
-            correlation_id=f"corr-plan-{uuid.uuid4().hex[:8]}",
-            governance_policy=governance_policy,
-        )
+        try:
+            dry_run_res = executor.execute(
+                dag=dag,
+                project_id=project_id,
+                expected_revision=expected_revision,
+                principal=principal,
+                is_dry_run=True,
+                workflow_id=f"wf-plan-{uuid.uuid4().hex[:8]}",
+                correlation_id=f"corr-plan-{uuid.uuid4().hex[:8]}",
+                governance_policy=governance_policy,
+            )
+            projected_state = dry_run_res.projected_state
+            combined_audit = dry_run_res.combined_audit_digest
+            dry_run_success = dry_run_res.success
+        except Exception as exc:
+            logger.warning("Dry-run preview failed: %s", exc)
+            projected_state = {"devices": [], "revision": expected_revision}
+            combined_audit = ""
+            dry_run_success = False
 
         plan_id = f"plan-{uuid.uuid4().hex[:12]}"
         intent_summary = f"Autonomous Engineering Workflow ({len(nodes)} steps: {', '.join(n.capability_id for n in nodes)})"
@@ -545,8 +590,8 @@ class AutonomousWorkflowPlanner:
         telemetry = {
             "prompt_length": len(prompt),
             "step_count": len(planned_steps),
-            "dry_run_success": dry_run_res.success,
-            "projected_devices": len(dry_run_res.projected_state.get("devices", [])),
+            "dry_run_success": dry_run_success,
+            "projected_devices": len(projected_state.get("devices", [])),
         }
 
         return AutonomousPlan(
@@ -559,8 +604,8 @@ class AutonomousWorkflowPlanner:
             dag=dag.to_dict(),
             requires_human_approval=requires_approval,
             overall_policy_decision=overall_policy.value,
-            projected_state=dry_run_res.projected_state,
-            combined_audit_digest=dry_run_res.combined_audit_digest,
+            projected_state=projected_state,
+            combined_audit_digest=combined_audit,
             token_telemetry=telemetry,
         )
 
