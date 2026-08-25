@@ -4,6 +4,7 @@
 
 import {
 	Box,
+	CheckCircle2,
 	Clock,
 	Download,
 	Eye,
@@ -39,6 +40,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import {
 	useCreateProject,
 	useDeleteProject,
@@ -83,6 +85,7 @@ const _CABLE_SIZES = [
 
 export function ProjectsPage() {
 	const { t } = useTranslation();
+	const { activeProjectId, setActiveProjectId } = useActiveProject();
 	const {
 		data: projects,
 		loading: projectsLoading,
@@ -354,32 +357,40 @@ export function ProjectsPage() {
 													{project.description || t("common.noData")}
 												</CardDescription>
 											</div>
-											<Badge
-												variant={
-													project.status === "active"
-														? "default"
+											<div className="flex items-center gap-2">
+												{project.id === activeProjectId && (
+													<Badge className="bg-primary/20 text-primary border-primary/40 text-xs">
+														<CheckCircle2 className="h-3 w-3 mr-1" />
+														Active
+													</Badge>
+												)}
+												<Badge
+													variant={
+														project.status === "active"
+															? "default"
+															: project.status === "draft" // NOSONAR: typescript:S3358
+																? "secondary"
+																: project.status === "archived" // NOSONAR: typescript:S3358
+																	? "outline"
+																	: "destructive"
+													}
+													className={
+														project.status === "active"
+															? "bg-success/10 text-success border-success/30"
+															: project.status === "draft" // NOSONAR: typescript:S3358
+																? "bg-warning/10 text-warning border-warning/30"
+																: "bg-slate-600/20 text-muted-foreground border-border/30"
+													}
+												>
+													{project.status === "active"
+														? t("projects.active")
 														: project.status === "draft" // NOSONAR: typescript:S3358
-															? "secondary"
+															? t("projects.draft")
 															: project.status === "archived" // NOSONAR: typescript:S3358
-																? "outline"
-																: "destructive"
-												}
-												className={
-													project.status === "active"
-														? "bg-success/10 text-success border-success/30"
-														: project.status === "draft" // NOSONAR: typescript:S3358
-															? "bg-warning/10 text-warning border-warning/30"
-															: "bg-slate-600/20 text-muted-foreground border-border/30"
-												}
-											>
-												{project.status === "active"
-													? t("projects.active")
-													: project.status === "draft" // NOSONAR: typescript:S3358
-														? t("projects.draft")
-														: project.status === "archived" // NOSONAR: typescript:S3358
-															? t("projects.archived")
-															: t("projects.inactive")}
-											</Badge>
+																? t("projects.archived")
+																: t("projects.inactive")}
+												</Badge>
+											</div>
 										</div>
 									</CardHeader>
 									<CardContent>
@@ -412,7 +423,20 @@ export function ProjectsPage() {
 													{project.connectionCount} {t("projects.connections")}
 												</div>
 											</div>
-											<div className="flex gap-2">
+											<div className="flex items-center gap-2">
+												{project.id !== activeProjectId && (
+													<Button
+														variant="outline"
+														size="sm"
+														className="text-xs border-border text-foreground/90 hover:bg-primary/10"
+														onClick={() => {
+															setActiveProjectId(project.id);
+															toast.success(`Active project set to ${project.name}`);
+														}}
+													>
+														Set Active
+													</Button>
+												)}
 												<Button
 													variant="outline"
 													size="sm"

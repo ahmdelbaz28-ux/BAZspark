@@ -15,10 +15,11 @@ import {
 import type React from "react";
 import { Link } from "react-router";
 import { useAgentSettings } from "@/contexts/AgentSettingsContext";
+import { useActiveProject } from "@/contexts/ProjectContext";
 
 interface ProjectContextBarProps {
-	projectId: string;
-	projectRevision: number;
+	projectId?: string;
+	projectRevision?: number;
 	isConnected: boolean;
 	isReconnecting: boolean;
 	onClearChat: () => void;
@@ -26,14 +27,16 @@ interface ProjectContextBarProps {
 }
 
 export const ProjectContextBar: React.FC<ProjectContextBarProps> = ({
-	projectId,
-	projectRevision,
+	projectId: propProjectId,
+	projectRevision = 1,
 	isConnected,
 	isReconnecting,
 	onClearChat,
 	onNewRun,
 }) => {
 	const { settings } = useAgentSettings();
+	const { activeProjectId } = useActiveProject();
+	const projectId = propProjectId || activeProjectId;
 
 	const providerName = settings.llm.provider.toUpperCase();
 	const modelName = settings.llm.model;
