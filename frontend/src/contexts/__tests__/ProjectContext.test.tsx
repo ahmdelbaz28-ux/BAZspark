@@ -169,7 +169,7 @@ describe("ProjectContext", () => {
 		expect(screen.getByTestId("active-id")).toHaveTextContent("");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("none");
 		expect(screen.getByTestId("active-model")).toHaveTextContent("");
-		expect(screen.getByTestId("active-rev")).toHaveTextContent("1");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("0");
 		expect(screen.getByTestId("selected-entity")).toHaveTextContent("none");
 	});
 });

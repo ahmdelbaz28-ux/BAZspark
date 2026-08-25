@@ -81,11 +81,24 @@ async def list_projects(
     sort: str = Query("createdAt", description="Sort field"),  # NOSONAR - python:S8410
     order: str = Query("desc", description="Sort order (asc/desc)"),  # NOSONAR - python:S8410
 ):
-    if order not in ("asc", "desc"):
-        order = "desc"
-    """List all projects with pagination."""
+    page_num = page if isinstance(page, int) else 1
+    limit_num = limit if isinstance(limit, int) else 20
+    sort_str = sort if isinstance(sort, str) else "createdAt"
+    order_str = order if isinstance(order, str) else "desc"
+    if order_str not in ("asc", "desc"):
+        order_str = "desc"
+    """List all projects with server-authoritative tenant scoping and pagination."""
+    principal = get_current_principal(request)
+    role = get_current_role(request)
+    author_filter = principal if (role != Role.ADMIN and principal) else None
     db = get_db()
-    result = db.list_projects(page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_projects(
+        page=page_num,
+        limit=limit_num,
+        sort=_normalize_sort(sort_str),
+        order=order_str,
+        author=author_filter,
+    )
     validate_paginated(result, item_validator=validate_project)
     return success(result)
 
@@ -95,10 +108,20 @@ async def list_projects(
 )
 @limiter.limit("30/minute")
 async def create_project(request: Request, input_data: CreateProjectInput):
-    """Create a new project scoped to the current authenticated principal."""
+    """Create a new project scoped authoritatively to the current authenticated principal."""
     db = get_db()
     principal = get_current_principal(request)
-    author = input_data.author or principal or ""
+    role = get_current_role(request)
+    if principal:
+        # Enforce authoritative ownership boundary: client cannot forge another principal's ownership
+        if input_data.author and input_data.author != principal and role != Role.ADMIN:
+            raise HTTPException(
+                status_code=403,
+                detail="Forbidden: Cannot create a project on behalf of another principal",
+            )
+        author = principal
+    else:
+        author = input_data.author or ""
     project_data = {
         "id": str(uuid.uuid4()),
         "name": input_data.name,

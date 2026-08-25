@@ -622,8 +622,8 @@ export interface Project {
 	status: "active" | "archived" | "draft";
 	deviceCount: number;
 	connectionCount: number;
-	revision?: number;
-	modelId?: string;
+	revision: number;
+	modelId: string;
 }
 
 export interface CreateProjectInput {

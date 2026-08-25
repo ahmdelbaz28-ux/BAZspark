@@ -38,7 +38,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useActiveProject } from "@/contexts/ProjectContext";
-import { useProjects } from "@/hooks/useApiQuery";
 import { useToast } from "@/hooks/use-toast";
 import { workflowApi } from "@/services/fullApi";
 
@@ -58,17 +57,15 @@ const WORKFLOW_TYPES = [
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive"> =
 	{
-		running: "secondary",
-		pending: "secondary",
 		completed: "default",
-		approved: "default",
+		running: "secondary",
+		waiting_for_approval: "secondary",
 		rejected: "destructive",
 		failed: "destructive",
 	};
 
 export function WorkflowPage() {
 	const { toast } = useToast();
-	const { data: projects } = useProjects();
 	const [loading, setLoading] = useState(false);
 	const [globalStatus, setGlobalStatus] = useState<Record<
 		string,

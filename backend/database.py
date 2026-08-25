@@ -946,9 +946,14 @@ class Database:
         return self.projects.get_project(project_id)
 
     def list_projects(
-        self, page: int = 1, limit: int = 20, sort: str = "created_at", order: str = "desc"
+        self,
+        page: int = 1,
+        limit: int = 20,
+        sort: str = "created_at",
+        order: str = "desc",
+        author: str | None = None,
     ) -> dict:
-        return self.projects.list_projects(page, limit, sort, order)
+        return self.projects.list_projects(page, limit, sort, order, author=author)
 
     def update_project(self, project_id: str, updates: dict) -> dict | None:
         return self.projects.update_project(project_id, updates)
@@ -1060,9 +1065,13 @@ class Database:
         row: Any,
         device_count: int = 0,
         connection_count: int = 0,
+        revision: int = 1,
     ) -> dict:
+        row_id = row["id"]
+        # Extract persistent canonical revision if present in row, else fall back to parameter
+        rev = row["revision"] if (isinstance(row, dict) and "revision" in row and row["revision"] is not None) else revision
         return {
-            "id": row["id"],
+            "id": row_id,
             "name": row["name"],
             "description": row["description"],
             "author": row["author"],
@@ -1071,6 +1080,8 @@ class Database:
             "status": row["status"],
             "deviceCount": device_count,
             "connectionCount": connection_count,
+            "revision": int(rev) if rev is not None else 1,
+            "modelId": f"dt-{row_id}",
         }
 
     @staticmethod

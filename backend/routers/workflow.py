@@ -17,6 +17,8 @@ LIFE-SAFETY NOTE:
   - Audit trails are append-only (no deletion or modification)
 """
 
+from __future__ import annotations
+
 import asyncio
 import hmac
 import logging
@@ -423,14 +425,23 @@ async def get_audit_trail(
 # above; they expose the durable Agent Run store exclusively.
 
 
+async def _to_thread(func, *args, **kwargs):
+    if hasattr(asyncio, "to_thread"):
+        return await asyncio.to_thread(func, *args, **kwargs)
+    import functools
+
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+
+
 def _agent_run_http_error(exc: Exception) -> HTTPException:
     """Map orchestrator domain errors to HTTP status codes."""
-    if isinstance(exc, RunNotFoundError | PendingApprovalNotFoundError):
+    if isinstance(exc, (RunNotFoundError, PendingApprovalNotFoundError)):
         return HTTPException(status_code=404, detail=str(exc)[:300])
     if isinstance(exc, RunPermissionError):
         return HTTPException(status_code=403, detail=str(exc)[:300])
     if isinstance(
-        exc, InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError
+        exc, (InvalidRunStateError, StaleApprovalError, ApprovalAlreadyDecidedError)
     ):
         return HTTPException(status_code=409, detail=str(exc)[:300])
     if isinstance(exc, ValueError):
@@ -558,6 +569,85 @@ async def decide_agent_run_approval(
     return {"success": True, "data": run.to_dict()}
 
 
+def _reconcile_and_validate_execution_context(
+    request: Request,
+    project_id: str,
+    model_id: str | None,
+    entity_id: str | None,
+    entity_type: str | None,
+    expected_revision: int | None,
+) -> dict:
+    """
+    Authoritative reconciliation of execution context (Gate 5 Blockers B, C, F).
+    Validates:
+    1. Authenticated principal has access to project_id
+    2. model_id belongs to project_id (rejects forged/mismatched models)
+    3. entity_id exists and belongs to project_id (zero bypasses: elem-*, mock-* forbidden unless in DB)
+    4. entity/entity_type is compatible
+    5. expected_revision matches canonical persistent OCC revision from project_revisions
+    """
+    from backend.database import get_db
+    from backend.core.state_store import CommandStateStore
+    from backend.routers.projects import _verify_project_access
+
+    db = get_db()
+    state_store = CommandStateStore(db)
+
+    project = None
+    if project_id:
+        project = db.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+        _verify_project_access(project, request)
+
+        # 2. model_id belongs to project_id
+        canonical_model_id = project.get("modelId") or f"dt-{project_id}"
+        if model_id and model_id != canonical_model_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model '{model_id}' does not belong to project '{project_id}'",
+            )
+
+        # 3. entity_id exists and belongs to project_id (strictly enforced, no prefix bypasses)
+        if entity_id:
+            dev = db.get_device(project_id, entity_id)
+            if not dev:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Entity '{entity_id}' does not belong to project '{project_id}'",
+                )
+
+            # 4. entity/entity_type compatibility
+            if entity_type:
+                allowed_types = {"device", "element", "detector", "panel", "module", "circuit", "appliance"}
+                dev_type = str(dev.get("type", "")).lower()
+                dev_cat = str(dev.get("category", "")).lower()
+                if entity_type.lower() not in allowed_types and entity_type.lower() != dev_type and entity_type.lower() != dev_cat:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Entity type '{entity_type}' is incompatible with entity '{entity_id}'",
+                    )
+
+        # 5. expected_revision matches canonical persistent revision
+        canonical_rev = state_store.get_project_revision(project_id)
+        if expected_revision is not None and expected_revision != canonical_rev:
+            raise HTTPException(
+                status_code=409,
+                detail=f"OCC revision conflict: expected revision {expected_revision} but project '{project_id}' is at canonical revision {canonical_rev}",
+            )
+    elif entity_id:
+        raise HTTPException(
+            status_code=400,
+            detail="project_id is required when entity_id is specified",
+        )
+
+    return {
+        "project": project,
+        "canonical_model_id": project.get("modelId") if project else "",
+        "canonical_revision": state_store.get_project_revision(project_id) if project_id else 1,
+    }
+
+
 class PlanWorkflowRequest(BaseModel):
     prompt: str = ""
     project_id: str = ""
@@ -589,16 +679,15 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         scopes=["*"],
     )
 
-    if body.entity_id and body.project_id:
-        from backend.database import get_db
-
-        db = get_db()
-        dev = db.get_device(body.project_id, body.entity_id)
-        if not dev and not body.entity_id.startswith("elem-") and not body.entity_id.startswith("mock-"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Entity '{body.entity_id}' does not belong to project '{body.project_id}'",
-            )
+    # Authoritative context reconciliation (Blockers B, C, F)
+    _reconcile_and_validate_execution_context(
+        request=request,
+        project_id=body.project_id,
+        model_id=body.model_id,
+        entity_id=body.entity_id,
+        entity_type=body.entity_type,
+        expected_revision=body.expected_revision,
+    )
 
     spec = dict(body.composite_spec or {})
     if body.model_id:
@@ -609,7 +698,7 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         spec["entity_type"] = body.entity_type
 
     try:
-        plan = await asyncio.to_thread(
+        plan = await _to_thread(
             default_workflow_planner.plan_workflow,
             prompt=body.prompt or "Autonomous engineering workflow",
             principal=principal,
@@ -659,16 +748,15 @@ async def start_planned_autonomous_workflow(
         scopes=["*"],
     )
 
-    if body.entity_id and body.project_id:
-        from backend.database import get_db
-
-        db = get_db()
-        dev = db.get_device(body.project_id, body.entity_id)
-        if not dev and not body.entity_id.startswith("elem-") and not body.entity_id.startswith("mock-"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Entity '{body.entity_id}' does not belong to project '{body.project_id}'",
-            )
+    # Authoritative context reconciliation (Blockers B, C, F)
+    _reconcile_and_validate_execution_context(
+        request=request,
+        project_id=body.project_id,
+        model_id=body.model_id,
+        entity_id=body.entity_id,
+        entity_type=body.entity_type,
+        expected_revision=body.expected_revision,
+    )
 
     spec = dict(body.composite_spec or {})
     if body.model_id:
@@ -679,17 +767,17 @@ async def start_planned_autonomous_workflow(
         spec["entity_type"] = body.entity_type
 
     try:
-        plan = await asyncio.to_thread(
+        plan = await _to_thread(
             default_workflow_planner.plan_workflow,
             prompt=body.prompt or "Autonomous engineering workflow",
             principal=principal,
             project_id=body.project_id,
             expected_revision=body.expected_revision,
-            composite_spec=body.composite_spec,
+            composite_spec=spec,
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
-        run = await asyncio.to_thread(
+        run = await _to_thread(
             default_workflow_planner.execute_plan,
             plan,
             principal=principal,

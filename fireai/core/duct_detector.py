@@ -32,8 +32,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Tuple
 
-Point = tuple[float, float]
+Point = Tuple[float, float]
 
 # NFPA 90A §6.4.2.2 / IMC §606.4 — maximum spacing between duct detectors
 # NOTE: NFPA 72 §17.7.5 does NOT specify inter-detector spacing.

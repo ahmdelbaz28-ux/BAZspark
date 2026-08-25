@@ -28,15 +28,16 @@ interface ProjectContextBarProps {
 
 export const ProjectContextBar: React.FC<ProjectContextBarProps> = ({
 	projectId: propProjectId,
-	projectRevision = 1,
+	projectRevision: propRevision,
 	isConnected,
 	isReconnecting,
 	onClearChat,
 	onNewRun,
 }) => {
 	const { settings } = useAgentSettings();
-	const { activeProjectId } = useActiveProject();
+	const { activeProjectId, activeRevision } = useActiveProject();
 	const projectId = propProjectId || activeProjectId;
+	const projectRevision = propRevision !== undefined ? propRevision : activeRevision;
 
 	const providerName = settings.llm.provider.toUpperCase();
 	const modelName = settings.llm.model;

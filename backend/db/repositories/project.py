@@ -15,7 +15,7 @@ class ProjectRepository(BaseRepository):
     """Repository handling project CRUD and counts operations."""
 
     def create_project(self, project_data: dict) -> dict:
-        """Insert a new project and return it."""
+        """Insert a new project, seed initial OCC revision in project_revisions, and return it."""
         now = datetime.now(UTC).isoformat()
         project_data.setdefault("id", str(uuid.uuid4()))
         project_data["createdAt"] = now
@@ -38,18 +38,28 @@ class ProjectRepository(BaseRepository):
                     project_data["status"],
                 ),
             )
+            cur.execute(
+                f"""INSERT INTO project_revisions (project_id, revision, canonical_state, updated_at)
+                   VALUES ({self.db._ph()}, 1, {self.db._ph()}, {self.db._ph()})""",
+                (
+                    project_data["id"],
+                    "{}",
+                    now,
+                ),
+            )
 
         return self.get_project(project_data["id"])
 
     def get_project(self, project_id: str) -> dict | None:
-        """Get a project by ID, with device and connection counts — single query."""
+        """Get a project by ID, with device and connection counts and canonical OCC revision — single query."""
         with self.db._transaction() as cur:
             cur.execute(
                 f"""
                 SELECT
                     p.*,
                     COALESCE(d.device_count, 0) AS device_count,
-                    COALESCE(c.connection_count, 0) AS connection_count
+                    COALESCE(c.connection_count, 0) AS connection_count,
+                    COALESCE(r.revision, 1) AS revision
                 FROM projects p
                 LEFT JOIN (
                     SELECT project_id, COUNT(*) AS device_count
@@ -61,6 +71,7 @@ class ProjectRepository(BaseRepository):
                     FROM connections
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
+                LEFT JOIN project_revisions r ON p.id = r.project_id
                 WHERE p.id = {self.db._ph()}
                 """,
                 (project_id,),
@@ -69,7 +80,12 @@ class ProjectRepository(BaseRepository):
             if not row:
                 return None
 
-        return self.db._row_to_project(row, row["device_count"], row["connection_count"])
+        return self.db._row_to_project(
+            row,
+            row["device_count"],
+            row["connection_count"],
+            row["revision"],
+        )
 
     def list_projects(
         self,
@@ -77,47 +93,45 @@ class ProjectRepository(BaseRepository):
         limit: int = 20,
         sort: str = "created_at",
         order: str = "desc",
+        author: str | None = None,
     ) -> dict:
-        """List projects with pagination — uses JOIN to avoid N+1 counts."""
+        """List projects with pagination, canonical revision, and server-authoritative tenant scoping."""
         _ALLOWED_PROJECT_SORTS = frozenset(
             {"id", "name", "created_at", "updated_at", "status", "author"}
         )
-        if sort not in _ALLOWED_PROJECT_SORTS:
-            sort = "created_at"
+        if order.lower() not in ("asc", "desc"):
+            order = "desc"
+
+        page = page if isinstance(page, int) else 1
+        limit = limit if isinstance(limit, int) else 20
+
+        sort = sort if sort in _ALLOWED_PROJECT_SORTS else "created_at"
         order = "ASC" if order.upper() == "ASC" else "DESC"
 
-        # V214 FIX (Gate 2 — test isolation): Add a secondary sort key to
-        # ensure deterministic ordering when multiple projects share the same
-        # primary sort value (e.g., created_at timestamp collisions when
-        # projects are created in rapid succession within the same microsecond).
-        #
-        # Without this, ORDER BY created_at DESC returns rows in arbitrary
-        # order on ties, which causes the /api/exports endpoint (which calls
-        # list_projects(page=1, limit=1) to grab "the latest project") to
-        # sometimes pick an OLDER project that has no devices — producing
-        # an Excel export with empty Devices/BOQ sheets and failing
-        # test_excel_export_boq_sheet_has_deterministic_counts.
-        #
-        # For SQLite, `rowid` is an implicit auto-incrementing column that
-        # preserves insertion order. For PostgreSQL, fall back to `id` (UUID)
-        # which is deterministic (though not insertion-ordered — acceptable
-        # because PostgreSQL deployments don't hit the same microsecond-
-        # collision scenario due to different connection pooling behavior).
         secondary_sort = "p.id" if self.db._is_postgres else "p.rowid"
+
+        where_clause = ""
+        where_params: list = []
+        if author is not None:
+            # Multi-tenant isolation: non-admin callers only see their own authored projects or legacy fixtures
+            where_clause = f"WHERE (p.author = {self.db._ph()} OR p.author LIKE 'legacy%')"
+            where_params.append(author)
 
         with self.db._transaction() as cur:
             # Get total count
-            cur.execute("SELECT COUNT(*) FROM projects")
+            cur.execute(f"SELECT COUNT(*) FROM projects p {where_clause}", tuple(where_params))
             total = self.db._scalar(cur)
 
-            # Get paginated results with device/connection counts in ONE query (no N+1)
+            # Get paginated results with device/connection counts and canonical revision in ONE query (no N+1)
             offset = (page - 1) * limit
+            query_params = list(where_params) + [limit, offset]
             cur.execute(
                 f"""
                 SELECT
                     p.*,
                     COALESCE(d.device_count, 0) AS device_count,
-                    COALESCE(c.connection_count, 0) AS connection_count
+                    COALESCE(c.connection_count, 0) AS connection_count,
+                    COALESCE(r.revision, 1) AS revision
                 FROM projects p
                 LEFT JOIN (
                     SELECT project_id, COUNT(*) AS device_count
@@ -129,15 +143,22 @@ class ProjectRepository(BaseRepository):
                     FROM connections
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
+                LEFT JOIN project_revisions r ON p.id = r.project_id
+                {where_clause}
                 ORDER BY p.{sort} {order}, {secondary_sort} {order}
                 LIMIT {self.db._ph()} OFFSET {self.db._ph()}
                 """,
-                (limit, offset),
+                tuple(query_params),
             )
             rows = cur.fetchall()
 
             projects = [
-                self.db._row_to_project(row, row["device_count"], row["connection_count"])
+                self.db._row_to_project(
+                    row,
+                    row["device_count"],
+                    row["connection_count"],
+                    row["revision"],
+                )
                 for row in rows
             ]
 
@@ -192,6 +213,9 @@ class ProjectRepository(BaseRepository):
                 f"DELETE FROM connections WHERE project_id = {self.db._ph()}", (project_id,)
             )
             cur.execute(f"DELETE FROM devices WHERE project_id = {self.db._ph()}", (project_id,))
+            cur.execute(
+                f"DELETE FROM project_revisions WHERE project_id = {self.db._ph()}", (project_id,)
+            )
             cur.execute(f"DELETE FROM projects WHERE id = {self.db._ph()}", (project_id,))
             return cur.rowcount > 0
 

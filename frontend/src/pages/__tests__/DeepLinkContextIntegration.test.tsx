@@ -4,7 +4,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
 import { ProjectProvider, useActiveProject } from "@/contexts/ProjectContext";

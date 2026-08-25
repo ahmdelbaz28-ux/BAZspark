@@ -39,10 +39,13 @@ import threading
 import time
 import uuid
 from collections import deque
-from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, NoReturn
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import datetime, timezone
+    UTC = timezone.utc
+from typing import Any, Callable, NoReturn
 
 # ===========================================================================
 # Event Data Model

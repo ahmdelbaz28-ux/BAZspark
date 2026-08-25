@@ -27,8 +27,10 @@ from starlette.requests import Request
 from backend.auth import require_permission
 from backend.rbac import Permission, Role, has_permission, ROLE_PERMISSIONS
 from backend.database import Database, get_db
-from backend.models import UpdateProjectInput
-from backend.routers.projects import get_project, update_project, delete_project
+from backend.core.state_store import CommandStateStore
+from backend.models import CreateProjectInput, UpdateProjectInput
+from backend.routers.projects import create_project, get_project, list_projects, update_project, delete_project
+from backend.routers.workflow import plan_autonomous_workflow, PlanWorkflowRequest
 
 
 class TestProjectRBACAuthorization:
@@ -287,3 +289,173 @@ class TestEndpointTenantAuthorizationBoundary:
         # Querying Project B with Tenant A's device ID returns None (no cross-project leakage)
         cross_dev = db.get_device("endpoint-proj-tenant-b", "dev-tenant-a-101")
         assert cross_dev is None
+
+    @pytest.mark.asyncio
+    async def test_project_api_returns_canonical_revision_from_project_revisions(self) -> None:
+        """Project response contains authoritative revision from project_revisions table."""
+        db = get_db()
+        state_store = CommandStateStore(db)
+        # Update persistent revision in project_revisions to 5
+        state_store.set_project_revision("endpoint-proj-tenant-a", 5)
+
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        res = await get_project(req, "endpoint-proj-tenant-a")
+        assert res["success"] is True
+        assert res["data"]["revision"] == 5
+        assert res["data"]["modelId"] == "dt-endpoint-proj-tenant-a"
+
+    @pytest.mark.asyncio
+    async def test_model_identity_is_canonical_and_mismatched_model_is_denied(self) -> None:
+        """Backend validates model_id against project_id and denies mismatched/forged combinations."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+
+        # Mismatched model_id (Project A with Model B) -> HTTP 400
+        with pytest.raises(HTTPException) as exc_info:
+            await plan_autonomous_workflow(
+                req,
+                PlanWorkflowRequest(
+                    prompt="Analyze power",
+                    project_id="endpoint-proj-tenant-a",
+                    model_id="dt-endpoint-proj-tenant-b",
+                ),
+            )
+        assert exc_info.value.status_code == 400
+        assert "does not belong to project" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_entity_validation_strictly_denies_unowned_elem_and_mock_prefixes(self) -> None:
+        """Workflow planning strictly denies nonexistent entities including arbitrary elem-* and mock-*."""
+        db = get_db()
+        db.create_device("endpoint-proj-tenant-a", {
+            "id": "dev-real-a1",
+            "name": "Legitimate Sensor A1",
+            "type": "smoke_detector",
+            "category": "detection",
+        })
+
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+
+        # 1. Project A + Existing Entity A -> ALLOWED
+        res = await plan_autonomous_workflow(
+            req,
+            PlanWorkflowRequest(
+                prompt="Verify device placement",
+                project_id="endpoint-proj-tenant-a",
+                entity_id="dev-real-a1",
+            ),
+        )
+        assert res["success"] is True
+
+        # 2. Project A + Entity B (foreign entity) -> DENIED (HTTP 400)
+        with pytest.raises(HTTPException) as exc_info:
+            await plan_autonomous_workflow(
+                req,
+                PlanWorkflowRequest(
+                    prompt="Verify device placement",
+                    project_id="endpoint-proj-tenant-a",
+                    entity_id="dev-tenant-b-nonexistent",
+                ),
+            )
+        assert exc_info.value.status_code == 400
+
+        # 3. Project A + arbitrary elem-* -> DENIED (HTTP 400)
+        with pytest.raises(HTTPException) as exc_info:
+            await plan_autonomous_workflow(
+                req,
+                PlanWorkflowRequest(
+                    prompt="Verify element",
+                    project_id="endpoint-proj-tenant-a",
+                    entity_id="elem-forged-device-999",
+                ),
+            )
+        assert exc_info.value.status_code == 400
+
+        # 4. Project A + arbitrary mock-* -> DENIED (HTTP 400)
+        with pytest.raises(HTTPException) as exc_info:
+            await plan_autonomous_workflow(
+                req,
+                PlanWorkflowRequest(
+                    prompt="Verify mock",
+                    project_id="endpoint-proj-tenant-a",
+                    entity_id="mock-fake-device-001",
+                ),
+            )
+        assert exc_info.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_tenant_list_projects_is_strictly_scoped(self) -> None:
+        """GET /projects returns only the projects authored by the calling tenant."""
+        req_a = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        res_a = await list_projects(req_a)
+        assert res_a["success"] is True
+        proj_ids_a = [p["id"] for p in res_a["data"]["data"]]
+        assert "endpoint-proj-tenant-a" in proj_ids_a
+        assert "endpoint-proj-tenant-b" not in proj_ids_a
+
+        req_b = self._create_mock_request("principal:tenant-b", Role.ENGINEER)
+        res_b = await list_projects(req_b)
+        assert res_b["success"] is True
+        proj_ids_b = [p["id"] for p in res_b["data"]["data"]]
+        assert "endpoint-proj-tenant-b" in proj_ids_b
+        assert "endpoint-proj-tenant-a" not in proj_ids_b
+
+    @pytest.mark.asyncio
+    async def test_tenant_cannot_forge_project_author_on_creation(self) -> None:
+        """Tenant A submitting author=Tenant B is rejected with HTTP 403 Forbidden."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        with pytest.raises(HTTPException) as exc_info:
+            await create_project(
+                req,
+                CreateProjectInput(
+                    name="Forged Project",
+                    author="principal:tenant-b",
+                ),
+            )
+        assert exc_info.value.status_code == 403
+
+        # Legitimate creation without author or matching author stamps authenticated principal
+        created = await create_project(
+            req,
+            CreateProjectInput(name="Legitimate Project"),
+        )
+        assert created["success"] is True
+        assert created["data"]["author"] == "principal:tenant-a"
+        assert created["data"]["revision"] == 1
+        assert created["data"]["modelId"] == f"dt-{created['data']['id']}"
+
+        # Clean up
+        db = get_db()
+        db.delete_project(created["data"]["id"])
+
+    @pytest.mark.asyncio
+    async def test_execution_planning_strictly_enforces_occ_expected_revision(self) -> None:
+        """Planning fails with HTTP 409 when expected_revision mismatches canonical revision."""
+        db = get_db()
+        state_store = CommandStateStore(db)
+        state_store.set_project_revision("endpoint-proj-tenant-a", 3)
+
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+
+        # Matching expected revision -> ALLOWED
+        res = await plan_autonomous_workflow(
+            req,
+            PlanWorkflowRequest(
+                prompt="Autonomous battery check",
+                project_id="endpoint-proj-tenant-a",
+                expected_revision=3,
+            ),
+        )
+        assert res["success"] is True
+
+        # Conflicting expected revision (stale client) -> HTTP 409 Conflict
+        with pytest.raises(HTTPException) as exc_info:
+            await plan_autonomous_workflow(
+                req,
+                PlanWorkflowRequest(
+                    prompt="Autonomous battery check",
+                    project_id="endpoint-proj-tenant-a",
+                    expected_revision=2,
+                ),
+            )
+        assert exc_info.value.status_code == 409
+        assert "OCC revision conflict" in str(exc_info.value.detail)

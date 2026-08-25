@@ -30,6 +30,7 @@ Current Values Status:
   pending licensed FPE sign-off, but a WARNING is emitted when they are used.
 """
 
+from __future__ import annotations
 
 # ============================================================================
 # NFPA 72-2022 — SMOKE DETECTOR SPACING (Chapter 17)

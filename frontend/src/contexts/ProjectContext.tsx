@@ -38,7 +38,7 @@ const STORAGE_KEY = "bazspark_active_project_id";
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-	const [searchParams, setSearchParams] = useSearchParams();
+	const [searchParams] = useSearchParams();
 	const urlProject = searchParams.get("project");
 	const urlElement = searchParams.get("element");
 	const urlDevice = searchParams.get("device");
@@ -78,19 +78,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		return projects.find((p) => p.id === activeProjectId) || null;
 	}, [projects, activeProjectId]);
 
-	// Canonical Model / Digital Twin Identity: Deterministic server-grounded projection
+	// Canonical Model / Digital Twin Identity: Read directly from authoritative backend projection
 	const activeModelId = useMemo(() => {
-		if (activeProject?.modelId) return activeProject.modelId;
-		if (activeProjectId) return `dt-${activeProjectId}`;
-		return "";
-	}, [activeProject, activeProjectId]);
-
-	// Authoritative server-derived revision token (OCC tracking)
-	const activeRevision = useMemo(() => {
-		if (typeof activeProject?.revision === "number") {
-			return activeProject.revision;
+		if (activeProject) {
+			if (activeProject.modelId) return activeProject.modelId;
+			throw new Error(`Project '${activeProject.id}' is missing canonical modelId from backend`);
 		}
-		return 1;
+		return "";
+	}, [activeProject]);
+
+	// Authoritative server-derived revision token (OCC tracking from backend project_revisions)
+	const activeRevision = useMemo(() => {
+		if (activeProject) {
+			if (typeof activeProject.revision === "number") {
+				return activeProject.revision;
+			}
+			throw new Error(`Project '${activeProject.id}' is missing canonical revision from backend`);
+		}
+		return 0;
 	}, [activeProject]);
 
 	const setActiveProjectId = (id: string) => {
@@ -149,12 +154,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 export function useActiveProject(): ProjectContextValue {
 	const context = useContext(ProjectContext);
 	if (!context) {
-		// Graceful fallback for isolated test harnesses outside ProjectProvider
+		// Fallback for isolated test harnesses outside ProjectProvider
 		return {
 			activeProjectId: "",
 			activeProject: null,
 			activeModelId: "",
-			activeRevision: 1,
+			activeRevision: 0,
 			selectedEntityId: null,
 			selectedEntityType: null,
 			projects: [],

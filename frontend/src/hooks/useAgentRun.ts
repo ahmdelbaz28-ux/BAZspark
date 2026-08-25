@@ -154,6 +154,14 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		isReconnecting: false,
 	}));
 
+	const [prevDefaultProjectId, setPrevDefaultProjectId] = useState(defaultProjectId);
+	if (!state.runId && defaultProjectId !== prevDefaultProjectId) {
+		setPrevDefaultProjectId(defaultProjectId);
+		if (defaultProjectId !== state.projectId) {
+			setState((prev) => ({ ...prev, projectId: defaultProjectId }));
+		}
+	}
+
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const reconnectAttemptsRef = useRef(0);
@@ -164,13 +172,6 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 	useEffect(() => {
 		activeRunIdRef.current = state.runId;
 	}, [state.runId]);
-
-	// Sync projectId when active project changes before a run starts
-	useEffect(() => {
-		if (defaultProjectId && defaultProjectId !== state.projectId && !state.runId) {
-			setState((prev) => ({ ...prev, projectId: defaultProjectId }));
-		}
-	}, [defaultProjectId, state.projectId, state.runId]);
 
 	// Elapsed execution timer
 	useEffect(() => {
