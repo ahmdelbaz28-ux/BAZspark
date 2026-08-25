@@ -160,7 +160,11 @@ const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
 	},
 ];
 
-export function AgentChatPage() {
+interface AgentChatPageProps {
+	projectId?: string;
+}
+
+export function AgentChatPage({ projectId = "default_project" }: AgentChatPageProps = {}) {
 	const { i18n } = useTranslation();
 	const isArabic = Boolean(i18n.language?.startsWith("ar"));
 
@@ -180,7 +184,7 @@ export function AgentChatPage() {
 		rejectStep,
 		setApprovalMode,
 		clearRun,
-	} = useAgentRun("default_project");
+	} = useAgentRun(projectId);
 
 	const [inputValue, setInputValue] = useState("");
 	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);

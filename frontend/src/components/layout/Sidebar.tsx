@@ -39,10 +39,10 @@ import {
 	Settings,
 	Settings2,
 	Shield,
+	ShieldCheck,
 	Ship,
 	Smartphone,
 	Sparkles,
-	Workflow as WorkflowIcon,
 } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
@@ -54,6 +54,8 @@ import "@/styles/sidebar.css";
 
 // Vercel React Best Practices: network-prefetch — preload lazy chunks on hover
 const routePrefetchMap: Record<string, () => Promise<unknown>> = {
+	"/": () => import("@/pages/AgentChatPage"),
+	"/agent": () => import("@/pages/AgentChatPage"),
 	"/dashboard": () => import("@/pages/DashboardPage"),
 	"/projects": () => import("@/pages/ProjectsPage"),
 	"/engineering": () => import("@/pages/EngineeringPage"),
@@ -83,6 +85,8 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
 	"/connections": () => import("@/pages/Connections"),
 	"/conflicts": () => import("@/pages/Conflicts"),
 	"/settings": () => import("@/pages/SettingsPage"),
+	"/settings/cad": () => import("@/pages/CADSettingsPage"),
+	"/settings/database": () => import("@/pages/DatabaseAdminPage"),
 	"/api-keys": () => import("@/pages/ApiKeysPage"),
 	"/fds-simulation": () => import("@/pages/FDSSimulationPage"),
 	"/bim-providers": () => import("@/pages/BIMProvidersPage"),
@@ -136,56 +140,73 @@ interface NavGroup {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Phase 8 (2026-08-03): Sidebar reorganized into grouped sections.
+// Phase 8: UI Surface Consolidation Architecture.
 //
-// Previously, all 63 nav items were in a single flat list, making it hard
-// to find anything. Now they are organized into 9 logical groups:
-//   Core, Engineering, CAD & BIM, Domains, Monitoring, Environment,
-//   Intelligence, Deliverables, Administration
-//
-// ALL 63 original paths are preserved — no routes were removed.
-// (Verified by comparing the path list before/after the refactor.)
+// The workstation navigation is consolidated around 6 Primary Workstation
+// Surfaces, backed by organized domain module groups that preserve 100% of
+// all existing engineering routes, capabilities, deep-links, and RBAC gates:
+//   1. Primary Workstation Surfaces (6 Hubs)
+//   2. Engineering & Physics Modules
+//   3. Project & Digital Twin Context
+//   4. Review, Audit & Governance
+//   5. Deliverables & Artifacts
+//   6. Administration & Infrastructure
 // ═══════════════════════════════════════════════════════════════════════════
 const navGroups: NavGroup[] = [
 	{
-		id: "core",
-		labelKey: "nav.group.core",
-		defaultLabel: "Core",
+		id: "primary-surfaces",
+		labelKey: "nav.group.primarySurfaces",
+		defaultLabel: "Workstation Surfaces",
 		items: [
 			{
-				labelKey: "nav.dashboard",
-				defaultLabel: "Dashboard",
-				icon: LayoutDashboard,
-				path: "/dashboard",
-				dataOnboarding: "nav-dashboard",
+				labelKey: "nav.aiControlCenter",
+				defaultLabel: "AI Control Center",
+				icon: Sparkles,
+				path: "/",
+				dataOnboarding: "nav-ai-control",
 			},
-			{
-				labelKey: "nav.systemHealth",
-				defaultLabel: "System Health",
-				icon: HeartPulse,
-				path: "/dashboard/system-health",
-			},
-			{
-				labelKey: "nav.projects",
-				defaultLabel: "Projects",
-				icon: FolderKanban,
-				path: "/projects",
-				dataOnboarding: "nav-projects",
-			},
-		],
-	},
-	{
-		id: "engineering",
-		labelKey: "nav.group.engineering",
-		defaultLabel: "Engineering",
-		items: [
 			{
 				labelKey: "nav.engineering",
-				defaultLabel: "Engineering Hub",
+				defaultLabel: "Engineering Workspace",
 				icon: Calculator,
 				path: "/engineering",
 				dataOnboarding: "nav-engineering",
 			},
+			{
+				labelKey: "nav.projects",
+				defaultLabel: "Project & Models",
+				icon: FolderKanban,
+				path: "/projects",
+				dataOnboarding: "nav-projects",
+			},
+			{
+				labelKey: "nav.workflow",
+				defaultLabel: "Review & Audit",
+				icon: ShieldCheck,
+				path: "/workflow",
+				dataOnboarding: "nav-workflow",
+			},
+			{
+				labelKey: "nav.reports",
+				defaultLabel: "Reports & Artifacts",
+				icon: FileText,
+				path: "/reports",
+				dataOnboarding: "nav-reports",
+			},
+			{
+				labelKey: "nav.settings",
+				defaultLabel: "Settings & Admin",
+				icon: Settings,
+				path: "/settings",
+				dataOnboarding: "nav-settings",
+			},
+		],
+	},
+	{
+		id: "engineering-modules",
+		labelKey: "nav.group.engineeringModules",
+		defaultLabel: "Engineering Modules",
+		items: [
 			{
 				labelKey: "nav.engineeringFireAI",
 				defaultLabel: "FireAI Analysis",
@@ -199,20 +220,14 @@ const navGroups: NavGroup[] = [
 				path: "/engineering/generative",
 			},
 			{
-				labelKey: "nav.pipelineLayers",
-				defaultLabel: "Pipeline Layers",
-				icon: Layers,
-				path: "/engineering/pipeline",
-			},
-			{
 				labelKey: "nav.topology",
-				defaultLabel: "Topology",
+				defaultLabel: "Topology & SLD",
 				icon: Network,
 				path: "/engineering/topology",
 			},
 			{
 				labelKey: "nav.qomn",
-				defaultLabel: "QOMN Calculator",
+				defaultLabel: "QOMN Kernel",
 				icon: Calculator,
 				path: "/engineering/qomn",
 			},
@@ -222,13 +237,12 @@ const navGroups: NavGroup[] = [
 				icon: Shield,
 				path: "/engineering/guards",
 			},
-		],
-	},
-	{
-		id: "cad-bim",
-		labelKey: "nav.group.cadBim",
-		defaultLabel: "CAD & BIM",
-		items: [
+			{
+				labelKey: "nav.pipelineLayers",
+				defaultLabel: "Pipeline Layers",
+				icon: Layers,
+				path: "/engineering/pipeline",
+			},
 			{
 				labelKey: "nav.autocad",
 				defaultLabel: "AutoCAD",
@@ -259,10 +273,109 @@ const navGroups: NavGroup[] = [
 				icon: Layers,
 				path: "/revit/elements",
 			},
-
+			{
+				labelKey: "nav.etap",
+				defaultLabel: "ETAP Bridge",
+				icon: Server,
+				path: "/etap",
+			},
+			{
+				labelKey: "nav.facp",
+				defaultLabel: "FACP Selector",
+				icon: Cpu,
+				path: "/facp",
+			},
+			{
+				labelKey: "nav.devices",
+				defaultLabel: "Device Catalog",
+				icon: Cpu,
+				path: "/devices",
+			},
+			{
+				labelKey: "nav.elements",
+				defaultLabel: "Elements",
+				icon: Layers,
+				path: "/elements",
+			},
+			{
+				labelKey: "nav.connections",
+				defaultLabel: "Connections",
+				icon: Cable,
+				path: "/connections",
+			},
+			{
+				labelKey: "nav.conflicts",
+				defaultLabel: "Conflicts",
+				icon: AlertTriangle,
+				path: "/conflicts",
+			},
+			{
+				labelKey: "nav.cadTools",
+				defaultLabel: "CAD Tools",
+				icon: PenLine,
+				path: "/cad-tools",
+			},
+			{
+				labelKey: "nav.dwg",
+				defaultLabel: "DWG Parser",
+				icon: FileText,
+				path: "/dwg",
+			},
+			{
+				labelKey: "nav.marine",
+				defaultLabel: "Marine System",
+				icon: Ship,
+				path: "/marine",
+			},
+			{
+				labelKey: "nav.mining",
+				defaultLabel: "Mining System",
+				icon: Pickaxe,
+				path: "/mining",
+				dataOnboarding: "nav-mining",
+			},
+			{
+				labelKey: "nav.bms",
+				defaultLabel: "BMS Telemetry",
+				icon: Activity,
+				path: "/bms",
+			},
+			{
+				labelKey: "nav.analysis",
+				defaultLabel: "Analysis Engine",
+				icon: FlaskConical,
+				path: "/analysis",
+			},
+			{
+				labelKey: "nav.fdsSimulation",
+				defaultLabel: "FDS Simulation",
+				icon: Flame,
+				path: "/fds-simulation",
+				requiredRole: "admin",
+			},
+			{
+				labelKey: "nav.engineeringCopilot",
+				defaultLabel: "Eng. Copilot",
+				icon: Brain,
+				path: "/engineering-copilot",
+			},
+		],
+	},
+	{
+		id: "project-context",
+		labelKey: "nav.group.projectContext",
+		defaultLabel: "Project & Digital Twin",
+		items: [
+			{
+				labelKey: "nav.dashboard",
+				defaultLabel: "Dashboard",
+				icon: LayoutDashboard,
+				path: "/dashboard",
+				dataOnboarding: "nav-dashboard",
+			},
 			{
 				labelKey: "nav.digitalTwin",
-				defaultLabel: "Digital Twin",
+				defaultLabel: "Digital Twin 3D",
 				icon: Box,
 				path: "/digital-twin",
 			},
@@ -286,21 +399,9 @@ const navGroups: NavGroup[] = [
 			},
 			{
 				labelKey: "nav.simready",
-				defaultLabel: "SimReady",
+				defaultLabel: "SimReady Assets",
 				icon: Sparkles,
 				path: "/simready",
-			},
-			{
-				labelKey: "nav.cadTools",
-				defaultLabel: "CAD Tools",
-				icon: PenLine,
-				path: "/cad-tools",
-			},
-			{
-				labelKey: "nav.dwg",
-				defaultLabel: "DWG Parser",
-				icon: FileText,
-				path: "/dwg",
 			},
 			{
 				labelKey: "nav.bimProviders",
@@ -316,91 +417,71 @@ const navGroups: NavGroup[] = [
 				requiredRole: "admin",
 			},
 			{
-				labelKey: "nav.etap",
-				defaultLabel: "ETAP Integration",
-				icon: Server,
-				path: "/etap",
+				labelKey: "nav.sync",
+				defaultLabel: "Data Sync",
+				icon: RotateCcw,
+				path: "/sync",
 			},
 			{
-				labelKey: "nav.elements",
-				defaultLabel: "Elements",
-				icon: Layers,
-				path: "/elements",
+				labelKey: "nav.aps",
+				defaultLabel: "APS Cloud",
+				icon: Globe,
+				path: "/aps",
 			},
 			{
-				labelKey: "nav.connections",
-				defaultLabel: "Connections",
-				icon: Cable,
-				path: "/connections",
+				labelKey: "nav.environment",
+				defaultLabel: "Environment",
+				icon: CloudSun,
+				path: "/environment",
 			},
 			{
-				labelKey: "nav.conflicts",
-				defaultLabel: "Conflicts",
+				labelKey: "nav.airQuality",
+				defaultLabel: "Air Quality",
+				icon: CloudSun,
+				path: "/environment/air-quality",
+			},
+			{
+				labelKey: "nav.context",
+				defaultLabel: "Context Engine",
+				icon: Globe,
+				path: "/environment/context",
+			},
+			{
+				labelKey: "nav.hazmat",
+				defaultLabel: "HazMat Tracker",
 				icon: AlertTriangle,
-				path: "/conflicts",
+				path: "/environment/hazmat",
 			},
 		],
 	},
 	{
-		id: "domains",
-		labelKey: "nav.group.domains",
-		defaultLabel: "Domains",
+		id: "governance-audit",
+		labelKey: "nav.group.governanceAudit",
+		defaultLabel: "Review, Audit & Intel",
 		items: [
-			{
-				labelKey: "nav.marine",
-				defaultLabel: "Marine",
-				icon: Ship,
-				path: "/marine",
-			},
-			{
-				labelKey: "nav.mining",
-				defaultLabel: "Mining",
-				icon: Pickaxe,
-				path: "/mining",
-				dataOnboarding: "nav-mining",
-			},
-			{
-				labelKey: "nav.facp",
-				defaultLabel: "FACP Selector",
-				icon: Cpu,
-				path: "/facp",
-			},
-			{
-				labelKey: "nav.devices",
-				defaultLabel: "Devices",
-				icon: Cpu,
-				path: "/devices",
-			},
-			{
-				labelKey: "nav.bms",
-				defaultLabel: "BMS",
-				icon: Activity,
-				path: "/bms",
-			},
-		],
-	},
-	{
-		id: "monitoring",
-		labelKey: "nav.group.monitoring",
-		defaultLabel: "Monitoring",
-		items: [
-			{
-				labelKey: "nav.monitor",
-				defaultLabel: "Monitor",
-				icon: Activity,
-				path: "/monitor",
-			},
-			{
-				labelKey: "nav.agentChat",
-				defaultLabel: "Agent Chat",
-				icon: MessageSquare,
-				path: "/monitor/agent",
-			},
 			{
 				labelKey: "nav.auditTrail",
 				defaultLabel: "Audit Trail",
 				icon: FileText,
 				path: "/audit-trail",
+			},
+			{
+				labelKey: "nav.systemHealth",
+				defaultLabel: "System Health",
+				icon: HeartPulse,
+				path: "/dashboard/system-health",
+			},
+			{
+				labelKey: "nav.monitor",
+				defaultLabel: "Live Monitor",
+				icon: Activity,
+				path: "/monitor",
+			},
+			{
+				labelKey: "nav.agentChat",
+				defaultLabel: "Agent Monitor",
+				icon: MessageSquare,
+				path: "/monitor/agent",
 			},
 			{
 				labelKey: "nav.securityAlerts",
@@ -417,94 +498,24 @@ const navGroups: NavGroup[] = [
 				requiredRole: "admin",
 			},
 			{
-				labelKey: "nav.sync",
-				defaultLabel: "Sync",
-				icon: RotateCcw,
-				path: "/sync",
-			},
-		],
-	},
-	{
-		id: "environment",
-		labelKey: "nav.group.environment",
-		defaultLabel: "Environment",
-		items: [
-			{
-				labelKey: "nav.environment",
-				defaultLabel: "Environment",
-				icon: CloudSun,
-				path: "/environment",
-			},
-			{
-				labelKey: "nav.airQuality",
-				defaultLabel: "Air Quality",
-				icon: CloudSun,
-				path: "/environment/air-quality",
-			},
-			{
-				labelKey: "nav.context",
-				defaultLabel: "Context",
-				icon: Globe,
-				path: "/environment/context",
-			},
-			{
-				labelKey: "nav.hazmat",
-				defaultLabel: "HazMat",
-				icon: AlertTriangle,
-				path: "/environment/hazmat",
-			},
-		],
-	},
-	{
-		id: "intelligence",
-		labelKey: "nav.group.intelligence",
-		defaultLabel: "Intelligence",
-		items: [
-			{
 				labelKey: "nav.memory",
-				defaultLabel: "Memory",
+				defaultLabel: "Agent Memory",
 				icon: Brain,
 				path: "/memory",
 			},
 			{
 				labelKey: "nav.graphrag",
-				defaultLabel: "GraphRAG",
+				defaultLabel: "GraphRAG Network",
 				icon: Network,
 				path: "/graphrag",
-			},
-			{
-				labelKey: "nav.workflow",
-				defaultLabel: "Workflows",
-				icon: WorkflowIcon,
-				path: "/workflow",
-			},
-			{
-				labelKey: "nav.engineeringCopilot",
-				defaultLabel: "Eng. Copilot",
-				icon: Brain,
-				path: "/engineering-copilot",
-			},
-			{
-				labelKey: "nav.fdsSimulation",
-				defaultLabel: "FDS Simulation",
-				icon: Flame,
-				path: "/fds-simulation",
-				requiredRole: "admin",
 			},
 		],
 	},
 	{
 		id: "deliverables",
 		labelKey: "nav.group.deliverables",
-		defaultLabel: "Deliverables",
+		defaultLabel: "Deliverables & Artifacts",
 		items: [
-			{
-				labelKey: "nav.reports",
-				defaultLabel: "Reports",
-				icon: FileText,
-				path: "/reports",
-				dataOnboarding: "nav-reports",
-			},
 			{
 				labelKey: "nav.reportGenerator",
 				defaultLabel: "Report Generator",
@@ -513,7 +524,7 @@ const navGroups: NavGroup[] = [
 			},
 			{
 				labelKey: "nav.exports",
-				defaultLabel: "Exports",
+				defaultLabel: "Deliverables Export",
 				icon: Download,
 				path: "/exports",
 				dataOnboarding: "nav-exports",
@@ -521,54 +532,46 @@ const navGroups: NavGroup[] = [
 			},
 			{
 				labelKey: "nav.arExport",
-				defaultLabel: "AR Export",
+				defaultLabel: "AR Visual Export",
 				icon: Smartphone,
 				path: "/ar-export",
 				requiredRole: "admin",
-			},
-			{
-				labelKey: "nav.analysis",
-				defaultLabel: "Analysis",
-				icon: FlaskConical,
-				path: "/analysis",
 			},
 		],
 	},
 	{
 		id: "administration",
 		labelKey: "nav.group.administration",
-		defaultLabel: "Administration",
+		defaultLabel: "System Administration",
 		items: [
 			{
-				labelKey: "nav.settings",
-				defaultLabel: "Settings",
-				icon: Settings,
-				path: "/settings",
-				dataOnboarding: "nav-settings",
+				labelKey: "nav.aiAgentSettings",
+				defaultLabel: "AI Agent Config",
+				icon: Brain,
+				path: "/settings/ai-agents",
+			},
+			{
+				labelKey: "nav.cadSettings",
+				defaultLabel: "CAD Defaults",
+				icon: Settings2,
+				path: "/settings/cad",
+			},
+			{
+				labelKey: "nav.databaseAdmin",
+				defaultLabel: "Database Admin",
+				icon: Database,
+				path: "/settings/database",
+				requiredRole: "admin",
 			},
 			{
 				labelKey: "nav.billing",
-				defaultLabel: "Billing & Meeza",
+				defaultLabel: "Billing & Subscriptions",
 				icon: CreditCard,
 				path: "/billing",
 			},
 			{
-				labelKey: "nav.advancedSettings",
-				defaultLabel: "Advanced Settings",
-				icon: Cog,
-				path: "/settings/advanced",
-				requiredRole: "admin",
-			},
-			{
-				labelKey: "nav.experimental",
-				defaultLabel: "Experimental",
-				icon: FlaskConical,
-				path: "/settings/experimental",
-				requiredRole: "admin",
-			},
-			{
 				labelKey: "nav.rbac",
-				defaultLabel: "RBAC",
+				defaultLabel: "RBAC Security",
 				icon: Shield,
 				path: "/settings/rbac",
 				requiredRole: "admin",
@@ -589,22 +592,24 @@ const navGroups: NavGroup[] = [
 			},
 			{
 				labelKey: "nav.multiDb",
-				defaultLabel: "Multi-DB",
+				defaultLabel: "Multi-DB Partitions",
 				icon: Database,
 				path: "/multi-db",
 				requiredRole: "admin",
 			},
 			{
-				labelKey: "nav.aps",
-				defaultLabel: "APS Cloud",
-				icon: Globe,
-				path: "/aps",
+				labelKey: "nav.advancedSettings",
+				defaultLabel: "Advanced Settings",
+				icon: Cog,
+				path: "/settings/advanced",
+				requiredRole: "admin",
 			},
 			{
-				labelKey: "nav.aiAgentSettings",
-				defaultLabel: "AI Agent",
-				icon: Brain,
-				path: "/settings/ai-agents",
+				labelKey: "nav.experimental",
+				defaultLabel: "Experimental Services",
+				icon: FlaskConical,
+				path: "/settings/experimental",
+				requiredRole: "admin",
 			},
 		],
 	},
