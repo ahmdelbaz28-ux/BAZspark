@@ -25,7 +25,6 @@ export interface ProjectContextValue {
 }
 
 const STORAGE_KEY = "bazspark_active_project_id";
-const FALLBACK_PROJECT_ID = "default_project";
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
@@ -45,7 +44,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		return "";
 	});
 
-	// Resolve active project ID: URL param -> user selected ID -> first available backend project -> fallback
+	// Resolve active project ID: URL param -> user selected ID -> first available backend project -> empty string
 	const activeProjectId = useMemo(() => {
 		const candidateId = urlProject || userSelectedId;
 		if (candidateId && projects.some((p) => p.id === candidateId)) {
@@ -54,7 +53,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		if (projects.length > 0) {
 			return projects[0].id;
 		}
-		return candidateId || FALLBACK_PROJECT_ID;
+		return candidateId || "";
 	}, [urlProject, userSelectedId, projects]);
 
 	const activeProject = useMemo(() => {
@@ -95,7 +94,7 @@ export function useActiveProject(): ProjectContextValue {
 	if (!context) {
 		// Graceful fallback for isolated test harnesses outside ProjectProvider
 		return {
-			activeProjectId: FALLBACK_PROJECT_ID,
+			activeProjectId: "",
 			activeProject: null,
 			projects: [],
 			loading: false,

@@ -165,6 +165,13 @@ export function useAgentRun(defaultProjectId: string = "default_project"): UseAg
 		activeRunIdRef.current = state.runId;
 	}, [state.runId]);
 
+	// Sync projectId when active project changes before a run starts
+	useEffect(() => {
+		if (defaultProjectId && defaultProjectId !== state.projectId && !state.runId) {
+			setState((prev) => ({ ...prev, projectId: defaultProjectId }));
+		}
+	}, [defaultProjectId, state.projectId, state.runId]);
+
 	// Elapsed execution timer
 	useEffect(() => {
 		if (state.status === "RUNNING") {

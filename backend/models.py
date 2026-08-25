@@ -22,8 +22,13 @@ from __future__ import annotations
 
 import math
 import uuid
-from datetime import UTC, datetime
 from typing import Any, Literal, TypeVar
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import datetime, timezone
+
+    UTC = timezone.utc
 
 from pydantic import BaseModel, Field, field_validator
 

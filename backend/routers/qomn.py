@@ -27,6 +27,7 @@ STANDARDS:
   NEC 2023     — All electrical calculations
   QOMN Specification §3 — System architecture
 """
+from __future__ import annotations
 
 import logging
 import threading

@@ -117,7 +117,7 @@ describe("ProjectContext", () => {
 			</MemoryRouter>,
 		);
 
-		expect(screen.getByTestId("active-id")).toHaveTextContent("default_project");
+		expect(screen.getByTestId("active-id")).toHaveTextContent("");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("none");
 	});
 });
