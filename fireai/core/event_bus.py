@@ -40,12 +40,8 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-    UTC = timezone.utc
-from typing import Any, Callable, NoReturn
+from datetime import UTC, datetime
+from typing import Any, Callable, NoReturn  # noqa: UP035
 
 # ===========================================================================
 # Event Data Model

@@ -364,6 +364,12 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     )
     monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
 
+    fresh_db.create_project({
+        "id": "proj-rest-test",
+        "name": "Rest Test Project",
+        "author": "engineer-42",
+    })
+
     client = TestClient(app)
 
     # 1. Plan workflow
