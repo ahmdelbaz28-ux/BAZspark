@@ -577,9 +577,13 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         mod = importlib.import_module(f"backend.routers.{module_name}")
         if hasattr(mod, "router"):
             app.include_router(mod.router, prefix=prefix, tags=[tag or module_name.title()])
+            if prefix == "/api/v1":
+                app.include_router(mod.router, prefix="/api", tags=[tag or module_name.title()])
             logger.debug("Registered router: %s", module_name)
         if hasattr(mod, "project_router"):
             app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
+            if prefix == "/api/v1":
+                app.include_router(mod.project_router, prefix="/api", tags=[tag or module_name.title()])
             logger.debug("Registered project_router from: %s", module_name)
         if hasattr(mod, "ws_router"):
             app.include_router(mod.ws_router, tags=[tag or module_name.title()])
