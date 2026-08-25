@@ -489,6 +489,55 @@ export function EngineeringPage() {
 					</div>
 				</header>
 
+				{/* ── Engineering Workstation Sub-Surfaces ──────────────────── */}
+				<div className="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-border/40">
+					<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-2">
+						Workspace Tools:
+					</span>
+					<a
+						href="/engineering"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground shadow-sm"
+					>
+						<Zap className="h-3.5 w-3.5" />
+						Calculators
+					</a>
+					<a
+						href="/engineering/topology"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-secondary/80 text-foreground hover:bg-secondary transition-colors"
+					>
+						<Network className="h-3.5 w-3.5" />
+						Topology & SLD
+					</a>
+					<a
+						href="/engineering/generative"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-secondary/80 text-foreground hover:bg-secondary transition-colors"
+					>
+						<Flame className="h-3.5 w-3.5" />
+						Generative Layout
+					</a>
+					<a
+						href="/engineering/guards"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-secondary/80 text-foreground hover:bg-secondary transition-colors"
+					>
+						<ShieldCheck className="h-3.5 w-3.5" />
+						Physics Guards
+					</a>
+					<a
+						href="/elements"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-secondary/80 text-foreground hover:bg-secondary transition-colors"
+					>
+						<Cable className="h-3.5 w-3.5" />
+						Model Elements
+					</a>
+					<a
+						href="/cad-tools"
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium bg-secondary/80 text-foreground hover:bg-secondary transition-colors"
+					>
+						<FileText className="h-3.5 w-3.5" />
+						CAD Tools
+					</a>
+				</div>
+
 				{/* ── Tabs — engineering terminal style ──────────────────── */}
 				<div
 					className="etap-tabs -mx-4 sm:-mx-6 px-4 sm:px-6 mb-6"
