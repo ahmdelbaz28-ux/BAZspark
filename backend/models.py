@@ -79,7 +79,7 @@ class Project(BaseModel):
     status: Literal["active", "archived", "draft"] = Field(default="draft")
     deviceCount: int = Field(default=0, ge=0)
     connectionCount: int = Field(default=0, ge=0)
-    revision: int = Field(default=1, ge=1)
+    revision: int | None = Field(default=None)
     modelId: str = Field(default="")
 
 

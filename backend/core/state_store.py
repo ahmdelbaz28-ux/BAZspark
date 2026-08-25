@@ -50,7 +50,7 @@ class CommandStateStore:
     def _ph(self) -> str:
         return self._db._ph()
 
-    def get_project_revision(self, project_id: str) -> int:
+    def get_project_revision(self, project_id: str) -> int | None:
         """Fetch the current canonical revision for a project from persistent storage."""
         ph = self._ph()
         with self._db._transaction() as cur:
@@ -60,10 +60,11 @@ class CommandStateStore:
             )
             row = cur.fetchone()
             if row is None:
-                return 1
+                return None
             if isinstance(row, dict):
-                return int(row.get("revision", 1))
-            return int(row[0])
+                val = row.get("revision")
+                return int(val) if val is not None else None
+            return int(row[0]) if row[0] is not None else None
 
     def set_project_revision(self, project_id: str, revision: int) -> None:
         """Upsert the canonical project revision in persistent storage."""

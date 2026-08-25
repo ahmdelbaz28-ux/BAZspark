@@ -459,3 +459,70 @@ class TestEndpointTenantAuthorizationBoundary:
             )
         assert exc_info.value.status_code == 409
         assert "OCC revision conflict" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_missing_canonical_revision_raises_error_and_does_not_silently_fallback(self) -> None:
+        """Attached project missing project_revisions row must not silently return synthetic 1."""
+        db = get_db()
+        # Seed an orphan project directly in projects table without project_revisions row
+        with db._transaction() as cur:
+            cur.execute(
+                f"INSERT INTO projects (id, name, description, author, created_at, updated_at, status) VALUES ({db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()})",
+                ("orphan-proj-no-rev", "Orphan Project", "No revision row", "principal:tenant-a", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z", "active"),
+            )
+
+        try:
+            # Repository get_project returns revision as None (NOT synthetic 1)
+            p = db.get_project("orphan-proj-no-rev")
+            assert p is not None
+            assert p["revision"] is None
+
+            # Execution reconciliation explicitly fails with HTTP 409 on missing canonical revision
+            req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+            with pytest.raises(HTTPException) as exc_info:
+                await plan_autonomous_workflow(
+                    req,
+                    PlanWorkflowRequest(
+                        prompt="Execute plan on orphan",
+                        project_id="orphan-proj-no-rev",
+                    ),
+                )
+            assert exc_info.value.status_code == 409
+            assert "missing persistent revision record" in str(exc_info.value.detail)
+        finally:
+            with db._transaction() as cur:
+                cur.execute(f"DELETE FROM projects WHERE id = {db._ph()}", ("orphan-proj-no-rev",))
+
+    @pytest.mark.asyncio
+    async def test_legacy_prefixed_project_is_isolated_to_its_author_and_not_globally_visible(self) -> None:
+        """Projects with author='legacy...' are strictly isolated and not enumerable by other tenants."""
+        db = get_db()
+        created = db.create_project({
+            "name": "Legacy Seed Project",
+            "author": "legacy-external-author",
+        })
+        legacy_id = created["id"]
+
+        try:
+            # Tenant A listing projects must NOT see legacy-external-author project
+            req_a = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+            res_a = await list_projects(req_a)
+            proj_ids_a = [p["id"] for p in res_a["data"]["data"]]
+            assert legacy_id not in proj_ids_a
+
+            # Tenant B listing projects must NOT see legacy-external-author project
+            req_b = self._create_mock_request("principal:tenant-b", Role.ENGINEER)
+            res_b = await list_projects(req_b)
+            proj_ids_b = [p["id"] for p in res_b["data"]["data"]]
+            assert legacy_id not in proj_ids_b
+
+            # Admin listing sees the legacy project
+            req_admin = self._create_mock_request("principal:admin-user", Role.ADMIN)
+            res_admin = await list_projects(req_admin)
+            proj_ids_admin = [p["id"] for p in res_admin["data"]["data"]]
+            assert legacy_id in proj_ids_admin
+
+            # Pagination total for Tenant A must equal count of Tenant A projects only
+            assert res_a["data"]["total"] == len(proj_ids_a)
+        finally:
+            db.delete_project(legacy_id)

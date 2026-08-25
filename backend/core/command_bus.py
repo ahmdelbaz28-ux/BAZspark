@@ -149,7 +149,7 @@ class CommandBus:
         self.registry = capability_registry or default_capability_registry
         self.state_store = state_store or default_state_store
 
-    def get_project_revision(self, project_id: str) -> int:
+    def get_project_revision(self, project_id: str) -> int | None:
         """Get canonical revision of a project from persistent storage."""
         return self.state_store.get_project_revision(project_id)
 

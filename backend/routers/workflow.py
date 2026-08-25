@@ -630,6 +630,11 @@ def _reconcile_and_validate_execution_context(
 
         # 5. expected_revision matches canonical persistent revision
         canonical_rev = state_store.get_project_revision(project_id)
+        if canonical_rev is None:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Canonical state error: project '{project_id}' is missing persistent revision record in project_revisions",
+            )
         if expected_revision is not None and expected_revision != canonical_rev:
             raise HTTPException(
                 status_code=409,
@@ -644,7 +649,7 @@ def _reconcile_and_validate_execution_context(
     return {
         "project": project,
         "canonical_model_id": project.get("modelId") if project else "",
-        "canonical_revision": state_store.get_project_revision(project_id) if project_id else 1,
+        "canonical_revision": canonical_rev if project_id else None,
     }
 
 

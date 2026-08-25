@@ -59,7 +59,7 @@ class ProjectRepository(BaseRepository):
                     p.*,
                     COALESCE(d.device_count, 0) AS device_count,
                     COALESCE(c.connection_count, 0) AS connection_count,
-                    COALESCE(r.revision, 1) AS revision
+                    r.revision AS revision
                 FROM projects p
                 LEFT JOIN (
                     SELECT project_id, COUNT(*) AS device_count
@@ -113,8 +113,8 @@ class ProjectRepository(BaseRepository):
         where_clause = ""
         where_params: list = []
         if author is not None:
-            # Multi-tenant isolation: non-admin callers only see their own authored projects or legacy fixtures
-            where_clause = f"WHERE (p.author = {self.db._ph()} OR p.author LIKE 'legacy%')"
+            # Multi-tenant isolation: non-admin callers strictly see ONLY their own authored projects
+            where_clause = f"WHERE p.author = {self.db._ph()}"
             where_params.append(author)
 
         with self.db._transaction() as cur:
@@ -131,7 +131,7 @@ class ProjectRepository(BaseRepository):
                     p.*,
                     COALESCE(d.device_count, 0) AS device_count,
                     COALESCE(c.connection_count, 0) AS connection_count,
-                    COALESCE(r.revision, 1) AS revision
+                    r.revision AS revision
                 FROM projects p
                 LEFT JOIN (
                     SELECT project_id, COUNT(*) AS device_count
