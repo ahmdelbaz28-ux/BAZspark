@@ -13,7 +13,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from datetime import UTC, datetime
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import datetime, timezone
+
+    UTC = timezone.utc
 from typing import TYPE_CHECKING, Any
 
 from backend.database import Database, get_db

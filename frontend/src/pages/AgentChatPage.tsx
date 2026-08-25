@@ -168,7 +168,7 @@ interface AgentChatPageProps {
 export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps = {}) {
 	const { i18n } = useTranslation();
 	const isArabic = Boolean(i18n.language?.startsWith("ar"));
-	const { activeProjectId } = useActiveProject();
+	const { activeProjectId, activeRevision } = useActiveProject();
 	const effectiveProjectId = propProjectId || activeProjectId;
 
 	// Conversational LLM chat hook
@@ -528,8 +528,8 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
 			{/* 1. Project & Model Context Header */}
 			<ProjectContextBar
-				projectId={runState.projectId}
-				projectRevision={runState.version}
+				projectId={effectiveProjectId || runState.projectId}
+				projectRevision={runState.status ? runState.version : activeRevision}
 				isConnected={runState.isConnected}
 				isReconnecting={runState.isReconnecting}
 				onClearChat={clearChat}

@@ -12,23 +12,27 @@ const mockProjects = [
 		id: "proj-alpha",
 		name: "Alpha Fire Alarm Facility",
 		description: "Industrial facility",
-		status: "active",
+		status: "active" as const,
 		createdAt: "2026-01-01T00:00:00Z",
 		updatedAt: "2026-01-02T00:00:00Z",
 		deviceCount: 14,
 		connectionCount: 22,
 		author: "Lead PE",
+		revision: 3,
+		modelId: "dt-proj-alpha",
 	},
 	{
 		id: "proj-beta",
 		name: "Beta High-Rise Tower",
 		description: "Commercial high rise",
-		status: "active",
+		status: "active" as const,
 		createdAt: "2026-02-01T00:00:00Z",
 		updatedAt: "2026-02-02T00:00:00Z",
 		deviceCount: 48,
 		connectionCount: 96,
 		author: "Design Engineer",
+		revision: 8,
+		modelId: "dt-proj-beta",
 	},
 ];
 
@@ -95,8 +99,8 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-alpha");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Alpha Fire Alarm Facility");
-		expect(screen.getByTestId("active-model")).toHaveTextContent("proj-alpha");
-		expect(screen.getByTestId("active-rev")).toHaveTextContent("1");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("dt-proj-alpha");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("3");
 	});
 
 	it("respects URL search param ?project=proj-beta with top priority", () => {
@@ -110,7 +114,8 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-beta");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Beta High-Rise Tower");
-		expect(screen.getByTestId("active-model")).toHaveTextContent("proj-beta");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("dt-proj-beta");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("8");
 	});
 
 	it("resolves selected entity context from URL query params (?project=proj-alpha&element=elem-404)", () => {
@@ -123,6 +128,8 @@ describe("ProjectContext", () => {
 		);
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-alpha");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("dt-proj-alpha");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("3");
 		expect(screen.getByTestId("selected-entity")).toHaveTextContent("elem-404");
 		expect(screen.getByTestId("selected-type")).toHaveTextContent("element");
 	});
@@ -145,6 +152,8 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-beta");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Beta High-Rise Tower");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("dt-proj-beta");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("8");
 		expect(screen.getByTestId("selected-entity")).toHaveTextContent("dev-101");
 		expect(screen.getByTestId("selected-type")).toHaveTextContent("device");
 		expect(localStorage.getItem("bazspark_active_project_id")).toBe("proj-beta");
@@ -160,6 +169,7 @@ describe("ProjectContext", () => {
 		expect(screen.getByTestId("active-id")).toHaveTextContent("");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("none");
 		expect(screen.getByTestId("active-model")).toHaveTextContent("");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("1");
 		expect(screen.getByTestId("selected-entity")).toHaveTextContent("none");
 	});
 });

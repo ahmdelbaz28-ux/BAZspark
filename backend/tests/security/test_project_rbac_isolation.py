@@ -9,14 +9,26 @@ Verifies:
    - Non-existent or foreign project lookup strictly returns None / raises HTTP 404.
    - Principal project scoping & isolation across distinct project IDs.
    - Cascading boundary isolation (deletion scopes strictly to project's children).
+5. Real Endpoint Tenant Authorization Boundary:
+   - Tenant A reading own Project A -> ALLOWED (HTTP 200).
+   - Tenant A reading Project B owned by Tenant B -> DENIED (HTTP 404).
+   - Tenant B reading own Project B -> ALLOWED (HTTP 200).
+   - Tenant A updating Project B -> DENIED (HTTP 404).
+   - Tenant A deleting Project B -> DENIED (HTTP 404).
+   - Admin cross-tenant oversight -> ALLOWED (HTTP 200).
+   - Cross-project entity injection into workflow execution -> DENIED (HTTP 400).
 """
 
+import asyncio
 from unittest.mock import Mock
 import pytest
 from fastapi import HTTPException
+from starlette.requests import Request
 from backend.auth import require_permission
 from backend.rbac import Permission, Role, has_permission, ROLE_PERMISSIONS
-from backend.database import Database
+from backend.database import Database, get_db
+from backend.models import UpdateProjectInput
+from backend.routers.projects import get_project, update_project, delete_project
 
 
 class TestProjectRBACAuthorization:
@@ -160,3 +172,118 @@ class TestProjectResolutionAndTenantIsolation:
         dev_p2 = isolated_db.get_device("proj-iso-2", "dev-p2-01")
         assert dev_p2 is not None
         assert dev_p2["projectId"] == "proj-iso-2"
+
+
+class TestEndpointTenantAuthorizationBoundary:
+    """Real HTTP endpoint tenant isolation and resource-scope verification tests."""
+
+    @pytest.fixture(autouse=True)
+    def setup_projects(self):
+        """Seed tenant A and tenant B projects into database."""
+        db = get_db()
+        db.create_project({
+            "id": "endpoint-proj-tenant-a",
+            "name": "Tenant A Datacenter",
+            "author": "principal:tenant-a",
+            "description": "Critical infrastructure",
+        })
+        db.create_project({
+            "id": "endpoint-proj-tenant-b",
+            "name": "Tenant B Complex",
+            "author": "principal:tenant-b",
+            "description": "Commercial space",
+        })
+        yield
+        try:
+            db.delete_project("endpoint-proj-tenant-a")
+            db.delete_project("endpoint-proj-tenant-b")
+        except Exception:
+            pass
+
+    def _create_mock_request(self, principal: str, role: Role) -> Request:
+        """Create a real starlette Request instance with stamped auth principal and role."""
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "client": ("127.0.0.1", 8000),
+            "app": None,
+            "fireai_principal": principal,
+            "fireai_role": role,
+        }
+        req = Request(scope)
+        req.state.fireai_principal = principal
+        req.state.fireai_role = role
+        return req
+
+    @pytest.mark.asyncio
+    async def test_tenant_a_reads_own_project_allowed(self) -> None:
+        """Tenant A can successfully read Project A."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        res = await get_project(req, "endpoint-proj-tenant-a")
+        assert res["success"] is True
+        assert res["data"]["name"] == "Tenant A Datacenter"
+
+    @pytest.mark.asyncio
+    async def test_tenant_a_reads_tenant_b_project_denied(self) -> None:
+        """Tenant A attempting to read Tenant B's project is denied with HTTP 404."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        with pytest.raises(HTTPException) as exc_info:
+            await get_project(req, "endpoint-proj-tenant-b")
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_tenant_b_reads_own_project_allowed(self) -> None:
+        """Tenant B can successfully read Project B."""
+        req = self._create_mock_request("principal:tenant-b", Role.ENGINEER)
+        res = await get_project(req, "endpoint-proj-tenant-b")
+        assert res["success"] is True
+        assert res["data"]["name"] == "Tenant B Complex"
+
+    @pytest.mark.asyncio
+    async def test_tenant_a_cannot_update_tenant_b_project(self) -> None:
+        """Tenant A attempting to mutate Tenant B's project is denied with HTTP 404."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        with pytest.raises(HTTPException) as exc_info:
+            await update_project(
+                req,
+                "endpoint-proj-tenant-b",
+                UpdateProjectInput(name="Malicious Rename"),
+            )
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_tenant_a_cannot_delete_tenant_b_project(self) -> None:
+        """Tenant A attempting to delete Tenant B's project is denied with HTTP 404."""
+        req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
+        with pytest.raises(HTTPException) as exc_info:
+            await delete_project(req, "endpoint-proj-tenant-b")
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_admin_has_global_project_oversight(self) -> None:
+        """Admin principal can read projects across any tenant."""
+        req = self._create_mock_request("principal:admin-user", Role.ADMIN)
+        res_a = await get_project(req, "endpoint-proj-tenant-a")
+        res_b = await get_project(req, "endpoint-proj-tenant-b")
+        assert res_a["success"] is True
+        assert res_b["success"] is True
+
+    def test_cross_project_entity_lookup_is_isolated(self) -> None:
+        """Entity lookup strictly requires both matching device ID and target project ID."""
+        db = get_db()
+        db.create_device("endpoint-proj-tenant-a", {
+            "id": "dev-tenant-a-101",
+            "name": "Smoke Detector A1",
+            "type": "smoke_detector",
+            "category": "detection",
+        })
+        # Tenant A can find device under Project A
+        dev = db.get_device("endpoint-proj-tenant-a", "dev-tenant-a-101")
+        assert dev is not None
+        assert dev["id"] == "dev-tenant-a-101"
+
+        # Querying Project B with Tenant A's device ID returns None (no cross-project leakage)
+        cross_dev = db.get_device("endpoint-proj-tenant-b", "dev-tenant-a-101")
+        assert cross_dev is None

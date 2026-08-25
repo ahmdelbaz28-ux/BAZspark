@@ -8,6 +8,8 @@ engineering data. Deletion cascades to all child devices, connections,
 and reports.
 """
 
+from __future__ import annotations
+
 import io
 import json
 import uuid
@@ -15,7 +17,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from backend.auth import require_permission
+from backend.auth import get_current_principal, get_current_role, require_permission
 from backend.contract import validate_paginated, validate_project
 from backend.database import get_db
 from backend.limiter import limiter
@@ -28,7 +30,7 @@ from backend.project_bridge import (
     sync_project_to_udm,
     sync_project_update_to_udm,
 )
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 from backend.response import success
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -39,6 +41,24 @@ _SORT_MAP = {
     "status": "status",
     "author": "author",
 }
+
+
+def _verify_project_access(project: dict, request: Request) -> None:
+    """
+    Enforce tenant/principal resource-scope authorization at project resolution boundary.
+
+    Prevents Tenant A from resolving or executing against Tenant B projects even
+    with a valid PROJECT_READ permission. Admin role retains cross-tenant oversight.
+    """
+    principal = get_current_principal(request)
+    role = get_current_role(request)
+    if role == Role.ADMIN or principal is None:
+        return
+    author = project.get("author")
+    if author and author != principal and not str(author).startswith("legacy"):
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )
 
 
 def _normalize_sort(sort: str) -> str:
@@ -55,6 +75,7 @@ def _normalize_sort(sort: str) -> str:
 
 @router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def list_projects(
+    request: Request,
     page: int = Query(1, ge=1, description="Page number"),  # NOSONAR - python:S8410
     limit: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
     sort: str = Query("createdAt", description="Sort field"),  # NOSONAR - python:S8410
@@ -74,13 +95,15 @@ async def list_projects(
 )
 @limiter.limit("30/minute")
 async def create_project(request: Request, input_data: CreateProjectInput):
-    """Create a new project."""
+    """Create a new project scoped to the current authenticated principal."""
     db = get_db()
+    principal = get_current_principal(request)
+    author = input_data.author or principal or ""
     project_data = {
         "id": str(uuid.uuid4()),
         "name": input_data.name,
         "description": input_data.description or "",
-        "author": input_data.author or "",
+        "author": author,
     }
     project = db.create_project(project_data)
     validate_project(project)
@@ -99,14 +122,15 @@ async def create_project(request: Request, input_data: CreateProjectInput):
     responses={404: {"description": "Project not found"}},
     dependencies=[Depends(require_permission(Permission.PROJECT_READ))],
 )
-async def get_project(project_id: str):
-    """Get a project by ID."""
+async def get_project(request: Request, project_id: str):
+    """Get a project by ID with tenant resource-scope authorization."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
-        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        )
+    _verify_project_access(project, request)
     validate_project(project)
     return success(project)
 
@@ -118,18 +142,23 @@ async def get_project(project_id: str):
 )
 @limiter.limit("30/minute")
 async def update_project(request: Request, project_id: str, input_data: UpdateProjectInput):
-    """Update an existing project."""
+    """Update an existing project with tenant resource-scope authorization."""
     db = get_db()
+    existing = db.get_project(project_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _verify_project_access(existing, request)
+
     updates = input_data.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(
             status_code=400, detail="No fields to update"
-        )  # NOSONAR — S8415: assignment kept for readability / debuggability
+        )
     project = db.update_project(project_id, updates)
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
-        )  # NOSONAR — S7632: test function documented via class name / module path
+        )
     validate_project(project)
 
     # Sync update to UDM (System B) — non-blocking, never raises
@@ -222,13 +251,20 @@ async def export_project_ifc(project_id: str, version: str | None = None) -> Str
 )
 @limiter.limit("30/minute")
 async def delete_project(request: Request, project_id: str):
-    """Delete a project and all its children."""
+    """Delete a project and all its children with tenant scope enforcement."""
     db = get_db()
+    existing = db.get_project(project_id)
+    if not existing:
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )
+    _verify_project_access(existing, request)
+
     deleted = db.delete_project(project_id)
     if not deleted:
         raise HTTPException(
             status_code=404, detail="Project not found"
-        )  # NOSONAR — S7632: test function documented via class name / module path
+        )
 
     # Sync deletion to UDM (System B) — non-blocking, never raises
     try:

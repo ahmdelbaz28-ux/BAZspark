@@ -17,25 +17,27 @@ const mockProjects = [
 		id: "proj-alpha",
 		name: "Alpha Facility",
 		description: "Industrial site",
-		status: "active",
+		status: "active" as const,
 		createdAt: "2026-01-01T00:00:00Z",
 		updatedAt: "2026-01-02T00:00:00Z",
 		deviceCount: 12,
 		connectionCount: 18,
 		author: "PE Alice",
-		version: 3,
+		revision: 3,
+		modelId: "dt-proj-alpha",
 	},
 	{
 		id: "proj-deep-target",
 		name: "Deep Link Target Complex",
 		description: "Deep-linked project",
-		status: "active",
+		status: "active" as const,
 		createdAt: "2026-02-01T00:00:00Z",
 		updatedAt: "2026-02-02T00:00:00Z",
 		deviceCount: 45,
 		connectionCount: 90,
 		author: "PE Bob",
-		version: 7,
+		revision: 7,
+		modelId: "dt-proj-deep-target",
 	},
 ];
 
@@ -100,25 +102,23 @@ function DeepLinkContextInspector() {
 	);
 }
 
-describe("Deep-Link Context Propagation Integration", () => {
+describe("Phase 8 Gate 5 — Deep-Link Context Chain Integration", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		sessionStorage.clear();
 	});
 
-	it("resolves deep-linked project, model, revision, and selected entity chain (?project=proj-deep-target&element=elem-smoke-101)", () => {
+	it("resolves canonical project, model, revision, and selected entity from URL parameters", () => {
 		render(
 			<MemoryRouter initialEntries={["/?project=proj-deep-target&element=elem-smoke-101"]}>
-				<AgentSettingsProvider>
-					<ProjectProvider>
-						<DeepLinkContextInspector />
-					</ProjectProvider>
-				</AgentSettingsProvider>
+				<ProjectProvider>
+					<DeepLinkContextInspector />
+				</ProjectProvider>
 			</MemoryRouter>,
 		);
 
 		expect(screen.getByTestId("dl-project-id")).toHaveTextContent("proj-deep-target");
-		expect(screen.getByTestId("dl-model-id")).toHaveTextContent("proj-deep-target");
+		expect(screen.getByTestId("dl-model-id")).toHaveTextContent("dt-proj-deep-target");
 		expect(screen.getByTestId("dl-revision")).toHaveTextContent("7");
 		expect(screen.getByTestId("dl-entity-id")).toHaveTextContent("elem-smoke-101");
 		expect(screen.getByTestId("dl-entity-type")).toHaveTextContent("element");
@@ -130,17 +130,14 @@ describe("Deep-Link Context Propagation Integration", () => {
 			<MemoryRouter initialEntries={["/?project=proj-deep-target"]}>
 				<AgentSettingsProvider>
 					<ProjectProvider>
-						<Routes>
-							<Route path="/" element={<AgentChatPage />} />
-						</Routes>
+						<AgentChatPage />
 					</ProjectProvider>
 				</AgentSettingsProvider>
 			</MemoryRouter>,
 		);
 
-		const contextBar = screen.getByTestId("project-context-bar");
-		expect(contextBar).toBeInTheDocument();
-		expect(contextBar).toHaveTextContent("proj-deep-target");
+		expect(screen.getByText("proj-deep-target")).toBeInTheDocument();
+		expect(screen.getByText("(Rev: 7)")).toBeInTheDocument();
 	});
 
 	it("resolves deep-linked project context on Workflow Page (/workflow?project=proj-deep-target)", () => {
@@ -148,31 +145,28 @@ describe("Deep-Link Context Propagation Integration", () => {
 			<MemoryRouter initialEntries={["/workflow?project=proj-deep-target"]}>
 				<AgentSettingsProvider>
 					<ProjectProvider>
-						<Routes>
-							<Route path="/workflow" element={<WorkflowPage />} />
-						</Routes>
+						<WorkflowPage />
 					</ProjectProvider>
 				</AgentSettingsProvider>
 			</MemoryRouter>,
 		);
 
-		expect(screen.getByText("Review & Governance")).toBeInTheDocument();
+		expect(screen.getByText(/Review & Governance/i)).toBeInTheDocument();
+		expect(screen.getByText(/Authoritative engineering review workflows/i)).toBeInTheDocument();
 	});
 
-	it("resolves deep-linked project context on Projects Hub (/projects?project=proj-deep-target)", () => {
+	it("reflects active project correctly in Projects list surface (/projects?project=proj-deep-target)", () => {
 		render(
 			<MemoryRouter initialEntries={["/projects?project=proj-deep-target"]}>
 				<AgentSettingsProvider>
 					<ProjectProvider>
-						<Routes>
-							<Route path="/projects" element={<ProjectsPage />} />
-						</Routes>
+						<ProjectsPage />
 					</ProjectProvider>
 				</AgentSettingsProvider>
 			</MemoryRouter>,
 		);
 
 		expect(screen.getByText("Deep Link Target Complex")).toBeInTheDocument();
-		expect(screen.getAllByText("Active").length).toBeGreaterThanOrEqual(1);
+		expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
 	});
 });

@@ -78,16 +78,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		return projects.find((p) => p.id === activeProjectId) || null;
 	}, [projects, activeProjectId]);
 
-	// Model ID: Aggregate projection from active project
+	// Canonical Model / Digital Twin Identity: Deterministic server-grounded projection
 	const activeModelId = useMemo(() => {
-		return activeProject?.id || activeProjectId || "";
+		if (activeProject?.modelId) return activeProject.modelId;
+		if (activeProjectId) return `dt-${activeProjectId}`;
+		return "";
 	}, [activeProject, activeProjectId]);
 
-	// Authoritative revision token (OCC tracking)
+	// Authoritative server-derived revision token (OCC tracking)
 	const activeRevision = useMemo(() => {
-		if (!activeProject) return 1;
-		const proj = activeProject as unknown as { version?: number; revision?: number };
-		return proj.version || proj.revision || 1;
+		if (typeof activeProject?.revision === "number") {
+			return activeProject.revision;
+		}
+		return 1;
 	}, [activeProject]);
 
 	const setActiveProjectId = (id: string) => {

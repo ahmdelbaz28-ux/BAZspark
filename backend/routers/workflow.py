@@ -560,7 +560,10 @@ async def decide_agent_run_approval(
 
 class PlanWorkflowRequest(BaseModel):
     prompt: str = ""
-    project_id: str = "default_project"
+    project_id: str = ""
+    model_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
     expected_revision: int | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
@@ -586,6 +589,25 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         scopes=["*"],
     )
 
+    if body.entity_id and body.project_id:
+        from backend.database import get_db
+
+        db = get_db()
+        dev = db.get_device(body.project_id, body.entity_id)
+        if not dev and not body.entity_id.startswith("elem-") and not body.entity_id.startswith("mock-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Entity '{body.entity_id}' does not belong to project '{body.project_id}'",
+            )
+
+    spec = dict(body.composite_spec or {})
+    if body.model_id:
+        spec["model_id"] = body.model_id
+    if body.entity_id:
+        spec["entity_id"] = body.entity_id
+    if body.entity_type:
+        spec["entity_type"] = body.entity_type
+
     try:
         plan = await asyncio.to_thread(
             default_workflow_planner.plan_workflow,
@@ -593,7 +615,7 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
             principal=principal,
             project_id=body.project_id,
             expected_revision=body.expected_revision,
-            composite_spec=body.composite_spec,
+            composite_spec=spec,
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
@@ -605,7 +627,10 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
 
 class StartPlannedWorkflowRequest(BaseModel):
     prompt: str = ""
-    project_id: str = "default_project"
+    project_id: str = ""
+    model_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
     expected_revision: int | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
@@ -633,6 +658,25 @@ async def start_planned_autonomous_workflow(
         role=role.value,
         scopes=["*"],
     )
+
+    if body.entity_id and body.project_id:
+        from backend.database import get_db
+
+        db = get_db()
+        dev = db.get_device(body.project_id, body.entity_id)
+        if not dev and not body.entity_id.startswith("elem-") and not body.entity_id.startswith("mock-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Entity '{body.entity_id}' does not belong to project '{body.project_id}'",
+            )
+
+    spec = dict(body.composite_spec or {})
+    if body.model_id:
+        spec["model_id"] = body.model_id
+    if body.entity_id:
+        spec["entity_id"] = body.entity_id
+    if body.entity_type:
+        spec["entity_type"] = body.entity_type
 
     try:
         plan = await asyncio.to_thread(

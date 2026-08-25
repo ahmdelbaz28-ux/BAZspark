@@ -74,6 +74,9 @@ export const agentWorkflowApi = {
 	async planWorkflow(params: {
 		prompt: string;
 		projectId?: string;
+		modelId?: string;
+		entityId?: string;
+		entityType?: string;
 		expectedRevision?: number;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
@@ -82,6 +85,9 @@ export const agentWorkflowApi = {
 		const res = await api.post<{ success: boolean; data: AutonomousPlanRecord }>("/workflow/runs/plan", {
 			prompt: params.prompt,
 			project_id: params.projectId || "",
+			model_id: params.modelId || (params.projectId ? `dt-${params.projectId}` : ""),
+			entity_id: params.entityId || "",
+			entity_type: params.entityType || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
@@ -96,6 +102,9 @@ export const agentWorkflowApi = {
 	async startPlannedWorkflow(params: {
 		prompt: string;
 		projectId?: string;
+		modelId?: string;
+		entityId?: string;
+		entityType?: string;
 		expectedRevision?: number;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
@@ -109,6 +118,9 @@ export const agentWorkflowApi = {
 		}>("/workflow/runs/start-plan", {
 			prompt: params.prompt,
 			project_id: params.projectId || "",
+			model_id: params.modelId || (params.projectId ? `dt-${params.projectId}` : ""),
+			entity_id: params.entityId || "",
+			entity_type: params.entityType || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",

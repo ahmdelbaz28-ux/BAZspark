@@ -31,7 +31,12 @@ import logging
 import re
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import datetime, timezone
+
+    UTC = timezone.utc
 from typing import Any
 
 from backend.core.agent_run_orchestrator import (
