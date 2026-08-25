@@ -159,13 +159,13 @@ class RedisMessageBus(MessageBusTransport):
                 if message["type"] == "message":
                     try:
                         data = json.loads(message["data"])
-                        # Call the handler with the message data
+                        # D1 FIX: async handlers previously returned un-awaited
+                        # coroutines (silently dropped). Run them on a fresh
+                        # loop from this worker thread.
                         if asyncio.iscoroutinefunction(
                             handler
                         ):  # NOSONAR — S3923: branches intentionally differ in side-effect only
-                            # For async handlers, we'd need to run in an event loop
-                            # This is simplified for now
-                            handler(data)
+                            asyncio.run(handler(data))
                         else:
                             handler(data)
                     except json.JSONDecodeError:
@@ -334,9 +334,9 @@ class InMemoryMessageBus(MessageBusTransport):
                     if asyncio.iscoroutinefunction(
                         handler
                     ):  # NOSONAR — S3923: branches intentionally differ in side-effect only
-                        # For async handlers, we'd need an event loop
-                        # This is simplified for now
-                        handler(message)
+                        # D1 FIX: run async handlers on a fresh loop instead of
+                        # leaking un-awaited coroutines.
+                        asyncio.run(handler(message))
                     else:
                         handler(message)
                 except Exception as e:

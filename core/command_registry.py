@@ -1,0 +1,228 @@
+"""Unified CAD command registry (A2).
+
+Single source of truth mapping canonical command names (used by the backend
+REST surface) to the C# add-in action names executed over the named pipes,
+plus parameter normalization between the two shapes.
+
+Consumers:
+- ``scripts/local_agent.py``: derives pipe-routed actions and normalizes params.
+- ``backend.routers`` (D4): allow-list validation before ``send_agent_command``.
+- Contract tests: regex-extract C# switch cases and compare against this file.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import threading
+from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
+
+_REGISTRY_PATH = None  # Overridable for tests; defaults to sibling JSON.
+_lock = threading.Lock()
+_cache: Optional[dict] = None
+
+
+def _default_path():
+    from pathlib import Path
+
+    if _REGISTRY_PATH:
+        return Path(_REGISTRY_PATH)
+    return Path(__file__).resolve().parent / "command_registry.json"
+
+
+def load_registry(force_reload: bool = False) -> dict[str, Any]:
+    """Load and cache the registry JSON."""
+    global _cache
+    if _cache is not None and not force_reload:
+        return _cache
+    with _lock:
+        if _cache is not None and not force_reload:
+            return _cache
+        path = _default_path()
+        with open(path, "r", encoding="utf-8") as fh:
+            _cache = json.load(fh)
+        return _cache
+
+
+def reset_cache() -> None:
+    """Reset the cached registry (test hook)."""
+    global _cache
+    with _lock:
+        _cache = None
+
+
+def get_service_names() -> tuple[str, ...]:
+    return tuple(load_registry().get("services", {}).keys())
+
+
+def get_command_entry(service: str, canonical: str) -> Optional[dict[str, Any]]:
+    """Resolve a canonical name or alias to its registry entry.
+
+    Returns ``None`` when the service is unknown or the command is not
+    registered — callers MUST treat that as a hard rejection (D4 allow-list).
+    """
+    services = load_registry().get("services", {})
+    svc = services.get(service)
+    if not svc:
+        return None
+    commands = svc.get("commands", {})
+    entry = commands.get(canonical)
+    if entry is not None:
+        return entry
+    for candidate in commands.values():
+        if canonical in candidate.get("aliases", []):
+            return candidate
+    return None
+
+
+def is_allowed(service: str, canonical: str) -> bool:
+    """Allow-list check used by the backend before dispatching to an agent."""
+    return get_command_entry(service, canonical) is not None
+
+
+def resolve_addin_action(service: str, canonical: str) -> Optional[str]:
+    entry = get_command_entry(service, canonical)
+    if entry is None:
+        return None
+    return entry.get("addin_action")
+
+
+def validate_params(service: str, canonical: str, params: dict[str, Any]) -> Optional[str]:
+    """Return an error string when required params are missing, else None."""
+    entry = get_command_entry(service, canonical)
+    if entry is None:
+        return f"Unknown {service} command: {canonical!r}"
+    schema = entry.get("params", {})
+    missing = [name for name in schema.get("required", []) if params.get(name) is None]
+    if missing:
+        return f"Missing required params for {service}/{canonical}: {', '.join(missing)}"
+    return None
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Parameter normalization: backend/REST shape → C# add-in shape.
+# Pure functions; no I/O. Each returns the transformed params dict.
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def _as_point3(value: Any, default_z: float = 0.0) -> list:
+    pts = [float(v) for v in value]
+    while len(pts) < 3:
+        pts.append(default_z)
+    return pts[:3]
+
+
+def _passthrough(out: dict[str, Any], p: dict[str, Any], keys: tuple[str, ...]) -> None:
+    for key in keys:
+        if key in p and p[key] is not None:
+            out[key] = p[key]
+
+
+def _norm_create_wall(p: dict[str, Any]) -> dict[str, Any]:
+    # REST shape {start_point,end_point,...} → C# shape {x1,y1,x2,y2,height}.
+    sp = _as_point3(p.get("start_point", [0, 0]))
+    ep = _as_point3(p.get("end_point", [0, 0]))
+    out: dict[str, Any] = {"x1": sp[0], "y1": sp[1], "x2": ep[0], "y2": ep[1]}
+    _passthrough(out, p, ("height", "level", "wall_type"))
+    return out
+
+
+def _norm_create_floor(p: dict[str, Any]) -> dict[str, Any]:
+    out = {"points": p.get("boundary_points")}
+    _passthrough(out, p, ("level", "floor_type"))
+    return out
+
+
+def _norm_place_family_instance(p: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    loc = p.get("location_point")
+    pt = _as_point3(loc) if loc else [0.0, 0.0, 0.0]
+    out["x"], out["y"], out["z"] = pt[0], pt[1], pt[2]
+    if "family_name" in p:
+        out["family"] = p["family_name"]
+        out["family_name"] = p["family_name"]  # C# accepts either key
+    _passthrough(
+        out,
+        p,
+        (
+            "symbol",
+            "symbol_name",
+            "family_file_path",
+            "family_path",
+            "parameters",
+            "level",
+            "category",
+        ),
+    )
+    return out
+
+
+def _norm_element_command(p: dict[str, Any]) -> dict[str, Any]:
+    # REST ``element_id`` → C# ``id`` (C# also accepts id directly after A1).
+    out = dict(p)
+    if "element_id" in p:
+        out["id"] = p["element_id"]
+    return out
+
+
+def _norm_hosted_instance(p: dict[str, Any]) -> dict[str, Any]:
+    """create_door/create_window (host_wall_id + family_type) → hosted placement."""
+    pt = _as_point3(p.get("location_point", [0, 0, 0]))
+    family = p.get("family_type") or p.get("family_name") or ""
+    out: dict[str, Any] = {
+        "x": pt[0],
+        "y": pt[1],
+        "z": pt[2],
+        "host_id": p.get("host_wall_id"),
+        "family": family,
+        "family_name": family,
+        "symbol": family,
+    }
+    _passthrough(out, p, ("level", "parameters"))
+    return out
+
+
+_REVIT_NORMALIZERS = {
+    "create_wall": _norm_create_wall,
+    "create_floor": _norm_create_floor,
+    "place_family_instance": _norm_place_family_instance,
+    "create_family": _norm_place_family_instance,
+    "place_family_instance_hosted": _norm_hosted_instance,
+    "create_door": _norm_hosted_instance,
+    "create_window": _norm_hosted_instance,
+    "get_parameter": _norm_element_command,
+    "set_parameter": _norm_element_command,
+}
+
+_AUTOCAD_NORMALIZERS = {}
+
+
+def normalize_params(service: str, canonical: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Normalize REST-style params into the shape the C# add-in expects."""
+    normalizers = _REVIT_NORMALIZERS if service == "revit" else _AUTOCAD_NORMALIZERS
+    fn = normalizers.get(canonical)
+    if fn is None:
+        return dict(params)
+    try:
+        return fn(params)
+    except Exception as exc:  # noqa: BLE001 — never break dispatch on bad input
+        logger.warning("Param normalization failed for %s/%s: %s", service, canonical, exc)
+        return dict(params)
+
+
+def expand_update_parameters(
+    params: dict[str, Any],
+) -> tuple[str, list]:
+    """Expand ``update_parameters`` into N ``set_parameter`` calls.
+
+    Returns ``(target_canonical, [params_per_call])``.
+    """
+    element_id = params.get("element_id")
+    parameters = params.get("parameters") or {}
+    calls = [
+        {"element_id": element_id, "id": element_id, "name": name, "value": value}
+        for name, value in parameters.items()
+    ]
+    return "set_parameter", calls

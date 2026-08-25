@@ -5,6 +5,7 @@
 import { Circle, Loader2, Minus, Spline, Type } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { RemoteCADSessionBar } from "@/components/cad/RemoteCADSessionBar";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -121,6 +122,8 @@ export function AutoCADDrawPage() {
 
 	return (
 		<div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
+			{/* B4: live desktop-agent session (status, native commands, screenshot) */}
+			<RemoteCADSessionBar />
 			<div>
 				<h1 className="text-2xl font-bold text-foreground">
 					AutoCAD Drawing Tools

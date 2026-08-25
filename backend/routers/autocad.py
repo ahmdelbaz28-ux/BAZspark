@@ -44,6 +44,7 @@ from pydantic import BaseModel
 
 from backend.auth import require_permission
 from backend.rbac import Permission
+from backend.routers.agent_ws import has_active_agent, send_agent_command
 from backend.services.autocad_service import AutoCADService
 from fireai.core.fireai_api import limiter
 
@@ -255,6 +256,47 @@ class OperationResponse(BaseModel):
     handle: str | None = None
 
 
+class SendCommandRequest(BaseModel):
+    """Request model for native AutoCAD command passthrough (B2)."""
+
+    command_string: str
+
+
+class CaptureScreenResponse(BaseModel):
+    """T2 visual awareness response."""
+
+    success: bool
+    image_base64: str | None = None
+    format: str = "png"
+    message: str | None = None
+
+
+def _flatten_agent_result(res: Any) -> dict[str, Any]:
+    """
+    Flatten a C# add-in envelope ``{"success": true, "data": {...}}`` so the
+    REST response exposes data fields (handle, count, elements…) at top level.
+    Local handler dicts pass through unchanged (A11).
+    """
+    if not isinstance(res, dict):
+        return {"success": False, "error": "Malformed agent result"}
+    if isinstance(res.get("data"), dict):
+        out = {k: v for k, v in res.items() if k != "data"}
+        out.update(res["data"])
+        return out
+    return res
+
+
+def _agent_operation_response(res: dict[str, Any], ok_msg: str) -> OperationResponse:
+    """Build an OperationResponse from an agent result (pipe or local shape)."""
+    flat = _flatten_agent_result(res)
+    handle = flat.get("handle")
+    return OperationResponse(
+        success=bool(flat.get("success", False)),
+        message=str(flat.get("message") or (ok_msg if flat.get("success") else flat.get("error") or "Operation failed"))[:300],
+        handle=str(handle) if handle is not None else None,
+    )
+
+
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 
@@ -337,9 +379,15 @@ async def list_autocad_documents() -> DocumentsResponse:
     """list open documents in AutoCAD."""
     try:
         service = get_autocad_service()
-        # If not connected, return a simulated list in development mode
+        # A7 FIX: the dev-mode fallback previously returned a fabricated
+        # "Drawing1.dwg" entry. It is now explicitly flagged as demo data so
+        # it can never be mistaken for a real AutoCAD session.
         if not service.connected:
             if os.getenv("FIREAI_ENV", "production") == "development":
+                logger.warning(
+                    "Returning DEMO document list (AutoCAD not connected) — "
+                    "explicitly marked demo:true"
+                )
                 return DocumentsResponse(
                     success=True,
                     documents=[
@@ -347,6 +395,7 @@ async def list_autocad_documents() -> DocumentsResponse:
                             "name": "Drawing1.dwg",
                             "path": "C:\\MockPath\\Drawing1.dwg",
                             "active": True,
+                            "demo": True,
                         }
                     ],
                 )
@@ -438,6 +487,20 @@ async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationRe
 @limiter.limit("30/minute")
 async def draw_line(request: Request, body: DrawLineRequest) -> OperationResponse:
     """Draw a line in AutoCAD."""
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command(
+            "autocad",
+            "draw_line",
+            {
+                "start_point": body.start_point,
+                "end_point": body.end_point,
+                "layer": body.layer,
+                "color": body.color,
+            },
+        )
+        return _agent_operation_response(res, "Line drawn successfully")
+
     try:
         service = get_autocad_service()
 
@@ -476,6 +539,20 @@ async def draw_line(request: Request, body: DrawLineRequest) -> OperationRespons
 @limiter.limit("30/minute")
 async def draw_polyline(request: Request, body: DrawPolylineRequest) -> OperationResponse:
     """Draw a polyline in AutoCAD."""
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command(
+            "autocad",
+            "draw_polyline",
+            {
+                "vertices": body.vertices,
+                "layer": body.layer,
+                "color": body.color,
+                "closed": body.closed,
+            },
+        )
+        return _agent_operation_response(res, "Polyline drawn successfully")
+
     try:
         service = get_autocad_service()
 
@@ -511,6 +588,20 @@ async def draw_polyline(request: Request, body: DrawPolylineRequest) -> Operatio
 @limiter.limit("30/minute")
 async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationResponse:
     """Draw a circle in AutoCAD."""
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command(
+            "autocad",
+            "draw_circle",
+            {
+                "center": body.center,
+                "radius": body.radius,
+                "layer": body.layer,
+                "color": body.color,
+            },
+        )
+        return _agent_operation_response(res, "Circle drawn successfully")
+
     try:
         service = get_autocad_service()
 
@@ -546,6 +637,21 @@ async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationRes
 @limiter.limit("30/minute")
 async def draw_text(request: Request, body: DrawTextRequest) -> OperationResponse:
     """Draw text in AutoCAD."""
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command(
+            "autocad",
+            "draw_text",
+            {
+                "text": body.text,
+                "insertion_point": body.insertion_point,
+                "height": body.height,
+                "layer": body.layer,
+                "color": body.color,
+            },
+        )
+        return _agent_operation_response(res, "Text drawn successfully")
+
     try:
         service = get_autocad_service()
 
@@ -608,6 +714,13 @@ async def get_autocad_status() -> StatusResponse:
 @limiter.limit("30/minute")
 async def save_document(request: Request, body: SaveRequest) -> OperationResponse:
     """Save the current AutoCAD document."""
+    # A11 FIX: agent path uses save_as so the explicit filepath is honored
+    # by the C# add-in (its plain "save" arm writes to doc.Name only).
+    if has_active_agent():
+        safe_path = _validate_autocad_file_path(body.filepath)
+        res = await send_agent_command("autocad", "save_as", {"filepath": safe_path})
+        return _agent_operation_response(res, "Document saved successfully")
+
     try:
         service = get_autocad_service()
 
@@ -720,6 +833,16 @@ async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
         raise HTTPException(
             status_code=400, detail="Invalid handle: must be 1-16 hex chars"
         )  # NOSONAR — S8415: endpoint error handling is intentional
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command("autocad", "delete_entity", {"handle": handle})
+        flat = _flatten_agent_result(res)
+        if not flat.get("success", False):
+            raise HTTPException(
+                status_code=400, detail=str(flat.get("error") or "Failed to delete entity")
+            )
+        return DeleteEntityResponse(success=True, message="Entity deleted successfully")
+
     try:
         service = get_autocad_service()
 
@@ -757,6 +880,16 @@ async def update_entity(
         raise HTTPException(
             status_code=400, detail="Invalid handle: must be 1-16 hex chars"
         )  # NOSONAR — S8415: endpoint error handling is intentional
+    if handle != body.handle:
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            status_code=400, detail="Handle in URL and request body must match"
+        )
+    # A11 FIX: prefer the live desktop agent (C# add-in) over local COM.
+    if has_active_agent():
+        res = await send_agent_command(
+            "autocad", "modify_entity", {"handle": body.handle, "properties": body.properties}
+        )
+        return _agent_operation_response(res, "Entity modified successfully")
     try:
         service = get_autocad_service()
 
@@ -764,11 +897,6 @@ async def update_entity(
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                 detail="AutoCAD not connected. Call /connect first.",
-            )
-
-        if handle != body.handle:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-                status_code=400, detail="Handle in URL and request body must match"
             )
 
         success = service.modify_entity(handle=body.handle, properties=body.properties)
@@ -783,3 +911,95 @@ async def update_entity(
         raise
     except Exception as e:
         raise _safe_error(500, "Error modifying entity", e)
+
+
+# ── B2/B4: native command passthrough + visual awareness + block insert ────
+
+
+@router.post(
+    "/send_command",
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)
+@limiter.limit("30/minute")
+async def send_autocad_native_command(request: Request, body: SendCommandRequest) -> dict[str, Any]:
+    """
+    Execute any native AutoCAD command (B2 ``send_command``).
+
+    Requires the BazSparkAutoCADBridge agent. The command is queued on the
+    AutoCAD main thread; pair with /capture_screen to verify the result
+    (SendStringToExecute is asynchronous by design).
+    """
+    if not has_active_agent():
+        raise HTTPException(
+            status_code=503,
+            detail="Requires a connected desktop agent with BazSparkAutoCADBridge loaded.",
+        )
+    res = await send_agent_command("autocad", "send_command", {"command_string": body.command_string})
+    return _flatten_agent_result(res)
+
+
+@router.post(
+    "/insert_block",
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)
+@limiter.limit("30/minute")
+async def insert_block(request: Request, body: dict[str, Any]) -> OperationResponse:
+    """Insert a block instance (agent-only; requires the C# add-in)."""
+    if not has_active_agent():
+        raise HTTPException(
+            status_code=503,
+            detail="Requires a connected desktop agent with BazSparkAutoCADBridge loaded.",
+        )
+    res = await send_agent_command("autocad", "insert_block", body)
+    return _agent_operation_response(res, "Block inserted successfully")
+
+
+@router.get(
+    "/capture_screen",
+    response_model=CaptureScreenResponse,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
+async def autocad_capture_screen(request: Request) -> CaptureScreenResponse:
+    """
+    Capture the AutoCAD window as base64 PNG (T2 visual awareness).
+
+    Returned inline so agents/UI can 'see' the outcome of prior commands.
+    """
+    if not has_active_agent():
+        raise HTTPException(
+            status_code=503,
+            detail="Requires a connected desktop agent with BazSparkAutoCADBridge loaded.",
+        )
+    res = await send_agent_command("autocad", "capture_screen", {})
+    flat = _flatten_agent_result(res)
+    return CaptureScreenResponse(
+        success=bool(flat.get("success", False)),
+        image_base64=flat.get("image_base64"),
+        format=str(flat.get("format", "png")),
+        message=None if flat.get("success") else str(flat.get("error") or "Capture failed"),
+    )
+
+
+@router.get(
+    "/remote/status",
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
+async def autocad_remote_status(request: Request) -> dict[str, Any]:
+    """Agent-backed session info for the Remote CAD Session UI (B4)."""
+    if has_active_agent():
+        try:
+            res = await send_agent_command("autocad", "get_info", {})
+            return {
+                "success": True,
+                "agent_connected": True,
+                "session": _flatten_agent_result(res),
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise _safe_error(502, "Remote AutoCAD session error", e)
+    return {
+        "success": True,
+        "agent_connected": False,
+        "message": "No desktop agent connected. Start scripts/local_agent.py with the AutoCAD bridge.",
+    }

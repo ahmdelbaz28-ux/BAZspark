@@ -265,6 +265,8 @@ class CreateWallRequest(BaseModel):
         "Level 1", description="Level name"
     )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     wall_type: str = Field("Basic Wall", description="Wall type name")
+    # B3/T2: ask the desktop agent for an inline PNG of the result.
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateFloorRequest(BaseModel):
@@ -281,6 +283,7 @@ class CreateFloorRequest(BaseModel):
     boundary_points: list[list[float]] = Field(..., description="Boundary points [[x,y,z], ...]")
     level: str = Field("Level 1", description="Level name")
     floor_type: str = Field("Floor", description="Floor type name")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateDoorRequest(BaseModel):
@@ -301,6 +304,7 @@ class CreateDoorRequest(BaseModel):
     )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     family_type: str = Field("M_Single-Flush", description="Door family type")
     level: str = Field("Level 1", description="Level name")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateWindowRequest(BaseModel):
@@ -310,6 +314,7 @@ class CreateWindowRequest(BaseModel):
     location_point: list[float] = Field(..., description="Insertion point [x, y, z]")
     family_type: str = Field("M_Single-Flush", description="Window family type")
     level: str = Field("Level 1", description="Level name")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateColumnRequest(BaseModel):
@@ -328,6 +333,7 @@ class CreateColumnRequest(BaseModel):
     height: float = Field(3000.0, description="Column height in mm")
     level: str = Field("Level 1", description="Base level name")
     column_type: str = Field("M_Columns", description="Column type name")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateBeamRequest(BaseModel):
@@ -337,6 +343,7 @@ class CreateBeamRequest(BaseModel):
     end_point: list[float] = Field(..., description="End point [x, y, z]")
     level: str = Field("Level 1", description="Level name")
     beam_type: str = Field("W-Wide Flange", description="Beam type name")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class CreateFamilyRequest(BaseModel):
@@ -357,6 +364,7 @@ class CreateFamilyRequest(BaseModel):
     location_point: list[float] = Field(..., description="Insertion point [x, y, z]")
     level: str | None = Field(None, description="Level name (for hosted families)")
     parameters: dict[str, Any] | None = Field(None, description="Parameter name/value pairs")
+    include_screenshot: bool = Field(False, description="Attach post-command screenshot")
 
 
 class ParameterUpdateRequest(BaseModel):
@@ -372,6 +380,41 @@ class ElementResponse(BaseModel):
     message: str
     element_id: str | None = None
     element: dict[str, Any] | None = None
+    # A3 FIX: explicit flag so clients can tell simulated results from a real
+    # Revit mutation even when connected=True.
+    simulation_mode: bool = False
+    # B3/T2: base64 PNG captured by the desktop agent after the command.
+    screenshot_base64: str | None = None
+
+
+def _as_element_response(
+    res: dict[str, Any], label: str, simulation_mode: bool = False
+) -> ElementResponse:
+    """
+    Normalize an agent command result into ElementResponse.
+
+    The C# add-in answers ``{"success": true, "data": {"id": 123, ...}}``
+    while local handlers answer ``{"success": ..., "message": ...,
+    "element_id": ...}``. This helper flattens both shapes (A2/A3).
+    """
+    data = res.get("data") if isinstance(res.get("data"), dict) else {}
+    element_id = res.get("element_id") or data.get("id") or data.get("element_id")
+    message = res.get("message")
+    if not message:
+        if element_id is not None:
+            message = f"{label}: {element_id}"
+        elif res.get("error"):
+            message = str(res["error"])
+        else:
+            message = f"{label} completed"
+    sim_flag = bool(res.get("simulation_mode", simulation_mode))
+    return ElementResponse(
+        success=bool(res.get("success", False)),
+        message=str(message)[:300],
+        element_id=str(element_id) if element_id is not None else None,
+        element=data or None,
+        simulation_mode=sim_flag,
+    )
 
 
 class ElementsResponse(BaseModel):
@@ -852,6 +895,27 @@ async def get_element_parameters(element_id: str) -> dict[str, Any]:
 @limiter.limit("30/minute")
 async def create_wall(request: Request, body: CreateWallRequest) -> ElementResponse:
     """Create a wall in Revit."""
+    # A3 FIX: route through the live agent (C# add-in) when connected, exactly
+    # like create_column/beam/family — previously this fell through to a
+    # simulation-only adapter and never touched real Revit.
+    if has_active_agent():
+        res = await send_agent_command(
+            "revit",
+            "create_wall",
+            {
+                "start_point": body.start_point,
+                "end_point": body.end_point,
+                "height": body.height,
+                "level": body.level,
+                "wall_type": body.wall_type,
+            },
+        )
+        resp = _as_element_response(res, "Wall created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(
@@ -866,10 +930,10 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
         wall_type=body.wall_type,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Wall created: {element_id}" if element_id else "Failed to create wall",
-        element_id=element_id,
+    return _as_element_response(
+        {"success": element_id is not None, "element_id": element_id, "message": f"Wall created: {element_id}" if element_id else None},
+        "Wall created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -882,6 +946,23 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
 @limiter.limit("30/minute")
 async def create_floor(request: Request, body: CreateFloorRequest) -> ElementResponse:
     """Create a floor in Revit."""
+    # A3 FIX: route through the live agent when connected.
+    if has_active_agent():
+        res = await send_agent_command(
+            "revit",
+            "create_floor",
+            {
+                "boundary_points": body.boundary_points,
+                "level": body.level,
+                "floor_type": body.floor_type,
+            },
+        )
+        resp = _as_element_response(res, "Floor created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(
@@ -892,10 +973,10 @@ async def create_floor(request: Request, body: CreateFloorRequest) -> ElementRes
         boundary_points=body.boundary_points, level=body.level, floor_type=body.floor_type
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Floor created: {element_id}" if element_id else "Failed to create floor",
-        element_id=element_id,
+    return _as_element_response(
+        {"success": element_id is not None, "element_id": element_id, "message": f"Floor created: {element_id}" if element_id else None},
+        "Floor created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -908,6 +989,24 @@ async def create_floor(request: Request, body: CreateFloorRequest) -> ElementRes
 @limiter.limit("30/minute")
 async def create_door(request: Request, body: CreateDoorRequest) -> ElementResponse:
     """Create a door in a wall."""
+    # A3 FIX: route through the live agent when connected.
+    if has_active_agent():
+        res = await send_agent_command(
+            "revit",
+            "create_door",
+            {
+                "host_wall_id": body.host_wall_id,
+                "location_point": body.location_point,
+                "family_type": body.family_type,
+                "level": body.level,
+            },
+        )
+        resp = _as_element_response(res, "Door created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(
@@ -921,10 +1020,10 @@ async def create_door(request: Request, body: CreateDoorRequest) -> ElementRespo
         level=body.level,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Door created: {element_id}" if element_id else "Failed to create door",
-        element_id=element_id,
+    return _as_element_response(
+        {"success": element_id is not None, "element_id": element_id, "message": f"Door created: {element_id}" if element_id else None},
+        "Door created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -937,6 +1036,24 @@ async def create_door(request: Request, body: CreateDoorRequest) -> ElementRespo
 @limiter.limit("30/minute")
 async def create_window(request: Request, body: CreateWindowRequest) -> ElementResponse:
     """Create a window in a wall."""
+    # A3 FIX: route through the live agent when connected.
+    if has_active_agent():
+        res = await send_agent_command(
+            "revit",
+            "create_window",
+            {
+                "host_wall_id": body.host_wall_id,
+                "location_point": body.location_point,
+                "family_type": body.family_type,
+                "level": body.level,
+            },
+        )
+        resp = _as_element_response(res, "Window created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(
@@ -950,11 +1067,43 @@ async def create_window(request: Request, body: CreateWindowRequest) -> ElementR
         level=body.level,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Window created: {element_id}" if element_id else "Failed to create window",
-        element_id=element_id,
+    return _as_element_response(
+        {"success": element_id is not None, "element_id": element_id, "message": f"Window created: {element_id}" if element_id else None},
+        "Window created",
+        simulation_mode=svc.simulation_mode,
     )
+
+
+async def _maybe_capture_screenshot(requested: bool) -> str | None:
+    """B3/T2: capture the Revit window via the desktop agent when requested.
+
+    Best-effort: capture failures never fail the primary command — they only
+    omit ``screenshot_base64`` from the response.
+    """
+    if not requested or not has_active_agent():
+        return None
+    try:
+        res = await send_agent_command("revit", "capture_screen", {})
+        flat = _flatten_agent_result(res)
+        image = flat.get("image_base64")
+        return str(image) if image else None
+    except HTTPException:
+        return None
+
+
+def _flatten_agent_result(res: Any) -> dict[str, Any]:
+    """
+    Flatten a C# add-in envelope ``{"success": true, "data": {...}}`` so the
+    REST response exposes ``data`` fields (id, deleted_id, count, elements…)
+    at the top level alongside ``success``. Local handler dicts pass through.
+    """
+    if not isinstance(res, dict):
+        return {"success": False, "error": "Malformed agent result"}
+    if isinstance(res.get("data"), dict):
+        out = {k: v for k, v in res.items() if k != "data"}
+        out.update(res["data"])
+        return out
+    return res
 
 
 @router.post(
@@ -977,7 +1126,11 @@ async def create_column(request: Request, body: CreateColumnRequest) -> ElementR
                 "column_type": body.column_type,
             },
         )
-        return ElementResponse(**res)
+        resp = _as_element_response(res, "Column created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
 
     svc = get_revit_service()
     if not svc.connected:
@@ -992,10 +1145,14 @@ async def create_column(request: Request, body: CreateColumnRequest) -> ElementR
         column_type=body.column_type,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Column created: {element_id}" if element_id else "Failed to create column",
-        element_id=element_id,
+    return _as_element_response(
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Column created: {element_id}" if element_id else None,
+        },
+        "Column created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -1019,7 +1176,11 @@ async def create_beam(request: Request, body: CreateBeamRequest) -> ElementRespo
                 "beam_type": body.beam_type,
             },
         )
-        return ElementResponse(**res)
+        resp = _as_element_response(res, "Beam created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1034,10 +1195,14 @@ async def create_beam(request: Request, body: CreateBeamRequest) -> ElementRespo
         beam_type=body.beam_type,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Beam created: {element_id}" if element_id else "Failed to create beam",
-        element_id=element_id,
+    return _as_element_response(
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Beam created: {element_id}" if element_id else None,
+        },
+        "Beam created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -1062,7 +1227,11 @@ async def create_family(request: Request, body: CreateFamilyRequest) -> ElementR
                 "parameters": body.parameters,
             },
         )
-        return ElementResponse(**res)
+        resp = _as_element_response(res, "Family instance created")
+        shot = await _maybe_capture_screenshot(body.include_screenshot)
+        if shot:
+            resp.screenshot_base64 = shot
+        return resp
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1078,10 +1247,14 @@ async def create_family(request: Request, body: CreateFamilyRequest) -> ElementR
         parameters=body.parameters,
     )
 
-    return ElementResponse(
-        success=element_id is not None,
-        message=f"Family instance created: {element_id}" if element_id else "Failed to create",
-        element_id=element_id,
+    return _as_element_response(
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Family instance created: {element_id}" if element_id else None,
+        },
+        "Family instance created",
+        simulation_mode=svc.simulation_mode,
     )
 
 
@@ -1101,9 +1274,10 @@ async def update_parameters(
 ) -> dict[str, Any]:
     """Update element parameters."""
     if has_active_agent():
-        return await send_agent_command(
+        res = await send_agent_command(
             "revit", "update_parameters", {"element_id": element_id, "parameters": body.parameters}
         )
+        return _flatten_agent_result(res)
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1131,7 +1305,8 @@ async def update_parameters(
 async def delete_element(request: Request, element_id: str) -> dict[str, Any]:
     """Delete an element."""
     if has_active_agent():
-        return await send_agent_command("revit", "delete_element", {"element_id": element_id})
+        res = await send_agent_command("revit", "delete_element", {"element_id": element_id})
+        return _flatten_agent_result(res)
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1162,7 +1337,7 @@ async def get_views() -> ElementsResponse:
     """Get all views in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_views", {})
-        return ElementsResponse(**res)
+        return ElementsResponse(**_flatten_agent_result(res))
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1184,7 +1359,7 @@ async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_levels", {})
-        return ElementsResponse(**res)
+        return ElementsResponse(**_flatten_agent_result(res))
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1206,7 +1381,7 @@ async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_grids", {})
-        return ElementsResponse(**res)
+        return ElementsResponse(**_flatten_agent_result(res))
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1228,7 +1403,7 @@ async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_worksets", {})
-        return ElementsResponse(**res)
+        return ElementsResponse(**_flatten_agent_result(res))
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1395,9 +1570,10 @@ async def execute_ai_command(request: Request, body: AICommandRequest) -> dict[s
 
     """
     if has_active_agent():
-        return await send_agent_command(
+        res = await send_agent_command(
             "revit", "execute_ai_command", {"command": body.command, "context": body.context}
         )
+        return _flatten_agent_result(res)
 
     svc = get_revit_service()
     if not svc.connected:

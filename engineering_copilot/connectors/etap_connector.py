@@ -20,7 +20,6 @@ except ImportError:
     clr = None
 
 import logging
-from datetime import datetime
 from typing import Any
 
 # ETAP API would be loaded here in a real implementation
@@ -33,6 +32,11 @@ if HAS_CLR:
         # Mock for testing without ETAP
         pass
 
+from engineering_copilot.connectors.base import (
+    ConnectorUnavailableError,
+    ElectricalConnector,
+    register_connector,
+)
 from engineering_copilot.models.unified_model import (
     Breaker,
     Bus,
@@ -52,17 +56,25 @@ class NotConnectedError(ConnectionError):
     """Raised when an operation is attempted without an active connection."""
 
 
-class ETAPConnector:
+@register_connector("etap")
+class ETAPConnector(ElectricalConnector):
     """
     ETAP integration connector for electrical engineering analysis.
-    Provides bidirectional communication between ETAP and the unified engineering model.
+    Provides bidirectional communication between ETAP and the unified
+    engineering model through the shared :class:`ElectricalConnector`
+    contract (Path C) so future providers (SKM, DIALux, ...) plug in
+    behind the same interface.
+
+    Path C honesty rules: reads return vendor data only — sample rows were
+    removed; ``connect`` no longer fakes a successful session when the
+    ETAP runtime is absent.
     """
 
     def __init__(self, etap_path: str = None):
         self.logger = logging.getLogger(__name__)
         self.etap_path = etap_path
         self.project = None
-        self.is_connected = False
+        self._connected = False
 
         # ETAP element type mapping
         self.element_type_mapping = {
@@ -85,6 +97,16 @@ class ETAPConnector:
             "HarmonicAnalysis",
         ]
 
+    @property
+    def is_connected(self) -> bool:
+        """True only while a live ETAP session is bound (contract property)."""
+        return self._connected
+
+    @is_connected.setter
+    def is_connected(self, value: bool) -> None:
+        # Backwards-compatible attribute-style writes.
+        self._connected = bool(value)
+
     def connect(self, project_path: str = None) -> bool:
         """
         Connect to ETAP and open a project.
@@ -94,16 +116,27 @@ class ETAPConnector:
 
         Returns:
             bool: True if connection successful
+
+        Path C: returns False honestly when the ETAP COM runtime is not
+        available instead of simulating a session.
         """
         try:
+            if not HAS_CLR:
+                self.logger.warning(
+                    "ETAP connect failed: pythonnet/CLR runtime not available "
+                    "(outside ETAP process). Refusing to simulate a session."
+                )
+                return False
+
             self.logger.info("Connecting to ETAP...")
 
-            # In a real implementation, this would connect to ETAP
-            # For now, we'll simulate the connection
-            self.is_connected = True
-            self.project = project_path or "simulated_project.eto"
-            self.logger.info(f"Successfully connected to ETAP project: {self.project}")
-            return True
+            # Real ETAP API binding happens here when running inside the
+            # ETAP process; until that bridge lands, fail honestly.
+            self.logger.warning(
+                "ETAP API bridge not implemented yet — refusing to simulate "
+                "a connected project."
+            )
+            return False
 
         except Exception as e:
             self.logger.error(f"Failed to connect to ETAP: {e}")
@@ -117,7 +150,7 @@ class ETAPConnector:
             bool: True if disconnection successful
         """
         try:
-            self.is_connected = False
+            self._connected = False
             self.project = None
             self.logger.info("Disconnected from ETAP")
             return True
@@ -125,19 +158,31 @@ class ETAPConnector:
             self.logger.error(f"Error disconnecting from ETAP: {e}")
             return False
 
+    # ── ElectricalConnector contract adapters ────────────────────────────
+
+    def read_project(self) -> dict[str, Any]:
+        """Contract alias for :meth:`read_etap_project`."""
+        return self.read_etap_project()
+
+    def supported_studies(self) -> list[str]:
+        """Study identifiers this provider can execute."""
+        return list(self.study_types)
+
     def read_etap_project(self) -> dict[str, Any]:
         """
         Read the current ETAP project and extract elements.
 
         Returns:
             dict: ETAP project data with elements
+
+        Path C: returns the live project structure only. Without a real
+        ETAP session bridge this raises NotConnectedError like every other
+        read — fabricated sample catalogs were removed.
         """
         if not self.is_connected:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read the ETAP project
-            # For now, we'll return a mock structure
             project_data = {
                 "buses": [],
                 "transformers": [],
@@ -168,12 +213,9 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read SLDs from ETAP
-            sl_ds = [
-                {"id": "sld_1", "name": "Main SLD", "file_path": "main_sld.etd"},
-                {"id": "sld_2", "name": "Distribution SLD", "file_path": "dist_sld.etd"},
-            ]
-            self.logger.info(f"Read {len(sl_ds)} single line diagrams from ETAP")
+            # Live SLD inventory from the connected ETAP session.
+            sl_ds: list[dict[str, Any]] = []
+            self.logger.info("Read %d single line diagrams from ETAP", len(sl_ds))
             return sl_ds
 
         except Exception as e:
@@ -191,17 +233,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read buses from ETAP
-            buses = [
-                {"id": "bus_1", "name": "Main Bus", "voltage": 13800.0, "rated_current": 2000.0},
-                {
-                    "id": "bus_2",
-                    "name": "Distribution Bus",
-                    "voltage": 480.0,
-                    "rated_current": 4000.0,
-                },
-            ]
-            self.logger.info(f"Read {len(buses)} buses from ETAP")
+            buses: list[dict[str, Any]] = []
+            self.logger.info("Read %d buses from ETAP", len(buses))
             return buses
 
         except Exception as e:
@@ -219,24 +252,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read transformers from ETAP
-            transformers = [
-                {
-                    "id": "xfmer_1",
-                    "name": "Main Transformer",
-                    "primary_voltage": 13800.0,
-                    "secondary_voltage": 480.0,
-                    "power_rating": 1000.0,
-                },
-                {
-                    "id": "xfmer_2",
-                    "name": "Distribution Transformer",
-                    "primary_voltage": 480.0,
-                    "secondary_voltage": 208.0,
-                    "power_rating": 500.0,
-                },
-            ]
-            self.logger.info(f"Read {len(transformers)} transformers from ETAP")
+            transformers: list[dict[str, Any]] = []
+            self.logger.info("Read %d transformers from ETAP", len(transformers))
             return transformers
 
         except Exception as e:
@@ -254,24 +271,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read cables from ETAP
-            cables = [
-                {
-                    "id": "cable_1",
-                    "name": "Main Feeder",
-                    "voltage_rating": 600.0,
-                    "conductor_size": "500kcmil",
-                    "length": 100.0,
-                },
-                {
-                    "id": "cable_2",
-                    "name": "Distribution Feeder",
-                    "voltage_rating": 600.0,
-                    "conductor_size": "3/0 AWG",
-                    "length": 50.0,
-                },
-            ]
-            self.logger.info(f"Read {len(cables)} cables from ETAP")
+            cables: list[dict[str, Any]] = []
+            self.logger.info("Read %d cables from ETAP", len(cables))
             return cables
 
         except Exception as e:
@@ -289,24 +290,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read panels from ETAP
-            panels = [
-                {
-                    "id": "panel_1",
-                    "name": "MDB",
-                    "voltage_rating": 480.0,
-                    "current_rating": 400.0,
-                    "feeder_count": 5,
-                },
-                {
-                    "id": "panel_2",
-                    "name": "Distribution Panel",
-                    "voltage_rating": 480.0,
-                    "current_rating": 200.0,
-                    "feeder_count": 3,
-                },
-            ]
-            self.logger.info(f"Read {len(panels)} panels from ETAP")
+            panels: list[dict[str, Any]] = []
+            self.logger.info("Read %d panels from ETAP", len(panels))
             return panels
 
         except Exception as e:
@@ -324,24 +309,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read breakers from ETAP
-            breakers = [
-                {
-                    "id": "brkr_1",
-                    "name": "Main Breaker",
-                    "voltage_rating": 480.0,
-                    "current_rating": 400.0,
-                    "interrupting_rating": 65.0,
-                },
-                {
-                    "id": "brkr_2",
-                    "name": "Feeder Breaker",
-                    "voltage_rating": 480.0,
-                    "current_rating": 100.0,
-                    "interrupting_rating": 10.0,
-                },
-            ]
-            self.logger.info(f"Read {len(breakers)} breakers from ETAP")
+            breakers: list[dict[str, Any]] = []
+            self.logger.info("Read %d breakers from ETAP", len(breakers))
             return breakers
 
         except Exception as e:
@@ -359,17 +328,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read loads from ETAP
-            loads = [
-                {"id": "load_1", "name": "Office Load", "power_rating": 100.0, "power_factor": 0.9},
-                {
-                    "id": "load_2",
-                    "name": "Mechanical Load",
-                    "power_rating": 250.0,
-                    "power_factor": 0.85,
-                },
-            ]
-            self.logger.info(f"Read {len(loads)} loads from ETAP")
+            loads: list[dict[str, Any]] = []
+            self.logger.info("Read %d loads from ETAP", len(loads))
             return loads
 
         except Exception as e:
@@ -387,22 +347,8 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read generators from ETAP
-            generators = [
-                {
-                    "id": "gen_1",
-                    "name": "Emergency Generator",
-                    "power_rating": 500.0,
-                    "voltage_rating": 480.0,
-                },
-                {
-                    "id": "gen_2",
-                    "name": "Standby Generator",
-                    "power_rating": 1000.0,
-                    "voltage_rating": 480.0,
-                },
-            ]
-            self.logger.info(f"Read {len(generators)} generators from ETAP")
+            generators: list[dict[str, Any]] = []
+            self.logger.info("Read %d generators from ETAP", len(generators))
             return generators
 
         except Exception as e:
@@ -420,11 +366,11 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read protection studies from ETAP
+            # Live study state only — no fabricated "complete" statuses.
             studies = {
-                "protective_device_coordination": {"status": "complete", "results": []},
-                "arc_flash": {"status": "complete", "results": []},
-                "selectivity": {"status": "complete", "results": []},
+                "protective_device_coordination": {"status": "not_run", "results": []},
+                "arc_flash": {"status": "not_run", "results": []},
+                "selectivity": {"status": "not_run", "results": []},
             }
             self.logger.info("Read protection studies from ETAP")
             return studies
@@ -444,7 +390,7 @@ class ETAPConnector:
             raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
-            # In a real implementation, this would read short circuit results from ETAP
+            # Live solver output only — zeros are honest "no study run" values.
             results = {
                 "symmetrical_rms": 0.0,
                 "momentary": 0.0,
@@ -501,17 +447,15 @@ class ETAPConnector:
             raise ValueError(f"Unsupported study type: {study_type}")
 
         try:
-            # In a real implementation, this would run the study in ETAP
-            results = {
-                "status": "completed",
-                "start_time": datetime.now().isoformat(),
-                "end_time": datetime.now().isoformat(),
-                "results": {},
-                "messages": [],
-            }
-            self.logger.info(f"Ran {study_type} study in ETAP")
-            return results
+            # Path C rule 3: real solver output or an honest failure —
+            # fabricated "completed" studies are forbidden.
+            raise ConnectorUnavailableError(
+                f"ETAP study execution ({study_type}) requires a live ETAP "
+                "runtime session; the ETAP API bridge is not connected."
+            )
 
+        except ConnectorUnavailableError:
+            raise
         except Exception as e:
             self.logger.error(f"Error running {study_type} study: {e}")
             raise

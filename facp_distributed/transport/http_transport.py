@@ -119,7 +119,8 @@ class TransportLayer(ABC):
 class HTTPTransport(TransportLayer):
     """HTTP transport implementation for distributed FACP"""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8000, node_type: str = "l2_orchestrator"):
+    def __init__(self, host: str = "0.0.0.0", port: int = 19000, node_type: str = "l2_orchestrator"):
+        # A8 FIX: default moved off 8000 (collides with the main FastAPI API).
         super().__init__()
         self.host = host
         self.port = port
@@ -303,7 +304,7 @@ class HTTPTransport(TransportLayer):
         self.is_running = False
 
     async def async_send_request(
-        self, request_data: dict[str, Any], target_host: str = "localhost", target_port: int = 8000
+        self, request_data: dict[str, Any], target_host: str = "localhost", target_port: int = 18101
     ) -> dict[str, Any]:
         """Send request asynchronously to target HTTP endpoint"""
         scheme = "https" if os.getenv("FACP_USE_HTTPS", "").lower() in ("1", "true") else "http"
@@ -356,8 +357,8 @@ class HTTPTransport(TransportLayer):
                 host, port = target_node.split(":")
                 port = int(port)
             else:
-                # Default to localhost:8001 for testing
-                host, port = "localhost", 8001
+                # Default to the L2 gateway port for testing (A8 port map)
+                host, port = "localhost", 18101
 
             # Run the async function synchronously
             import asyncio
