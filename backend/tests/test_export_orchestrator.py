@@ -39,31 +39,39 @@ from backend.database import Database
 def test_db(tmp_path: Path) -> Database:
     db = Database(db_path=str(tmp_path / "export_test.db"))
     # Seed a test project with devices
-    db.create_project({"id": "proj-exp-01", "name": "Fire Station Alpha", "author": "Chief Engineer"})
-    db.create_device("proj-exp-01", {
-        "id": "dev-01",
-        "name": "Optical Smoke Detector",
-        "type": "smoke_detector",
-        "category": "FIRE_ALARM",
-        "x": 10.0,
-        "y": 15.0,
-        "z": 3.0,
-        "voltage": 24.0,
-        "current": 0.05,
-        "zone": "Zone 1",
-    })
-    db.create_device("proj-exp-01", {
-        "id": "dev-02",
-        "name": "Heat Detector",
-        "type": "heat_detector",
-        "category": "FIRE_ALARM",
-        "x": 20.0,
-        "y": 15.0,
-        "z": 3.0,
-        "voltage": 24.0,
-        "current": 0.04,
-        "zone": "Zone 1",
-    })
+    db.create_project(
+        {"id": "proj-exp-01", "name": "Fire Station Alpha", "author": "Chief Engineer"}
+    )
+    db.create_device(
+        "proj-exp-01",
+        {
+            "id": "dev-01",
+            "name": "Optical Smoke Detector",
+            "type": "smoke_detector",
+            "category": "FIRE_ALARM",
+            "x": 10.0,
+            "y": 15.0,
+            "z": 3.0,
+            "voltage": 24.0,
+            "current": 0.05,
+            "zone": "Zone 1",
+        },
+    )
+    db.create_device(
+        "proj-exp-01",
+        {
+            "id": "dev-02",
+            "name": "Heat Detector",
+            "type": "heat_detector",
+            "category": "FIRE_ALARM",
+            "x": 20.0,
+            "y": 15.0,
+            "z": 3.0,
+            "voltage": 24.0,
+            "current": 0.04,
+            "zone": "Zone 1",
+        },
+    )
     return db
 
 
@@ -73,7 +81,9 @@ def state_store(test_db: Database) -> CommandStateStore:
 
 
 @pytest.fixture
-def export_orchestrator(test_db: Database, state_store: CommandStateStore, tmp_path: Path) -> ExportOrchestrator:
+def export_orchestrator(
+    test_db: Database, state_store: CommandStateStore, tmp_path: Path
+) -> ExportOrchestrator:
     artifact_dir = tmp_path / "artifacts"
     return ExportOrchestrator(db=test_db, state_store=state_store, artifact_dir=artifact_dir)
 
@@ -94,20 +104,32 @@ def principal() -> AuthenticatedPrincipal:
 
 class TestExportPlanningAndMapping:
     @pytest.mark.parametrize("fmt", ["dxf", "revit", "ifc", "xlsx", "csv", "json", "pdf"])
-    def test_plan_supported_formats(self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal, fmt: str):
-        plan = export_orchestrator.plan_export("proj-exp-01", target_format=fmt, principal=principal)
+    def test_plan_supported_formats(
+        self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal, fmt: str
+    ):
+        plan = export_orchestrator.plan_export(
+            "proj-exp-01", target_format=fmt, principal=principal
+        )
         assert plan.project_id == "proj-exp-01"
         assert plan.target_format == fmt
         assert plan.estimated_devices == 2
         assert plan.mapping_status in ("LOSSLESS", "PARTIALLY_LOSSLESS", "LOSSY")
         assert plan.summary != ""
 
-    def test_unsupported_format_raises_error(self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal):
+    def test_unsupported_format_raises_error(
+        self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal
+    ):
         with pytest.raises(UnsupportedExportFormatError):
-            export_orchestrator.plan_export("proj-exp-01", target_format="unknown_format", principal=principal)
+            export_orchestrator.plan_export(
+                "proj-exp-01", target_format="unknown_format", principal=principal
+            )
 
-    def test_csv_mapping_is_lossy(self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal):
-        plan = export_orchestrator.plan_export("proj-exp-01", target_format="csv", principal=principal)
+    def test_csv_mapping_is_lossy(
+        self, export_orchestrator: ExportOrchestrator, principal: AuthenticatedPrincipal
+    ):
+        plan = export_orchestrator.plan_export(
+            "proj-exp-01", target_format="csv", principal=principal
+        )
         assert plan.mapping_status == "LOSSY"
         assert len(plan.mapping_report.warnings) > 0
 

@@ -52,15 +52,18 @@ Per agent.md Rule 21 (4-LAYER SELF-CRITICISM):
 
 from __future__ import annotations
 
+import datetime
 import enum
+
 if not hasattr(enum, "StrEnum"):
+
     class _StrEnum(str, enum.Enum):
         pass
+
     enum.StrEnum = _StrEnum
 
-import datetime
 if not hasattr(datetime, "UTC"):
-    datetime.UTC = datetime.timezone.utc
+    datetime.UTC = datetime.timezone.utc  # noqa: UP017
 
 import os
 import sys as _sys

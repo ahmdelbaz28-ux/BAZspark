@@ -83,24 +83,32 @@ def read_only_principal() -> AuthenticatedPrincipal:
 # 1. Capability Discovery Tests
 # ============================================================================
 class TestCapabilityDiscovery:
-    def test_discover_electrical_capability(self, authorized_principal: AuthenticatedPrincipal) -> None:
+    def test_discover_electrical_capability(
+        self, authorized_principal: AuthenticatedPrincipal
+    ) -> None:
         registry = default_capability_registry
         caps = registry.discover(categories=["electrical"], scopes=authorized_principal.scopes)
         assert len(caps) >= 1
-        voltage_drop_cap = next((c for c in caps if c.capability_id == "electrical.calculate_voltage_drop"), None)
+        voltage_drop_cap = next(
+            (c for c in caps if c.capability_id == "electrical.calculate_voltage_drop"), None
+        )
         assert voltage_drop_cap is not None
         assert voltage_drop_cap.category == "electrical"
         assert voltage_drop_cap.risk_class == "ENGINEERING_MUTATION"
         assert "electrical:write" in voltage_drop_cap.required_scopes
 
-    def test_filter_excludes_unrelated_categories(self, authorized_principal: AuthenticatedPrincipal) -> None:
+    def test_filter_excludes_unrelated_categories(
+        self, authorized_principal: AuthenticatedPrincipal
+    ) -> None:
         registry = default_capability_registry
         caps = registry.discover(categories=["spatial"], scopes=authorized_principal.scopes)
         for cap in caps:
             assert cap.category == "spatial"
             assert cap.capability_id != "electrical.calculate_voltage_drop"
 
-    def test_scope_enforcement_in_discovery(self, read_only_principal: AuthenticatedPrincipal) -> None:
+    def test_scope_enforcement_in_discovery(
+        self, read_only_principal: AuthenticatedPrincipal
+    ) -> None:
         registry = default_capability_registry
         # Viewer lacks electrical:write -> should not discover mutation capability
         caps = registry.discover(categories=["electrical"], scopes=read_only_principal.scopes)
@@ -332,7 +340,12 @@ class TestOCC:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-01", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.0,
+                "one_way_length_m": 20.0,
+                "awg": "14",
+            },
         )
 
         cmd2 = DomainCommand(
@@ -344,7 +357,12 @@ class TestOCC:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-02", "current_a": 2.0, "one_way_length_m": 35.0, "awg": "12"},
+            payload={
+                "circuit_id": "nac-02",
+                "current_a": 2.0,
+                "one_way_length_m": 35.0,
+                "awg": "12",
+            },
         )
 
         res1 = command_bus.execute(cmd1)
@@ -374,7 +392,12 @@ class TestIdempotency:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-01", "current_a": 1.5, "one_way_length_m": 30.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.5,
+                "one_way_length_m": 30.0,
+                "awg": "14",
+            },
         )
 
         res1 = command_bus.execute(cmd)
@@ -401,7 +424,12 @@ class TestIdempotency:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-01", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.0,
+                "one_way_length_m": 20.0,
+                "awg": "14",
+            },
         )
         res1 = command_bus.execute(cmd1)
         assert res1.success is True
@@ -416,7 +444,12 @@ class TestIdempotency:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-01", "current_a": 2.5, "one_way_length_m": 60.0, "awg": "10"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 2.5,
+                "one_way_length_m": 60.0,
+                "awg": "10",
+            },
         )
         res2 = command_bus.execute(cmd2)
         assert res2.success is False
@@ -458,7 +491,12 @@ class TestTransactionPersistence:
             timestamp=datetime.now(UTC).isoformat(),
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
-            payload={"circuit_id": "nac-circuit-01", "current_a": 1.2, "one_way_length_m": 25.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-circuit-01",
+                "current_a": 1.2,
+                "one_way_length_m": 25.0,
+                "awg": "14",
+            },
         )
         res_electrical = command_bus.execute(cmd_electrical)
         assert res_electrical.success is True
@@ -528,11 +566,17 @@ class TestRevisionPollutionInvariant:
         # Baseline inspection directly against raw database tables
         ph = fresh_db._ph()
         with fresh_db._transaction() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,)
+            )
             rev_count_before = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,)
+            )
             events_count_before = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,)
+            )
             cmds_count_before = cur.fetchone()[0]
 
         assert rev_count_before == 0
@@ -550,7 +594,12 @@ class TestRevisionPollutionInvariant:
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=True,
-            payload={"circuit_id": "nac-01", "current_a": 1.5, "one_way_length_m": 35.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.5,
+                "one_way_length_m": 35.0,
+                "awg": "14",
+            },
         )
 
         res = command_bus.execute(dry_run_cmd)
@@ -560,11 +609,17 @@ class TestRevisionPollutionInvariant:
 
         # Verify raw database tables remain completely unpolluted
         with fresh_db._transaction() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", (project_id,)
+            )
             rev_count_after = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,)
+            )
             events_count_after = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,)
+            )
             cmds_count_after = cur.fetchone()[0]
 
         assert rev_count_after == 0
@@ -592,7 +647,12 @@ class TestRevisionPollutionInvariant:
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"circuit_id": "nac-01", "current_a": 1.2, "one_way_length_m": 25.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.2,
+                "one_way_length_m": 25.0,
+                "awg": "14",
+            },
         )
 
         res = command_bus.execute(commit_cmd)
@@ -603,14 +663,21 @@ class TestRevisionPollutionInvariant:
 
         ph = fresh_db._ph()
         with fresh_db._transaction() as cur:
-            cur.execute(f"SELECT revision, canonical_state FROM project_revisions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT revision, canonical_state FROM project_revisions WHERE project_id = {ph}",
+                (project_id,),
+            )
             row = cur.fetchone()
             assert row[0] == 2
 
-            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", (project_id,)
+            )
             assert cur.fetchone()[0] == 1
 
-            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,))
+            cur.execute(
+                f"SELECT COUNT(*) FROM command_executions WHERE project_id = {ph}", (project_id,)
+            )
             assert cur.fetchone()[0] == 1
 
 
@@ -620,14 +687,18 @@ class TestRevisionPollutionInvariant:
 class TestAdversarialExtremes:
     def test_temperature_extreme_hot_65c(self) -> None:
         """Test physical plausibility at 65°C operating ambient temperature."""
-        res = calculate_voltage_drop(current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=65.0)
+        res = calculate_voltage_drop(
+            current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=65.0
+        )
         # R_65 = R_75 * [1 + 0.00323 * (65 - 75)] = R_75 * 0.9677
         assert res["is_compliant"] is True
         assert res["resistance_per_m_ohm"] < 0.0103  # Cooler than 75°C -> slightly lower R
 
     def test_temperature_extreme_cold_minus_30c(self) -> None:
         """Test physical plausibility at -30°C extreme freezing temperature."""
-        res = calculate_voltage_drop(current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=-30.0)
+        res = calculate_voltage_drop(
+            current_a=1.0, one_way_length_m=50.0, awg="14", temperature_c=-30.0
+        )
         # R_-30 = R_75 * [1 + 0.00323 * (-30 - 75)] = R_75 * 0.66085
         assert res["is_compliant"] is True
         assert res["resistance_per_m_ohm"] < 0.0103 * 0.7
@@ -695,7 +766,12 @@ class TestCryptographicAuditDigest:
             principal=authorized_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"circuit_id": "nac-01", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 1.0,
+                "one_way_length_m": 20.0,
+                "awg": "14",
+            },
         )
         res = command_bus.execute(cmd)
         assert res.success is True
@@ -704,4 +780,3 @@ class TestCryptographicAuditDigest:
         assert isinstance(audit_ref, str)
         assert len(audit_ref) == 64  # SHA-256 hex digest length
         assert all(c in "0123456789abcdef" for c in audit_ref.lower())
-

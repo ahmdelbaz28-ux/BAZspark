@@ -21,13 +21,15 @@ from fireai.core.qomn_kernel import PhysicsGuardError
 
 
 def _make_request(path: str = "/api/analyze") -> Request:
-    return Request({
-        "type": "http",
-        "method": "POST",
-        "path": path,
-        "headers": [(b"host", b"testserver")],
-        "client": ("127.0.0.1", 12345),
-    })
+    return Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": path,
+            "headers": [(b"host", b"testserver")],
+            "client": ("127.0.0.1", 12345),
+        }
+    )
 
 
 class TestAnalyzeEndpoints:
@@ -66,7 +68,10 @@ class TestAnalyzeEndpoints:
             standby_load_a=0.5,
             alarm_load_a=2.0,
         )
-        with patch("backend.routers.analyze.QOMNKernel.battery_capacity", side_effect=PhysicsGuardError("load", -5.0, "too high", "SEC-1")):
+        with patch(
+            "backend.routers.analyze.QOMNKernel.battery_capacity",
+            side_effect=PhysicsGuardError("load", -5.0, "too high", "SEC-1"),
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await analyze_battery(req, req_data)
             assert exc_info.value.status_code == 422
@@ -94,7 +99,10 @@ class TestAnalyzeEndpoints:
             awg_gauge="14",
             supply_voltage_v=24.0,
         )
-        with patch("backend.routers.analyze.QOMNKernel.voltage_drop", side_effect=PhysicsGuardError("awg", "99", "invalid gauge", "NEC")):
+        with patch(
+            "backend.routers.analyze.QOMNKernel.voltage_drop",
+            side_effect=PhysicsGuardError("awg", "99", "invalid gauge", "NEC"),
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await analyze_voltage(req, req_data)
             assert exc_info.value.status_code == 422
@@ -121,7 +129,10 @@ class TestAnalyzeEndpoints:
             ceiling_height_m=3.0,
             detector_type="smoke",
         )
-        with patch("backend.routers.analyze.analyze_room", side_effect=PhysicsGuardError("poly", [], "degenerate", "NFPA")):
+        with patch(
+            "backend.routers.analyze.analyze_room",
+            side_effect=PhysicsGuardError("poly", [], "degenerate", "NFPA"),
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await analyze_project_room(req, "proj-1", req_data)
             assert exc_info.value.status_code == 422

@@ -30,13 +30,13 @@ logger = logging.getLogger("fireai.import_orchestrator")
 
 # Size limits per format
 MAX_FILE_SIZES: dict[str, int] = {
-    "dwg": 50 * 1024 * 1024,   # 50 MB
-    "dxf": 50 * 1024 * 1024,   # 50 MB
-    "ifc": 50 * 1024 * 1024,   # 50 MB
-    "rvt": 50 * 1024 * 1024,   # 50 MB
-    "pdf": 25 * 1024 * 1024,   # 25 MB
+    "dwg": 50 * 1024 * 1024,  # 50 MB
+    "dxf": 50 * 1024 * 1024,  # 50 MB
+    "ifc": 50 * 1024 * 1024,  # 50 MB
+    "rvt": 50 * 1024 * 1024,  # 50 MB
+    "pdf": 25 * 1024 * 1024,  # 25 MB
     "xlsx": 15 * 1024 * 1024,  # 15 MB
-    "csv": 10 * 1024 * 1024,   # 10 MB
+    "csv": 10 * 1024 * 1024,  # 10 MB
     "json": 10 * 1024 * 1024,  # 10 MB
 }
 

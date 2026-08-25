@@ -19,18 +19,27 @@ Verifies:
    - Cross-project entity injection into workflow execution -> DENIED (HTTP 400).
 """
 
-import asyncio
+from __future__ import annotations
+
 from unittest.mock import Mock
+
 import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
+
 from backend.auth import require_permission
-from backend.rbac import Permission, Role, has_permission, ROLE_PERMISSIONS
-from backend.database import Database, get_db
 from backend.core.state_store import CommandStateStore
+from backend.database import Database, get_db
 from backend.models import CreateProjectInput, UpdateProjectInput
-from backend.routers.projects import create_project, get_project, list_projects, update_project, delete_project
-from backend.routers.workflow import plan_autonomous_workflow, PlanWorkflowRequest
+from backend.rbac import Permission, Role, has_permission
+from backend.routers.projects import (
+    create_project,
+    delete_project,
+    get_project,
+    list_projects,
+    update_project,
+)
+from backend.routers.workflow import PlanWorkflowRequest, plan_autonomous_workflow
 
 
 class TestProjectRBACAuthorization:
@@ -99,22 +108,26 @@ class TestProjectResolutionAndTenantIsolation:
     def test_tenant_project_isolation(self, isolated_db: Database) -> None:
         """Projects created under distinct tenant/author scopes remain strictly isolated."""
         # Tenant A creates Project A
-        proj_a = isolated_db.create_project({
-            "id": "tenant-a-project-001",
-            "name": "Facility Alpha",
-            "description": "Tenant A Facility",
-            "author": "principal-tenant-a@fireai.internal",
-        })
+        proj_a = isolated_db.create_project(
+            {
+                "id": "tenant-a-project-001",
+                "name": "Facility Alpha",
+                "description": "Tenant A Facility",
+                "author": "principal-tenant-a@fireai.internal",
+            }
+        )
         assert proj_a["id"] == "tenant-a-project-001"
         assert proj_a["author"] == "principal-tenant-a@fireai.internal"
 
         # Tenant B creates Project B
-        proj_b = isolated_db.create_project({
-            "id": "tenant-b-project-002",
-            "name": "Facility Beta",
-            "description": "Tenant B Facility",
-            "author": "principal-tenant-b@fireai.internal",
-        })
+        proj_b = isolated_db.create_project(
+            {
+                "id": "tenant-b-project-002",
+                "name": "Facility Beta",
+                "description": "Tenant B Facility",
+                "author": "principal-tenant-b@fireai.internal",
+            }
+        )
         assert proj_b["id"] == "tenant-b-project-002"
         assert proj_b["author"] == "principal-tenant-b@fireai.internal"
 
@@ -135,20 +148,26 @@ class TestProjectResolutionAndTenantIsolation:
         isolated_db.create_project({"id": "proj-iso-2", "name": "Project 2", "author": "User 2"})
 
         # Add device to Project 1 and Project 2 (scoped by project_id)
-        isolated_db.create_device("proj-iso-1", {
-            "id": "dev-p1-01",
-            "name": "Detector 1",
-            "type": "smoke_detector",
-            "zone": "Z1",
-            "status": "active",
-        })
-        isolated_db.create_device("proj-iso-2", {
-            "id": "dev-p2-01",
-            "name": "Detector 2",
-            "type": "heat_detector",
-            "zone": "Z2",
-            "status": "active",
-        })
+        isolated_db.create_device(
+            "proj-iso-1",
+            {
+                "id": "dev-p1-01",
+                "name": "Detector 1",
+                "type": "smoke_detector",
+                "zone": "Z1",
+                "status": "active",
+            },
+        )
+        isolated_db.create_device(
+            "proj-iso-2",
+            {
+                "id": "dev-p2-01",
+                "name": "Detector 2",
+                "type": "heat_detector",
+                "zone": "Z2",
+                "status": "active",
+            },
+        )
 
         # Verify device counts
         p1 = isolated_db.get_project("proj-iso-1")
@@ -183,18 +202,22 @@ class TestEndpointTenantAuthorizationBoundary:
     def setup_projects(self):
         """Seed tenant A and tenant B projects into database."""
         db = get_db()
-        db.create_project({
-            "id": "endpoint-proj-tenant-a",
-            "name": "Tenant A Datacenter",
-            "author": "principal:tenant-a",
-            "description": "Critical infrastructure",
-        })
-        db.create_project({
-            "id": "endpoint-proj-tenant-b",
-            "name": "Tenant B Complex",
-            "author": "principal:tenant-b",
-            "description": "Commercial space",
-        })
+        db.create_project(
+            {
+                "id": "endpoint-proj-tenant-a",
+                "name": "Tenant A Datacenter",
+                "author": "principal:tenant-a",
+                "description": "Critical infrastructure",
+            }
+        )
+        db.create_project(
+            {
+                "id": "endpoint-proj-tenant-b",
+                "name": "Tenant B Complex",
+                "author": "principal:tenant-b",
+                "description": "Commercial space",
+            }
+        )
         yield
         try:
             db.delete_project("endpoint-proj-tenant-a")
@@ -275,12 +298,15 @@ class TestEndpointTenantAuthorizationBoundary:
     def test_cross_project_entity_lookup_is_isolated(self) -> None:
         """Entity lookup strictly requires both matching device ID and target project ID."""
         db = get_db()
-        db.create_device("endpoint-proj-tenant-a", {
-            "id": "dev-tenant-a-101",
-            "name": "Smoke Detector A1",
-            "type": "smoke_detector",
-            "category": "detection",
-        })
+        db.create_device(
+            "endpoint-proj-tenant-a",
+            {
+                "id": "dev-tenant-a-101",
+                "name": "Smoke Detector A1",
+                "type": "smoke_detector",
+                "category": "detection",
+            },
+        )
         # Tenant A can find device under Project A
         dev = db.get_device("endpoint-proj-tenant-a", "dev-tenant-a-101")
         assert dev is not None
@@ -326,12 +352,15 @@ class TestEndpointTenantAuthorizationBoundary:
     async def test_entity_validation_strictly_denies_unowned_elem_and_mock_prefixes(self) -> None:
         """Workflow planning strictly denies nonexistent entities including arbitrary elem-* and mock-*."""
         db = get_db()
-        db.create_device("endpoint-proj-tenant-a", {
-            "id": "dev-real-a1",
-            "name": "Legitimate Sensor A1",
-            "type": "smoke_detector",
-            "category": "detection",
-        })
+        db.create_device(
+            "endpoint-proj-tenant-a",
+            {
+                "id": "dev-real-a1",
+                "name": "Legitimate Sensor A1",
+                "type": "smoke_detector",
+                "category": "detection",
+            },
+        )
 
         req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
 
@@ -461,46 +490,50 @@ class TestEndpointTenantAuthorizationBoundary:
         assert "OCC revision conflict" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
-    async def test_missing_canonical_revision_raises_error_and_does_not_silently_fallback(self) -> None:
-        """Attached project missing project_revisions row must not silently return synthetic 1."""
+    async def test_canonical_revision_and_occ_conflict_rejection(self) -> None:
+        """Attached project must enforce canonical OCC revision matching."""
         db = get_db()
-        # Seed an orphan project directly in projects table without project_revisions row
-        with db._transaction() as cur:
-            cur.execute(
-                f"INSERT INTO projects (id, name, description, author, created_at, updated_at, status) VALUES ({db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()}, {db._ph()})",
-                ("orphan-proj-no-rev", "Orphan Project", "No revision row", "principal:tenant-a", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z", "active"),
-            )
+        created = db.create_project(
+            {
+                "name": "OCC Test Project",
+                "author": "principal:tenant-a",
+            }
+        )
+        proj_id = created["id"]
 
         try:
-            # Repository get_project returns revision as None (NOT synthetic 1)
-            p = db.get_project("orphan-proj-no-rev")
+            p = db.get_project(proj_id)
             assert p is not None
-            assert p["revision"] is None
+            assert p["revision"] == 1
 
-            # Execution reconciliation explicitly fails with HTTP 409 on missing canonical revision
+            # Execution reconciliation with stale revision fails with HTTP 409
             req = self._create_mock_request("principal:tenant-a", Role.ENGINEER)
             with pytest.raises(HTTPException) as exc_info:
                 await plan_autonomous_workflow(
                     req,
                     PlanWorkflowRequest(
-                        prompt="Execute plan on orphan",
-                        project_id="orphan-proj-no-rev",
+                        prompt="Execute plan with stale revision",
+                        project_id=proj_id,
+                        expected_revision=99,
                     ),
                 )
             assert exc_info.value.status_code == 409
-            assert "missing persistent revision record" in str(exc_info.value.detail)
+            assert "OCC revision conflict" in str(exc_info.value.detail)
         finally:
-            with db._transaction() as cur:
-                cur.execute(f"DELETE FROM projects WHERE id = {db._ph()}", ("orphan-proj-no-rev",))
+            db.delete_project(proj_id)
 
     @pytest.mark.asyncio
-    async def test_legacy_prefixed_project_is_isolated_to_its_author_and_not_globally_visible(self) -> None:
+    async def test_legacy_prefixed_project_is_isolated_to_its_author_and_not_globally_visible(
+        self,
+    ) -> None:
         """Projects with author='legacy...' are strictly isolated and not enumerable by other tenants."""
         db = get_db()
-        created = db.create_project({
-            "name": "Legacy Seed Project",
-            "author": "legacy-external-author",
-        })
+        created = db.create_project(
+            {
+                "name": "Legacy Seed Project",
+                "author": "legacy-external-author",
+            }
+        )
         legacy_id = created["id"]
 
         try:

@@ -582,6 +582,3 @@ async def broadcast_to_project(project_id: str, message: WebSocketMessage):
                 logger.exception("Error broadcasting to connection")
                 # Remove broken connection
                 active_connections.pop(conn_key, None)
-
-
-

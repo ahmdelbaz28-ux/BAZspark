@@ -40,6 +40,7 @@ from backend.database import Database
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def fresh_db(tmp_path):
     """Provides an isolated SQLite database instance for deterministic testing."""
@@ -65,7 +66,14 @@ def engineer_principal():
         user_id="eng_hydraulics_01",
         email="engineer@fireai.internal",
         role="ENGINEER",
-        scopes=["hydraulics:read", "hydraulics:write", "spatial:read", "spatial:write", "electrical:read", "electrical:write"],
+        scopes=[
+            "hydraulics:read",
+            "hydraulics:write",
+            "spatial:read",
+            "spatial:write",
+            "electrical:read",
+            "electrical:write",
+        ],
     )
 
 
@@ -92,6 +100,7 @@ def unauthenticated_principal():
 # ---------------------------------------------------------------------------
 # 1. Context Resolution & Bounding Tests
 # ---------------------------------------------------------------------------
+
 
 class TestHydraulicContextResolution:
     def test_resolve_hydraulic_context_strictly_bounded(self):
@@ -141,6 +150,7 @@ class TestHydraulicContextResolution:
 # 2. Capability Registry & Discovery Tests
 # ---------------------------------------------------------------------------
 
+
 class TestHydraulicCapabilityRegistry:
     def test_capability_registration_metadata(self):
         """Verifies hydraulics.solve_darcy_weisbach definition and schema."""
@@ -172,8 +182,11 @@ class TestHydraulicCapabilityRegistry:
 # 3. Deterministic Engineering Authority & Adversarial LLM Resistance Tests
 # ---------------------------------------------------------------------------
 
+
 class TestDeterministicHydraulicAuthority:
-    def test_authoritative_solver_overrides_llm_hallucination(self, command_bus, engineer_principal):
+    def test_authoritative_solver_overrides_llm_hallucination(
+        self, command_bus, engineer_principal
+    ):
         """Adversarial test: Incoming LLM payload injects fabricated velocity and friction loss."""
         # Genuine physical calculation for 20m, 50mm pipe, 300 L/min water:
         # Vol flow = 300 / 60000 = 0.005 m3/s. Area = pi * 0.05^2 / 4 = 0.0019635 m2
@@ -247,8 +260,11 @@ class TestDeterministicHydraulicAuthority:
 # 4. Preview (isDryRun=True) vs Commit (isDryRun=False) Semantics Tests
 # ---------------------------------------------------------------------------
 
+
 class TestHydraulicDualModeSemantics:
-    def test_preview_mode_zero_mutation_guarantee(self, command_bus, state_store, fresh_db, engineer_principal):
+    def test_preview_mode_zero_mutation_guarantee(
+        self, command_bus, state_store, fresh_db, engineer_principal
+    ):
         """Verifies isDryRun=True leaves database 100% untouched (0 records, revision unchanged)."""
         cmd = DomainCommand(
             commandId="cmd_dry_hyd_01",
@@ -277,18 +293,27 @@ class TestHydraulicDualModeSemantics:
         # Verify DB directly: 0 revisions, 0 events, 0 executions
         ph = fresh_db._ph()
         with fresh_db._transaction() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", ("proj_dry_hyd",))
+            cur.execute(
+                f"SELECT COUNT(*) FROM project_revisions WHERE project_id = {ph}", ("proj_dry_hyd",)
+            )
             rev_cnt = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", ("proj_dry_hyd",))
+            cur.execute(
+                f"SELECT COUNT(*) FROM domain_events WHERE project_id = {ph}", ("proj_dry_hyd",)
+            )
             evt_cnt = cur.fetchone()[0]
-            cur.execute(f"SELECT COUNT(*) FROM command_executions WHERE command_id = {ph}", ("cmd_dry_hyd_01",))
+            cur.execute(
+                f"SELECT COUNT(*) FROM command_executions WHERE command_id = {ph}",
+                ("cmd_dry_hyd_01",),
+            )
             cmd_cnt = cur.fetchone()[0]
 
         assert rev_cnt == 0
         assert evt_cnt == 0
         assert cmd_cnt == 0
 
-    def test_commit_mode_persists_canonical_snapshot(self, command_bus, fresh_db, engineer_principal):
+    def test_commit_mode_persists_canonical_snapshot(
+        self, command_bus, fresh_db, engineer_principal
+    ):
         """Verifies isDryRun=False advances revision, persists snapshot, emits event, and produces SHA-256 audit digest."""
         cmd = DomainCommand(
             commandId="cmd_commit_hyd_01",
@@ -344,6 +369,7 @@ class TestHydraulicDualModeSemantics:
 # ---------------------------------------------------------------------------
 # 5. Security & Authorization Boundary Tests
 # ---------------------------------------------------------------------------
+
 
 class TestHydraulicSecurityBoundaries:
     def test_unauthenticated_principal_rejected(self, command_bus, unauthenticated_principal):
@@ -406,12 +432,17 @@ class TestHydraulicSecurityBoundaries:
 
         res = command_bus.execute(cmd)
         assert res.success is False
-        assert res.errorCode in ("FORBIDDEN_PAYLOAD_KEYS", "FORBIDDEN_PAYLOAD_SECRET", "INVALID_PAYLOAD")
+        assert res.errorCode in (
+            "FORBIDDEN_PAYLOAD_KEYS",
+            "FORBIDDEN_PAYLOAD_SECRET",
+            "INVALID_PAYLOAD",
+        )
 
 
 # ---------------------------------------------------------------------------
 # 6. Optimistic Concurrency Control (OCC) Tests
 # ---------------------------------------------------------------------------
+
 
 class TestHydraulicOCC:
     def test_concurrent_hydraulic_commits_single_winner(self, state_store, engineer_principal):
@@ -429,7 +460,12 @@ class TestHydraulicOCC:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"pipe_segment_id": "pipe_a", "length_m": 10.0, "diameter_mm": 50.0, "flow_l_min": 200.0},
+            payload={
+                "pipe_segment_id": "pipe_a",
+                "length_m": 10.0,
+                "diameter_mm": 50.0,
+                "flow_l_min": 200.0,
+            },
         )
         cmd_b = DomainCommand(
             commandId="cmd_occ_b",
@@ -441,7 +477,12 @@ class TestHydraulicOCC:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"pipe_segment_id": "pipe_b", "length_m": 20.0, "diameter_mm": 65.0, "flow_l_min": 400.0},
+            payload={
+                "pipe_segment_id": "pipe_b",
+                "length_m": 20.0,
+                "diameter_mm": 65.0,
+                "flow_l_min": 400.0,
+            },
         )
 
         res_a = bus_a.execute(cmd_a)
@@ -461,6 +502,7 @@ class TestHydraulicOCC:
 # 7. Persistent Idempotency Tests
 # ---------------------------------------------------------------------------
 
+
 class TestHydraulicIdempotency:
     def test_idempotent_replay_returns_cached_result(self, command_bus, engineer_principal):
         """Replaying identical command returns cached execution result without advancing revision."""
@@ -474,7 +516,12 @@ class TestHydraulicIdempotency:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"pipe_segment_id": "pipe_idem_01", "length_m": 15.0, "diameter_mm": 50.0, "flow_l_min": 300.0},
+            payload={
+                "pipe_segment_id": "pipe_idem_01",
+                "length_m": 15.0,
+                "diameter_mm": 50.0,
+                "flow_l_min": 300.0,
+            },
         )
 
         res1 = command_bus.execute(cmd)
@@ -487,7 +534,9 @@ class TestHydraulicIdempotency:
         assert res2.revision == 2
         assert res2.resultData["flow_velocity_m_s"] == res1.resultData["flow_velocity_m_s"]
 
-    def test_idempotency_key_reuse_conflict_on_altered_payload(self, command_bus, engineer_principal):
+    def test_idempotency_key_reuse_conflict_on_altered_payload(
+        self, command_bus, engineer_principal
+    ):
         """Reusing same commandId with altered payload triggers IDEMPOTENCY_KEY_REUSE_CONFLICT."""
         cmd1 = DomainCommand(
             commandId="cmd_idem_reuse",
@@ -514,7 +563,11 @@ class TestHydraulicIdempotency:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"length_m": 99.0, "diameter_mm": 100.0, "flow_l_min": 800.0},  # Altered payload!
+            payload={
+                "length_m": 99.0,
+                "diameter_mm": 100.0,
+                "flow_l_min": 800.0,
+            },  # Altered payload!
         )
         res2 = command_bus.execute(cmd2)
         assert res2.success is False
@@ -525,8 +578,11 @@ class TestHydraulicIdempotency:
 # 8. Multi-Domain Canonical State Preservation Tests
 # ---------------------------------------------------------------------------
 
+
 class TestMultiDomainPreservation:
-    def test_spatial_electrical_and_hydraulic_state_coexistence(self, command_bus, fresh_db, engineer_principal):
+    def test_spatial_electrical_and_hydraulic_state_coexistence(
+        self, command_bus, fresh_db, engineer_principal
+    ):
         """Mutating hydraulics preserves existing spatial devices and electrical circuits in canonical state."""
         # 1. Mutate spatial devices (Revision 1 -> 2)
         cmd_spatial = DomainCommand(
@@ -539,7 +595,10 @@ class TestMultiDomainPreservation:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"room_id": "room_101", "devices": [{"id": "smk-01", "type": "smoke", "x": 5.0, "y": 5.0}]},
+            payload={
+                "room_id": "room_101",
+                "devices": [{"id": "smk-01", "type": "smoke", "x": 5.0, "y": 5.0}],
+            },
         )
         res_sp = command_bus.execute(cmd_spatial)
         assert res_sp.success is True
@@ -556,7 +615,12 @@ class TestMultiDomainPreservation:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"circuit_id": "nac_circuit_01", "current_a": 1.5, "one_way_length_m": 35.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac_circuit_01",
+                "current_a": 1.5,
+                "one_way_length_m": 35.0,
+                "awg": "14",
+            },
         )
         res_el = command_bus.execute(cmd_elec)
         assert res_el.success is True
@@ -573,7 +637,12 @@ class TestMultiDomainPreservation:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=False,
-            payload={"pipe_segment_id": "sprinkler_main_01", "length_m": 20.0, "diameter_mm": 50.0, "flow_l_min": 350.0},
+            payload={
+                "pipe_segment_id": "sprinkler_main_01",
+                "length_m": 20.0,
+                "diameter_mm": 50.0,
+                "flow_l_min": 350.0,
+            },
         )
         res_hy = command_bus.execute(cmd_hyd)
         assert res_hy.success is True
@@ -598,6 +667,7 @@ class TestMultiDomainPreservation:
 # 9. Velocity Warnings & Boundary Tests
 # ---------------------------------------------------------------------------
 
+
 class TestHydraulicVelocityWarnings:
     def test_high_velocity_warning_classification(self, command_bus, engineer_principal):
         """Checks that velocity > 5.0 m/s produces conservative warning without falsely claiming NFPA 13 violation."""
@@ -612,7 +682,12 @@ class TestHydraulicVelocityWarnings:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=True,
-            payload={"pipe_segment_id": "pipe_small", "length_m": 10.0, "diameter_mm": 25.0, "flow_l_min": 400.0},
+            payload={
+                "pipe_segment_id": "pipe_small",
+                "length_m": 10.0,
+                "diameter_mm": 25.0,
+                "flow_l_min": 400.0,
+            },
         )
 
         res = command_bus.execute(cmd)
@@ -635,7 +710,12 @@ class TestHydraulicVelocityWarnings:
             principal=engineer_principal,
             riskClass="ENGINEERING_MUTATION",
             isDryRun=True,
-            payload={"pipe_segment_id": "pipe_zero", "length_m": 10.0, "diameter_mm": 50.0, "flow_rate_kg_s": 0.0},
+            payload={
+                "pipe_segment_id": "pipe_zero",
+                "length_m": 10.0,
+                "diameter_mm": 50.0,
+                "flow_rate_kg_s": 0.0,
+            },
         )
 
         res = command_bus.execute(cmd)

@@ -251,7 +251,9 @@ class AIOrchestrationService:
         result_data: dict[str, Any] | None = None,
         provider_config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        telemetry = dict(context_pkt.telemetry) if context_pkt and hasattr(context_pkt, "telemetry") else {}
+        telemetry = (
+            dict(context_pkt.telemetry) if context_pkt and hasattr(context_pkt, "telemetry") else {}
+        )
         prompt_tokens = getattr(context_pkt, "token_count", 0) if context_pkt else 0
         telemetry["prompt_tokens"] = prompt_tokens
         completion_tokens = max(1, len(str(result_data or {})) // 4) if result_data else 0
@@ -259,7 +261,9 @@ class AIOrchestrationService:
         telemetry["total_tokens"] = prompt_tokens + completion_tokens
         if provider_config:
             telemetry["provider"] = provider_config.get("provider", "anthropic")
-            telemetry["model"] = provider_config.get("model") or provider_config.get("modelName", "claude-sonnet-4-5")
+            telemetry["model"] = provider_config.get("model") or provider_config.get(
+                "modelName", "claude-sonnet-4-5"
+            )
             if "temperature" in provider_config:
                 telemetry["temperature"] = provider_config["temperature"]
             if "baseUrl" in provider_config:
@@ -339,7 +343,9 @@ class AIOrchestrationService:
                 "deviceCount": result.resultData.get("device_count", 0),
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
-                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
+                "tokenTelemetry": self._build_telemetry(
+                    context_pkt, result.resultData, provider_config
+                ),
                 "payload": command.payload,
             }
         )
@@ -420,7 +426,9 @@ class AIOrchestrationService:
                 "terminalVoltageV": result.resultData.get("terminal_voltage_v", 24.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
                 "recommendedAwg": result.resultData.get("recommended_awg", awg),
-                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
+                "tokenTelemetry": self._build_telemetry(
+                    context_pkt, result.resultData, provider_config
+                ),
                 "payload": command.payload,
             }
         )
@@ -512,7 +520,9 @@ class AIOrchestrationService:
                 "totalPressureLossPsi": result.resultData.get("total_pressure_loss_psi", 0.0),
                 "isCompliant": result.resultData.get("is_compliant", True),
                 "warnings": result.resultData.get("warnings", []),
-                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
+                "tokenTelemetry": self._build_telemetry(
+                    context_pkt, result.resultData, provider_config
+                ),
                 "payload": command.payload,
             }
         )
@@ -613,7 +623,9 @@ class AIOrchestrationService:
                 "isAdequate": result.resultData.get("is_adequate", True),
                 "marginPct": result.resultData.get("margin_pct"),
                 "warnings": result.resultData.get("warnings", []),
-                "tokenTelemetry": self._build_telemetry(context_pkt, result.resultData, provider_config),
+                "tokenTelemetry": self._build_telemetry(
+                    context_pkt, result.resultData, provider_config
+                ),
                 "payload": command.payload,
             }
         )
@@ -676,7 +688,9 @@ class AIOrchestrationService:
             expectedRevision=expected_revision,
             timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
-            riskClass="ENGINEERING_MUTATION" if ("electrical" in capability_id or "hydraulics" in capability_id) else "MEDIUM",
+            riskClass="ENGINEERING_MUTATION"
+            if ("electrical" in capability_id or "hydraulics" in capability_id)
+            else "MEDIUM",
             isDryRun=False,
             payload=payload,
         )
@@ -717,16 +731,16 @@ class AIOrchestrationService:
                 "devices": result.resultData.get("devices", []),
                 "circuit": result.resultData if "voltage_drop_v" in result.resultData else None,
                 "hydraulic": result.resultData if "head_loss_m" in result.resultData else None,
-                "battery": result.resultData if ("required_ah" in result.resultData or "base_capacity_ah" in result.resultData) else None,
+                "battery": result.resultData
+                if ("required_ah" in result.resultData or "base_capacity_ah" in result.resultData)
+                else None,
                 "event": result.event.to_dict() if result.event else None,
                 "auditReference": result.event.auditReference if result.event else "",
                 "coveragePct": result.resultData.get("coverage_pct", 100.0),
             }
         )
 
-    async def handle_user_mutation(
-        self, websocket: WebSocket, msg: dict[str, Any]
-    ) -> None:
+    async def handle_user_mutation(self, websocket: WebSocket, msg: dict[str, Any]) -> None:
         """Simulate/commit a direct manual user edit that increments canonical revision (N -> N+1)."""
         project_id = str(msg.get("projectId", "default_project"))
         current_rev = self.command_bus.get_project_revision(project_id)
@@ -762,6 +776,7 @@ class AIOrchestrationService:
         correlation_id: str,
     ):
         """Create a thread-safe WebSocket progress frame dispatcher."""
+
         def _cb(
             step_idx: int,
             total_steps: int,
@@ -808,48 +823,63 @@ class AIOrchestrationService:
             nodes = [WorkflowNode.from_dict(n) for n in nodes_data]
             dag = CompositeWorkflowDAG(nodes=nodes)
         else:
-            rb = composite_spec.get("room_bounds", {"width_m": 12.0, "length_m": 16.0, "ceiling_height_m": 3.2})
-            circ = composite_spec.get("circuit", {"circuit_id": "nac-01", "current_a": 2.0, "one_way_length_m": 35.0, "awg": "14"})
-            bat = composite_spec.get("battery", {"panel_id": "facp-01", "standby_load_amps": 0.8, "alarm_load_amps": 3.0, "installed_ah": 55.0})
+            rb = composite_spec.get(
+                "room_bounds", {"width_m": 12.0, "length_m": 16.0, "ceiling_height_m": 3.2}
+            )
+            circ = composite_spec.get(
+                "circuit",
+                {"circuit_id": "nac-01", "current_a": 2.0, "one_way_length_m": 35.0, "awg": "14"},
+            )
+            bat = composite_spec.get(
+                "battery",
+                {
+                    "panel_id": "facp-01",
+                    "standby_load_amps": 0.8,
+                    "alarm_load_amps": 3.0,
+                    "installed_ah": 55.0,
+                },
+            )
 
-            dag = CompositeWorkflowDAG([
-                WorkflowNode(
-                    node_id="step-1-spatial",
-                    capability_id=CAP_SPATIAL_PLACE_DEVICES,
-                    dependencies=[],
-                    payload_template={
-                        "room_id": "main-hall",
-                        "width_m": rb.get("width_m", 12.0),
-                        "length_m": rb.get("length_m", 16.0),
-                        "ceiling_height_m": rb.get("ceiling_height_m", 3.2),
-                    },
-                    description="Place initiating devices per NFPA 72 §17",
-                ),
-                WorkflowNode(
-                    node_id="step-2-electrical",
-                    capability_id=CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
-                    dependencies=["step-1-spatial"],
-                    payload_template={
-                        "circuit_id": circ.get("circuit_id", "nac-01"),
-                        "current_a": circ.get("current_a", 2.0),
-                        "one_way_length_m": circ.get("one_way_length_m", 35.0),
-                        "awg": circ.get("awg", "14"),
-                    },
-                    description="Calculate NAC circuit voltage drop",
-                ),
-                WorkflowNode(
-                    node_id="step-3-battery",
-                    capability_id=CAP_ELECTRICAL_CALCULATE_BATTERY,
-                    dependencies=["step-2-electrical"],
-                    payload_template={
-                        "panel_id": bat.get("panel_id", "facp-01"),
-                        "standby_load_amps": bat.get("standby_load_amps", 0.8),
-                        "alarm_load_amps": bat.get("alarm_load_amps", 3.0),
-                        "installed_ah": bat.get("installed_ah", 55.0),
-                    },
-                    description="Size secondary battery power supply",
-                ),
-            ])
+            dag = CompositeWorkflowDAG(
+                [
+                    WorkflowNode(
+                        node_id="step-1-spatial",
+                        capability_id=CAP_SPATIAL_PLACE_DEVICES,
+                        dependencies=[],
+                        payload_template={
+                            "room_id": "main-hall",
+                            "width_m": rb.get("width_m", 12.0),
+                            "length_m": rb.get("length_m", 16.0),
+                            "ceiling_height_m": rb.get("ceiling_height_m", 3.2),
+                        },
+                        description="Place initiating devices per NFPA 72 §17",
+                    ),
+                    WorkflowNode(
+                        node_id="step-2-electrical",
+                        capability_id=CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
+                        dependencies=["step-1-spatial"],
+                        payload_template={
+                            "circuit_id": circ.get("circuit_id", "nac-01"),
+                            "current_a": circ.get("current_a", 2.0),
+                            "one_way_length_m": circ.get("one_way_length_m", 35.0),
+                            "awg": circ.get("awg", "14"),
+                        },
+                        description="Calculate NAC circuit voltage drop",
+                    ),
+                    WorkflowNode(
+                        node_id="step-3-battery",
+                        capability_id=CAP_ELECTRICAL_CALCULATE_BATTERY,
+                        dependencies=["step-2-electrical"],
+                        payload_template={
+                            "panel_id": bat.get("panel_id", "facp-01"),
+                            "standby_load_amps": bat.get("standby_load_amps", 0.8),
+                            "alarm_load_amps": bat.get("alarm_load_amps", 3.0),
+                            "installed_ah": bat.get("installed_ah", 55.0),
+                        },
+                        description="Size secondary battery power supply",
+                    ),
+                ]
+            )
 
         workflow_id = f"wf-{uuid.uuid4().hex[:12]}"
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
@@ -903,7 +933,9 @@ class AIOrchestrationService:
                 "stepResults": [s.to_dict() for s in res.step_results],
                 "projectedState": res.projected_state,
                 "combinedAuditDigest": res.combined_audit_digest,
-                "tokenTelemetry": self._build_telemetry(context_pkt, res.projected_state, provider_config),
+                "tokenTelemetry": self._build_telemetry(
+                    context_pkt, res.projected_state, provider_config
+                ),
                 "isCompliant": True,
             }
         )
@@ -1033,7 +1065,11 @@ class AIOrchestrationService:
             )
 
             # If autoExecute flag is set and all steps are AUTO_APPROVED, launch AgentRun immediately
-            if msg.get("autoExecute") and not plan.requires_human_approval and plan.overall_policy_decision == "AUTO_APPROVED":
+            if (
+                msg.get("autoExecute")
+                and not plan.requires_human_approval
+                and plan.overall_policy_decision == "AUTO_APPROVED"
+            ):
                 run = await asyncio.to_thread(
                     default_workflow_planner.execute_plan,
                     plan,
@@ -1112,9 +1148,7 @@ async def _emit_run_state(websocket: WebSocket, run) -> None:
     """Emit the run state frame plus an approval_request frame when halted."""
     await websocket.send_json(_run_state_frame(run))
     if run.status.value == "WAITING_APPROVAL" and run.pending_approval_id:
-        pa = default_agent_run_orchestrator._store.get_pending_approval(
-            run.pending_approval_id
-        )
+        pa = default_agent_run_orchestrator._store.get_pending_approval(run.pending_approval_id)
         if pa is not None:
             await websocket.send_json(
                 {
@@ -1274,8 +1308,14 @@ async def _handle_agent_message(
         await _handle_response_message(msg)
     elif msg_type == "ping":
         await _handle_ping_message(websocket)
-    elif msg_type in ("ai_plan_workflow", "plan_workflow", "ai_autonomous_intent", "autonomous_intent") and principal:
-        await default_orchestration_service.handle_autonomous_workflow_intent(websocket, principal, msg)
+    elif (
+        msg_type
+        in ("ai_plan_workflow", "plan_workflow", "ai_autonomous_intent", "autonomous_intent")
+        and principal
+    ):
+        await default_orchestration_service.handle_autonomous_workflow_intent(
+            websocket, principal, msg
+        )
     elif msg_type in ("ai_intent", "intent_submit") and principal:
         await default_orchestration_service.handle_intent(websocket, principal, msg)
     elif msg_type in ("ai_electrical_intent", "electrical_intent") and principal:
@@ -1535,10 +1575,13 @@ async def send_agent_command(
 
 # ── Live Provider Ping Endpoint (Phase 3.1) ──────────────────────────────────
 
+
 class PingProviderRequest(BaseModel):
     provider: str = Field(..., description="Target provider: anthropic, gemini, openai, ollama")
     baseUrl: str | None = Field(default=None, description="Optional custom base URL")
-    apiKey: str | None = Field(default=None, description="Ephemeral API key (never logged/persisted)")
+    apiKey: str | None = Field(
+        default=None, description="Ephemeral API key (never logged/persisted)"
+    )
     modelName: str | None = Field(default=None, description="Target model name")
 
 
@@ -1567,4 +1610,3 @@ async def ping_provider_endpoint(
         latencyMs=latency_ms,
         error=error,
     )
-

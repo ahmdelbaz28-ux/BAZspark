@@ -93,7 +93,9 @@ def _sign_payload(raw_bytes: bytes, secret: str = _TEST_HMAC_SECRET, algo: str =
     return f"{algo}={digest}"
 
 
-def _build_paymob_webhook_payload(order_id: str, amount_cents: int = 50000, success: bool = True) -> dict[str, Any]:
+def _build_paymob_webhook_payload(
+    order_id: str, amount_cents: int = 50000, success: bool = True
+) -> dict[str, Any]:
     """Construct PayMob/Meeza compliant webhook transaction payload."""
     return {
         "type": "TRANSACTION",
@@ -136,7 +138,9 @@ class TestTaskASessionStoreHardening:
         with pytest.raises(ConfigurationError, match="REDIS_URL is not set"):
             ss.session_store.set("test-sess-key", {"user_id": "alice"}, ttl=86400)
 
-    def test_production_mode_fails_fast_on_redis_connection_failure(self, monkeypatch: pytest.MonkeyPatch):
+    def test_production_mode_fails_fast_on_redis_connection_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         """In production, unreachable Redis host must raise ConfigurationError."""
         monkeypatch.setenv("FIREAI_ENV", "production")
         # Point to invalid host/port that will immediately fail connection
@@ -183,7 +187,9 @@ class TestTaskASessionStoreHardening:
 class TestTaskBDatabaseGuardrail:
     """Verify fail-fast SQLite guardrail in production mode."""
 
-    def test_production_sqlite_database_url_raises_configuration_error(self, monkeypatch: pytest.MonkeyPatch):
+    def test_production_sqlite_database_url_raises_configuration_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         """In production mode, DATABASE_URL=sqlite:// must fail with ConfigurationError."""
         monkeypatch.setenv("FIREAI_ENV", "production")
         monkeypatch.setenv("DATABASE_URL", "sqlite:///prod.db")
@@ -210,7 +216,9 @@ class TestTaskBDatabaseGuardrail:
         assert "SQLite is strictly forbidden in production mode" in err_msg
         assert "PostgreSQL" in err_msg
 
-    def test_production_environment_var_alias_triggers_guardrail(self, monkeypatch: pytest.MonkeyPatch):
+    def test_production_environment_var_alias_triggers_guardrail(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         """ENVIRONMENT=production triggers the guardrail even if FIREAI_ENV is unset."""
         monkeypatch.delenv("FIREAI_ENV", raising=False)
         monkeypatch.setenv("ENVIRONMENT", "production")
@@ -274,7 +282,13 @@ class TestTaskCE2EBillingLifecycle:
         # Step 2: Initiate Checkout
         checkout_res = client.post(
             f"/api/v1/billing/orders/{order_id}/checkout",
-            json={"billing_data": {"email": "operator@bazspark.com", "first_name": "Ahmed", "last_name": "Elbaz"}},
+            json={
+                "billing_data": {
+                    "email": "operator@bazspark.com",
+                    "first_name": "Ahmed",
+                    "last_name": "Elbaz",
+                }
+            },
         )
         assert checkout_res.status_code == 200, checkout_res.text
         checkout_data = checkout_res.json()
@@ -283,7 +297,9 @@ class TestTaskCE2EBillingLifecycle:
         assert checkout_data["checkout_url"]
 
         # Step 3: Webhook Delivery (Valid HMAC-SHA256)
-        webhook_payload = _build_paymob_webhook_payload(order_id=order_id, amount_cents=50000, success=True)
+        webhook_payload = _build_paymob_webhook_payload(
+            order_id=order_id, amount_cents=50000, success=True
+        )
         raw_body = json.dumps(webhook_payload, separators=(",", ":")).encode("utf-8")
         signature = _sign_payload(raw_body)
 
@@ -321,7 +337,9 @@ class TestTaskCE2EBillingLifecycle:
 
         # Webhook via /webhook alias
         order_id = data["order_id"]
-        webhook_payload = _build_paymob_webhook_payload(order_id=order_id, amount_cents=25000, success=True)
+        webhook_payload = _build_paymob_webhook_payload(
+            order_id=order_id, amount_cents=25000, success=True
+        )
         raw_body = json.dumps(webhook_payload, separators=(",", ":")).encode("utf-8")
         sig = _sign_payload(raw_body)
 
@@ -403,10 +421,15 @@ class TestTaskCE2EBillingLifecycle:
         res = client.post(
             "/api/v1/billing/webhooks/meeza",
             content=raw_body,
-            headers={"X-Meeza-Signature": "sha256=deadbeefcafebabe000000000000000000000000000000000000000000000000"},
+            headers={
+                "X-Meeza-Signature": "sha256=deadbeefcafebabe000000000000000000000000000000000000000000000000"
+            },
         )
         assert res.status_code == 401
-        assert "unauthorized" in res.json()["detail"].lower() or "invalid_signature" in res.json()["detail"].lower()
+        assert (
+            "unauthorized" in res.json()["detail"].lower()
+            or "invalid_signature" in res.json()["detail"].lower()
+        )
 
         # Missing signature header
         res_missing = client.post(
@@ -421,7 +444,9 @@ class TestTaskCE2EBillingLifecycle:
         order_id = order_res.json()["id"]
 
         # Fraudulent webhook claiming 1000 cents instead of 50000
-        fraud_payload = _build_paymob_webhook_payload(order_id=order_id, amount_cents=1000, success=True)
+        fraud_payload = _build_paymob_webhook_payload(
+            order_id=order_id, amount_cents=1000, success=True
+        )
         raw_body = json.dumps(fraud_payload, separators=(",", ":")).encode("utf-8")
         sig = _sign_payload(raw_body)
 

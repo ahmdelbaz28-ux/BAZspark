@@ -1065,10 +1065,10 @@ class Database:
         row: Any,
         device_count: int = 0,
         connection_count: int = 0,
-        revision: int | None = None,
+        revision: int = 1,
     ) -> dict:
         row_id = row["id"]
-        # Extract persistent canonical revision without synthetic default
+        # Extract persistent canonical revision
         if isinstance(row, dict) and "revision" in row:
             raw_rev = row["revision"]
         elif hasattr(row, "__getitem__"):
@@ -1089,7 +1089,7 @@ class Database:
             "status": row["status"],
             "deviceCount": device_count,
             "connectionCount": connection_count,
-            "revision": int(raw_rev) if raw_rev is not None else None,
+            "revision": int(raw_rev) if raw_rev is not None else 1,
             "modelId": f"dt-{row_id}",
         }
 

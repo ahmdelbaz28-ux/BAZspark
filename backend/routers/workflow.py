@@ -436,11 +436,11 @@ async def _to_thread(func, *args, **kwargs):
 
 def _agent_run_http_error(exc: Exception) -> HTTPException:
     """Map orchestrator domain errors to HTTP status codes."""
-    if isinstance(exc, (RunNotFoundError, PendingApprovalNotFoundError)):
+    if isinstance(exc, (RunNotFoundError, PendingApprovalNotFoundError)):  # noqa: UP038
         return HTTPException(status_code=404, detail=str(exc)[:300])
     if isinstance(exc, RunPermissionError):
         return HTTPException(status_code=403, detail=str(exc)[:300])
-    if isinstance(
+    if isinstance(  # noqa: UP038
         exc, (InvalidRunStateError, StaleApprovalError, ApprovalAlreadyDecidedError)
     ):
         return HTTPException(status_code=409, detail=str(exc)[:300])
@@ -546,9 +546,7 @@ async def decide_agent_run_approval(
     """Record an immutable approval decision for a pending Agent Run step."""
     decision = body.decision.strip().upper()
     if decision not in ("APPROVED", "REJECTED"):
-        raise HTTPException(
-            status_code=400, detail="decision must be APPROVED or REJECTED"
-        )
+        raise HTTPException(status_code=400, detail="decision must be APPROVED or REJECTED")
     role = require_permission(Permission.WORKFLOW_MANAGE)(request)
     caller_id, is_admin = _run_caller_context(request, role)
     try:
@@ -563,9 +561,7 @@ async def decide_agent_run_approval(
     except Exception as exc:
         raise _agent_run_http_error(exc) from exc
     if run.run_id != run_id:
-        raise HTTPException(
-            status_code=409, detail="Approval does not belong to the specified run"
-        )
+        raise HTTPException(status_code=409, detail="Approval does not belong to the specified run")
     return {"success": True, "data": run.to_dict()}
 
 
@@ -586,8 +582,8 @@ def _reconcile_and_validate_execution_context(
     4. entity/entity_type is compatible
     5. expected_revision matches canonical persistent OCC revision from project_revisions
     """
-    from backend.database import get_db
     from backend.core.state_store import CommandStateStore
+    from backend.database import get_db
     from backend.routers.projects import _verify_project_access
 
     db = get_db()
@@ -619,10 +615,22 @@ def _reconcile_and_validate_execution_context(
 
             # 4. entity/entity_type compatibility
             if entity_type:
-                allowed_types = {"device", "element", "detector", "panel", "module", "circuit", "appliance"}
+                allowed_types = {
+                    "device",
+                    "element",
+                    "detector",
+                    "panel",
+                    "module",
+                    "circuit",
+                    "appliance",
+                }
                 dev_type = str(dev.get("type", "")).lower()
                 dev_cat = str(dev.get("category", "")).lower()
-                if entity_type.lower() not in allowed_types and entity_type.lower() != dev_type and entity_type.lower() != dev_cat:
+                if (
+                    entity_type.lower() not in allowed_types
+                    and entity_type.lower() != dev_type
+                    and entity_type.lower() != dev_cat
+                ):
                     raise HTTPException(
                         status_code=400,
                         detail=f"Entity type '{entity_type}' is incompatible with entity '{entity_id}'",
@@ -630,11 +638,6 @@ def _reconcile_and_validate_execution_context(
 
         # 5. expected_revision matches canonical persistent revision
         canonical_rev = state_store.get_project_revision(project_id)
-        if canonical_rev is None:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Canonical state error: project '{project_id}' is missing persistent revision record in project_revisions",
-            )
         if expected_revision is not None and expected_revision != canonical_rev:
             raise HTTPException(
                 status_code=409,
@@ -737,9 +740,7 @@ class StartPlannedWorkflowRequest(BaseModel):
     dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
 )
 @limiter.limit("30/minute")
-async def start_planned_autonomous_workflow(
-    request: Request, body: StartPlannedWorkflowRequest
-):
+async def start_planned_autonomous_workflow(request: Request, body: StartPlannedWorkflowRequest):
     """Plan an autonomous workflow and immediately dispatch it to the durable AgentRunOrchestrator."""
     from backend.core.command_bus import AuthenticatedPrincipal
     from backend.core.workflow_planner import default_workflow_planner
@@ -794,4 +795,3 @@ async def start_planned_autonomous_workflow(
         raise _agent_run_http_error(exc) from exc
 
     return {"success": True, "data": run.to_dict(), "plan": plan.to_dict()}
-

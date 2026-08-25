@@ -31,12 +31,7 @@ import logging
 import re
 import uuid
 from dataclasses import asdict, dataclass, field
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
+from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.agent_run_orchestrator import (
@@ -137,9 +132,7 @@ class AutonomousPlan:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AutonomousPlan:
         steps_data = data.get("steps", [])
-        steps = [
-            PlannedStep(**s) if isinstance(s, dict) else s for s in steps_data
-        ]
+        steps = [PlannedStep(**s) if isinstance(s, dict) else s for s in steps_data]
         return cls(
             plan_id=str(data.get("plan_id", "")),
             project_id=str(data.get("project_id", "")),
@@ -195,7 +188,11 @@ class AutonomousWorkflowPlanner:
         room_id = str(spec.get("room_id") or spec.get("roomId") or "zone-a")
 
         # Regex extraction from prompt if present
-        m_w = re.search(r"(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?\s*(?:x|by|×)\s*(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?", prompt, re.I)
+        m_w = re.search(
+            r"(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?\s*(?:x|by|×)\s*(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?",
+            prompt,
+            re.I,
+        )
         if m_w:
             width = float(m_w.group(1))
             length = float(m_w.group(2))
@@ -226,7 +223,9 @@ class AutonomousWorkflowPlanner:
         if m_curr:
             current_a = float(m_curr.group(1))
 
-        m_len = re.search(r"(\d+(?:\.\d+)?)\s*(?:m|meter|meters)\s*(?:run|length|wire|cable)", prompt, re.I)
+        m_len = re.search(
+            r"(\d+(?:\.\d+)?)\s*(?:m|meter|meters)\s*(?:run|length|wire|cable)", prompt, re.I
+        )
         if m_len:
             length_m = float(m_len.group(1))
 
@@ -320,7 +319,9 @@ class AutonomousWorkflowPlanner:
     ) -> AutonomousPlan:
         """Analyze intent, resolve context, discover capabilities, synthesize DAG, evaluate policy, and run dry-run."""
         if not principal.is_authenticated:
-            raise AutonomousPlannerError("Principal must be authenticated to plan an autonomous workflow.")
+            raise AutonomousPlannerError(
+                "Principal must be authenticated to plan an autonomous workflow."
+            )
 
         if expected_revision is None:
             expected_revision = self._bus.get_project_revision(project_id)
@@ -371,10 +372,10 @@ class AutonomousWorkflowPlanner:
 
         # Check for Pure Export Workflow Intent
         elif (
-            "export" in lower_prompt
-            or "download" in lower_prompt
-            or spec.get("target_format")
-        ) and not any(k in lower_prompt for k in ("place", "layout", "calculate", "design", "solve")):
+            "export" in lower_prompt or "download" in lower_prompt or spec.get("target_format")
+        ) and not any(
+            k in lower_prompt for k in ("place", "layout", "calculate", "design", "solve")
+        ):
             intent_category = "export"
             fmt = self._extract_export_format(lower_prompt, spec)
             nodes.append(
@@ -404,12 +405,43 @@ class AutonomousWorkflowPlanner:
         else:
             is_spatial = any(
                 k in lower_prompt
-                for k in ("place", "layout", "detector", "room", "spacing", "smoke", "heat", "area", "zone", "device", "coverage")
+                for k in (
+                    "place",
+                    "layout",
+                    "detector",
+                    "room",
+                    "spacing",
+                    "smoke",
+                    "heat",
+                    "area",
+                    "zone",
+                    "device",
+                    "coverage",
+                )
             )
-            is_electrical = any(k in lower_prompt for k in ("voltage", "drop", "wire", "awg", "nac", "slc", "circuit", "cable"))
-            is_battery = any(k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp"))
-            is_hydraulic = any(k in lower_prompt for k in ("hydraulic", "pipe", "flow", "pressure", "darcy", "head loss", "sprinkler"))
-            is_export = any(k in lower_prompt for k in ("export", "download", "deliverable", "ifc", "dxf", "revit", "report"))
+            is_electrical = any(
+                k in lower_prompt
+                for k in ("voltage", "drop", "wire", "awg", "nac", "slc", "circuit", "cable")
+            )
+            is_battery = any(
+                k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp")
+            )
+            is_hydraulic = any(
+                k in lower_prompt
+                for k in (
+                    "hydraulic",
+                    "pipe",
+                    "flow",
+                    "pressure",
+                    "darcy",
+                    "head loss",
+                    "sprinkler",
+                )
+            )
+            is_export = any(
+                k in lower_prompt
+                for k in ("export", "download", "deliverable", "ifc", "dxf", "revit", "report")
+            )
 
             if not (is_spatial or is_electrical or is_battery or is_hydraulic or is_export or spec):
                 raise InvalidWorkflowIntentError(
@@ -447,7 +479,13 @@ class AutonomousWorkflowPlanner:
             )
 
             # Node 3: Electrical Voltage Drop (if requested or in full composite)
-            if any(k in lower_prompt for k in ("voltage", "drop", "circuit", "nac", "slc", "electrical", "wiring")) or len(nodes) >= 1:
+            if (
+                any(
+                    k in lower_prompt
+                    for k in ("voltage", "drop", "circuit", "nac", "slc", "electrical", "wiring")
+                )
+                or len(nodes) >= 1
+            ):
                 el_spec = self._extract_electrical_spec(lower_prompt, spec)
                 nodes.append(
                     WorkflowNode(
@@ -460,7 +498,9 @@ class AutonomousWorkflowPlanner:
                 )
 
             # Node 4: Battery Sizing (if requested)
-            if any(k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp")):
+            if any(
+                k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp")
+            ):
                 bat_spec = self._extract_battery_spec(lower_prompt, spec)
                 last_dep = nodes[-1].node_id if nodes else []
                 nodes.append(
@@ -474,7 +514,18 @@ class AutonomousWorkflowPlanner:
                 )
 
             # Node 5: Hydraulic Calculation (if requested)
-            if any(k in lower_prompt for k in ("hydraulic", "pipe", "flow", "pressure", "darcy", "head loss", "sprinkler")):
+            if any(
+                k in lower_prompt
+                for k in (
+                    "hydraulic",
+                    "pipe",
+                    "flow",
+                    "pressure",
+                    "darcy",
+                    "head loss",
+                    "sprinkler",
+                )
+            ):
                 hyd_spec = self._extract_hydraulic_spec(lower_prompt, spec)
                 last_dep = nodes[-1].node_id if nodes else []
                 nodes.append(
@@ -488,7 +539,10 @@ class AutonomousWorkflowPlanner:
                 )
 
             # Node 6: Export Deliverable (if user mentioned deliverable / export / report)
-            if any(k in lower_prompt for k in ("export", "download", "dxf", "pdf", "report", "boq", "excel")):
+            if any(
+                k in lower_prompt
+                for k in ("export", "download", "dxf", "pdf", "report", "boq", "excel")
+            ):
                 fmt = self._extract_export_format(lower_prompt, spec)
                 last_dep = nodes[-1].node_id if nodes else []
                 nodes.append(
@@ -506,7 +560,9 @@ class AutonomousWorkflowPlanner:
                 )
 
         if not nodes:
-            raise InvalidWorkflowIntentError("Unable to synthesize any valid engineering steps from user prompt.")
+            raise InvalidWorkflowIntentError(
+                "Unable to synthesize any valid engineering steps from user prompt."
+            )
 
         # Construct and validate DAG topology (Kahn's algorithm)
         dag = CompositeWorkflowDAG(nodes=nodes)
@@ -522,7 +578,9 @@ class AutonomousWorkflowPlanner:
         for node in nodes:
             cap = self._registry.get(node.capability_id)
             if cap is None:
-                raise CapabilityUnavailableError(f"Required capability '{node.capability_id}' is not registered.")
+                raise CapabilityUnavailableError(
+                    f"Required capability '{node.capability_id}' is not registered."
+                )
 
             # Scope check
             if not all(principal.has_scope(s) for s in cap.required_scopes):

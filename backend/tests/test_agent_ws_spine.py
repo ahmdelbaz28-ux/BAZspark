@@ -579,4 +579,3 @@ async def test_handle_battery_approval_commit(
     assert resp["battery"] is not None
     assert resp["battery"]["panel_id"] == "facp-ws-commit-01"
     assert resp["event"]["eventType"] == "BATTERY_CALCULATION_SOLVED"
-

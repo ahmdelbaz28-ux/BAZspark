@@ -112,9 +112,7 @@ def test_full_auto_lifecycle_completes(orchestrator: AgentRunOrchestrator, owner
     assert orchestrator._bus.get_project_revision("proj-lc-auto") == 2
 
 
-def test_approval_flow_approve_then_complete(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_approval_flow_approve_then_complete(orchestrator: AgentRunOrchestrator, owner) -> None:
     """create → running → waiting_approval → approved → running → completed."""
     run = orchestrator.start_run(
         owner,
@@ -223,9 +221,7 @@ def test_cancel_from_waiting_approval_is_terminal(
 
     # Approving after cancellation must be rejected safely.
     with pytest.raises((ApprovalAlreadyDecidedError, InvalidRunStateError)):
-        orchestrator.decide_approval(
-            owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
     # Terminal state preserved.
     assert orchestrator.get_run_status(owner.user_id, run.run_id).status == RunStatus.CANCELLED
 
@@ -241,9 +237,7 @@ def test_cancel_prevents_subsequent_step_execution(
         approval_mode="STEP_BY_STEP",
     )
     approval_a = run.pending_approval_id
-    run = orchestrator.decide_approval(
-        owner.user_id, approval_a, ApprovalDecisionValue.APPROVED
-    )
+    run = orchestrator.decide_approval(owner.user_id, approval_a, ApprovalDecisionValue.APPROVED)
     # Step b now awaits its own approval.
     assert run.status == RunStatus.WAITING_APPROVAL
     rev_after_a = orchestrator._bus.get_project_revision("proj-lc-cancel2")
@@ -289,9 +283,7 @@ def test_state_preserved_across_orchestrator_recreation(
     assert status.status == RunStatus.WAITING_APPROVAL
     assert status.pending_approval_id == approval_id
 
-    completed = orch_b.decide_approval(
-        owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-    )
+    completed = orch_b.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
     # Step s1 executes post-approval, then s2 halts for its own approval.
     assert completed.status == RunStatus.WAITING_APPROVAL
     assert completed.completed_steps == ["s1"]
@@ -306,9 +298,7 @@ def test_state_preserved_across_orchestrator_recreation(
 # ── Authorization failures ───────────────────────────────────────────────────
 
 
-def test_wrong_principal_cannot_operate_on_run(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_wrong_principal_cannot_operate_on_run(orchestrator: AgentRunOrchestrator, owner) -> None:
     run = orchestrator.start_run(
         owner, project_id="proj-lc-authz", steps=[_spatial_step()], approval_mode="AUTO"
     )
@@ -319,17 +309,13 @@ def test_wrong_principal_cannot_operate_on_run(
         orchestrator.cancel_run(intruder, run.run_id)
 
 
-def test_wrong_principal_approval_rejected(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_wrong_principal_approval_rejected(orchestrator: AgentRunOrchestrator, owner) -> None:
     run = orchestrator.start_run(
         owner, project_id="proj-lc-wp", steps=[_electrical_step()], approval_mode="AUTO"
     )
     approval_id = run.pending_approval_id
     with pytest.raises(RunPermissionError):
-        orchestrator.decide_approval(
-            "not-the-owner", approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval("not-the-owner", approval_id, ApprovalDecisionValue.APPROVED)
     # Approval remains pending and untouched.
     pa = orchestrator._store.get_pending_approval(approval_id)
     assert pa.status == PendingApprovalStatus.PENDING
@@ -351,9 +337,7 @@ def test_wrong_project_binding_rejected(
             ("some-other-project", approval_id),
         )
     with pytest.raises(StaleApprovalError):
-        orchestrator.decide_approval(
-            owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
 
 
 def test_wrong_capability_binding_rejected(
@@ -371,14 +355,10 @@ def test_wrong_capability_binding_rejected(
             (SPATIAL, approval_id),
         )
     with pytest.raises(StaleApprovalError):
-        orchestrator.decide_approval(
-            owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
 
 
-def test_stale_revision_approval_rejected(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_stale_revision_approval_rejected(orchestrator: AgentRunOrchestrator, owner) -> None:
     """Project revision drift between approval creation and decision → stale."""
     run = orchestrator.start_run(
         owner, project_id="proj-lc-stale", steps=[_electrical_step()], approval_mode="AUTO"
@@ -390,9 +370,7 @@ def test_stale_revision_approval_rejected(
     orchestrator._bus.set_project_revision("proj-lc-stale", bound_rev + 1)
 
     with pytest.raises(StaleApprovalError):
-        orchestrator.decide_approval(
-            owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
     # Invalidation recorded as auditable evidence; nothing executed.
     decisions = orchestrator._store.list_decisions(run.run_id)
     assert len(decisions) == 1
@@ -400,24 +378,18 @@ def test_stale_revision_approval_rejected(
     assert orchestrator._bus.get_project_revision("proj-lc-stale") == bound_rev + 1
 
 
-def test_duplicate_approval_is_safe(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_duplicate_approval_is_safe(orchestrator: AgentRunOrchestrator, owner) -> None:
     """Duplicate approve messages are idempotent-safe: second one rejected."""
     run = orchestrator.start_run(
         owner, project_id="proj-lc-dup", steps=[_electrical_step()], approval_mode="AUTO"
     )
     approval_id = run.pending_approval_id
-    first = orchestrator.decide_approval(
-        owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-    )
+    first = orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
     assert first.status == RunStatus.COMPLETED
     # The duplicate is rejected safely — either by the atomic PENDING claim or
     # by run-state validation (the run already completed).
     with pytest.raises((ApprovalAlreadyDecidedError, InvalidRunStateError)):
-        orchestrator.decide_approval(
-            owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-        )
+        orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
     # Exactly one commit happened.
     assert orchestrator._bus.get_project_revision("proj-lc-dup") == 2
 
@@ -447,9 +419,7 @@ def _register_flaky(registry: CapabilityRegistry, calls: list[int]) -> None:
     )
 
 
-def test_failed_run_retry_recovers_without_duplicate_mutation(
-    fresh_db: Database, owner
-) -> None:
+def test_failed_run_retry_recovers_without_duplicate_mutation(fresh_db: Database, owner) -> None:
     """failed → retry executes the failed step once more and completes."""
     registry = CapabilityRegistry()
     calls: list[int] = []
@@ -465,9 +435,7 @@ def test_failed_run_retry_recovers_without_duplicate_mutation(
     run = orch.start_run(
         owner,
         project_id="proj-lc-retry",
-        steps=[
-            {"step_id": "f1", "capability_id": "test.flaky", "payload": {"room_id": "r1"}}
-        ],
+        steps=[{"step_id": "f1", "capability_id": "test.flaky", "payload": {"room_id": "r1"}}],
         approval_mode="AUTO",
     )
     assert run.status == RunStatus.FAILED
@@ -493,9 +461,7 @@ def test_retry_refused_for_non_failed_run(orchestrator: AgentRunOrchestrator, ow
 # ── Races ────────────────────────────────────────────────────────────────────
 
 
-def test_cancel_vs_approve_race_is_deterministic(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_cancel_vs_approve_race_is_deterministic(orchestrator: AgentRunOrchestrator, owner) -> None:
     """cancel vs approve race → safe deterministic result, at most one commit."""
     run = orchestrator.start_run(
         owner, project_id="proj-lc-race1", steps=[_electrical_step()], approval_mode="AUTO"
@@ -507,9 +473,7 @@ def test_cancel_vs_approve_race_is_deterministic(
     def _approve() -> None:
         barrier.wait()
         try:
-            orchestrator.decide_approval(
-                owner.user_id, approval_id, ApprovalDecisionValue.APPROVED
-            )
+            orchestrator.decide_approval(owner.user_id, approval_id, ApprovalDecisionValue.APPROVED)
         except Exception as exc:  # noqa: BLE001 — race loser expected
             errors.append(exc)
 
@@ -534,12 +498,12 @@ def test_cancel_vs_approve_race_is_deterministic(
     if final.status == RunStatus.CANCELLED:
         assert revision == 1 or revision == 2  # commit either pre-ceded cancel or never happened
     for err in errors:
-        assert isinstance(err, InvalidRunStateError | ApprovalAlreadyDecidedError | InvalidTransitionError)
+        assert isinstance(
+            err, InvalidRunStateError | ApprovalAlreadyDecidedError | InvalidTransitionError
+        )
 
 
-def test_resume_vs_cancel_race_is_deterministic(
-    orchestrator: AgentRunOrchestrator, owner
-) -> None:
+def test_resume_vs_cancel_race_is_deterministic(orchestrator: AgentRunOrchestrator, owner) -> None:
     """resume vs cancel race from PAUSED → exactly one wins deterministically."""
     run = orchestrator.start_run(
         owner,
@@ -583,7 +547,9 @@ def test_resume_vs_cancel_race_is_deterministic(
     # Cancel always eventually wins here because a live approval blocks resume;
     # regardless of interleaving the run MUST end terminal and consistent.
     assert final.status in (RunStatus.CANCELLED, RunStatus.COMPLETED)
-    assert orchestrator._bus.get_project_revision("proj-lc-race2") == 1  # no commit without approval
+    assert (
+        orchestrator._bus.get_project_revision("proj-lc-race2") == 1
+    )  # no commit without approval
     combined = set(outcomes) | {type(e).__name__ for e in errors}
     assert combined, "at least one racer must produce an observable outcome"
 
@@ -591,9 +557,7 @@ def test_resume_vs_cancel_race_is_deterministic(
 # ── Policy denial inside a run ───────────────────────────────────────────────
 
 
-def test_policy_denied_step_fails_run(
-    fresh_db: Database, registry: CapabilityRegistry
-) -> None:
+def test_policy_denied_step_fails_run(fresh_db: Database, registry: CapabilityRegistry) -> None:
     """DENIED policy result fails the run — never silently downgraded."""
     limited = AuthenticatedPrincipal(
         user_id="limited-01",

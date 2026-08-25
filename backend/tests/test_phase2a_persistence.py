@@ -336,7 +336,21 @@ class TestTransactionRollback:
                           {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()},
                           {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()})
                 """,
-                ("cmd-atomic-fail-01", "corr", None, project_id, "spatial.place_devices", 1, 2, "actor", 0, "hash", "{}", "COMPLETED", "2026-01-01T00:00:00Z"),
+                (
+                    "cmd-atomic-fail-01",
+                    "corr",
+                    None,
+                    project_id,
+                    "spatial.place_devices",
+                    1,
+                    2,
+                    "actor",
+                    0,
+                    "hash",
+                    "{}",
+                    "COMPLETED",
+                    "2026-01-01T00:00:00Z",
+                ),
             )
 
         event = DomainEvent(
@@ -815,4 +829,3 @@ class TestCoverageBooster:
         assert len(events) >= 1
         assert events[0].eventId == "evt-events-parsed-01"
         assert events[0].verificationResult == {"valid": True}
-

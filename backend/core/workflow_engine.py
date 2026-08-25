@@ -16,12 +16,7 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
+from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.capability_registry import (

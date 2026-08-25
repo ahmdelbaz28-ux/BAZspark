@@ -13,12 +13,7 @@ import json
 import logging
 import uuid
 from dataclasses import asdict, dataclass, field
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
+from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.capability_registry import (
@@ -149,7 +144,7 @@ class CommandBus:
         self.registry = capability_registry or default_capability_registry
         self.state_store = state_store or default_state_store
 
-    def get_project_revision(self, project_id: str) -> int | None:
+    def get_project_revision(self, project_id: str) -> int:
         """Get canonical revision of a project from persistent storage."""
         return self.state_store.get_project_revision(project_id)
 
@@ -161,9 +156,7 @@ class CommandBus:
         """Retrieve canonical engineering state for project from persistent storage."""
         return self.state_store.get_canonical_state(project_id)
 
-    def save_canonical_state(
-        self, project_id: str, state: dict[str, Any], revision: int
-    ) -> None:
+    def save_canonical_state(self, project_id: str, state: dict[str, Any], revision: int) -> None:
         """Save canonical engineering state to persistent storage."""
         self.state_store.save_canonical_state(project_id, state, revision)
 
@@ -248,7 +241,9 @@ class CommandBus:
                     ),
                 )
             if cached_result is not None:
-                logger.info("Idempotent command replay from persistent store: %s", command.commandId)
+                logger.info(
+                    "Idempotent command replay from persistent store: %s", command.commandId
+                )
                 return cached_result
 
         # 6. Optimistic Concurrency Control (OCC) Pre-Check
@@ -316,9 +311,7 @@ class CommandBus:
             "device_count": len(new_devices),
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        audit_ref = hashlib.sha256(
-            json.dumps(audit_payload, sort_keys=True).encode()
-        ).hexdigest()
+        audit_ref = hashlib.sha256(json.dumps(audit_payload, sort_keys=True).encode()).hexdigest()
         if "place_devices" in command.capabilityId:
             evt_type = "DEVICES_PLACED"
         elif "voltage_drop" in command.capabilityId:
@@ -362,7 +355,9 @@ class CommandBus:
         if "aging_derating" in exec_result:
             verification_result["aging_derating"] = exec_result["aging_derating"]
         if "discharge_rate_correction" in exec_result:
-            verification_result["discharge_rate_correction"] = exec_result["discharge_rate_correction"]
+            verification_result["discharge_rate_correction"] = exec_result[
+                "discharge_rate_correction"
+            ]
         if "installed_ah" in exec_result:
             verification_result["installed_ah"] = exec_result["installed_ah"]
         if "usable_ah" in exec_result:

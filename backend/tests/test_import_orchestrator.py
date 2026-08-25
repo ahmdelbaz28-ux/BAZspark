@@ -50,7 +50,9 @@ def state_store(test_db: Database) -> CommandStateStore:
 
 
 @pytest.fixture
-def import_orchestrator(test_db: Database, state_store: CommandStateStore, tmp_path: Path) -> ImportOrchestrator:
+def import_orchestrator(
+    test_db: Database, state_store: CommandStateStore, tmp_path: Path
+) -> ImportOrchestrator:
     staging_dir = tmp_path / "staging"
     return ImportOrchestrator(db=test_db, state_store=state_store, staging_dir=staging_dir)
 
@@ -124,7 +126,9 @@ class TestFormatSniffingAndSanitization:
 
 
 class TestImportOrchestratorLifecycle:
-    def test_stage_and_inspect_dxf(self, import_orchestrator: ImportOrchestrator, principal: AuthenticatedPrincipal):
+    def test_stage_and_inspect_dxf(
+        self, import_orchestrator: ImportOrchestrator, principal: AuthenticatedPrincipal
+    ):
         dxf_content = (
             b"  0\nSECTION\n  2\nHEADER\n  0\nENDSEC\n"
             b"  0\nSECTION\n  2\nENTITIES\n  0\nLWPOLYLINE\n  0\nENDSEC\n  0\nEOF"
@@ -233,7 +237,9 @@ class TestImportOrchestratorLifecycle:
         # State unchanged
         assert state_store.get_project_revision(project_id) == 2
 
-    def test_get_nonexistent_staged_file_raises_error(self, import_orchestrator: ImportOrchestrator):
+    def test_get_nonexistent_staged_file_raises_error(
+        self, import_orchestrator: ImportOrchestrator
+    ):
         with pytest.raises(StagedFileNotFoundError) as exc_info:
             import_orchestrator.get_staged_file("imp-nonexistent-uuid")
         assert exc_info.value.error_code == "STAGED_FILE_NOT_FOUND"
@@ -263,7 +269,9 @@ class TestAgentRunImportPipeline:
         state_store.set_project_revision(project_id, revision=1)
 
         dxf_content = b"  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF"
-        record = default_import_orchestrator.stage_file(dxf_content, "floor_plan.dxf", principal=principal)
+        record = default_import_orchestrator.stage_file(
+            dxf_content, "floor_plan.dxf", principal=principal
+        )
 
         steps = [
             {
@@ -279,7 +287,11 @@ class TestAgentRunImportPipeline:
             {
                 "step_id": "step-3",
                 "capability_id": "import.execute_import",
-                "payload": {"file_id": record.file_id, "project_id": project_id, "expected_revision": 1},
+                "payload": {
+                    "file_id": record.file_id,
+                    "project_id": project_id,
+                    "expected_revision": 1,
+                },
             },
         ]
 
@@ -314,7 +326,9 @@ class TestAgentRunImportPipeline:
         state_store.set_project_revision(project_id, revision=1)
 
         dxf_content = b"  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF"
-        record = default_import_orchestrator.stage_file(dxf_content, "floor.dxf", principal=principal)
+        record = default_import_orchestrator.stage_file(
+            dxf_content, "floor.dxf", principal=principal
+        )
 
         steps = [
             {
@@ -330,7 +344,11 @@ class TestAgentRunImportPipeline:
             {
                 "step_id": "step-3",
                 "capability_id": "import.execute_import",
-                "payload": {"file_id": record.file_id, "project_id": project_id, "expected_revision": 1},
+                "payload": {
+                    "file_id": record.file_id,
+                    "project_id": project_id,
+                    "expected_revision": 1,
+                },
             },
         ]
 

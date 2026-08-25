@@ -75,9 +75,7 @@ ROOM_NAME_PATTERNS = [
 ]
 
 AREA_VALUE_PATTERNS = [
-    re.compile(
-        r"(\d+\.?\d*)\s*(?:m²|m2|square meter|sq\.?m)", re.IGNORECASE
-    ),
+    re.compile(r"(\d+\.?\d*)\s*(?:m²|m2|square meter|sq\.?m)", re.IGNORECASE),
     re.compile(
         r"(\d+\.?\d*)\s*(?:METERS?\s*SQUARED|M²)", re.IGNORECASE
     ),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path

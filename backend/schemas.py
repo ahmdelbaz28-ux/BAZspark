@@ -452,6 +452,7 @@ class StatisticsResponse(CamelModel):
 # UNIVERSAL RESPONSE WRAPPER
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class ApiResponse[T](CamelModel):
     """Universal response wrapper for all API endpoints."""
 

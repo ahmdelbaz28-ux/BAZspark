@@ -2,12 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
+from datetime import UTC, datetime
 
 from backend.db.repositories.base import BaseRepository
 

@@ -115,11 +115,7 @@ _RISK_SAFETY_CRITICAL = frozenset({"CRITICAL", "SAFETY_CRITICAL"})
 
 def _default_environment() -> str:
     """Resolve the deployment environment from server configuration only."""
-    env = (
-        os.environ.get("FIREAI_ENV")
-        or os.environ.get("NODE_ENV")
-        or "production"
-    )
+    env = os.environ.get("FIREAI_ENV") or os.environ.get("NODE_ENV") or "production"
     return str(env).strip().lower()
 
 
@@ -242,7 +238,7 @@ def evaluate_execution_policy(ctx: PolicyContext) -> ExecutionPolicyDecision:
 
     # 3. Governance explicit denial
     denied_caps = gov.get("deniedCapabilities") or gov.get("denied_capabilities") or []
-    if isinstance(denied_caps, (list, tuple, set)) and cap_id in set(denied_caps):
+    if isinstance(denied_caps, (list, tuple, set)) and cap_id in set(denied_caps):  # noqa: UP038
         return ExecutionPolicyDecision(
             result=PolicyResult.DENIED,
             reason="GOVERNANCE_DENIED_CAPABILITY",
@@ -266,13 +262,12 @@ def evaluate_execution_policy(ctx: PolicyContext) -> ExecutionPolicyDecision:
 
     # 5. Mandatory human review — cannot be bypassed by AUTO mode
     mhr_list = (
-        gov.get("mandatoryReviewCapabilities")
-        or gov.get("mandatory_review_capabilities")
-        or []
+        gov.get("mandatoryReviewCapabilities") or gov.get("mandatory_review_capabilities") or []
     )
-    governance_mhr = isinstance(mhr_list, (list, tuple, set)) and cap_id in set(mhr_list)
+    governance_mhr = isinstance(mhr_list, (list, tuple, set)) and cap_id in set(mhr_list)  # noqa: UP038
     production_safety_critical = (
-        ctx.environment in ("production", "prod") and ctx.mutation_type == MutationType.SAFETY_CRITICAL
+        ctx.environment in ("production", "prod")
+        and ctx.mutation_type == MutationType.SAFETY_CRITICAL
     )
     mandatory_review = bool(
         ctx.mandatory_review

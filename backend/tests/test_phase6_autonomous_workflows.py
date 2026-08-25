@@ -71,7 +71,9 @@ def registry() -> CapabilityRegistry:
 
 
 @pytest.fixture
-def orchestrator(bus: CommandBus, registry: CapabilityRegistry, store: AgentRunStore) -> AgentRunOrchestrator:
+def orchestrator(
+    bus: CommandBus, registry: CapabilityRegistry, store: AgentRunStore
+) -> AgentRunOrchestrator:
     return AgentRunOrchestrator(command_bus=bus, capability_registry=registry, run_store=store)
 
 
@@ -303,9 +305,7 @@ def test_scenario_e_cancellation_boundary(
 
     # Verify no subsequent execution or approval is possible
     with pytest.raises(Exception):
-        orchestrator.decide_approval(
-            engineer_principal.user_id, appr_id, "APPROVED"
-        )
+        orchestrator.decide_approval(engineer_principal.user_id, appr_id, "APPROVED")
 
 
 # ── Scenario F: RBAC & Policy Denial ──────────────────────────────────────────

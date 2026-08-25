@@ -51,6 +51,7 @@ from fireai.core.darcy_weisbach_solver import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def temp_db():
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -105,6 +106,7 @@ def viewer_principal() -> AuthenticatedPrincipal:
 # TIER 1: Adversarial LLM Mathematical Override & Physics Boundary Stress
 # ---------------------------------------------------------------------------
 
+
 class TestTier1AdversarialAndPhysicsBoundaryStress:
     """TIER 1: Mathematical Override & Physics Boundary Stress."""
 
@@ -140,31 +142,38 @@ class TestTier1AdversarialAndPhysicsBoundaryStress:
         # 2. Capability Execution via Default Registry
         cap = default_capability_registry.get("hydraulics.solve_darcy_weisbach")
         assert cap is not None
-        cap_result = cap.handler({
-            "pipe_segment_id": "pipe-high-vel-01",
-            "length_m": pipe_length_m,
-            "diameter_mm": diameter_mm,
-            "flow_l_min": flow_l_min,
-            "fluid_type": "water",
-        })
+        cap_result = cap.handler(
+            {
+                "pipe_segment_id": "pipe-high-vel-01",
+                "length_m": pipe_length_m,
+                "diameter_mm": diameter_mm,
+                "flow_l_min": flow_l_min,
+                "fluid_type": "water",
+            }
+        )
 
         assert pytest.approx(cap_result["flow_velocity_m_s"], rel=1e-2) == 14.50
-        assert any("Excessive flow velocity flag" in w and "water hammer" in w.lower() for w in cap_result["warnings"])
+        assert any(
+            "Excessive flow velocity flag" in w and "water hammer" in w.lower()
+            for w in cap_result["warnings"]
+        )
 
         # 3. DAG Execution with autoRollbackOnWarning = True
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(
-                node_id="step-hydraulic-extreme",
-                capability_id="hydraulics.solve_darcy_weisbach",
-                payload_template={
-                    "pipe_segment_id": "pipe-high-vel-01",
-                    "length_m": pipe_length_m,
-                    "diameter_mm": diameter_mm,
-                    "flow_l_min": flow_l_min,
-                    "fluid_type": "water",
-                },
-            )
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="step-hydraulic-extreme",
+                    capability_id="hydraulics.solve_darcy_weisbach",
+                    payload_template={
+                        "pipe_segment_id": "pipe-high-vel-01",
+                        "length_m": pipe_length_m,
+                        "diameter_mm": diameter_mm,
+                        "flow_l_min": flow_l_min,
+                        "fluid_type": "water",
+                    },
+                )
+            ]
+        )
 
         project_id = "proj-stress-hydraulic-01"
         executor = WorkflowExecutor(default_capability_registry, state_store)
@@ -191,11 +200,11 @@ class TestTier1AdversarialAndPhysicsBoundaryStress:
         # Verify ZERO database commit: project revision remains 1 and canonical state is unmutated
         assert state_store.get_project_revision(project_id) == 1
         canonical = state_store.get_canonical_state(project_id)
-        assert canonical.get("hydraulics") == {} or "pipe-high-vel-01" not in canonical.get("hydraulics", {})
+        assert canonical.get("hydraulics") == {} or "pipe-high-vel-01" not in canonical.get(
+            "hydraulics", {}
+        )
 
-    def test_vector_1_2_sub_zero_lifepo4_thermal_inversion(
-        self, state_store, engineer_principal
-    ):
+    def test_vector_1_2_sub_zero_lifepo4_thermal_inversion(self, state_store, engineer_principal):
         """Vector 1.2: Sub-Zero LiFePO4 Thermal Inversion Test.
 
         - Execute `electrical.calculate_battery` at ambient temperature -25°C with LiFePO4 chemistry.
@@ -235,9 +244,7 @@ class TestTier1AdversarialAndPhysicsBoundaryStress:
         # Required Ah with deratings: 31.05 * 1.25 (aging) / (0.50 * discharge_rate) > 60 Ah
         assert result["required_ah"] > result["base_capacity_ah"]
 
-    def test_vector_1_3_adversarial_client_result_spoofing(
-        self, state_store, engineer_principal
-    ):
+    def test_vector_1_3_adversarial_client_result_spoofing(self, state_store, engineer_principal):
         """Vector 1.3: Adversarial Client Result Spoofing.
 
         - Inject fake calculation results in the payload (voltage_drop_pct: 1.2% for 4.0A over 120m AWG 18).
@@ -278,6 +285,7 @@ class TestTier1AdversarialAndPhysicsBoundaryStress:
 # TIER 2: Distributed OCC Concurrency & Race-Condition Hammer
 # ---------------------------------------------------------------------------
 
+
 class TestTier2DistributedOCCAndConcurrencyHammer:
     """TIER 2: Distributed OCC Concurrency & Race-Condition Hammer."""
 
@@ -297,7 +305,12 @@ class TestTier2DistributedOCCAndConcurrencyHammer:
         # Initialize project at revision 1
         state_store.save_canonical_state(
             project_id=project_id,
-            state={"devices": [], "circuits": {}, "hydraulics": {}, "calculations": {"battery": {}}},
+            state={
+                "devices": [],
+                "circuits": {},
+                "hydraulics": {},
+                "calculations": {"battery": {}},
+            },
             revision=1,
         )
         assert state_store.get_project_revision(project_id) == 1
@@ -308,30 +321,32 @@ class TestTier2DistributedOCCAndConcurrencyHammer:
             worker_store = CommandStateStore(db=state_store._db)
             worker_executor = WorkflowExecutor(default_capability_registry, worker_store)
 
-            dag = CompositeWorkflowDAG([
-                WorkflowNode(
-                    node_id=f"step-elec-w{worker_idx}",
-                    capability_id="electrical.calculate_voltage_drop",
-                    payload_template={
-                        "circuit_id": f"nac-w{worker_idx}",
-                        "current_a": 1.0 + (worker_idx * 0.1),
-                        "one_way_length_m": 15.0,
-                        "awg": "14",
-                    },
-                ),
-                WorkflowNode(
-                    node_id=f"step-hyd-w{worker_idx}",
-                    capability_id="hydraulics.solve_darcy_weisbach",
-                    dependencies=[f"step-elec-w{worker_idx}"],
-                    payload_template={
-                        "pipe_segment_id": f"pipe-w{worker_idx}",
-                        "length_m": 10.0 + worker_idx,
-                        "diameter_mm": 50.0,
-                        "flow_l_min": 120.0,
-                        "fluid_type": "water",
-                    },
-                ),
-            ])
+            dag = CompositeWorkflowDAG(
+                [
+                    WorkflowNode(
+                        node_id=f"step-elec-w{worker_idx}",
+                        capability_id="electrical.calculate_voltage_drop",
+                        payload_template={
+                            "circuit_id": f"nac-w{worker_idx}",
+                            "current_a": 1.0 + (worker_idx * 0.1),
+                            "one_way_length_m": 15.0,
+                            "awg": "14",
+                        },
+                    ),
+                    WorkflowNode(
+                        node_id=f"step-hyd-w{worker_idx}",
+                        capability_id="hydraulics.solve_darcy_weisbach",
+                        dependencies=[f"step-elec-w{worker_idx}"],
+                        payload_template={
+                            "pipe_segment_id": f"pipe-w{worker_idx}",
+                            "length_m": 10.0 + worker_idx,
+                            "diameter_mm": 50.0,
+                            "flow_l_min": 120.0,
+                            "fluid_type": "water",
+                        },
+                    ),
+                ]
+            )
 
             res = worker_executor.execute(
                 dag=dag,
@@ -411,12 +426,16 @@ class TestTier2DistributedOCCAndConcurrencyHammer:
         res2 = command_bus.execute(cmd2_mutated)
         assert res2.success is False
         assert res2.errorCode == "IDEMPOTENCY_KEY_REUSE_CONFLICT"
-        assert "collision" in (res2.errorMessage or "").lower() or "reuse" in (res2.errorMessage or "").lower()
+        assert (
+            "collision" in (res2.errorMessage or "").lower()
+            or "reuse" in (res2.errorMessage or "").lower()
+        )
 
 
 # ---------------------------------------------------------------------------
 # TIER 3: Context Bounding & Telemetry Overflow Stress
 # ---------------------------------------------------------------------------
+
 
 class TestTier3ContextBoundingAndTelemetryOverflowStress:
     """TIER 3: Context Bounding & Telemetry Overflow Stress."""
@@ -464,8 +483,7 @@ class TestTier3ContextBoundingAndTelemetryOverflowStress:
                     "entity_id": f"ENT-DWG-3D-{i}",
                     "layer": "A-WALL-FULL",
                     "polygon_mesh": [
-                        [math.sin(i + j) * 100.0, math.cos(i + j) * 100.0, 3.2]
-                        for j in range(20)
+                        [math.sin(i + j) * 100.0, math.cos(i + j) * 100.0, 3.2] for j in range(20)
                     ],
                     "vertices_count": 20,
                     "color_rgb": [255, 128, 64],

@@ -157,9 +157,7 @@ def test_stale_version_update_rejected(store: AgentRunStore) -> None:
     stale_version = run.version  # 1
     store.transition_run(run.run_id, RunStatus.READY)  # version → 2
     with pytest.raises(RunConcurrencyConflictError):
-        store.transition_run(
-            run.run_id, RunStatus.RUNNING, expected_version=stale_version
-        )
+        store.transition_run(run.run_id, RunStatus.RUNNING, expected_version=stale_version)
 
 
 def test_concurrent_transitions_exactly_one_wins(store: AgentRunStore) -> None:
@@ -173,9 +171,7 @@ def test_concurrent_transitions_exactly_one_wins(store: AgentRunStore) -> None:
     def _worker() -> None:
         barrier.wait()
         try:
-            store.transition_run(
-                run.run_id, RunStatus.READY, expected_version=version
-            )
+            store.transition_run(run.run_id, RunStatus.READY, expected_version=version)
             results.append("won")
         except Exception as exc:  # noqa: BLE001 — race loser is expected here
             errors.append(exc)

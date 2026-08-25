@@ -46,21 +46,9 @@ import logging
 import math
 import os
 import time
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-    UTC = timezone.utc
-
-try:
-    from enum import StrEnum
-except ImportError:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        pass
-
-from typing import Any, Callable, TypedDict, TypeVar
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any, Callable, TypedDict, TypeVar  # noqa: UP035
 
 try:
     from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver

@@ -56,9 +56,7 @@ def _verify_project_access(project: dict, request: Request) -> None:
         return
     author = project.get("author")
     if author and author != principal and not str(author).startswith("legacy"):
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
 
 
 def _normalize_sort(sort: str) -> str:
@@ -150,9 +148,7 @@ async def get_project(request: Request, project_id: str):
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
     _verify_project_access(project, request)
     validate_project(project)
     return success(project)
@@ -174,14 +170,10 @@ async def update_project(request: Request, project_id: str, input_data: UpdatePr
 
     updates = input_data.model_dump(exclude_none=True)
     if not updates:
-        raise HTTPException(
-            status_code=400, detail="No fields to update"
-        )
+        raise HTTPException(status_code=400, detail="No fields to update")
     project = db.update_project(project_id, updates)
     if not project:
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
     validate_project(project)
 
     # Sync update to UDM (System B) — non-blocking, never raises
@@ -278,16 +270,12 @@ async def delete_project(request: Request, project_id: str):
     db = get_db()
     existing = db.get_project(project_id)
     if not existing:
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
     _verify_project_access(existing, request)
 
     deleted = db.delete_project(project_id)
     if not deleted:
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
 
     # Sync deletion to UDM (System B) — non-blocking, never raises
     try:

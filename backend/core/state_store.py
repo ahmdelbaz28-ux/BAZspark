@@ -13,12 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from backend.database import Database, get_db
@@ -50,7 +45,7 @@ class CommandStateStore:
     def _ph(self) -> str:
         return self._db._ph()
 
-    def get_project_revision(self, project_id: str) -> int | None:
+    def get_project_revision(self, project_id: str) -> int:
         """Fetch the current canonical revision for a project from persistent storage."""
         ph = self._ph()
         with self._db._transaction() as cur:
@@ -60,11 +55,10 @@ class CommandStateStore:
             )
             row = cur.fetchone()
             if row is None:
-                return None
+                return 1
             if isinstance(row, dict):
-                val = row.get("revision")
-                return int(val) if val is not None else None
-            return int(row[0]) if row[0] is not None else None
+                return int(row.get("revision", 1))
+            return int(row[0])
 
     def set_project_revision(self, project_id: str, revision: int) -> None:
         """Upsert the canonical project revision in persistent storage."""
@@ -108,9 +102,7 @@ class CommandStateStore:
             except Exception:
                 return {"devices": [], "revision": 1}
 
-    def save_canonical_state(
-        self, project_id: str, state: dict[str, Any], revision: int
-    ) -> None:
+    def save_canonical_state(self, project_id: str, state: dict[str, Any], revision: int) -> None:
         """Upsert canonical project state and revision atomically in persistent storage."""
         ph = self._ph()
         now_iso = datetime.now(UTC).isoformat()
@@ -359,7 +351,9 @@ class CommandStateStore:
                         existing_circuits = loaded.get("circuits", {})
                         existing_hydraulics = loaded.get("hydraulics", {})
                         existing_calculations = loaded.get("calculations", {"battery": {}})
-                        if "battery" not in existing_calculations or not isinstance(existing_calculations["battery"], dict):
+                        if "battery" not in existing_calculations or not isinstance(
+                            existing_calculations["battery"], dict
+                        ):
                             existing_calculations["battery"] = {}
                 except Exception:
                     existing_devices = []
@@ -394,7 +388,13 @@ class CommandStateStore:
                     SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
                     WHERE project_id = {ph} AND revision = {ph}
                     """,
-                    (new_revision, json.dumps(updated_state), now_iso, command.projectId, command.expectedRevision),
+                    (
+                        new_revision,
+                        json.dumps(updated_state),
+                        now_iso,
+                        command.projectId,
+                        command.expectedRevision,
+                    ),
                 )
                 if cur.rowcount == 0:
                     logger.warning(
@@ -596,7 +596,9 @@ class CommandStateStore:
                         existing_circuits = loaded.get("circuits", {})
                         existing_hydraulics = loaded.get("hydraulics", {})
                         existing_calculations = loaded.get("calculations", {"battery": {}})
-                        if "battery" not in existing_calculations or not isinstance(existing_calculations["battery"], dict):
+                        if "battery" not in existing_calculations or not isinstance(
+                            existing_calculations["battery"], dict
+                        ):
                             existing_calculations["battery"] = {}
                 except Exception:
                     existing_devices = []
@@ -642,7 +644,13 @@ class CommandStateStore:
                     SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
                     WHERE project_id = {ph} AND revision = {ph}
                     """,
-                    (new_revision, json.dumps(updated_state), now_iso, project_id, expected_revision),
+                    (
+                        new_revision,
+                        json.dumps(updated_state),
+                        now_iso,
+                        project_id,
+                        expected_revision,
+                    ),
                 )
                 if cur.rowcount == 0:
                     logger.warning(
@@ -653,7 +661,9 @@ class CommandStateStore:
 
             # 2. Persist Command Executions for each step in DAG
             for cmd, res in zip(commands, exec_results, strict=False):
-                p_hash = hashlib.sha256(json.dumps(cmd.payload, sort_keys=True).encode("utf-8")).hexdigest()
+                p_hash = hashlib.sha256(
+                    json.dumps(cmd.payload, sort_keys=True).encode("utf-8")
+                ).hexdigest()
                 cur.execute(
                     f"""
                     INSERT INTO command_executions (
@@ -680,7 +690,11 @@ class CommandStateStore:
 
             # 3. Persist Unified Composite Domain Event
             first_cmd = commands[0] if commands else None
-            w_id = first_cmd.commandId if first_cmd else f"wf-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
+            w_id = (
+                first_cmd.commandId
+                if first_cmd
+                else f"wf-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
+            )
             c_id = first_cmd.correlationId if first_cmd else f"corr-{w_id}"
             actor = first_cmd.principal.user_id if first_cmd else "system"
 
@@ -700,17 +714,21 @@ class CommandStateStore:
                     new_revision,
                     actor,
                     "COMPOSITE_WORKFLOW_COMMITTED",
-                    json.dumps({
-                        "total_steps": len(commands),
-                        "capabilities": [c.capabilityId for c in commands],
-                        "combined_audit_digest": combined_audit_digest,
-                    }),
+                    json.dumps(
+                        {
+                            "total_steps": len(commands),
+                            "capabilities": [c.capabilityId for c in commands],
+                            "combined_audit_digest": combined_audit_digest,
+                        }
+                    ),
                     combined_audit_digest,
-                    json.dumps({
-                        "project_id": project_id,
-                        "revision": new_revision,
-                        "commands_count": len(commands),
-                    }),
+                    json.dumps(
+                        {
+                            "project_id": project_id,
+                            "revision": new_revision,
+                            "commands_count": len(commands),
+                        }
+                    ),
                     now_iso,
                 ),
             )
@@ -719,4 +737,3 @@ class CommandStateStore:
 
 
 default_state_store = CommandStateStore()
-

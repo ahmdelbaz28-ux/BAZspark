@@ -306,7 +306,9 @@ async def direct_checkout(
         target_order_id = body.order_id
         if not target_order_id:
             if not body.amount_cents:
-                raise HTTPException(status_code=400, detail="Either order_id or amount_cents is required")
+                raise HTTPException(
+                    status_code=400, detail="Either order_id or amount_cents is required"
+                )
             order = svc.create_order(
                 user_principal=user,
                 amount_cents=body.amount_cents,
@@ -447,7 +449,9 @@ async def meeza_webhook_alias(
     signature: Annotated[str, Header()] = "",
 ) -> dict[str, Any]:
     """Alias for /webhooks/meeza for webhook dispatchers configured with /webhook."""
-    return await meeza_webhook(request=request, x_meeza_signature=x_meeza_signature, signature=signature)
+    return await meeza_webhook(
+        request=request, x_meeza_signature=x_meeza_signature, signature=signature
+    )
 
 
 # ── Sandbox-only simulate endpoint (gated behind BILLING_MANAGE) ────────────

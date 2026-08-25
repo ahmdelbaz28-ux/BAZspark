@@ -22,13 +22,8 @@ from __future__ import annotations
 
 import math
 import uuid
+from datetime import UTC, datetime
 from typing import Any, Literal, TypeVar
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-
-    UTC = timezone.utc
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -79,7 +74,7 @@ class Project(BaseModel):
     status: Literal["active", "archived", "draft"] = Field(default="draft")
     deviceCount: int = Field(default=0, ge=0)
     connectionCount: int = Field(default=0, ge=0)
-    revision: int | None = Field(default=None)
+    revision: int = Field(default=1, ge=1)
     modelId: str = Field(default="")
 
 
