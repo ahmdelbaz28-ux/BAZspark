@@ -1106,6 +1106,22 @@ def _flatten_agent_result(res: Any) -> dict[str, Any]:
     return res
 
 
+def _elements_response_from_agent(res: Any) -> ElementsResponse:
+    """
+    Build ElementsResponse from an agent result without letting an unexpected
+    add-in envelope surface as HTTP 500. Missing collection fields degrade to
+    empty results while preserving the caller's success flag.
+    """
+    flat = _flatten_agent_result(res)
+    elements = flat.get("elements")
+    count = flat.get("count")
+    return ElementsResponse(
+        success=bool(flat.get("success", False)) and elements is not None,
+        elements=list(elements) if isinstance(elements, list) else [],
+        count=int(count) if isinstance(count, int) else len(elements or []),
+    )
+
+
 @router.post(
     "/elements/create/column",
     response_model=ElementResponse,
@@ -1337,7 +1353,7 @@ async def get_views() -> ElementsResponse:
     """Get all views in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_views", {})
-        return ElementsResponse(**_flatten_agent_result(res))
+        return _elements_response_from_agent(res)
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1359,7 +1375,7 @@ async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_levels", {})
-        return ElementsResponse(**_flatten_agent_result(res))
+        return _elements_response_from_agent(res)
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1381,7 +1397,7 @@ async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_grids", {})
-        return ElementsResponse(**_flatten_agent_result(res))
+        return _elements_response_from_agent(res)
 
     svc = get_revit_service()
     if not svc.connected:
@@ -1403,7 +1419,7 @@ async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
     if has_active_agent():
         res = await send_agent_command("revit", "get_worksets", {})
-        return ElementsResponse(**_flatten_agent_result(res))
+        return _elements_response_from_agent(res)
 
     svc = get_revit_service()
     if not svc.connected:
