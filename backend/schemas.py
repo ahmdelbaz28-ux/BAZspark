@@ -10,7 +10,7 @@ now live in backend/schema_base.py to eliminate duplication with backend/models.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -451,19 +451,28 @@ class StatisticsResponse(CamelModel):
 # ════════════════════════════════════════════════════════════════════════════
 # UNIVERSAL RESPONSE WRAPPER
 # ════════════════════════════════════════════════════════════════════════════
+# S5644 root cause: these two wrappers used PEP 695 generics (``class
+# ApiResponse[T]``), which the SonarCloud Python analyzer cannot resolve —
+# it treated every ``response_model=ApiResponse[...]`` subscript as an
+# unsupported ``__getitem__`` on a plain class and raised six BLOCKERs.
+# Runtime-equivalent ``Generic[T]`` form keeps pydantic behaviour identical
+# while remaining analyzable.
 
-class ApiResponse[T](CamelModel):
+_T = TypeVar("_T")
+
+
+class ApiResponse(CamelModel, Generic[_T]):
     """Universal response wrapper for all API endpoints."""
 
     success: bool
-    data: T | None = None
+    data: _T | None = None
     message: str | None = None
 
 
-class PaginatedData[T](CamelModel):
+class PaginatedData(CamelModel, Generic[_T]):
     """Wrapper for paginated data inside ApiResponse."""
 
-    items: list[T]
+    items: list[_T]
     total: int
     page: int
     page_size: int
