@@ -426,6 +426,7 @@ export function EngineeringPage() {
 		"battery-calc",
 		"room-analysis",
 		"integration",
+		"physics-guards",
 	] as const;
 	const tabLabels: Record<string, string> = {
 		"voltage-drop": t("engineering.voltageDrop"),
@@ -433,6 +434,7 @@ export function EngineeringPage() {
 		"battery-calc": t("engineering.batteryCalculation"),
 		"room-analysis": t("fireai.room.title"),
 		integration: t("fireai.integration.title"),
+		"physics-guards": t("engineering.physicsGuards", "Physics & Safety Guards"),
 	};
 
 	// FIX #5: Map compliance level to data-status for etap-status-pill
@@ -1563,6 +1565,93 @@ export function EngineeringPage() {
 											<Network aria-hidden="true" className="h-4 w-4" />
 											{t("engineering.runIntegrationCheck")}
 										</Button>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
+					{/* ══════════════════════════════════════════════════════════
+					 *  PHYSICS & SAFETY GUARDS TAB
+					 * ══════════════════════════════════════════════════════════ */}
+					{activeTab === "physics-guards" && (
+						<div
+							id="panel-physics-guards"
+							role="tabpanel"
+							aria-labelledby="tab-physics-guards"
+							aria-label="Physics & Safety Guards"
+							className="space-y-6 animate-[fadeInUp_0.3s_var(--ease-entrance)]"
+						>
+							<div className="etap-panel">
+								<div className="etap-panel-header">
+									<div className="etap-panel-title">
+										<ShieldCheck
+											aria-hidden="true"
+											className="h-5 w-5 etap-panel-title-icon"
+										/>
+										Physics Guard Limits & Code Baselines
+									</div>
+									<div className="etap-panel-description">
+										Deterministic safety margins enforced by the QOMN engineering engine (NFPA 72 §10.6 & NEC Article 760)
+									</div>
+								</div>
+								<div className="etap-panel-body space-y-4">
+									<div className="overflow-x-auto">
+										<table className="w-full text-xs text-left">
+											<thead>
+												<tr className="border-b border-border text-muted-foreground font-mono">
+													<th className="py-2 px-3">Parameter</th>
+													<th className="py-2 px-3">Threshold Limit</th>
+													<th className="py-2 px-3">Code Reference</th>
+													<th className="py-2 px-3">Status</th>
+												</tr>
+											</thead>
+											<tbody className="divide-y divide-border/40 font-mono-num">
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Max NAC Voltage Drop</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">≤ 10.0% (2.40V @ 24VDC)</td>
+													<td className="py-2.5 px-3 text-muted-foreground">NFPA 72 §10.15.1</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Max Branch Voltage Drop</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">≤ 3.0% (0.72V @ 24VDC)</td>
+													<td className="py-2.5 px-3 text-muted-foreground">NEC Article 210.19(A)</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Secondary Power Standby</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">≥ 24.0 Hours</td>
+													<td className="py-2.5 px-3 text-muted-foreground">NFPA 72 §10.6.7.2.1</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Secondary Power Alarm</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">≥ 5.0 Minutes (15 min EVAC)</td>
+													<td className="py-2.5 px-3 text-muted-foreground">NFPA 72 §10.6.7.2.2</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Battery Aging Safety Derating</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">1.25x Factor (25% Safety Margin)</td>
+													<td className="py-2.5 px-3 text-muted-foreground">IEEE Standard 485</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+												<tr>
+													<td className="py-2.5 px-3 font-medium text-foreground">Spot Smoke Detector Spacing</td>
+													<td className="py-2.5 px-3 text-[var(--etap-accent)]">≤ 9.1 m (30.0 ft) Radius</td>
+													<td className="py-2.5 px-3 text-muted-foreground">NFPA 72 §17.7.3.2.3.1</td>
+													<td className="py-2.5 px-3 text-[var(--etap-success)]">ENFORCED</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+									<div className="pt-2 flex justify-end">
+										<a
+											href="/engineering/guards"
+											className="inline-flex items-center gap-1 text-xs text-[var(--etap-accent)] hover:underline"
+										>
+											Open Full Physics Guards Dashboard &rarr;
+										</a>
 									</div>
 								</div>
 							</div>
