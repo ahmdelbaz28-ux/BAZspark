@@ -133,7 +133,7 @@ function setStoredActiveRunId(runId: string | null): void {
 	}
 }
 
-export function useAgentRun(defaultProjectId: string = "default_project"): UseAgentRunReturn {
+export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 	const [state, setState] = useState<AgentRunState>(() => ({
 		runId: null,
 		projectId: defaultProjectId,

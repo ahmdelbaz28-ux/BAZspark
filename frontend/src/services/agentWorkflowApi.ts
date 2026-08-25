@@ -81,7 +81,7 @@ export const agentWorkflowApi = {
 	}): Promise<AutonomousPlanRecord> {
 		const res = await api.post<{ success: boolean; data: AutonomousPlanRecord }>("/workflow/runs/plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "default_project",
+			project_id: params.projectId || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
@@ -108,7 +108,7 @@ export const agentWorkflowApi = {
 			plan: AutonomousPlanRecord;
 		}>("/workflow/runs/start-plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "default_project",
+			project_id: params.projectId || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
