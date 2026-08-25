@@ -7,7 +7,7 @@
  */
 
 import { Camera, Loader2, MonitorCheck, MonitorX, Terminal } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,21 +25,25 @@ export function RemoteCADSessionBar() {
 	const [capturing, setCapturing] = useState(false);
 	const [screenshot, setScreenshot] = useState<CaptureScreenResponse | null>(null);
 
-	const refreshStatus = useCallback(async () => {
-		setChecking(true);
-		try {
-			const res = await cadRemoteApi.getRemoteStatus();
-			setStatus(res);
-		} catch {
-			setStatus(null);
-		} finally {
-			setChecking(false);
-		}
-	}, []);
-
+	// Subscribe once: all setState calls run in async callbacks (never
+	// synchronously inside the effect body).
 	useEffect(() => {
-		void refreshStatus();
-	}, [refreshStatus]);
+		let cancelled = false;
+		cadRemoteApi
+			.getRemoteStatus()
+			.then((res) => {
+				if (!cancelled) setStatus(res);
+			})
+			.catch(() => {
+				if (!cancelled) setStatus(null);
+			})
+			.finally(() => {
+				if (!cancelled) setChecking(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const agentConnected = status?.agent_connected === true;
 
