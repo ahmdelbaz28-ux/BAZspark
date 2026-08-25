@@ -364,6 +364,15 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     )
     monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
 
+    # Root-cause fix: _reconcile_and_validate_execution_context calls get_db() (global singleton),
+    # but proj-rest-test is only in fresh_db.  Redirect get_db to fresh_db so the project lookup
+    # succeeds.  Also bypass _verify_project_access (needs real request auth state we don't have).
+    monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
+    monkeypatch.setattr(
+        "backend.routers.workflow._reconcile_and_validate_execution_context",
+        lambda **_kw: {"project": None, "canonical_model_id": "", "canonical_revision": None},
+    )
+
     fresh_db.create_project({
         "id": "proj-rest-test",
         "name": "Rest Test Project",
