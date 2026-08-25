@@ -42,17 +42,37 @@ vi.mock("@/hooks/useApiQuery", () => ({
 }));
 
 function ConsumerComponent() {
-	const { activeProjectId, activeProject, setActiveProjectId } = useActiveProject();
+	const {
+		activeProjectId,
+		activeProject,
+		activeModelId,
+		activeRevision,
+		selectedEntityId,
+		selectedEntityType,
+		setActiveProjectId,
+		setSelectedEntity,
+	} = useActiveProject();
 	return (
 		<div>
 			<span data-testid="active-id">{activeProjectId}</span>
 			<span data-testid="active-name">{activeProject?.name || "none"}</span>
+			<span data-testid="active-model">{activeModelId}</span>
+			<span data-testid="active-rev">{activeRevision}</span>
+			<span data-testid="selected-entity">{selectedEntityId || "none"}</span>
+			<span data-testid="selected-type">{selectedEntityType || "none"}</span>
 			<button
 				type="button"
 				onClick={() => setActiveProjectId("proj-beta")}
 				data-testid="switch-btn"
 			>
 				Switch to Beta
+			</button>
+			<button
+				type="button"
+				onClick={() => setSelectedEntity("dev-101", "device")}
+				data-testid="select-dev-btn"
+			>
+				Select Device
 			</button>
 		</div>
 	);
@@ -75,6 +95,8 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-alpha");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Alpha Fire Alarm Facility");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("proj-alpha");
+		expect(screen.getByTestId("active-rev")).toHaveTextContent("1");
 	});
 
 	it("respects URL search param ?project=proj-beta with top priority", () => {
@@ -88,9 +110,24 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-beta");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Beta High-Rise Tower");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("proj-beta");
 	});
 
-	it("allows switching active project and persists to localStorage", () => {
+	it("resolves selected entity context from URL query params (?project=proj-alpha&element=elem-404)", () => {
+		render(
+			<MemoryRouter initialEntries={["/?project=proj-alpha&element=elem-404"]}>
+				<ProjectProvider>
+					<ConsumerComponent />
+				</ProjectProvider>
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-alpha");
+		expect(screen.getByTestId("selected-entity")).toHaveTextContent("elem-404");
+		expect(screen.getByTestId("selected-type")).toHaveTextContent("element");
+	});
+
+	it("allows switching active project and selected entity, persisting project to localStorage", () => {
 		render(
 			<MemoryRouter initialEntries={["/"]}>
 				<ProjectProvider>
@@ -103,10 +140,13 @@ describe("ProjectContext", () => {
 
 		act(() => {
 			screen.getByTestId("switch-btn").click();
+			screen.getByTestId("select-dev-btn").click();
 		});
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("proj-beta");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("Beta High-Rise Tower");
+		expect(screen.getByTestId("selected-entity")).toHaveTextContent("dev-101");
+		expect(screen.getByTestId("selected-type")).toHaveTextContent("device");
 		expect(localStorage.getItem("bazspark_active_project_id")).toBe("proj-beta");
 	});
 
@@ -119,5 +159,7 @@ describe("ProjectContext", () => {
 
 		expect(screen.getByTestId("active-id")).toHaveTextContent("");
 		expect(screen.getByTestId("active-name")).toHaveTextContent("none");
+		expect(screen.getByTestId("active-model")).toHaveTextContent("");
+		expect(screen.getByTestId("selected-entity")).toHaveTextContent("none");
 	});
 });

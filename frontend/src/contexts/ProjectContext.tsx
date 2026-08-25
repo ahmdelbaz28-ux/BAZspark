@@ -1,11 +1,15 @@
 /**
- * ProjectContext.tsx — Canonical Project & Model Context Provider (Phase 8 Gate 5).
+ * ProjectContext.tsx — Canonical Project, Model & Entity Context Provider (Phase 8 Gate 5).
  *
- * Establishes a single, authoritative project context boundary for the workstation:
- * - Synchronizes active project with URL search param (?project=...), persisted storage, or authoritative backend query.
- * - Resolves active project metadata, revision, and device count from GET /api/v1/projects.
- * - Provides clean context propagation across AI Control Center, Engineering Workspace, Digital Twin, Reports, and Review.
- * - Graceful fallback when rendered in isolated test harnesses without a provider.
+ * Establishes the authoritative workstation context chain:
+ * activeProjectId -> activeModelId -> activeRevision -> selectedEntityId -> capability execution
+ *
+ * Invariants:
+ * 1. Project is the canonical aggregate root; Model ID is structurally bound to Project ID.
+ * 2. Revision is the authoritative version token for OCC write-integrity checks.
+ * 3. Selected Entity context is navigational/selection metadata (not frontend source-of-truth).
+ * 4. Pure reactive resolution: URL search params (?project=, ?element=, ?device=) > persisted state > backend list > empty.
+ * 5. Zero hardcoded project fallbacks.
  */
 
 import type React from "react";
@@ -17,10 +21,15 @@ import type { Project } from "@/services/digitalTwinApi";
 export interface ProjectContextValue {
 	activeProjectId: string;
 	activeProject: Project | null;
+	activeModelId: string;
+	activeRevision: number;
+	selectedEntityId: string | null;
+	selectedEntityType: "device" | "element" | "circuit" | null;
 	projects: Project[];
 	loading: boolean;
 	error: string | null;
 	setActiveProjectId: (id: string) => void;
+	setSelectedEntity: (id: string | null, type?: "device" | "element" | "circuit" | null) => void;
 	refetchProjects: () => void;
 }
 
@@ -29,8 +38,12 @@ const STORAGE_KEY = "bazspark_active_project_id";
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-	const [searchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const urlProject = searchParams.get("project");
+	const urlElement = searchParams.get("element");
+	const urlDevice = searchParams.get("device");
+	const urlEntity = urlElement || urlDevice || searchParams.get("entity");
+
 	const { data: projectsData, loading, error, refetch } = useProjects();
 	const projects = useMemo(() => projectsData || [], [projectsData]);
 
@@ -43,6 +56,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		}
 		return "";
 	});
+
+	const [selectedEntityId, setSelectedEntityId] = useState<string | null>(urlEntity || null);
+	const [selectedEntityType, setSelectedEntityType] = useState<"device" | "element" | "circuit" | null>(
+		urlElement ? "element" : urlDevice ? "device" : null,
+	);
 
 	// Resolve active project ID: URL param -> user selected ID -> first available backend project -> empty string
 	const activeProjectId = useMemo(() => {
@@ -60,6 +78,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		return projects.find((p) => p.id === activeProjectId) || null;
 	}, [projects, activeProjectId]);
 
+	// Model ID: Aggregate projection from active project
+	const activeModelId = useMemo(() => {
+		return activeProject?.id || activeProjectId || "";
+	}, [activeProject, activeProjectId]);
+
+	// Authoritative revision token (OCC tracking)
+	const activeRevision = useMemo(() => {
+		if (!activeProject) return 1;
+		const proj = activeProject as unknown as { version?: number; revision?: number };
+		return proj.version || proj.revision || 1;
+	}, [activeProject]);
+
 	const setActiveProjectId = (id: string) => {
 		setUserSelectedId(id);
 		try {
@@ -69,17 +99,41 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
-	const value = useMemo(
+	const setSelectedEntity = (id: string | null, type: "device" | "element" | "circuit" | null = null) => {
+		setSelectedEntityId(id);
+		setSelectedEntityType(type);
+	};
+
+	const value = useMemo<ProjectContextValue>(
 		() => ({
 			activeProjectId,
 			activeProject,
+			activeModelId,
+			activeRevision,
+			selectedEntityId: urlEntity || selectedEntityId,
+			selectedEntityType: urlElement ? "element" : urlDevice ? "device" : selectedEntityType,
 			projects,
 			loading,
 			error,
 			setActiveProjectId,
+			setSelectedEntity,
 			refetchProjects: refetch,
 		}),
-		[activeProjectId, activeProject, projects, loading, error, refetch],
+		[
+			activeProjectId,
+			activeProject,
+			activeModelId,
+			activeRevision,
+			urlEntity,
+			urlElement,
+			urlDevice,
+			selectedEntityId,
+			selectedEntityType,
+			projects,
+			loading,
+			error,
+			refetch,
+		],
 	);
 
 	return (
@@ -96,10 +150,15 @@ export function useActiveProject(): ProjectContextValue {
 		return {
 			activeProjectId: "",
 			activeProject: null,
+			activeModelId: "",
+			activeRevision: 1,
+			selectedEntityId: null,
+			selectedEntityType: null,
 			projects: [],
 			loading: false,
 			error: null,
 			setActiveProjectId: () => {},
+			setSelectedEntity: () => {},
 			refetchProjects: () => {},
 		};
 	}

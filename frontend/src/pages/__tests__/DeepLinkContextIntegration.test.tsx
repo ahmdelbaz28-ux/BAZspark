@@ -1,16 +1,15 @@
 /**
  * DeepLinkContextIntegration.test.tsx — Integration tests proving canonical Project Context
- * propagation across deep links (Phase 8 Gate 5).
+ * propagation across deep links and contextual entity resolution (Phase 8 Gate 5).
  */
 
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
-import { ProjectProvider } from "@/contexts/ProjectContext";
+import { ProjectProvider, useActiveProject } from "@/contexts/ProjectContext";
 import { AgentChatPage } from "@/pages/AgentChatPage";
 import { WorkflowPage } from "@/pages/WorkflowPage";
-import { ReportsPage } from "@/pages/ReportsPage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
 
 const mockProjects = [
@@ -24,6 +23,7 @@ const mockProjects = [
 		deviceCount: 12,
 		connectionCount: 18,
 		author: "PE Alice",
+		version: 3,
 	},
 	{
 		id: "proj-deep-target",
@@ -35,6 +35,7 @@ const mockProjects = [
 		deviceCount: 45,
 		connectionCount: 90,
 		author: "PE Bob",
+		version: 7,
 	},
 ];
 
@@ -78,10 +79,50 @@ vi.mock("@/services/agentWorkflowApi", () => ({
 	},
 }));
 
+function DeepLinkContextInspector() {
+	const {
+		activeProjectId,
+		activeModelId,
+		activeRevision,
+		selectedEntityId,
+		selectedEntityType,
+		activeProject,
+	} = useActiveProject();
+	return (
+		<div>
+			<span data-testid="dl-project-id">{activeProjectId}</span>
+			<span data-testid="dl-model-id">{activeModelId}</span>
+			<span data-testid="dl-revision">{activeRevision}</span>
+			<span data-testid="dl-entity-id">{selectedEntityId || "none"}</span>
+			<span data-testid="dl-entity-type">{selectedEntityType || "none"}</span>
+			<span data-testid="dl-project-name">{activeProject?.name || "none"}</span>
+		</div>
+	);
+}
+
 describe("Deep-Link Context Propagation Integration", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		sessionStorage.clear();
+	});
+
+	it("resolves deep-linked project, model, revision, and selected entity chain (?project=proj-deep-target&element=elem-smoke-101)", () => {
+		render(
+			<MemoryRouter initialEntries={["/?project=proj-deep-target&element=elem-smoke-101"]}>
+				<AgentSettingsProvider>
+					<ProjectProvider>
+						<DeepLinkContextInspector />
+					</ProjectProvider>
+				</AgentSettingsProvider>
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByTestId("dl-project-id")).toHaveTextContent("proj-deep-target");
+		expect(screen.getByTestId("dl-model-id")).toHaveTextContent("proj-deep-target");
+		expect(screen.getByTestId("dl-revision")).toHaveTextContent("7");
+		expect(screen.getByTestId("dl-entity-id")).toHaveTextContent("elem-smoke-101");
+		expect(screen.getByTestId("dl-entity-type")).toHaveTextContent("element");
+		expect(screen.getByTestId("dl-project-name")).toHaveTextContent("Deep Link Target Complex");
 	});
 
 	it("resolves deep-linked project context on AI Control Center (/?project=proj-deep-target)", () => {
