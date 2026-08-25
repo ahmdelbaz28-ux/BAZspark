@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { BatteryCalcInput } from "@/engine/BatteryCalculator";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import {
 	useGenerateReport,
 	useProjects,
@@ -59,10 +60,10 @@ export function ReportsPage() {
 		error: reportsError,
 		refetch: refetchReports,
 	} = useReports(null); // Pass null as projectId
-	// V214 self-critique fix: fetch real projects instead of hardcoded "default-project-id"
+	const { activeProjectId } = useActiveProject();
 	const { data: projects } = useProjects();
 	const firstProjectId =
-		projects && projects.length > 0 ? projects[0].id : null;
+		activeProjectId || (projects && projects.length > 0 ? projects[0].id : null);
 	const {
 		mutate: generateReport,
 		loading: generating,

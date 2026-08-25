@@ -37,6 +37,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import { useProjects } from "@/hooks/useApiQuery";
 import { useToast } from "@/hooks/use-toast";
 import { workflowApi } from "@/services/fullApi";
@@ -78,10 +79,10 @@ export function WorkflowPage() {
 	);
 	const [auditTrail, setAuditTrail] = useState<unknown[]>([]);
 
-	// Start form — initialize with first real project ID or user override
+	const { activeProjectId } = useActiveProject();
+	// Start form — initialize with active project ID or user override
 	const [userProjectId, setUserProjectId] = useState<string>("");
-	const projectId =
-		userProjectId || (projects && projects.length > 0 ? projects[0].id : "default-project");
+	const projectId = userProjectId || activeProjectId;
 
 	const [workflowType, setWorkflowType] = useState("design_review");
 	const [workflowId, setWorkflowId] = useState("");

@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkflowActionCard } from "@/components/ui/WorkflowActionCard";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
@@ -164,9 +165,11 @@ interface AgentChatPageProps {
 	projectId?: string;
 }
 
-export function AgentChatPage({ projectId = "default_project" }: AgentChatPageProps = {}) {
+export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps = {}) {
 	const { i18n } = useTranslation();
 	const isArabic = Boolean(i18n.language?.startsWith("ar"));
+	const { activeProjectId } = useActiveProject();
+	const effectiveProjectId = propProjectId || activeProjectId;
 
 	// Conversational LLM chat hook
 	const { messages, loading: llmLoading, error: llmError, sendMessage, clearChat } =
@@ -184,7 +187,7 @@ export function AgentChatPage({ projectId = "default_project" }: AgentChatPagePr
 		rejectStep,
 		setApprovalMode,
 		clearRun,
-	} = useAgentRun(projectId);
+	} = useAgentRun(effectiveProjectId);
 
 	const [inputValue, setInputValue] = useState("");
 	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
