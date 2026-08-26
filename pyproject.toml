@@ -65,13 +65,21 @@ dependencies = [
     # works with aiosqlite 0.22.x. Removed.
     "langgraph>=1.0.10,<2.0.0",
     "langgraph-checkpoint-sqlite>=3.0.1,<4.0.0",
+    # A1 (agent-platform-rebuild): direct declarations for packages the code
+    # imports but previously relied on transitively (via mem0ai) or did not
+    # declare at all — GraphRAG imported langchain-openai/langchain-neo4j.
+    "openai>=2,<3",
+    "langchain-openai>=1,<2",
+    "langchain-neo4j>=0.4,<1",
+    # A1/C2: official MCP Python SDK (tools/list + tools/call contract).
+    "mcp>=1,<2",
     # V256 FIX: Added missing packages from requirements.txt to prevent
     # `pip install .` from failing. These 19 packages were in requirements.txt
     # but missing from pyproject.toml, causing drift.
     "asyncio-mqtt>=0.16.0,<1.0.0",
     "beautifulsoup4>=4.12.0,<5.0.0",
     "ezdxf>=1.0.0,<2.0.0",
-    "google-generativeai>=0.3.0,<1.0.0",
+    "google-genai>=1.0.0,<2.0.0",  # A1: replaces deprecated google-generativeai
     "ifcopenshell>=0.7.0,<1.0.0",
     "langfuse>=2.0.0,<5.0.0",
     "lxml>=6.1.0,<7.0.0",
@@ -150,7 +158,8 @@ docs = [
 # dependencies) because:
 #   - ifcopenshell pulls in lark + isodate (heavy)
 #   - mem0ai pulls in openai + qdrant-client + grpcio (heavy)
-#   - google-generativeai is deprecated (use google-genai in V142)    #   - asyncio-mqtt / asyncua are only needed for IoT deployments
+#   - google-genai is the successor of the deprecated google-generativeai
+#   - asyncio-mqtt / asyncua are only needed for IoT deployments
 #
 # Install with: pip install -e ".[integrations]"
 integrations = [
@@ -160,9 +169,8 @@ integrations = [
     # (V72/V75/V79 crash-recovery + procedural memory)
     "mem0ai>=0.1.0,<3.0.0",
     # Google Gemini — used by mem0_setup.py as dual-primary LLM provider
-    # NOTE: google-generativeai is deprecated; V142 should migrate to
-    # google-genai (the official successor). Kept for backward compat.
-    "google-generativeai>=0.3.0,<1.0.0",
+    # A1: migrated from deprecated google-generativeai to google-genai.
+    "google-genai>=1.0.0,<2.0.0",
     # IoT MQTT ingestion — used by fireai/integration/iot_pipeline.py
     "asyncio-mqtt>=0.16.0,<1.0.0",
     # IoT OPC-UA ingestion — used by fireai/integration/iot_pipeline.py
