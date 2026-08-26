@@ -559,7 +559,9 @@ def _make_sentinel(
             raw_log.append(entry)
             fn_posix = fn.replace(os.sep, "/").lower()
             if (
-                not fn_posix.startswith(tuple(p.replace(os.sep, "/").lower() for p in test_file_prefixes))
+                not fn_posix.startswith(
+                    tuple(p.replace(os.sep, "/").lower() for p in test_file_prefixes)
+                )
                 and "/_pytest/" not in fn_posix
                 and "/site-packages/pytest" not in fn_posix
                 and "conftest" not in os.path.basename(fn)

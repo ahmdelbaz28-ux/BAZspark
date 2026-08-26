@@ -34,6 +34,9 @@ class DeviceRepository(BaseRepository):
         device_data["projectId"] = project_id
         device_data["createdAt"] = now
         device_data["updatedAt"] = now
+        device_data.setdefault("category", "initiating")
+        device_data.setdefault("x", 0.0)
+        device_data.setdefault("y", 0.0)
         device_data.setdefault("z", 0.0)
         device_data.setdefault("rotation", 0.0)
         device_data.setdefault("voltage", 0.0)

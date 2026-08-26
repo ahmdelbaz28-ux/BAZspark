@@ -51,21 +51,29 @@ ExportExecuteRole = Annotated[None, Depends(require_permission(Permission.EXPORT
 
 
 class PlanExportRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
-    target_format: str = Field(..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf")
+    project_id: str = Field("", description="Target project ID")
+    target_format: str = Field(
+        ..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf"
+    )
     options: dict[str, Any] = Field(default_factory=dict, description="Export options")
 
 
 class ExecuteExportRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
-    expected_revision: int = Field(..., description="Expected project revision for OCC verification")
-    target_format: str = Field(..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf")
+    project_id: str = Field("", description="Target project ID")
+    expected_revision: int = Field(
+        ..., description="Expected project revision for OCC verification"
+    )
+    target_format: str = Field(
+        ..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf"
+    )
     options: dict[str, Any] = Field(default_factory=dict, description="Execution options")
 
 
 class CreateExportRunRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
-    target_format: str = Field(..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf")
+    project_id: str = Field("", description="Target project ID")
+    target_format: str = Field(
+        ..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf"
+    )
     approval_mode: str = Field("AUTO", description="AUTO or STEP_BY_STEP")
     options: dict[str, Any] = Field(default_factory=dict, description="Export options")
 
@@ -257,7 +265,10 @@ async def create_export_run(
         logger.error("Failed to start export agent run: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"errorCode": "AGENT_RUN_FAILED", "message": "Could not initiate export workflow run."},
+            detail={
+                "errorCode": "AGENT_RUN_FAILED",
+                "message": "Could not initiate export workflow run.",
+            },
         ) from exc
 
 

@@ -124,7 +124,7 @@ export class ImportApiClient extends ApiClient {
 	 */
 	async planImport(
 		fileId: string,
-		projectId = "default_project",
+		projectId = "",
 		options: Record<string, unknown> = {},
 	): Promise<ImportPlan> {
 		const res = await this.fetchWithRetry<{
@@ -170,7 +170,7 @@ export class ImportApiClient extends ApiClient {
 	 */
 	async createImportRun(
 		fileId: string,
-		projectId = "default_project",
+		projectId = "",
 		approvalMode: "AUTO" | "STEP_BY_STEP" = "AUTO",
 		options: Record<string, unknown> = {},
 	): Promise<AgentRunSummary> {

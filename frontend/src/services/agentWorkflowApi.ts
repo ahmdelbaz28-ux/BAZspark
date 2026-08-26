@@ -74,20 +74,25 @@ export const agentWorkflowApi = {
 	async planWorkflow(params: {
 		prompt: string;
 		projectId?: string;
+		modelId?: string;
+		entityId?: string;
+		entityType?: string;
 		expectedRevision?: number;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
 		governancePolicy?: Record<string, unknown>;
 	}): Promise<AutonomousPlanRecord> {
-		const res = await api.post<{ success: boolean; data: AutonomousPlanRecord }>("/workflow/runs/plan", {
+		return api.post<AutonomousPlanRecord>("/workflow/runs/plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "default_project",
+			project_id: params.projectId || "",
+			model_id: params.modelId || "",
+			entity_id: params.entityId || "",
+			entity_type: params.entityType || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
 			governance_policy: params.governancePolicy,
 		});
-		return res.data;
 	},
 
 	/**
@@ -96,58 +101,55 @@ export const agentWorkflowApi = {
 	async startPlannedWorkflow(params: {
 		prompt: string;
 		projectId?: string;
+		modelId?: string;
+		entityId?: string;
+		entityType?: string;
 		expectedRevision?: number;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
 		conversationId?: string;
 		governancePolicy?: Record<string, unknown>;
-	}): Promise<{ run: AgentRunStateRecord; plan: AutonomousPlanRecord }> {
-		const res = await api.post<{
-			success: boolean;
-			data: AgentRunStateRecord;
-			plan: AutonomousPlanRecord;
-		}>("/workflow/runs/start-plan", {
+	}): Promise<AgentRunStateRecord> {
+		return api.post<AgentRunStateRecord>("/workflow/runs/start-plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "default_project",
+			project_id: params.projectId || "",
+			model_id: params.modelId || "",
+			entity_id: params.entityId || "",
+			entity_type: params.entityType || "",
 			expected_revision: params.expectedRevision,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
 			conversation_id: params.conversationId || "",
 			governance_policy: params.governancePolicy,
 		});
-		return { run: res.data, plan: res.plan };
 	},
 
 	/**
 	 * Get persisted status for an Agent Run.
 	 */
 	async getRunStatus(runId: string): Promise<AgentRunStateRecord> {
-		const res = await api.get<{ success: boolean; data: AgentRunStateRecord }>(`/workflow/runs/${runId}/status`);
-		return res.data;
+		return api.get<AgentRunStateRecord>(`/workflow/runs/${runId}/status`);
 	},
 
 	/**
 	 * Resume a paused or interrupted Agent Run.
 	 */
 	async resumeRun(runId: string): Promise<AgentRunStateRecord> {
-		const res = await api.post<{ success: boolean; data: AgentRunStateRecord }>(`/workflow/runs/${runId}/resume`, {});
-		return res.data;
+		return api.post<AgentRunStateRecord>(`/workflow/runs/${runId}/resume`, {});
 	},
 
 	/**
 	 * Cancel an active Agent Run server-side.
 	 */
 	async cancelRun(runId: string): Promise<AgentRunStateRecord> {
-		const res = await api.post<{ success: boolean; data: AgentRunStateRecord }>(`/workflow/runs/${runId}/cancel`, {});
-		return res.data;
+		return api.post<AgentRunStateRecord>(`/workflow/runs/${runId}/cancel`, {});
 	},
 
 	/**
 	 * Retry a failed Agent Run from its failed step with idempotency protection.
 	 */
 	async retryRun(runId: string): Promise<AgentRunStateRecord> {
-		const res = await api.post<{ success: boolean; data: AgentRunStateRecord }>(`/workflow/runs/${runId}/retry`, {});
-		return res.data;
+		return api.post<AgentRunStateRecord>(`/workflow/runs/${runId}/retry`, {});
 	},
 
 	/**
@@ -159,10 +161,9 @@ export const agentWorkflowApi = {
 		decision: "APPROVED" | "REJECTED",
 		reason?: string,
 	): Promise<AgentRunStateRecord> {
-		const res = await api.post<{ success: boolean; data: AgentRunStateRecord }>(
+		return api.post<AgentRunStateRecord>(
 			`/workflow/runs/${runId}/approvals/${approvalId}/decide`,
 			{ decision, reason },
 		);
-		return res.data;
 	},
 };

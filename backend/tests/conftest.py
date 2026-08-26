@@ -52,6 +52,19 @@ Per agent.md Rule 21 (4-LAYER SELF-CRITICISM):
 
 from __future__ import annotations
 
+import datetime
+import enum
+
+if not hasattr(enum, "StrEnum"):
+
+    class _StrEnum(str, enum.Enum):
+        pass
+
+    enum.StrEnum = _StrEnum
+
+if not hasattr(datetime, "UTC"):
+    datetime.UTC = datetime.timezone.utc  # noqa: UP017
+
 import os
 import sys as _sys
 
@@ -460,6 +473,141 @@ def _reset_rate_limiter_storage():
     except Exception:
         # Fail-safe: ignore if limiter unavailable or API changed
         pass
+
+
+@pytest.fixture(autouse=True)
+def _seed_test_canonical_revisions(request):
+    """Seed persistent canonical project revisions for test cases that execute commands."""
+    fpath = str(getattr(request, "fspath", ""))
+    if "test_blk02" in fpath or "security" in fpath:
+        return
+    try:
+        from backend.core.state_store import default_state_store
+        from backend.database import get_db
+        db = get_db()
+        pids = [
+            "default_project",
+            "proj-contract-01",
+            "proj-idempotent-01",
+            "proj-e2e-vertical-slice",
+            "proj-electrical-01",
+            "proj-elec-determ-01",
+            "proj-elec-occ-01",
+            "proj-elec-idemp-01",
+            "proj-elec-collision-01",
+            "proj-elec-tx-01",
+            "proj-elec-dry-01",
+            "proj-elec-mut-01",
+            "proj-elec-audit-01",
+            "proj-hydr-solver-01",
+            "proj-hydr-fluid-01",
+            "proj-hydr-preview-01",
+            "proj-hydr-commit-01",
+            "proj-hydr-occ-01",
+            "proj-hydr-idemp-01",
+            "proj-hydr-collision-01",
+            "proj-hydr-multi-01",
+            "proj-hydr-warn-01",
+            "proj-hydr-zero-01",
+            "proj-bat-determ-01",
+            "proj-bat-temp-01",
+            "proj-bat-chem-01",
+            "proj-bat-bound-01",
+            "proj-bat-preview-01",
+            "proj-bat-commit-01",
+            "proj-bat-occ-01",
+            "proj-bat-idemp-01",
+            "proj-bat-collision-01",
+            "proj-bat-multi-01",
+            "proj-rollback-01",
+            "proj-comp-handler-01",
+            "proj-comp-full-01",
+            "proj-phase4-adv-01",
+            "proj-phase4-occ-01",
+            "proj-phase6-scen-a",
+            "proj-phase6-scen-b",
+            "proj-phase6-scen-c",
+            "proj-phase6-scen-d",
+            "proj-phase6-scen-e",
+            "proj-phase6-scen-f1",
+            "proj-phase6-scen-f2",
+            "proj-phase6-import-export",
+            "proj-phase6-hydr-bat",
+            "proj-phase6-invalid",
+            "proj-phase6-ws-orch",
+            "proj-phase6-ser",
+            "proj-run-lifecycle-01",
+            "proj-import-run-01",
+            "proj-rest-import-01",
+            "proj-rest-01",
+            "proj-rest-exec",
+            "proj-run-import",
+            "proj-ws-test",
+            "proj-agent-import",
+            "proj-step-import",
+            "proj-export-01",
+            "proj-export-exec",
+            "proj-run-export",
+            # test_agent_run_routers.py
+            "proj-ws-auto",
+            "proj-ws-appr",
+            "proj-ws-pause",
+            "proj-ws-cancel",
+            "proj-ws-retry",
+            "proj-ws-decide",
+            "proj-ws-dispatch",
+            "proj-rest-status",
+            "proj-rest-resume",
+            "proj-rest-cancel",
+            "proj-rest-retry",
+            "proj-rest-baddec",
+            "proj-rest-unkappr",
+            "proj-rest-mismatch-a",
+            "proj-rest-mismatch-b",
+            "proj-rest-ok",
+            "proj-rest-resume-ok",
+            "proj-rest-cancel-done",
+            "proj-rest-retry-ok",
+            # test_agent_ws_spine.py
+            "proj-ws-1",
+            "proj-ws-2",
+            "proj-user-mut",
+            "proj-dispatch",
+            "proj-ws-elec-1",
+            "proj-ws-elec-2",
+            "proj-ws-elec-commit",
+            "proj-ws-hyd-1",
+            "proj-ws-hyd-2",
+            "proj-ws-hyd-commit",
+            "proj-ws-bat-1",
+            "proj-ws-bat-2",
+            "proj-ws-bat-commit",
+            # test_dynamic_provider_routing.py
+            "proj-dyn-route-01",
+            "proj-dyn-route-02",
+            "proj-dyn-route-03",
+            "proj-room-01",
+            "proj-elec-01",
+            "proj-hyd-01",
+            "proj-bat-01",
+            # test_export_orchestrator.py
+            "proj-exp-01",
+            "proj-traversal-test",
+        ]
+        for pid in pids:
+            try:
+                if not db.get_project(pid):
+                    db.create_project({"id": pid, "name": f"Test Project {pid}", "author": "test-suite"})
+            except Exception:
+                pass
+            try:
+                if default_state_store.get_project_revision(pid) is None:
+                    default_state_store.set_project_revision(pid, 1)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 
 
 def pytest_addoption(parser):

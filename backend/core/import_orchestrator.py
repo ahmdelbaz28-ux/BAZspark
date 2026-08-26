@@ -30,13 +30,13 @@ logger = logging.getLogger("fireai.import_orchestrator")
 
 # Size limits per format
 MAX_FILE_SIZES: dict[str, int] = {
-    "dwg": 50 * 1024 * 1024,   # 50 MB
-    "dxf": 50 * 1024 * 1024,   # 50 MB
-    "ifc": 50 * 1024 * 1024,   # 50 MB
-    "rvt": 50 * 1024 * 1024,   # 50 MB
-    "pdf": 25 * 1024 * 1024,   # 25 MB
+    "dwg": 50 * 1024 * 1024,  # 50 MB
+    "dxf": 50 * 1024 * 1024,  # 50 MB
+    "ifc": 50 * 1024 * 1024,  # 50 MB
+    "rvt": 50 * 1024 * 1024,  # 50 MB
+    "pdf": 25 * 1024 * 1024,  # 25 MB
     "xlsx": 15 * 1024 * 1024,  # 15 MB
-    "csv": 10 * 1024 * 1024,   # 10 MB
+    "csv": 10 * 1024 * 1024,  # 10 MB
     "json": 10 * 1024 * 1024,  # 10 MB
 }
 
@@ -84,6 +84,11 @@ class ProjectRevisionChangedError(ImportErrorBase):
         message: str = "Project revision changed concurrently; import aborted to prevent state corruption.",
     ) -> None:
         super().__init__(message, error_code="PROJECT_REVISION_CHANGED")
+
+
+class ProjectNotFoundError(ImportErrorBase):
+    def __init__(self, message: str = "Target project not found or uninitialized.") -> None:
+        super().__init__(message, error_code="PROJECT_NOT_FOUND")
 
 
 class StagedFileNotFoundError(ImportErrorBase):
@@ -491,6 +496,10 @@ class ImportOrchestrator:
         record = self.get_staged_file(file_id)
         inspection = self.inspect_file(file_id, principal)
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
 
         warnings: list[str] = list(inspection.get("warnings", []))
         estimated_rooms = int(inspection.get("rooms_count", 1))
@@ -586,6 +595,10 @@ class ImportOrchestrator:
         """
         record = self.get_staged_file(file_id)
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
 
         # OCC Guardrail: verify revision has not drifted
         if current_rev != expected_revision:

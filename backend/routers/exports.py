@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import json
 from datetime import UTC, datetime
@@ -277,9 +279,7 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     if project_id:
         project = db.get_project(project_id)
         if not project:
-            raise HTTPException(
-                status_code=404, detail=f"Project '{project_id}' not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
     else:
         projects = db.list_projects(page=1, limit=1)
         if not projects or not projects.get("data"):

@@ -286,9 +286,17 @@ class CapabilityRegistry:
                         "circuit_id": {"type": "string"},
                         "current_a": {"type": "number", "minimum": 0.0},
                         "one_way_length_m": {"type": "number", "minimum": 0.0},
-                        "awg": {"type": "string", "enum": ["18", "16", "14", "12", "10", "8", "6", "4"]},
+                        "awg": {
+                            "type": "string",
+                            "enum": ["18", "16", "14", "12", "10", "8", "6", "4"],
+                        },
                         "nominal_voltage": {"type": "number", "minimum": 1.0, "default": 24.0},
-                        "temperature_c": {"type": "number", "minimum": -40.0, "maximum": 200.0, "default": 75.0},
+                        "temperature_c": {
+                            "type": "number",
+                            "minimum": -40.0,
+                            "maximum": 200.0,
+                            "default": 75.0,
+                        },
                     },
                     "required": ["current_a", "one_way_length_m", "awg"],
                 },
@@ -332,8 +340,16 @@ class CapabilityRegistry:
             except ValueError:
                 fluid_type = FluidType.WATER
 
-            density_kg_m3 = float(payload["density_kg_m3"]) if payload.get("density_kg_m3") is not None else None
-            viscosity_pa_s = float(payload["viscosity_pa_s"]) if payload.get("viscosity_pa_s") is not None else None
+            density_kg_m3 = (
+                float(payload["density_kg_m3"])
+                if payload.get("density_kg_m3") is not None
+                else None
+            )
+            viscosity_pa_s = (
+                float(payload["viscosity_pa_s"])
+                if payload.get("viscosity_pa_s") is not None
+                else None
+            )
 
             flow_rate_kg_s = payload.get("flow_rate_kg_s")
             flow_l_min = payload.get("flow_l_min")
@@ -420,7 +436,16 @@ class CapabilityRegistry:
                         "flow_l_min": {"type": "number", "minimum": 0.0},
                         "fluid_type": {
                             "type": "string",
-                            "enum": ["water", "co2_liquid", "co2_vapor", "fm200", "novec1230", "inergen_ig541", "afff_foam", "custom"],
+                            "enum": [
+                                "water",
+                                "co2_liquid",
+                                "co2_vapor",
+                                "fm200",
+                                "novec1230",
+                                "inergen_ig541",
+                                "afff_foam",
+                                "custom",
+                            ],
                             "default": "water",
                         },
                         "roughness_mm": {"type": "number", "minimum": 0.0, "maximum": 10.0},
@@ -497,11 +522,17 @@ class CapabilityRegistry:
                 safety_margin_pct=safety_margin_pct,
             )
 
-            warnings: list[str] = [v.get("message", "") for v in result.violations if isinstance(v, dict)]
+            warnings: list[str] = [
+                v.get("message", "") for v in result.violations if isinstance(v, dict)
+            ]
             if battery_type == "lifepo4" and min_temperature_c < 0.0:
-                warnings.append("Low temperature warning: LiFePO4 charging below 0°C risks lithium plating.")
+                warnings.append(
+                    "Low temperature warning: LiFePO4 charging below 0°C risks lithium plating."
+                )
             elif battery_type == "vrla" and min_temperature_c < -10.0:
-                warnings.append("Severe cold warning: VRLA capacity drops below 60% of rated value.")
+                warnings.append(
+                    "Severe cold warning: VRLA capacity drops below 60% of rated value."
+                )
 
             temp_derating = result.temperature_derating
             if battery_type == "lifepo4":
@@ -552,12 +583,26 @@ class CapabilityRegistry:
                         "alarm_load_amps": {"type": "number", "minimum": 0.0},
                         "standby_hours": {"type": "number", "minimum": 0.0, "default": 24.0},
                         "alarm_hours": {"type": "number", "minimum": 0.0, "default": 0.0833},
-                        "min_temperature_c": {"type": "number", "minimum": -40.0, "maximum": 70.0, "default": 20.0},
+                        "min_temperature_c": {
+                            "type": "number",
+                            "minimum": -40.0,
+                            "maximum": 70.0,
+                            "default": 20.0,
+                        },
                         "service_life_years": {"type": "number", "minimum": 1.0, "default": 5.0},
-                        "battery_type": {"type": "string", "enum": ["vrla", "flooded", "lifepo4", "nicad"], "default": "vrla"},
+                        "battery_type": {
+                            "type": "string",
+                            "enum": ["vrla", "flooded", "lifepo4", "nicad"],
+                            "default": "vrla",
+                        },
                         "installed_ah": {"type": "number", "minimum": 0.0},
                         "cells": {"type": "integer", "minimum": 1, "default": 12},
-                        "safety_margin_pct": {"type": "number", "minimum": 0.0, "maximum": 100.0, "default": 0.0},
+                        "safety_margin_pct": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 100.0,
+                            "default": 0.0,
+                        },
                         "aging_factor": {"type": "number", "minimum": 1.0, "default": 1.25},
                     },
                     "required": ["standby_load_amps", "alarm_load_amps"],
@@ -592,7 +637,7 @@ class CapabilityRegistry:
             from backend.core.import_orchestrator import default_import_orchestrator
 
             file_id = str(payload.get("file_id", ""))
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             options = payload.get("options") or {}
             plan = default_import_orchestrator.plan_import(file_id, project_id, options=options)
             return plan.to_dict()
@@ -601,7 +646,7 @@ class CapabilityRegistry:
             from backend.core.import_orchestrator import default_import_orchestrator
 
             file_id = str(payload.get("file_id", ""))
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             options = payload.get("options") or {}
             return default_import_orchestrator.prepare_import_commit(
                 file_id, project_id, options=options
@@ -704,16 +749,18 @@ class CapabilityRegistry:
         def _plan_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from backend.core.export_orchestrator import default_export_orchestrator
 
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             target_format = str(payload.get("target_format", "dxf"))
             options = payload.get("options") or {}
-            plan = default_export_orchestrator.plan_export(project_id, target_format, options=options)
+            plan = default_export_orchestrator.plan_export(
+                project_id, target_format, options=options
+            )
             return plan.to_dict()
 
         def _execute_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from backend.core.export_orchestrator import default_export_orchestrator
 
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             target_format = str(payload.get("target_format", "dxf"))
             expected_revision = int(payload.get("expected_revision", 0))
             options = payload.get("options") or {}
@@ -828,4 +875,3 @@ class CapabilityRegistry:
 
 # Global singleton instance
 default_capability_registry = CapabilityRegistry()
-

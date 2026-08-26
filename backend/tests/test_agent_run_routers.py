@@ -70,13 +70,13 @@ def registry() -> CapabilityRegistry:
 
 
 @pytest.fixture
-def orch(
-    fresh_db: Database, registry: CapabilityRegistry
-) -> AgentRunOrchestrator:
+def orch(fresh_db: Database, registry: CapabilityRegistry) -> AgentRunOrchestrator:
     bus = CommandBus(state_store=CommandStateStore(fresh_db))
     store = AgentRunStore(fresh_db)
     return AgentRunOrchestrator(
-        command_bus=bus, capability_registry=registry, run_store=store,
+        command_bus=bus,
+        capability_registry=registry,
+        run_store=store,
         environment="development",
     )
 
@@ -125,6 +125,33 @@ def patched_orch(monkeypatch: pytest.MonkeyPatch, orch: AgentRunOrchestrator):
     monkeypatch.setattr(agent_ws, "default_agent_run_orchestrator", orch)
     monkeypatch.setattr(workflow, "default_agent_run_orchestrator", orch)
     return orch
+
+
+@pytest.fixture(autouse=True)
+def _auto_seed_router_projects(orch: AgentRunOrchestrator) -> None:
+    """Seed project revisions so OCC checks don't reject legitimate test operations."""
+    for pid in [
+        "proj-ws-auto",
+        "proj-ws-appr",
+        "proj-ws-pause",
+        "proj-ws-cancel",
+        "proj-ws-retry",
+        "proj-ws-decide",
+        "proj-ws-dispatch",
+        "proj-rest-status",
+        "proj-rest-resume",
+        "proj-rest-cancel",
+        "proj-rest-retry",
+        "proj-rest-baddec",
+        "proj-rest-unkappr",
+        "proj-rest-mismatch-a",
+        "proj-rest-mismatch-b",
+        "proj-rest-ok",
+        "proj-rest-resume-ok",
+        "proj-rest-cancel-done",
+        "proj-rest-retry-ok",
+    ]:
+        orch._bus.state_store.set_project_revision(pid, 1)
 
 
 # ── WS handler unit tests ────────────────────────────────────────────────────
@@ -188,9 +215,7 @@ async def test_run_start_emits_approval_request_frame(
 async def test_run_status_unknown_run_maps_to_run_not_found(
     ws: MockWebSocket, owner: AuthenticatedPrincipal
 ) -> None:
-    await agent_ws._handle_run_status(
-        ws, owner, {"type": "run_status", "runId": "nope"}
-    )
+    await agent_ws._handle_run_status(ws, owner, {"type": "run_status", "runId": "nope"})
     assert len(ws.sent_messages) == 1
     resp = ws.sent_messages[0]
     assert resp["type"] == "run_error"
@@ -209,12 +234,8 @@ async def test_pause_resume_roundtrip_frames(
         steps=[_spatial_step("s1"), _electrical_step("s2")],
         approval_mode="AUTO",
     )
-    await agent_ws._handle_run_pause(
-        ws, owner, {"type": "run_pause", "runId": run.run_id}
-    )
-    await agent_ws._handle_run_resume(
-        ws, owner, {"type": "run_resume", "runId": run.run_id}
-    )
+    await agent_ws._handle_run_pause(ws, owner, {"type": "run_pause", "runId": run.run_id})
+    await agent_ws._handle_run_resume(ws, owner, {"type": "run_resume", "runId": run.run_id})
     statuses = [f["status"] for f in ws.sent_messages if f["type"] == "run_status_update"]
     assert statuses[0] == "PAUSED"
     assert statuses[-1] == "WAITING_APPROVAL"
@@ -232,9 +253,7 @@ async def test_cancel_waiting_run_invalidates_approval(
         steps=[_spatial_step("s1"), _electrical_step("s2")],
         approval_mode="AUTO",
     )
-    await agent_ws._handle_run_cancel(
-        ws, owner, {"type": "run_cancel", "runId": run.run_id}
-    )
+    await agent_ws._handle_run_cancel(ws, owner, {"type": "run_cancel", "runId": run.run_id})
     frame = ws.sent_messages[-1]
     assert frame["type"] == "run_status_update"
     assert frame["status"] == "CANCELLED"
@@ -253,9 +272,7 @@ async def test_retry_on_terminal_run_maps_to_invalid_state(
         approval_mode="AUTO",
     )
     assert run.status.value == "COMPLETED"
-    await agent_ws._handle_run_retry(
-        ws, owner, {"type": "run_retry", "runId": run.run_id}
-    )
+    await agent_ws._handle_run_retry(ws, owner, {"type": "run_retry", "runId": run.run_id})
     resp = ws.sent_messages[-1]
     assert resp["type"] == "run_error"
     assert resp["errorCode"] == "INVALID_RUN_STATE"
@@ -314,9 +331,7 @@ async def test_run_operation_unexpected_error_is_sanitized(
         raise RuntimeError("secret internals")
 
     monkeypatch.setattr(patched_orch, "get_run_status", _boom)
-    await agent_ws._handle_run_status(
-        ws, owner, {"type": "run_status", "runId": "whatever"}
-    )
+    await agent_ws._handle_run_status(ws, owner, {"type": "run_status", "runId": "whatever"})
     resp = ws.sent_messages[0]
     assert resp["type"] == "run_error"
     assert resp["errorCode"] == "RUN_OPERATION_FAILED"
@@ -326,9 +341,7 @@ async def test_run_operation_unexpected_error_is_sanitized(
 def test_run_error_code_mapping() -> None:
     assert agent_ws._run_error_code(RunNotFoundError("x")) == "RUN_NOT_FOUND"
     assert agent_ws._run_error_code(ValueError("bad plan")) == "INVALID_RUN_PLAN"
-    assert agent_ws._run_error_code(InvalidRunStateError("bad state")) == (
-        "INVALID_RUN_STATE"
-    )
+    assert agent_ws._run_error_code(InvalidRunStateError("bad state")) == ("INVALID_RUN_STATE")
     assert agent_ws._run_error_code(RuntimeError("boom")) == "RUN_OPERATION_FAILED"
 
 
@@ -369,9 +382,7 @@ async def test_dispatch_chain_routes_all_run_message_types(
 
 
 @pytest.fixture
-def client(
-    monkeypatch: pytest.MonkeyPatch, patched_orch: AgentRunOrchestrator
-):
+def client(monkeypatch: pytest.MonkeyPatch, patched_orch: AgentRunOrchestrator):
     """TestClient with RBAC/principal wired to the tmp orchestrator owner."""
     from fastapi.testclient import TestClient
 
@@ -382,9 +393,7 @@ def client(
     monkeypatch.setattr(
         workflow, "require_permission", lambda permission: (lambda request: Role.ADMIN)
     )
-    monkeypatch.setattr(
-        "backend.auth.has_permission", lambda role, permission: True
-    )
+    monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
     with TestClient(app) as c:
         yield c
 
@@ -444,9 +453,7 @@ def test_rest_retry_conflict_409(client, patched_orch, owner) -> None:
     assert resp.status_code == 409
 
 
-def test_rest_decide_rejects_invalid_decision(
-    client, patched_orch, owner
-) -> None:
+def test_rest_decide_rejects_invalid_decision(client, patched_orch, owner) -> None:
     run = _make_waiting_run(patched_orch, owner, "proj-rest-baddec")
     approval_id = run.pending_approval_id
     resp = client.post(
@@ -558,10 +565,10 @@ def test_rest_retry_success_on_failed_run(
         )
     )
     db = Database(db_path=str(tmp_path / "agent_run_retry_rest.db"))
+    flaky_store = CommandStateStore(db)
+    flaky_store.set_project_revision("proj-rest-retry-ok", 1)
     flaky_orch = AgentRunOrchestrator(
-        command_bus=CommandBus(
-            capability_registry=registry, state_store=CommandStateStore(db)
-        ),
+        command_bus=CommandBus(capability_registry=registry, state_store=flaky_store),
         capability_registry=registry,
         run_store=AgentRunStore(db),
         environment="development",
@@ -571,9 +578,7 @@ def test_rest_retry_success_on_failed_run(
     run = flaky_orch.start_run(
         owner,
         project_id="proj-rest-retry-ok",
-        steps=[
-            {"step_id": "f1", "capability_id": "test.flaky.rest", "payload": {"room_id": "r1"}}
-        ],
+        steps=[{"step_id": "f1", "capability_id": "test.flaky.rest", "payload": {"room_id": "r1"}}],
         approval_mode="AUTO",
     )
     assert run.status.value == "FAILED"

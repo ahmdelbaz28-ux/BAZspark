@@ -73,6 +73,7 @@ class TestDistributedOCC:
         The other MUST return CONCURRENCY_CONFLICT, leaving final revision at exactly 2.
         """
         project_id = "proj-concurrent-occ-01"
+        fresh_db.create_project({"id": project_id, "name": "OCC Test Project", "author": "lead-engineer-01"})
 
         # Worker A and Worker B separate runtime instances sharing the same DB
         worker_a = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
@@ -144,6 +145,7 @@ class TestPersistentIdempotency:
         - Revision is NOT incremented twice.
         """
         project_id = "proj-idemp-01"
+        fresh_db.create_project({"id": project_id, "name": "Idemp Project", "author": "lead-engineer-01"})
         bus_instance_1 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
         bus_instance_2 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
 
@@ -184,6 +186,7 @@ class TestPersistentIdempotency:
         - Must NOT mutate state or advance revision.
         """
         project_id = "proj-idemp-collision"
+        fresh_db.create_project({"id": project_id, "name": "Collision Project", "author": "lead-engineer-01"})
         bus = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
 
         cmd_orig = DomainCommand(
@@ -240,6 +243,7 @@ class TestTransactionRollback:
         - No domain event is written.
         """
         project_id = "proj-rollback-01"
+        fresh_db.create_project({"id": project_id, "name": "Rollback Project", "author": "lead-engineer-01"})
         store = CommandStateStore(fresh_db)
 
         # Create custom capability registry with failing handler
@@ -336,7 +340,21 @@ class TestTransactionRollback:
                           {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()},
                           {fresh_db._ph()}, {fresh_db._ph()}, {fresh_db._ph()})
                 """,
-                ("cmd-atomic-fail-01", "corr", None, project_id, "spatial.place_devices", 1, 2, "actor", 0, "hash", "{}", "COMPLETED", "2026-01-01T00:00:00Z"),
+                (
+                    "cmd-atomic-fail-01",
+                    "corr",
+                    None,
+                    project_id,
+                    "spatial.place_devices",
+                    1,
+                    2,
+                    "actor",
+                    0,
+                    "hash",
+                    "{}",
+                    "COMPLETED",
+                    "2026-01-01T00:00:00Z",
+                ),
             )
 
         event = DomainEvent(
@@ -383,6 +401,7 @@ class TestEventPersistence:
         self, fresh_db: Database, test_principal: AuthenticatedPrincipal
     ):
         project_id = "proj-events-01"
+        fresh_db.create_project({"id": project_id, "name": "Events Project", "author": "lead-engineer-01"})
         store = CommandStateStore(fresh_db)
         bus = CommandBus(default_capability_registry, store)
 
@@ -423,6 +442,7 @@ class TestRestartRecovery:
         self, fresh_db: Database, test_principal: AuthenticatedPrincipal
     ):
         project_id = "proj-restart-01"
+        fresh_db.create_project({"id": project_id, "name": "Restart Project", "author": "lead-engineer-01"})
 
         # Session 1: Process executes commit
         bus_1 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
@@ -507,16 +527,16 @@ class TestCoverageBooster:
     # StateStore: tuple-row vs dict-row paths (get_project_revision, get_canonical_state)
     # ──────────────────────────────────────────────────────────────────────────
 
-    def test_state_store_get_revision_returns_1_for_unknown_project(self) -> None:
+    def test_state_store_get_revision_returns_none_for_unknown_project(self) -> None:
         db = Database()
         store = CommandStateStore(db)
-        assert store.get_project_revision("nonexistent-project-xyz") == 1
+        assert store.get_project_revision("nonexistent-project-xyz") is None
 
-    def test_state_store_get_canonical_state_returns_default_for_unknown_project(self) -> None:
+    def test_state_store_get_canonical_state_returns_none_for_unknown_project(self) -> None:
         db = Database()
         store = CommandStateStore(db)
         state = store.get_canonical_state("nonexistent-project-abc")
-        assert state == {"devices": [], "revision": 1}
+        assert state is None
 
     def test_state_store_set_revision_insert_then_update(self) -> None:
         """Covers both the INSERT (row is None) and UPDATE (row exists) branches."""
@@ -749,6 +769,7 @@ class TestCoverageBooster:
         db = Database()
         store = CommandStateStore(db)
         pid = "proj-idem-event"
+        store.set_project_revision(pid, 1)
         cmd = self._make_cmd("cmd-with-event-01", pid, expected_rev=1)
         event = DomainEvent(
             eventId="evt-with-event-01",
@@ -789,6 +810,7 @@ class TestCoverageBooster:
         db = Database()
         store = CommandStateStore(db)
         pid = "proj-events-parsed"
+        store.set_project_revision(pid, 1)
         cmd = self._make_cmd("cmd-events-parsed-01", pid, expected_rev=1)
         event = DomainEvent(
             eventId="evt-events-parsed-01",
@@ -803,16 +825,16 @@ class TestCoverageBooster:
             auditReference="b" * 64,
             payload={"devices": []},
         )
-        store.commit_transaction(
+        committed, err = store.commit_transaction(
             command=cmd,
             new_revision=2,
             exec_result={"devices": []},
             event=event,
             payload_hash="hash456",
         )
+        assert committed is True
 
         events = store.get_domain_events(project_id=pid, limit=10)
         assert len(events) >= 1
         assert events[0].eventId == "evt-events-parsed-01"
         assert events[0].verificationResult == {"valid": True}
-

@@ -8,6 +8,8 @@
 
 import {
 	CheckCircle2,
+	FileText,
+	AlertTriangle,
 	History,
 	Loader2,
 	Play,
@@ -16,6 +18,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +37,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import { useToast } from "@/hooks/use-toast";
 import { workflowApi } from "@/services/fullApi";
 
@@ -53,10 +57,9 @@ const WORKFLOW_TYPES = [
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive"> =
 	{
-		running: "secondary",
-		pending: "secondary",
 		completed: "default",
-		approved: "default",
+		running: "secondary",
+		waiting_for_approval: "secondary",
 		rejected: "destructive",
 		failed: "destructive",
 	};
@@ -73,8 +76,11 @@ export function WorkflowPage() {
 	);
 	const [auditTrail, setAuditTrail] = useState<unknown[]>([]);
 
-	// Start form
-	const [projectId, setProjectId] = useState("default-project");
+	const { activeProjectId } = useActiveProject();
+	// Start form — initialize with active project ID or user override
+	const [userProjectId, setUserProjectId] = useState<string>("");
+	const projectId = userProjectId || activeProjectId;
+
 	const [workflowType, setWorkflowType] = useState("design_review");
 	const [workflowId, setWorkflowId] = useState("");
 
@@ -213,15 +219,39 @@ export function WorkflowPage() {
 	return (
 		<div className="flex-1 overflow-auto">
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
-				<div>
-					<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-						<WorkflowIcon className="h-5 w-5 text-primary" />
-						Engineering Workflows
-					</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						Start, monitor, approve, and reject engineering review workflows
-						with audit trail
-					</p>
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
+					<div>
+						<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
+							<WorkflowIcon className="h-5 w-5 text-primary" />
+							Review & Governance
+						</h1>
+						<p className="text-sm text-muted-foreground mt-1">
+							Authoritative engineering review workflows, pending approval gates, and compliance audit trail
+						</p>
+					</div>
+					<div className="flex items-center gap-2">
+						<Link
+							to="/workflow"
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground shadow-sm"
+						>
+							<WorkflowIcon className="h-3.5 w-3.5" />
+							Workflows
+						</Link>
+						<Link
+							to="/audit-trail"
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+						>
+							<FileText className="h-3.5 w-3.5" />
+							Audit Trail
+						</Link>
+						<Link
+							to="/conflicts"
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+						>
+							<AlertTriangle className="h-3.5 w-3.5" />
+							Conflicts
+						</Link>
+					</div>
 				</div>
 
 				{/* Engine Status */}
@@ -267,7 +297,7 @@ export function WorkflowPage() {
 								</Label>
 								<Input
 									value={projectId}
-									onChange={(e) => setProjectId(e.target.value)}
+									onChange={(e) => setUserProjectId(e.target.value)}
 									placeholder="default-project"
 								/>
 							</div>

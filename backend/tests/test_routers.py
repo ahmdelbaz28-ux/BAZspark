@@ -693,7 +693,6 @@ class TestReportsRouter:
 class TestExportsRouter:
     """Tests for backend/routers/exports.py — 3 endpoints."""
 
-
     def test_export_dxf(self, client, project_with_devices) -> None:
         """GET /api/projects/{id}/export/dxf must return DXF file."""
         pid, _, _ = project_with_devices

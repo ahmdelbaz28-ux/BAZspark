@@ -74,7 +74,9 @@ def command_bus() -> CommandBus:
 
 
 class TestCommandContract:
-    def test_valid_command_execution(self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal):
+    def test_valid_command_execution(
+        self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal
+    ):
         cmd = DomainCommand(
             commandId="cmd-test-valid-01",
             correlationId="corr-01",
@@ -101,7 +103,9 @@ class TestCommandContract:
         assert res.event is not None
         assert res.event.eventType == "DEVICES_PLACED"
 
-    def test_unknown_capability_rejection(self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal):
+    def test_unknown_capability_rejection(
+        self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal
+    ):
         cmd = DomainCommand(
             commandId="cmd-test-unknown-01",
             correlationId="corr-02",
@@ -118,7 +122,9 @@ class TestCommandContract:
         assert res.errorCode == "UNKNOWN_CAPABILITY"
         assert "not registered" in (res.errorMessage or "")
 
-    def test_idempotency_duplicate_command_id(self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal):
+    def test_idempotency_duplicate_command_id(
+        self, command_bus: CommandBus, test_principal: AuthenticatedPrincipal
+    ):
         cmd = DomainCommand(
             commandId="cmd-idempotent-unique-01",
             correlationId="corr-03",
@@ -334,8 +340,7 @@ class TestContextResolutionAndTokenBudget:
             revision=4,
             room_bounds={"width_m": 25.0, "length_m": 40.0, "ceiling_height_m": 4.5},
             existing_devices=[
-                {"id": f"det-{i}", "type": "smoke", "x": i * 2, "y": i * 3}
-                for i in range(10)
+                {"id": f"det-{i}", "type": "smoke", "x": i * 2, "y": i * 3} for i in range(10)
             ],
         )
 
@@ -351,7 +356,13 @@ class TestContextResolutionAndTokenBudget:
         resolver = ContextResolver(token_budget=1500)
         # Pass a large simulated device list
         large_device_list = [
-            {"id": f"det-dense-{i}", "type": "smoke", "x": i * 0.5, "y": i * 0.5, "raw_geom": "X" * 200}
+            {
+                "id": f"det-dense-{i}",
+                "type": "smoke",
+                "x": i * 0.5,
+                "y": i * 0.5,
+                "raw_geom": "X" * 200,
+            }
             for i in range(100)
         ]
         pkt = resolver.resolve_room_context(
