@@ -14,9 +14,11 @@ import pytest
 
 def test_qomn_conduit_fitting_dimensions():
     from qomn_conduit.catalog import Fitting, FittingType, TradeSize
+    from qomn_conduit.types import ConduitType
 
     f = Fitting(
         fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
         trade_size=TradeSize.HALF_INCH,
         od_in=0.84,
         bend_radius_in=4.0,
@@ -33,6 +35,7 @@ def test_qomn_conduit_fitting_dimensions():
 
     coupling = Fitting(
         fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.EMT,
         trade_size=TradeSize.HALF_INCH,
         od_in=0.84,
         bend_radius_in=0.0,
