@@ -149,9 +149,7 @@ class Fitting:
                     f"be positive for elbows, got {self.developed_length_in}.",
                     "Check catalog data or computation of developed length.",
                 )
-            if (
-                self.body_length_in != 0.0
-            ):  # NOSONAR — S1244: import retained for re-export / API surface
+            if not math.isclose(self.body_length_in, 0.0):
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: body_length_in must be "
                     f"0.0 for elbows, got {self.body_length_in}.",
@@ -160,17 +158,13 @@ class Fitting:
 
         # ── Coupling-specific checks ───────────────────────────────
         if self.fitting_type == FittingType.COUPLING:
-            if (
-                self.bend_radius_in != 0.0
-            ):  # NOSONAR — S1244: import retained for re-export / API surface
+            if not math.isclose(self.bend_radius_in, 0.0):
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: bend_radius_in must be "
                     f"0.0 for couplings, got {self.bend_radius_in}.",
                     "Couplings are straight fittings with no bend.",
                 )
-            if (
-                self.developed_length_in != 0.0
-            ):  # NOSONAR — S1244: import retained for re-export / API surface
+            if not math.isclose(self.developed_length_in, 0.0):
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: developed_length_in must "
                     f"be 0.0 for couplings, got {self.developed_length_in}.",
@@ -182,9 +176,7 @@ class Fitting:
                     f"positive for couplings, got {self.body_length_in}.",
                     "Check catalog data for coupling body length.",
                 )
-            if (
-                self.angle_deg != 0.0
-            ):  # NOSONAR — S1244: import retained for re-export / API surface
+            if not math.isclose(self.angle_deg, 0.0):
                 raise PhysicsError(
                     f"Fitting {self.catalog_number}: angle_deg must be 0.0 "
                     f"for couplings, got {self.angle_deg}.",

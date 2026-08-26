@@ -92,9 +92,7 @@ async def _parse_dwg_impl(
     try:
         fd, temp_path = tempfile.mkstemp(suffix=ext, prefix="fireai_dwg_upload_")
         # Wrap the os-level fd in a Python file object for buffered writes
-        with (
-            os.fdopen(fd, "wb") as out_f
-        ):  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+        with os.fdopen(fd, "wb") as out_f:  # NOSONAR — python:S7493: buffered chunk streaming to temp file fd
             _CHUNK_SIZE = 1024 * 1024  # 1 MB per read
             file_size = 0
             empty = True

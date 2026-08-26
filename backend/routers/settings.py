@@ -547,7 +547,7 @@ async def store_provider_key(
             detail="Internal inconsistency after key insertion.",
         )
 
-    logger.info(
+    logger.info(  # NOSONAR — pythonsecurity:S5145: logged parameters sanitized via _safe_log_fragment
         "Stored %s Vision key id=%s masked=%s model=%s",
         _safe_log_fragment(provider),
         _safe_log_fragment(key_id),
@@ -856,7 +856,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.exception(
+        logger.exception(  # NOSONAR — pythonsecurity:S5145: key_id sanitized via _safe_log_fragment
             "Vision key test (decrypt) failed for id=%s: %s",
             _safe_log_fragment(key_id),
             type(e).__name__,

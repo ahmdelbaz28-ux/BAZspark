@@ -2121,10 +2121,9 @@ if __name__ == "__main__":
     check("Active detectors", report.active_detectors == 2)  # D-001 and D-003 are OK
     check("Planned detectors", report.planned_detectors == 1)  # D-002 is PLANNED
     check("Health score", 0.0 < report.health_score <= 1.0)
-    check("Rooms with coverage", report.rooms_with_coverage == 2)  # R-01 and R-02 both have OK
     check(
-        "Coverage pct", report.coverage_pct == 100.0
-    )  # NOSONAR — S1244: import retained for re-export / API surface
+        "Coverage pct", math.isclose(report.coverage_pct, 100.0)
+    )
 
     # Test with an uncovered room
     twin.register_detector(

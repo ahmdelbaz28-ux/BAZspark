@@ -240,7 +240,7 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 	const handleAddFiles = useCallback(
 		async (newFiles: File[]) => {
 			const formatted: AttachedFile[] = newFiles.map((f) => ({
-				id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+				id: `att-${Date.now()}-${typeof window !== "undefined" && window.crypto?.randomUUID ? window.crypto.randomUUID().slice(0, 8) : "file"}`,
 				file: f,
 				name: f.name,
 				sizeBytes: f.size,

@@ -569,7 +569,7 @@ def create_order(
     user_hash = (
         hashlib.sha256(user_principal.encode("utf-8")).hexdigest()[:8] if user_principal else ""
     )
-    logger.info(
+    logger.info(  # NOSONAR — pythonsecurity:S5145: user identifier is hashed via sha256
         "Meeza Payment: order created (user_sha=%s, amount=%d %s)",
         user_hash,
         amount_cents,

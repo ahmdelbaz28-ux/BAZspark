@@ -1148,9 +1148,10 @@ class RevitService:
                     target_level = lvl
                     break
             if target_level is None:
-                logger.error(
-                    "create_floor failed: Level '%s' not found in document.", level
-                )  # NOSONAR
+                logger.error(  # NOSONAR — pythonsecurity:S5145: level identifier logged for diagnostics
+                    "create_floor failed: Level '%s' not found in document.",
+                    "".join(ch for ch in str(level) if ch.isprintable())[:64],
+                )
                 return None
 
             # Create floor inside a transaction
@@ -1185,9 +1186,11 @@ class RevitService:
                             floor.ChangeTypeId(ft.Id)
                             break
                 except Exception as ft_err:
-                    logger.warning(
-                        "Could not set floor type to '%s': %s", floor_type, ft_err
-                    )  # NOSONAR
+                    logger.warning(  # NOSONAR — pythonsecurity:S5145: floor_type and exception logged for diagnostics
+                        "Could not set floor type to '%s': %s",
+                        "".join(ch for ch in str(floor_type) if ch.isprintable())[:64],
+                        type(ft_err).__name__,
+                    )
 
                 tx.Commit()
                 element_id = str(floor.Id)
@@ -1712,9 +1715,10 @@ class RevitService:
                 wall = self._revit_doc.GetElement(host_wall_id)
                 if wall is None:
                     t.RollBack()
-                    logger.error(
-                        "create_door failed: host wall '%s' not found.", host_wall_id
-                    )  # NOSONAR
+                    logger.error(  # NOSONAR — pythonsecurity:S5145: host_wall_id logged for diagnostics
+                        "create_door failed: host wall '%s' not found.",
+                        "".join(ch for ch in str(host_wall_id) if ch.isprintable())[:64],
+                    )
                     return None
 
                 # Convert mm to feet (Revit internal units)

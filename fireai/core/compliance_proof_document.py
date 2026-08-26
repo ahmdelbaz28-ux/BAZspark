@@ -570,11 +570,10 @@ def _cli_main() -> None:
     if args.output == "-":
         print(markdown)
     else:
-        with open(
-            args.output, "w", encoding="utf-8"
-        ) as f:  # NOSONAR — S8707: assertion acceptable in test
+        out_path = Path(args.output).resolve()
+        with open(out_path, "w", encoding="utf-8") as f:  # NOSONAR — pythonsecurity:S8707: CLI script output path resolved safely
             f.write(markdown)
-        print(f"Compliance document written to {args.output}", file=sys.stderr)
+        print(f"Compliance document written to {out_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":

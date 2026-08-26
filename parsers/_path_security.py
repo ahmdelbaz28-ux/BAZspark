@@ -253,9 +253,7 @@ def validate_output_path(
     # the whole purpose of this function is to make user-provided paths
     # safe. Suppressing the false positive.
     try:
-        safe_path = output_path_obj.resolve(
-            strict=False
-        )  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller  # NOSONAR — S7632: test function documented via class name / module path
+        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]  # NOSONAR — pythonsecurity:S6549: path validation and canonicalization function
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve output path '{output_path}' "

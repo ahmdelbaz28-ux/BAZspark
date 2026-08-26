@@ -874,9 +874,11 @@ class AutoCADService:
                 return None
             if not self.acad_doc:
                 # Simulation mode fallback
-                logger.info(
-                    "Drawing text '%s' at %s in SIMULATION mode", text, insertion_point
-                )  # NOSONAR: S5145 logging reviewed for SSRF risk  # NOSONAR — S7632: test function documented via class name / module path
+                logger.info(  # NOSONAR — pythonsecurity:S5145: simulation log text reviewed
+                    "Drawing text '%s' at %s in SIMULATION mode",
+                    "".join(ch for ch in str(text) if ch.isprintable())[:64],
+                    insertion_point,
+                )
                 return MockAutoCADObject(ObjectName="AcDbText", Layer=layer, Color=color)
 
             model_space = self.acad_doc.ModelSpace

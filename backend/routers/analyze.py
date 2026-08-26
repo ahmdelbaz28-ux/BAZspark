@@ -219,8 +219,8 @@ async def analyze_project_room(
     if not req.room_id.startswith(project_id):
         # Don't leak project_id structure in error -- use generic message
         logger.warning(
-            "room_id %r does not match project_id %r", req.room_id, project_id
-        )  # NOSONAR
+            "Room ID does not match project ID prefix for analysis request"
+        )
 
     try:
         result = await asyncio.to_thread(

@@ -802,9 +802,7 @@ def _get_element_bbox(
     # cables will route through an invisible wall.
     volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
     # without volume produce unrouteable targets for the cable router.
-    if (
-        volume == 0.0 and element_type in _BLOCKING_TYPES
-    ):  # NOSONAR — S1244: import retained for re-export / API surface
+    if (math.isclose(volume, 0.0) or volume <= 0.0) and element_type in _BLOCKING_TYPES:
         log.critical(
             "V93 SAFETY: Zero-volume BoundingBox3D for BLOCKING element %s "
             "(type=%s, bbox=(%s,%s,%s)-(%s,%s,%s)). This element will be "
@@ -820,9 +818,7 @@ def _get_element_bbox(
             max_z,
         )
         return None
-    if (
-        volume == 0.0 and element_type == IfcElementType.SPACE
-    ):  # NOSONAR — S1244: import retained for re-export / API surface
+    if (math.isclose(volume, 0.0) or volume <= 0.0) and element_type == IfcElementType.SPACE:
         log.warning(
             "V106: Zero-volume SPACE element %s (bbox=(%s,%s,%s)-(%s,%s,%s)). "
             "DROPPING — phantom spaces produce unrouteable cable targets.",

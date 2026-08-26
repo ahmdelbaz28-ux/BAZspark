@@ -572,10 +572,11 @@ def _self_test():
         f"chunk_size={batch_chunk.chunk_size}",
     )
 
-    # ── 7. Timeout validation ──
     check(
-        "Default timeout", batch.timeout_per_room_s == 60.0, f"timeout={batch.timeout_per_room_s}"
-    )  # NOSONAR — S1244: import retained for re-export / API surface
+        "Default timeout",
+        math.isclose(batch.timeout_per_room_s, 60.0),
+        f"timeout={batch.timeout_per_room_s}",
+    )
 
     print(f"\n{'=' * 60}")
     print(f"Density Optimizer V2 Self-Test: {passed} PASS, {failed} FAIL")

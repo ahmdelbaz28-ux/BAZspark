@@ -660,6 +660,7 @@ class KafkaEventBus(EventBus):
         self._dlq_topic_suffix = dlq_topic_suffix
         self._producer = None
         self._consumer = None
+        self._consume_task = None
         self._running = False
         self._handlers: dict[str, list[HandlerFunc]] = defaultdict(list)
         self._lock = asyncio.Lock()
@@ -715,9 +716,7 @@ class KafkaEventBus(EventBus):
         _ = await self._get_producer()
         if self._handlers:
             _ = await self._get_consumer()
-        asyncio.create_task(
-            self._consume_loop()
-        )  # NOSONAR — S7502: broad except kept for resilience
+        self._consume_task = asyncio.create_task(self._consume_loop())
         logger.info("KafkaEventBus started")
 
     async def stop(self) -> None:

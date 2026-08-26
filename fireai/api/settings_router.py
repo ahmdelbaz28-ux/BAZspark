@@ -29,13 +29,16 @@ async def update_feature_flags(flags: dict[str, bool]):
     current_flags.update(flags)
     os.environ["FIREAI_FEATURE_FLAGS"] = json.dumps(current_flags)
 
-    try:
-        with open("feature_flags.json", "w") as f:
-            json.dump(current_flags, f)
-    except Exception as e:
-        import logging
+    def _persist_flags(data: dict) -> None:
+        try:
+            with open("feature_flags.json", "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        except Exception as e:
+            import logging
 
-        logging.getLogger(__name__).error(f"Failed to persist flags: {e}")
+            logging.getLogger(__name__).error(f"Failed to persist flags: {e}")
+
+    await asyncio.to_thread(_persist_flags, current_flags)
 
     return {"status": "success", "flags": current_flags}
 

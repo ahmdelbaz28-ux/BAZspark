@@ -28,6 +28,7 @@ was conservative but incorrectly rejected valid smoke detector placements.
 """
 
 import logging
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import ClassVar
@@ -1103,9 +1104,7 @@ def _get_radius_internal(h: float) -> float:
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern). Behavior
         # is preserved — final bracket uses inclusive upper bound.
-        upper_inclusive = (
-            max_h == 18.288
-        )  # NOSONAR — S1244: import retained for re-export / API surface
+        upper_inclusive = math.isclose(max_h, 18.288)
         within_bracket = (min_h <= h <= max_h) if upper_inclusive else (min_h <= h < max_h)
         if within_bracket:
             return r
@@ -1155,9 +1154,7 @@ def _get_max_internal(h: float) -> float:
     for (min_h, max_h), m in M.items():
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern).
-        upper_inclusive = (
-            max_h == 18.288
-        )  # NOSONAR — S1244: import retained for re-export / API surface
+        upper_inclusive = math.isclose(max_h, 18.288)
         within_bracket = (min_h <= h <= max_h) if upper_inclusive else (min_h <= h < max_h)
         if within_bracket:
             return m

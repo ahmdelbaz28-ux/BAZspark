@@ -32,8 +32,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Tuple
 
-Point = tuple[float, float]
+Point = Tuple[float, float]
 
 # NFPA 90A §6.4.2.2 / IMC §606.4 — maximum spacing between duct detectors
 # NOTE: NFPA 72 §17.7.5 does NOT specify inter-detector spacing.
@@ -232,9 +233,7 @@ def analyse_duct(
 
     if not cfm_override and not cfm_unknown_blocks_exemption:
         # ── Exemption: zero-dimension ducts ──────────────────────────────
-        if (
-            duct.width_m == 0.0 or duct.length_m == 0.0
-        ):  # NOSONAR — S1244: import retained for re-export / API surface
+        if math.isclose(duct.width_m, 0.0) or math.isclose(duct.length_m, 0.0) or duct.width_m <= 0.0 or duct.length_m <= 0.0:
             return DuctAnalysisResult(
                 duct_id=duct.duct_id,
                 duct_length_m=duct.length_m,

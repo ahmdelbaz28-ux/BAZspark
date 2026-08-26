@@ -635,7 +635,7 @@ class AcousticsEngine:
         # ── Input validation ──────────────────────────────────────────
         self._validate_coverage_inputs(speakers, check_points, mode, room_id)
 
-        logger.info(
+        logger.info(  # NOSONAR — pythonsecurity:S5145: parameters sanitized via _safe_log_fragment
             "check_coverage: room=%s mode=%s speakers=%d points=%d",
             _safe_log_fragment(room_id),
             _safe_log_fragment(mode),
@@ -769,13 +769,13 @@ class AcousticsEngine:
     ) -> None:
         """Log the coverage result (PASS/FAIL) with safe room_id."""
         if compliant:
-            logger.info(
+            logger.info(  # NOSONAR — pythonsecurity:S5145: room_id sanitized via _safe_log_fragment
                 "check_coverage PASS: room=%s margin_dba=%.1f",
                 _safe_log_fragment(room_id),
                 result.margin_dba,
             )
         else:
-            logger.warning(
+            logger.warning(  # NOSONAR — pythonsecurity:S5145: room_id sanitized via _safe_log_fragment
                 "check_coverage FAIL: room=%s violations=%d",
                 _safe_log_fragment(room_id),
                 len(violations),

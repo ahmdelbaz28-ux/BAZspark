@@ -19,9 +19,10 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import List, Tuple
 
-Point = tuple[float, float]
-Polygon = list[Point]
+Point = Tuple[float, float]
+Polygon = List[Point]
 
 
 # ─────────────────────────────────────────────
