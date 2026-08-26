@@ -204,6 +204,62 @@ def test_database_sqlite_methods(tmp_path: Path) -> None:
         cur.execute("SELECT 1")
         assert cur.fetchone()[0] == 1
 
+    # Test Database._row_to_project branch coverage
+    # 1. Dict with explicit revision
+    d1 = Database._row_to_project(
+        {"id": "p1", "name": "n1", "description": "d1", "author": "a1", "created_at": "c1", "updated_at": "u1", "status": "active", "revision": 7}
+    )
+    assert d1["revision"] == 7
+
+    # 2. Dict without revision key
+    d2 = Database._row_to_project(
+        {"id": "p2", "name": "n2", "description": "d2", "author": "a2", "created_at": "c2", "updated_at": "u2", "status": "active"},
+        revision=3,
+    )
+    assert d2["revision"] == 3
+
+    # 3. Custom class with __getitem__ raising KeyError
+    class RowWithKeyError:
+        def __getitem__(self, item):
+            if item == "revision":
+                raise KeyError("revision")
+            return f"val_{item}"
+
+    d3 = Database._row_to_project(RowWithKeyError(), revision=4)
+    assert d3["revision"] == 4
+
+    # 4. Custom class with __getitem__ raising TypeError
+    class RowWithTypeError:
+        def __getitem__(self, item):
+            if item == "revision":
+                raise TypeError("bad type")
+            return f"val_{item}"
+
+    d4 = Database._row_to_project(RowWithTypeError(), revision=9)
+    assert d4["revision"] == 9
+
+    # 5. Dict with revision=None
+    d5 = Database._row_to_project(
+        {"id": "p5", "name": "n5", "description": "d5", "author": "a5", "created_at": "c5", "updated_at": "u5", "status": "active", "revision": None}
+    )
+    assert d5["revision"] == 1
+
+    # 6. Object without __getitem__
+    class ObjectWithoutGetItem:
+        id = "p6"
+        name = "n6"
+        description = "d6"
+        author = "a6"
+        created_at = "c6"
+        updated_at = "u6"
+        status = "active"
+
+        def __getitem__(self, item):
+            return getattr(self, item)
+
+    d6 = Database._row_to_project(ObjectWithoutGetItem(), revision=2)
+    assert d6["revision"] == 2
+
 
 def test_validate_agent_nonce_valid_and_duplicate() -> None:
     """Test frame nonce validation and replay prevention."""

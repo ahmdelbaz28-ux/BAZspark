@@ -1074,7 +1074,7 @@ class Database:
         elif hasattr(row, "__getitem__"):
             try:
                 raw_rev = row["revision"]
-            except (KeyError, IndexError, TypeError):
+            except (KeyError, IndexError, TypeError, AttributeError):
                 raw_rev = revision
         else:
             raw_rev = revision

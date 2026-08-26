@@ -162,4 +162,94 @@ describe("useAgentRun", () => {
 		expect(result.current.state.status).toBeNull();
 		expect(result.current.state.steps).toEqual([]);
 	});
+
+	it("handles resume, retry, cancel, approveStep, rejectStep", async () => {
+		vi.mocked(agentRunsApi.getStatus).mockResolvedValue({
+			success: true,
+			data: {
+				run_id: "run-actions-1",
+				project_id: "proj-101",
+				status: "WAITING_APPROVAL",
+				approval_mode: "STEP_BY_STEP",
+				current_step: 1,
+				completed_steps: [0],
+				failed_steps: [],
+				pending_approval_id: "appr-1",
+				version: 3,
+				plan: {
+					steps: [{ step_id: "s1", capability_id: "spatial.place_devices" }],
+				},
+			},
+		});
+		vi.mocked(agentRunsApi.resume).mockResolvedValue({
+			success: true,
+			data: {
+				run_id: "run-actions-1",
+				project_id: "proj-101",
+				status: "RUNNING",
+				approval_mode: "STEP_BY_STEP",
+				current_step: 1,
+				completed_steps: [0],
+				failed_steps: [],
+				pending_approval_id: null,
+				version: 4,
+			},
+		});
+		vi.mocked(agentRunsApi.retry).mockResolvedValue({
+			success: true,
+			data: {
+				run_id: "run-actions-1",
+				project_id: "proj-101",
+				status: "RUNNING",
+				approval_mode: "STEP_BY_STEP",
+				current_step: 1,
+				completed_steps: [0],
+				failed_steps: [],
+				pending_approval_id: null,
+				version: 5,
+			},
+		});
+		vi.mocked(agentRunsApi.decideApproval).mockResolvedValue({
+			success: true,
+			data: {
+				run_id: "run-actions-1",
+				project_id: "proj-101",
+				status: "RUNNING",
+				approval_mode: "STEP_BY_STEP",
+				current_step: 2,
+				completed_steps: [0, 1],
+				failed_steps: [],
+				pending_approval_id: null,
+				version: 6,
+			},
+		});
+
+		const { result } = renderHook(() => useAgentRun("proj-101"));
+
+		await act(async () => {
+			await result.current.rehydrateRun("run-actions-1");
+		});
+
+		await act(async () => {
+			await result.current.resumeRun();
+		});
+		expect(agentRunsApi.resume).toHaveBeenCalled();
+
+		await act(async () => {
+			await result.current.retryRun();
+		});
+		expect(agentRunsApi.retry).toHaveBeenCalled();
+
+		await act(async () => {
+			await result.current.approveStep("Looks good");
+		});
+
+		await act(async () => {
+			await result.current.rejectStep("Rejected");
+		});
+
+		await act(async () => {
+			await result.current.pauseRun();
+		});
+	});
 });

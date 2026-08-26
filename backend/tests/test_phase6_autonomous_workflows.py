@@ -430,6 +430,92 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     assert "runId" in start_data["data"]
 
 
+def test_rest_workflow_context_reconciliation_validation_errors(
+    monkeypatch: pytest.MonkeyPatch, fresh_db: Database
+) -> None:
+    """Verify validation and OCC errors in workflow context reconciliation."""
+    from backend.rbac import Role
+    from backend.routers import workflow
+
+    monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr(
+        workflow, "require_permission", lambda permission: (lambda request: Role.ENGINEER)
+    )
+    monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
+    monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
+    monkeypatch.setattr("backend.routers.projects.get_db", lambda: fresh_db)
+
+    fresh_db.create_project({
+        "id": "proj-reconcile-err",
+        "name": "Reconcile Error Project",
+        "author": "engineer-42",
+    })
+    fresh_db.create_device("proj-reconcile-err", {
+        "id": "dev-01",
+        "name": "Smoke Detector 1",
+        "type": "smoke_detector",
+        "category": "initiating",
+    })
+
+    client = TestClient(app)
+
+    # 1. Project not found -> 404
+    r1 = client.post(
+        "/api/workflow/runs/plan",
+        json={"prompt": "Plan test", "project_id": "proj-nonexistent"},
+    )
+    assert r1.status_code == 404
+
+    # 2. Model mismatch -> 400
+    r2 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "model_id": "dt-forged-model",
+        },
+    )
+    assert r2.status_code == 400
+
+    # 3. Entity does not belong to project -> 400
+    r3 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "entity_id": "dev-nonexistent",
+        },
+    )
+    assert r3.status_code == 400
+
+    # 4. Incompatible entity type -> 400
+    r4 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "entity_id": "dev-01",
+            "entity_type": "incompatible_type_xyz",
+        },
+    )
+    assert r4.status_code == 400
+
+    # 5. Stale expected_revision -> 409
+    r5 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "expected_revision": 999,
+        },
+    )
+    assert r5.status_code == 409
+
+
 def test_import_and_export_workflow_planning(
     planner: AutonomousWorkflowPlanner, engineer_principal: AuthenticatedPrincipal
 ) -> None:
