@@ -16,6 +16,7 @@ import csv
 import hashlib
 import json
 import logging
+import os
 import re
 import tempfile
 import uuid
@@ -182,10 +183,12 @@ class ExportExecutionResult:
 
 def sanitize_export_filename(name: str, target_format: str) -> str:
     """Sanitize export filename preventing path traversal or unsafe shell characters."""
-    clean = name.replace("\\", "/").split("/")[-1]
+    clean = os.path.basename(str(name).replace("\\", "/"))
     clean = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", clean)
+    clean = re.sub(r"\.\.+", "", clean)
     clean = re.sub(r"[^a-zA-Z0-9_\-. ]", "_", clean).strip()
-    if not clean or clean.startswith("."):
+    clean = clean.lstrip(".")
+    if not clean:
         clean = f"project_export_{uuid.uuid4().hex[:8]}"
     ext = FORMAT_EXTENSIONS.get(target_format.lower(), f".{target_format.lower()}")
     if not clean.lower().endswith(ext):
@@ -217,6 +220,24 @@ class ExportOrchestrator:
     @property
     def artifact_dir(self) -> Path:
         return self._artifact_dir
+
+    def _resolve_contained_artifact_path(self, artifact_id: str, filename: str) -> Path:
+        """Resolve and strictly verify that artifact path remains within self._artifact_dir."""
+        clean_root = self._artifact_dir.resolve()
+        safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "", str(artifact_id))
+        safe_name = os.path.basename(str(filename).replace("\\", "/"))
+        safe_name = re.sub(r"\.\.+", "", safe_name)
+        safe_name = re.sub(r"[^a-zA-Z0-9_\-.]", "_", safe_name)
+
+        target = (clean_root / f"{safe_id}_{safe_name}").resolve()
+
+        # Strict containment verification preventing path injection / directory traversal
+        if clean_root not in target.parents and target != clean_root:
+            raise ExportExecutionError("Target artifact path escapes artifact directory.")
+        if not str(target).startswith(str(clean_root) + os.sep) and target != clean_root:
+            raise ExportExecutionError("Target artifact path escapes artifact directory.")
+
+        return target
 
     # ── 1. Planning & Loss Analysis ───────────────────────────────────────
 
@@ -408,7 +429,7 @@ class ExportOrchestrator:
         # Prepare target path
         artifact_id = f"art-{uuid.uuid4()}"
         filename = sanitize_export_filename(project.get("name", "project"), norm_fmt)
-        artifact_file = self._artifact_dir / f"{artifact_id}_{filename}"
+        artifact_file = self._resolve_contained_artifact_path(artifact_id, filename)
 
         # Generate target format content deterministically
         try:

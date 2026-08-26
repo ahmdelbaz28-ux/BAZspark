@@ -355,23 +355,41 @@ def test_scenario_f_governance_policy_denial(
 
 def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db: Database) -> None:
     """Verify POST /api/workflow/runs/plan and POST /api/workflow/runs/start-plan endpoints."""
+    import backend.core.agent_run_orchestrator as _orch_mod
+    import backend.core.agent_run_store as _store_mod
+    import backend.core.command_bus as _bus_mod
+    import backend.core.state_store as _ss_mod
+    import backend.core.workflow_planner as _planner_mod
     from backend.rbac import Role
     from backend.routers import workflow
 
+    monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
     monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr(
         workflow, "require_permission", lambda permission: (lambda request: Role.ENGINEER)
     )
     monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
-
-    # Root-cause fix: _reconcile_and_validate_execution_context calls get_db() (global singleton),
-    # but proj-rest-test is only in fresh_db.  Redirect get_db to fresh_db so the project lookup
-    # succeeds.  Also bypass _verify_project_access (needs real request auth state we don't have).
     monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
-    monkeypatch.setattr(
-        "backend.routers.workflow._reconcile_and_validate_execution_context",
-        lambda **_kw: {"project": None, "canonical_model_id": "", "canonical_revision": None},
+    monkeypatch.setattr("backend.routers.projects.get_db", lambda: fresh_db)
+
+    # Wire singletons to fresh_db
+    fresh_state_store = CommandStateStore(fresh_db)
+    fresh_run_store = AgentRunStore(fresh_db)
+    fresh_command_bus = CommandBus(state_store=fresh_state_store)
+    fresh_orchestrator = AgentRunOrchestrator(
+        command_bus=fresh_command_bus, run_store=fresh_run_store
     )
+    fresh_planner = AutonomousWorkflowPlanner(
+        command_bus=fresh_command_bus, orchestrator=fresh_orchestrator
+    )
+    monkeypatch.setattr(_ss_mod, "default_state_store", fresh_state_store)
+    monkeypatch.setattr(_bus_mod, "default_command_bus", fresh_command_bus)
+    monkeypatch.setattr(_store_mod, "default_agent_run_store", fresh_run_store)
+    monkeypatch.setattr(_orch_mod, "default_agent_run_orchestrator", fresh_orchestrator)
+    monkeypatch.setattr(_planner_mod, "default_workflow_planner", fresh_planner)
 
     fresh_db.create_project({
         "id": "proj-rest-test",

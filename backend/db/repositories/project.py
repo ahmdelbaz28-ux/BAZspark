@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from backend.db.repositories.base import BaseRepository
 
@@ -33,13 +34,14 @@ class ProjectRepository(BaseRepository):
                     project_data["status"],
                 ),
             )
+            # Initialize canonical project_revisions row at revision 1 per BLK-02
             cur.execute(
-                f"""INSERT INTO project_revisions (project_id, revision, canonical_state, updated_at)
+                f"""INSERT INTO project_revisions (project_id, revision, updated_at, canonical_state)
                    VALUES ({self.db._ph()}, 1, {self.db._ph()}, {self.db._ph()})""",
                 (
                     project_data["id"],
-                    "{}",
                     now,
+                    "{}",
                 ),
             )
 
@@ -106,7 +108,7 @@ class ProjectRepository(BaseRepository):
         secondary_sort = "p.id" if self.db._is_postgres else "p.rowid"
 
         where_clause = ""
-        where_params: list = []
+        where_params: list[Any] = []
         if author is not None:
             # Multi-tenant isolation: non-admin callers strictly see ONLY their own authored projects
             where_clause = f"WHERE p.author = {self.db._ph()}"
@@ -200,6 +202,9 @@ class ProjectRepository(BaseRepository):
     def delete_project(self, project_id: str) -> bool:
         """Delete a project and all its children (CASCADE)."""
         with self.db._transaction() as cur:
+            cur.execute(
+                f"DELETE FROM project_revisions WHERE project_id = {self.db._ph()}", (project_id,)
+            )
             cur.execute(
                 f"DELETE FROM sync_status WHERE project_id = {self.db._ph()}", (project_id,)
             )

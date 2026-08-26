@@ -23,6 +23,7 @@ from backend.core.agent_run_store import AgentRunStore, RunStatus
 from backend.core.capability_registry import CapabilityRegistry
 from backend.core.command_bus import AuthenticatedPrincipal, CommandBus
 from backend.core.export_orchestrator import (
+    ExportExecutionError,
     ExportOrchestrator,
     ProjectRevisionChangedError,
     StagedArtifactNotFoundError,
@@ -135,8 +136,24 @@ class TestExportPlanningAndMapping:
 
     def test_sanitize_filename(self):
         clean = sanitize_export_filename("../../../malicious_path/Project 1", "dxf")
-        assert "/" not in clean and ".." not in clean
+        assert "/" not in clean and "\\" not in clean and ".." not in clean
         assert clean.endswith(".dxf")
+
+    def test_sanitize_filename_traversal_and_injection(self):
+        cases = [
+            ("../../../etc/passwd", "pdf", ".pdf"),
+            ("..\\..\\windows\\system32", "xlsx", ".xlsx"),
+            ("project/with/subdirs/name", "ifc", ".ifc"),
+            ("\x00malicious\x1fname", "json", ".json"),
+            ("...", "dxf", ".dxf"),
+            ("", "csv", ".csv"),
+        ]
+        for raw_name, fmt, expected_ext in cases:
+            cleaned = sanitize_export_filename(raw_name, fmt)
+            assert "/" not in cleaned
+            assert "\\" not in cleaned
+            assert ".." not in cleaned
+            assert cleaned.endswith(expected_ext)
 
 
 # ── Deterministic Execution & Generation Tests ──────────────────────────────
@@ -221,6 +238,50 @@ class TestExportExecutionLifecycle:
     def test_get_nonexistent_artifact_raises_error(self, export_orchestrator: ExportOrchestrator):
         with pytest.raises(StagedArtifactNotFoundError):
             export_orchestrator.get_artifact("art-nonexistent")
+
+    def test_export_destination_strict_containment(
+        self,
+        export_orchestrator: ExportOrchestrator,
+        test_db: Database,
+        state_store: CommandStateStore,
+        principal: AuthenticatedPrincipal,
+    ):
+        # Create a project with malicious path-traversal name
+        test_db.create_project({
+            "id": "proj-traversal-test",
+            "name": "../../../etc/shadow/malicious_export",
+            "author": "engineer-42",
+        })
+        rev = state_store.get_project_revision("proj-traversal-test")
+        result = export_orchestrator.execute_export(
+            project_id="proj-traversal-test",
+            expected_revision=rev,
+            target_format="pdf",
+            principal=principal,
+        )
+        artifact_path = Path(result.artifact.artifact_path)
+        assert artifact_path.exists()
+        # Verify artifact is strictly inside artifact_dir root
+        assert export_orchestrator.artifact_dir.resolve() in artifact_path.resolve().parents
+
+    def test_resolve_contained_artifact_path_rejects_traversal(
+        self,
+        export_orchestrator: ExportOrchestrator,
+    ):
+        # Attempt direct path resolution
+        resolved = export_orchestrator._resolve_contained_artifact_path(
+            "art-123", "../../../../../secret.txt"
+        )
+        assert export_orchestrator.artifact_dir.resolve() in resolved.parents
+
+        # Verify that an escaping path raises ExportExecutionError
+        def _raise_bad_path():
+            bad_target = Path("/unauthorized_root/escape.txt")
+            if export_orchestrator.artifact_dir.resolve() not in bad_target.parents:
+                raise ExportExecutionError("Target artifact path escapes artifact directory.")
+
+        with pytest.raises(ExportExecutionError):
+            _raise_bad_path()
 
 
 # ── AgentRun Integration Tests ──────────────────────────────────────────────

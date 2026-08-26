@@ -568,10 +568,10 @@ async def decide_agent_run_approval(
 def _reconcile_and_validate_execution_context(
     request: Request,
     project_id: str,
-    model_id: str | None,
-    entity_id: str | None,
-    entity_type: str | None,
-    expected_revision: int | None,
+    model_id: str | None = None,
+    entity_id: str | None = None,
+    entity_type: str | None = None,
+    expected_revision: int | None = None,
 ) -> dict:
     """
     Authoritative reconciliation of execution context (Gate 5 Blockers B, C, F).
@@ -582,14 +582,13 @@ def _reconcile_and_validate_execution_context(
     4. entity/entity_type is compatible
     5. expected_revision matches canonical persistent OCC revision from project_revisions
     """
-    from backend.core.state_store import CommandStateStore
-    from backend.database import get_db
+    import backend.database as _db_mod
     from backend.routers.projects import _verify_project_access
 
-    db = get_db()
-    state_store = CommandStateStore(db)
+    db = _db_mod.get_db()
 
     project = None
+    canonical_rev = None
     if project_id:
         project = db.get_project(project_id)
         if not project:
@@ -637,7 +636,18 @@ def _reconcile_and_validate_execution_context(
                     )
 
         # 5. expected_revision matches canonical persistent revision
-        canonical_rev = state_store.get_project_revision(project_id)
+        with db._transaction() as cur:
+            cur.execute(
+                f"SELECT revision FROM project_revisions WHERE project_id = {db._ph()}",
+                (project_id,),
+            )
+            rev_row = cur.fetchone()
+        if rev_row is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Project '{project_id}' is uninitialized or missing canonical revision",
+            )
+        canonical_rev = int(rev_row["revision"] if isinstance(rev_row, dict) else rev_row[0])
         if expected_revision is not None and expected_revision != canonical_rev:
             raise HTTPException(
                 status_code=409,
@@ -688,14 +698,15 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
     )
 
     # Authoritative context reconciliation (Blockers B, C, F)
-    _reconcile_and_validate_execution_context(
-        request=request,
-        project_id=body.project_id,
-        model_id=body.model_id,
-        entity_id=body.entity_id,
-        entity_type=body.entity_type,
-        expected_revision=body.expected_revision,
-    )
+    if body.project_id:
+        _reconcile_and_validate_execution_context(
+            request=request,
+            project_id=body.project_id,
+            model_id=body.model_id,
+            entity_id=body.entity_id,
+            entity_type=body.entity_type,
+            expected_revision=body.expected_revision,
+        )
 
     spec = dict(body.composite_spec or {})
     if body.model_id:
@@ -706,7 +717,7 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         spec["entity_type"] = body.entity_type
 
     try:
-        plan = await _to_thread(
+        plan = await asyncio.to_thread(
             default_workflow_planner.plan_workflow,
             prompt=body.prompt or "Autonomous engineering workflow",
             principal=principal,
@@ -755,14 +766,15 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
     )
 
     # Authoritative context reconciliation (Blockers B, C, F)
-    _reconcile_and_validate_execution_context(
-        request=request,
-        project_id=body.project_id,
-        model_id=body.model_id,
-        entity_id=body.entity_id,
-        entity_type=body.entity_type,
-        expected_revision=body.expected_revision,
-    )
+    if body.project_id:
+        _reconcile_and_validate_execution_context(
+            request=request,
+            project_id=body.project_id,
+            model_id=body.model_id,
+            entity_id=body.entity_id,
+            entity_type=body.entity_type,
+            expected_revision=body.expected_revision,
+        )
 
     spec = dict(body.composite_spec or {})
     if body.model_id:
@@ -773,7 +785,7 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
         spec["entity_type"] = body.entity_type
 
     try:
-        plan = await _to_thread(
+        plan = await asyncio.to_thread(
             default_workflow_planner.plan_workflow,
             prompt=body.prompt or "Autonomous engineering workflow",
             principal=principal,
@@ -783,7 +795,7 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
-        run = await _to_thread(
+        run = await asyncio.to_thread(
             default_workflow_planner.execute_plan,
             plan,
             principal=principal,

@@ -17,7 +17,11 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from backend.auth import get_current_principal, get_current_role, require_permission
+from backend.auth import (
+    get_current_principal,
+    get_current_role,
+    require_permission,
+)
 from backend.contract import validate_paginated, validate_project
 from backend.database import get_db
 from backend.limiter import limiter
@@ -43,22 +47,6 @@ _SORT_MAP = {
 }
 
 
-def _verify_project_access(project: dict, request: Request) -> None:
-    """
-    Enforce tenant/principal resource-scope authorization at project resolution boundary.
-
-    Prevents Tenant A from resolving or executing against Tenant B projects even
-    with a valid PROJECT_READ permission. Admin role retains cross-tenant oversight.
-    """
-    principal = get_current_principal(request)
-    role = get_current_role(request)
-    if role == Role.ADMIN or principal is None:
-        return
-    author = project.get("author")
-    if author and author != principal and not str(author).startswith("legacy"):
-        raise HTTPException(status_code=404, detail="Project not found")
-
-
 def _normalize_sort(sort: str) -> str:
     """
     Convert camelCase sort fields to snake_case for database.
@@ -71,6 +59,24 @@ def _normalize_sort(sort: str) -> str:
     return _SORT_MAP.get(sort, "created_at")
 
 
+def _verify_project_access(project: dict, request: Request) -> None:
+    """
+    Verify caller has permission to access the project (BLK-01 Tenant Isolation).
+    Fails closed with 404 (anti-enumeration).
+    """
+    role = get_current_role(request)
+    if role == Role.ADMIN:
+        return
+
+    principal = get_current_principal(request)
+    if not principal:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    author = project.get("author", "")
+    if author != principal:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+
 @router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def list_projects(
     request: Request,
@@ -78,17 +84,24 @@ async def list_projects(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
     sort: str = Query("createdAt", description="Sort field"),  # NOSONAR - python:S8410
     order: str = Query("desc", description="Sort order (asc/desc)"),  # NOSONAR - python:S8410
+    author: str | None = Query(None, description="Filter by author"),
 ):
     page_num = page if isinstance(page, int) else 1
     limit_num = limit if isinstance(limit, int) else 20
     sort_str = sort if isinstance(sort, str) else "createdAt"
-    order_str = order if isinstance(order, str) else "desc"
-    if order_str not in ("asc", "desc"):
-        order_str = "desc"
-    """List all projects with server-authoritative tenant scoping and pagination."""
-    principal = get_current_principal(request)
+    order_str = order if isinstance(order, str) and order in ("asc", "desc") else "desc"
+
     role = get_current_role(request)
-    author_filter = principal if (role != Role.ADMIN and principal) else None
+    principal = get_current_principal(request)
+
+    if role == Role.ADMIN:
+        author_filter = author if isinstance(author, str) else None
+    elif principal:
+        author_filter = principal
+    else:
+        author_filter = "__unauthenticated_deny__"
+
+    """List all projects with pagination and tenant isolation."""
     db = get_db()
     result = db.list_projects(
         page=page_num,
@@ -120,6 +133,7 @@ async def create_project(request: Request, input_data: CreateProjectInput):
         author = principal
     else:
         author = input_data.author or ""
+
     project_data = {
         "id": str(uuid.uuid4()),
         "name": input_data.name,
@@ -144,11 +158,13 @@ async def create_project(request: Request, input_data: CreateProjectInput):
     dependencies=[Depends(require_permission(Permission.PROJECT_READ))],
 )
 async def get_project(request: Request, project_id: str):
-    """Get a project by ID with tenant resource-scope authorization."""
+    """Get a project by ID with tenant access verification."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     _verify_project_access(project, request)
     validate_project(project)
     return success(project)
@@ -161,7 +177,7 @@ async def get_project(request: Request, project_id: str):
 )
 @limiter.limit("30/minute")
 async def update_project(request: Request, project_id: str, input_data: UpdateProjectInput):
-    """Update an existing project with tenant resource-scope authorization."""
+    """Update an existing project with tenant access verification."""
     db = get_db()
     existing = db.get_project(project_id)
     if not existing:
@@ -193,12 +209,13 @@ async def update_project(request: Request, project_id: str, input_data: UpdatePr
     responses={404: {"description": "Project not found"}},
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
-async def export_project_dxf(project_id: str) -> StreamingResponse:
+async def export_project_dxf(request: Request, project_id: str) -> StreamingResponse:
     """Export a project as DXF (placeholder implementation)."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    _verify_project_access(project, request)
     content = b"Mock DXF content for project " + project_id.encode()
     filename = f"{project.get('name', 'project')}_export.dxf"
     return StreamingResponse(
@@ -213,12 +230,13 @@ async def export_project_dxf(project_id: str) -> StreamingResponse:
     responses={404: {"description": "Project not found"}},
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
-async def export_project_revit(project_id: str) -> StreamingResponse:
+async def export_project_revit(request: Request, project_id: str) -> StreamingResponse:
     """Export a project as Revit JSON (placeholder)."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    _verify_project_access(project, request)
     data = {"project_id": project_id, "devices": [], "connections": [], "version": "1.0"}
     content = json.dumps(data).encode()
     filename = f"{project.get('name', 'project')}_export.json"
@@ -237,7 +255,7 @@ async def export_project_revit(project_id: str) -> StreamingResponse:
     },
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
-async def export_project_ifc(project_id: str, version: str | None = None) -> StreamingResponse:
+async def export_project_ifc(request: Request, project_id: str, version: str | None = None) -> StreamingResponse:
     """Export a project as IFC (placeholder).
     Accepts optional version parameter; only known versions are allowed.
     """
@@ -245,6 +263,7 @@ async def export_project_ifc(project_id: str, version: str | None = None) -> Str
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    _verify_project_access(project, request)
     # Validate version if provided
     allowed_versions = {"IFC2X3", "IFC4"}
     if version is not None and version not in allowed_versions:
@@ -266,11 +285,13 @@ async def export_project_ifc(project_id: str, version: str | None = None) -> Str
 )
 @limiter.limit("30/minute")
 async def delete_project(request: Request, project_id: str):
-    """Delete a project and all its children with tenant scope enforcement."""
+    """Delete a project and all its children with tenant verification."""
     db = get_db()
     existing = db.get_project(project_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )
     _verify_project_access(existing, request)
 
     deleted = db.delete_project(project_id)
