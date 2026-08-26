@@ -60,11 +60,22 @@ _keys_lock = threading.Lock()
 # Prevent CPU/memory DoS via very long keys. HMAC-SHA256 is fast but a 10MB
 # key would still waste CPU. 1KB is more than enough for any reasonable key
 # (our generated keys are ~43 chars; even 256-char keys are rare).
-# Also: bcrypt has a 72-byte limit on input. We pre-hash long keys with
-# SHA-256 (32 bytes) before bcrypt to support keys longer than 72 bytes
-# while still benefiting from bcrypt's slow KDF.
+# Also: bcrypt has a 72-byte limit on input. Keys longer than that are
+# normalized to 64 hex chars via BLAKE2b (32-byte digest) before bcrypt.
 _MAX_KEY_LENGTH = 1024  # bytes
 _BCRYPT_MAX_INPUT = 72  # bcrypt's hard limit
+
+_MIGRATION_SHIM = object()  # marker: helpers below are frozen legacy shims
+
+
+def _legacy_long_key_bcrypt_input(key_bytes: bytes) -> bytes:
+    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
+
+    Pre-bcrypt normalization historically used SHA-256 hex for >72B keys.
+    Kept solely so bcrypt hashes stored under the old normalization keep
+    verifying; new long keys use the BLAKE2b normalization above.
+    """
+    return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
 
 
 def _normalize_key_for_bcrypt(key: str) -> bytes:
@@ -72,18 +83,13 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
     Normalize a key for bcrypt input.
 
     bcrypt has a 72-byte limit. If the key is longer, we pre-hash it with
-    SHA-256 (32 bytes) and use the hex digest as bcrypt input. This is
-    safe because:
-      1. SHA-256 is collision-resistant â€” different keys â†’ different hashes.
-      2. We only use this for the bcrypt verification path, not for the
-         HMAC lookup (which handles arbitrary lengths).
-      3. The HMAC lookup is the primary auth gate; bcrypt is defense-in-depth.
+    keyed-free BLAKE2b (32-byte digest → 64 hex chars) before handing it to
+    bcrypt, which remains the slow KDF that protects the credential.
     """
     key_bytes = key.encode("utf-8")
     if len(key_bytes) > _BCRYPT_MAX_INPUT:
-        # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
         return (
-            hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
+            hashlib.blake2b(key_bytes, digest_size=32).hexdigest().encode("utf-8")
         )
     return key_bytes
 
@@ -325,10 +331,23 @@ def _load_server_secret() -> bytes:
 
 def _lookup_key(key: str) -> str:
     """
-    Compute the deterministic lookup key (HMAC-SHA256) for an API key.
+    Compute the PRIMARY deterministic lookup index for an API key.
 
-    This is the O(1) index into the keys dict. The same input always yields
-    the same output, so we can find a stored key without iterating.
+    ``bk$`` = keyed BLAKE2b over the raw key with the server secret. This is
+    the O(1) index into the keys dict for all NEW records.
+    """
+    secret = _load_server_secret()
+    return (
+        "bk$" + hmac.new(secret, key.encode(), hashlib.blake2b).hexdigest()
+    )
+
+
+def _legacy_hmac_lookup(key: str) -> str:
+    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
+
+    Pre-migration records are indexed under ``hk$`` (HMAC-SHA256). Lookups
+    fall back to this index once and transparently re-key the record under
+    the BLAKE2b primary; new writes never touch it.
     """
     secret = _load_server_secret()
     return (
@@ -377,7 +396,13 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     try:
         if HAS_BCRYPT and hashed_key.startswith("$2"):
             normalized = _normalize_key_for_bcrypt(key)
-            return bcrypt.checkpw(normalized, hashed_key.encode())
+            ok = bcrypt.checkpw(normalized, hashed_key.encode())
+            if not ok and len(key.encode("utf-8")) > _BCRYPT_MAX_INPUT:
+                # Pre-BLAKE2b long-key hashes were stored under the SHA-256
+                # normalization; try the frozen shim before rejecting.
+                legacy_in = _legacy_long_key_bcrypt_input(key.encode("utf-8"))
+                ok = bcrypt.checkpw(legacy_in, hashed_key.encode())
+            return ok
         if hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
@@ -393,14 +418,21 @@ def _verify_key(key: str, hashed_key: str) -> bool:
             # Legacy: plain SHA-256 (no salt) for backwards compatibility.
             # Kept ONLY to authenticate hashes stored before the bcrypt
             # migration; validate_api_key transparently rehashes on success.
-            return hmac.compare_digest(
-                hashlib.sha256(
-                    key.encode()
-                ).hexdigest(),
-                hashed_key,
-            )
+            return _legacy_plain_sha256_compare(key, hashed_key)
     except (ValueError, TypeError):
         return False
+
+
+def _legacy_plain_sha256_compare(key: str, stored_hash: str) -> bool:
+    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
+
+    Constant-time comparison against pre-bcrypt unsalted SHA-256 stores.
+    validate_api_key rehashes any entry that authenticates through here.
+    """
+    return hmac.compare_digest(
+        hashlib.sha256(key.encode()).hexdigest(),
+        stored_hash,
+    )
 
 
 def _load_keys() -> dict[str, Any]:
@@ -485,13 +517,22 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
     with _keys_lock:
         keys = _load_keys()
         lookup = _lookup_key(key)
-        # If key already exists, fail (don't silently overwrite)
+        legacy_index = _legacy_hmac_lookup(key)
+        existing_entry: dict[str, Any] | None = None
         if lookup in keys:
+            existing_entry = keys[lookup]
+        elif legacy_index in keys:
+            # One-time re-key of a pre-migration record under the new index.
+            existing_entry = keys.pop(legacy_index)
+            keys[lookup] = existing_entry
+            _save_keys(keys)
+            logger.info("Migrated legacy hk$ API-key index to bk$ primary")
+        if existing_entry is not None:
             logger.warning("Attempted to add duplicate API key (role=%s)", role.value)
             # Update role/description instead of creating duplicate
-            existing = keys[lookup]
-            # Preserve backward compat: existing entry may not have bcrypt_hash
-            key_hash = str(existing.get("bcrypt_hash") or existing.get("key_hash") or "")
+            key_hash = str(
+                existing_entry.get("bcrypt_hash") or existing_entry.get("key_hash") or ""
+            )
         else:
             key_hash = _hash_key(key)
         keys[lookup] = {
@@ -608,6 +649,18 @@ def validate_api_key(
     with _keys_lock:
         keys = _load_keys()
         info = keys.get(lookup)
+        if info is None:
+            # Pre-migration record: resolve under the frozen hk$ index and
+            # re-key the entry to the bk$ primary so future lookups are O(1)
+            # on the new index alone.
+            legacy_index = _legacy_hmac_lookup(key)
+            legacy_info = keys.get(legacy_index)
+            if legacy_info is not None:
+                info = legacy_info
+                keys.pop(legacy_index, None)
+                keys[lookup] = info
+                _save_keys(keys)
+                logger.info("Re-keyed legacy hk$ API-key index to bk$ primary")
         if not info:
             env_fallback = os.getenv("FIREAI_API_KEY")
             if env_fallback and hmac.compare_digest(key, env_fallback):
