@@ -54,7 +54,6 @@ MIN_WALL_DISTANCE_M = 0.1016  # 4 inches per NFPA 72 §17.6.3.1.1 (was 0.10 - DR
 MAX_DIMENSION_M = 1000.0  # Max room dimension in meters
 MAX_POLYGON_VERTICES = 5000  # Max polygon vertices
 MAX_STRING_LENGTH = 200  # Max string input length
-import math
 
 
 # ============================================================================

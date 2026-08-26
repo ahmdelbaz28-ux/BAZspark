@@ -49,8 +49,6 @@ from fireai.core.models_v21 import (
     RayTracePoint as V21RayTracePoint,
 )
 
-from typing import Tuple
-
 logger = logging.getLogger(__name__)
 
 
@@ -58,8 +56,8 @@ logger = logging.getLogger(__name__)
 # Legacy Types & Enums
 # ---------------------------------------------------------------------------
 
-Point3D = Tuple[float, float, float]
-Point2D = Tuple[float, float]
+Point3D = tuple[float, float, float]
+Point2D = tuple[float, float]
 
 
 class FlameDetectorTech(StrEnum):

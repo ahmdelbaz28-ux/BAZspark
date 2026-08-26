@@ -40,6 +40,7 @@ from __future__ import annotations
 import datetime
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from fireai.core.spatial_engine.consensus_engine import (
     ConfidenceLevel,
