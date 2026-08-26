@@ -1,8 +1,15 @@
 """
-ETAP-AI-WORK Engineering Copilot - MCP Server
-============================================
+ETAP-AI-WORK Engineering Copilot - Engineering API Server
+=========================================================
 
-MCP (Microservice Control Protocol) Server for Engineering Copilot operations.
+REST Engineering API for Engineering Copilot operations.
+
+A3 NAMING FIX (agent-platform-rebuild): this module previously described
+itself as an "MCP (Microservice Control Protocol) Server", which it is not —
+it exposes plain REST endpoints over FastAPI and shares nothing with the
+Model Context Protocol (the real MCP lives in fireai/mcp_server/). The
+misleading name was replaced with "REST Engineering API". Routes, paths and
+client-facing behavior are UNCHANGED.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
@@ -140,8 +147,8 @@ class MCPServer:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.app = FastAPI(
-            title="ETAP-AI-WORK Engineering Copilot MCP Server",
-            description="Microservice Control Protocol Server for Engineering Operations",
+            title="ETAP-AI-WORK Engineering Copilot REST Engineering API",
+            description="REST Engineering API for Engineering Operations",
             version="1.0.0",
         )
 

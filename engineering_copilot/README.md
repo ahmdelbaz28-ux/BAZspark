@@ -61,8 +61,8 @@ Platform-specific connectors:
 - **Revit Connector** - Revit API integration
 - **ETAP Connector** - ETAP API integration
 
-#### 5. MCP Server
-Microservice Control Protocol server providing standardized endpoints:
+#### 5. Engineering API Server
+REST Engineering API providing standardized endpoints:
 
 - `/create_drawing` - Create new drawings
 - `/update_drawing` - Update existing drawings
