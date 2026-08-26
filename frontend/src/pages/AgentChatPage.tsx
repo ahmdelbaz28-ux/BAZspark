@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkflowActionCard } from "@/components/ui/WorkflowActionCard";
+import { useActiveProject } from "@/contexts/ProjectContext";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
@@ -160,9 +161,15 @@ const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
 	},
 ];
 
-export function AgentChatPage() {
+interface AgentChatPageProps {
+	projectId?: string;
+}
+
+export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps = {}) {
 	const { i18n } = useTranslation();
 	const isArabic = Boolean(i18n.language?.startsWith("ar"));
+	const { activeProjectId, activeRevision } = useActiveProject();
+	const effectiveProjectId = propProjectId || activeProjectId;
 
 	// Conversational LLM chat hook
 	const { messages, loading: llmLoading, error: llmError, sendMessage, clearChat } =
@@ -180,7 +187,7 @@ export function AgentChatPage() {
 		rejectStep,
 		setApprovalMode,
 		clearRun,
-	} = useAgentRun("default_project");
+	} = useAgentRun(effectiveProjectId);
 
 	const [inputValue, setInputValue] = useState("");
 	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -521,8 +528,8 @@ export function AgentChatPage() {
 		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
 			{/* 1. Project & Model Context Header */}
 			<ProjectContextBar
-				projectId={runState.projectId}
-				projectRevision={runState.version}
+				projectId={effectiveProjectId || runState.projectId}
+				projectRevision={runState.status ? runState.version : activeRevision}
 				isConnected={runState.isConnected}
 				isReconnecting={runState.isReconnecting}
 				onClearChat={clearChat}

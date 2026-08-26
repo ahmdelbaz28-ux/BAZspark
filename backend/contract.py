@@ -107,6 +107,8 @@ def validate_project(data: dict[str, Any]) -> dict[str, Any]:
         "connectionCount": int,
         "createdAt|createdTimestamp": str,  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         "updatedAt|lastModifiedTimestamp": str,
+        "revision": int,
+        "modelId|model_id": str,
         "metadata": dict,
     }
     violations = _validate_fields(data, required, optional)

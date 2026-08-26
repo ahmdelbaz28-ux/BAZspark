@@ -27,6 +27,7 @@ class BoundedContextPacket:
     budget_limit: int = 1500
     telemetry: dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class BoundedCircuitContextPacket:
     project_id: str
@@ -49,7 +50,9 @@ class BoundedHydraulicContextPacket:
     project_id: str
     pipe_segment_id: str
     revision: int
-    hydraulic_spec: dict[str, Any]  # length_m, diameter_mm, roughness_mm, flow_rate_kg_s, flow_l_min, fluid_type, elevation_m
+    hydraulic_spec: dict[
+        str, Any
+    ]  # length_m, diameter_mm, roughness_mm, flow_rate_kg_s, flow_l_min, fluid_type, elevation_m
     standards: list[str]
     token_count: int
     is_within_budget: bool
@@ -65,7 +68,9 @@ class BoundedBatteryContextPacket:
     project_id: str
     panel_id: str
     revision: int
-    battery_spec: dict[str, Any]  # standby_load_amps, alarm_load_amps, standby_hours, alarm_hours, min_temperature_c, service_life_years, battery_type, installed_ah, aging_factor
+    battery_spec: dict[
+        str, Any
+    ]  # standby_load_amps, alarm_load_amps, standby_hours, alarm_hours, min_temperature_c, service_life_years, battery_type, installed_ah, aging_factor
     standards: list[str]
     token_count: int
     is_within_budget: bool
@@ -90,7 +95,6 @@ class BoundedCompositeContextPacket:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
 
 
 def estimate_token_count(text_or_dict: str | dict[str, Any]) -> int:
@@ -278,8 +282,14 @@ class ContextResolver:
         spec = hydraulic_spec or {}
         length_m = float(spec.get("length_m", 15.0))
         diameter_mm = float(spec.get("diameter_mm", 50.0))
-        roughness_mm = float(spec.get("roughness_mm", 0.0457)) if spec.get("roughness_mm") is not None else 0.0457
-        flow_rate_kg_s = float(spec["flow_rate_kg_s"]) if spec.get("flow_rate_kg_s") is not None else None
+        roughness_mm = (
+            float(spec.get("roughness_mm", 0.0457))
+            if spec.get("roughness_mm") is not None
+            else 0.0457
+        )
+        flow_rate_kg_s = (
+            float(spec["flow_rate_kg_s"]) if spec.get("flow_rate_kg_s") is not None else None
+        )
         if spec.get("flow_l_min") is not None:
             flow_l_min = float(spec["flow_l_min"])
         elif flow_rate_kg_s is not None:
@@ -428,11 +438,21 @@ class ContextResolver:
             ),
             "hydraulic": spec.get(
                 "hydraulic",
-                {"pipe_segment_id": "pipe-01", "length_m": 25.0, "diameter_mm": 65.0, "flow_l_min": 350.0},
+                {
+                    "pipe_segment_id": "pipe-01",
+                    "length_m": 25.0,
+                    "diameter_mm": 65.0,
+                    "flow_l_min": 350.0,
+                },
             ),
             "battery": spec.get(
                 "battery",
-                {"panel_id": "facp-01", "standby_load_amps": 0.8, "alarm_load_amps": 3.0, "installed_ah": 55.0},
+                {
+                    "panel_id": "facp-01",
+                    "standby_load_amps": 0.8,
+                    "alarm_load_amps": 3.0,
+                    "installed_ah": 55.0,
+                },
             ),
         }
 
@@ -476,4 +496,3 @@ class ContextResolver:
 
 
 default_context_resolver = ContextResolver()
-

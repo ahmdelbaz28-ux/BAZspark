@@ -14,6 +14,8 @@ Gate decisions:
 Author: The Consultant Who Refused to Lie
 """
 
+from __future__ import annotations
+
 try:
     import _fitz_compat as fitz  # PyMuPDF
 except ImportError:

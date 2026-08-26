@@ -16,6 +16,7 @@ import csv
 import hashlib
 import json
 import logging
+import os
 import re
 import tempfile
 import uuid
@@ -182,10 +183,12 @@ class ExportExecutionResult:
 
 def sanitize_export_filename(name: str, target_format: str) -> str:
     """Sanitize export filename preventing path traversal or unsafe shell characters."""
-    clean = name.replace("\\", "/").split("/")[-1]
+    clean = os.path.basename(str(name).replace("\\", "/"))
     clean = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", clean)
+    clean = re.sub(r"\.\.+", "", clean)
     clean = re.sub(r"[^a-zA-Z0-9_\-. ]", "_", clean).strip()
-    if not clean or clean.startswith("."):
+    clean = clean.lstrip(".")
+    if not clean:
         clean = f"project_export_{uuid.uuid4().hex[:8]}"
     ext = FORMAT_EXTENSIONS.get(target_format.lower(), f".{target_format.lower()}")
     if not clean.lower().endswith(ext):
@@ -207,7 +210,9 @@ class ExportOrchestrator:
     ) -> None:
         self._db = db or get_db()
         self._state_store = state_store or default_state_store
-        self._artifact_dir = artifact_dir or (Path(tempfile.gettempdir()) / "fireai_export_artifacts")
+        self._artifact_dir = artifact_dir or (
+            Path(tempfile.gettempdir()) / "fireai_export_artifacts"
+        )
         self._artifact_dir.mkdir(parents=True, exist_ok=True)
         self._artifacts: dict[str, ExportArtifactRecord] = {}
         self._idempotency_cache: dict[str, ExportExecutionResult] = {}
@@ -215,6 +220,38 @@ class ExportOrchestrator:
     @property
     def artifact_dir(self) -> Path:
         return self._artifact_dir
+
+    def _resolve_contained_artifact_path(self, artifact_id: str, target_format: str) -> Path:
+        """Resolve and strictly verify that artifact path is server-generated and remains within self._artifact_dir."""
+        base_dir = os.path.abspath(str(self._artifact_dir))
+        safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "", str(artifact_id))
+
+        fmt = str(target_format).lower().strip()
+        if fmt == "dxf":
+            ext = ".dxf"
+        elif fmt == "revit":
+            ext = ".json"
+        elif fmt == "ifc":
+            ext = ".ifc"
+        elif fmt == "xlsx":
+            ext = ".xlsx"
+        elif fmt == "csv":
+            ext = ".csv"
+        elif fmt == "json":
+            ext = ".json"
+        elif fmt == "pdf":
+            ext = ".pdf"
+        else:
+            ext = ".dat"
+
+        filename = f"{safe_id}{ext}"
+        full_path = os.path.normpath(os.path.join(base_dir, filename))
+
+        # Strict containment verification matching standard CodeQL sanitizer semantics
+        if not full_path.startswith(base_dir + os.sep) and full_path != base_dir:
+            raise ExportExecutionError("Target artifact path escapes artifact directory.")
+
+        return Path(full_path)
 
     # ── 1. Planning & Loss Analysis ───────────────────────────────────────
 
@@ -233,15 +270,26 @@ class ExportOrchestrator:
                 f"Supported formats: {', '.join(sorted(SUPPORTED_EXPORT_FORMATS))}."
             )
 
+        current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
+
         project = self._db.get_project(project_id)
         if not project:
-            # Fallback for default project in demo/testing
-            project = {"id": project_id, "name": f"Project {project_id}", "author": "FireAI Engineer"}
-
-        current_rev = self._state_store.get_project_revision(project_id)
+            project = {
+                "id": project_id,
+                "name": f"Project {project_id}",
+                "author": "FireAI Engineer",
+            }
         devices = self._db.get_all_devices_for_project(project_id) or []
         connections = self._db.get_all_connections_for_project(project_id) or []
-        rooms = self._db.get_rooms_for_project(project_id) if hasattr(self._db, "get_rooms_for_project") else []
+        rooms = (
+            self._db.get_rooms_for_project(project_id)
+            if hasattr(self._db, "get_rooms_for_project")
+            else []
+        )
 
         opts = options or {}
         mapping_report = self._analyze_mapping(norm_fmt, devices, connections, rooms, opts)
@@ -294,20 +342,32 @@ class ExportOrchestrator:
         if target_format == "dxf":
             transformed.append("3D BIM entities converted to 2D/3D CAD Blocks & LWPolylines")
             if any("voltage" in d for d in devices):
-                dropped.append("Device electrical calculation properties omitted from DXF block attributes")
+                dropped.append(
+                    "Device electrical calculation properties omitted from DXF block attributes"
+                )
                 status = "PARTIALLY_LOSSLESS"
         elif target_format == "csv":
             status = "LOSSY"
-            dropped.append("Spatial geometry (polygons, bounding boxes) dropped in flat tabular CSV")
+            dropped.append(
+                "Spatial geometry (polygons, bounding boxes) dropped in flat tabular CSV"
+            )
             transformed.append("Device coordinates flattened to (x, y, z) numeric columns")
-            warnings.append("CSV contains tabular inventory only; spatial geometry is not preserved.")
+            warnings.append(
+                "CSV contains tabular inventory only; spatial geometry is not preserved."
+            )
         elif target_format == "xlsx":
             status = "PARTIALLY_LOSSLESS"
-            transformed.append("Project, Devices, Wiring, and BoQ partitioned into distinct workbook sheets")
+            transformed.append(
+                "Project, Devices, Wiring, and BoQ partitioned into distinct workbook sheets"
+            )
         elif target_format == "pdf":
             status = "LOSSY"
-            transformed.append("Engineering state rendered into 2D document pages & compliance summary")
-            warnings.append("PDF is a presentation format and cannot be round-tripped into CAD/BIM.")
+            transformed.append(
+                "Engineering state rendered into 2D document pages & compliance summary"
+            )
+            warnings.append(
+                "PDF is a presentation format and cannot be round-tripped into CAD/BIM."
+            )
         elif target_format == "ifc":
             status = "LOSSLESS"
             transformed.append("Entities structured into standard IFC4 building hierarchy")
@@ -362,6 +422,10 @@ class ExportOrchestrator:
 
         # OCC Guard: verify revision has not drifted
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
         if current_rev != expected_revision:
             raise ProjectRevisionChangedError(
                 f"Project '{project_id}' revision changed from expected {expected_revision} to current {current_rev}. "
@@ -375,7 +439,11 @@ class ExportOrchestrator:
         }
         devices = self._db.get_all_devices_for_project(project_id) or []
         connections = self._db.get_all_connections_for_project(project_id) or []
-        rooms = self._db.get_rooms_for_project(project_id) if hasattr(self._db, "get_rooms_for_project") else []
+        rooms = (
+            self._db.get_rooms_for_project(project_id)
+            if hasattr(self._db, "get_rooms_for_project")
+            else []
+        )
 
         mapping_report = self._analyze_mapping(norm_fmt, devices, connections, rooms, opts)
 
@@ -410,7 +478,9 @@ class ExportOrchestrator:
                 self._generate_pdf(project, devices, connections, rooms, artifact_file)
         except Exception as exc:
             logger.error("Failed generating %s export: %s", norm_fmt, exc, exc_info=True)
-            raise ExportExecutionError(f"Failed to generate {norm_fmt.upper()} artifact: {exc}") from exc
+            raise ExportExecutionError(
+                f"Failed to generate {norm_fmt.upper()} artifact: {exc}"
+            ) from exc
 
         # OCC Post-Generation Re-verification
         post_rev = self._state_store.get_project_revision(project_id)
@@ -511,10 +581,14 @@ class ExportOrchestrator:
                 raise ArtifactValidationError("PDF artifact does not contain valid %PDF header.")
         elif norm_fmt == "ifc":
             if not (content.startswith(b"ISO-10303-21;") or b"ISO-10303-21;" in content[:512]):
-                raise ArtifactValidationError("IFC artifact does not contain valid ISO-10303-21 header.")
+                raise ArtifactValidationError(
+                    "IFC artifact does not contain valid ISO-10303-21 header."
+                )
         elif norm_fmt == "xlsx":
             if not content.startswith(b"PK\x03\x04"):
-                raise ArtifactValidationError("Excel XLSX artifact does not contain valid ZIP header.")
+                raise ArtifactValidationError(
+                    "Excel XLSX artifact does not contain valid ZIP header."
+                )
         elif norm_fmt in ("json", "revit"):
             try:
                 json.loads(content.decode("utf-8"))
@@ -548,9 +622,9 @@ class ExportOrchestrator:
 
         # Add layers
         doc.layers.add("FIRE_ALARM_DEVICES", color=1)  # Red
-        doc.layers.add("WIRING_CIRCUITS", color=4)      # Cyan
-        doc.layers.add("ROOM_BOUNDARIES", color=7)      # White
-        doc.layers.add("ANNOTATIONS", color=2)          # Yellow
+        doc.layers.add("WIRING_CIRCUITS", color=4)  # Cyan
+        doc.layers.add("ROOM_BOUNDARIES", color=7)  # White
+        doc.layers.add("ANNOTATIONS", color=2)  # Yellow
 
         # Add rooms
         for r in rooms or [{"id": "room_1", "name": "Main Hall", "width": 20.0, "length": 30.0}]:
@@ -566,7 +640,9 @@ class ExportOrchestrator:
             dev_type = str(d.get("type", "smoke_detector")).upper()
             dev_id = str(d.get("id", "dev"))
             msp.add_circle(center=(x, y), radius=0.3, dxfattribs={"layer": "FIRE_ALARM_DEVICES"})
-            msp.add_text(f"{dev_type}:{dev_id}", dxfattribs={"layer": "ANNOTATIONS", "height": 0.2}).set_placement((x + 0.4, y))
+            msp.add_text(
+                f"{dev_type}:{dev_id}", dxfattribs={"layer": "ANNOTATIONS", "height": 0.2}
+            ).set_placement((x + 0.4, y))
 
         # Add wiring
         for c in connections:
@@ -609,7 +685,11 @@ class ExportOrchestrator:
                             "id": d.get("id"),
                             "name": d.get("name", d.get("type")),
                             "type": d.get("type"),
-                            "location": {"x": d.get("x", 0.0), "y": d.get("y", 0.0), "z": d.get("z", 3.0)},
+                            "location": {
+                                "x": d.get("x", 0.0),
+                                "y": d.get("y", 0.0),
+                                "z": d.get("z", 3.0),
+                            },
                             "parameters": {
                                 "Voltage": d.get("voltage", 24.0),
                                 "Current_Alarm_A": d.get("current", 0.05),
@@ -623,7 +703,9 @@ class ExportOrchestrator:
             "circuits": connections,
             "rooms": rooms,
         }
-        out_path.write_text(json.dumps(revit_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        out_path.write_text(
+            json.dumps(revit_payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
 
     def _generate_ifc(
         self,
@@ -668,10 +750,12 @@ class ExportOrchestrator:
             )
             entity_id += 1
 
-        lines.extend([
-            "ENDSEC;",
-            "END-ISO-10303-21;",
-        ])
+        lines.extend(
+            [
+                "ENDSEC;",
+                "END-ISO-10303-21;",
+            ]
+        )
         out_path.write_text("\n".join(lines), encoding="utf-8")
 
     def _generate_excel(
@@ -780,20 +864,35 @@ class ExportOrchestrator:
         """Generate tabular CSV inventory."""
         with open(out_path, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["device_id", "name", "type", "category", "x", "y", "z", "voltage_v", "current_a", "zone"])
+            writer.writerow(
+                [
+                    "device_id",
+                    "name",
+                    "type",
+                    "category",
+                    "x",
+                    "y",
+                    "z",
+                    "voltage_v",
+                    "current_a",
+                    "zone",
+                ]
+            )
             for d in devices:
-                writer.writerow([
-                    d.get("id", ""),
-                    d.get("name", ""),
-                    d.get("type", ""),
-                    d.get("category", "fire_alarm"),
-                    d.get("x", 0.0),
-                    d.get("y", 0.0),
-                    d.get("z", 0.0),
-                    d.get("voltage", 24.0),
-                    d.get("current", 0.05),
-                    d.get("zone", "Zone 1"),
-                ])
+                writer.writerow(
+                    [
+                        d.get("id", ""),
+                        d.get("name", ""),
+                        d.get("type", ""),
+                        d.get("category", "fire_alarm"),
+                        d.get("x", 0.0),
+                        d.get("y", 0.0),
+                        d.get("z", 0.0),
+                        d.get("voltage", 24.0),
+                        d.get("current", 0.05),
+                        d.get("zone", "Zone 1"),
+                    ]
+                )
 
     def _generate_json(
         self,
@@ -850,11 +949,15 @@ class ExportOrchestrator:
                 ["Exported At", datetime.now(UTC).isoformat()],
             ]
             t = Table(meta_data, colWidths=[150, 300])
-            t.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), "#E2E8F0"),
-                ("GRID", (0, 0), (-1, -1), 0.5, "#CBD5E1"),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ]))
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), "#E2E8F0"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, "#CBD5E1"),
+                        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ]
+                )
+            )
             elements.append(t)
             elements.append(Spacer(1, 16))
 
@@ -863,18 +966,24 @@ class ExportOrchestrator:
             elements.append(Spacer(1, 8))
             dev_rows = [["ID", "Type", "Coordinates (X, Y, Z)", "Zone"]]
             for d in devices[:20]:
-                dev_rows.append([
-                    str(d.get("id", "")),
-                    str(d.get("type", "")),
-                    f"({d.get('x', 0)}, {d.get('y', 0)}, {d.get('z', 0)})",
-                    str(d.get("zone", "Zone 1")),
-                ])
+                dev_rows.append(
+                    [
+                        str(d.get("id", "")),
+                        str(d.get("type", "")),
+                        f"({d.get('x', 0)}, {d.get('y', 0)}, {d.get('z', 0)})",
+                        str(d.get("zone", "Zone 1")),
+                    ]
+                )
             dev_table = Table(dev_rows, colWidths=[90, 150, 160, 80])
-            dev_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), "#1E293B"),
-                ("TEXTCOLOR", (0, 0), (-1, 0), "#FFFFFF"),
-                ("GRID", (0, 0), (-1, -1), 0.5, "#CBD5E1"),
-            ]))
+            dev_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), "#1E293B"),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), "#FFFFFF"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, "#CBD5E1"),
+                    ]
+                )
+            )
             elements.append(dev_table)
 
             doc.build(elements)

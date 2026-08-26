@@ -19,6 +19,7 @@ import { SmoothScroll } from "@/components/interaction/SmoothScroll";
 import { DemoDataBanner } from "@/components/shared/DemoDataBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
+import { ProjectProvider } from "@/contexts/ProjectContext";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApiQuery";
@@ -553,7 +554,8 @@ function App() {
 	return (
 		<AuthProvider>
 			<AgentSettingsProvider>
-			<SmoothScroll>
+				<ProjectProvider>
+					<SmoothScroll>
 				<Suspense fallback={null}>
 					<MagneticCursor />
 				</Suspense>
@@ -660,8 +662,9 @@ function App() {
 					<Toaster position="top-right" />
 				</div>
 			</SmoothScroll>
-			</AgentSettingsProvider>
-		</AuthProvider>
+		</ProjectProvider>
+	</AgentSettingsProvider>
+</AuthProvider>
 	);
 }
 

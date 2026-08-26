@@ -54,6 +54,26 @@ def state_store(temp_db):
     return CommandStateStore(db=temp_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2d_projects(state_store):
+    for pid in [
+        "proj-adv-bat",
+        "proj-thermal",
+        "proj-chem",
+        "proj-bounds",
+        "proj-dry-bat",
+        "proj-com-bat",
+        "proj-sec-bat",
+        "proj-occ-bat",
+        "proj-idem-bat",
+        "proj-idem-reuse",
+        "proj-idem-clash",
+        "proj-md-bat",
+        "proj-multidomain-all",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def command_bus(state_store):
     return CommandBus(default_capability_registry, state_store)
@@ -65,7 +85,14 @@ def engineer_principal():
         user_id="eng-bat-01",
         email="engineer@fireai.internal",
         role="ENGINEER",
-        scopes=["electrical:read", "electrical:write", "spatial:read", "spatial:write", "hydraulics:read", "hydraulics:write"],
+        scopes=[
+            "electrical:read",
+            "electrical:write",
+            "spatial:read",
+            "spatial:write",
+            "hydraulics:read",
+            "hydraulics:write",
+        ],
         is_authenticated=True,
     )
 
@@ -174,7 +201,9 @@ class TestBatteryCapabilityRegistry:
 class TestDeterministicBatteryAuthority:
     """3. Deterministic Engineering Authority & Adversarial Rejection"""
 
-    def test_authoritative_solver_overrides_llm_hallucination(self, command_bus, engineer_principal):
+    def test_authoritative_solver_overrides_llm_hallucination(
+        self, command_bus, engineer_principal
+    ):
         """Adversarial Test: Fabricated client/LLM values must be completely ignored."""
         adversarial_payload = {
             "panel_id": "facp-adv-01",
@@ -217,10 +246,10 @@ class TestDeterministicBatteryAuthority:
 
     def test_thermal_deratings_across_temperatures(self, command_bus, engineer_principal):
         temps_and_expected = [
-            (-20.0, 0.60),   # Below minimum data point -> capped at 0.60
-            (0.0, 0.72),     # Freezing point
-            (20.0, 0.95),    # Indoor typical
-            (25.0, 1.00),    # Rated reference temp
+            (-20.0, 0.60),  # Below minimum data point -> capped at 0.60
+            (0.0, 0.72),  # Freezing point
+            (20.0, 0.95),  # Indoor typical
+            (25.0, 1.00),  # Rated reference temp
         ]
 
         for temp_c, expected_factor in temps_and_expected:
@@ -470,8 +499,12 @@ class TestBatteryOCC:
         bus_a = CommandBus(default_capability_registry, CommandStateStore(temp_db))
         bus_b = CommandBus(default_capability_registry, CommandStateStore(temp_db))
 
-        worker_a = AuthenticatedPrincipal("worker-a", "a@fireai.internal", "ENGINEER", ["electrical:write"])
-        worker_b = AuthenticatedPrincipal("worker-b", "b@fireai.internal", "ENGINEER", ["electrical:write"])
+        worker_a = AuthenticatedPrincipal(
+            "worker-a", "a@fireai.internal", "ENGINEER", ["electrical:write"]
+        )
+        worker_b = AuthenticatedPrincipal(
+            "worker-b", "b@fireai.internal", "ENGINEER", ["electrical:write"]
+        )
 
         cmd_a = DomainCommand(
             commandId="cmd-occ-a",
@@ -534,7 +567,9 @@ class TestBatteryIdempotency:
         assert res2.revision == 2
         assert res2.resultData["required_ah"] == res1.resultData["required_ah"]
 
-    def test_idempotency_key_reuse_conflict_on_altered_payload(self, command_bus, engineer_principal):
+    def test_idempotency_key_reuse_conflict_on_altered_payload(
+        self, command_bus, engineer_principal
+    ):
         cmd1 = DomainCommand(
             commandId="cmd-idem-clash-01",
             correlationId="corr-idem-01",
@@ -571,7 +606,9 @@ class TestBatteryIdempotency:
 class TestMultiDomainPreservation:
     """8. Multi-Domain Coexistence (Spatial, Electrical, Hydraulic, Calculations)"""
 
-    def test_spatial_electrical_hydraulic_and_battery_state_coexistence(self, command_bus, engineer_principal):
+    def test_spatial_electrical_hydraulic_and_battery_state_coexistence(
+        self, command_bus, engineer_principal
+    ):
         # 1. Spatial Placement (Rev 1 -> 2)
         cmd_spatial = DomainCommand(
             commandId="cmd-multi-spatial",
@@ -598,7 +635,12 @@ class TestMultiDomainPreservation:
             timestamp=datetime.now(UTC).isoformat(),
             principal=engineer_principal,
             isDryRun=False,
-            payload={"circuit_id": "nac-01", "current_a": 2.5, "one_way_length_m": 45.0, "awg": "14"},
+            payload={
+                "circuit_id": "nac-01",
+                "current_a": 2.5,
+                "one_way_length_m": 45.0,
+                "awg": "14",
+            },
         )
         res_el = command_bus.execute(cmd_elec)
         assert res_el.success is True
@@ -614,7 +656,12 @@ class TestMultiDomainPreservation:
             timestamp=datetime.now(UTC).isoformat(),
             principal=engineer_principal,
             isDryRun=False,
-            payload={"pipe_segment_id": "pipe-01", "length_m": 30.0, "diameter_mm": 65.0, "flow_l_min": 350.0},
+            payload={
+                "pipe_segment_id": "pipe-01",
+                "length_m": 30.0,
+                "diameter_mm": 65.0,
+                "flow_l_min": 350.0,
+            },
         )
         res_hy = command_bus.execute(cmd_hyd)
         assert res_hy.success is True
@@ -630,7 +677,12 @@ class TestMultiDomainPreservation:
             timestamp=datetime.now(UTC).isoformat(),
             principal=engineer_principal,
             isDryRun=False,
-            payload={"panel_id": "facp-01", "standby_load_amps": 0.8, "alarm_load_amps": 3.5, "installed_ah": 55.0},
+            payload={
+                "panel_id": "facp-01",
+                "standby_load_amps": 0.8,
+                "alarm_load_amps": 3.5,
+                "installed_ah": 55.0,
+            },
         )
         res_bat = command_bus.execute(cmd_bat)
         assert res_bat.success is True

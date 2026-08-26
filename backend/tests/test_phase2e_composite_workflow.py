@@ -55,6 +55,19 @@ def state_store(temp_db) -> CommandStateStore:
     return CommandStateStore(db=temp_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2e_projects(state_store: CommandStateStore) -> None:
+    for pid in [
+        "proj-rollback-01",
+        "proj-rollback-exc",
+        "proj-atomic-4domain",
+        "proj-occ-stale",
+        "proj-sec-anon",
+        "proj-sec-scope",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def populated_registry() -> CapabilityRegistry:
     """Fixture providing standard capabilities across all 4 domains."""
@@ -192,22 +205,46 @@ def admin_principal() -> AuthenticatedPrincipal:
 # ---------------------------------------------------------------------------
 class TestCompositeWorkflowDAG:
     def test_linear_dag_topological_sort(self):
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
-            WorkflowNode(node_id="step2", capability_id="electrical.calculate_voltage_drop", dependencies=["step1"]),
-            WorkflowNode(node_id="step3", capability_id="electrical.calculate_battery", dependencies=["step2"]),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
+                WorkflowNode(
+                    node_id="step2",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["step1"],
+                ),
+                WorkflowNode(
+                    node_id="step3",
+                    capability_id="electrical.calculate_battery",
+                    dependencies=["step2"],
+                ),
+            ]
+        )
         ordered = dag.validate()
         assert [n.node_id for n in ordered] == ["step1", "step2", "step3"]
 
     def test_branching_dag_topological_sort(self):
         # A -> B, A -> C, B -> D, C -> D
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="node_a", capability_id="spatial.place_devices"),
-            WorkflowNode(node_id="node_b", capability_id="electrical.calculate_voltage_drop", dependencies=["node_a"]),
-            WorkflowNode(node_id="node_c", capability_id="hydraulics.solve_darcy_weisbach", dependencies=["node_a"]),
-            WorkflowNode(node_id="node_d", capability_id="electrical.calculate_battery", dependencies=["node_b", "node_c"]),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="node_a", capability_id="spatial.place_devices"),
+                WorkflowNode(
+                    node_id="node_b",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["node_a"],
+                ),
+                WorkflowNode(
+                    node_id="node_c",
+                    capability_id="hydraulics.solve_darcy_weisbach",
+                    dependencies=["node_a"],
+                ),
+                WorkflowNode(
+                    node_id="node_d",
+                    capability_id="electrical.calculate_battery",
+                    dependencies=["node_b", "node_c"],
+                ),
+            ]
+        )
         ordered = dag.validate()
         order_ids = [n.node_id for n in ordered]
         assert order_ids[0] == "node_a"
@@ -217,25 +254,49 @@ class TestCompositeWorkflowDAG:
 
     def test_cycle_detection_rejection(self):
         # Cycle: A -> B -> C -> A
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="stepA", capability_id="spatial.place_devices", dependencies=["stepC"]),
-            WorkflowNode(node_id="stepB", capability_id="electrical.calculate_voltage_drop", dependencies=["stepA"]),
-            WorkflowNode(node_id="stepC", capability_id="electrical.calculate_battery", dependencies=["stepB"]),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="stepA", capability_id="spatial.place_devices", dependencies=["stepC"]
+                ),
+                WorkflowNode(
+                    node_id="stepB",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["stepA"],
+                ),
+                WorkflowNode(
+                    node_id="stepC",
+                    capability_id="electrical.calculate_battery",
+                    dependencies=["stepB"],
+                ),
+            ]
+        )
         with pytest.raises(WorkflowCycleDetectedError):
             dag.validate()
 
     def test_self_cycle_rejection(self):
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="stepSelf", capability_id="spatial.place_devices", dependencies=["stepSelf"]),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="stepSelf",
+                    capability_id="spatial.place_devices",
+                    dependencies=["stepSelf"],
+                ),
+            ]
+        )
         with pytest.raises(WorkflowCycleDetectedError):
             dag.validate()
 
     def test_missing_dependency_rejection(self):
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="step1", capability_id="spatial.place_devices", dependencies=["non_existent_node"]),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="step1",
+                    capability_id="spatial.place_devices",
+                    dependencies=["non_existent_node"],
+                ),
+            ]
+        )
         with pytest.raises(WorkflowValidationError) as exc:
             dag.validate()
         assert "non-existent node" in str(exc.value)
@@ -261,11 +322,17 @@ class TestEphemeralStateOverlay:
         overlay = EphemeralStateOverlay(base_state)
 
         # Step 1: Update devices
-        overlay.apply_delta("spatial.place_devices", {"devices": [{"id": "new-01"}, {"id": "new-02"}]})
+        overlay.apply_delta(
+            "spatial.place_devices", {"devices": [{"id": "new-01"}, {"id": "new-02"}]}
+        )
         # Step 2: Update circuit
-        overlay.apply_delta("electrical.calculate_voltage_drop", {"circuit_id": "nac-02", "voltage_drop_v": 0.85})
+        overlay.apply_delta(
+            "electrical.calculate_voltage_drop", {"circuit_id": "nac-02", "voltage_drop_v": 0.85}
+        )
         # Step 3: Update battery
-        overlay.apply_delta("electrical.calculate_battery", {"panel_id": "facp-02", "required_ah": 35.0})
+        overlay.apply_delta(
+            "electrical.calculate_battery", {"panel_id": "facp-02", "required_ah": 35.0}
+        )
 
         proj = overlay.get_projected_state(revision=2)
         assert len(proj["devices"]) == 2
@@ -287,25 +354,31 @@ class TestAllOrNothingRollback:
         executor = WorkflowExecutor(populated_registry, state_store)
 
         # Step 2 will fail because current=10.0 A over 100 m yields > 10% voltage drop
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(
-                node_id="step1",
-                capability_id="spatial.place_devices",
-                payload_template={"width_m": 12.0, "length_m": 15.0},
-            ),
-            WorkflowNode(
-                node_id="step2",
-                capability_id="electrical.calculate_voltage_drop",
-                dependencies=["step1"],
-                payload_template={"circuit_id": "nac-fail", "current_a": 10.0, "one_way_length_m": 100.0},
-            ),
-            WorkflowNode(
-                node_id="step3",
-                capability_id="electrical.calculate_battery",
-                dependencies=["step2"],
-                payload_template={"panel_id": "facp-01"},
-            ),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="step1",
+                    capability_id="spatial.place_devices",
+                    payload_template={"width_m": 12.0, "length_m": 15.0},
+                ),
+                WorkflowNode(
+                    node_id="step2",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["step1"],
+                    payload_template={
+                        "circuit_id": "nac-fail",
+                        "current_a": 10.0,
+                        "one_way_length_m": 100.0,
+                    },
+                ),
+                WorkflowNode(
+                    node_id="step3",
+                    capability_id="electrical.calculate_battery",
+                    dependencies=["step2"],
+                    payload_template={"panel_id": "facp-01"},
+                ),
+            ]
+        )
 
         res = executor.execute(
             dag=dag,
@@ -345,9 +418,11 @@ class TestAllOrNothingRollback:
             )
         )
 
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="stepFault", capability_id="spatial.faulty"),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="stepFault", capability_id="spatial.faulty"),
+            ]
+        )
 
         res = executor.execute(
             dag=dag,
@@ -366,37 +441,49 @@ class TestAllOrNothingRollback:
 # Tier 4: Single Atomic Revision Advancement (N -> N+1) & SHA-256 Audit
 # ---------------------------------------------------------------------------
 class TestAtomicMultiCommandCommit:
-    def test_full_4_domain_composite_commit(
-        self, state_store, populated_registry, admin_principal
-    ):
+    def test_full_4_domain_composite_commit(self, state_store, populated_registry, admin_principal):
         project_id = "proj-atomic-4domain"
         executor = WorkflowExecutor(populated_registry, state_store)
 
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(
-                node_id="step-spatial",
-                capability_id="spatial.place_devices",
-                payload_template={"width_m": 14.0, "length_m": 20.0},
-            ),
-            WorkflowNode(
-                node_id="step-elec-drop",
-                capability_id="electrical.calculate_voltage_drop",
-                dependencies=["step-spatial"],
-                payload_template={"circuit_id": "nac-main-01", "current_a": 1.5, "one_way_length_m": 25.0},
-            ),
-            WorkflowNode(
-                node_id="step-elec-bat",
-                capability_id="electrical.calculate_battery",
-                dependencies=["step-elec-drop"],
-                payload_template={"panel_id": "facp-main-01", "standby_load_amps": 0.6, "installed_ah": 65.0},
-            ),
-            WorkflowNode(
-                node_id="step-hydraulic",
-                capability_id="hydraulics.solve_darcy_weisbach",
-                dependencies=["step-spatial"],
-                payload_template={"pipe_segment_id": "riser-01", "length_m": 15.0, "flow_l_min": 250.0},
-            ),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(
+                    node_id="step-spatial",
+                    capability_id="spatial.place_devices",
+                    payload_template={"width_m": 14.0, "length_m": 20.0},
+                ),
+                WorkflowNode(
+                    node_id="step-elec-drop",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["step-spatial"],
+                    payload_template={
+                        "circuit_id": "nac-main-01",
+                        "current_a": 1.5,
+                        "one_way_length_m": 25.0,
+                    },
+                ),
+                WorkflowNode(
+                    node_id="step-elec-bat",
+                    capability_id="electrical.calculate_battery",
+                    dependencies=["step-elec-drop"],
+                    payload_template={
+                        "panel_id": "facp-main-01",
+                        "standby_load_amps": 0.6,
+                        "installed_ah": 65.0,
+                    },
+                ),
+                WorkflowNode(
+                    node_id="step-hydraulic",
+                    capability_id="hydraulics.solve_darcy_weisbach",
+                    dependencies=["step-spatial"],
+                    payload_template={
+                        "pipe_segment_id": "riser-01",
+                        "length_m": 15.0,
+                        "flow_l_min": 250.0,
+                    },
+                ),
+            ]
+        )
 
         # 1. Dry run preview first
         preview = executor.execute(
@@ -447,9 +534,11 @@ class TestCompositeOCCAndConcurrency:
         state_store.set_project_revision(project_id, 3)
 
         executor = WorkflowExecutor(populated_registry, state_store)
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
+            ]
+        )
 
         # Workflow expects revision 1, but project is at 3
         res = executor.execute(
@@ -475,9 +564,24 @@ class TestCompositeContextBudget:
             revision=1,
             composite_spec={
                 "room_bounds": {"width_m": 25.0, "length_m": 40.0, "ceiling_height_m": 4.5},
-                "circuit": {"circuit_id": "nac-large-01", "current_a": 2.5, "one_way_length_m": 60.0, "awg": "12"},
-                "hydraulic": {"pipe_segment_id": "pipe-main-01", "length_m": 50.0, "diameter_mm": 100.0, "flow_l_min": 600.0},
-                "battery": {"panel_id": "facp-complex", "standby_load_amps": 1.5, "alarm_load_amps": 5.0, "installed_ah": 100.0},
+                "circuit": {
+                    "circuit_id": "nac-large-01",
+                    "current_a": 2.5,
+                    "one_way_length_m": 60.0,
+                    "awg": "12",
+                },
+                "hydraulic": {
+                    "pipe_segment_id": "pipe-main-01",
+                    "length_m": 50.0,
+                    "diameter_mm": 100.0,
+                    "flow_l_min": 600.0,
+                },
+                "battery": {
+                    "panel_id": "facp-complex",
+                    "standby_load_amps": 1.5,
+                    "alarm_load_amps": 5.0,
+                    "installed_ah": 100.0,
+                },
             },
         )
         assert pkt.is_within_budget
@@ -490,9 +594,7 @@ class TestCompositeContextBudget:
 # Tier 7: Security Boundaries & RBAC Scope Enforcement
 # ---------------------------------------------------------------------------
 class TestCompositeSecurityBoundaries:
-    def test_unauthenticated_principal_rejected(
-        self, state_store, populated_registry
-    ):
+    def test_unauthenticated_principal_rejected(self, state_store, populated_registry):
         anon = AuthenticatedPrincipal(
             user_id="anon",
             email="anon@bazspark.internal",
@@ -500,9 +602,11 @@ class TestCompositeSecurityBoundaries:
             is_authenticated=False,
         )
         executor = WorkflowExecutor(populated_registry, state_store)
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
+            ]
+        )
         res = executor.execute(
             dag=dag,
             project_id="proj-sec-anon",
@@ -523,14 +627,16 @@ class TestCompositeSecurityBoundaries:
             scopes=["design:write"],
         )
         executor = WorkflowExecutor(populated_registry, state_store)
-        dag = CompositeWorkflowDAG([
-            WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
-            WorkflowNode(
-                node_id="step2",
-                capability_id="electrical.calculate_voltage_drop",
-                dependencies=["step1"],
-            ),
-        ])
+        dag = CompositeWorkflowDAG(
+            [
+                WorkflowNode(node_id="step1", capability_id="spatial.place_devices"),
+                WorkflowNode(
+                    node_id="step2",
+                    capability_id="electrical.calculate_voltage_drop",
+                    dependencies=["step1"],
+                ),
+            ]
+        )
 
         res = executor.execute(
             dag=dag,

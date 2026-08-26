@@ -17,6 +17,8 @@ LIFE-SAFETY NOTE:
   - Audit trails are append-only (no deletion or modification)
 """
 
+from __future__ import annotations
+
 import asyncio
 import hmac
 import logging
@@ -423,14 +425,23 @@ async def get_audit_trail(
 # above; they expose the durable Agent Run store exclusively.
 
 
+async def _to_thread(func, *args, **kwargs):
+    if hasattr(asyncio, "to_thread"):
+        return await asyncio.to_thread(func, *args, **kwargs)
+    import functools
+
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+
+
 def _agent_run_http_error(exc: Exception) -> HTTPException:
     """Map orchestrator domain errors to HTTP status codes."""
-    if isinstance(exc, RunNotFoundError | PendingApprovalNotFoundError):
+    if isinstance(exc, (RunNotFoundError, PendingApprovalNotFoundError)):  # noqa: UP038
         return HTTPException(status_code=404, detail=str(exc)[:300])
     if isinstance(exc, RunPermissionError):
         return HTTPException(status_code=403, detail=str(exc)[:300])
-    if isinstance(
-        exc, InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError
+    if isinstance(  # noqa: UP038
+        exc, (InvalidRunStateError, StaleApprovalError, ApprovalAlreadyDecidedError)
     ):
         return HTTPException(status_code=409, detail=str(exc)[:300])
     if isinstance(exc, ValueError):
@@ -535,9 +546,7 @@ async def decide_agent_run_approval(
     """Record an immutable approval decision for a pending Agent Run step."""
     decision = body.decision.strip().upper()
     if decision not in ("APPROVED", "REJECTED"):
-        raise HTTPException(
-            status_code=400, detail="decision must be APPROVED or REJECTED"
-        )
+        raise HTTPException(status_code=400, detail="decision must be APPROVED or REJECTED")
     role = require_permission(Permission.WORKFLOW_MANAGE)(request)
     caller_id, is_admin = _run_caller_context(request, role)
     try:
@@ -552,15 +561,117 @@ async def decide_agent_run_approval(
     except Exception as exc:
         raise _agent_run_http_error(exc) from exc
     if run.run_id != run_id:
-        raise HTTPException(
-            status_code=409, detail="Approval does not belong to the specified run"
-        )
+        raise HTTPException(status_code=409, detail="Approval does not belong to the specified run")
     return {"success": True, "data": run.to_dict()}
+
+
+def _reconcile_and_validate_execution_context(
+    request: Request,
+    project_id: str,
+    model_id: str | None = None,
+    entity_id: str | None = None,
+    entity_type: str | None = None,
+    expected_revision: int | None = None,
+) -> dict:
+    """
+    Authoritative reconciliation of execution context (Gate 5 Blockers B, C, F).
+    Validates:
+    1. Authenticated principal has access to project_id
+    2. model_id belongs to project_id (rejects forged/mismatched models)
+    3. entity_id exists and belongs to project_id (zero bypasses: elem-*, mock-* forbidden unless in DB)
+    4. entity/entity_type is compatible
+    5. expected_revision matches canonical persistent OCC revision from project_revisions
+    """
+    import backend.database as _db_mod
+    from backend.routers.projects import _verify_project_access
+
+    db = _db_mod.get_db()
+
+    project = None
+    canonical_rev = None
+    if project_id:
+        project = db.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+        _verify_project_access(project, request)
+
+        # 2. model_id belongs to project_id
+        canonical_model_id = project.get("modelId") or f"dt-{project_id}"
+        if model_id and model_id != canonical_model_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model '{model_id}' does not belong to project '{project_id}'",
+            )
+
+        # 3. entity_id exists and belongs to project_id (strictly enforced, no prefix bypasses)
+        if entity_id:
+            dev = db.get_device(project_id, entity_id)
+            if not dev:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Entity '{entity_id}' does not belong to project '{project_id}'",
+                )
+
+            # 4. entity/entity_type compatibility
+            if entity_type:
+                allowed_types = {
+                    "device",
+                    "element",
+                    "detector",
+                    "panel",
+                    "module",
+                    "circuit",
+                    "appliance",
+                }
+                dev_type = str(dev.get("type", "")).lower()
+                dev_cat = str(dev.get("category", "")).lower()
+                if (
+                    entity_type.lower() not in allowed_types
+                    and entity_type.lower() != dev_type
+                    and entity_type.lower() != dev_cat
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Entity type '{entity_type}' is incompatible with entity '{entity_id}'",
+                    )
+
+        # 5. expected_revision matches canonical persistent revision
+        with db._transaction() as cur:
+            cur.execute(
+                f"SELECT revision FROM project_revisions WHERE project_id = {db._ph()}",
+                (project_id,),
+            )
+            rev_row = cur.fetchone()
+        if rev_row is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Project '{project_id}' is uninitialized or missing canonical revision",
+            )
+        canonical_rev = int(rev_row["revision"] if isinstance(rev_row, dict) else rev_row[0])
+        if expected_revision is not None and expected_revision != canonical_rev:
+            raise HTTPException(
+                status_code=409,
+                detail=f"OCC revision conflict: expected revision {expected_revision} but project '{project_id}' is at canonical revision {canonical_rev}",
+            )
+    elif entity_id:
+        raise HTTPException(
+            status_code=400,
+            detail="project_id is required when entity_id is specified",
+        )
+
+    return {
+        "project": project,
+        "canonical_model_id": project.get("modelId") if project else "",
+        "canonical_revision": canonical_rev if project_id else None,
+    }
 
 
 class PlanWorkflowRequest(BaseModel):
     prompt: str = ""
-    project_id: str = "default_project"
+    project_id: str = ""
+    model_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
     expected_revision: int | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
@@ -586,6 +697,25 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         scopes=["*"],
     )
 
+    # Authoritative context reconciliation (Blockers B, C, F)
+    if body.project_id:
+        _reconcile_and_validate_execution_context(
+            request=request,
+            project_id=body.project_id,
+            model_id=body.model_id,
+            entity_id=body.entity_id,
+            entity_type=body.entity_type,
+            expected_revision=body.expected_revision,
+        )
+
+    spec = dict(body.composite_spec or {})
+    if body.model_id:
+        spec["model_id"] = body.model_id
+    if body.entity_id:
+        spec["entity_id"] = body.entity_id
+    if body.entity_type:
+        spec["entity_type"] = body.entity_type
+
     try:
         plan = await asyncio.to_thread(
             default_workflow_planner.plan_workflow,
@@ -593,7 +723,7 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
             principal=principal,
             project_id=body.project_id,
             expected_revision=body.expected_revision,
-            composite_spec=body.composite_spec,
+            composite_spec=spec,
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
@@ -605,7 +735,10 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
 
 class StartPlannedWorkflowRequest(BaseModel):
     prompt: str = ""
-    project_id: str = "default_project"
+    project_id: str = ""
+    model_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
     expected_revision: int | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
@@ -618,9 +751,7 @@ class StartPlannedWorkflowRequest(BaseModel):
     dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
 )
 @limiter.limit("30/minute")
-async def start_planned_autonomous_workflow(
-    request: Request, body: StartPlannedWorkflowRequest
-):
+async def start_planned_autonomous_workflow(request: Request, body: StartPlannedWorkflowRequest):
     """Plan an autonomous workflow and immediately dispatch it to the durable AgentRunOrchestrator."""
     from backend.core.command_bus import AuthenticatedPrincipal
     from backend.core.workflow_planner import default_workflow_planner
@@ -634,6 +765,25 @@ async def start_planned_autonomous_workflow(
         scopes=["*"],
     )
 
+    # Authoritative context reconciliation (Blockers B, C, F)
+    if body.project_id:
+        _reconcile_and_validate_execution_context(
+            request=request,
+            project_id=body.project_id,
+            model_id=body.model_id,
+            entity_id=body.entity_id,
+            entity_type=body.entity_type,
+            expected_revision=body.expected_revision,
+        )
+
+    spec = dict(body.composite_spec or {})
+    if body.model_id:
+        spec["model_id"] = body.model_id
+    if body.entity_id:
+        spec["entity_id"] = body.entity_id
+    if body.entity_type:
+        spec["entity_type"] = body.entity_type
+
     try:
         plan = await asyncio.to_thread(
             default_workflow_planner.plan_workflow,
@@ -641,7 +791,7 @@ async def start_planned_autonomous_workflow(
             principal=principal,
             project_id=body.project_id,
             expected_revision=body.expected_revision,
-            composite_spec=body.composite_spec,
+            composite_spec=spec,
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
@@ -657,4 +807,3 @@ async def start_planned_autonomous_workflow(
         raise _agent_run_http_error(exc) from exc
 
     return {"success": True, "data": run.to_dict(), "plan": plan.to_dict()}
-

@@ -81,9 +81,7 @@ def _now_iso() -> str:
 
 
 def _sha256_json(data: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(data, sort_keys=True, default=str).encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
 def _step_command_id(run_id: str, step_id: str) -> str:
@@ -252,9 +250,7 @@ class AgentRunOrchestrator:
             decision = self._evaluate_step_policy(run, principal, next_step)
 
             if decision.result == PolicyResult.DENIED:
-                return self._fail_step(
-                    run, step_id, "POLICY_DENIED", decision.reason
-                )
+                return self._fail_step(run, step_id, "POLICY_DENIED", decision.reason)
 
             if decision.result in (
                 PolicyResult.REQUIRES_APPROVAL,
@@ -266,7 +262,9 @@ class AgentRunOrchestrator:
             result = self._execute_step(run, principal, next_step)
             if not result["success"]:
                 return self._fail_step(
-                    run, step_id, result.get("errorCode") or "STEP_EXECUTION_FAILED",
+                    run,
+                    step_id,
+                    result.get("errorCode") or "STEP_EXECUTION_FAILED",
                     result.get("errorMessage") or "Step execution failed.",
                     artifacts=result.get("resultData") or {},
                 )
@@ -311,6 +309,13 @@ class AgentRunOrchestrator:
 
         if expected_revision is None:
             expected_revision = self._bus.get_project_revision(run.project_id)
+            if expected_revision is None:
+                return {
+                    "success": False,
+                    "errorCode": "PROJECT_REVISION_NOT_FOUND",
+                    "errorMessage": f"Project '{run.project_id}' is uninitialized or missing canonical revision.",
+                    "resultData": {},
+                }
 
         command = DomainCommand(
             commandId=_step_command_id(run.run_id, str(step["step_id"])),
@@ -469,7 +474,9 @@ class AgentRunOrchestrator:
 
     # ── Status ───────────────────────────────────────────────────────────
 
-    def get_run_status(self, caller_id: str, run_id: str, caller_is_admin: bool = False) -> AgentRun:
+    def get_run_status(
+        self, caller_id: str, run_id: str, caller_is_admin: bool = False
+    ) -> AgentRun:
         run = self._store.require_run(run_id)
         self._authorize(run, caller_id, caller_is_admin)
         return run
@@ -497,9 +504,7 @@ class AgentRunOrchestrator:
         run = self._store.require_run(run_id)
         self._authorize(run, caller_id, caller_is_admin)
         if run.status in TERMINAL_STATUSES:
-            raise InvalidRunStateError(
-                f"Run '{run_id}' is already terminal ({run.status.value})."
-            )
+            raise InvalidRunStateError(f"Run '{run_id}' is already terminal ({run.status.value}).")
         # Invalidate any pending approvals atomically with the cancellation.
         self._store.cancel_pending_approvals(run_id)
         cancelled = self._store.transition_run(
@@ -625,9 +630,7 @@ class AgentRunOrchestrator:
         # Re-validate the retry policy for the failed step BEFORE transitioning.
         decision = self._evaluate_step_policy(run, self._require_principal(run), failed_step)
         if decision.result == PolicyResult.DENIED:
-            raise InvalidRunStateError(
-                f"Retry denied by execution policy: {decision.reason}"
-            )
+            raise InvalidRunStateError(f"Retry denied by execution policy: {decision.reason}")
 
         # Validate current project revision consistency.
         current_rev = self._bus.get_project_revision(run.project_id)
@@ -707,8 +710,7 @@ class AgentRunOrchestrator:
         # Run state: must still be waiting on THIS approval.
         if run.status != RunStatus.WAITING_APPROVAL:
             raise InvalidRunStateError(
-                f"Run '{run.run_id}' is {run.status.value}; approval '{approval_id}' "
-                f"is stale."
+                f"Run '{run.run_id}' is {run.status.value}; approval '{approval_id}' is stale."
             )
         if run.pending_approval_id != approval_id:
             raise InvalidRunStateError(

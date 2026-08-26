@@ -22,7 +22,9 @@ from backend.core.execution_policy import (
 )
 
 
-def _principal(scopes: list[str] | None = None, authenticated: bool = True) -> AuthenticatedPrincipal:
+def _principal(
+    scopes: list[str] | None = None, authenticated: bool = True
+) -> AuthenticatedPrincipal:
     return AuthenticatedPrincipal(
         user_id="engineer-01",
         email="e@bazspark.io",

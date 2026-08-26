@@ -35,6 +35,7 @@ from backend.services.llm_service import (
 # 1. SSRF & URL Validation Tests
 # ---------------------------------------------------------------------------
 
+
 class TestSSRFAndURLValidation:
     """Test SSRF protection rules for local and cloud providers."""
 
@@ -81,11 +82,15 @@ class TestSSRFAndURLValidation:
         assert "SSRF_BLOCKED" in (err or "")
 
     def test_gemini_valid_and_blocked(self):
-        is_valid, _resolved, err = validate_provider_url("gemini", "https://generativelanguage.googleapis.com")
+        is_valid, _resolved, err = validate_provider_url(
+            "gemini", "https://generativelanguage.googleapis.com"
+        )
         assert is_valid is True
         assert err is None
 
-        is_valid, _, err = validate_provider_url("gemini", "http://generativelanguage.googleapis.com")
+        is_valid, _, err = validate_provider_url(
+            "gemini", "http://generativelanguage.googleapis.com"
+        )
         assert is_valid is False
         assert "HTTPS is required" in (err or "")
 
@@ -94,13 +99,19 @@ class TestSSRFAndURLValidation:
         assert "SSRF_BLOCKED" in (err or "")
 
     def test_openai_valid_and_blocked(self):
-        is_valid, _resolved, err = validate_provider_url("openai", "https://api.openai.com/v1")
+        is_valid, _resolved, err = validate_provider_url(
+            "openai", "https://api.openai.com/v1"
+        )
         assert is_valid is True
 
-        is_valid, _resolved, err = validate_provider_url("openai", "https://zenmux.ai/api/v1")
+        is_valid, _resolved, err = validate_provider_url(
+            "openai", "https://zenmux.ai/api/v1"
+        )
         assert is_valid is True
 
-        is_valid, _, err = validate_provider_url("openai", "https://unauthorized-proxy.internal.corp")
+        is_valid, _, err = validate_provider_url(
+            "openai", "https://unauthorized-proxy.internal.corp"
+        )
         assert is_valid is False
         assert "SSRF_BLOCKED" in (err or "")
 
@@ -108,6 +119,7 @@ class TestSSRFAndURLValidation:
 # ---------------------------------------------------------------------------
 # 2. Ping Probes & Zero Secret Leakage Tests
 # ---------------------------------------------------------------------------
+
 
 class TestPingProbesAndSecretSafety:
     """Test live zero-token probe execution and secret redaction."""
@@ -152,12 +164,16 @@ class TestPingProbesAndSecretSafety:
     async def test_anthropic_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"data": []})
-            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="valid")
+            success, _latency, err = await ping_provider(
+                "anthropic", "https://api.anthropic.com", api_key="valid"
+            )
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(401, json={"error": "unauthorized"})
-            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="invalid")
+            success, _latency, err = await ping_provider(
+                "anthropic", "https://api.anthropic.com", api_key="invalid"
+            )
             assert success is False
             assert "Invalid Anthropic API key" in (err or "")
 
@@ -170,17 +186,23 @@ class TestPingProbesAndSecretSafety:
     async def test_gemini_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"models": []})
-            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="valid")
+            success, _latency, err = await ping_provider(
+                "gemini", "https://generativelanguage.googleapis.com", api_key="valid"
+            )
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(400, json={"error": "bad request"})
-            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="invalid")
+            success, _latency, err = await ping_provider(
+                "gemini", "https://generativelanguage.googleapis.com", api_key="invalid"
+            )
             assert success is False
             assert "Invalid Gemini API key" in (err or "")
 
             mock_get.return_value = httpx.Response(502, text="Bad Gateway")
-            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com")
+            success, _latency, err = await ping_provider(
+                "gemini", "https://generativelanguage.googleapis.com"
+            )
             assert success is False
             assert "HTTP 502" in (err or "")
 
@@ -188,12 +210,16 @@ class TestPingProbesAndSecretSafety:
     async def test_openai_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"data": []})
-            success, _latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="valid")
+            success, _latency, err = await ping_provider(
+                "openai", "https://api.openai.com/v1", api_key="valid"
+            )
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(401, json={"error": "invalid_api_key"})
-            success, _latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="invalid")
+            success, _latency, err = await ping_provider(
+                "openai", "https://api.openai.com/v1", api_key="invalid"
+            )
             assert success is False
             assert "Invalid OpenAI API key" in (err or "")
 
@@ -212,6 +238,7 @@ class TestPingProbesAndSecretSafety:
 # ---------------------------------------------------------------------------
 # 3. FastAPI HTTP Endpoint Tests
 # ---------------------------------------------------------------------------
+
 
 class TestPingProviderEndpoint:
     """Test POST /api/v1/agent/ping-provider endpoint."""
@@ -254,6 +281,24 @@ class TestPingProviderEndpoint:
 # 4. WebSocket Dynamic Provider Routing & Telemetry Tests
 # ---------------------------------------------------------------------------
 
+
+@pytest.fixture(autouse=True)
+def _seed_dynamic_routing_projects() -> None:
+    """Seed global state store with project revisions for dynamic routing tests."""
+    from backend.core.state_store import default_state_store
+    for pid in [
+        "proj-dyn-route-01",
+        "proj-dyn-route-02",
+        "proj-dyn-route-03",
+        "proj-room-01",
+        "proj-elec-01",
+        "proj-hyd-01",
+        "proj-bat-01",
+    ]:
+        if default_state_store.get_project_revision(pid) is None:
+            default_state_store.set_project_revision(pid, 1)
+
+
 class TestWebSocketDynamicRoutingAndTelemetry:
     """Test dynamic routing envelope extraction and live token telemetry."""
 
@@ -263,7 +308,14 @@ class TestWebSocketDynamicRoutingAndTelemetry:
             user_id="eng-phase31-01",
             email="eng@bazspark.com",
             role="ENGINEER",
-            scopes=["spatial:read", "spatial:write", "electrical:read", "electrical:write", "hydraulics:read", "hydraulics:write"],
+            scopes=[
+                "spatial:read",
+                "spatial:write",
+                "electrical:read",
+                "electrical:write",
+                "hydraulics:read",
+                "hydraulics:write",
+            ],
             is_authenticated=True,
         )
 
@@ -295,8 +347,17 @@ class TestWebSocketDynamicRoutingAndTelemetry:
             },
             "compositeSpec": {
                 "room_bounds": {"width_m": 8.0, "length_m": 10.0, "ceiling_height_m": 3.0},
-                "circuit": {"circuit_id": "nac-dyn-01", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
-                "battery": {"panel_id": "facp-dyn-01", "standby_load_amps": 0.5, "installed_ah": 50.0},
+                "circuit": {
+                    "circuit_id": "nac-dyn-01",
+                    "current_a": 1.0,
+                    "one_way_length_m": 20.0,
+                    "awg": "14",
+                },
+                "battery": {
+                    "panel_id": "facp-dyn-01",
+                    "standby_load_amps": 0.5,
+                    "installed_ah": 50.0,
+                },
             },
         }
 
@@ -315,7 +376,10 @@ class TestWebSocketDynamicRoutingAndTelemetry:
         assert telemetry.get("temperature") == 0.0
         assert telemetry.get("prompt_tokens", 0) > 0
         assert telemetry.get("completion_tokens", 0) > 0
-        assert telemetry.get("total_tokens", 0) == telemetry["prompt_tokens"] + telemetry["completion_tokens"]
+        assert (
+            telemetry.get("total_tokens", 0)
+            == telemetry["prompt_tokens"] + telemetry["completion_tokens"]
+        )
         assert telemetry.get("token_budget", 1500) <= 1500
 
     @pytest.mark.asyncio
@@ -342,8 +406,17 @@ class TestWebSocketDynamicRoutingAndTelemetry:
             },
             "compositeSpec": {
                 "room_bounds": {"width_m": 8.0, "length_m": 10.0, "ceiling_height_m": 3.0},
-                "circuit": {"circuit_id": "nac-dyn-02", "current_a": 1.0, "one_way_length_m": 20.0, "awg": "14"},
-                "battery": {"panel_id": "facp-dyn-02", "standby_load_amps": 0.5, "installed_ah": 50.0},
+                "circuit": {
+                    "circuit_id": "nac-dyn-02",
+                    "current_a": 1.0,
+                    "one_way_length_m": 20.0,
+                    "awg": "14",
+                },
+                "battery": {
+                    "panel_id": "facp-dyn-02",
+                    "standby_load_amps": 0.5,
+                    "installed_ah": 50.0,
+                },
             },
         }
 
@@ -366,7 +439,9 @@ class TestWebSocketDynamicRoutingAndTelemetry:
         ws = MockWebSocket()
 
         # 1. Invalid payload missing dag
-        await orchestrator.handle_composite_approval(cast(WebSocket, ws), engineer_principal, {"type": "composite_approval"})
+        await orchestrator.handle_composite_approval(
+            cast(WebSocket, ws), engineer_principal, {"type": "composite_approval"}
+        )
         assert any(m.get("errorCode") == "INVALID_WORKFLOW_PAYLOAD" for m in sent_messages)
 
         # 2. Valid dag approval
@@ -379,7 +454,12 @@ class TestWebSocketDynamicRoutingAndTelemetry:
                     {
                         "node_id": "step_1",
                         "capability_id": "spatial.place_devices",
-                        "payload_template": {"room_id": "r1", "width_m": 8.0, "length_m": 10.0, "ceiling_height_m": 3.0},
+                        "payload_template": {
+                            "room_id": "r1",
+                            "width_m": 8.0,
+                            "length_m": 10.0,
+                            "ceiling_height_m": 3.0,
+                        },
                         "dependencies": [],
                     }
                 ]

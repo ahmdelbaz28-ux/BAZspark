@@ -51,20 +51,20 @@ class InspectRequest(BaseModel):
 
 class PlanImportRequest(BaseModel):
     file_id: str = Field(..., description="Staged file ID")
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     options: dict[str, Any] = Field(default_factory=dict, description="Import options")
 
 
 class ExecuteImportRequest(BaseModel):
     file_id: str = Field(..., description="Staged file ID")
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     expected_revision: int = Field(..., description="Expected project revision for OCC check")
     options: dict[str, Any] = Field(default_factory=dict, description="Execution options")
 
 
 class CreateImportRunRequest(BaseModel):
     file_id: str = Field(..., description="Staged file ID")
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     approval_mode: str = Field("AUTO", description="AUTO or STEP_BY_STEP")
     options: dict[str, Any] = Field(default_factory=dict, description="Import options")
 

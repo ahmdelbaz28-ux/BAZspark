@@ -133,7 +133,7 @@ function setStoredActiveRunId(runId: string | null): void {
 	}
 }
 
-export function useAgentRun(defaultProjectId: string = "default_project"): UseAgentRunReturn {
+export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 	const [state, setState] = useState<AgentRunState>(() => ({
 		runId: null,
 		projectId: defaultProjectId,
@@ -153,6 +153,14 @@ export function useAgentRun(defaultProjectId: string = "default_project"): UseAg
 		isConnected: false,
 		isReconnecting: false,
 	}));
+
+	const [prevDefaultProjectId, setPrevDefaultProjectId] = useState(defaultProjectId);
+	if (!state.runId && defaultProjectId !== prevDefaultProjectId) {
+		setPrevDefaultProjectId(defaultProjectId);
+		if (defaultProjectId !== state.projectId) {
+			setState((prev) => ({ ...prev, projectId: defaultProjectId }));
+		}
+	}
 
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

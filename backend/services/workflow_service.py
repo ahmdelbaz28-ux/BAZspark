@@ -46,13 +46,17 @@ import logging
 import math
 import os
 import time
-from collections.abc import Callable
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, TypedDict, TypeVar
+from typing import Any, Callable, TypedDict, TypeVar  # noqa: UP035
 
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langgraph.graph import END, StateGraph
+try:
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+    from langgraph.graph import END, StateGraph
+except ImportError:
+    AsyncSqliteSaver = None
+    END = "__end__"
+    StateGraph = None
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +73,9 @@ try:
     STUCK_DETECTION_AVAILABLE = True
 except ImportError:
     STUCK_DETECTION_AVAILABLE = False
-    # Fallback: no-op decorator
     _F = TypeVar("_F", bound=Callable[..., Any])
 
-    def with_stuck_detection[F: Callable[..., Any]](func: _F) -> _F:
+    def with_stuck_detection(func: _F) -> _F:
         return func
 
 

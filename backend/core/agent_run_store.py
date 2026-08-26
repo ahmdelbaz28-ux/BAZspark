@@ -86,12 +86,8 @@ class ApprovalDecisionValue(StrEnum):
 # ─────────────────────────────────────────────────────────────────────────────
 
 VALID_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
-    RunStatus.PLANNING: frozenset(
-        {RunStatus.READY, RunStatus.FAILED, RunStatus.CANCELLED}
-    ),
-    RunStatus.READY: frozenset(
-        {RunStatus.RUNNING, RunStatus.CANCELLED, RunStatus.FAILED}
-    ),
+    RunStatus.PLANNING: frozenset({RunStatus.READY, RunStatus.FAILED, RunStatus.CANCELLED}),
+    RunStatus.READY: frozenset({RunStatus.RUNNING, RunStatus.CANCELLED, RunStatus.FAILED}),
     RunStatus.RUNNING: frozenset(
         {
             RunStatus.WAITING_APPROVAL,
@@ -104,9 +100,7 @@ VALID_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
     RunStatus.WAITING_APPROVAL: frozenset(
         {RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLED, RunStatus.PAUSED}
     ),
-    RunStatus.PAUSED: frozenset(
-        {RunStatus.RUNNING, RunStatus.CANCELLED, RunStatus.FAILED}
-    ),
+    RunStatus.PAUSED: frozenset({RunStatus.RUNNING, RunStatus.CANCELLED, RunStatus.FAILED}),
     # FAILED → RUNNING only through an explicit retry/recovery operation.
     RunStatus.FAILED: frozenset({RunStatus.RUNNING, RunStatus.CANCELLED}),
     # Terminal states
@@ -142,9 +136,7 @@ def validate_transition(current: RunStatus | str, to: RunStatus | str) -> None:
     cur = RunStatus(current)
     nxt = RunStatus(to)
     if nxt not in VALID_TRANSITIONS[cur]:
-        raise InvalidTransitionError(
-            f"Illegal Agent Run transition: {cur.value} -> {nxt.value}"
-        )
+        raise InvalidTransitionError(f"Illegal Agent Run transition: {cur.value} -> {nxt.value}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -347,9 +339,7 @@ class AgentRunStore:
                 "CREATE INDEX IF NOT EXISTS idx_agent_runs_project ON agent_runs(project_id)"
             )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_agent_runs_user ON agent_runs(user_id)")
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_agent_runs_status ON agent_runs(status)"
-            )
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_agent_runs_status ON agent_runs(status)")
 
             cur.execute(
                 """
@@ -605,7 +595,9 @@ class AgentRunStore:
             if row is None:
                 raise RunNotFoundError(f"Agent Run '{run_id}' does not exist.")
             cur_status_raw, stored_version = (
-                (row["status"], int(row["version"])) if isinstance(row, dict) else (row[0], int(row[1]))
+                (row["status"], int(row["version"]))
+                if isinstance(row, dict)
+                else (row[0], int(row[1]))
             )
             cur_status = RunStatus(cur_status_raw)
 
@@ -701,8 +693,7 @@ class AgentRunStore:
         params.extend([run_id, expected_version])
         with self._db._transaction() as cur:
             cur.execute(
-                f"UPDATE agent_runs SET {', '.join(sets)} "
-                f"WHERE run_id = {ph} AND version = {ph}",
+                f"UPDATE agent_runs SET {', '.join(sets)} WHERE run_id = {ph} AND version = {ph}",
                 tuple(params),
             )
             if cur.rowcount == 0:
@@ -761,7 +752,7 @@ class AgentRunStore:
                     run_id,
                     step_id,
                     project_id,
-                    int(project_revision),
+                    int(project_revision) if project_revision is not None else 1,
                     capability_id,
                     principal_id,
                     ApprovalMode(approval_mode).value,
@@ -834,9 +825,7 @@ class AgentRunStore:
             row = cur.fetchone()
         return self._row_to_pending_approval(row) if row is not None else None
 
-    def get_pending_approval_for_step(
-        self, run_id: str, step_id: str
-    ) -> PendingApproval | None:
+    def get_pending_approval_for_step(self, run_id: str, step_id: str) -> PendingApproval | None:
         ph = self._ph()
         with self._db._transaction() as cur:
             cur.execute(
@@ -938,9 +927,7 @@ class AgentRunStore:
     def require_pending_approval(self, approval_id: str) -> PendingApproval:
         pa = self.get_pending_approval(approval_id)
         if pa is None:
-            raise PendingApprovalNotFoundError(
-                f"Pending approval '{approval_id}' does not exist."
-            )
+            raise PendingApprovalNotFoundError(f"Pending approval '{approval_id}' does not exist.")
         return pa
 
     def cancel_pending_approvals(self, run_id: str) -> int:

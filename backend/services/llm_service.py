@@ -418,20 +418,24 @@ async def close_llm_service() -> None:
 _ANTHROPIC_DEFAULT_HOST = "api.anthropic.com"
 _GEMINI_DEFAULT_HOST = "generativelanguage.googleapis.com"
 
-ALLOWED_CLOUD_HOSTS = frozenset({
-    _ANTHROPIC_DEFAULT_HOST,
-    _GEMINI_DEFAULT_HOST,
-    "api.openai.com",
-    "zenmux.ai",
-    "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
-})
+ALLOWED_CLOUD_HOSTS = frozenset(
+    {
+        _ANTHROPIC_DEFAULT_HOST,
+        _GEMINI_DEFAULT_HOST,
+        "api.openai.com",
+        "zenmux.ai",
+        "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
+    }
+)
 
-ALLOWED_LOCAL_HOSTS = frozenset({
-    "localhost",
-    "127.0.0.1",
-    "::1",
-    "[::1]",
-})
+ALLOWED_LOCAL_HOSTS = frozenset(
+    {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        "[::1]",
+    }
+)
 
 
 def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, str, str | None]:
@@ -470,8 +474,16 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         if scheme != "https":
             return False, url, "HTTPS is required for Anthropic provider"
         host = (parsed.hostname or "").lower()
-        if not (host == _ANTHROPIC_DEFAULT_HOST or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
-            return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
+        if not (
+            host == _ANTHROPIC_DEFAULT_HOST
+            or host.endswith(".anthropic.com")
+            or host in ALLOWED_LOCAL_HOSTS
+        ):
+            return (
+                False,
+                url,
+                f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint",
+            )
         return True, _clean(url), None
 
     if prov == "gemini":
@@ -486,7 +498,11 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host.endswith(".googleapis.com")
             or host in ALLOWED_LOCAL_HOSTS
         ):
-            return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint"
+            return (
+                False,
+                url,
+                f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint",
+            )
         return True, _clean(url), None
 
     if prov == "openai":

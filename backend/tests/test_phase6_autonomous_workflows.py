@@ -60,6 +60,30 @@ def bus(fresh_db: Database) -> CommandBus:
     return CommandBus(state_store=state_store)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase6_projects(bus: CommandBus) -> None:
+    for pid in [
+        "proj-scenario-a",
+        "proj-scenario-b",
+        "proj-scenario-c",
+        "proj-scenario-d",
+        "proj-scenario-e",
+        "proj-scenario-f",
+        "proj-scenario-f1",
+        "proj-scenario-f2",
+        "proj-import-test",
+        "proj-export-test",
+        "proj-hyd-bat",
+        "proj-invalid",
+        "proj-invalid-intent",
+        "proj-ws-plan",
+        "proj-ws-planning",
+        "proj-serde",
+        "proj-roundtrip",
+    ]:
+        bus.state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def store(fresh_db: Database) -> AgentRunStore:
     return AgentRunStore(fresh_db)
@@ -71,7 +95,9 @@ def registry() -> CapabilityRegistry:
 
 
 @pytest.fixture
-def orchestrator(bus: CommandBus, registry: CapabilityRegistry, store: AgentRunStore) -> AgentRunOrchestrator:
+def orchestrator(
+    bus: CommandBus, registry: CapabilityRegistry, store: AgentRunStore
+) -> AgentRunOrchestrator:
     return AgentRunOrchestrator(command_bus=bus, capability_registry=registry, run_store=store)
 
 
@@ -303,9 +329,7 @@ def test_scenario_e_cancellation_boundary(
 
     # Verify no subsequent execution or approval is possible
     with pytest.raises(Exception):
-        orchestrator.decide_approval(
-            engineer_principal.user_id, appr_id, "APPROVED"
-        )
+        orchestrator.decide_approval(engineer_principal.user_id, appr_id, "APPROVED")
 
 
 # ── Scenario F: RBAC & Policy Denial ──────────────────────────────────────────
@@ -355,14 +379,47 @@ def test_scenario_f_governance_policy_denial(
 
 def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db: Database) -> None:
     """Verify POST /api/workflow/runs/plan and POST /api/workflow/runs/start-plan endpoints."""
+    import backend.core.agent_run_orchestrator as _orch_mod
+    import backend.core.agent_run_store as _store_mod
+    import backend.core.command_bus as _bus_mod
+    import backend.core.state_store as _ss_mod
+    import backend.core.workflow_planner as _planner_mod
     from backend.rbac import Role
     from backend.routers import workflow
 
+    monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
     monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr(
         workflow, "require_permission", lambda permission: (lambda request: Role.ENGINEER)
     )
     monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
+    monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
+    monkeypatch.setattr("backend.routers.projects.get_db", lambda: fresh_db)
+
+    # Wire singletons to fresh_db
+    fresh_state_store = CommandStateStore(fresh_db)
+    fresh_run_store = AgentRunStore(fresh_db)
+    fresh_command_bus = CommandBus(state_store=fresh_state_store)
+    fresh_orchestrator = AgentRunOrchestrator(
+        command_bus=fresh_command_bus, run_store=fresh_run_store
+    )
+    fresh_planner = AutonomousWorkflowPlanner(
+        command_bus=fresh_command_bus, orchestrator=fresh_orchestrator
+    )
+    monkeypatch.setattr(_ss_mod, "default_state_store", fresh_state_store)
+    monkeypatch.setattr(_bus_mod, "default_command_bus", fresh_command_bus)
+    monkeypatch.setattr(_store_mod, "default_agent_run_store", fresh_run_store)
+    monkeypatch.setattr(_orch_mod, "default_agent_run_orchestrator", fresh_orchestrator)
+    monkeypatch.setattr(_planner_mod, "default_workflow_planner", fresh_planner)
+
+    fresh_db.create_project({
+        "id": "proj-rest-test",
+        "name": "Rest Test Project",
+        "author": "engineer-42",
+    })
 
     client = TestClient(app)
 
@@ -395,6 +452,92 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     assert start_data["success"] is True
     assert start_data["data"]["status"] in ("COMPLETED", "WAITING_APPROVAL")
     assert "runId" in start_data["data"]
+
+
+def test_rest_workflow_context_reconciliation_validation_errors(
+    monkeypatch: pytest.MonkeyPatch, fresh_db: Database
+) -> None:
+    """Verify validation and OCC errors in workflow context reconciliation."""
+    from backend.rbac import Role
+    from backend.routers import workflow
+
+    monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
+    monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr(
+        workflow, "require_permission", lambda permission: (lambda request: Role.ENGINEER)
+    )
+    monkeypatch.setattr("backend.auth.has_permission", lambda role, permission: True)
+    monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
+    monkeypatch.setattr("backend.routers.projects.get_db", lambda: fresh_db)
+
+    fresh_db.create_project({
+        "id": "proj-reconcile-err",
+        "name": "Reconcile Error Project",
+        "author": "engineer-42",
+    })
+    fresh_db.create_device("proj-reconcile-err", {
+        "id": "dev-01",
+        "name": "Smoke Detector 1",
+        "type": "smoke_detector",
+        "category": "initiating",
+    })
+
+    client = TestClient(app)
+
+    # 1. Project not found -> 404
+    r1 = client.post(
+        "/api/workflow/runs/plan",
+        json={"prompt": "Plan test", "project_id": "proj-nonexistent"},
+    )
+    assert r1.status_code == 404
+
+    # 2. Model mismatch -> 400
+    r2 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "model_id": "dt-forged-model",
+        },
+    )
+    assert r2.status_code == 400
+
+    # 3. Entity does not belong to project -> 400
+    r3 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "entity_id": "dev-nonexistent",
+        },
+    )
+    assert r3.status_code == 400
+
+    # 4. Incompatible entity type -> 400
+    r4 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "entity_id": "dev-01",
+            "entity_type": "incompatible_type_xyz",
+        },
+    )
+    assert r4.status_code == 400
+
+    # 5. Stale expected_revision -> 409
+    r5 = client.post(
+        "/api/workflow/runs/plan",
+        json={
+            "prompt": "Plan test",
+            "project_id": "proj-reconcile-err",
+            "expected_revision": 999,
+        },
+    )
+    assert r5.status_code == 409
 
 
 def test_import_and_export_workflow_planning(
@@ -466,10 +609,31 @@ def test_invalid_workflow_intent_rejection(
 
 @pytest.mark.asyncio
 async def test_websocket_orchestration_service_autonomous_planning(
-    fresh_db: Database, engineer_principal: AuthenticatedPrincipal
+    monkeypatch: pytest.MonkeyPatch, fresh_db: Database, engineer_principal: AuthenticatedPrincipal
 ) -> None:
     """Verify AIOrchestrationService handles ai_plan_workflow message."""
+    import backend.core.workflow_planner as _planner_mod
+    from backend.core.agent_run_orchestrator import AgentRunOrchestrator
+    from backend.core.agent_run_store import AgentRunStore
+    from backend.core.command_bus import CommandBus
+    from backend.core.state_store import CommandStateStore
+    from backend.core.workflow_planner import AutonomousWorkflowPlanner
     from backend.routers.agent_ws import AIOrchestrationService
+
+    # Build fresh planner backed by fresh_db
+    fresh_ss = CommandStateStore(fresh_db)
+    fresh_bus = CommandBus(state_store=fresh_ss)
+    fresh_orch = AgentRunOrchestrator(
+        command_bus=fresh_bus,
+        run_store=AgentRunStore(fresh_db),
+        environment="development",
+    )
+    fresh_planner = AutonomousWorkflowPlanner(command_bus=fresh_bus, orchestrator=fresh_orch)
+
+    # Seed project revision so plan_workflow doesn't raise PROJECT_REVISION_NOT_FOUND
+    fresh_ss.set_project_revision("proj-ws-plan", 1)
+
+    monkeypatch.setattr(_planner_mod, "default_workflow_planner", fresh_planner)
 
     class MockWebSocket:
         def __init__(self):

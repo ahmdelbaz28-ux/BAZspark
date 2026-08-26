@@ -39,10 +39,9 @@ import threading
 import time
 import uuid
 from collections import deque
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, NoReturn
+from typing import Any, Callable, NoReturn  # noqa: UP035
 
 # ===========================================================================
 # Event Data Model
