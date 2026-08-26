@@ -49,12 +49,87 @@ _MAX_TOKENS_HARD_CAP = 8000
 _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_TOKENS = 2000
 
-_WELL_KNOWN_KEY_VARS: tuple[tuple[str, str, str], ...] = (
-    # (env var, provider name, kind)
-    ("OPENAI_API_KEY", "openai", "openai_compatible"),
-    ("ANTHROPIC_API_KEY", "anthropic", "anthropic"),
-    ("GEMINI_API_KEY", "gemini", "gemini"),
-    ("AZURE_OPENAI_API_KEY", "azure", "azure"),
+
+@dataclass(frozen=True)
+class _WellKnownProvider:
+    """A provider the user can enable by setting ONE env var (the API key)."""
+
+    env_var: str
+    name: str
+    kind: str
+    base_url: str = ""
+    model: str = ""
+
+
+# Single-key discovery catalog ("add a key → it works").
+# Order IS the fallback priority when several keys are set at once.
+# Every default is overridable via LLM_<NAME>_BASE_URL / LLM_<NAME>_MODEL.
+_WELL_KNOWN_PROVIDERS: tuple[_WellKnownProvider, ...] = (
+    # ── First-party native APIs ──────────────────────────────────────────
+    _WellKnownProvider("OPENAI_API_KEY", "openai", "openai_compatible",
+                       "https://api.openai.com/v1", "gpt-4o"),
+    _WellKnownProvider("ANTHROPIC_API_KEY", "anthropic", "anthropic",
+                       "https://api.anthropic.com", "claude-sonnet-4-5"),
+    _WellKnownProvider("GEMINI_API_KEY", "gemini", "gemini",
+                       "https://generativelanguage.googleapis.com",
+                       "gemini-2.0-flash"),
+    _WellKnownProvider("GOOGLE_API_KEY", "gemini-google", "gemini",
+                       "https://generativelanguage.googleapis.com",
+                       "gemini-2.0-flash"),
+    _WellKnownProvider("AZURE_OPENAI_API_KEY", "azure", "azure", "", ""),
+    _WellKnownProvider("XAI_API_KEY", "xai", "openai_compatible",
+                       "https://api.x.ai/v1", "grok-2-latest"),
+    _WellKnownProvider("MISTRAL_API_KEY", "mistral", "openai_compatible",
+                       "https://api.mistral.ai/v1", "mistral-large-latest"),
+    _WellKnownProvider("DEEPSEEK_API_KEY", "deepseek", "openai_compatible",
+                       "https://api.deepseek.com/v1", "deepseek-chat"),
+    _WellKnownProvider("COHERE_API_KEY", "cohere", "openai_compatible",
+                       "https://api.cohere.ai/compatibility/v1", "command-r-plus"),
+    # ── Aggregators / coding-tool gateways ───────────────────────────────
+    _WellKnownProvider("OPENROUTER_API_KEY", "openrouter", "openai_compatible",
+                       "https://openrouter.ai/api/v1", "openai/gpt-4o"),
+    _WellKnownProvider("KILOCODE_API_KEY", "kilocode", "openai_compatible",
+                       "https://api.kilocode.ai/v1", "x-ai/grok-code-fast-1"),
+    _WellKnownProvider("OPENCODE_API_KEY", "opencode", "openai_compatible",
+                       "https://opencode.ai/zen/v1/", "gpt-4o"),
+    _WellKnownProvider("ZENMUX_API_KEY", "zenmux-discovered", "openai_compatible",
+                       "https://zenmux.ai/api/v1", "z-ai/glm-4.7"),
+    # ── GPU clouds / inference hosts ─────────────────────────────────────
+    _WellKnownProvider("NVIDIA_API_KEY", "nvidia", "openai_compatible",
+                       "https://integrate.api.nvidia.com/v1",
+                       "meta/llama-3.1-8b-instruct"),
+    _WellKnownProvider("GROQ_API_KEY", "groq", "openai_compatible",
+                       "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
+    _WellKnownProvider("TOGETHER_API_KEY", "together", "openai_compatible",
+                       "https://api.together.xyz/v1",
+                       "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
+    _WellKnownProvider("FIREWORKS_API_KEY", "fireworks", "openai_compatible",
+                       "https://api.fireworks.ai/inference/v1",
+                       "accounts/fireworks/models/llama-v3p3-70b-instruct"),
+    _WellKnownProvider("DEEPINFRA_API_KEY", "deepinfra", "openai_compatible",
+                       "https://api.deepinfra.com/v1/openai",
+                       "meta-llama/Llama-3.3-70B-Instruct"),
+    _WellKnownProvider("CEREBRAS_API_KEY", "cerebras", "openai_compatible",
+                       "https://api.cerebras.ai/v1", "llama3.1-8b"),
+    _WellKnownProvider("SAMBANOVA_API_KEY", "sambanova", "openai_compatible",
+                       "https://api.sambanova.ai/v1",
+                       "Meta-Llama-3.3-70B-Instruct"),
+    _WellKnownProvider("PERPLEXITY_API_KEY", "perplexity", "openai_compatible",
+                       "https://api.perplexity.ai",
+                       "llama-3.1-sonar-small-128k-online"),
+    # ── Regional / CN providers ──────────────────────────────────────────
+    _WellKnownProvider("DASHSCOPE_API_KEY", "dashscope", "openai_compatible",
+                       "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                       "qwen-plus-latest"),
+    _WellKnownProvider("MOONSHOT_API_KEY", "moonshot", "openai_compatible",
+                       "https://api.moonshot.cn/v1", "moonshot-v1-32k"),
+    _WellKnownProvider("ZHIPU_API_KEY", "zhipu", "openai_compatible",
+                       "https://open.bigmodel.cn/api/paas/v4", "glm-4-plus"),
+)
+
+# Back-compat alias used by older call sites/tests.
+_WELL_KNOWN_KEY_VARS: tuple[tuple[str, str, str], ...] = tuple(
+    (p.env_var, p.name, p.kind) for p in _WELL_KNOWN_PROVIDERS
 )
 
 
@@ -191,21 +266,33 @@ class LLMProviderRegistry:
         if configs:
             return configs
 
-        # Single-key discovery: any well-known key alone yields a provider.
-        for env_var, name, kind in _WELL_KNOWN_KEY_VARS:
-            if env.get(env_var):
-                defaults = _KIND_DEFAULTS[kind]
-                configs.append(
-                    ProviderConfig(
-                        name=name,
-                        kind=kind,
-                        api_key=env[env_var],
-                        base_url=env.get(_prefix_for_kind(kind) + "BASE_URL",
-                                         defaults["base_url"]),
-                        model=env.get(_prefix_for_kind(kind) + "MODEL",
-                                      defaults["model"]),
-                    )
+        # Single-key discovery: any well-known key yields a ready provider.
+        # Azure is skipped unless its resource endpoint was also provided —
+        # a deployment URL cannot be derived from the API key alone.
+        for known in _WELL_KNOWN_PROVIDERS:
+            key_value = env.get(known.env_var)
+            if not key_value:
+                continue
+            prefix = f"LLM_{known.name.upper()}_"
+            base_url = env.get(prefix + "BASE_URL") or known.base_url
+            model = env.get(prefix + "MODEL") or known.model
+            if not base_url:
+                logger.debug(
+                    "Provider '%s' key found but no base_url available — "
+                    "set %sBASE_URL to enable it",
+                    known.name,
+                    prefix,
                 )
+                continue
+            configs.append(
+                ProviderConfig(
+                    name=known.name,
+                    kind=known.kind,
+                    api_key=key_value,
+                    base_url=base_url,
+                    model=model,
+                )
+            )
         return configs
 
     def reload(self) -> list[str]:
@@ -272,13 +359,6 @@ _KIND_DEFAULTS: dict[str, dict[str, str]] = {
                "model": "gemini-2.0-flash"},
     "azure": {"base_url": "", "model": ""},
 }
-
-
-def _prefix_for_kind(kind: str) -> str:
-    for env_var, _name, k in _WELL_KNOWN_KEY_VARS:
-        if k == kind:
-            return env_var.replace("_API_KEY", "")
-    return ""
 
 
 def _legacy_configs_from_env(env: dict[str, str] | os._Environ[str]) -> list[ProviderConfig]:

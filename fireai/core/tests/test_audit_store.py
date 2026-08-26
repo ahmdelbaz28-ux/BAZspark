@@ -26,6 +26,7 @@ import hmac
 import json
 import os
 import sqlite3
+import sys
 import tempfile
 import threading
 from typing import NoReturn
@@ -787,10 +788,16 @@ class TestECDSA:
         result = _compute_ecdsa_signature("somehash")
         assert result is None
 
-    def test_verify_ecdsa_raises_without_library(self) -> None:
-        """verify_ecdsa_signature raises ImportError if ecdsa not installed."""
-        if audit_mod.HAS_ECDSA:
-            pytest.skip("ecdsa library is installed; cannot test ImportError path")
+    def test_verify_ecdsa_raises_without_library(self, monkeypatch) -> None:
+        """verify_ecdsa_signature raises ImportError if ecdsa not installed.
+
+        NO-SKIP policy: instead of skipping when ecdsa happens to be
+        installed, simulate its absence by hiding the module and resetting
+        the module-level HAS_ECDSA flag — the ImportError path is then
+        exercised deterministically in every environment.
+        """
+        monkeypatch.setitem(sys.modules, "ecdsa", None)
+        monkeypatch.setattr(audit_mod, "HAS_ECDSA", False)
         with pytest.raises(ImportError, match="ecdsa library required"):
             verify_ecdsa_signature(
                 {

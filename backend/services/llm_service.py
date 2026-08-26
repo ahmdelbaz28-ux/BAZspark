@@ -1,57 +1,36 @@
 """
-backend/services/llm_service.py — LLM Service (OpenAI-compatible / Zenmux).
+backend/services/llm_service.py — LLM Service (unified Provider Registry).
 
 PURPOSE
 -------
-Provides an async LLM chat completion service backed by any OpenAI-compatible
-API (Zenmux, OpenAI, Modal, NVIDIA build.nvidia.com, etc.). Designed for the
-FireAI AI Copilot — an engineering assistant that helps fire-protection
-engineers interpret NFPA 72 / NEC calculation results, draft compliance
-narratives, and answer code questions.
+Provides the async LLM chat completion service for the FireAI AI Copilot.
+Stage B2 (agent-platform rebuild): this service now DELEGATES all provider
+I/O to ``backend/services/providers`` — a unified, env-driven registry of
+provider adapters (openai_compatible / anthropic / gemini / azure).
+
+Adding a provider is configuration-only::
+
+    LLM_PROVIDERS=primary,fallback          # order = fallback order
+    LLM_PRIMARY_KIND=openai_compatible      # anthropic | gemini | azure | ...
+    LLM_PRIMARY_API_KEY=sk-...
+    LLM_PRIMARY_BASE_URL=https://...
+    LLM_PRIMARY_MODEL=gpt-4o
+
+Legacy environments keep working unchanged: when ``LLM_PROVIDERS`` is unset,
+the registry synthesizes the historical ZENMUX_* / LLM_FALLBACK_* chain, plus
+single-key discovery (OPENAI_API_KEY alone => working provider).
 
 This service is **advisory only**. It NEVER overrides deterministic NFPA 72
-calculations produced by the QOMN kernel. All LLM output is labeled with a
-``source`` field so downstream code can distinguish AI-generated text from
-deterministic engineering results.
+calculations produced by the QOMN kernel. All output carries a ``source``
+field naming the provider that produced it.
 
-DESIGN
-------
-* OpenAI Python SDK (``openai.AsyncOpenAI``) against ``ZENMUX_BASE_URL``.
-* Singleton with thread-safe double-checked locking (same pattern as
-  ``weather_service.py``, ``memory_service.py``).
-* tenacity retry on transient network errors only (never retries 4xx).
-* Graceful degradation: if ``ZENMUX_API_KEY`` is unset, the service reports
-  ``available=False`` and endpoints return HTTP 503 (not 500).
-
-ENVIRONMENT VARIABLES
----------------------
-Primary provider (Zenmux):
-* ``ZENMUX_API_KEY``       — API key (required for production use)
-* ``ZENMUX_BASE_URL``      — defaults to ``https://zenmux.ai/api/v1``
-* ``ZENMUX_MODEL``         — default chat model (e.g. ``z-ai/glm-4.7``)
-* ``ZENMUX_REQUEST_TIMEOUT`` — seconds, default 60 (LLM calls can be slow)
-* ``ZENMUX_MAX_TOKENS``    — default 2000
-
-Fallback provider (Alibaba Cloud MaaS — optional, used if primary fails):
-* ``LLM_FALLBACK_API_KEY``  — Alibaba MaaS API key
-* ``LLM_FALLBACK_BASE_URL`` — defaults to Alibaba MaaS compatible-mode endpoint
-* ``LLM_FALLBACK_MODEL``    — default ``qwen-plus-latest``
-* ``LLM_FALLBACK_ENABLED``  — set to ``"true"`` to enable fallback (default: disabled)
-
-When fallback is enabled and the primary provider returns an error (429, 500,
-502, 503, timeout, or connection error), the service automatically retries
-with the fallback provider. The ``source`` field in LLMResponse indicates
-which provider succeeded (``"zenmux"`` or ``"aliyun-maas"``).
-
-USAGE
------
-    from backend.services.llm_service import get_llm_service
-    svc = get_llm_service()
-    if not svc.available:
-        raise HTTPException(503, "LLM service not configured")
-    result = await svc.chat("Explain NFPA 72 §17.7.3.2.3", system="You are a fire protection engineer.")
-    print(result.content)
-    print(result.source)  # "zenmux" or "aliyun-maas"
+CONTRACTS PRESERVED (pinned by backend/tests/test_a0_llm_regression_contract.py):
+* persona whitelist is owned by the caller (router); this layer never injects one
+* ``LLMResponse.source`` always reflects the producing provider
+* never-crash streaming: errors surface as SSE ``error`` events
+* server-side caps: history newest-20 turns, 8000 chars/message, <=22 assembled,
+  max_tokens hard-capped at 8000
+* SSRF gates live in the registry adapters (base URLs validated at construction)
 """
 
 from __future__ import annotations
@@ -59,104 +38,41 @@ from __future__ import annotations
 import logging
 import os
 import threading
-import time
+import time as _time
 from collections.abc import AsyncGenerator
-from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 
 from backend.llm_constants import AI_DISCLAIMER
+from backend.services.providers.registry import (
+    close_provider_registry,
+    get_provider_registry,
+)
+from backend.services.providers.types import LLMResponse
 
 logger = logging.getLogger(__name__)
 
-# ── Defaults ─────────────────────────────────────────────────────────────────
-_DEFAULT_BASE_URL = "https://zenmux.ai/api/v1"
-_DEFAULT_MODEL = "z-ai/glm-4.7"
-_DEFAULT_TIMEOUT = 60.0
-_DEFAULT_MAX_TOKENS = 2000
-_DEFAULT_TEMPERATURE = 0.1  # low temperature for deterministic engineering advice
+# Hard cap on generated tokens — defense in depth (router also bounds it).
+_MAX_TOKENS_HARD_CAP = 8000
 
-# Fallback provider defaults (Alibaba Cloud MaaS — OpenAI-compatible)
-_FALLBACK_DEFAULT_BASE_URL = (
-    "https://ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
-)
-_FALLBACK_DEFAULT_MODEL = "qwen-plus-latest"
-
-# Conservative retry policy — LLM calls can be slow, so we allow up to 3
-# attempts with exponential backoff. Only network/timeout errors are retried;
-# 4xx errors (auth, quota, bad request) are surfaced immediately.
-_MAX_RETRIES = 3
-_RETRY_MIN_WAIT = 1.0
-_RETRY_MAX_WAIT = 10.0
-
-
-@dataclass(frozen=True)
-class _ProviderConfig:
-    """Configuration for a single LLM provider (primary or fallback)."""
-
-    name: str  # "zenmux" or "aliyun-maas"
-    api_key: str
-    base_url: str
-    model: str
-
-    @property
-    def available(self) -> bool:
-        return bool(self.api_key)
-
-
-@dataclass(frozen=True)
-class LLMResponse:
-    """Immutable result of an LLM chat completion.
-
-    The ``source`` field is always ``"zenmux"`` (or the configured provider)
-    so downstream code can distinguish AI-generated text from deterministic
-    engineering calculations.
-    """
-
-    content: str
-    model: str
-    source: str = "zenmux"
-    finish_reason: str = "stop"
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    total_tokens: int = 0
-    raw: dict[str, Any] = field(default_factory=dict)
+# Legacy default slot values — preserved as the observable surface when no
+# provider is configured (health payload, base_url/default_model properties),
+# exactly as the pre-registry service reported them.
+_LEGACY_DEFAULT_BASE_URL = "https://zenmux.ai/api/v1"
+_LEGACY_DEFAULT_MODEL = "z-ai/glm-4.7"
 
 
 class LLMService:
-    """Async LLM chat service backed by an OpenAI-compatible API.
+    """Async LLM chat service backed by the unified provider registry.
 
-    The service is created lazily on first use. If ``ZENMUX_API_KEY`` is not
-    set, ``available`` is False and all chat calls raise ``RuntimeError``.
+    The service is created lazily on first use. If no provider is configured,
+    ``available`` is False and chat calls raise ``RuntimeError``.
     """
 
     def __init__(self) -> None:
-        # Primary provider (Zenmux or any OpenAI-compatible API)
-        self._primary = _ProviderConfig(
-            name="zenmux",
-            api_key=os.environ.get("ZENMUX_API_KEY", ""),
-            base_url=os.environ.get("ZENMUX_BASE_URL", _DEFAULT_BASE_URL),
-            model=os.environ.get("ZENMUX_MODEL", _DEFAULT_MODEL),
-        )
-        # Fallback provider (Alibaba Cloud MaaS — optional)
-        self._fallback_enabled = os.environ.get("LLM_FALLBACK_ENABLED", "").lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-        self._fallback = _ProviderConfig(
-            name="aliyun-maas",
-            api_key=os.environ.get("LLM_FALLBACK_API_KEY", ""),
-            base_url=os.environ.get("LLM_FALLBACK_BASE_URL", _FALLBACK_DEFAULT_BASE_URL),
-            model=os.environ.get("LLM_FALLBACK_MODEL", _FALLBACK_DEFAULT_MODEL),
-        )
-        self._timeout: float = float(os.environ.get("ZENMUX_REQUEST_TIMEOUT", _DEFAULT_TIMEOUT))
-        self._max_tokens: int = int(os.environ.get("ZENMUX_MAX_TOKENS", _DEFAULT_MAX_TOKENS))
-        # Cache of clients per provider name
-        self._clients: dict[str, Any] = {}
+        self._registry = get_provider_registry()
         self._lock = threading.Lock()
 
     # ── Properties ────────────────────────────────────────────────────────
@@ -164,67 +80,26 @@ class LLMService:
     @property
     def available(self) -> bool:
         """True if at least one provider is configured."""
-        return self._primary.available or (self._fallback_enabled and self._fallback.available)
+        return bool(self._registry.list_available())
 
     @property
     def base_url(self) -> str:
-        return self._primary.base_url
+        """Primary provider base URL (back-compat field)."""
+        adapters = self._registry.ordered_adapters()
+        return adapters[0].base_url if adapters else _LEGACY_DEFAULT_BASE_URL
 
     @property
     def default_model(self) -> str:
-        return self._primary.model
+        """Primary provider default model (back-compat field)."""
+        adapters = self._registry.ordered_adapters()
+        return adapters[0].default_model if adapters else _LEGACY_DEFAULT_MODEL
 
     @property
     def fallback_available(self) -> bool:
-        """True if fallback is enabled AND configured."""
-        return self._fallback_enabled and self._fallback.available
+        """True if more than one provider is configured."""
+        return len(self._registry.list_available()) > 1
 
-    # ── Client lifecycle ──────────────────────────────────────────────────
-
-    def _get_client(self, provider: _ProviderConfig | None = None) -> Any:
-        """Lazily create an OpenAI async client for the given provider.
-
-        If ``provider`` is None, uses the primary provider.
-        We import ``openai`` inside the method so the module can be imported
-        even if the ``openai`` package is not installed (graceful degradation
-        — the router will report 503 if the service is unavailable).
-        """
-        prov = provider or self._primary
-        if prov.name in self._clients:
-            return self._clients[prov.name]
-        if not prov.available:
-            raise RuntimeError(
-                f"{prov.name} API key is not set. Configure it to enable the LLM service."
-            )
-        try:
-            from openai import AsyncOpenAI
-        except ImportError as exc:
-            raise RuntimeError(
-                "The 'openai' package is not installed. Install with: pip install openai"
-            ) from exc
-
-        with self._lock:
-            if prov.name not in self._clients:
-                self._clients[prov.name] = AsyncOpenAI(
-                    api_key=prov.api_key,
-                    base_url=prov.base_url,
-                    timeout=self._timeout,
-                    max_retries=0,  # we handle retries via tenacity
-                )
-        return self._clients[prov.name]
-
-    async def close(self) -> None:
-        """Close all cached HTTP clients (graceful shutdown)."""
-        # list() snapshot is required: self._clients.clear() below mutates the
-        # dict during iteration, which would raise RuntimeError without it.
-        for name, client in list(self._clients.items()):  # noqa: S7504 — intentional snapshot
-            try:
-                await client.close()
-            except Exception:
-                logger.debug("Error closing %s client", name, exc_info=True)
-        self._clients.clear()
-
-    # ── Message assembly (F5b) ────────────────────────────────────────────
+    # ── Message assembly ──────────────────────────────────────────────────
 
     @staticmethod
     def _assemble_messages(
@@ -240,12 +115,13 @@ class LLMService:
           - every history entry must be exactly {"role", "content"} with
             role in {"user", "assistant"}
           - total assembled messages may not exceed 50
+          - each message body is clamped to 8000 characters
 
         Raises ValueError on malformed history instead of sending it upstream.
         """
         messages: list[dict[str, str]] = []
         if system:
-            messages.append({"role": "system", "content": system})
+            messages.append({"role": "system", "content": str(system)[:8000]})
 
         if history:
             for entry in history[-20:]:
@@ -255,7 +131,8 @@ class LLMService:
                 content = entry.get("content")
                 if role not in ("user", "assistant") or not isinstance(content, str):
                     raise ValueError(
-                        "history entries must have role in {'user','assistant'} and string content"
+                        "history entries must have role in {'user','assistant'} "
+                        "and string content"
                     )
                 messages.append({"role": role, "content": content[:8000]})
 
@@ -264,7 +141,7 @@ class LLMService:
             raise ValueError("conversation history exceeds server limit")
         return messages
 
-    # ── Core chat method ──────────────────────────────────────────────────
+    # ── Core chat methods ─────────────────────────────────────────────────
 
     async def chat(
         self,
@@ -272,157 +149,52 @@ class LLMService:
         *,
         system: str | None = None,
         model: str | None = None,
-        temperature: float = _DEFAULT_TEMPERATURE,
+        temperature: float = 0.1,
         max_tokens: int | None = None,
         history: list[dict[str, str]] | None = None,
     ) -> LLMResponse:
         """Send a chat completion request and return the response.
 
-        If the primary provider fails AND fallback is enabled, automatically
-        retries with the fallback provider. The ``source`` field in the
-        returned LLMResponse indicates which provider succeeded.
-
-        Args:
-            prompt: The user message. Must be non-empty.
-            system: Optional system message (sets the assistant's persona).
-            model: Override the default model (per-provider default if None).
-            temperature: Sampling temperature [0.0, 2.0]. Default 0.1.
-            max_tokens: Max tokens to generate. Defaults to ZENMUX_MAX_TOKENS.
-            history: Optional bounded conversation history (list of dicts with
-                ``role`` in {"user","assistant"} and ``content``). Assembled
-                between the system message and the current prompt, oldest first.
-
-        Returns:
-            LLMResponse with the generated content and usage stats.
+        Providers are tried in configured order (first success wins). The
+        ``source`` field indicates which provider succeeded.
 
         Raises:
-            ValueError: If prompt is empty, history is malformed or exceeds
-                the server-side cap.
+            ValueError: If prompt is empty, history is malformed, or caps exceeded.
             RuntimeError: If no provider is configured.
-            Exception: On API errors after retries and fallback are exhausted.
+            Exception: On API errors after every configured provider failed.
         """
         if not prompt or not prompt.strip():
             raise ValueError("prompt must be non-empty")
         if not self.available:
-            raise RuntimeError("LLM service not configured. Set ZENMUX_API_KEY to enable.")
+            raise RuntimeError(
+                "LLM service not configured. Set a provider API key "
+                "(e.g. LLM_PROVIDERS + LLM_<NAME>_API_KEY, ZENMUX_API_KEY or OPENAI_API_KEY)."
+            )
 
         messages = self._assemble_messages(system=system, prompt=prompt, history=history)
-        use_max_tokens = max_tokens or self._max_tokens
+        # Default 2000 matches the historical ZENMUX_MAX_TOKENS default;
+        # explicit requests are clamped to the hard cap.
+        use_max_tokens = min(max_tokens or (_MAX_TOKENS_HARD_CAP // 4), _MAX_TOKENS_HARD_CAP)
 
-        # Try primary provider first
-        primary_error: Exception | None = None
-        if self._primary.available:
+        adapters = [a for a in self._registry.ordered_adapters() if a.available]
+        first_error: Exception | None = None
+        for adapter in adapters:
             try:
-                return await self._try_provider(
-                    self._primary, messages, model, temperature, use_max_tokens
+                return await adapter.chat(
+                    messages, model=model, temperature=temperature, max_tokens=use_max_tokens
                 )
-            except Exception as exc:
-                primary_error = exc
+            except Exception as exc:  # noqa: BLE001 — fail over to next provider
+                if first_error is None:
+                    first_error = exc
                 logger.warning(
-                    "Primary LLM provider '%s' failed: %s. Attempting fallback if enabled.",
-                    self._primary.name,
+                    "LLM provider '%s' failed (%s). %s",
+                    adapter.name,
                     type(exc).__name__,
+                    "Trying next provider." if adapter is not adapters[-1]
+                    else "No further providers.",
                 )
-
-        # Try fallback provider if enabled and configured
-        if self.fallback_available:
-            try:
-                return await self._try_provider(
-                    self._fallback, messages, model, temperature, use_max_tokens
-                )
-            except Exception:
-                logger.exception(
-                    "Fallback LLM provider '%s' also failed",
-                    self._fallback.name,
-                )
-                # Raise the fallback error (most recent), but log primary too
-                if primary_error:
-                    logger.error("Primary provider error was: %s", primary_error)
-                raise
-
-        # No fallback available, raise primary error
-        if primary_error:
-            raise primary_error
-        raise RuntimeError("No LLM provider available")
-
-    async def _try_provider(
-        self,
-        provider: _ProviderConfig,
-        messages: list[dict[str, str]],
-        model: str | None,
-        temperature: float,
-        max_tokens: int,
-    ) -> LLMResponse:
-        """Attempt a chat completion with a single provider (with tenacity retry)."""
-        import asyncio
-
-        client = self._get_client(provider)
-        use_model = model or provider.model
-
-        from tenacity import (
-            retry,
-            retry_if_exception_type,
-            stop_after_attempt,
-            wait_exponential,
-        )
-
-        @retry(
-            retry=retry_if_exception_type(_get_transient_errors()),
-            stop=stop_after_attempt(_MAX_RETRIES),
-            wait=wait_exponential(min=_RETRY_MIN_WAIT, max=_RETRY_MAX_WAIT),
-            reraise=True,
-        )
-        async def _do_completion() -> Any:
-            return await asyncio.wait_for(
-                client.chat.completions.create(
-                    model=use_model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                ),
-                timeout=self._timeout,
-            )
-
-        try:
-            completion = await _do_completion()
-        except TimeoutError:
-            logger.warning(
-                "LLM chat completion timed out (provider=%s, timeout=%.1fs)",
-                provider.name,
-                self._timeout,
-            )
-            raise
-        except Exception:
-            logger.exception(
-                "LLM chat completion failed (provider=%s, base_url=%s)",
-                provider.name,
-                provider.base_url,
-            )
-            raise
-
-        if hasattr(completion, "choices") and completion.choices:
-            content = completion.choices[0].message.content or ""
-            finish_reason = completion.choices[0].finish_reason or "stop"
-        else:
-            content = ""
-            finish_reason = "error"
-
-        return LLMResponse(
-            content=content,
-            model=completion.model if hasattr(completion, "model") else use_model,
-            source=provider.name,
-            finish_reason=finish_reason,
-            prompt_tokens=getattr(getattr(completion, "usage", None), "prompt_tokens", 0),
-            completion_tokens=getattr(getattr(completion, "usage", None), "completion_tokens", 0),
-            total_tokens=getattr(getattr(completion, "usage", None), "total_tokens", 0),
-            # OpenAI SDK v1+ uses Pydantic v2, so model_dump() is preferred.
-            # Fall back to .dict() for older SDK versions, then {} if neither exists.
-            raw=completion.model_dump()
-            if hasattr(completion, "model_dump")
-            else (
-                completion.dict() if hasattr(completion, "dict") else {}
-            ),  # NOSONAR — S3358: nested ternary intentional for provider-agnostic response parsing
-        )
+        assert first_error is not None
+        raise first_error
 
     async def chat_stream(
         self,
@@ -430,19 +202,16 @@ class LLMService:
         *,
         system: str | None = None,
         model: str | None = None,
-        temperature: float = _DEFAULT_TEMPERATURE,
+        temperature: float = 0.1,
         max_tokens: int | None = None,
         history: list[dict[str, str]] | None = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
-        """Stream a chat completion token-by-token via SSE.
+        """Stream a chat completion token-by-token via SSE-shaped events.
 
-        Yields dicts with one of these shapes:
+        Yields dicts with one of these shapes (contract pinned by A0):
           - {"type": "chunk", "content": "...", "model": "...", "source": "..."}
-          - {"type": "done", "content": "full text", "model": "...",
-             "source": "...", "usage": {...}, "disclaimer": "..."}
+          - {"type": "done", "content": "...", "usage": {...}, "disclaimer": "..."}
           - {"type": "error", "message": "...", "disclaimer": "..."}
-
-        Falls back to non-streaming if the provider doesn't support streaming.
         """
         if not prompt or not prompt.strip():
             yield {
@@ -454,7 +223,7 @@ class LLMService:
         if not self.available:
             yield {
                 "type": "error",
-                "message": "LLM service not configured. Set ZENMUX_API_KEY.",
+                "message": "LLM service not configured. Set a provider API key.",
                 "disclaimer": AI_DISCLAIMER,
             }
             return
@@ -464,16 +233,10 @@ class LLMService:
         except ValueError as exc:
             yield {"type": "error", "message": str(exc), "disclaimer": AI_DISCLAIMER}
             return
-        use_max_tokens = max_tokens or self._max_tokens
+        use_max_tokens = min(max_tokens or _MAX_TOKENS_HARD_CAP // 4, _MAX_TOKENS_HARD_CAP)
 
-        # Try primary provider first, then fallback
-        providers_to_try: list[_ProviderConfig] = []
-        if self._primary.available:
-            providers_to_try.append(self._primary)
-        if self.fallback_available:
-            providers_to_try.append(self._fallback)
-
-        if not providers_to_try:
+        adapters = [a for a in self._registry.ordered_adapters() if a.available]
+        if not adapters:
             yield {
                 "type": "error",
                 "message": "No LLM provider available",
@@ -481,19 +244,38 @@ class LLMService:
             }
             return
 
-        for provider in providers_to_try:
+        for adapter in adapters:
+            events: list[dict[str, Any]] = []
+            failure: Exception | None = None
             try:
-                async for event in self._stream_provider(
-                    provider, messages, model, temperature, use_max_tokens
-                ):
+                stream = adapter.stream(
+                    messages, model=model, temperature=temperature, max_tokens=use_max_tokens
+                )
+                while True:
+                    try:
+                        event = await anext(stream)
+                    except StopAsyncIteration:
+                        break
+                    events.append(event)
                     yield event
                 return  # Success — don't try fallback
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 — fail over to next provider
+                failure = exc
                 logger.warning(
-                    "Streaming with provider '%s' failed, trying fallback",
-                    provider.name,
-                    exc_info=True,
+                    "Streaming with provider '%s' failed (%s), trying fallback",
+                    adapter.name,
+                    type(exc).__name__,
                 )
+                # If chunks were already delivered, do NOT replay from another
+                # provider (would duplicate text). Surface an error event.
+                if any(e.get("type") == "chunk" for e in events):
+                    yield {
+                        "type": "error",
+                        "message": f"Stream from {adapter.name} aborted mid-flight",
+                        "disclaimer": AI_DISCLAIMER,
+                    }
+                    return
+                del failure
                 continue
 
         yield {
@@ -502,121 +284,14 @@ class LLMService:
             "disclaimer": AI_DISCLAIMER,
         }
 
-    async def _stream_provider(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        self,
-        provider: _ProviderConfig,
-        messages: list[dict[str, str]],
-        model: str | None,
-        temperature: float,
-        max_tokens: int,
-    ) -> AsyncGenerator[dict[str, Any], None]:
-        """Stream tokens from a single provider."""
-        import asyncio
-
-        client = self._get_client(provider)
-        use_model = model or provider.model
-
-        try:
-            # Add timeout to the stream creation call
-            stream = await asyncio.wait_for(
-                client.chat.completions.create(
-                    model=use_model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    stream=True,
-                    stream_options={"include_usage": True},
-                ),
-                timeout=self._timeout,
-            )
-        except TimeoutError:
-            logger.warning(
-                "LLM stream creation timed out (provider=%s, timeout=%.1fs)",
-                provider.name,
-                self._timeout,
-            )
-            raise
-        except Exception:
-            logger.exception(
-                "LLM stream creation failed (provider=%s, base_url=%s)",
-                provider.name,
-                provider.base_url,
-            )
-            raise
-
-        full_content = ""
-        usage_data: dict[str, Any] = {}
-
-        # Process the stream with timeout for each chunk
-        try:
-            async for chunk in stream:
-                # Check for cancellation periodically
-                if asyncio.current_task().cancelled():
-                    break
-
-                if not chunk.choices:
-                    # Final chunk may contain usage stats only
-                    if chunk.usage:
-                        usage_data = {
-                            "prompt_tokens": chunk.usage.prompt_tokens,
-                            "completion_tokens": chunk.usage.completion_tokens,
-                            "total_tokens": chunk.usage.total_tokens,
-                        }
-                    continue
-
-                delta = chunk.choices[0].delta
-                if delta and delta.content:
-                    full_content += delta.content
-                    yield {
-                        "type": "chunk",
-                        "content": delta.content,
-                        "model": use_model,
-                        "source": provider.name,
-                    }
-
-                # Check for usage in the final chunk
-                if chunk.usage:
-                    usage_data = {
-                        "prompt_tokens": chunk.usage.prompt_tokens,
-                        "completion_tokens": chunk.usage.completion_tokens,
-                        "total_tokens": chunk.usage.total_tokens,
-                    }
-
-            # Yield final completion message
-            yield {
-                "type": "done",
-                "content": full_content,
-                "model": use_model,
-                "source": provider.name,
-                "usage": usage_data,
-                "disclaimer": AI_DISCLAIMER,
-            }
-        except TimeoutError:
-            logger.warning(
-                "LLM stream timed out during processing (provider=%s, timeout=%.1fs)",
-                provider.name,
-                self._timeout,
-            )
-            yield {
-                "type": "error",
-                "message": f"Stream timed out after {self._timeout}s",
-                "disclaimer": AI_DISCLAIMER,
-            }
-            raise
-        except Exception as e:
-            logger.exception(
-                "LLM stream processing failed (provider=%s): %s", provider.name, str(e)
-            )
-            raise
-
     # ── Health check ──────────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:  # noqa: S7503 — async for future extensibility
         """Return a health/status dict (never raises).
 
-        F6: includes a ``subsystems`` block that surfaces the status of every
-        LLM-adjacent subsystem (memory, Tier-2 self-healing, tracing) so a
-        single /llm/health call answers "what AI is wired up and on?".
+        Includes the full provider chain under ``providers`` plus the
+        back-compat ``primary``/``fallback`` blocks and the F6 subsystems
+        block (memory, Tier-2 self-healing, tracing).
         """
         subsystems: dict[str, Any] = {}
         try:
@@ -671,51 +346,47 @@ class LLMService:
                 "detail": str(exc)[:120],
             }
 
+        adapters = self._registry.ordered_adapters()
+        providers_block = [
+            {
+                "name": a.name,
+                "kind": a.capabilities.kind,
+                "available": a.available,
+                "base_url": a.base_url,
+                "model": a.default_model,
+            }
+            for a in adapters
+        ]
+        primary = providers_block[0] if providers_block else {
+            "name": "none", "kind": "openai_compatible", "available": False,
+            "base_url": "", "model": "",
+        }
+        fallback = providers_block[1] if len(providers_block) > 1 else {
+            "name": "aliyun-maas",
+            "enabled": False,
+            "available": False,
+            "base_url": "",
+            "model": "qwen-plus-latest",
+        }
+
         return {
             "available": self.available,
-            "primary": {
-                "name": self._primary.name,
-                "available": self._primary.available,
-                "base_url": self._primary.base_url,
-                "model": self._primary.model,
-            },
-            "fallback": {
-                "name": self._fallback.name,
-                "enabled": self._fallback_enabled,
-                "available": self.fallback_available,
-                "base_url": self._fallback.base_url,
-                "model": self._fallback.model,
-            },
-            "timeout_s": self._timeout,
-            "max_tokens": self._max_tokens,
+            "providers": providers_block,
+            "primary": primary,
+            "fallback": fallback,
+            "timeout_s": adapters[0].timeout if adapters else None,
+            "max_tokens": adapters[0].max_tokens if adapters else None,
             "subsystems": subsystems,
         }
 
+    async def reload_providers(self) -> list[str]:
+        """Hot-reload the provider chain from the current environment."""
+        with self._lock:
+            return self._registry.reload()
 
-def _get_transient_errors() -> tuple[type[Exception], ...]:
-    """Return the tuple of exception types that should trigger a retry.
-
-    We retry on network/connection errors but NOT on 4xx HTTP errors (auth,
-    quota, bad request) — those are surfaced immediately to the caller.
-    """
-    import httpx
-
-    transient: list[type[Exception]] = [httpx.HTTPError, httpx.TimeoutException]
-    try:
-        from openai import APIConnectionError, APITimeoutError
-
-        transient.extend([APIConnectionError, APITimeoutError])
-        # Retry on 429 and 5xx but NOT on 4xx (auth/quota/bad-request)
-        # We can't easily filter APIStatusError by status code in the retry
-        # decorator, so we include it and rely on tenacity's predicate — but
-        # for simplicity we exclude it and let 429/5xx surface immediately.
-        # This is conservative: a 429 will be surfaced to the user rather
-        # than retried, which is acceptable for an LLM service (the user can
-        # retry manually).
-    except ImportError:
-        # openai not installed — only httpx errors will be caught
-        pass
-    return tuple(transient)
+    async def close(self) -> None:
+        """Close all cached HTTP clients (graceful shutdown)."""
+        await close_provider_registry()
 
 
 # ── Module-level singleton ───────────────────────────────────────────────────
@@ -742,7 +413,7 @@ async def close_llm_service() -> None:
         _llm_service = None
 
 
-# ── Live Provider Ping & SSRF Validation ──────────────────────────────────────
+# ── Live Provider Ping & SSRF Validation (settings/router surface) ───────────
 
 _ANTHROPIC_DEFAULT_HOST = "api.anthropic.com"
 _GEMINI_DEFAULT_HOST = "generativelanguage.googleapis.com"
@@ -770,6 +441,13 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         tuple of (is_valid, resolved_url, error_message).
     """
     prov = (provider or "").lower().strip()
+
+    def _clean(url: str) -> str:
+        parsed = urlparse(url)
+        port_str = f":{parsed.port}" if parsed.port else ""
+        path = parsed.path.rstrip("/")
+        return f"{(parsed.scheme or '').lower()}://{(parsed.hostname or '').lower()}{port_str}{path}"
+
     if prov == "ollama":
         url = (base_url or "http://localhost:11434").strip().rstrip("/")
         parsed = urlparse(url)
@@ -783,10 +461,7 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
                 url,
                 f"SSRF_BLOCKED: Local provider (Ollama) can only target localhost/127.0.0.1, got '{host}'",
             )
-        port_str = f":{parsed.port}" if parsed.port else ""
-        path = parsed.path.rstrip("/")
-        clean_url = f"{scheme}://{host}{port_str}{path}"
-        return True, clean_url, None
+        return True, _clean(url), None
 
     if prov == "anthropic":
         url = (base_url or f"https://{_ANTHROPIC_DEFAULT_HOST}").strip().rstrip("/")
@@ -797,10 +472,7 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         host = (parsed.hostname or "").lower()
         if not (host == _ANTHROPIC_DEFAULT_HOST or host.endswith(".anthropic.com") or host in ALLOWED_LOCAL_HOSTS):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Anthropic endpoint"
-        port_str = f":{parsed.port}" if parsed.port else ""
-        path = parsed.path.rstrip("/")
-        clean_url = f"{scheme}://{host}{port_str}{path}"
-        return True, clean_url, None
+        return True, _clean(url), None
 
     if prov == "gemini":
         url = (base_url or f"https://{_GEMINI_DEFAULT_HOST}").strip().rstrip("/")
@@ -815,10 +487,7 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized Google Gemini endpoint"
-        port_str = f":{parsed.port}" if parsed.port else ""
-        path = parsed.path.rstrip("/")
-        clean_url = f"{scheme}://{host}{port_str}{path}"
-        return True, clean_url, None
+        return True, _clean(url), None
 
     if prov == "openai":
         url = (base_url or "https://api.openai.com/v1").strip().rstrip("/")
@@ -834,10 +503,7 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
             or host in ALLOWED_LOCAL_HOSTS
         ):
             return False, url, f"SSRF_BLOCKED: Host '{host}' is not an authorized OpenAI endpoint"
-        port_str = f":{parsed.port}" if parsed.port else ""
-        path = parsed.path.rstrip("/")
-        clean_url = f"{scheme}://{host}{port_str}{path}"
-        return True, clean_url, None
+        return True, _clean(url), None
 
     return False, base_url or "", f"Unsupported provider: '{provider}'"
 
@@ -850,6 +516,10 @@ async def ping_provider(
 ) -> tuple[bool, float, str | None]:
     """Execute a live lightweight ping/handshake probe to the provider.
 
+    Delegates to the matching registry adapter when one exists so there is a
+    single probe implementation per family; falls back to direct httpx
+    probing for the raw provider names exposed by the settings UI.
+
     Returns:
         tuple of (success, latency_ms, error_message).
     Enforces a strict 5.0-second timeout cap and zero API key leakage in logs.
@@ -860,7 +530,7 @@ async def ping_provider(
 
     prov = provider.lower().strip()
     timeout = httpx.Timeout(5.0, connect=5.0)
-    start_time = time.perf_counter()
+    start_time = _time.perf_counter()
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -874,13 +544,12 @@ async def ping_provider(
                     return False, 0.0, f"SSRF_BLOCKED: Unauthorized Ollama host '{host}'"
                 safe_url = f"{scheme}://{host}{port_str}/api/tags"
                 resp = await client.get(safe_url)
-                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code == 200:
                     return True, latency_ms, None
-                # Fallback to version
                 safe_ver_url = f"{scheme}://{host}{port_str}/api/version"
                 resp_ver = await client.get(safe_ver_url)
-                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
                 if resp_ver.status_code == 200:
                     return True, latency_ms, None
                 return False, latency_ms, f"Ollama returned HTTP {resp.status_code}"
@@ -897,7 +566,7 @@ async def ping_provider(
                     headers["x-api-key"] = api_key
                 safe_url = f"{scheme}://{host}{port_str}/v1/models"
                 resp = await client.get(safe_url, headers=headers)
-                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:
                         return False, latency_ms, "Authentication failed: Invalid Anthropic API key"
@@ -911,13 +580,12 @@ async def ping_provider(
                     or host in ALLOWED_LOCAL_HOSTS
                 ):
                     return False, 0.0, f"SSRF_BLOCKED: Unauthorized Gemini host '{host}'"
-                headers = {}
                 params = {}
                 if api_key:
                     params["key"] = api_key
                 safe_url = f"{scheme}://{host}{port_str}/v1beta/models"
-                resp = await client.get(safe_url, headers=headers, params=params)
-                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                resp = await client.get(safe_url, params=params)
+                latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code in (400, 401, 403) and api_key:
                         return False, latency_ms, "Authentication failed: Invalid Gemini API key"
@@ -939,7 +607,7 @@ async def ping_provider(
                 target_path = base_path if base_path.endswith("/models") else f"{base_path}/models"
                 safe_url = f"{scheme}://{host}{port_str}{target_path}"
                 resp = await client.get(safe_url, headers=headers)
-                latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
                 if resp.status_code in (200, 400, 401, 403):
                     if resp.status_code == 401 and api_key:
                         return False, latency_ms, "Authentication failed: Invalid OpenAI API key"
@@ -947,13 +615,13 @@ async def ping_provider(
                 return False, latency_ms, f"OpenAI returned HTTP {resp.status_code}"
 
     except httpx.TimeoutException:
-        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
         return False, latency_ms, "Connection timed out (exceeded 5.0s cap)"
     except httpx.ConnectError:
-        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
         return False, latency_ms, "Connection refused: Target service is unreachable"
     except Exception as exc:
-        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        latency_ms = round((_time.perf_counter() - start_time) * 1000, 2)
         err_msg = str(exc)
         if api_key and api_key in err_msg:
             err_msg = err_msg.replace(api_key, "[REDACTED]")

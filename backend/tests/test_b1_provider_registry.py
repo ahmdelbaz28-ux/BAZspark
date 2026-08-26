@@ -27,7 +27,7 @@ import pytest
 
 
 def _clean_provider_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in (
+    _provider_keys = (
         "LLM_PROVIDERS",
         "ZENMUX_API_KEY",
         "ZENMUX_BASE_URL",
@@ -37,8 +37,28 @@ def _clean_provider_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
         "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
         "AZURE_OPENAI_API_KEY",
-    ):
+        "XAI_API_KEY",
+        "MISTRAL_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "COHERE_API_KEY",
+        "OPENROUTER_API_KEY",
+        "KILOCODE_API_KEY",
+        "OPENCODE_API_KEY",
+        "NVIDIA_API_KEY",
+        "GROQ_API_KEY",
+        "TOGETHER_API_KEY",
+        "FIREWORKS_API_KEY",
+        "DEEPINFRA_API_KEY",
+        "CEREBRAS_API_KEY",
+        "SAMBANOVA_API_KEY",
+        "PERPLEXITY_API_KEY",
+        "DASHSCOPE_API_KEY",
+        "MOONSHOT_API_KEY",
+        "ZHIPU_API_KEY",
+    )
+    for key in _provider_keys:
         monkeypatch.delenv(key, raising=False)
 
 
@@ -250,18 +270,96 @@ class TestLegacyBackcompatConfig:
         """THE headline promise: add one key → one working provider."""
         from backend.services.providers.registry import LLMProviderRegistry
 
-        for env_var, expected_name, expected_kind in [
+        cases = [
             ("OPENAI_API_KEY", "openai", "openai_compatible"),
             ("ANTHROPIC_API_KEY", "anthropic", "anthropic"),
             ("GEMINI_API_KEY", "gemini", "gemini"),
-            ("AZURE_OPENAI_API_KEY", "azure", "azure"),
-        ]:
+            ("XAI_API_KEY", "xai", "openai_compatible"),
+            ("DEEPSEEK_API_KEY", "deepseek", "openai_compatible"),
+            ("MISTRAL_API_KEY", "mistral", "openai_compatible"),
+            ("COHERE_API_KEY", "cohere", "openai_compatible"),
+        ]
+        for env_var, expected_name, expected_kind in cases:
             _clean_provider_env(monkeypatch)
             monkeypatch.setenv(env_var, "k-" + expected_name)
             configs = LLMProviderRegistry.configs_from_env()
             assert len(configs) == 1
             assert configs[0].name == expected_name
             assert configs[0].kind == expected_kind
+            # A discovered provider must always carry a usable endpoint.
+            assert configs[0].base_url.startswith("https://")
+
+    def test_azure_needs_explicit_endpoint(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A deployment URL cannot be derived from the key — must stay off."""
+        from backend.services.providers.registry import LLMProviderRegistry
+
+        _clean_provider_env(monkeypatch)
+        monkeypatch.setenv("AZURE_OPENAI_API_KEY", "azure-key")
+        assert LLMProviderRegistry.configs_from_env() == []
+
+        monkeypatch.setenv(
+            "LLM_AZURE_BASE_URL", "https://myres.openai.azure.com"
+        )
+        monkeypatch.setenv("LLM_AZURE_MODEL", "fireai-deployment")
+        configs = LLMProviderRegistry.configs_from_env()
+        assert [c.name for c in configs] == ["azure"]
+        assert configs[0].model == "fireai-deployment"
+
+    def test_requested_provider_catalog(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """User-requested catalog: OpenCode / KiloCode / OpenRouter / NVIDIA
+        and the wider roster are all key-enabled with real endpoints."""
+        from backend.services.providers.registry import LLMProviderRegistry
+
+        requested = {
+            "OPENCODE_API_KEY": ("opencode", "https://opencode.ai/zen/v1/"),
+            "KILOCODE_API_KEY": ("kilocode", "https://api.kilocode.ai/v1"),
+            "OPENROUTER_API_KEY": ("openrouter", "https://openrouter.ai/api/v1"),
+            "NVIDIA_API_KEY": ("nvidia", "https://integrate.api.nvidia.com/v1"),
+            "GROQ_API_KEY": ("groq", "https://api.groq.com/openai/v1"),
+            "TOGETHER_API_KEY": ("together", "https://api.together.xyz/v1"),
+            "FIREWORKS_API_KEY": ("fireworks", "https://api.fireworks.ai/inference/v1"),
+            "DEEPINFRA_API_KEY": ("deepinfra", "https://api.deepinfra.com/v1/openai"),
+            "CEREBRAS_API_KEY": ("cerebras", "https://api.cerebras.ai/v1"),
+            "SAMBANOVA_API_KEY": ("sambanova", "https://api.sambanova.ai/v1"),
+            "PERPLEXITY_API_KEY": ("perplexity", "https://api.perplexity.ai"),
+            "DASHSCOPE_API_KEY": (
+                "dashscope",
+                "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            ),
+            "MOONSHOT_API_KEY": ("moonshot", "https://api.moonshot.cn/v1"),
+            "ZHIPU_API_KEY": ("zhipu", "https://open.bigmodel.cn/api/paas/v4"),
+        }
+        for env_var, (name, base_url) in requested.items():
+            _clean_provider_env(monkeypatch)
+            monkeypatch.setenv(env_var, "k-" + name)
+            configs = LLMProviderRegistry.configs_from_env()
+            assert len(configs) == 1, env_var
+            assert configs[0].name == name, env_var
+            assert configs[0].base_url == base_url, env_var
+            assert configs[0].model, f"{env_var} must default a model"
+
+    def test_multiple_keys_build_ordered_chain(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Several keys at once → ordered fallback chain, first = primary."""
+        from backend.services.providers.registry import LLMProviderRegistry
+
+        _clean_provider_env(monkeypatch)
+        monkeypatch.setenv("GROQ_API_KEY", "gsk")
+        monkeypatch.setenv("NVIDIA_API_KEY", "nvapi")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+        names = [c.name for c in LLMProviderRegistry.configs_from_env()]
+        # Catalog order defines priority: aggregators before GPU hosts.
+        assert names == ["openrouter", "nvidia", "groq"]
+
+    def test_per_provider_overrides(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """LLM_<NAME>_BASE_URL/_MODEL override catalog defaults per provider."""
+        from backend.services.providers.registry import LLMProviderRegistry
+
+        _clean_provider_env(monkeypatch)
+        monkeypatch.setenv("NVIDIA_API_KEY", "nvapi")
+        monkeypatch.setenv("LLM_NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+        monkeypatch.setenv("LLM_NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+        configs = LLMProviderRegistry.configs_from_env()
+        assert configs[0].model == "meta/llama-3.3-70b-instruct"
 
 
 class TestHotReload:

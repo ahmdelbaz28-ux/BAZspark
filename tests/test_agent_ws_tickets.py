@@ -92,7 +92,7 @@ def test_ws_ticket_http_endpoint_rejects_missing_identity(monkeypatch):
     assert "Valid API key required." in res.json()["detail"]
 
 
-def test_handshake_with_invalid_ticket_closes_4401(client_factory=None):
+def test_handshake_with_invalid_ticket_closes_4401():
     aw = _load_agent_ws()
     client = TestClient(_mini_app(aw))
     with pytest.raises(Exception):

@@ -18,6 +18,37 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Ensure backend package is importable
+# Real provider keys from the developer/CI environment must never leak
+# into unit tests (single-key discovery would otherwise build live
+# providers and make real network calls).
+_PROVIDER_KEY_VARS = (
+    "LLM_PROVIDERS",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "NVIDIA_API_KEY",
+    "GROQ_API_KEY",
+    "OPENROUTER_API_KEY",
+    "TOGETHER_API_KEY",
+    "FIREWORKS_API_KEY",
+    "DEEPINFRA_API_KEY",
+    "CEREBRAS_API_KEY",
+    "SAMBANOVA_API_KEY",
+    "PERPLEXITY_API_KEY",
+    "DASHSCOPE_API_KEY",
+    "MOONSHOT_API_KEY",
+    "ZHIPU_API_KEY",
+    "XAI_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "MISTRAL_API_KEY",
+    "COHERE_API_KEY",
+    "OPENCODE_API_KEY",
+    "KILOCODE_API_KEY",
+    "ZENMUX_API_KEY",
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -31,14 +62,18 @@ def clean_env(monkeypatch):
     # list() snapshot is required: monkeypatch.delenv mutates os.environ
     # during iteration, which would raise RuntimeError without it.
     for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
-        if key.startswith("ZENMUX_"):
+        if key.startswith("ZENMUX_") or key in _PROVIDER_KEY_VARS:
             monkeypatch.delenv(key, raising=False)
-    # Also reset the singleton
+    # Also reset BOTH singletons (B2: the provider registry caches adapters
+    # built from the environment at first use).
     import backend.services.llm_service as mod
+    import backend.services.providers.registry as prov_registry
 
     mod._llm_service = None
+    prov_registry._registry = None
     yield
     mod._llm_service = None
+    prov_registry._registry = None
 
 
 @pytest.fixture
@@ -123,7 +158,9 @@ class TestLLMServiceConfig:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
-        assert svc._timeout == pytest.approx(120.0)
+        adapter = svc._registry.resolve("zenmux")
+        assert adapter is not None
+        assert adapter.timeout == pytest.approx(120.0)
 
 
 # ── LLMService.chat tests (mocked) ───────────────────────────────────────────
@@ -187,8 +224,10 @@ class TestLLMServiceChat:
         mock_create = AsyncMock(return_value=mock_completion)
         mock_client.chat.completions.create = mock_create
 
-        # Patch _get_client to return our mock regardless of provider arg
-        with patch.object(svc, "_get_client", return_value=mock_client):
+        # B2: the adapter owns the client now - patch it there.
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
+        with patch.object(primary, "_ensure_client", return_value=mock_client):
             import asyncio
 
             async def run():
@@ -226,7 +265,9 @@ class TestLLMServiceChat:
         mock_create = AsyncMock(return_value=mock_completion)
         mock_client.chat.completions.create = mock_create
 
-        with patch.object(svc, "_get_client", return_value=mock_client):
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
+        with patch.object(primary, "_ensure_client", return_value=mock_client):
             import asyncio
 
             async def run():
@@ -289,19 +330,23 @@ class TestSingleton:
 
     def test_singleton_picks_up_env_changes_after_reset(self, clean_env, monkeypatch):
         import backend.services.llm_service as mod
+        import backend.services.providers.registry as prov_registry
 
         monkeypatch.setenv("ZENMUX_API_KEY", "key-1")
         svc1 = mod.get_llm_service()
         assert svc1.available is True
 
-        # Reset singleton
+        # Reset BOTH singletons (B2: the provider registry caches adapters).
         mod._llm_service = None
+        prov_registry._registry = None
 
         # Change env
         monkeypatch.setenv("ZENMUX_API_KEY", "key-2")
         svc2 = mod.get_llm_service()
         assert svc2 is not svc1
-        assert svc2._primary.api_key == "key-2"
+        adapter = svc2._registry.resolve("zenmux")
+        assert adapter is not None
+        assert adapter.api_key == "key-2"
 
 
 # ── Fallback provider tests ──────────────────────────────────────────────────
@@ -321,8 +366,9 @@ class TestFallbackProvider:
 
         svc = LLMService()
         assert svc.fallback_available is True
-        assert svc._fallback.name == "aliyun-maas"
-        assert svc._fallback.model == "qwen-plus-latest"
+        fallback = svc._registry.resolve("aliyun-maas")
+        assert fallback is not None
+        assert fallback.default_model == "qwen-plus-latest"
 
     def test_fallback_used_when_primary_fails(self, configured_env, monkeypatch):
         """If primary provider raises, fallback should be tried."""
@@ -356,12 +402,14 @@ class TestFallbackProvider:
             return_value=mock_fallback_completion
         )
 
-        def _get_client_mock(provider=None, *args, **kwargs):
-            if provider and provider.name == "aliyun-maas":
-                return mock_fallback_client
-            return mock_primary_client
-
-        with patch.object(svc, "_get_client", side_effect=_get_client_mock):
+        # B2: patch each adapter's client instead of the removed _get_client.
+        primary = svc._registry.resolve("zenmux")
+        fallback = svc._registry.resolve("aliyun-maas")
+        assert primary is not None and fallback is not None
+        with (
+            patch.object(primary, "_ensure_client", return_value=mock_primary_client),
+            patch.object(fallback, "_ensure_client", return_value=mock_fallback_client),
+        ):
             import asyncio
 
             async def run():

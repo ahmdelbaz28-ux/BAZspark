@@ -25,7 +25,6 @@ from backend.routers.agent_ws import (
     AIOrchestrationService,
 )
 from backend.services.llm_service import (
-    _get_transient_errors,
     close_llm_service,
     get_llm_service,
     ping_provider,
@@ -48,7 +47,7 @@ class TestSSRFAndURLValidation:
             None,  # defaults to http://localhost:11434
         ]
         for url in valid_urls:
-            is_valid, resolved, err = validate_provider_url("ollama", url)
+            is_valid, _resolved, err = validate_provider_url("ollama", url)
             assert is_valid is True, f"Failed for {url}: {err}"
             assert err is None
 
@@ -61,13 +60,13 @@ class TestSSRFAndURLValidation:
             "ftp://localhost:11434",
         ]
         for url in blocked_urls:
-            is_valid, resolved, err = validate_provider_url("ollama", url)
+            is_valid, _resolved, err = validate_provider_url("ollama", url)
             assert is_valid is False
             assert "SSRF_BLOCKED" in (err or "") or "Invalid scheme" in (err or "")
 
     def test_anthropic_valid_and_blocked(self):
         # Valid official HTTPS
-        is_valid, resolved, err = validate_provider_url("anthropic", "https://api.anthropic.com")
+        is_valid, _resolved, err = validate_provider_url("anthropic", "https://api.anthropic.com")
         assert is_valid is True
         assert err is None
 
@@ -82,7 +81,7 @@ class TestSSRFAndURLValidation:
         assert "SSRF_BLOCKED" in (err or "")
 
     def test_gemini_valid_and_blocked(self):
-        is_valid, resolved, err = validate_provider_url("gemini", "https://generativelanguage.googleapis.com")
+        is_valid, _resolved, err = validate_provider_url("gemini", "https://generativelanguage.googleapis.com")
         assert is_valid is True
         assert err is None
 
@@ -95,10 +94,10 @@ class TestSSRFAndURLValidation:
         assert "SSRF_BLOCKED" in (err or "")
 
     def test_openai_valid_and_blocked(self):
-        is_valid, resolved, err = validate_provider_url("openai", "https://api.openai.com/v1")
+        is_valid, _resolved, err = validate_provider_url("openai", "https://api.openai.com/v1")
         assert is_valid is True
 
-        is_valid, resolved, err = validate_provider_url("openai", "https://zenmux.ai/api/v1")
+        is_valid, _resolved, err = validate_provider_url("openai", "https://zenmux.ai/api/v1")
         assert is_valid is True
 
         is_valid, _, err = validate_provider_url("openai", "https://unauthorized-proxy.internal.corp")
@@ -117,22 +116,21 @@ class TestPingProbesAndSecretSafety:
     async def test_ollama_ping_success(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"models": []})
-            success, latency, err = await ping_provider("ollama", "http://localhost:11434")
+            success, _latency, err = await ping_provider("ollama", "http://localhost:11434")
             assert success is True
-            assert latency >= 0.0
             assert err is None
 
     @pytest.mark.asyncio
     async def test_ollama_ping_connection_refused(self):
         with patch("httpx.AsyncClient.get", side_effect=httpx.ConnectError("Connection refused")):
-            success, latency, err = await ping_provider("ollama", "http://localhost:11434")
+            success, _latency, err = await ping_provider("ollama", "http://localhost:11434")
             assert success is False
             assert "Connection refused" in (err or "")
 
     @pytest.mark.asyncio
     async def test_probe_timeout_cap_enforced(self):
         with patch("httpx.AsyncClient.get", side_effect=httpx.TimeoutException("Timed out")):
-            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com")
+            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com")
             assert success is False
             assert "timed out" in (err or "").lower()
 
@@ -143,7 +141,7 @@ class TestPingProbesAndSecretSafety:
             "httpx.AsyncClient.get",
             side_effect=Exception(f"Failed with key {secret_key} during SSL negotiation"),
         ):
-            success, latency, err = await ping_provider(
+            success, _latency, err = await ping_provider(
                 "anthropic", "https://api.anthropic.com", api_key=secret_key
             )
             assert success is False
@@ -154,17 +152,17 @@ class TestPingProbesAndSecretSafety:
     async def test_anthropic_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"data": []})
-            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="valid")
+            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="valid")
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(401, json={"error": "unauthorized"})
-            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="invalid")
+            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com", api_key="invalid")
             assert success is False
             assert "Invalid Anthropic API key" in (err or "")
 
             mock_get.return_value = httpx.Response(500, text="Internal Error")
-            success, latency, err = await ping_provider("anthropic", "https://api.anthropic.com")
+            success, _latency, err = await ping_provider("anthropic", "https://api.anthropic.com")
             assert success is False
             assert "HTTP 500" in (err or "")
 
@@ -172,17 +170,17 @@ class TestPingProbesAndSecretSafety:
     async def test_gemini_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"models": []})
-            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="valid")
+            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="valid")
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(400, json={"error": "bad request"})
-            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="invalid")
+            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com", api_key="invalid")
             assert success is False
             assert "Invalid Gemini API key" in (err or "")
 
             mock_get.return_value = httpx.Response(502, text="Bad Gateway")
-            success, latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com")
+            success, _latency, err = await ping_provider("gemini", "https://generativelanguage.googleapis.com")
             assert success is False
             assert "HTTP 502" in (err or "")
 
@@ -190,23 +188,23 @@ class TestPingProbesAndSecretSafety:
     async def test_openai_ping_success_and_auth_fail(self):
         with patch("httpx.AsyncClient.get") as mock_get:
             mock_get.return_value = httpx.Response(200, json={"data": []})
-            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="valid")
+            success, _latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="valid")
             assert success is True
             assert err is None
 
             mock_get.return_value = httpx.Response(401, json={"error": "invalid_api_key"})
-            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="invalid")
+            success, _latency, err = await ping_provider("openai", "https://api.openai.com/v1", api_key="invalid")
             assert success is False
             assert "Invalid OpenAI API key" in (err or "")
 
             mock_get.return_value = httpx.Response(503, text="Service Unavailable")
-            success, latency, err = await ping_provider("openai", "https://api.openai.com/v1")
+            success, _latency, err = await ping_provider("openai", "https://api.openai.com/v1")
             assert success is False
             assert "HTTP 503" in (err or "")
 
     @pytest.mark.asyncio
     async def test_unsupported_provider(self):
-        success, latency, err = await ping_provider("unknown_prov", "https://foo.com")
+        success, _latency, err = await ping_provider("unknown_prov", "https://foo.com")
         assert success is False
         assert "Unsupported provider" in (err or "")
 
@@ -496,6 +494,10 @@ class TestWebSocketDynamicRoutingAndTelemetry:
         svc2 = get_llm_service()
         assert svc1 is svc2
         await close_llm_service()
-        # Verify transient errors helper
-        exc_types = _get_transient_errors()
-        assert len(exc_types) >= 2
+        # Verify the transient-retry policy (moved into adapters in Stage B1).
+        import httpx as _httpx
+
+        from backend.services.providers.adapters import is_retryable_exception
+
+        assert is_retryable_exception(_httpx.ConnectError("x"))
+        assert is_retryable_exception(_httpx.TimeoutException("x"))

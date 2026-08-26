@@ -609,7 +609,10 @@ def _dispatch_autocad(
     if entry is not None and _pipe_routed("autocad", entry):
         pipe = _get_autocad_pipe()
         if pipe.available:
-            return _dispatch_via_pipe("autocad", pipe, action, entry, args)
+            try:
+                return _dispatch_via_pipe("autocad", pipe, action, entry, args)
+            except RuntimeError:
+                pass  # stale singleton or pipe vanished mid-call — fall through to fallback
         logger.warning(
             "[AutoCAD] Named Pipe unavailable for %s — "
             "is BazSparkAutoCADBridge loaded in AutoCAD?",
@@ -884,9 +887,13 @@ def _dispatch_revit(
         if pipe.available and target_entry is not None:
             updated, failed = 0, []
             for call in calls:
-                res = _dispatch_via_pipe(
-                    "revit", pipe, target_canonical, target_entry, call
-                )
+                try:
+                    res = _dispatch_via_pipe(
+                        "revit", pipe, target_canonical, target_entry, call
+                    )
+                except RuntimeError:
+                    failed.append(call.get("name"))
+                    continue
                 if isinstance(res, dict) and res.get("success"):
                     updated += 1
                 else:
@@ -902,7 +909,10 @@ def _dispatch_revit(
     if entry is not None and _pipe_routed("revit", entry):
         pipe = _get_revit_pipe()
         if pipe.available:
-            return _dispatch_via_pipe("revit", pipe, action, entry, args)
+            try:
+                return _dispatch_via_pipe("revit", pipe, action, entry, args)
+            except RuntimeError:
+                pass  # stale singleton or pipe vanished mid-call — fall through to fallback
         logger.warning(
             "[Revit] Named Pipe unavailable for %s — "
             "is BazSparkRevitBridge Add-in loaded in Revit?",
@@ -1005,12 +1015,16 @@ async def _agent_loop(uri: str, api_key: str = "") -> None:
     connect_kwargs = _build_ws_connect_kwargs(api_key)
     async with websockets.connect(uri, **connect_kwargs) as ws:
         logger.info("✅ Connected to BAZspark server. Waiting for commands …")
+        _partial = ""
         async for raw in ws:
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8", errors="replace")
+            _partial += raw
             try:
-                msg = json.loads(raw)
-            except json.JSONDecodeError:
-                logger.warning("Received non-JSON message, skipping")
+                msg = json.loads(_partial)
+            except (json.JSONDecodeError, TypeError):
                 continue
+            _partial = ""
 
             msg_type = msg.get("type")
 
@@ -1075,6 +1089,9 @@ async def run(server_url: str, api_key: str) -> None:
 
 
 def main() -> None:
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     parser = argparse.ArgumentParser(
         description="BAZspark Local Agent — bridges cloud commands to local AutoCAD/Revit",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

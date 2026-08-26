@@ -40,6 +40,11 @@ import logging
 import sys
 import warnings
 
+if sys.platform == "win32":
+    import asyncio
+
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 warnings.filterwarnings(
     "ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning
 )

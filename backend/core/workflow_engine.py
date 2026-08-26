@@ -108,7 +108,7 @@ class CompositeWorkflowDAG:
                     )
 
         # Kahn's algorithm for topological sorting and cycle detection
-        in_degree: dict[str, int] = {node_id: 0 for node_id in self.nodes}
+        in_degree: dict[str, int] = dict.fromkeys(self.nodes, 0)
         adj: dict[str, list[str]] = defaultdict(list)
 
         for node_id, node in self.nodes.items():

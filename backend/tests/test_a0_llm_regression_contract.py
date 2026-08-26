@@ -33,6 +33,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+# Real provider keys from the developer/CI environment must never leak
+# into unit tests (single-key discovery would otherwise build live
+# providers and make real network calls).
+_PROVIDER_KEY_VARS = (
+    "LLM_PROVIDERS",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -43,13 +55,25 @@ from backend.llm_constants import AI_DISCLAIMER, CHAT_ROLES, PERSONAE  # noqa: E
 
 
 def _clean_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Remove ZENMUX_* / LLM_FALLBACK_* env vars and reset the singleton."""
-    import backend.services.llm_service as mod
+    """Remove ZENMUX_* / LLM_FALLBACK_* env vars and reset BOTH singletons.
 
-    for key in list(os.environ.keys()):  # noqa: S7504 - intentional snapshot
-        if key.startswith("ZENMUX_") or key.startswith("LLM_FALLBACK_"):
+    Root-cause fix for cross-test contamination: the provider registry is a
+    module-level singleton built from the environment at first use. Without
+    resetting it, adapters constructed under one test's env leak into the
+    next test (observed as spurious AuthenticationError from aliyun-maas).
+    """
+    import backend.services.llm_service as mod
+    import backend.services.providers.registry as prov_registry
+
+    for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
+        if (
+            key.startswith("ZENMUX_")
+            or key.startswith("LLM_FALLBACK_")
+            or key in _PROVIDER_KEY_VARS
+        ):
             monkeypatch.delenv(key, raising=False)
     mod._llm_service = None
+    prov_registry._registry = None
 
 
 def _configured(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -173,19 +197,19 @@ class TestSourceTagging:
         with pytest.raises(Exception):  # noqa: B017 - frozen dataclass raises FrozenInstanceError
             r.source = "tampered"  # type: ignore[misc]
 
-    def test_try_provider_tags_source_with_provider_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        _clean_llm_env(monkeypatch)
-        _configured(monkeypatch)
-        from backend.services.llm_service import LLMService
+    def test_adapter_tags_source_with_provider_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """B2: source tagging moved INTO the adapters — same guarantee."""
+        from backend.services.providers.adapters import OpenAICompatibleAdapter
 
-        svc = LLMService()
+        adapter = OpenAICompatibleAdapter(
+            name="zenmux", api_key="sk-test",
+            base_url="https://zenmux.ai/api/v1", model="z-ai/glm-4.7",
+            timeout=10.0, max_tokens=100,
+        )
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=_make_completion())
-        with patch.object(svc, "_get_client", return_value=mock_client):
-            result = asyncio.run(
-                svc._try_provider(svc._primary, [{"role": "user", "content": "q"}],
-                                  None, 0.1, 100)
-            )
+        with patch.object(adapter, "_ensure_client", return_value=mock_client):
+            result = asyncio.run(adapter.chat([{"role": "user", "content": "q"}]))
         assert result.source == "zenmux"
 
     def test_fallback_success_tags_source_with_fallback_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -193,25 +217,38 @@ class TestSourceTagging:
         _configured(monkeypatch)
         monkeypatch.setenv("LLM_FALLBACK_ENABLED", "true")
         monkeypatch.setenv("LLM_FALLBACK_API_KEY", "sk-ws-test")
-        from backend.services.llm_service import LLMService
 
-        svc = LLMService()
-        primary_client = MagicMock()
-        primary_client.chat.completions.create = AsyncMock(side_effect=RuntimeError("down"))
-        fallback_client = MagicMock()
-        fallback_client.chat.completions.create = AsyncMock(
-            return_value=_make_completion(content="fallback says hi")
-        )
+        async def _run() -> Any:
+            from backend.services.llm_service import get_llm_service
 
-        def _client_by_provider(provider: Any = None, *args: Any, **kwargs: Any) -> Any:
-            if provider is not None and provider.name == "aliyun-maas":
-                return fallback_client
-            return primary_client
+            svc = get_llm_service()
+            # Mock BOTH adapters: primary fails, fallback succeeds — no
+            # adapter may reach the network in a unit test.
+            primary = svc._registry.resolve("zenmux")
+            fallback = svc._registry.resolve("aliyun-maas")
+            assert primary is not None and fallback is not None
+            failing_client = MagicMock()
+            failing_client.chat.completions.create = AsyncMock(
+                side_effect=RuntimeError("primary down")
+            )
+            success_client = MagicMock()
+            success_client.chat.completions.create = AsyncMock(
+                return_value=_make_completion(content="fallback says hi")
+            )
+            with (
+                patch.object(primary, "_ensure_client", return_value=failing_client),
+                patch.object(fallback, "_ensure_client", return_value=success_client),
+            ):
+                return await svc.chat("q")
 
-        with patch.object(svc, "_get_client", side_effect=_client_by_provider):
-            result = asyncio.run(svc.chat("q"))
+        result = asyncio.run(_run())
         assert result.source == "aliyun-maas"
         assert result.content == "fallback says hi"
+        import backend.services.llm_service as mod
+        import backend.services.providers.registry as prov_registry
+
+        mod._llm_service = None
+        prov_registry._registry = None
 
 
 # -- 3. Never-raises contract -------------------------------------------------
@@ -276,9 +313,11 @@ class TestNeverRaisesChatPaths:
     def test_chat_stream_yields_error_event_instead_of_raising(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
-        from backend.services.llm_service import LLMService
+        import backend.services.llm_service as mod
 
-        svc = LLMService()
+        svc = mod.LLMService()
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
         failing = MagicMock()
         failing.chat.completions.create = AsyncMock(side_effect=httpx.ConnectError("refused"))
 
@@ -288,11 +327,12 @@ class TestNeverRaisesChatPaths:
                 events.append(ev)
             return events
 
-        with patch.object(svc, "_get_client", return_value=failing):
+        with patch.object(primary, "_ensure_client", return_value=failing):
             events = asyncio.run(_collect())
         assert events, "chat_stream must always yield at least one event"
         assert events[-1]["type"] == "error"
         assert AI_DISCLAIMER in events[-1]["disclaimer"]
+        mod._llm_service = None
 
     def test_health_never_raises_with_broken_subsystems(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _clean_llm_env(monkeypatch)
@@ -416,13 +456,15 @@ class TestSSEEvents:
     def test_stream_passes_include_usage_option(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
-        from backend.services.llm_service import LLMService
+        import backend.services.llm_service as mod
 
-        svc = LLMService()
+        svc = mod.LLMService()
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
         create, captured = self._streaming_completion_mock()
         client = MagicMock()
         client.chat.completions.create = create
-        with patch.object(svc, "_get_client", return_value=client):
+        with patch.object(primary, "_ensure_client", return_value=client):
 
             async def _run() -> Any:
                 events = []
@@ -442,13 +484,15 @@ class TestSSEEvents:
     def test_chunk_event_carries_content_model_source(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
-        from backend.services.llm_service import LLMService
+        import backend.services.llm_service as mod
 
-        svc = LLMService()
+        svc = mod.LLMService()
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
         create, _captured = self._streaming_completion_mock()
         client = MagicMock()
         client.chat.completions.create = create
-        with patch.object(svc, "_get_client", return_value=client):
+        with patch.object(primary, "_ensure_client", return_value=client):
 
             async def _run() -> Any:
                 events = []
@@ -465,13 +509,15 @@ class TestSSEEvents:
     def test_done_event_carries_full_text_usage_and_disclaimer(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
-        from backend.services.llm_service import LLMService
+        import backend.services.llm_service as mod
 
-        svc = LLMService()
+        svc = mod.LLMService()
+        primary = svc._registry.resolve("zenmux")
+        assert primary is not None
         create, _captured = self._streaming_completion_mock()
         client = MagicMock()
         client.chat.completions.create = create
-        with patch.object(svc, "_get_client", return_value=client):
+        with patch.object(primary, "_ensure_client", return_value=client):
 
             async def _run() -> Any:
                 done = None
@@ -515,32 +561,52 @@ class TestSSEEvents:
         assert events[1]["message"] == "mid-stream failure"
 
 
-# -- 6. Retry policy (CURRENT behavior - pre-Stage-B documentation) -----------
+# -- 6. Retry policy (UPDATED in Stage B: 429/5xx now retried with Retry-After)
 
 
 class TestRetryPolicyCurrentBehavior:
     def test_transient_errors_include_network_and_timeout(self) -> None:
+        """B1 moved the policy into adapters.is_retryable_exception."""
         from openai import APIConnectionError, APITimeoutError
 
-        from backend.services.llm_service import _get_transient_errors
+        from backend.services.providers.adapters import is_retryable_exception
 
-        transient = _get_transient_errors()
-        assert httpx.HTTPError in transient
-        assert httpx.TimeoutException in transient
-        assert APIConnectionError in transient
-        assert APITimeoutError in transient
+        assert is_retryable_exception(httpx.ConnectError("x"))
+        assert is_retryable_exception(httpx.TimeoutException("x"))
+        assert is_retryable_exception(
+            APIConnectionError(request=httpx.Request("GET", "https://x"))
+        )
+        assert is_retryable_exception(APITimeoutError(httpx.Request("GET", "https://x")))
 
-    def test_http_status_errors_are_not_retried_today(self) -> None:
-        """Documents CURRENT behavior: 429/5xx surface immediately.
+    def test_429_and_5xx_are_now_retried(self) -> None:
+        """Stage-B1 policy extension (was 'not retried' pre-registry).
 
-        Stage B1 will add 429/5xx retries with Retry-After support; this test
-        is expected to be UPDATED (not deleted) as part of that work.
+        Updated — not deleted — exactly as the A0 note anticipated.
         """
         from openai import APIStatusError
 
-        from backend.services.llm_service import _get_transient_errors
+        from backend.services.providers.adapters import is_retryable_exception
 
-        assert APIStatusError not in _get_transient_errors()
+        for status in (429, 500, 502, 503, 504):
+            exc = APIStatusError(
+                message=f"HTTP {status}",
+                response=httpx.Response(status_code=status, request=httpx.Request("GET", "https://x")),
+                body=None,
+            )
+            assert is_retryable_exception(exc), f"{status} must be retryable"
+
+    def test_other_4xx_still_surface_immediately(self) -> None:
+        from openai import APIStatusError
+
+        from backend.services.providers.adapters import is_retryable_exception
+
+        for status in (400, 401, 403, 404):
+            exc = APIStatusError(
+                message=f"HTTP {status}",
+                response=httpx.Response(status_code=status, request=httpx.Request("GET", "https://x")),
+                body=None,
+            )
+            assert not is_retryable_exception(exc), f"{status} must NOT be retryable"
 
 
 # -- 7. SSRF gates ------------------------------------------------------------
