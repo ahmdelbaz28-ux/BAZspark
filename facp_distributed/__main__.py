@@ -83,8 +83,8 @@ def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str,
     # set up L1 gateway with transport
     transport_config = {
         "host": config.get("l2_host", "0.0.0.0"),
-        "gateway_port": config.get("l2_port", 8001),
-        "interface_port": config.get("l1_port", 8000),
+        "gateway_port": config.get("l2_port", 18101),
+        "interface_port": config.get("l1_port", 18100),
     }
 
     client_interface = create_client_interface_with_gateway(
@@ -93,10 +93,16 @@ def create_distributed_system(config: dict[str, Any] | None = None) -> dict[str,
 
     # Connect components together
     # set up cluster sync callbacks
-    agent_manager.set_cluster_sync_callback(lambda msg: print(f"Agent sync: {msg}"))
-    task_scheduler.set_cluster_sync_callback(lambda msg: print(f"Task sync: {msg}"))
-    agent_registry.set_cluster_sync_callback(lambda msg: print(f"Registry sync: {msg}"))
-    engine_controller.set_cluster_sync_callback(lambda msg: print(f"Engine sync: {msg}"))
+    # D1 FIX: route sync events through logging instead of print() lambdas.
+    _sync_logger = logging.getLogger("facp_distributed.cluster_sync")
+
+    def _log_cluster_sync(component: str):
+        return lambda msg: _sync_logger.info("[%s] %s", component, msg)
+
+    agent_manager.set_cluster_sync_callback(_log_cluster_sync("agent_manager"))
+    task_scheduler.set_cluster_sync_callback(_log_cluster_sync("task_scheduler"))
+    agent_registry.set_cluster_sync_callback(_log_cluster_sync("agent_registry"))
+    engine_controller.set_cluster_sync_callback(_log_cluster_sync("engine_controller"))
 
     # set up the distributed engine controller
     engine_controller.start()
@@ -240,7 +246,7 @@ def run_test_scenario():
     print(f"🔐 Security: {test_request['security']['risk_level']} risk")
 
     # Create a minimal test system
-    config = {"l1_port": 8000, "l2_port": 8001}
+    config = {"l1_port": 18100, "l2_port": 18101}
     system_components = create_distributed_system(config)
 
     # Process the test request through the system
@@ -287,9 +293,11 @@ def main():
         "--mode", choices=["run", "test"], default="run", help="Run mode: run the system or test it"
     )
     parser.add_argument("--config", type=str, help="Configuration file path")
-    parser.add_argument("--port", type=int, default=8000, help="Port for L1 interface")
     parser.add_argument(
-        "--l2-port", dest="l2_port", type=int, default=8001, help="Port for L2 orchestrator"
+        "--port", type=int, default=18100, help="Port for L1 interface (A8 port map)"
+    )
+    parser.add_argument(
+        "--l2-port", dest="l2_port", type=int, default=18101, help="Port for L2 orchestrator (A8 port map)"
     )
 
     args = parser.parse_args()

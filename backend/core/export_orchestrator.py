@@ -448,9 +448,17 @@ class ExportOrchestrator:
         mapping_report = self._analyze_mapping(norm_fmt, devices, connections, rooms, opts)
 
         # Prepare target path
-        artifact_id = f"art-{uuid.uuid4().hex}"
-        filename = sanitize_export_filename(project.get("name", "project"), norm_fmt)
-        artifact_file = self._resolve_contained_artifact_path(artifact_id, norm_fmt)
+        # Server-synthesized filename: no project/user-controlled string ever
+        # enters a filesystem path. Project names come from stored state and
+        # must not reach disk paths (py/path-injection source eliminated by
+        # construction rather than relying on downstream sanitizers).
+        artifact_id = f"art-{uuid.uuid4()}"
+        name_hash = hashlib.sha256(
+            f"{project_id}_{expected_revision}_{norm_fmt}".encode()
+        ).hexdigest()[:24]
+        ext = FORMAT_EXTENSIONS.get(norm_fmt, f".{norm_fmt}")
+        filename = f"{name_hash}{ext}"
+        artifact_file = self._artifact_dir / f"{artifact_id}_{filename}"
 
         # Generate target format content deterministically
         try:

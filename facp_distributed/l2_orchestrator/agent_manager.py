@@ -6,6 +6,7 @@ import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -115,6 +116,17 @@ class ExecutorAgent(BaseAgent):
     def __init__(self):
         super().__init__("executor_agent", "Executor Agent", "Handles task execution")
         self.capabilities = ["execute.*", "task.run", "process.start", "action.perform"]
+        # D2 FIX: task handlers are bound by integrators (engine controllers,
+        # calculation kernels). Without a bound handler the agent reports an
+        # honest error instead of fabricating a "completed" result with an
+        # invented 0.123s execution time.
+        self._task_handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {}
+
+    def bind_task_handler(
+        self, task_type: str, handler: Callable[[dict[str, Any]], dict[str, Any]]
+    ) -> None:
+        """Bind a real executor for one task type."""
+        self._task_handlers[task_type] = handler
 
     def execute_task(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Execute a task"""
@@ -130,13 +142,36 @@ class ExecutorAgent(BaseAgent):
             task = params.get("payload", {}).get("task", {})
             task_type = task.get("type", "generic")
 
-            # Simulate task execution
+            handler = self._task_handlers.get(task_type)
+            if handler is None:
+                return {
+                    "status": "error",
+                    "error": (
+                        f"No executor bound for task type {task_type!r}. "
+                        "Bind one via ExecutorAgent.bind_task_handler()."
+                    ),
+                    "agent_id": self.id,
+                    "method": method,
+                }
+
+            started = time.perf_counter()
+            try:
+                output = handler(task)
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "error": f"Task handler {task_type!r} raised: {e}",
+                    "agent_id": self.id,
+                    "method": method,
+                }
+            elapsed = round(time.perf_counter() - started, 6)
+
             result = {
                 "task_id": task.get("id", str(uuid.uuid4())),
                 "type": task_type,
                 "status": "completed",
-                "execution_time": 0.123,  # seconds
-                "output": task.get("expected_output", "Task completed successfully"),
+                "execution_time": elapsed,  # D2: REAL measured wall-clock time
+                "output": output,
                 "executed_at": time.time(),
             }
 

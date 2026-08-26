@@ -420,10 +420,15 @@ class ImportOrchestrator:
             from parsers.symbol_extractor import SymbolExtractor
 
             if GeometryExtractor and SymbolExtractor:
-                geom = GeometryExtractor()
-                sym = SymbolExtractor()
-                walls = geom.extract_walls(str(path))
-                symbols = sym.extract_symbols(str(path))
+                # S930 root-cause fix: the extractors take the PDF path in
+                # their constructors (extract_*() are zero-arg). The previous
+                # call passed the path to the methods, raised TypeError, and
+                # the broad except silently degraded to fallback counts —
+                # so real extraction never ran.
+                geom = GeometryExtractor(str(path))
+                sym = SymbolExtractor(str(path))
+                walls = geom.extract_walls()
+                symbols = sym.extract_symbols()
                 out["rooms_count"] = max(1, len(walls) // 4)
                 out["devices_count"] = len(symbols)
                 out["confidence_score"] = 0.90

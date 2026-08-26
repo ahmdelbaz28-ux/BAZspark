@@ -201,11 +201,13 @@ class RevitNamedPipeClient:
                     None,
                 )
                 win32file.CloseHandle(handle)
-                self.circuit_breaker.record_success()
+                # Read-only health probe: never mutate breaker state.
+                # Recording here made every get_stats() poll while the bridge
+                # was offline count as a real failure and could trip the
+                # circuit from monitoring alone (self-pollution).
                 return True
             except pywintypes.error:
-                # Pipe not found or not available
-                self.circuit_breaker.record_failure()
+                # Pipe not found or not available — probe stays side-effect free.
                 return False
         except ImportError:
             logger.warning(

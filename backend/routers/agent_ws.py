@@ -8,11 +8,11 @@ from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
 from backend.api_keys import validate_api_key
-from backend.auth import has_permission
+from backend.auth import has_permission, require_permission
 from backend.core.agent_run_orchestrator import (
     AgentRunOrchestrator,
     InvalidRunStateError,
@@ -98,8 +98,9 @@ def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
     if protocols:
         # The first token is the API key (client must send it as the subprotocol)
         return protocols.split(",")[0].strip()
-    # 3. Query parameter or initial auth ticket
-    for qparam in ("token", "api_key", "ticket", "auth_token"):
+    # 3. Query parameter or initial auth token (single-use WS tickets are
+    # handled separately in _authenticate_agent_websocket)
+    for qparam in ("token", "api_key", "auth_token"):
         qval = websocket.query_params.get(qparam)
         if qval:
             return qval.strip()
@@ -171,7 +172,57 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
         await websocket.close(code=4403)
         return None, ""
 
+    # A4 FIX: browser clients authenticate with a short-lived single-use
+    # ticket obtained from POST /agent/ws-ticket (browsers cannot set
+    # custom headers on WebSocket handshakes).
+    ticket = websocket.query_params.get("ticket")
+    if ticket:
+        ticket_info = _consume_ws_ticket(ticket, origin)
+        if ticket_info is None:
+            logger.warning("Rejected agent connection: invalid/expired/replayed WS ticket")
+            await websocket.close(code=4401)
+            return None, ""
+        if not has_permission(ticket_info.role, Permission.CALCULATION_EXECUTE):
+            logger.warning(
+                "Rejected agent connection: ticket role %s lacks CALCULATION_EXECUTE",
+                ticket_info.role,
+            )
+            await websocket.close(code=4403)
+            return None, ""
+        return ticket_info, ""
+
     return await _extract_and_validate_api_key(websocket)
+
+
+@router.post("/ws-ticket")
+async def create_ws_ticket(
+    request: Request,
+    _permission: None = Depends(require_permission(Permission.CALCULATION_EXECUTE)),
+) -> dict[str, Any]:
+    """Issue a single-use WebSocket ticket (A4).
+
+    Browsers cannot attach ``X-API-Key`` to a WS handshake. The client calls
+    this authenticated endpoint first, then connects to
+    ``/api/v1/agent/ws?ticket=<value>``. The ticket is bound to the caller's
+    identity and Origin, expires in <=60 seconds, and is burned on first use.
+    """
+    from fastapi import HTTPException as _HTTPException
+
+    api_key = request.headers.get("x-api-key") or request.headers.get("X-API-Key") or ""
+    if api_key.lower().startswith("bearer "):
+        api_key = api_key[7:].strip()
+
+    info = None
+    if api_key:
+        try:
+            info = validate_api_key(api_key)
+        except Exception:  # noqa: BLE001 — validation failure means no identity
+            info = None
+    if info is None:
+        raise _HTTPException(status_code=401, detail="Valid API key required.")
+
+    ticket = _issue_ws_ticket(info, request.headers.get("origin"))
+    return {"ticket": ticket, "expires_in": WS_TICKET_TTL_SECONDS}
 
 
 def _register_agent(websocket: WebSocket, agent_type: str) -> None:
@@ -223,10 +274,102 @@ def _validate_agent_nonce(msg: dict) -> bool:
         if nonce in _seen_agent_nonces:
             logger.warning("Replay attack blocked for agent WS: nonce=%s", nonce)
             return False
+        import time as _time
+
         _seen_agent_nonces.add(nonce)
-        if len(_seen_agent_nonces) > 5000:
-            _seen_agent_nonces.clear()
+        _nonce_timestamps[nonce] = _time.monotonic()
+        _prune_seen_nonces()
     return True
+
+
+# ── A6 FIX: sliding-TTL nonce store ─────────────────────────────────────────
+# Previously the whole set was cleared when it exceeded 5000 entries, which
+# re-opened a replay window for every previously seen nonce. Nonces now carry
+# timestamps and only expired entries are pruned.
+_NONCE_TTL_SECONDS = 3600.0
+_SEEN_AGENT_NONCES_MAX = 20000
+_nonce_timestamps: dict[str, float] = {}
+
+
+def _prune_seen_nonces() -> None:
+    import time as _time
+
+    now = _time.monotonic()
+    if len(_nonce_timestamps) > _SEEN_AGENT_NONCES_MAX:
+        cutoff = now - _NONCE_TTL_SECONDS
+        expired = [n for n, ts in _nonce_timestamps.items() if ts < cutoff]
+        for n in expired:
+            _seen_agent_nonces.discard(n)
+            _nonce_timestamps.pop(n, None)
+        # Hard cap fallback: drop the oldest quarter even if none expired.
+        if len(_nonce_timestamps) > _SEEN_AGENT_NONCES_MAX:
+            ordered = sorted(_nonce_timestamps.items(), key=lambda kv: kv[1])
+            for n, _ts in ordered[: len(ordered) // 4]:
+                _seen_agent_nonces.discard(n)
+                _nonce_timestamps.pop(n, None)
+
+
+def _register_agent_nonce(nonce: str) -> None:
+    """Record a nonce with its arrival time."""
+    import time as _time
+
+    _nonce_timestamps[nonce] = _time.monotonic()
+
+
+# ── A4 FIX: single-use WebSocket tickets ────────────────────────────────────
+# Browsers cannot attach X-API-Key headers to a WebSocket handshake, so the
+# frontend previously connected with NO credentials and was closed with 4401.
+# The client now exchanges its API key (via authenticated REST) for a
+# short-lived single-use ticket bound to its identity, then passes it as
+# ?ticket=. The server burns the ticket on first use.
+import secrets as _secrets
+
+WS_TICKET_TTL_SECONDS = 60
+_ws_tickets: dict[str, dict[str, Any]] = {}
+
+
+def _issue_ws_ticket(api_key_info: Any, origin: str | None) -> str:
+    """Create a one-time ticket bound to the caller identity (+origin)."""
+    # Opportunistic pruning of expired tickets.
+    import time as _time
+
+    now = _time.monotonic()
+    expired = [t for t, meta in _ws_tickets.items() if meta["expires"] <= now]
+    for t in expired:
+        _ws_tickets.pop(t, None)
+
+    ticket = _secrets.token_urlsafe(32)
+    _ws_tickets[ticket] = {
+        "expires": now + WS_TICKET_TTL_SECONDS,
+        "role": getattr(api_key_info, "role", "engineer"),
+        "name": getattr(api_key_info, "name", "browser_user"),
+        "email": getattr(api_key_info, "email", ""),
+        "origin": (origin or "").strip().lower().rstrip("/"),
+    }
+    return ticket
+
+
+def _consume_ws_ticket(ticket: str, origin: str | None) -> Any | None:
+    """Validate and burn a ticket. Returns an api-key-info-like object or None."""
+    import time as _time
+    from types import SimpleNamespace
+
+    meta = _ws_tickets.pop(ticket, None)  # burned immediately — single use
+    if meta is None:
+        return None
+    now = _time.monotonic()
+    if meta["expires"] <= now:
+        return None
+    expected_origin = meta.get("origin")
+    if expected_origin and origin:
+        if origin.strip().lower().rstrip("/") != expected_origin:
+            logger.warning("WS ticket rejected: origin mismatch")
+            return None
+
+    logger.info("WS ticket accepted for %s (single-use)", meta["name"])
+    return SimpleNamespace(
+        role=meta["role"], name=meta["name"], email=meta["email"]
+    )
 
 
 class AIOrchestrationService:
@@ -1511,7 +1654,55 @@ async def agent_websocket_endpoint(websocket: WebSocket):
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:
     """Check if there is at least one active agent connected."""
-    return len(active_agents.get(agent_type, [])) > 0
+    return len(active_agents.get(_resolve_agent_bucket(agent_type), [])) > 0
+
+
+# ── ROOT-CAUSE FIX (found by the D3 E2E chain test) ─────────────────────────
+# The WebSocket endpoint registers every desktop agent under the single
+# combined bucket "autocad_revit", but routers call
+# ``send_agent_command("revit", …)`` / ``send_agent_command("autocad", …)``.
+# The raw dict lookup therefore always missed and EVERY remote-control
+# request returned 503 even with a live agent connected. One desktop agent
+# process serves both CAD applications, so service-level types resolve to
+# the shared bucket while keeping their own action prefix on the wire.
+_AGENT_TYPE_BUCKETS: dict[str, str] = {
+    "revit": "autocad_revit",
+    "autocad": "autocad_revit",
+    "autocad_revit": "autocad_revit",
+}
+
+
+def _resolve_agent_bucket(agent_type: str) -> str:
+    """Map a service-level agent type onto its connection registry bucket."""
+    return _AGENT_TYPE_BUCKETS.get(agent_type, agent_type)
+
+
+def _validate_command_against_registry(agent_type: str, action: str, args: dict[str, Any]) -> None:
+    """
+    D4 FIX: every LLM-planned (or REST-driven) command MUST exist in
+    core/command_registry.json before it is dispatched to a desktop agent.
+    Anything unregistered — or missing required params — is hard-rejected.
+    """
+    try:
+        from core import command_registry as _registry
+    except Exception as e:  # noqa: BLE001
+        # Fail closed: without the registry we refuse to forward commands.
+        raise HTTPException(
+            status_code=503,
+            detail="Command registry unavailable — refusing to dispatch desktop commands.",
+        ) from e
+
+    if not _registry.is_allowed(agent_type, action):
+        logger.warning(
+            "Rejected %s/%s — not present in command registry allow-list", agent_type, action
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Command '{agent_type}/{action}' is not allowed (not in command registry).",
+        )
+    error = _registry.validate_params(agent_type, action, args)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
 
 
 async def send_agent_command(
@@ -1524,10 +1715,15 @@ async def send_agent_command(
     type (newest wins), so ``agents[0]`` here is always the most recently
     authenticated connection — a stale/rogue socket cannot sit ahead of the
     real agent in the registry and intercept commands.
+
+    D4 FIX: commands are validated against core/command_registry.json
+    (allow-list + required params) before leaving the server.
     """
-    agents = active_agents.get(agent_type, [])
+    agents = active_agents.get(_resolve_agent_bucket(agent_type), [])
     if not agents:
         raise HTTPException(status_code=503, detail="No active local agent connected.")
+
+    _validate_command_against_registry(agent_type, action, args)
 
     websocket = agents[0]
     ws_id = str(id(websocket))

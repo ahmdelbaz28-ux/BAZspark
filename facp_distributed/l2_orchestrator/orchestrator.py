@@ -382,12 +382,13 @@ class Orchestrator:
     ) -> dict[str, Any]:
         """Process request using agent information from registry"""
         # In a real implementation, this would create or locate the actual agent
-        # For simulation, we'll return a result indicating the agent would process it
+        # D1 FIX: the simulation marker is explicit in every field consumers see.
         return {
             "processed_by": agent_info["id"],
             "method": request_data.get("method"),
             "agent_type": agent_info["type"],
             "result": "simulated_agent_processing",
+            "simulation": True,
             "scheduled_at": time.time(),
         }
 

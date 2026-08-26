@@ -25,6 +25,19 @@ from fireai.mcp_server.named_pipe_client import (
 class TestNamedPipeCircuitBreaker:
     """Test suite for NamedPipeCircuitBreaker state machine."""
 
+    @staticmethod
+    def _wait_until_executable(cb: NamedPipeCircuitBreaker, timeout: float = 2.0) -> None:
+        """Poll past the recovery cooldown instead of a fixed sleep.
+
+        Fixed micro-sleeps race the Windows timer granularity (~15ms) and
+        fail intermittently under load; condition polling is deterministic.
+        """
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if cb.can_execute():
+                return
+            time.sleep(0.005)
+
     def test_initial_state_is_closed(self):
         cb = NamedPipeCircuitBreaker(failure_threshold=3, recovery_timeout=1.0)
         assert cb.state == CircuitState.CLOSED
@@ -55,8 +68,7 @@ class TestNamedPipeCircuitBreaker:
         assert cb.state == CircuitState.OPEN
         assert cb.can_execute() is False
 
-        # Wait for cooldown
-        time.sleep(0.15)
+        self._wait_until_executable(cb)
         assert cb.can_execute() is True
         assert cb.state == CircuitState.HALF_OPEN
 
@@ -66,7 +78,7 @@ class TestNamedPipeCircuitBreaker:
         cb.record_failure()
         assert cb.state == CircuitState.OPEN
 
-        time.sleep(0.06)
+        self._wait_until_executable(cb)
         assert cb.can_execute() is True
         assert cb.state == CircuitState.HALF_OPEN
 
@@ -81,7 +93,7 @@ class TestNamedPipeCircuitBreaker:
         cb.record_failure()
         assert cb.state == CircuitState.OPEN
 
-        time.sleep(0.05)
+        self._wait_until_executable(cb)
         assert cb.can_execute() is True
         assert cb.state == CircuitState.HALF_OPEN
 

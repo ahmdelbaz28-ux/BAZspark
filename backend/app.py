@@ -1011,12 +1011,17 @@ async def cache_stats(
 
 if __name__ == "__main__":
     # Production deployments must use a reverse proxy (nginx, traefik, AWS ALB)
+    # A8 FIX: single source of truth for the port. The Dockerfile CMD already
+    # honors $PORT (default 7860); local runs now do the same instead of a
+    # hardcoded 8000 that silently diverged from container deployments.
+    import os as _port_os
+
     import uvicorn
 
     uvicorn.run(
         "backend.app:app",
         host="127.0.0.1",  # V129: loopback only
-        port=8000,
+        port=int(_port_os.environ.get("PORT", "8000")),
         reload=True,
         reload_dirs=["backend"],
     )

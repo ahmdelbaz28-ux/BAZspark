@@ -518,8 +518,6 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
     ],
     "integration": [
         "SPECKLE_SERVER_URL",
-        "REVIT_BRIDGE_URL",
-        "AUTOCAD_BRIDGE_PORT",
         "LANGFUSE_HOST",
     ],
     "security": [
@@ -556,8 +554,6 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
     "integrations": [
         "OPENAI_API_URL",
         "SPECKLE_SERVER_URL",
-        "REVIT_BRIDGE_URL",
-        "AUTOCAD_BRIDGE_PORT",
         "LANGFUSE_HOST",
         "LANGFUSE_PUBLIC_KEY",
     ],
@@ -697,12 +693,10 @@ _ENV_SETTING_METADATA: dict[str, dict[str, Any]] = {
         "type": "url",
         "default": "https://speckle.xyz",
     },
-    "REVIT_BRIDGE_URL": {
-        "label": "Revit Local Bridge URL",
-        "type": "url",
-        "default": "http://localhost:8002",
-    },
-    "AUTOCAD_BRIDGE_PORT": {"label": "AutoCAD Bridge Port", "type": "number", "default": "8001"},
+    # A10 FIX: REVIT_BRIDGE_URL / AUTOCAD_BRIDGE_PORT removed — these settings
+    # had no consumers (the desktop bridge uses named pipes via the local
+    # agent, not HTTP endpoints) and only misled operators into thinking a
+    # direct bridge port existed.
     "CORS_ORIGINS": {
         "label": "Allowed CORS Origins",
         "type": "string",
@@ -807,7 +801,6 @@ def _resolve_env_var_value(var: str, value: str | None) -> Any:
         "LANGFUSE_HOST",
         "LANGFUSE_PUBLIC_KEY",
         "SPECKLE_SERVER_URL",
-        "REVIT_BRIDGE_URL",
     }:
         return value
 

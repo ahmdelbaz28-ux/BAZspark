@@ -334,3 +334,76 @@ class TestAgentRunExportPipeline:
         assert run.status == RunStatus.COMPLETED
         assert len(run.completed_steps) == 2
 
+
+# ── Path Hardening (CodeQL py/path-injection regression guards) ─────────────
+
+
+class TestExportPathHardening:
+    """No project/user-controlled string may ever reach a filesystem path.
+
+    Artifact filenames are synthesized server-side from a SHA-256 of
+    (project_id, revision, format); the stored project name is content, never
+    a path component.
+    """
+
+    import re as _re
+
+    _ARTIFACT_RE = _re.compile(r"^art-[0-9a-f\-]+_[0-9a-f]{24}\.\w+$")
+
+    def test_hostile_project_name_never_reaches_disk_path(
+        self,
+        export_orchestrator: ExportOrchestrator,
+        principal: AuthenticatedPrincipal,
+        tmp_path: Path,
+    ):
+        hostile = "..\\..\\..\\evil <>|&%$ \x00traversal"
+        export_orchestrator._db.update_project("proj-exp-01", {"name": hostile})
+
+        result = export_orchestrator.execute_export(
+            "proj-exp-01", 1, "json", principal=principal
+        )
+
+        written = [p.name for p in (tmp_path / "artifacts").iterdir() if p.is_file()]
+        assert written, "expected artifact files on disk"
+        for name in written:
+            assert self._ARTIFACT_RE.match(name), f"unsafe artifact filename: {name}"
+            assert "evil" not in name and "traversal" not in name
+        assert Path(result.artifact.artifact_path).exists()
+
+    def test_filename_hash_is_name_independent_and_revision_bound(
+        self,
+        test_db: Database,
+        state_store: CommandStateStore,
+        principal: AuthenticatedPrincipal,
+        tmp_path: Path,
+    ):
+        import hashlib
+
+        orch_a = ExportOrchestrator(db=test_db, state_store=state_store, artifact_dir=tmp_path)
+        rev = state_store.get_project_revision("proj-exp-01")
+        res_a = orch_a.execute_export("proj-exp-01", rev, "json", principal=principal)
+        seg_a = Path(res_a.artifact.artifact_path).name.split("_", 1)[1]
+
+        # Same inputs through a fresh orchestrator → same hash segment.
+        orch_b = ExportOrchestrator(db=test_db, state_store=state_store, artifact_dir=tmp_path / "b")
+        res_b = orch_b.execute_export("proj-exp-01", rev, "json", principal=principal)
+        seg_b = Path(res_b.artifact.artifact_path).name.split("_", 1)[1]
+        assert seg_a == seg_b
+
+        # Segment is exactly sha256(project_id, revision, format)[:24] + ext —
+        # i.e. bound to the revision and free of any project-name influence.
+        expected_hash = hashlib.sha256(f"proj-exp-01_{rev}_json".encode()).hexdigest()[:24]
+        assert seg_a == f"{expected_hash}.json"
+
+    def test_artifacts_stay_inside_artifact_dir(
+        self,
+        export_orchestrator: ExportOrchestrator,
+        principal: AuthenticatedPrincipal,
+        tmp_path: Path,
+    ):
+        root = tmp_path.resolve()
+        result = export_orchestrator.execute_export(
+            "proj-exp-01", 1, "json", principal=principal
+        )
+        assert Path(result.artifact.artifact_path).resolve().is_relative_to(root)
+
