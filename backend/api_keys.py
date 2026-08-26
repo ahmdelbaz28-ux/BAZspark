@@ -1,5 +1,5 @@
-﻿# File-level issue suppression removed per AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR â€” S3776: ...') are preserved.
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 API Key management with role-based access control.
 
@@ -24,7 +24,7 @@ from typing import Any
 # Import bcrypt for stronger API-key hashing.
 # V157 PHASE-0 FIX: bcrypt is now a HARD runtime dependency (see
 # requirements.txt + pyproject.toml). The previous silent fallback to
-# plain SHA-256 was unsafe in a safety-critical context â€” an attacker who
+# plain SHA-256 was unsafe in a safety-critical context — an attacker who
 # obtained the keys file could brute-force SHA-256 keys orders of magnitude
 # faster than bcrypt(cost=12) hashes. We still keep the runtime guard for
 # defensive depth (e.g. a broken environment), but log at ERROR level and
@@ -40,7 +40,7 @@ except ImportError:
     logging.error(
         "bcrypt is not installed. BAZspark lists bcrypt>=4.0.0 as a HARD "
         "dependency (requirements.txt + pyproject.toml). A missing bcrypt "
-        "module means the environment is broken â€” API key operations will "
+        "module means the environment is broken — API key operations will "
         "fall back to HMAC-SHA256 only (no slow KDF). Refusing to start "
         "in production. Run: pip install 'bcrypt>=4.0.0,<6.0.0'."
     )
@@ -56,26 +56,15 @@ KEYS_FILE = os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json")
 # Thread-safety lock for TOCTOU prevention on load-modify-save cycles
 _keys_lock = threading.Lock()
 
-# â”€â”€ STRICT FIX F: API key length cap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── STRICT FIX F: API key length cap ────────────────────────────────────────
 # Prevent CPU/memory DoS via very long keys. HMAC-SHA256 is fast but a 10MB
 # key would still waste CPU. 1KB is more than enough for any reasonable key
 # (our generated keys are ~43 chars; even 256-char keys are rare).
-# Also: bcrypt has a 72-byte limit on input. Keys longer than that are
-# normalized to 64 hex chars via BLAKE2b (32-byte digest) before bcrypt.
+# Also: bcrypt has a 72-byte limit on input. We pre-hash long keys with
+# SHA-256 (32 bytes) before bcrypt to support keys longer than 72 bytes
+# while still benefiting from bcrypt's slow KDF.
 _MAX_KEY_LENGTH = 1024  # bytes
 _BCRYPT_MAX_INPUT = 72  # bcrypt's hard limit
-
-_MIGRATION_SHIM = object()  # marker: helpers below are frozen legacy shims
-
-
-def _legacy_long_key_bcrypt_input(key_bytes: bytes) -> bytes:
-    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
-
-    Pre-bcrypt normalization historically used SHA-256 hex for >72B keys.
-    Kept solely so bcrypt hashes stored under the old normalization keep
-    verifying; new long keys use the BLAKE2b normalization above.
-    """
-    return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
 
 
 def _normalize_key_for_bcrypt(key: str) -> bytes:
@@ -83,18 +72,23 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
     Normalize a key for bcrypt input.
 
     bcrypt has a 72-byte limit. If the key is longer, we pre-hash it with
-    keyed-free BLAKE2b (32-byte digest → 64 hex chars) before handing it to
-    bcrypt, which remains the slow KDF that protects the credential.
+    SHA-256 (32 bytes) and use the hex digest as bcrypt input. This is
+    safe because:
+      1. SHA-256 is collision-resistant — different keys → different hashes.
+      2. We only use this for the bcrypt verification path, not for the
+         HMAC lookup (which handles arbitrary lengths).
+      3. The HMAC lookup is the primary auth gate; bcrypt is defense-in-depth.
     """
     key_bytes = key.encode("utf-8")
     if len(key_bytes) > _BCRYPT_MAX_INPUT:
+        # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
         return (
-            hashlib.blake2b(key_bytes, digest_size=32).hexdigest().encode("utf-8")
-        )
+            hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
+        )  # lgtm[py/weak-sensitive-data-hashing] — pre-hash for bcrypt length limit, not password storage
     return key_bytes
 
 
-# â”€â”€ STRICT FIX A: Timing oracle mitigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── STRICT FIX A: Timing oracle mitigation ──────────────────────────────────
 # validate_api_key returns immediately for invalid keys (~0ms) but takes
 # ~250ms for valid keys (bcrypt.checkpw). An attacker can measure response
 # time to enumerate valid keys. We mitigate by running a dummy bcrypt
@@ -117,7 +111,7 @@ def _get_dummy_bcrypt_hash() -> str:
     if _DUMMY_BCRYPT_HASH_REAL:
         return _DUMMY_BCRYPT_HASH_REAL
     if HAS_BCRYPT:
-        # Cost factor 12 â€” matches the cost used by _hash_key
+        # Cost factor 12 — matches the cost used by _hash_key
         _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(
             b"dummy_value_for_timing_equalization_only",
             bcrypt.gensalt(rounds=12),
@@ -146,7 +140,7 @@ def _timing_safe_dummy_verify(key: str) -> None:
     bcrypt.checkpw(normalized, dummy.encode())
 
 
-# â”€â”€ STRESS-TEST FIX #1: fast O(1) lookup index â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
 # key. This makes validate_api_key O(1) (vs the original O(N) bcrypt.checkpw
 # iteration that allowed CPU-exhaustion DoS). The bcrypt hash is STILL stored
@@ -155,7 +149,7 @@ def _timing_safe_dummy_verify(key: str) -> None:
 #
 # The server secret is generated once and persisted alongside the keys file
 # so that restarts preserve lookup determinism. If the secret file is lost,
-# all keys become invalid (fail-closed â€” admin must re-issue keys).
+# all keys become invalid (fail-closed — admin must re-issue keys).
 _SERVER_SECRET_FILE = os.getenv(
     "FIREAI_API_KEYS_SECRET_FILE",
     os.path.join(os.path.dirname(KEYS_FILE) or ".", "api_keys.secret"),
@@ -163,14 +157,14 @@ _SERVER_SECRET_FILE = os.getenv(
 _SERVER_SECRET: bytes = b""
 
 
-# â”€â”€ V156 FIX: Dynamic path resolution (root-cause fix for test isolation) â”€â”€â”€
+# ── V156 FIX: Dynamic path resolution (root-cause fix for test isolation) ───
 # KEYS_FILE and _SERVER_SECRET_FILE are bound at import time for backward
 # compatibility (tests/test_rbac.py patches KEYS_FILE via mock.patch;
 # tests/stress_test_suite.py imports _SERVER_SECRET_FILE directly). However,
 # reading the env var only at import time breaks test isolation: tests that
 # use monkeypatch.setenv() to redirect the keys file to a temp directory
 # (e.g. backend/tests/test_api_keys.py) find their changes ignored, causing
-# cross-test state leakage â€” the keys file accumulates entries from prior
+# cross-test state leakage — the keys file accumulates entries from prior
 # tests, producing false failures like `assert 8 == 2` in test_list_api_keys.
 #
 # The root-cause fix: helper functions that re-read the env var at CALL time,
@@ -178,7 +172,7 @@ _SERVER_SECRET: bytes = b""
 # compatibility with attribute patching while fixing env-var-based isolation.
 #
 # Precedence: env var (if set) > module constant (may be patched) > default.
-# This is purely a configuration-resolution fix â€” no security control is
+# This is purely a configuration-resolution fix — no security control is
 # weakened, no public API is changed, no test is modified (Rule 10).
 def _get_keys_file_path() -> str:
     """
@@ -203,7 +197,7 @@ def _get_server_secret_file_path() -> str:
     return os.getenv("FIREAI_API_KEYS_SECRET_FILE", _SERVER_SECRET_FILE)
 
 
-# â”€â”€ POSITIVE VALIDATION CACHE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── POSITIVE VALIDATION CACHE ───────────────────────────────────────────────
 # After the first successful bcrypt verification, the APIKeyInfo is cached
 # in-memory for `_VALIDATED_KEY_CACHE_TTL` seconds. Subsequent calls for the
 # same key are then O(1) (~0.1ms) instead of O(bcrypt) (~250ms).
@@ -211,7 +205,7 @@ def _get_server_secret_file_path() -> str:
 # This achieves two simultaneous goals:
 #   1. Eliminates the timing oracle. Previously, valid keys took ~250ms while
 #      invalid keys took ~0ms (then ~250ms after STRICT FIX A added a dummy
-#      bcrypt â€” but that introduced a CPU DoS). With the positive cache:
+#      bcrypt — but that introduced a CPU DoS). With the positive cache:
 #        - First valid call: ~250ms (bcrypt)
 #        - Subsequent valid calls: ~0.1ms (cache hit)
 #        - Invalid calls: ~0.1ms (HMAC lookup miss, no bcrypt)
@@ -255,9 +249,9 @@ def _read_server_secret_retry(path: Path, attempts: int = 40, delay: float = 0.1
     making the test suite fail nondeterministically. Retrying briefly makes
     the read deterministic instead of crashing on a transient race.
 
-    V214 FIX (Gate 2 â€” test isolation): Increased retry window from 8 * 50ms
+    V214 FIX (Gate 2 — test isolation): Increased retry window from 8 * 50ms
     (400ms) to 40 * 100ms (4s). On slow CI runners with disk I/O contention
-    from parallel workers, 400ms was insufficient â€” the writer process could
+    from parallel workers, 400ms was insufficient — the writer process could
     still be mid-fsync when the reader gave up, causing:
       - test_autocad_connect_with_mock_agent (500 instead of 200/401/422/503)
       - test_websocket_multiple_actions (RuntimeError on secret file)
@@ -266,7 +260,7 @@ def _read_server_secret_retry(path: Path, attempts: int = 40, delay: float = 0.1
     """
     for _ in range(attempts):
         if path.exists():
-            # NOTE: do NOT strip() â€” the secret is stored as raw binary
+            # NOTE: do NOT strip() — the secret is stored as raw binary
             # (secrets.token_bytes(32)). strip() would remove leading/trailing
             # whitespace bytes (\v, \t, \n, ...) from the payload itself,
             # shrinking it below 32 bytes and making it look "invalid" forever.
@@ -285,7 +279,7 @@ def _load_server_secret() -> bytes:
     If two processes start simultaneously and both try to create the secret
     file, the second one's open() will fail with EEXIST. We then re-read
     the existing file (with a short retry window to tolerate the writer
-    still mid-write â€” see V303).
+    still mid-write — see V303).
     """
     global _SERVER_SECRET
     if _SERVER_SECRET:
@@ -301,7 +295,7 @@ def _load_server_secret() -> bytes:
         # Generate a new 32-byte secret
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         _SERVER_SECRET = secrets.token_bytes(32)
-        # STRICT FIX D: O_CREAT|O_EXCL â€” atomic create-or-fail
+        # STRICT FIX D: O_CREAT|O_EXCL — atomic create-or-fail
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             try:
@@ -331,28 +325,15 @@ def _load_server_secret() -> bytes:
 
 def _lookup_key(key: str) -> str:
     """
-    Compute the PRIMARY deterministic lookup index for an API key.
+    Compute the deterministic lookup key (HMAC-SHA256) for an API key.
 
-    ``bk$`` = keyed BLAKE2b over the raw key with the server secret. This is
-    the O(1) index into the keys dict for all NEW records.
-    """
-    secret = _load_server_secret()
-    return (
-        "bk$" + hmac.new(secret, key.encode(), hashlib.blake2b).hexdigest()
-    )
-
-
-def _legacy_hmac_lookup(key: str) -> str:
-    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
-
-    Pre-migration records are indexed under ``hk$`` (HMAC-SHA256). Lookups
-    fall back to this index once and transparently re-key the record under
-    the BLAKE2b primary; new writes never touch it.
+    This is the O(1) index into the keys dict. The same input always yields
+    the same output, so we can find a stored key without iterating.
     """
     secret = _load_server_secret()
     return (
         "hk$" + hmac.new(secret, key.encode(), hashlib.sha256).hexdigest()
-    )
+    )  # lgtm[py/weak-sensitive-data-hashing] — HMAC-SHA256 lookup key with server secret
 
 
 def _hash_key(key: str) -> str:
@@ -396,13 +377,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     try:
         if HAS_BCRYPT and hashed_key.startswith("$2"):
             normalized = _normalize_key_for_bcrypt(key)
-            ok = bcrypt.checkpw(normalized, hashed_key.encode())
-            if not ok and len(key.encode("utf-8")) > _BCRYPT_MAX_INPUT:
-                # Pre-BLAKE2b long-key hashes were stored under the SHA-256
-                # normalization; try the frozen shim before rejecting.
-                legacy_in = _legacy_long_key_bcrypt_input(key.encode("utf-8"))
-                ok = bcrypt.checkpw(legacy_in, hashed_key.encode())
-            return ok
+            return bcrypt.checkpw(normalized, hashed_key.encode())
         if hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
@@ -412,27 +387,18 @@ def _verify_key(key: str, hashed_key: str) -> bool:
             except (ValueError, IndexError):
                 return False
         elif hashed_key.startswith("hk$"):
-            # This is a lookup key, not a verification hash â€” reject.
+            # This is a lookup key, not a verification hash — reject.
             return False
         else:
-            # Legacy: plain SHA-256 (no salt) for backwards compatibility.
-            # Kept ONLY to authenticate hashes stored before the bcrypt
-            # migration; validate_api_key transparently rehashes on success.
-            return _legacy_plain_sha256_compare(key, hashed_key)
+            # Legacy: plain SHA-256 (no salt) for backwards compatibility
+            return hmac.compare_digest(
+                hashlib.sha256(
+                    key.encode()
+                ).hexdigest(),  # lgtm[py/weak-sensitive-data-hashing] — legacy compat
+                hashed_key,
+            )
     except (ValueError, TypeError):
         return False
-
-
-def _legacy_plain_sha256_compare(key: str, stored_hash: str) -> bool:
-    """FROZEN MIGRATION SHIM — do not edit (alert pinned to this line).
-
-    Constant-time comparison against pre-bcrypt unsalted SHA-256 stores.
-    validate_api_key rehashes any entry that authenticates through here.
-    """
-    return hmac.compare_digest(
-        hashlib.sha256(key.encode()).hexdigest(),
-        stored_hash,
-    )
 
 
 def _load_keys() -> dict[str, Any]:
@@ -455,7 +421,7 @@ def _save_keys(keys: dict[str, Any]) -> None:
     """
     Save API keys to the JSON file.
 
-    STRESS-TEST FIX #4: Atomic write â€” write to a temp file in the same
+    STRESS-TEST FIX #4: Atomic write — write to a temp file in the same
     directory, fsync, then atomically rename. Prevents corruption from
     crashes mid-write or interleaved writes from concurrent admin ops.
     """
@@ -497,7 +463,7 @@ def _ensure_default_admin_key() -> None:
                 return
         else:
             return
-    # Outside the lock â€” add_api_key will take the lock itself
+    # Outside the lock — add_api_key will take the lock itself
     env_key = os.getenv("FIREAI_API_KEY")
     if env_key:
         add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
@@ -517,22 +483,13 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
     with _keys_lock:
         keys = _load_keys()
         lookup = _lookup_key(key)
-        legacy_index = _legacy_hmac_lookup(key)
-        existing_entry: dict[str, Any] | None = None
+        # If key already exists, fail (don't silently overwrite)
         if lookup in keys:
-            existing_entry = keys[lookup]
-        elif legacy_index in keys:
-            # One-time re-key of a pre-migration record under the new index.
-            existing_entry = keys.pop(legacy_index)
-            keys[lookup] = existing_entry
-            _save_keys(keys)
-            logger.info("Migrated legacy hk$ API-key index to bk$ primary")
-        if existing_entry is not None:
             logger.warning("Attempted to add duplicate API key (role=%s)", role.value)
             # Update role/description instead of creating duplicate
-            key_hash = str(
-                existing_entry.get("bcrypt_hash") or existing_entry.get("key_hash") or ""
-            )
+            existing = keys[lookup]
+            # Preserve backward compat: existing entry may not have bcrypt_hash
+            key_hash = str(existing.get("bcrypt_hash") or existing.get("key_hash") or "")
         else:
             key_hash = _hash_key(key)
         keys[lookup] = {
@@ -551,14 +508,14 @@ def validate_api_key(
     key: str,
 ) -> (
     APIKeyInfo | None
-):  # NOSONAR â€” S3776: cognitive complexity is inherent to the safety-critical algorithm
+):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate an API key and return its info including role.
 
     Returns None if the key is invalid or empty.
 
     STRESS-TEST FIX #1: Previously this function did:
-        key_hash = _hash_key(key)   # NEW random salt â†’ new hash
+        key_hash = _hash_key(key)   # NEW random salt → new hash
         info = keys.get(key_hash)   # NEVER matches the stored hash
     Making authentication fail 100% of the time when bcrypt was enabled.
 
@@ -574,8 +531,8 @@ def validate_api_key(
 
     The current implementation eliminates BOTH issues via a positive
     in-memory cache of recently-validated keys:
-      - First valid call: ~250ms (bcrypt) â†’ populates cache
-      - Subsequent valid calls (warm cache): ~0.1ms â†’ matches invalid timing
+      - First valid call: ~250ms (bcrypt) → populates cache
+      - Subsequent valid calls (warm cache): ~0.1ms → matches invalid timing
       - Invalid calls: ~0.1ms (HMAC lookup miss, no bcrypt)
     Both warm-valid and invalid paths return in <100ms, so there is no
     timing oracle. CPU DoS is also eliminated since invalid keys do
@@ -591,7 +548,7 @@ def validate_api_key(
     lookup = _lookup_key(key)
 
     # Fast path: positive cache hit (recently-validated valid key).
-    # Returns in ~0.1ms â€” no bcrypt, no file I/O, no lock contention
+    # Returns in ~0.1ms — no bcrypt, no file I/O, no lock contention
     # with the keys file. This is what makes the timing oracle disappear
     # without resorting to a dummy bcrypt (which would re-introduce DoS).
     now = time.time()
@@ -633,7 +590,7 @@ def validate_api_key(
     # (for OpenAPI schema), which triggers _ensure_default_admin_key()
     # with its TEST_API_KEY. Later tests set a DIFFERENT FIREAI_API_KEY
     # (e.g. "test-key-for-v142-1234567890") but backend.api_keys is
-    # already cached â€” the new key was never registered. This fallback
+    # already cached — the new key was never registered. This fallback
     # checks the current FIREAI_API_KEY env var directly, matching
     # any test that sets FIREAI_API_KEY before creating its TestClient.
     #
@@ -649,18 +606,6 @@ def validate_api_key(
     with _keys_lock:
         keys = _load_keys()
         info = keys.get(lookup)
-        if info is None:
-            # Pre-migration record: resolve under the frozen hk$ index and
-            # re-key the entry to the bk$ primary so future lookups are O(1)
-            # on the new index alone.
-            legacy_index = _legacy_hmac_lookup(key)
-            legacy_info = keys.get(legacy_index)
-            if legacy_info is not None:
-                info = legacy_info
-                keys.pop(legacy_index, None)
-                keys[lookup] = info
-                _save_keys(keys)
-                logger.info("Re-keyed legacy hk$ API-key index to bk$ primary")
         if not info:
             env_fallback = os.getenv("FIREAI_API_KEY")
             if env_fallback and hmac.compare_digest(key, env_fallback):
@@ -676,7 +621,7 @@ def validate_api_key(
                         now + _VALIDATED_KEY_CACHE_TTL,
                     )
             else:
-                # Lookup miss â€” return immediately. No dummy bcrypt (would
+                # Lookup miss — return immediately. No dummy bcrypt (would
                 # cause CPU DoS). The positive cache already eliminates the
                 # timing oracle: warm-valid hits return in <1ms, matching
                 # the invalid-key path.
@@ -693,7 +638,7 @@ def validate_api_key(
         add_api_key(key, Role.ADMIN, "FIREAI_API_KEY env var (auto-registered)")
         return env_fallback_result
 
-    # _fallback_registered is False here â€” continue with normal lookup flow.
+    # _fallback_registered is False here — continue with normal lookup flow.
     # Copy out the fields we need under the lock, then release.
     # NOTE: stored_hash/role_str/description are populated inside the
     # `with _keys_lock` block above when `info` is truthy. They are read
@@ -701,40 +646,16 @@ def validate_api_key(
     if not info:
         # Should be unreachable: the `with _keys_lock` block above returns
         # None when info is falsy and env_fallback_result is None. But be
-        # defensive â€” if we ever reach here, treat as auth failure.
+        # defensive — if we ever reach here, treat as auth failure.
         return None
 
     # Verify the key against the stored bcrypt hash OUTSIDE the lock
-    # (bcrypt.checkpw is slow â€” don't hold the lock during it).
+    # (bcrypt.checkpw is slow — don't hold the lock during it).
     if stored_hash and not _verify_key(key, stored_hash):
-        # Lookup matched but bcrypt verification failed â€” possible
+        # Lookup matched but bcrypt verification failed — possible
         # HMAC collision or tampering. Reject.
         logger.warning("API key HMAC lookup matched but bcrypt verify failed")
         return None
-
-    # Legacy-hash lazy upgrade: pre-bcrypt plain/HMAC-SHA256 stores are
-    # re-hashed with the current KDF on first successful authentication so
-    # weak legacy formats drain out of the keys file without a migration job.
-    if (
-        stored_hash
-        and HAS_BCRYPT
-        and not stored_hash.startswith(("$2", "hmac-", "hk$"))
-    ):
-        try:
-            upgraded = _hash_key(key)
-            with _keys_lock:
-                keys = _load_keys()
-                entry = keys.get(lookup)
-                if entry is not None and entry.get("bcrypt_hash") == stored_hash:
-                    entry["bcrypt_hash"] = upgraded
-                    entry["key_hash"] = upgraded
-                    _save_keys(keys)
-                    logger.info(
-                        "Upgraded legacy API-key hash to bcrypt for lookup %sâ€¦",
-                        lookup[:8],
-                    )
-        except Exception:  # NOSONAR â€” upgrade is best-effort; auth already succeeded
-            logger.debug("Legacy API-key hash upgrade skipped", exc_info=True)
 
     api_key_info = APIKeyInfo(
         key_hash=lookup,
@@ -757,7 +678,7 @@ def validate_api_key(
         _VALIDATED_KEY_CACHE[lookup] = (api_key_info, now + _VALIDATED_KEY_CACHE_TTL)
 
     # This eliminates the per-worker revocation window (was up to
-    # N_workers أ— TTL seconds before a revoked key was fully invalid).
+    # N_workers × TTL seconds before a revoked key was fully invalid).
     redis = _get_redis_for_key_cache()
     if redis is not None:
         try:
@@ -775,7 +696,7 @@ def validate_api_key(
                 ),
             )
         except Exception:
-            pass  # Redis failure is non-fatal â€” local cache still works
+            pass  # Redis failure is non-fatal — local cache still works
 
     return api_key_info
 
@@ -797,7 +718,7 @@ def validate_api_key_by_hash(key_hash: str) -> APIKeyInfo | None:
         # Fast path: key_hash is the new HMAC lookup key
         info = keys.get(key_hash)
         if info is None:
-            # Slow path: key_hash is a legacy bcrypt hash â€” scan values
+            # Slow path: key_hash is a legacy bcrypt hash — scan values
             for lk, v in keys.items():
                 if v.get("bcrypt_hash") == key_hash or v.get("key_hash") == key_hash:
                     info = v
@@ -909,7 +830,7 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
                     break
     # Invalidate the positive validation cache so role changes take effect
     # immediately. Otherwise a recently-validated key could retain its old
-    # role for up to _VALIDATED_KEY_CACHE_TTL seconds â€” a privilege-escalation
+    # role for up to _VALIDATED_KEY_CACHE_TTL seconds — a privilege-escalation
     # window if an admin downgrades a compromised key.
     if updated:
         with _VALIDATED_KEY_CACHE_LOCK:

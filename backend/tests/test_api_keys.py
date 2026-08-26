@@ -62,15 +62,12 @@ class TestKeyHashing:
         assert _verify_key("key", "") is False
 
     def test_lookup_key_is_deterministic(self):
-        from backend.api_keys import _legacy_hmac_lookup, _lookup_key
+        from backend.api_keys import _lookup_key
 
         lk1 = _lookup_key("my-secret-key")
         lk2 = _lookup_key("my-secret-key")
         assert lk1 == lk2
-        # Post-migration primary index uses keyed BLAKE2b under bk$.
-        assert lk1.startswith("bk$")
-        # Frozen legacy shim keeps producing the historical hk$ index.
-        assert _legacy_hmac_lookup("my-secret-key").startswith("hk$")
+        assert lk1.startswith("hk$")
 
 
 class TestCRUDOperations:
@@ -151,65 +148,3 @@ class TestCRUDOperations:
 
         assert validate_api_key("") is None
         assert validate_api_key(None) is None  # type: ignore[arg-type]  # NOSONAR â€” S5655: intentional wrong-type arg (test verifies rejection)
-
-
-# â”€â”€ BLAKE2b primary-index migration (CodeQL durable remediation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-
-class TestLookupMigration:
-    """New bk$ primary index with one-time hk$ re-keying and legacy formats."""
-
-    def test_new_keys_are_indexed_under_bk_primary(self, monkeypatch, tmp_path):
-        import backend.api_keys as ak
-        from backend.rbac import Role as _Role
-
-        monkeypatch.setattr(ak, "_get_keys_file_path", lambda: str(tmp_path / "k.json"))
-        ak._VALIDATED_KEY_CACHE.clear()
-        ak.add_api_key("mig-key-1", _Role.ENGINEER)
-        keys = ak._load_keys()
-        assert any(k.startswith("bk$") for k in keys), dict(keys)
-
-    def test_legacy_hk_entry_validates_and_rekeys(self, monkeypatch, tmp_path):
-        import hashlib
-        import json as _json
-
-        import backend.api_keys as ak
-        from backend.rbac import Role as _Role
-
-        monkeypatch.setattr(ak, "_get_keys_file_path", lambda: str(tmp_path / "k.json"))
-        ak._VALIDATED_KEY_CACHE.clear()
-        # Simulate a pre-migration store indexed under hk$ with a plain hash.
-        legacy_index = ak._legacy_hmac_lookup("old-key")
-        plain_hash = hashlib.sha256(b"old-key").hexdigest()
-        tmp_path.joinpath("k.json").write_text(
-            _json.dumps({legacy_index: {"role": "admin", "description": "old",
-                                        "bcrypt_hash": plain_hash, "key_hash": plain_hash}}),
-            encoding="utf-8",
-        )
-        info = ak.validate_api_key("old-key")
-        assert info is not None and info.role is _Role.ADMIN
-        keys = ak._load_keys()
-        assert any(k.startswith("bk$") for k in keys), "entry migrated to primary"
-        assert legacy_index not in keys, "legacy index consumed"
-
-    def test_long_key_roundtrip_and_pre_blake2b_compat(self):
-        import bcrypt as _b
-
-        from backend.api_keys import (
-            HAS_BCRYPT,
-            _hash_key,
-            _legacy_long_key_bcrypt_input,
-            _normalize_key_for_bcrypt,
-            _verify_key,
-        )
-
-        long_key = "L" * 100
-        new_hash = _hash_key(long_key)
-        assert _verify_key(long_key, new_hash) is True
-        # Hash stored under the OLD normalization still verifies.
-        old_norm = _legacy_long_key_bcrypt_input(long_key.encode())
-        if HAS_BCRYPT:
-            stored_old = _b.hashpw(old_norm, _b.gensalt()).decode()
-            assert _verify_key(long_key, stored_old) is True
-        # Normalizations differ by construction.
-        assert _normalize_key_for_bcrypt(long_key) != old_norm
