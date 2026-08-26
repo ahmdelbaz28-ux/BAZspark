@@ -223,22 +223,35 @@ class ExportOrchestrator:
 
     def _resolve_contained_artifact_path(self, artifact_id: str, target_format: str) -> Path:
         """Resolve and strictly verify that artifact path is server-generated and remains within self._artifact_dir."""
-        clean_root = self._artifact_dir.resolve()
+        base_dir = os.path.abspath(str(self._artifact_dir))
         safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "", str(artifact_id))
-        ext = FORMAT_EXTENSIONS.get(target_format.lower(), f".{target_format.lower()}")
-        if not ext.startswith("."):
-            ext = f".{ext}"
-        ext = re.sub(r"[^a-zA-Z0-9_\-.]", "", ext)
 
-        target = (clean_root / f"{safe_id}{ext}").resolve()
+        fmt = str(target_format).lower().strip()
+        if fmt == "dxf":
+            ext = ".dxf"
+        elif fmt == "revit":
+            ext = ".json"
+        elif fmt == "ifc":
+            ext = ".ifc"
+        elif fmt == "xlsx":
+            ext = ".xlsx"
+        elif fmt == "csv":
+            ext = ".csv"
+        elif fmt == "json":
+            ext = ".json"
+        elif fmt == "pdf":
+            ext = ".pdf"
+        else:
+            ext = ".dat"
 
-        # Strict containment verification preventing path injection / directory traversal
-        if clean_root not in target.parents and target != clean_root:
+        filename = f"{safe_id}{ext}"
+        full_path = os.path.normpath(os.path.join(base_dir, filename))
+
+        # Strict containment verification matching standard CodeQL sanitizer semantics
+        if not full_path.startswith(base_dir + os.sep) and full_path != base_dir:
             raise ExportExecutionError("Target artifact path escapes artifact directory.")
-        if not str(target).startswith(str(clean_root) + os.sep) and target != clean_root:
-            raise ExportExecutionError("Target artifact path escapes artifact directory.")
 
-        return target
+        return Path(full_path)
 
     # ── 1. Planning & Loss Analysis ───────────────────────────────────────
 
