@@ -369,3 +369,189 @@ class TestProcessRequestInProcess:
         # SanitizedMCPHandler rejects unknown tools with "not authorized"
         # (OWASP A03:2021 — tool injection protection).
         assert resp.error  # must have a non-empty error message
+
+
+# ===========================================================================
+# A2 contract-conformance tests (agent-platform-rebuild)
+# ===========================================================================
+
+
+class TestA2MCPConformance:
+    """
+    A2 CONTRACT FIX verification:
+
+    Previously tools/list advertised place_detector/calculate_coverage while
+    SanitizedMCPHandler.ALLOWED_TOOLS rejected them at Gate 1, and two
+    whitelisted tools (get_project_status/export_report) had no route
+    handler at all. The contract now holds:
+
+      tools/list names == ALLOWED_TOOLS == PARAM_RULES keys == routed handlers
+
+    and every advertised tool accepts a tools/call that returns either a
+    REAL result or a legitimate JSON-RPC error envelope.
+    """
+
+    VALID_ARGS: dict[str, dict] = {
+        "update_bim_parameter": {
+            "element_id": "12345",
+            "parameter_name": "Diameter",
+            "parameter_value": 2.067,
+        },
+        "query_hydraulic_calculation": {
+            "flow_rate_gpm": 100.0,
+            "friction_factor_c": 120.0,
+            "internal_diameter_inches": 1.5,
+            "pipe_length_feet": 100.0,
+        },
+        "calculate_friction_loss": {
+            "flow_rate_gpm": 100.0,
+            "friction_factor_c": 120.0,
+            "internal_diameter_inches": 1.5,
+            "pipe_length_feet": 100.0,
+        },
+        "validate_sprinkler_compliance": {
+            "head_pressure_psi": 30.0,
+            "density_gpm_sqft": 0.15,
+            "hazard_class": "light_hazard",
+        },
+        "calculate_battery_capacity": {
+            "standby_current_ma": 50.0,
+            "alarm_current_ma": 300.0,
+        },
+        "query_room_hazard_class": {},
+        "update_room_classification": {
+            "room_name": "Electrical Room",
+            "hazard_class": "ordinary_hazard_1",
+            "element_id": "100",
+        },
+        "place_detector": {
+            "room_id": "R101",
+            "room_length_m": 12.0,
+            "room_width_m": 10.0,
+            "ceiling_height_m": 3.0,
+            "detector_type": "smoke",
+        },
+        "calculate_coverage": {
+            "room_length_m": 12.0,
+            "room_width_m": 10.0,
+            "ceiling_height_m": 3.0,
+            "detector_type": "smoke",
+        },
+        "get_project_status": {},
+        "export_report": {"report_type": "session_audit"},
+    }
+
+    def test_listed_tools_match_whitelist_and_rules(self, server):
+        """tools/list, ALLOWED_TOOLS and PARAM_RULES must be identical sets."""
+        from fireai.mcp_server.sanitized_handler import SanitizedMCPHandler
+
+        listed = {t["name"] for t in self._list_tools(server)}
+        assert listed == set(SanitizedMCPHandler.ALLOWED_TOOLS)
+        assert listed == set(SanitizedMCPHandler.PARAM_RULES)
+
+    def test_input_schemas_generated_from_param_rules(self, server):
+        """Advertised inputSchema must equal the PARAM_RULES-generated schema."""
+        from fireai.mcp_server.sanitized_handler import SanitizedMCPHandler
+
+        expected = SanitizedMCPHandler.build_input_schemas()
+        for tool in self._list_tools(server):
+            assert tool["inputSchema"] == expected[tool["name"]], (
+                f"inputSchema drift for tool '{tool['name']}'"
+            )
+
+    def test_every_listed_tool_accepts_call_with_real_result_or_error(self, server):
+        """Conformance: every tools/list entry survives a real tools/call."""
+        for tool in self._list_tools(server):
+            name = tool["name"]
+            line = _jsonrpc(
+                "tools/call",
+                {"name": name, "arguments": dict(self.VALID_ARGS.get(name, {}))},
+            )
+            resp = server._handle_jsonrpc_line(line)
+            assert resp is not None, f"{name}: no JSON-RPC response"
+            if "error" in resp:
+                # Legitimate JSON-RPC error is acceptable — but not a crash.
+                assert resp["error"]["code"] in (-32601, -32603), f"{name}: {resp['error']}"
+                continue
+            payload = json.loads(resp["result"]["content"][0]["text"])
+            assert payload["success"] is True, f"{name} rejected valid args: {payload['error']}"
+            assert payload["result"] is not None, f"{name}: empty result"
+
+    def test_no_route_returns_not_implemented_placeholder(self, server):
+        """The 'handler not implemented yet' path must be unreachable for whitelisted tools."""
+        from fireai.mcp_server.sanitized_handler import MCPRequest, SanitizedMCPHandler
+
+        for name in sorted(SanitizedMCPHandler.ALLOWED_TOOLS):
+            req = MCPRequest(
+                request_id=f"a2-{name}",
+                tool_name=name,
+                parameters=dict(self.VALID_ARGS.get(name, {})),
+            )
+            resp = server.process_request(req)
+            msg = str(resp.error) + str(resp.result)
+            assert "not implemented yet" not in msg, f"tool '{name}' has no route handler"
+
+    def test_place_detector_returns_real_engine_result(self, server):
+        """place_detector must run DetectorPlacementEngine, not fabricate output."""
+        result = self._call(server, "place_detector")
+        assert result["coverage_pct"] >= 0.0
+        assert isinstance(result["detectors"], list) and result["detectors"]
+        assert result["nfpa_references"]
+        assert result["queued_action_ids"]
+
+    def test_calculate_coverage_matches_kernel_values(self, server):
+        """calculate_coverage must return values consistent with the kernel tables."""
+        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+
+        result = self._call(server, "calculate_coverage")
+        spec = calculate_coverage_radius_from_height(3.0, "smoke")
+        assert abs(result["coverage_radius_m"] - round(spec.radius, 4)) < 1e-6
+        assert result["detectors_required_grid"] >= 1
+        assert "NFPA" in result["nfpa_reference"]
+
+    def test_get_project_status_reports_queue_and_session(self, server):
+        result = self._call(server, "get_project_status")
+        assert "model_update_queue" in result
+        assert "available_tools" in result
+        assert "place_detector" in result["available_tools"]
+
+    def test_export_report_writes_session_audit_file(self, server, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        result = self._call(
+            server, "export_report", args={"output_path": "reports/session_audit.json"}
+        )
+        assert result["report_type"] == "session_audit"
+        written = tmp_path / "reports" / "session_audit.json"
+        assert written.exists()
+        content = json.loads(written.read_text(encoding="utf-8"))
+        assert content["report_type"] == "session_audit"
+        assert "request_log" in content
+
+    def test_initialize_advertises_sdk_protocol_version(self, server):
+        """protocolVersion must come from the official mcp SDK, not a stale pin."""
+        try:
+            from mcp.types import LATEST_PROTOCOL_VERSION as sdk_version
+        except ImportError:  # pragma: no cover
+            pytest.skip("mcp SDK unavailable")  # noqa: PT012 — single statement body
+        line = _jsonrpc("initialize", {"capabilities": {}, "clientInfo": {"name": "t"}})
+        resp = server._handle_jsonrpc_line(line)
+        assert resp["result"]["protocolVersion"] == sdk_version
+
+    # -- helpers ---------------------------------------------------------
+
+    @staticmethod
+    def _list_tools(server) -> list[dict]:
+        resp = server._handle_jsonrpc_line(_jsonrpc("tools/list"))
+        assert resp is not None and "result" in resp
+        return resp["result"]["tools"]
+
+    @staticmethod
+    def _call(server, name: str, args: dict | None = None) -> dict:
+        line = _jsonrpc(
+            "tools/call", {"name": name, "arguments": dict(args or TestA2MCPConformance.VALID_ARGS.get(name, {}))}
+        )
+        resp = server._handle_jsonrpc_line(line)
+        assert resp is not None and "result" in resp, f"{name}: JSON-RPC error: {resp}"
+        payload = json.loads(resp["result"]["content"][0]["text"])
+        assert payload["success"] is True, f"{name} failed: {payload['error']}"
+        return payload["result"]

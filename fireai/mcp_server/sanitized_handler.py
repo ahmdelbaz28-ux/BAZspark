@@ -165,7 +165,10 @@ class SanitizedMCPHandler:
         response = handler.handle(request)
     """
 
-    # Allowed MCP tool names (whitelist — unknown tools are REJECTED)
+    # Allowed MCP tool names (whitelist — unknown tools are REJECTED).
+    # A2 CONTRACT FIX: this set MUST stay in lockstep with PARAM_RULES below
+    # and with the route handlers in revit_mcp_server.process_request().
+    # Every tool listed here has validation rules AND a real handler.
     ALLOWED_TOOLS = {
         "update_bim_parameter",
         "query_hydraulic_calculation",
@@ -176,6 +179,10 @@ class SanitizedMCPHandler:
         "update_room_classification",
         "get_project_status",
         "export_report",
+        # Wired to DetectorPlacementEngine / nfpa72 coverage calculations
+        # (previously advertised by tools/list but rejected at Gate 1).
+        "place_detector",
+        "calculate_coverage",
     }
 
     # Parameter validation rules per tool
@@ -236,11 +243,99 @@ class SanitizedMCPHandler:
             "hazard_class": {"type": "str", "sanitize": "bim_parameter", "required": True},
             "element_id": {"type": "str", "sanitize": "bim_parameter", "required": True},
         },
+        # A2: previously advertised by tools/list but rejected at Gate 1 — now
+        # backed by DetectorPlacementEngine (fireai/core/device_placement.py).
+        "place_detector": {
+            "room_id": {"type": "str", "sanitize": "bim_parameter", "required": True},
+            "room_length_m": {"type": "float", "min": 0.1, "max": 200.0, "required": True},
+            "room_width_m": {"type": "float", "min": 0.1, "max": 200.0, "required": True},
+            # NFPA 72 §17.7.3.2.4 hard limit (18.288 m) enforced by physics guard.
+            "ceiling_height_m": {"type": "float", "min": 0.1, "max": 18.288, "required": True},
+            "detector_type": {
+                "type": "str",
+                "enum": ["smoke", "heat", "duct"],
+                "required": True,
+            },
+        },
+        # A2: wired to calculate_coverage_radius_from_height
+        # (fireai/core/nfpa72_calculations.py, NFPA 72 Table 17.6.3.1.1).
+        "calculate_coverage": {
+            "room_length_m": {"type": "float", "min": 0.1, "max": 200.0, "required": True},
+            "room_width_m": {"type": "float", "min": 0.1, "max": 200.0, "required": True},
+            "ceiling_height_m": {"type": "float", "min": 0.1, "max": 18.288, "required": True},
+            "detector_type": {
+                "type": "str",
+                "enum": ["smoke", "heat"],
+                "required": True,
+            },
+        },
+        # A2: minimal real implementation — reports live in-process session
+        # state (model-update queue stats + sanitized request log).
+        "get_project_status": {},
+        "query_room_hazard_class": {},
+        # A2: minimal real implementation — exports the MCP session audit log
+        # to a JSON file. Full NFPA submittal PDFs require BuildingEngine
+        # analysis context that is not available over a stdio session.
+        "export_report": {
+            "report_type": {
+                "type": "str",
+                "enum": ["session_audit"],
+                "default": "session_audit",
+                "required": False,
+            },
+            "output_path": {"type": "str", "sanitize": "file_path", "required": False},
+        },
     }
 
     def __init__(self) -> None:
         self._hazard_verifier = HazardOverrideVerifier()
         self._request_log: list[dict[str, Any]] = []
+
+    @classmethod
+    def build_input_schemas(cls) -> dict[str, dict[str, Any]]:
+        """Generate an MCP ``inputSchema`` for every tool from PARAM_RULES.
+
+        A2 CONTRACT FIX: PARAM_RULES is the SINGLE SOURCE OF TRUTH. The
+        schemas advertised via tools/list are generated here, so the
+        advertised contract can never drift from the validation gates that
+        actually run on every tools/call (Gate 3 + Gate 4).
+
+        Rule-key → JSON Schema mapping:
+          type "str"   → {"type": "string"}  (+ "enum" if constrained)
+          type "float" → {"type": "number", "minimum": min, "maximum": max}
+          type "any"   → {"description": ...} (no type constraint)
+          required     → added to the schema's "required" array
+        """
+        schemas: dict[str, dict[str, Any]] = {}
+        for tool_name, rules in cls.PARAM_RULES.items():
+            properties: dict[str, Any] = {}
+            required: list[str] = []
+            for param_name, rule in rules.items():
+                prop: dict[str, Any] = {}
+                rule_type = rule.get("type", "any")
+                if rule_type == "str":
+                    prop["type"] = "string"
+                elif rule_type == "float":
+                    prop["type"] = "number"
+                    if "min" in rule:
+                        prop["minimum"] = rule["min"]
+                    if "max" in rule:
+                        prop["maximum"] = rule["max"]
+                if "enum" in rule:
+                    prop["enum"] = list(rule["enum"])
+                if "default" in rule:
+                    prop["default"] = rule["default"]
+                if "description" in rule:
+                    prop["description"] = rule["description"]
+                properties[param_name] = prop
+                if rule.get("required"):
+                    required.append(param_name)
+            schemas[tool_name] = {
+                "type": "object",
+                "properties": properties,
+                "required": required,
+            }
+        return schemas
 
     def handle(
         self, request: MCPRequest
@@ -324,6 +419,8 @@ class SanitizedMCPHandler:
                 continue
 
             if raw_value is None:
+                if "default" in rule:
+                    sanitized_params[param_name] = rule["default"]
                 continue
 
             # Sanitize strings
@@ -340,6 +437,13 @@ class SanitizedMCPHandler:
                         sanitized_params[param_name] = sanitize_bim_parameter(raw_value)
                 except ValueError as e:
                     violations.append(f"Sanitization rejected parameter '{param_name}': {e}")
+                    continue
+                # A2: enum constraint — reject values outside the allowed set
+                if "enum" in rule and sanitized_params.get(param_name) not in rule["enum"]:
+                    violations.append(
+                        f"Parameter '{param_name}' must be one of "
+                        f"{sorted(rule['enum'])}, got '{sanitized_params.get(param_name)}'"
+                    )
                     continue
 
             # Validate numerics

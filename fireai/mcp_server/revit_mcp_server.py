@@ -46,6 +46,7 @@ import logging
 import queue
 import sys
 import threading
+import time
 from typing import Any
 
 from fireai.mcp_server.sanitized_handler import (
@@ -64,9 +65,17 @@ logger = logging.getLogger(__name__)
 
 # ── MCP Protocol Constants ──────────────────────────────────────────────────
 # Per https://modelcontextprotocol.io/specification
-MCP_PROTOCOL_VERSION = "2024-11-05"
+# A2 CONTRACT FIX: advertise the newest protocol revision supported by the
+# official `mcp` SDK (declared dependency since A1) instead of a stale pinned
+# constant. Falls back to the original revision if the SDK is unavailable.
+try:
+    from mcp.types import LATEST_PROTOCOL_VERSION as _SDK_PROTOCOL_VERSION
+except ImportError:  # pragma: no cover — mcp is a declared dependency (A1)
+    _SDK_PROTOCOL_VERSION = "2024-11-05"
+
+MCP_PROTOCOL_VERSION = _SDK_PROTOCOL_VERSION
 MCP_SERVER_NAME = "fireai-revit-mcp"
-MCP_SERVER_VERSION = "1.0.0"
+MCP_SERVER_VERSION = "1.1.0"
 
 # MCP methods we support
 MCP_METHODS = {
@@ -77,6 +86,60 @@ MCP_METHODS = {
     "resources/list",
     "resources/read",
     "ping",
+}
+
+# Human-facing description per tool. The inputSchema is generated from
+# SanitizedMCPHandler.PARAM_RULES (single source of truth — A2).
+TOOL_DESCRIPTIONS: dict[str, str] = {
+    "calculate_battery_capacity": (
+        "Calculate NFPA 72 §10.6.7 battery capacity for a fire alarm control "
+        "panel from standby/alarm currents, with aging and temperature derating."
+    ),
+    "calculate_coverage": (
+        "Calculate NFPA 72 coverage for a room (coverage radius, max spacing, "
+        "and detectors required) from room dimensions and detector type using "
+        "Table 17.6.3.1.1 height-adjusted values."
+    ),
+    "calculate_friction_loss": (
+        "Calculate friction loss in a sprinkler pipe (NFPA 13 Chapter 23) "
+        "from flow rate, C-factor, diameter and pipe length."
+    ),
+    "export_report": (
+        "Export the MCP session audit report (sanitized request log + model "
+        "update queue stats) to a JSON file. Full NFPA submittal PDFs require "
+        "BuildingEngine context not available over stdio sessions."
+    ),
+    "get_project_status": (
+        "Report live session status: model update queue stats, pending "
+        "updates, processed request count and available tools."
+    ),
+    "place_detector": (
+        "Compute an NFPA 72-compliant detector placement plan for a room "
+        "(hex-grid with beam obstruction rule) via DetectorPlacementEngine "
+        "and queue the computed device locations for safe Revit execution."
+    ),
+    "query_hydraulic_calculation": (
+        "Query a hydraulic calculation (friction loss, NFPA 13-2022 "
+        "Chapter 23) for given pipe parameters."
+    ),
+    "query_room_hazard_class": (
+        "Return the mandatory hazard classification override table and the "
+        "available NFPA 13 / SBC 801 hazard classifications."
+    ),
+    "update_bim_parameter": (
+        "Queue an update to a Revit BIM element parameter. The update is "
+        "sanitized, enqueued in the thread-safe model update queue and "
+        "forwarded to the Revit add-in when available. Never writes directly."
+    ),
+    "update_room_classification": (
+        "Queue a room hazard classification update. Mandatory overrides are "
+        "applied during sanitization if the AI under-classifies a known "
+        "hazardous room type."
+    ),
+    "validate_sprinkler_compliance": (
+        "Validate sprinkler design compliance (head pressure vs density) "
+        "against NFPA 13 hazard classification requirements."
+    ),
 }
 
 
@@ -140,6 +203,7 @@ class RevitMCPServer:
             return response
 
         # Step 2: Route to appropriate handler
+        # A2 CONTRACT FIX: every tool in ALLOWED_TOOLS has a route here.
         sanitized_params = response.sanitized_parameters
 
         if request.tool_name == "update_bim_parameter":
@@ -154,6 +218,14 @@ class RevitMCPServer:
             return self._handle_hazard_class_query(request, sanitized_params)
         if request.tool_name == "update_room_classification":
             return self._handle_room_classification(request, sanitized_params)
+        if request.tool_name == "place_detector":
+            return self._handle_place_detector(request, sanitized_params)
+        if request.tool_name == "calculate_coverage":
+            return self._handle_calculate_coverage(request, sanitized_params)
+        if request.tool_name == "get_project_status":
+            return self._handle_get_project_status(request)
+        if request.tool_name == "export_report":
+            return self._handle_export_report(request, sanitized_params)
         return MCPResponse(
             request_id=request.request_id,
             success=False,
@@ -438,6 +510,214 @@ class RevitMCPServer:
             sanitized_parameters=params,
         )
 
+    def _handle_place_detector(self, request: MCPRequest, params: dict[str, Any]) -> MCPResponse:
+        """
+        Compute an NFPA 72-compliant detector placement for a room and queue
+        it for safe Revit execution (A2 — real engine wiring).
+
+        Delegates to DetectorPlacementEngine.place_detectors() (hex-grid,
+        beam obstruction rule, wall-distance constraints) and enqueues one
+        SET_DETECTOR_LOCATION action per computed device. Nothing writes to
+        the Revit model directly.
+        """
+        from fireai.core.device_placement import DetectorPlacementEngine, DetectorType, RoomSpec
+
+        type_map = {
+            "smoke": DetectorType.SMOKE,
+            "heat": DetectorType.HEAT,
+            "duct": DetectorType.DUCT,
+        }
+        detector_type = type_map.get(str(params.get("detector_type", "")))
+        if detector_type is None:
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=(
+                    f"Unsupported detector_type '{params.get('detector_type')}'. "
+                    f"Supported: {sorted(type_map)}"
+                ),
+                sanitized_parameters=params,
+            )
+
+        room = RoomSpec(
+            room_id=str(params.get("room_id", "")),
+            length_m=float(params["room_length_m"]),
+            width_m=float(params["room_width_m"]),
+            ceiling_height_m=float(params["ceiling_height_m"]),
+            detector_type=detector_type,
+        )
+        try:
+            placement = DetectorPlacementEngine().place_detectors(room)
+        except Exception as e:
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=f"Detector placement failed: {e}",
+                sanitized_parameters=params,
+            )
+
+        action_ids: list[str] = []
+        try:
+            for device in placement.detectors:
+                action = ModelUpdateAction(
+                    action_type=ModelUpdateType.SET_DETECTOR_LOCATION,
+                    element_id=device.device_id,
+                    parameter_name="DetectorLocation",
+                    parameter_value={"x_m": device.x_m, "y_m": device.y_m, "z_m": device.z_m},
+                    source=request.source,
+                    nfpa_reference=device.nfpa_section,
+                )
+                action_ids.append(self._update_queue.enqueue(action))
+        except (ValueError, queue.Full) as e:
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=f"Failed to enqueue placement actions: {e}",
+                sanitized_parameters=params,
+            )
+
+        return MCPResponse(
+            request_id=request.request_id,
+            success=True,
+            result={
+                "room_id": placement.room_id,
+                "detectors": [
+                    {"device_id": d.device_id, "x_m": d.x_m, "y_m": d.y_m, "z_m": d.z_m}
+                    for d in placement.detectors
+                ],
+                "coverage_pct": placement.coverage_pct,
+                "is_fully_compliant": placement.is_fully_compliant,
+                "violations": placement.violations,
+                "nfpa_references": placement.nfpa_references,
+                "computation_hash": placement.computation_hash,
+                "queued_action_ids": action_ids,
+                "status": "queued",
+            },
+            sanitized_parameters=params,
+        )
+
+    def _handle_calculate_coverage(
+        self, request: MCPRequest, params: dict[str, Any]
+    ) -> MCPResponse:
+        """Calculate NFPA 72 coverage for a room via the real kernel tables."""
+        import math
+        from typing import Literal
+
+        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+
+        raw_type = str(params["detector_type"])
+        # Gate 3's enum constrains calculate_coverage to smoke/heat; map
+        # defensively so the kernel's Literal-typed parameter stays honest.
+        detector_kind: Literal["smoke", "heat"] = "smoke" if raw_type == "smoke" else "heat"
+        try:
+            spec = calculate_coverage_radius_from_height(
+                ceiling_height=float(params["ceiling_height_m"]),
+                detector_type=detector_kind,
+            )
+        except Exception as e:
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=f"Coverage calculation failed: {e}",
+                sanitized_parameters=params,
+            )
+
+        length_m = float(params["room_length_m"])
+        width_m = float(params["room_width_m"])
+        spacing = spec.spacing_max if spec.spacing_max > 0 else spec.radius
+        detectors_required = max(1, math.ceil(length_m / spacing)) * max(
+            1, math.ceil(width_m / spacing)
+        )
+
+        result: dict[str, Any] = {
+            "coverage_radius_m": round(spec.radius, 4),
+            "spacing_max_m": round(spec.spacing_max, 4),
+            "wall_distance_max_m": round(spec.wall_distance_max, 4),
+            "coverage_area_per_detector_m2": round(spec.area, 4),
+            "room_area_m2": round(length_m * width_m, 4),
+            "detectors_required_grid": int(detectors_required),
+            "nfpa_reference": spec.nfpa_ref,
+        }
+        if spec.warning:
+            result["warning"] = spec.warning
+        return MCPResponse(
+            request_id=request.request_id,
+            success=True,
+            result=result,
+            sanitized_parameters=params,
+        )
+
+    def _handle_get_project_status(self, request: MCPRequest) -> MCPResponse:
+        """Report live in-process session state (queue + audit counters)."""
+        processed = len(self._handler.get_request_log(last_n=10**9))
+        return MCPResponse(
+            request_id=request.request_id,
+            success=True,
+            result={
+                "server_name": MCP_SERVER_NAME,
+                "server_version": MCP_SERVER_VERSION,
+                "protocol_version": MCP_PROTOCOL_VERSION,
+                "model_update_queue": self._update_queue.get_stats(),
+                "pending_updates": self._update_queue.get_pending_count(),
+                "session_requests_processed": processed,
+                "available_tools": sorted(self._handler.ALLOWED_TOOLS),
+            },
+        )
+
+    def _handle_export_report(self, request: MCPRequest, params: dict[str, Any]) -> MCPResponse:
+        """
+        Export the MCP session audit report to a JSON file.
+
+        A2 minimal real implementation: full NFPA submittal PDFs require a
+        BuildingEngine analysis context that is not available over a stdio
+        session, so this tool exports the REAL session data instead of
+        fabricating engineering results: the sanitized request log and the
+        model-update queue stats.
+        """
+        import json as _json
+        from pathlib import Path
+
+        report_type = str(params.get("report_type", "session_audit"))
+        if report_type != "session_audit":
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=(f"Unsupported report_type '{report_type}'. Supported: ['session_audit']"),
+                sanitized_parameters=params,
+            )
+
+        output_path = params.get("output_path") or "uploads/fireai_mcp_session_report.json"
+        request_log_entries = self._handler.get_request_log(last_n=1000)
+        payload = {
+            "report_type": "session_audit",
+            "generated_at": time.time(),
+            "server": {"name": MCP_SERVER_NAME, "version": MCP_SERVER_VERSION},
+            "model_update_queue": self._update_queue.get_stats(),
+            "request_log": request_log_entries,
+        }
+        try:
+            path = Path(output_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+        except OSError as e:
+            return MCPResponse(
+                request_id=request.request_id,
+                success=False,
+                error=f"Failed to write session audit report: {e}",
+                sanitized_parameters=params,
+            )
+        return MCPResponse(
+            request_id=request.request_id,
+            success=True,
+            result={
+                "report_type": report_type,
+                "output_path": str(path),
+                "entries": len(request_log_entries),
+                "message": "Session audit report written successfully.",
+            },
+            sanitized_parameters=params,
+        )
+
     def start(self, *, block: bool = True) -> None:
         """
         Start the MCP server.
@@ -636,73 +916,47 @@ class RevitMCPServer:
         }
 
     def _handle_tools_list(self) -> dict[str, Any]:
-        """List available MCP tools."""
+        """List available MCP tools.
+
+        A2 CONTRACT FIX: tool descriptions live here, but the inputSchema for
+        each tool is GENERATED from SanitizedMCPHandler.PARAM_RULES (single
+        source of truth). tools/list can no longer advertise parameters that
+        Gate 3 does not actually validate, or omit ones it does.
+        """
+        schemas = self._handler.build_input_schemas()
         return {
             "tools": [
                 {
-                    "name": "place_detector",
-                    "description": "Place a fire detector in the Revit BIM model "
-                    "at the specified coordinates. Inputs are sanitized and "
-                    "the update is queued for thread-safe execution.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "x": {"type": "number", "description": "X coordinate (mm)"},
-                            "y": {"type": "number", "description": "Y coordinate (mm)"},
-                            "z": {"type": "number", "description": "Z coordinate (mm)"},
-                            "detector_type": {
-                                "type": "string",
-                                "enum": ["smoke", "heat", "flame", "duct"],
-                            },
-                            "room_id": {"type": "string"},
-                        },
-                        "required": ["x", "y", "z", "detector_type", "room_id"],
-                    },
-                },
-                {
-                    "name": "calculate_coverage",
-                    "description": "Calculate NFPA 72 coverage for a room given "
-                    "its dimensions and detector type.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "room_length": {"type": "number", "description": "Room length (m)"},
-                            "room_width": {"type": "number", "description": "Room width (m)"},
-                            "ceiling_height": {
-                                "type": "number",
-                                "description": "Ceiling height (m)",
-                            },
-                            "detector_type": {"type": "string"},
-                        },
-                        "required": [
-                            "room_length",
-                            "room_width",
-                            "ceiling_height",
-                            "detector_type",
-                        ],
-                    },
-                },
+                    "name": name,
+                    "description": TOOL_DESCRIPTIONS[name],
+                    "inputSchema": schemas[name],
+                }
+                for name in sorted(schemas)
             ]
         }
 
     def _handle_tools_call(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Handle a tools/call request by dispatching to SanitizedMCPHandler."""
+        """Handle a tools/call request by dispatching through process_request().
+
+        A2 CONTRACT FIX: this previously called SanitizedMCPHandler.handle()
+        DIRECTLY, which only sanitizes inputs — it never routed to the real
+        tool handlers, so every engineering calculation tool silently
+        returned its own sanitized arguments as the "result" over the wire.
+        tools/call now goes through process_request() (sanitize + route),
+        the same path as the in-process API.
+        """
         tool_name = params.get("name")
         tool_args = params.get("arguments", {})
 
-        # Build an MCPRequest and delegate to the safety-enforcing handler.
-        # which does NOT exist on SanitizedMCPHandler — the actual method
-        # is `handle`. This caused every tools/call to fail with
-        # AttributeError, breaking Claude Desktop integration entirely.
-        # Verified at runtime before fix: tools/call returned -32603 error.
-        # Verified at runtime after fix: tools/call returns the handler's
-        # MCPResponse wrapped in the MCP content envelope.
+        # Build an MCPRequest and delegate to the safety-enforcing gate +
+        # route chain. The comment below documents the V142 bug that broke
+        # Claude Desktop integration entirely; keep it as a regression note.
         mcp_request = MCPRequest(
             request_id=str(params.get("_meta", {}).get("request_id", "")),
             tool_name=tool_name or "",
             parameters=tool_args,
         )
-        response: MCPResponse = self._handler.handle(mcp_request)
+        response: MCPResponse = self.process_request(mcp_request)
 
         return {
             "content": [

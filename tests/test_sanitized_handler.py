@@ -104,6 +104,11 @@ class TestAllowedTools:
     """The whitelist of allowed tools."""
 
     def test_allowed_tools_contains_expected(self):
+        # A2 (agent-platform-rebuild): place_detector + calculate_coverage
+        # were ADDED to the whitelist — they were previously advertised by
+        # tools/list but rejected at Gate 1. Both now have PARAM_RULES and
+        # real engine-backed handlers (conformance-pinned in
+        # tests/test_mcp_server.py::TestA2MCPConformance).
         expected = {
             "update_bim_parameter",
             "query_hydraulic_calculation",
@@ -114,5 +119,7 @@ class TestAllowedTools:
             "update_room_classification",
             "get_project_status",
             "export_report",
+            "place_detector",
+            "calculate_coverage",
         }
         assert expected == ALLOWED_TOOLS
