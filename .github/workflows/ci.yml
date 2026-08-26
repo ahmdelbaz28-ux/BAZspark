@@ -148,7 +148,13 @@ jobs:
           pip install --only-binary :all: -e ".[parsing]"
           pip install --only-binary :all: opencv-python-headless==4.11.0.86
           pip install --only-binary :all: prometheus_client==0.21.1
-          pip install --only-binary :all: langgraph==0.2.73 langgraph-checkpoint-sqlite==2.0.8
+          # A1 FIX (agent-platform-rebuild, PR #428): the previous explicit
+          # downgrade `langgraph==0.2.73 langgraph-checkpoint-sqlite==2.0.8`
+          # contradicted pyproject.toml (langgraph>=1.0.10 adopted since
+          # V141.3) and silently downgraded langchain-core below 1.6.0,
+          # breaking imports of now-declared hard dependencies
+          # (langchain-openai / langchain-neo4j) and billing/workflow tests.
+          # The environment is now driven by pyproject constraints only.
           pip install --only-binary :all: pytest-timeout==2.3.1 pytest-xdist==3.6.1
           # V163/C-1: install pip-audit so the M-4 gold-standard CVE test
           # actually runs in Gate 2 instead of skipping when the tool is
