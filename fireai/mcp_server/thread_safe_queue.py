@@ -204,6 +204,13 @@ class ThreadSafeModelUpdateQueue:
 
         """
         self._queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_size)
+        # A2 FIX: monotonically increasing sequence number used as the
+        # PriorityQueue tiebreaker. Previously entries were (priority, action)
+        # and a second enqueue with the SAME priority crashed with
+        # TypeError("'<' not supported between ModelUpdateAction instances")
+        # because heapq compared the dataclass objects themselves.
+        self._enqueue_seq = 0
+        self._seq_lock = threading.Lock()
         self._results: dict[str, ModelUpdateResult] = {}
         self._results_lock = threading.Lock()
         self._results_events: dict[str, threading.Event] = {}
@@ -262,8 +269,12 @@ class ThreadSafeModelUpdateQueue:
             )
             self._results_events[action.action_id] = threading.Event()
 
-        # Enqueue with priority
-        self._queue.put((action.priority, action), block=True, timeout=5.0)
+        # Enqueue with priority; sequence number breaks priority ties so the
+        # heap never falls back to comparing ModelUpdateAction objects.
+        with self._seq_lock:
+            self._enqueue_seq += 1
+            seq = self._enqueue_seq
+        self._queue.put((action.priority, seq, action), block=True, timeout=5.0)
 
         # Log for audit trail
         log_entry = {
@@ -306,7 +317,7 @@ class ThreadSafeModelUpdateQueue:
 
         """
         try:
-            _priority, action = self._queue.get(block=True, timeout=timeout)
+            _priority, _seq, action = self._queue.get(block=True, timeout=timeout)
             return action
         except queue.Empty:
             return None

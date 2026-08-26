@@ -55,7 +55,7 @@ ARCHITECTURE (V80 — 6-Strategy Failover with OpenRouter):
   2. Generous free tier — no cost for development/testing
   3. Fast response times
   4. Good multilingual support (Arabic + English)
-  5. Uses google-generativeai SDK — official Google AI SDK
+  5. Uses google-genai SDK — official Google AI SDK
 
 CHANGES from V80 → V81:
   1. Renamed OpenQuotta (Strategy 3) to OpenCode — correct provider name
@@ -76,10 +76,10 @@ CHANGES from V79 → V80:
 
 CHANGES from V76 → V77:
   1. Gemini promoted from FALLBACK to PRIMARY when OpenAI key is absent
-  2. Added google-generativeai SDK dependency requirement
+  2. Added google-genai SDK dependency requirement
   3. Updated provider detection to clearly document dual-primary logic
   4. Gemini LLM config now explicitly uses Mem0's native gemini provider
-     (which requires google-generativeai package)
+     (which requires the google-genai package)
 
 CRITICAL FIXES from V74/V75:
   V76:
@@ -208,12 +208,21 @@ def _test_gemini_connectivity(api_key: str) -> bool:
 
     """
     try:
-        import google.generativeai as genai
+        # A1 (agent-platform-rebuild): migrated from the deprecated
+        # google-generativeai SDK to google-genai (official successor).
+        from google import genai as _google_genai
+        from google.genai import types as _genai_types
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        # Minimal request to verify quota and connectivity
-        model.generate_content("ping", request_options={"timeout": 10})
+        client = _google_genai.Client(api_key=api_key)
+        # Minimal request to verify quota and connectivity.
+        # HttpOptions.timeout is in milliseconds.
+        client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents="ping",
+            config=_genai_types.GenerateContentConfig(
+                http_options=_genai_types.HttpOptions(timeout=10000)
+            ),
+        )
         # If we get here, Gemini is working
         return True
     except Exception as e:
@@ -339,7 +348,7 @@ def _detect_provider_uncached() -> dict[
     4. Try Google Gemini API (if GEMINI_API_KEY available)
        - gemini-2.0-flash for LLM + local sentence-transformers for embeddings
        - PRIMARY when OpenAI/OpenRouter/OpenCode unavailable
-       - Uses google-generativeai SDK via Mem0's native gemini provider
+       - Uses google-genai SDK via Mem0's native gemini provider
     5. Try NVIDIA API (V168 — OpenAI-compatible, 120+ models, no region block)
        - Uses NVIDIA_API_KEY + NVIDIA_BASE_URL
        - OpenAI-compatible: works with Mem0's openai provider
@@ -496,10 +505,10 @@ def _detect_provider_uncached() -> dict[
             #    by Mem0's v1beta API endpoint — causes 404 errors
             # 4. Local embeddings (all-MiniLM-L6-v2) are deterministic and fast
             #
-            # The Mem0 "gemini" provider uses google-generativeai SDK internally.
+            # The Mem0 "gemini" provider uses the google-genai SDK internally.
             logger.info(
                 "Gemini API reachable — using Gemini as PRIMARY provider. "
-                "(Hybrid: Gemini LLM via google-generativeai + sentence-transformers embeddings)"
+                "(Hybrid: Gemini LLM via google-genai + sentence-transformers embeddings)"
             )
             return {
                 "provider": "gemini_primary",
