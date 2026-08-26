@@ -663,36 +663,24 @@ async def list_available_panels():
 async def get_facp_cluster_status():
     """
     Get Distributed FACP Cluster Communicator status and node topology.
-    Exposes real-time node health, leader node, and communicator stats.
 
-    Returns the local (standalone) node status. This endpoint must NOT
-    import facp_distributed: the backend is required to stay isolated
-    from that package (see backend/tests/security/
-    test_marshal_loads_not_http_reachable.py Tests 1/1b/1c) because it
-    transitively reaches isolation.py (marshal.loads, M-1). When a real
-    distributed deployment is added, expose cluster status through a
-    backend-local service layer instead.
+    A7 FIX: this endpoint previously returned a fabricated healthy-node
+    payload (fake leader election, hardcoded uptime) that could be mistaken
+    for a live distributed deployment. There is NO real cluster behind this
+    backend process (and the backend must stay isolated from
+    ``facp_distributed`` — see backend/tests/security/
+    test_marshal_loads_not_http_reachable.py), so we now fail honestly with
+    501 and an explicit ``demo`` marker instead of inventing telemetry.
     """
-    return {
-        "success": True,
-        "data": {
-            "cluster_id": "facp_cluster_default",
-            "local_node_id": "node_standalone",
-            "local_node_type": "l2_orchestrator",
-            "local_node_status": "healthy",
-            "total_nodes": 1,
-            "healthy_nodes": 1,
-            "unhealthy_nodes": 0,
-            "leader_node": "node_standalone",
-            "is_leader": True,
-            "known_peers": [],
-            "stats": {
-                "messages_sent": 0,
-                "messages_received": 0,
-                "connections_made": 0,
-                "connection_errors": 0,
-                "state_syncs": 0,
-            },
-            "uptime_seconds": 3600.0,
+    raise HTTPException(
+        status_code=501,
+        detail={
+            _ERROR: "NOT_CONNECTED_TO_REAL_SYSTEM",
+            "demo": True,
+            "detail": (
+                "Distributed FACP cluster status is not available: no real "
+                "cluster connection is configured. This endpoint never reports "
+                "simulated panel telemetry."
+            ),
         },
-    }
+    )

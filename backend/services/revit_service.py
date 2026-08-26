@@ -226,7 +226,19 @@ class RevitService:
         # tests can read this to know that create_wall/floor/door will
         # return None (no real document is open).
         self._simulation_mode = False
-        self.adapter = RevitAdapter(mode="simulation")
+        # A3 FIX: adapter mode is configurable instead of hardcoded simulation.
+        # FIREAI_REVIT_MODE=simulation|api|macro (default simulation, unchanged
+        # behaviour for existing deployments). Explicit responses still carry
+        # ``simulation_mode`` so clients never mistake mock results for real ones.
+        import os as _os
+
+        _configured_mode = _os.getenv("FIREAI_REVIT_MODE", "simulation").strip().lower()
+        if _configured_mode not in ("simulation", "api", "macro"):
+            logger.warning(
+                "Invalid FIREAI_REVIT_MODE=%r — falling back to 'simulation'", _configured_mode
+            )
+            _configured_mode = "simulation"
+        self.adapter = RevitAdapter(mode=_configured_mode)
 
         # RevitAPIDocGen data
         self._api_data_cache: list[dict[str, Any]] = []

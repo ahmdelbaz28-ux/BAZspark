@@ -1,7 +1,7 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+﻿# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR â€” S3776: ...') are preserved.
 """
-test_api_keys.py — Direct unit tests for backend/api_keys.py.
+test_api_keys.py â€” Direct unit tests for backend/api_keys.py.
 
 Covers key hashing, validation, add/list/delete/update operations,
 timing-safe dummy verify, and the O(1) lookup index.
@@ -147,4 +147,4 @@ class TestCRUDOperations:
         from backend.api_keys import validate_api_key
 
         assert validate_api_key("") is None
-        assert validate_api_key(None) is None  # type: ignore[arg-type]  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        assert validate_api_key(None) is None  # type: ignore[arg-type]  # NOSONAR â€” S5655: intentional wrong-type arg (test verifies rejection)

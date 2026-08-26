@@ -492,45 +492,23 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                 try:
                     message = WebSocketMessage.model_validate_json(data)
 
-                    # Handle different message types
                     if message.type == "sync_request":
-                        # Simulate starting a sync
+                        # A7 FIX: this handler previously staged a fake sync
+                        # ("sync_started" → hardcoded 25/50/75/100 progress →
+                        # fabricated "elements_processed": 100). There is no
+                        # real document-sync engine behind it, so we now fail
+                        # honestly instead of simulating progress.
                         await websocket.send_text(
                             WebSocketMessage(
-                                type="sync_started",
+                                type="error",
                                 data={
-                                    "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
-                                    "project_id": project_id,
-                                    "timestamp": datetime.now(UTC).isoformat(),
-                                },
-                            ).model_dump_json()
-                        )
-
-                        # Simulate sync progress
-                        for progress in [25, 50, 75, 100]:
-                            await websocket.send_text(
-                                WebSocketMessage(
-                                    type="sync_progress",
-                                    data={
-                                        "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
-                                        "progress": progress,
-                                        "timestamp": datetime.now(UTC).isoformat(),
-                                    },
-                                ).model_dump_json()
-                            )
-
-                            await asyncio.sleep(1)  # Simulate processing
-
-                        # Send completion
-                        await websocket.send_text(
-                            WebSocketMessage(
-                                type="sync_completed",
-                                data={
-                                    "sync_id": f"sync_{project_id}_{int(datetime.now(UTC).timestamp())}",
-                                    "project_id": project_id,
-                                    "elements_processed": 100,
-                                    "elements_successful": 98,
-                                    "elements_failed": 2,
+                                    "error": "SYNC_NOT_IMPLEMENTED",
+                                    "demo": True,
+                                    "message": (
+                                        "Document synchronization is not connected "
+                                        "to a real source. No simulated sync "
+                                        "progress is reported."
+                                    ),
                                     "timestamp": datetime.now(UTC).isoformat(),
                                 },
                             ).model_dump_json()

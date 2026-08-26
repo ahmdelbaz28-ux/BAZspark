@@ -267,7 +267,10 @@ def calculate_friction_loss(
             f"Hazen-Williams numerator overflow: 4.52 × {flow_rate_gpm}^{HW_EXPONENT}. "
             "Flow rate may be unreasonably large."
         )
-    if not math.isfinite(denominator) or denominator == 0.0:
+    # S1244: denominator is a computed product (C^1.852 x d^4.87); a strict
+    # equality check can miss denormal underflow. A tiny tolerance rejects
+    # near-zero denominators before the division without changing valid flows.
+    if not math.isfinite(denominator) or abs(denominator) < 1e-12:
         raise ValueError(
             f"Hazen-Williams denominator invalid: C={friction_factor_c}^{HW_EXPONENT} "
             f"× d={internal_diameter_inches}^{DIAMETER_EXPONENT} = {denominator}. "

@@ -120,3 +120,36 @@ Docker Image ──► GHCR Registry ──► Helm Chart ──► Kubernetes P
 ```
 
 Production helm charts deploy isolated pods with automated liveness probes. Scaling rules maintain service availability under heavy calculation loads.
+
+### 6.1 Port Map (A8 — single source of truth)
+
+| Port | Service | Config source |
+|------|---------|---------------|
+| `$PORT` (default `7860` in Docker / `8000` local) | FastAPI backend (`backend.app`) | env `PORT`; Dockerfile CMD and local `__main__` both honor it |
+| `5173` | Vite dev server | frontend tooling only |
+| `18100` | facp_distributed L1 client interface | `python -m facp_distributed --port` |
+| `18101` | facp_distributed L2 orchestrator gateway | `--l2-port` |
+| `19000` | facp_distributed generic HTTP transport default | `HTTPTransport(port=...)` |
+| `\\.\pipe\bazspark_revit` | Revit C# add-in named pipe | not a TCP port — local IPC via `scripts/local_agent.py` |
+| `\\.\pipe\bazspark_autocad` | AutoCAD C# add-in named pipe | same |
+
+Rules: the desktop CAD bridge has **no HTTP ports** (named pipes only);
+facp_distributed never binds 8000/8001; anything new must extend this table
+in the same change.
+
+## 7. External Control Plane (desktop CAD agents)
+
+Revit/AutoCAD control flows through one chain:
+
+```
+REST /api/v1/revit/* ──► agent_ws.send_agent_command
+    (allow-listed against core/command_registry.json)
+  ──► WebSocket /api/v1/agent/ws  ──► scripts/local_agent.py
+  ──► Named pipe (bazspark_revit / bazspark_autocad)
+  ──► C# add-in executes on the app's main thread
+```
+
+Every action name on that wire must exist in `core/command_registry.json`;
+`tests/test_command_registry_contract.py` fails the build on drift between
+the registry and the C# command switches. Unregistered commands are rejected
+with HTTP 400 before leaving the server (D4).

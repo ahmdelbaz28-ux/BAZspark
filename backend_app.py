@@ -46,7 +46,13 @@ from backend.routers.qomn import router as qomn_router
 # HSTS, CSP, Referrer-Policy, Permissions-Policy to every HTTP response.
 # CorrelationIdMiddleware adds X-Correlation-ID for end-to-end audit tracing
 # (NFPA 72 §14.2.4 compliance).
+#
+# A9 FIX: this entry point previously shipped WITHOUT ApiKeyMiddleware while
+# granting ADMIN in dev — two entry points with conflicting protection modes.
+# It now mounts the exact same ApiKeyMiddleware as backend/app.py so every
+# entry fails closed identically in production.
 from backend.security_middleware import (
+    ApiKeyMiddleware,
     CorrelationIdMiddleware,
     SecurityHeadersMiddleware,
 )
@@ -142,12 +148,15 @@ else:
 #   1. _RoleDevMiddleware   — sets dev role on request.state
 #   2. SecurityHeadersMiddleware — appends security headers to response
 #   3. CorrelationIdMiddleware   — adds X-Correlation-ID audit header
-#   4. CORSMiddleware            — handles preflight OPTIONS (outermost)
+#   4. ApiKeyMiddleware          — validates X-API-Key, sets fireai_role (A9)
+#   5. CORSMiddleware            — handles preflight OPTIONS (outermost)
 # CORSMiddleware MUST be outermost so preflight OPTIONS requests are
 # answered before any other middleware processes them (S8414).
 app.add_middleware(_RoleDevMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+# A9 FIX: same auth gate as backend/app.py — no unauthenticated side door.
+app.add_middleware(ApiKeyMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,

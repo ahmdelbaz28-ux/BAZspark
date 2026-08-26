@@ -72,7 +72,9 @@ class TestAgentSpeckleRouting:
         }
         res = _dispatch_autocad("speckle_push", args)
         assert res["success"] is False
-        assert "only supported when BazSparkAutoCADBridge" in res["error"]
+        # A2 registry fallback message (wording updated with the unified
+        # command-registry routing).
+        assert "speckle_push requires the BazSparkAutoCADBridge" in res["error"]
 
     def test_revit_speckle_pull_routing_fallback(self):
         """Revit speckle_pull falls back to error if C# named pipe is not active."""
@@ -83,4 +85,6 @@ class TestAgentSpeckleRouting:
         }
         res = _dispatch_revit("speckle_pull", args)
         assert res["success"] is False
-        assert "only supported when BazSparkRevitBridge" in res["error"]
+        # A2 registry fallback message (wording updated with the unified
+        # command-registry routing).
+        assert "speckle_pull requires the BazSparkRevitBridge" in res["error"]
