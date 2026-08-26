@@ -127,6 +127,33 @@ def patched_orch(monkeypatch: pytest.MonkeyPatch, orch: AgentRunOrchestrator):
     return orch
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_router_projects(orch: AgentRunOrchestrator) -> None:
+    """Seed project revisions so OCC checks don't reject legitimate test operations."""
+    for pid in [
+        "proj-ws-auto",
+        "proj-ws-appr",
+        "proj-ws-pause",
+        "proj-ws-cancel",
+        "proj-ws-retry",
+        "proj-ws-decide",
+        "proj-ws-dispatch",
+        "proj-rest-status",
+        "proj-rest-resume",
+        "proj-rest-cancel",
+        "proj-rest-retry",
+        "proj-rest-baddec",
+        "proj-rest-unkappr",
+        "proj-rest-mismatch-a",
+        "proj-rest-mismatch-b",
+        "proj-rest-ok",
+        "proj-rest-resume-ok",
+        "proj-rest-cancel-done",
+        "proj-rest-retry-ok",
+    ]:
+        orch._bus.state_store.set_project_revision(pid, 1)
+
+
 # ── WS handler unit tests ────────────────────────────────────────────────────
 
 
@@ -538,8 +565,10 @@ def test_rest_retry_success_on_failed_run(
         )
     )
     db = Database(db_path=str(tmp_path / "agent_run_retry_rest.db"))
+    flaky_store = CommandStateStore(db)
+    flaky_store.set_project_revision("proj-rest-retry-ok", 1)
     flaky_orch = AgentRunOrchestrator(
-        command_bus=CommandBus(capability_registry=registry, state_store=CommandStateStore(db)),
+        command_bus=CommandBus(capability_registry=registry, state_store=flaky_store),
         capability_registry=registry,
         run_store=AgentRunStore(db),
         environment="development",

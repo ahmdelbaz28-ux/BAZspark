@@ -309,6 +309,13 @@ class AgentRunOrchestrator:
 
         if expected_revision is None:
             expected_revision = self._bus.get_project_revision(run.project_id)
+            if expected_revision is None:
+                return {
+                    "success": False,
+                    "errorCode": "PROJECT_REVISION_NOT_FOUND",
+                    "errorMessage": f"Project '{run.project_id}' is uninitialized or missing canonical revision.",
+                    "resultData": {},
+                }
 
         command = DomainCommand(
             commandId=_step_command_id(run.run_id, str(step["step_id"])),

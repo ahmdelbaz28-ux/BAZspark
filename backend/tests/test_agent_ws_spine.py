@@ -68,6 +68,29 @@ def orchestration_service(fresh_db: Database) -> AIOrchestrationService:
     )
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_ws_spine_projects(orchestration_service: AIOrchestrationService) -> None:
+    """Seed project revisions for all projects used in ws spine tests."""
+    store: CommandStateStore = orchestration_service.command_bus.state_store
+    for pid in [
+        "proj-ws-1",
+        "proj-ws-2",
+        "proj-ws-appr",
+        "proj-user-mut",
+        "proj-dispatch",
+        "proj-ws-elec-1",
+        "proj-ws-elec-2",
+        "proj-ws-elec-commit",
+        "proj-ws-hyd-1",
+        "proj-ws-hyd-2",
+        "proj-ws-hyd-commit",
+        "proj-ws-bat-1",
+        "proj-ws-bat-2",
+        "proj-ws-bat-commit",
+    ]:
+        store.set_project_revision(pid, 1)
+
+
 @pytest.mark.asyncio
 async def test_handle_intent_success(
     orchestration_service: AIOrchestrationService,
@@ -238,11 +261,11 @@ def test_database_sqlite_methods(tmp_path: Path) -> None:
     d4 = Database._row_to_project(RowWithTypeError(), revision=9)
     assert d4["revision"] == 9
 
-    # 5. Dict with revision=None
+    # 5. Dict with revision=None — BLK-02 contract: missing revision stays None
     d5 = Database._row_to_project(
         {"id": "p5", "name": "n5", "description": "d5", "author": "a5", "created_at": "c5", "updated_at": "u5", "status": "active", "revision": None}
     )
-    assert d5["revision"] == 1
+    assert d5["revision"] is None  # BLK-02: missing canonical revision must NOT coerce to 1
 
     # 6. Object without __getitem__
     class ObjectWithoutGetItem:

@@ -311,7 +311,7 @@ class AutonomousWorkflowPlanner:
         prompt: str,
         *,
         principal: AuthenticatedPrincipal,
-        project_id: str = "default_project",
+        project_id: str = "",
         expected_revision: int | None = None,
         composite_spec: dict[str, Any] | None = None,
         approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
@@ -325,6 +325,10 @@ class AutonomousWorkflowPlanner:
 
         if expected_revision is None:
             expected_revision = self._bus.get_project_revision(project_id)
+            if expected_revision is None:
+                raise AutonomousPlannerError(
+                    f"Project '{project_id}' is uninitialized or missing canonical revision."
+                )
 
         spec = dict(composite_spec or {})
         prompt_clean = prompt.strip()

@@ -637,7 +637,7 @@ class CapabilityRegistry:
             from backend.core.import_orchestrator import default_import_orchestrator
 
             file_id = str(payload.get("file_id", ""))
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             options = payload.get("options") or {}
             plan = default_import_orchestrator.plan_import(file_id, project_id, options=options)
             return plan.to_dict()
@@ -646,7 +646,7 @@ class CapabilityRegistry:
             from backend.core.import_orchestrator import default_import_orchestrator
 
             file_id = str(payload.get("file_id", ""))
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             options = payload.get("options") or {}
             return default_import_orchestrator.prepare_import_commit(
                 file_id, project_id, options=options
@@ -749,7 +749,7 @@ class CapabilityRegistry:
         def _plan_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from backend.core.export_orchestrator import default_export_orchestrator
 
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             target_format = str(payload.get("target_format", "dxf"))
             options = payload.get("options") or {}
             plan = default_export_orchestrator.plan_export(
@@ -760,7 +760,7 @@ class CapabilityRegistry:
         def _execute_export_handler(payload: dict[str, Any]) -> dict[str, Any]:
             from backend.core.export_orchestrator import default_export_orchestrator
 
-            project_id = str(payload.get("project_id", "default_project"))
+            project_id = str(payload.get("project_id", "") or "")
             target_format = str(payload.get("target_format", "dxf"))
             expected_revision = int(payload.get("expected_revision", 0))
             options = payload.get("options") or {}

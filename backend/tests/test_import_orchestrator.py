@@ -267,6 +267,7 @@ class TestAgentRunImportPipeline:
 
         project_id = "proj-agent-import"
         state_store.set_project_revision(project_id, revision=1)
+        default_import_orchestrator._state_store.set_project_revision(project_id, revision=1)
 
         dxf_content = b"  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF"
         record = default_import_orchestrator.stage_file(
@@ -324,6 +325,7 @@ class TestAgentRunImportPipeline:
 
         project_id = "proj-step-import"
         state_store.set_project_revision(project_id, revision=1)
+        default_import_orchestrator._state_store.set_project_revision(project_id, revision=1)
 
         dxf_content = b"  0\nSECTION\n  2\nENTITIES\n  0\nENDSEC\n  0\nEOF"
         record = default_import_orchestrator.stage_file(

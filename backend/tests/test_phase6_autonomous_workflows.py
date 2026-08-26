@@ -60,6 +60,30 @@ def bus(fresh_db: Database) -> CommandBus:
     return CommandBus(state_store=state_store)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase6_projects(bus: CommandBus) -> None:
+    for pid in [
+        "proj-scenario-a",
+        "proj-scenario-b",
+        "proj-scenario-c",
+        "proj-scenario-d",
+        "proj-scenario-e",
+        "proj-scenario-f",
+        "proj-scenario-f1",
+        "proj-scenario-f2",
+        "proj-import-test",
+        "proj-export-test",
+        "proj-hyd-bat",
+        "proj-invalid",
+        "proj-invalid-intent",
+        "proj-ws-plan",
+        "proj-ws-planning",
+        "proj-serde",
+        "proj-roundtrip",
+    ]:
+        bus.state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def store(fresh_db: Database) -> AgentRunStore:
     return AgentRunStore(fresh_db)
@@ -585,10 +609,31 @@ def test_invalid_workflow_intent_rejection(
 
 @pytest.mark.asyncio
 async def test_websocket_orchestration_service_autonomous_planning(
-    fresh_db: Database, engineer_principal: AuthenticatedPrincipal
+    monkeypatch: pytest.MonkeyPatch, fresh_db: Database, engineer_principal: AuthenticatedPrincipal
 ) -> None:
     """Verify AIOrchestrationService handles ai_plan_workflow message."""
+    import backend.core.workflow_planner as _planner_mod
+    from backend.core.agent_run_orchestrator import AgentRunOrchestrator
+    from backend.core.agent_run_store import AgentRunStore
+    from backend.core.command_bus import CommandBus
+    from backend.core.state_store import CommandStateStore
+    from backend.core.workflow_planner import AutonomousWorkflowPlanner
     from backend.routers.agent_ws import AIOrchestrationService
+
+    # Build fresh planner backed by fresh_db
+    fresh_ss = CommandStateStore(fresh_db)
+    fresh_bus = CommandBus(state_store=fresh_ss)
+    fresh_orch = AgentRunOrchestrator(
+        command_bus=fresh_bus,
+        run_store=AgentRunStore(fresh_db),
+        environment="development",
+    )
+    fresh_planner = AutonomousWorkflowPlanner(command_bus=fresh_bus, orchestrator=fresh_orch)
+
+    # Seed project revision so plan_workflow doesn't raise PROJECT_REVISION_NOT_FOUND
+    fresh_ss.set_project_revision("proj-ws-plan", 1)
+
+    monkeypatch.setattr(_planner_mod, "default_workflow_planner", fresh_planner)
 
     class MockWebSocket:
         def __init__(self):

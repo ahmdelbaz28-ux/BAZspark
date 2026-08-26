@@ -54,6 +54,21 @@ def state_store(fresh_db):
     return CommandStateStore(fresh_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2c_projects(state_store):
+    for pid in [
+        "proj_adv_hyd",
+        "proj_fm200",
+        "proj_commit_hyd",
+        "proj_sec",
+        "proj_occ_hyd",
+        "proj_idem_hyd",
+        "proj_idem_reuse",
+        "proj_multidomain",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def command_bus(state_store):
     """Provides a fresh CommandBus with default capability registry."""

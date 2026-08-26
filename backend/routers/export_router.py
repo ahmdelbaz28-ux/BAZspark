@@ -51,7 +51,7 @@ ExportExecuteRole = Annotated[None, Depends(require_permission(Permission.EXPORT
 
 
 class PlanExportRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     target_format: str = Field(
         ..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf"
     )
@@ -59,7 +59,7 @@ class PlanExportRequest(BaseModel):
 
 
 class ExecuteExportRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     expected_revision: int = Field(
         ..., description="Expected project revision for OCC verification"
     )
@@ -70,7 +70,7 @@ class ExecuteExportRequest(BaseModel):
 
 
 class CreateExportRunRequest(BaseModel):
-    project_id: str = Field("default_project", description="Target project ID")
+    project_id: str = Field("", description="Target project ID")
     target_format: str = Field(
         ..., description="Target format: dxf, revit, ifc, xlsx, csv, json, pdf"
     )

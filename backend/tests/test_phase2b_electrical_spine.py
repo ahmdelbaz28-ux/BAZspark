@@ -49,6 +49,30 @@ def state_store(fresh_db: Database) -> CommandStateStore:
     return CommandStateStore(fresh_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2b_projects(state_store: CommandStateStore) -> None:
+    for pid in [
+        "proj-contract-test",
+        "proj-det-auth",
+        "proj-determ",
+        "proj-determ-test",
+        "proj-sec",
+        "proj-occ-race",
+        "proj-occ-race-test",
+        "proj-idem",
+        "proj-idem-test",
+        "proj-idem-collision",
+        "proj-collision-test",
+        "proj-multi-domain",
+        "proj-tx-persist-test",
+        "proj-atomic-commit-test",
+        "proj-crypto-test",
+        "proj-alpha",
+        "proj-electrical-01",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def command_bus(state_store: CommandStateStore) -> CommandBus:
     """CommandBus initialized with test state store and default capability registry."""
@@ -625,8 +649,8 @@ class TestRevisionPollutionInvariant:
         assert rev_count_after == 0
         assert events_count_after == 0
         assert cmds_count_after == 0
-        assert command_bus.get_project_revision(project_id) == 1
-        assert command_bus.get_canonical_state(project_id) == {"devices": [], "revision": 1}
+        assert command_bus.get_project_revision(project_id) is None
+        assert command_bus.get_canonical_state(project_id) is None
 
     def test_committed_mutation_produces_exact_atomic_records(
         self,

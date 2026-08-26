@@ -1065,7 +1065,7 @@ class Database:
         row: Any,
         device_count: int = 0,
         connection_count: int = 0,
-        revision: int = 1,
+        revision: int | None = None,
     ) -> dict:
         row_id = row["id"]
         # Extract persistent canonical revision
@@ -1089,7 +1089,7 @@ class Database:
             "status": row["status"],
             "deviceCount": device_count,
             "connectionCount": connection_count,
-            "revision": int(raw_rev) if raw_rev is not None else 1,
+            "revision": int(raw_rev) if raw_rev is not None else None,
             "modelId": f"dt-{row_id}",
         }
 

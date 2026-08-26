@@ -55,6 +55,19 @@ def state_store(temp_db) -> CommandStateStore:
     return CommandStateStore(db=temp_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2e_projects(state_store: CommandStateStore) -> None:
+    for pid in [
+        "proj-rollback-01",
+        "proj-rollback-exc",
+        "proj-atomic-4domain",
+        "proj-occ-stale",
+        "proj-sec-anon",
+        "proj-sec-scope",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def populated_registry() -> CapabilityRegistry:
     """Fixture providing standard capabilities across all 4 domains."""

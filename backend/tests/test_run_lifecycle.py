@@ -48,11 +48,38 @@ def registry() -> CapabilityRegistry:
 
 @pytest.fixture
 def orchestrator(fresh_db: Database, registry: CapabilityRegistry) -> AgentRunOrchestrator:
-    bus = CommandBus(state_store=CommandStateStore(fresh_db))
+    state_store = CommandStateStore(fresh_db)
+    bus = CommandBus(state_store=state_store)
     store = AgentRunStore(fresh_db)
     return AgentRunOrchestrator(
         command_bus=bus, capability_registry=registry, run_store=store, environment="development"
     )
+
+
+@pytest.fixture(autouse=True)
+def _auto_seed_run_lifecycle_projects(fresh_db: Database) -> None:
+    store = CommandStateStore(fresh_db)
+    for pid in [
+        "proj-lc-auto",
+        "proj-lc-appr",
+        "proj-lc-rej",
+        "proj-lc-pause",
+        "proj-lc-cancel",
+        "proj-lc-cancel2",
+        "proj-lc-reload",
+        "proj-lc-authz",
+        "proj-lc-wp",
+        "proj-lc-wproj",
+        "proj-lc-wcap",
+        "proj-lc-stale",
+        "proj-lc-dup",
+        "proj-lc-retry",
+        "proj-lc-noretry",
+        "proj-lc-race1",
+        "proj-lc-race2",
+        "proj-lc-denied",
+    ]:
+        store.set_project_revision(pid, 1)
 
 
 @pytest.fixture

@@ -280,6 +280,23 @@ class TestPingProviderEndpoint:
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _seed_dynamic_routing_projects() -> None:
+    """Seed global state store with project revisions for dynamic routing tests."""
+    from backend.core.state_store import default_state_store
+    for pid in [
+        "proj-dyn-route-01",
+        "proj-dyn-route-02",
+        "proj-dyn-route-03",
+        "proj-room-01",
+        "proj-elec-01",
+        "proj-hyd-01",
+        "proj-bat-01",
+    ]:
+        if default_state_store.get_project_revision(pid) is None:
+            default_state_store.set_project_revision(pid, 1)
+
+
 class TestWebSocketDynamicRoutingAndTelemetry:
     """Test dynamic routing envelope extraction and live token telemetry."""
 

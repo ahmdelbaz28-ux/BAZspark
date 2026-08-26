@@ -294,12 +294,17 @@ class TestAgentRunExportPipeline:
         state_store: CommandStateStore,
         principal: AuthenticatedPrincipal,
     ):
+        from backend.core.export_orchestrator import default_export_orchestrator
+
         registry = CapabilityRegistry()
         command_bus = CommandBus(capability_registry=registry, state_store=state_store)
         run_store = AgentRunStore(test_db)
         orchestrator = AgentRunOrchestrator(command_bus, registry, run_store)
 
         rev = state_store.get_project_revision("proj-exp-01")
+        # Also seed the global export orchestrator's state store so capability handler resolves
+        default_export_orchestrator._state_store.set_project_revision("proj-exp-01", rev or 1)
+
         steps = [
             {
                 "step_id": "step-1-plan",
@@ -313,7 +318,7 @@ class TestAgentRunExportPipeline:
                 "description": "Execute DXF export",
                 "payload": {
                     "project_id": "proj-exp-01",
-                    "expected_revision": rev,
+                    "expected_revision": rev or 1,
                     "target_format": "dxf",
                 },
             },
@@ -328,3 +333,4 @@ class TestAgentRunExportPipeline:
 
         assert run.status == RunStatus.COMPLETED
         assert len(run.completed_steps) == 2
+

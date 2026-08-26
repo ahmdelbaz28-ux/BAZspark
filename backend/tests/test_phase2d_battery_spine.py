@@ -54,6 +54,26 @@ def state_store(temp_db):
     return CommandStateStore(db=temp_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase2d_projects(state_store):
+    for pid in [
+        "proj-adv-bat",
+        "proj-thermal",
+        "proj-chem",
+        "proj-bounds",
+        "proj-dry-bat",
+        "proj-com-bat",
+        "proj-sec-bat",
+        "proj-occ-bat",
+        "proj-idem-bat",
+        "proj-idem-reuse",
+        "proj-idem-clash",
+        "proj-md-bat",
+        "proj-multidomain-all",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def command_bus(state_store):
     return CommandBus(default_capability_registry, state_store)

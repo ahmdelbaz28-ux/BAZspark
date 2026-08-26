@@ -274,7 +274,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process an AI intent: resolve context, plan placement deterministically, and return dry-run preview."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         room_id = str(msg.get("roomId", "room-101"))
         room_bounds = msg.get(
             "roomBounds", {"width_m": 10.0, "length_m": 15.0, "ceiling_height_m": 3.0}
@@ -354,7 +354,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process an electrical calculation intent: resolve circuit context and return deterministic preview."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         circuit_id = str(msg.get("circuit_id", msg.get("circuitId", "nac-circuit-01")))
         current_a = float(msg.get("current_a") or msg.get("currentA") or 1.5)
         one_way_length_m = float(msg.get("one_way_length_m") or msg.get("oneWayLengthM") or 30.0)
@@ -437,7 +437,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process natural language / structured hydraulic intent into bounded preview proposal (Phase 2C)."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         current_rev = self.command_bus.get_project_revision(project_id)
         pipe_segment_id = str(msg.get("pipeSegmentId", "pipe-seg-01"))
         length_m = float(msg.get("lengthM", 15.0))
@@ -531,7 +531,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process an electrical battery calculation intent: resolve bounded context and return dry-run preview."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         panel_id = str(msg.get("panelId", "facp-01"))
         spec = msg.get("batterySpec", {})
         provider_config = msg.get("providerConfig") or msg.get("llm") or {}
@@ -637,7 +637,7 @@ class AIOrchestrationService:
         from backend.core.import_orchestrator import default_import_orchestrator
 
         file_id = str(msg.get("fileId", msg.get("file_id", "")))
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
 
         try:
             record = default_import_orchestrator.get_staged_file(file_id)
@@ -675,7 +675,7 @@ class AIOrchestrationService:
         """Process user approval: execute deterministic commit with OCC validation."""
         command_id = str(msg.get("commandId", f"cmd-{uuid.uuid4().hex[:12]}"))
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         expected_revision = int(msg.get("expectedRevision", 1))
         capability_id = str(msg.get("capabilityId", CAP_SPATIAL_PLACE_DEVICES))
         payload = msg.get("payload", {})
@@ -742,7 +742,7 @@ class AIOrchestrationService:
 
     async def handle_user_mutation(self, websocket: WebSocket, msg: dict[str, Any]) -> None:
         """Simulate/commit a direct manual user edit that increments canonical revision (N -> N+1)."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         current_rev = self.command_bus.get_project_revision(project_id)
         new_rev = current_rev + 1
         self.command_bus.set_project_revision(project_id, new_rev)
@@ -806,7 +806,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process natural language/composite spec intent into a multi-step DAG proposal."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         current_rev = int(msg.get("expectedRevision", 1))
 
         # 1. Bounded Context Resolution (<= 1500 tokens)
@@ -944,7 +944,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process user approval for composite workflow: atomically commit all steps at expectedRevision."""
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         expected_revision = int(msg.get("expectedRevision", 1))
         workflow_id = str(msg.get("workflowId", f"wf-{uuid.uuid4().hex[:12]}"))
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
@@ -1026,7 +1026,7 @@ class AIOrchestrationService:
         from backend.core.workflow_planner import AutonomousPlannerError, default_workflow_planner
 
         prompt = str(msg.get("prompt") or msg.get("message") or "").strip()
-        project_id = str(msg.get("projectId", "default_project"))
+        project_id = str(msg.get("projectId") or "")
         expected_rev = msg.get("expectedRevision")
         expected_revision = int(expected_rev) if expected_rev is not None else None
         composite_spec = msg.get("compositeSpec") or msg.get("spec") or {}
@@ -1206,7 +1206,7 @@ async def _handle_run_start(
     def _op():
         return default_agent_run_orchestrator.start_run(
             principal,
-            project_id=str(msg.get("projectId", "default_project")),
+            project_id=str(msg.get("projectId") or ""),
             steps=steps,
             approval_mode=str(msg.get("approvalMode", "AUTO")),
             conversation_id=str(msg.get("conversationId", "")),

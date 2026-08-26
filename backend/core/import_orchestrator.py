@@ -86,6 +86,11 @@ class ProjectRevisionChangedError(ImportErrorBase):
         super().__init__(message, error_code="PROJECT_REVISION_CHANGED")
 
 
+class ProjectNotFoundError(ImportErrorBase):
+    def __init__(self, message: str = "Target project not found or uninitialized.") -> None:
+        super().__init__(message, error_code="PROJECT_NOT_FOUND")
+
+
 class StagedFileNotFoundError(ImportErrorBase):
     def __init__(self, message: str = "Staged file not found or expired.") -> None:
         super().__init__(message, error_code="STAGED_FILE_NOT_FOUND")
@@ -486,6 +491,10 @@ class ImportOrchestrator:
         record = self.get_staged_file(file_id)
         inspection = self.inspect_file(file_id, principal)
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
 
         warnings: list[str] = list(inspection.get("warnings", []))
         estimated_rooms = int(inspection.get("rooms_count", 1))
@@ -581,6 +590,10 @@ class ImportOrchestrator:
         """
         record = self.get_staged_file(file_id)
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
 
         # OCC Guardrail: verify revision has not drifted
         if current_rev != expected_revision:

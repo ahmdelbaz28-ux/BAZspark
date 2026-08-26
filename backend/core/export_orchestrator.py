@@ -270,16 +270,19 @@ class ExportOrchestrator:
                 f"Supported formats: {', '.join(sorted(SUPPORTED_EXPORT_FORMATS))}."
             )
 
+        current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
+
         project = self._db.get_project(project_id)
         if not project:
-            # Fallback for default project in demo/testing
             project = {
                 "id": project_id,
                 "name": f"Project {project_id}",
                 "author": "FireAI Engineer",
             }
-
-        current_rev = self._state_store.get_project_revision(project_id)
         devices = self._db.get_all_devices_for_project(project_id) or []
         connections = self._db.get_all_connections_for_project(project_id) or []
         rooms = (
@@ -419,6 +422,10 @@ class ExportOrchestrator:
 
         # OCC Guard: verify revision has not drifted
         current_rev = self._state_store.get_project_revision(project_id)
+        if current_rev is None:
+            raise ProjectNotFoundError(
+                f"Project '{project_id}' is uninitialized or missing canonical revision."
+            )
         if current_rev != expected_revision:
             raise ProjectRevisionChangedError(
                 f"Project '{project_id}' revision changed from expected {expected_revision} to current {current_rev}. "

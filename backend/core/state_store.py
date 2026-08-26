@@ -44,9 +44,11 @@ class CommandStateStore:
 
     def _ph(self) -> str:
         return self._db._ph()
+    def get_project_revision(self, project_id: str) -> int | None:
+        """Fetch the current canonical revision for a project from persistent storage.
 
-    def get_project_revision(self, project_id: str) -> int:
-        """Fetch the current canonical revision for a project from persistent storage."""
+        Returns None if no persistent revision row exists for the project.
+        """
         ph = self._ph()
         with self._db._transaction() as cur:
             cur.execute(
@@ -55,10 +57,11 @@ class CommandStateStore:
             )
             row = cur.fetchone()
             if row is None:
-                return 1
+                return None
             if isinstance(row, dict):
-                return int(row.get("revision", 1))
-            return int(row[0])
+                val = row.get("revision")
+                return int(val) if val is not None else None
+            return int(row[0]) if row[0] is not None else None
 
     def set_project_revision(self, project_id: str, revision: int) -> None:
         """Upsert the canonical project revision in persistent storage."""
@@ -84,8 +87,11 @@ class CommandStateStore:
                     (revision, now_iso, project_id),
                 )
 
-    def get_canonical_state(self, project_id: str) -> dict[str, Any]:
-        """Load the authoritative canonical engineering state from persistent storage."""
+    def get_canonical_state(self, project_id: str) -> dict[str, Any] | None:
+        """Load the authoritative canonical engineering state from persistent storage.
+
+        Returns None if no persistent canonical state row exists for the project.
+        """
         ph = self._ph()
         with self._db._transaction() as cur:
             cur.execute(
@@ -94,13 +100,13 @@ class CommandStateStore:
             )
             row = cur.fetchone()
             if row is None:
-                return {"devices": [], "revision": 1}
+                return None
             state_raw = row["canonical_state"] if isinstance(row, dict) else row[0]
             try:
                 state = json.loads(state_raw) if isinstance(state_raw, str) else state_raw
                 return state if isinstance(state, dict) else {"devices": []}
             except Exception:
-                return {"devices": [], "revision": 1}
+                return {"devices": []}
 
     def save_canonical_state(self, project_id: str, state: dict[str, Any], revision: int) -> None:
         """Upsert canonical project state and revision atomically in persistent storage."""
@@ -290,118 +296,86 @@ class CommandStateStore:
             )
             row = cur.fetchone()
 
-            existing_devices = []
             if row is None:
-                if command.expectedRevision != 1:
-                    logger.warning(
-                        "OCC Conflict: Project '%s' does not exist but expectedRevision is %d (expected 1)",
-                        command.projectId,
-                        command.expectedRevision,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
-
-                new_devices = exec_result.get("devices", [])
-                new_circuits = {}
-                new_hydraulics = {}
-                new_calculations = {"battery": {}}
-                if "voltage_drop_v" in exec_result:
-                    cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
-                    new_circuits[cid] = exec_result
-                if "head_loss_m" in exec_result:
-                    pid = str(exec_result.get("pipe_segment_id", "pipe-seg-01"))
-                    new_hydraulics[pid] = exec_result
-                if "required_ah" in exec_result or "base_capacity_ah" in exec_result:
-                    pnl_id = str(exec_result.get("panel_id", "facp-01"))
-                    new_calculations["battery"][pnl_id] = exec_result
-
-                updated_state = {
-                    "devices": new_devices,
-                    "circuits": new_circuits,
-                    "hydraulics": new_hydraulics,
-                    "calculations": new_calculations,
-                    "last_mutation": command.capabilityId,
-                    "revision": new_revision,
-                }
-                cur.execute(
-                    f"""
-                    INSERT INTO project_revisions (project_id, revision, canonical_state, updated_at)
-                    VALUES ({ph}, {ph}, {ph}, {ph})
-                    """,
-                    (command.projectId, new_revision, json.dumps(updated_state), now_iso),
+                logger.warning(
+                    "OCC Conflict: Project '%s' has no persistent canonical revision",
+                    command.projectId,
                 )
-            else:
-                curr_rev = int(row["revision"] if isinstance(row, dict) else row[0])
-                if curr_rev != command.expectedRevision:
-                    logger.warning(
-                        "OCC Conflict: Project '%s' is at revision %d, command expected %d",
-                        command.projectId,
-                        curr_rev,
-                        command.expectedRevision,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
+                return False, "CONCURRENCY_CONFLICT"
 
-                raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
+            curr_rev = int(row["revision"] if isinstance(row, dict) else row[0])
+            if curr_rev != command.expectedRevision:
+                logger.warning(
+                    "OCC Conflict: Project '%s' is at revision %d, command expected %d",
+                    command.projectId,
+                    curr_rev,
+                    command.expectedRevision,
+                )
+                return False, "CONCURRENCY_CONFLICT"
+
+            raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
+            existing_devices = []
+            existing_circuits = {}
+            existing_hydraulics = {}
+            existing_calculations = {"battery": {}}
+            try:
+                loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
+                if isinstance(loaded, dict):
+                    existing_devices = loaded.get("devices", [])
+                    existing_circuits = loaded.get("circuits", {})
+                    existing_hydraulics = loaded.get("hydraulics", {})
+                    existing_calculations = loaded.get("calculations", {"battery": {}})
+                    if "battery" not in existing_calculations or not isinstance(
+                        existing_calculations["battery"], dict
+                    ):
+                        existing_calculations["battery"] = {}
+            except Exception:
+                existing_devices = []
                 existing_circuits = {}
                 existing_hydraulics = {}
                 existing_calculations = {"battery": {}}
-                try:
-                    loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
-                    if isinstance(loaded, dict):
-                        existing_devices = loaded.get("devices", [])
-                        existing_circuits = loaded.get("circuits", {})
-                        existing_hydraulics = loaded.get("hydraulics", {})
-                        existing_calculations = loaded.get("calculations", {"battery": {}})
-                        if "battery" not in existing_calculations or not isinstance(
-                            existing_calculations["battery"], dict
-                        ):
-                            existing_calculations["battery"] = {}
-                except Exception:
-                    existing_devices = []
-                    existing_circuits = {}
-                    existing_hydraulics = {}
-                    existing_calculations = {"battery": {}}
 
-                new_devices = exec_result.get("devices", [])
-                if "voltage_drop_v" in exec_result:
-                    cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
-                    existing_circuits[cid] = exec_result
-                if "head_loss_m" in exec_result:
-                    pid = str(exec_result.get("pipe_segment_id", "pipe-seg-01"))
-                    existing_hydraulics[pid] = exec_result
-                if "required_ah" in exec_result or "base_capacity_ah" in exec_result:
-                    pnl_id = str(exec_result.get("panel_id", "facp-01"))
-                    existing_calculations["battery"][pnl_id] = exec_result
+            new_devices = exec_result.get("devices", [])
+            if "voltage_drop_v" in exec_result:
+                cid = str(exec_result.get("circuit_id", "nac-circuit-01"))
+                existing_circuits[cid] = exec_result
+            if "head_loss_m" in exec_result:
+                pid = str(exec_result.get("pipe_segment_id", "pipe-seg-01"))
+                existing_hydraulics[pid] = exec_result
+            if "required_ah" in exec_result or "base_capacity_ah" in exec_result:
+                pnl_id = str(exec_result.get("panel_id", "facp-01"))
+                existing_calculations["battery"][pnl_id] = exec_result
 
-                updated_state = {
-                    "devices": new_devices if new_devices else existing_devices,
-                    "circuits": existing_circuits,
-                    "hydraulics": existing_hydraulics,
-                    "calculations": existing_calculations,
-                    "last_mutation": command.capabilityId,
-                    "revision": new_revision,
-                }
+            updated_state = {
+                "devices": new_devices if new_devices else existing_devices,
+                "circuits": existing_circuits,
+                "hydraulics": existing_hydraulics,
+                "calculations": existing_calculations,
+                "last_mutation": command.capabilityId,
+                "revision": new_revision,
+            }
 
-                # Atomic OCC update
-                cur.execute(
-                    f"""
-                    UPDATE project_revisions
-                    SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
-                    WHERE project_id = {ph} AND revision = {ph}
-                    """,
-                    (
-                        new_revision,
-                        json.dumps(updated_state),
-                        now_iso,
-                        command.projectId,
-                        command.expectedRevision,
-                    ),
+            # Atomic OCC update
+            cur.execute(
+                f"""
+                UPDATE project_revisions
+                SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
+                WHERE project_id = {ph} AND revision = {ph}
+                """,
+                (
+                    new_revision,
+                    json.dumps(updated_state),
+                    now_iso,
+                    command.projectId,
+                    command.expectedRevision,
+                ),
+            )
+            if cur.rowcount == 0:
+                logger.warning(
+                    "OCC Conflict: Race condition detected on project '%s' update",
+                    command.projectId,
                 )
-                if cur.rowcount == 0:
-                    logger.warning(
-                        "OCC Conflict: Race condition detected on project '%s' update",
-                        command.projectId,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
+                return False, "CONCURRENCY_CONFLICT"
 
             # 2. Persist Command Execution (enforcing unique commandId and payload_hash across all workers)
             cur.execute(
@@ -564,47 +538,44 @@ class CommandStateStore:
             )
             row = cur.fetchone()
 
+            if row is None:
+                logger.warning(
+                    "OCC Conflict: Project '%s' has no persistent canonical revision",
+                    project_id,
+                )
+                return False, "CONCURRENCY_CONFLICT"
+
+            curr_rev = int(row["revision"] if isinstance(row, dict) else row[0])
+            if curr_rev != expected_revision:
+                logger.warning(
+                    "OCC Conflict: Project '%s' is at revision %d, workflow expected %d",
+                    project_id,
+                    curr_rev,
+                    expected_revision,
+                )
+                return False, "CONCURRENCY_CONFLICT"
+
+            raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
             existing_devices: list[dict[str, Any]] = []
             existing_circuits: dict[str, Any] = {}
             existing_hydraulics: dict[str, Any] = {}
             existing_calculations: dict[str, Any] = {"battery": {}}
-
-            if row is None:
-                if expected_revision != 1:
-                    logger.warning(
-                        "OCC Conflict: Project '%s' does not exist but expectedRevision is %d (expected 1)",
-                        project_id,
-                        expected_revision,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
-            else:
-                curr_rev = int(row["revision"] if isinstance(row, dict) else row[0])
-                if curr_rev != expected_revision:
-                    logger.warning(
-                        "OCC Conflict: Project '%s' is at revision %d, workflow expected %d",
-                        project_id,
-                        curr_rev,
-                        expected_revision,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
-
-                raw_state = row["canonical_state"] if isinstance(row, dict) else row[1]
-                try:
-                    loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
-                    if isinstance(loaded, dict):
-                        existing_devices = loaded.get("devices", [])
-                        existing_circuits = loaded.get("circuits", {})
-                        existing_hydraulics = loaded.get("hydraulics", {})
-                        existing_calculations = loaded.get("calculations", {"battery": {}})
-                        if "battery" not in existing_calculations or not isinstance(
-                            existing_calculations["battery"], dict
-                        ):
-                            existing_calculations["battery"] = {}
-                except Exception:
-                    existing_devices = []
-                    existing_circuits = {}
-                    existing_hydraulics = {}
-                    existing_calculations = {"battery": {}}
+            try:
+                loaded = json.loads(raw_state) if isinstance(raw_state, str) else raw_state
+                if isinstance(loaded, dict):
+                    existing_devices = loaded.get("devices", [])
+                    existing_circuits = loaded.get("circuits", {})
+                    existing_hydraulics = loaded.get("hydraulics", {})
+                    existing_calculations = loaded.get("calculations", {"battery": {}})
+                    if "battery" not in existing_calculations or not isinstance(
+                        existing_calculations["battery"], dict
+                    ):
+                        existing_calculations["battery"] = {}
+            except Exception:
+                existing_devices = []
+                existing_circuits = {}
+                existing_hydraulics = {}
+                existing_calculations = {"battery": {}}
 
             # Sequentially apply all step execution results into canonical state
             for cmd, res in zip(commands, exec_results, strict=False):
@@ -629,35 +600,26 @@ class CommandStateStore:
                 "revision": new_revision,
             }
 
-            if row is None:
-                cur.execute(
-                    f"""
-                    INSERT INTO project_revisions (project_id, revision, canonical_state, updated_at)
-                    VALUES ({ph}, {ph}, {ph}, {ph})
-                    """,
-                    (project_id, new_revision, json.dumps(updated_state), now_iso),
+            cur.execute(
+                f"""
+                UPDATE project_revisions
+                SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
+                WHERE project_id = {ph} AND revision = {ph}
+                """,
+                (
+                    new_revision,
+                    json.dumps(updated_state),
+                    now_iso,
+                    project_id,
+                    expected_revision,
+                ),
+            )
+            if cur.rowcount == 0:
+                logger.warning(
+                    "OCC Conflict: Race condition detected on project '%s' composite update",
+                    project_id,
                 )
-            else:
-                cur.execute(
-                    f"""
-                    UPDATE project_revisions
-                    SET revision = {ph}, canonical_state = {ph}, updated_at = {ph}
-                    WHERE project_id = {ph} AND revision = {ph}
-                    """,
-                    (
-                        new_revision,
-                        json.dumps(updated_state),
-                        now_iso,
-                        project_id,
-                        expected_revision,
-                    ),
-                )
-                if cur.rowcount == 0:
-                    logger.warning(
-                        "OCC Conflict: Race condition detected on project '%s' composite update",
-                        project_id,
-                    )
-                    return False, "CONCURRENCY_CONFLICT"
+                return False, "CONCURRENCY_CONFLICT"
 
             # 2. Persist Command Executions for each step in DAG
             for cmd, res in zip(commands, exec_results, strict=False):

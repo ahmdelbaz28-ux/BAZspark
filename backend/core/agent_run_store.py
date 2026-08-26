@@ -752,7 +752,7 @@ class AgentRunStore:
                     run_id,
                     step_id,
                     project_id,
-                    int(project_revision),
+                    int(project_revision) if project_revision is not None else 1,
                     capability_id,
                     principal_id,
                     ApprovalMode(approval_mode).value,

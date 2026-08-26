@@ -100,8 +100,8 @@ class CommandResult:
     success: bool
     commandId: str  # NOSONAR — frozen API contract (camelCase JSON wire format)
     projectId: str  # NOSONAR
-    revision: int
-    isDryRun: bool  # NOSONAR
+    revision: int | None = None
+    isDryRun: bool = False  # NOSONAR
     resultData: dict[str, Any] = field(default_factory=dict)  # NOSONAR
     event: DomainEvent | None = None
     errorCode: str | None = None  # NOSONAR
@@ -144,7 +144,7 @@ class CommandBus:
         self.registry = capability_registry or default_capability_registry
         self.state_store = state_store or default_state_store
 
-    def get_project_revision(self, project_id: str) -> int:
+    def get_project_revision(self, project_id: str) -> int | None:
         """Get canonical revision of a project from persistent storage."""
         return self.state_store.get_project_revision(project_id)
 
@@ -152,7 +152,7 @@ class CommandBus:
         """Update canonical project revision in persistent storage."""
         self.state_store.set_project_revision(project_id, revision)
 
-    def get_canonical_state(self, project_id: str) -> dict[str, Any]:
+    def get_canonical_state(self, project_id: str) -> dict[str, Any] | None:
         """Retrieve canonical engineering state for project from persistent storage."""
         return self.state_store.get_canonical_state(project_id)
 
@@ -248,19 +248,30 @@ class CommandBus:
 
         # 6. Optimistic Concurrency Control (OCC) Pre-Check
         current_rev = self.get_project_revision(command.projectId)
-        if not command.isDryRun and command.expectedRevision != current_rev:
-            return CommandResult(
-                success=False,
-                commandId=command.commandId,
-                projectId=command.projectId,
-                revision=current_rev,
-                isDryRun=command.isDryRun,
-                errorCode="CONCURRENCY_CONFLICT",
-                errorMessage=(
-                    f"Concurrency Conflict: Command expected revision {command.expectedRevision}, "
-                    f"but project canonical revision is {current_rev}. The project was modified concurrently."
-                ),
-            )
+        if not command.isDryRun:
+            if current_rev is None:
+                return CommandResult(
+                    success=False,
+                    commandId=command.commandId,
+                    projectId=command.projectId,
+                    revision=None,
+                    isDryRun=False,
+                    errorCode="PROJECT_REVISION_NOT_FOUND",
+                    errorMessage=f"Project '{command.projectId}' is uninitialized or missing canonical revision.",
+                )
+            if command.expectedRevision != current_rev:
+                return CommandResult(
+                    success=False,
+                    commandId=command.commandId,
+                    projectId=command.projectId,
+                    revision=current_rev,
+                    isDryRun=False,
+                    errorCode="CONCURRENCY_CONFLICT",
+                    errorMessage=(
+                        f"Concurrency Conflict: Command expected revision {command.expectedRevision}, "
+                        f"but project canonical revision is {current_rev}. The project was modified concurrently."
+                    ),
+                )
 
         # 7. Deterministic Execution
         if not cap.handler:
@@ -294,7 +305,7 @@ class CommandBus:
                 success=True,
                 commandId=command.commandId,
                 projectId=command.projectId,
-                revision=current_rev,
+                revision=current_rev if current_rev is not None else command.expectedRevision,
                 isDryRun=True,
                 resultData=exec_result,
             )

@@ -69,6 +69,14 @@ def state_store(temp_db) -> CommandStateStore:
     return CommandStateStore(db=temp_db)
 
 
+@pytest.fixture(autouse=True)
+def _auto_seed_phase4_projects(state_store: CommandStateStore) -> None:
+    for pid in [
+        "proj-stress-hydraulic-01",
+    ]:
+        state_store.set_project_revision(pid, 1)
+
+
 @pytest.fixture
 def command_bus(state_store) -> CommandBus:
     return CommandBus(default_capability_registry, state_store)
@@ -387,6 +395,7 @@ class TestTier2DistributedOCCAndConcurrencyHammer:
         - Assert immediate rejection with IDEMPOTENCY_KEY_REUSE_CONFLICT.
         """
         project_id = f"proj-idemp-{uuid.uuid4().hex[:8]}"
+        command_bus.state_store.set_project_revision(project_id, 1)
         command_id = f"cmd-fixed-idemp-{uuid.uuid4().hex[:8]}"
 
         cmd1 = DomainCommand(
