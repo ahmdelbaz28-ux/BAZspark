@@ -221,15 +221,16 @@ class ExportOrchestrator:
     def artifact_dir(self) -> Path:
         return self._artifact_dir
 
-    def _resolve_contained_artifact_path(self, artifact_id: str, filename: str) -> Path:
-        """Resolve and strictly verify that artifact path remains within self._artifact_dir."""
+    def _resolve_contained_artifact_path(self, artifact_id: str, target_format: str) -> Path:
+        """Resolve and strictly verify that artifact path is server-generated and remains within self._artifact_dir."""
         clean_root = self._artifact_dir.resolve()
         safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "", str(artifact_id))
-        safe_name = os.path.basename(str(filename).replace("\\", "/"))
-        safe_name = re.sub(r"\.\.+", "", safe_name)
-        safe_name = re.sub(r"[^a-zA-Z0-9_\-.]", "_", safe_name)
+        ext = FORMAT_EXTENSIONS.get(target_format.lower(), f".{target_format.lower()}")
+        if not ext.startswith("."):
+            ext = f".{ext}"
+        ext = re.sub(r"[^a-zA-Z0-9_\-.]", "", ext)
 
-        target = (clean_root / f"{safe_id}_{safe_name}").resolve()
+        target = (clean_root / f"{safe_id}{ext}").resolve()
 
         # Strict containment verification preventing path injection / directory traversal
         if clean_root not in target.parents and target != clean_root:
@@ -427,9 +428,9 @@ class ExportOrchestrator:
         mapping_report = self._analyze_mapping(norm_fmt, devices, connections, rooms, opts)
 
         # Prepare target path
-        artifact_id = f"art-{uuid.uuid4()}"
+        artifact_id = f"art-{uuid.uuid4().hex}"
         filename = sanitize_export_filename(project.get("name", "project"), norm_fmt)
-        artifact_file = self._resolve_contained_artifact_path(artifact_id, filename)
+        artifact_file = self._resolve_contained_artifact_path(artifact_id, norm_fmt)
 
         # Generate target format content deterministically
         try:

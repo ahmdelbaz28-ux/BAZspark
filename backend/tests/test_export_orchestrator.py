@@ -270,7 +270,7 @@ class TestExportExecutionLifecycle:
     ):
         # Attempt direct path resolution
         resolved = export_orchestrator._resolve_contained_artifact_path(
-            "art-123", "../../../../../secret.txt"
+            "art-123", "pdf"
         )
         assert export_orchestrator.artifact_dir.resolve() in resolved.parents
 
