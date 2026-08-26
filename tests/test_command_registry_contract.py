@@ -104,3 +104,46 @@ def test_native_passthrough_commands_are_flagged():
         entry = command_registry.get_command_entry(service, cmd)
         assert entry is not None
         assert entry["risk"] == "native_passthrough"
+
+
+# ── Registry mechanics (cache / override / unknown-command paths) ───────────
+
+
+def test_default_path_honors_registry_path_override(monkeypatch, tmp_path):
+    override = tmp_path / "reg.json"
+    monkeypatch.setattr(command_registry, "_REGISTRY_PATH", str(override))
+    assert command_registry._default_path() == override
+
+
+def test_load_registry_second_call_returns_cached_object():
+    first = command_registry.load_registry()
+    second = command_registry.load_registry()
+    assert second is first
+
+
+def test_force_reload_returns_fresh_mapping():
+    cached = command_registry.load_registry()
+    reloaded = command_registry.load_registry(force_reload=True)
+    assert reloaded == cached
+    assert reloaded is not cached
+
+
+def test_reset_cache_clears_cached_registry():
+    command_registry.load_registry()
+    command_registry.reset_cache()
+    assert command_registry._cache is None
+
+
+def test_validate_params_unknown_command_reports_unknown():
+    err = command_registry.validate_params("revit", "definitely_not_a_command", {})
+    assert err is not None
+    assert "Unknown revit command" in err
+
+
+def test_normalize_params_swallows_normalizer_crash(monkeypatch):
+    def _explode(params):
+        raise ValueError("bad shape")
+
+    monkeypatch.setitem(command_registry._REVIT_NORMALIZERS, "create_wall", _explode)
+    out = command_registry.normalize_params("revit", "create_wall", {"x": 1})
+    assert out == {"x": 1}

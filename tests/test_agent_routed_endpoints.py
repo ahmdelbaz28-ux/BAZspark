@@ -221,3 +221,159 @@ def test_facp_cluster_status_honest_501(client):
     assert res.status_code == 501
     detail = res.json()["detail"]
     assert detail["demo"] is True
+
+
+# ── New-code coverage: screenshot attach + error branches (Sonar gate) ──────
+
+
+CREATE_CASES = [
+    (
+        "/api/revit/elements/create/wall",
+        {"start_point": [0, 0, 0], "end_point": [1, 0, 0]},
+    ),
+    (
+        "/api/revit/elements/create/floor",
+        {"boundary_points": [[0, 0, 0], [5, 0, 0], [5, 5, 0], [0, 5, 0]]},
+    ),
+    ("/api/revit/elements/create/door", {"host_wall_id": "9", "location_point": [1, 2, 3]}),
+    ("/api/revit/elements/create/window", {"host_wall_id": "9", "location_point": [1, 2, 3]}),
+    ("/api/revit/elements/create/column", {"location_point": [0, 0, 0]}),
+    ("/api/revit/elements/create/beam", {"start_point": [0, 0, 0], "end_point": [4, 0, 0]}),
+    (
+        "/api/revit/elements/create/family",
+        {"family_name": "F", "category": "Doors", "location_point": [0, 0, 0]},
+    ),
+]
+
+
+@pytest.mark.parametrize(("path", "body"), CREATE_CASES)
+def test_revit_creates_attach_screenshot_via_agent(client, path, body):
+    """include_screenshot=True must flow the captured base64 into the response."""
+    payload = dict(body)
+    payload["include_screenshot"] = True
+    res = client.post(path, json=payload)
+    assert res.status_code == 200, res.text
+    assert res.json()["screenshot_base64"] == "QUJD"
+
+
+def test_revit_capture_failure_is_swallowed(client, monkeypatch):
+    """A failing capture_screen during create degrades to no screenshot."""
+    from fastapi import HTTPException
+
+    real_fake = client.app  # noqa: F841 — readability; fixture app unused directly
+
+    async def failing_capture(agent_type: str, action: str, args: dict, *_a, **_k):
+        if action == "capture_screen":
+            raise HTTPException(status_code=503, detail="capture unavailable")
+        AGENT_CALLS.append((agent_type, action, args))
+        return {"success": True, "data": {"id": 777}}
+
+    monkeypatch.setattr(sys.modules["backend.routers.revit"], "send_agent_command", failing_capture)
+    res = client.post(
+        "/api/revit/elements/create/wall",
+        json={"start_point": [0, 0, 0], "end_point": [1, 0, 0], "include_screenshot": True},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["screenshot_base64"] is None
+
+
+def test_revit_execute_reports_agent_error_message(client):
+    """An error envelope from the agent surfaces as success=False + message."""
+
+    async def erroring_send(agent_type: str, action: str, args: dict, *_a, **_k):
+        AGENT_CALLS.append((agent_type, action, args))
+        return {"success": False, "error": "boom inside add-in"}
+
+    original = sys.modules["backend.routers.revit"].send_agent_command
+    sys.modules["backend.routers.revit"].send_agent_command = erroring_send
+    try:
+        res = client.post("/api/revit/execute", json={"command": "create wall"})
+    finally:
+        sys.modules["backend.routers.revit"].send_agent_command = original
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["success"] is False
+    assert "boom inside add-in" in str(body.get("error") or body.get("message"))
+
+
+def test_autocad_malformed_agent_envelope_degrades_gracefully(client, monkeypatch):
+    async def junk_send(agent_type: str, action: str, args: dict, *_a, **_k):
+        AGENT_CALLS.append((agent_type, action, args))
+        return "not-a-dict"
+
+    monkeypatch.setattr(sys.modules["backend.routers.autocad"], "send_agent_command", junk_send)
+    res = client.post(
+        "/api/autocad/draw_line",
+        json={"start_point": [0, 0], "end_point": [1, 1]},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["success"] is False
+
+
+def test_autocad_delete_agent_failure_maps_to_400(client, monkeypatch):
+    async def fail_delete(agent_type: str, action: str, args: dict, *_a, **_k):
+        AGENT_CALLS.append((agent_type, action, args))
+        if action == "delete_entity":
+            return {"success": False, "error": "handle in use"}
+        return {"success": True, "data": {}}
+
+    monkeypatch.setattr(sys.modules["backend.routers.autocad"], "send_agent_command", fail_delete)
+    res = client.delete("/api/autocad/entity/1A2F")
+    assert res.status_code == 400
+    assert "in use" in res.json()["detail"]
+
+
+def test_autocad_put_handle_mismatch_rejected(client):
+    res = client.put(
+        "/api/autocad/entity/AAAA",
+        json={"handle": "BBBB", "properties": {"color": 3}},
+    )
+    assert res.status_code == 400
+    assert "must match" in res.json()["detail"]
+
+
+def test_autocad_insert_block_routes_via_agent(client):
+    res = client.post(
+        "/api/autocad/insert_block",
+        json={"block_name": "WBLOCK", "insertion_point": [0, 0]},
+    )
+    assert res.status_code == 200, res.text
+    assert _called("autocad", "insert_block")
+
+
+def test_autocad_insert_block_requires_agent(client, monkeypatch):
+    autocad_mod = sys.modules["backend.routers.autocad"]
+    monkeypatch.setattr(autocad_mod, "has_active_agent", lambda *a, **k: False)
+    res = client.post(
+        "/api/autocad/insert_block",
+        json={"block_name": "WBLOCK", "insertion_point": [0, 0]},
+    )
+    assert res.status_code == 503
+
+
+def test_autocad_remote_status_reports_disconnected(client, monkeypatch):
+    autocad_mod = sys.modules["backend.routers.autocad"]
+    monkeypatch.setattr(autocad_mod, "has_active_agent", lambda *a, **k: False)
+    res = client.get("/api/autocad/remote/status")
+    assert res.status_code == 200, res.text
+    assert res.json()["agent_connected"] is False
+
+
+def test_autocad_remote_status_maps_remote_error_to_502(client, monkeypatch):
+    async def boom(agent_type: str, action: str, args: dict, *_a, **_k):
+        AGENT_CALLS.append((agent_type, action, args))
+        if action == "get_info":
+            raise RuntimeError("pipe collapsed")
+        return {"success": True, "data": {}}
+
+    monkeypatch.setattr(sys.modules["backend.routers.autocad"], "send_agent_command", boom)
+    res = client.get("/api/autocad/remote/status")
+    assert res.status_code == 502
+
+
+def test_autocad_capture_requires_connected_agent(client, monkeypatch):
+    autocad_mod = sys.modules["backend.routers.autocad"]
+    monkeypatch.setattr(autocad_mod, "has_active_agent", lambda *a, **k: False)
+    res = client.get("/api/autocad/capture_screen")
+    assert res.status_code == 503
+    assert "desktop agent" in res.json()["detail"]

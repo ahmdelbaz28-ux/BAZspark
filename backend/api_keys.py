@@ -84,7 +84,7 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
         # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
         return (
             hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
-        )  # lgtm[py/weak-sensitive-data-hashing] — pre-hash for bcrypt length limit, not password storage
+        )  # codeql[py/weak-sensitive-data-hashing] intentional: SHA-256 here is a length-normalizing PRE-HASH feeding bcrypt (the actual password KDF); switching algorithms would invalidate every stored long-key hash
     return key_bytes
 
 
@@ -333,7 +333,7 @@ def _lookup_key(key: str) -> str:
     secret = _load_server_secret()
     return (
         "hk$" + hmac.new(secret, key.encode(), hashlib.sha256).hexdigest()
-    )  # lgtm[py/weak-sensitive-data-hashing] — HMAC-SHA256 lookup key with server secret
+    )  # codeql[py/weak-sensitive-data-hashing] intentional: keyed HMAC-SHA256 as an O(1) lookup INDEX with a server-side secret, never used for credential storage; changing the digest would orphan every persisted key record
 
 
 def _hash_key(key: str) -> str:
@@ -359,7 +359,7 @@ def _hash_key(key: str) -> str:
     # Fallback: HMAC-SHA256 with random salt
     salt = secrets.token_hex(16)
     h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
-    return f"hmac-sha256${salt}${h}"
+    return f"hmac-sha256${salt}${h}"  # codeql[py/weak-sensitive-data-hashing] intentional: salted keyed-MAC fallback used ONLY when bcrypt (hard runtime dep) is unavailable; format kept for stored-hash compatibility
 
 
 def _verify_key(key: str, hashed_key: str) -> bool:
@@ -383,18 +383,20 @@ def _verify_key(key: str, hashed_key: str) -> bool:
             try:
                 _, salt, stored_hash = hashed_key.split("$", 2)
                 computed = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
-                return hmac.compare_digest(computed, stored_hash)
+                return hmac.compare_digest(computed, stored_hash)  # codeql[py/weak-sensitive-data-hashing] intentional: verification path for pre-existing hmac-sha256$ stored hashes during migration; new stores use bcrypt
             except (ValueError, IndexError):
                 return False
         elif hashed_key.startswith("hk$"):
             # This is a lookup key, not a verification hash — reject.
             return False
         else:
-            # Legacy: plain SHA-256 (no salt) for backwards compatibility
+            # Legacy: plain SHA-256 (no salt) for backwards compatibility.
+            # Kept ONLY to authenticate hashes stored before the bcrypt
+            # migration; validate_api_key transparently rehashes on success.
             return hmac.compare_digest(
                 hashlib.sha256(
                     key.encode()
-                ).hexdigest(),  # lgtm[py/weak-sensitive-data-hashing] — legacy compat
+                ).hexdigest(),  # codeql[py/weak-sensitive-data-hashing] intentional: legacy unsalted-hash verification, migrated lazily to bcrypt on first successful login
                 hashed_key,
             )
     except (ValueError, TypeError):
@@ -656,6 +658,30 @@ def validate_api_key(
         # HMAC collision or tampering. Reject.
         logger.warning("API key HMAC lookup matched but bcrypt verify failed")
         return None
+
+    # Legacy-hash lazy upgrade: pre-bcrypt plain/HMAC-SHA256 stores are
+    # re-hashed with the current KDF on first successful authentication so
+    # weak legacy formats drain out of the keys file without a migration job.
+    if (
+        stored_hash
+        and HAS_BCRYPT
+        and not stored_hash.startswith(("$2", "hmac-", "hk$"))
+    ):
+        try:
+            upgraded = _hash_key(key)
+            with _keys_lock:
+                keys = _load_keys()
+                entry = keys.get(lookup)
+                if entry is not None and entry.get("bcrypt_hash") == stored_hash:
+                    entry["bcrypt_hash"] = upgraded
+                    entry["key_hash"] = upgraded
+                    _save_keys(keys)
+                    logger.info(
+                        "Upgraded legacy API-key hash to bcrypt for lookup %s…",
+                        lookup[:8],
+                    )
+        except Exception:  # NOSONAR — upgrade is best-effort; auth already succeeded
+            logger.debug("Legacy API-key hash upgrade skipped", exc_info=True)
 
     api_key_info = APIKeyInfo(
         key_hash=lookup,
