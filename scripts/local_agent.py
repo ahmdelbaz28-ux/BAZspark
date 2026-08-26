@@ -27,8 +27,24 @@ import logging
 import os
 import sys
 import tempfile
+import threading
 import time
 from typing import Any
+
+# ── Command registry (A2: single source of truth) ────────────────────────────
+_REPO_ROOT_EARLY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT_EARLY not in sys.path:
+    sys.path.insert(0, _REPO_ROOT_EARLY)
+
+try:
+    from core import command_registry as _registry
+
+    _registry_available = True
+except Exception as e:  # noqa: BLE001
+    logging.getLogger("bazspark-agent").warning(
+        "core.command_registry not importable (%s) — pipe routing disabled", e
+    )
+    _registry_available = False
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -80,6 +96,97 @@ except Exception as e:  # noqa: BLE001
     RevitService = None  # type: ignore
 
 
+# ── Shared Named Pipe transport with enforced timeout (A5) ───────────────────
+
+_READ_BUFFER_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _send_pipe_command(
+    pipe_name: str, payload: dict, timeout_sec: float
+) -> dict:
+    """Send one JSON command over a named pipe and read the response.
+
+    A5 FIX: ``win32file.ReadFile`` blocks forever when the add-in never
+    answers (e.g. a modal dialog is open in the CAD app). The declared
+    TIMEOUT_SEC was never enforced. We now run the blocking read on a worker
+    thread with ``join(timeout)``; on expiry we close the handle — which
+    unblocks the pending ReadFile — and return a structured PIPE_TIMEOUT
+    error instead of hanging the whole agent.
+    """
+    import pywintypes  # type: ignore
+    import win32file  # type: ignore
+    import win32pipe  # type: ignore
+
+    h = None
+    try:
+        # Retry briefly when the pipe is momentarily unavailable: the add-in
+        # recreates its server instance after every message (LocalAgentServer.cs
+        # runs create→serve→close in a loop), so back-to-back commands can hit
+        # ERROR_PIPE_BUSY (231) or a short ERROR_FILE_NOT_FOUND (2) window.
+        last_error: Exception | None = None
+        for attempt in range(8):
+            try:
+                h = win32file.CreateFile(
+                    pipe_name,
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0,
+                    None,
+                    win32file.OPEN_EXISTING,
+                    0,
+                    None,
+                )
+                break
+            except pywintypes.error as e:
+                if e.winerror in (2, 231):
+                    last_error = e
+                    time.sleep(0.05 * (attempt + 1))
+                    continue
+                raise
+        else:
+            raise RuntimeError(f"Pipe {pipe_name!r} stayed unreachable: {last_error}")
+
+        win32pipe.SetNamedPipeHandleState(h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+        win32file.WriteFile(h, (json.dumps(payload) + "\n").encode("utf-8"))
+
+        result: dict[str, Any] = {}
+
+        def _read() -> None:
+            try:
+                _, data = win32file.ReadFile(h, _READ_BUFFER_BYTES)
+                result["data"] = data
+            except Exception as exc:  # noqa: BLE001 — handle closed on timeout
+                result["read_error"] = exc
+
+        reader = threading.Thread(target=_read, daemon=True)
+        reader.start()
+        reader.join(timeout_sec)
+
+        if reader.is_alive():
+            # Unblock the worker's pending ReadFile by destroying the handle.
+            try:
+                win32file.CloseHandle(h)
+            except Exception:  # noqa: BLE001
+                pass
+            return {
+                "success": False,
+                "error": "PIPE_TIMEOUT",
+                "detail": (
+                    f"Named pipe {pipe_name!r} did not answer within "
+                    f"{timeout_sec:.0f}s. A modal dialog may be open in the CAD app."
+                ),
+            }
+
+        if "data" not in result:
+            raise RuntimeError(f"Pipe read failed: {result.get('read_error')}")
+        return json.loads(result["data"].decode("utf-8").strip())
+    finally:
+        if h is not None:
+            try:
+                win32file.CloseHandle(h)
+            except Exception:  # noqa: BLE001
+                pass
+
+
 # ── Named Pipe dispatcher for C# Revit Add-in (thread-safe, no pythonnet calls) ──
 class RevitNamedPipeDispatcher:
     """
@@ -128,28 +235,15 @@ class RevitNamedPipeDispatcher:
 
     def send(self, action: str, params: dict[str, Any]) -> dict[str, Any]:
         """Send a command and return the response dict."""
-        import pywintypes  # type: ignore
-        import win32file  # type: ignore
-        import win32pipe  # type: ignore
-
-        payload = json.dumps({"command_id": str(time.time()), "action": action, "params": params})
         try:
-            h = win32file.CreateFile(
-                self.PIPE_NAME,
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0,
-                None,
-                win32file.OPEN_EXISTING,
-                0,
-                None,
-            )
-            win32pipe.SetNamedPipeHandleState(h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
-            # Write request
-            win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
-            # Read response (up to 10 MB)
-            _, data = win32file.ReadFile(h, 10 * 1024 * 1024)
-            win32file.CloseHandle(h)
-            return json.loads(data.decode("utf-8").strip())
+            import pywintypes  # type: ignore  # noqa: F401 — availability probe
+        except ImportError as exc:
+            self._available = False
+            return {"error": f"pywin32 not available: {exc}"}
+
+        payload = {"command_id": str(time.time()), "action": action, "params": params}
+        try:
+            return _send_pipe_command(self.PIPE_NAME, payload, self.TIMEOUT_SEC)
         except pywintypes.error as e:
             if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
                 self._available = False
@@ -226,9 +320,7 @@ class AutoCADNamedPipeDispatcher:
             }
 
         try:
-            import pywintypes  # type: ignore
-            import win32file  # type: ignore
-            import win32pipe  # type: ignore
+            import pywintypes  # type: ignore  # noqa: F401 — availability probe
         except ImportError as exc:
             self._available = False
             return {
@@ -240,24 +332,9 @@ class AutoCADNamedPipeDispatcher:
                 ),
             }
 
-        payload = json.dumps({"command_id": str(time.time()), "action": action, "params": params})
+        payload = {"command_id": str(time.time()), "action": action, "params": params}
         try:
-            h = win32file.CreateFile(
-                self.PIPE_NAME,
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0,
-                None,
-                win32file.OPEN_EXISTING,
-                0,
-                None,
-            )
-            win32pipe.SetNamedPipeHandleState(h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
-            # Write request
-            win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
-            # Read response (up to 10 MB)
-            _, data = win32file.ReadFile(h, 10 * 1024 * 1024)
-            win32file.CloseHandle(h)
-            return json.loads(data.decode("utf-8").strip())
+            return _send_pipe_command(self.PIPE_NAME, payload, self.TIMEOUT_SEC)
         except pywintypes.error as e:
             if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
                 self._available = False
@@ -482,6 +559,34 @@ def _handle_autocad_modify_entity(svc, args):
     return {"success": True, "message": "Entity modified successfully"}
 
 
+def _registry_entry_or_none(service: str, action: str):
+    """Resolve action against the unified registry (None when unavailable/disabled)."""
+    if not _registry_available:
+        return None
+    return _registry.get_command_entry(service, action)
+
+
+def _pipe_routed(service: str, entry) -> bool:
+    """True when this command is supported by the C# add-in named pipe."""
+    return "pipe" in (entry.get("channel") or [])
+
+
+def _dispatch_via_pipe(
+    service: str, dispatcher, canonical_action: str, entry, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Send one command over the pipe using addin action name + normalized params."""
+    assert _registry_available  # noqa: S101 — callers guarantee availability
+    addin_action = entry["addin_action"]
+    params = _registry.normalize_params(service, canonical_action, args)
+    logger.info(
+        "[%s] Routing %s via Named Pipe (C# Add-in action=%s)",
+        service.capitalize(),
+        canonical_action,
+        addin_action,
+    )
+    return dispatcher.send(addin_action, params)
+
+
 def _dispatch_autocad(
     action: str, args: dict[str, Any]
 ) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
@@ -491,31 +596,25 @@ def _dispatch_autocad(
     Routing priority:
     1. AutoCADNamedPipeDispatcher — sends command to BazSparkAutoCADBridge C# Add-in
        via Named Pipe so it runs on AutoCAD's main thread inside a document lock.
+       Actions and params are resolved/normalized through core/command_registry.json.
     2. AutoCADService (COM fallback) — direct COM API calls, only when the Add-in
        is not loaded.
     """
-    _PIPE_ROUTED_ACTIONS = {
-        "get_info",
-        "draw_line",
-        "draw_polyline",
-        "draw_circle",
-        "draw_text",
-        "delete_entity",
-        "modify_entity",
-        "save",
-        "speckle_push",
-    }
-    if action in _PIPE_ROUTED_ACTIONS:
+    entry = _registry_entry_or_none("autocad", action)
+
+    if _registry_available and entry is None:
+        # D4 mirror on the agent side: unregistered commands never touch CAD apps.
+        return {"success": False, "error": f"Unknown AutoCAD command: {action}"}
+
+    if entry is not None and _pipe_routed("autocad", entry):
         pipe = _get_autocad_pipe()
         if pipe.available:
-            logger.info("[AutoCAD] Routing %s via Named Pipe (C# Add-in)", action)
-            return pipe.send(action, args)
-        else:
-            logger.warning(
-                "[AutoCAD] Named Pipe unavailable for %s — "
-                "is BazSparkAutoCADBridge loaded in AutoCAD?",
-                action,
-            )
+            return _dispatch_via_pipe("autocad", pipe, action, entry, args)
+        logger.warning(
+            "[AutoCAD] Named Pipe unavailable for %s — "
+            "is BazSparkAutoCADBridge loaded in AutoCAD?",
+            action,
+        )
 
     svc = _get_autocad()
     if svc is None:
@@ -541,10 +640,14 @@ def _dispatch_autocad(
 
     if action in action_handlers:
         return action_handlers[action](svc, args)
-    elif action == "speckle_push":
+    elif entry is not None:
+        # Registered but pipe-only (e.g. send_command / plot_pdf / capture_screen).
         return {
             "success": False,
-            "error": "speckle_push is only supported when BazSparkAutoCADBridge C# add-in is loaded.",
+            "error": (
+                f"{action} requires the BazSparkAutoCADBridge C# Add-in "
+                "(named pipe). Load the DLL in AutoCAD first."
+            ),
         }
     else:
         return {"error": f"Unknown AutoCAD action: {action}"}
@@ -761,38 +864,51 @@ def _dispatch_revit(
     Routing priority:
     1. RevitNamedPipeDispatcher — sends command to BazSparkRevitBridge C# Add-in
        via Named Pipe so it runs on Revit's Main Thread (ExternalEvent). SAFE.
+       Actions and param shapes are resolved/normalized through
+       core/command_registry.json (A2) — e.g. canonical ``get_views`` maps to
+       add-in ``list_views``, ``start_point/end_point`` map to ``x1/y1/x2/y2``.
     2. RevitService (pythonnet fallback) — direct API calls, only safe in limited
        contexts and only when the Add-in is not installed.
-
-    Non-connection actions (get_elements, create_wall, etc.) always prefer
-    the pipe dispatcher when it is available.
     """
-    # ── For structural actions, prefer the C# Add-in via Named Pipe ──────────
-    _PIPE_ROUTED_ACTIONS = {
-        "get_info",
-        "list_elements",
-        "create_wall",
-        "create_floor",
-        "place_family_instance",
-        "delete_element",
-        "get_parameter",
-        "set_parameter",
-        "list_views",
-        "save",
-        "speckle_pull",
-    }
-    if action in _PIPE_ROUTED_ACTIONS:
+    entry = _registry_entry_or_none("revit", action)
+
+    if _registry_available and entry is None:
+        # D4 mirror on the agent side: unregistered commands never touch CAD apps.
+        return {"success": False, "error": f"Unknown Revit command: {action}"}
+
+    # ── update_parameters fans out into N set_parameter calls over the pipe ──
+    if entry is not None and entry.get("expands_to") == "set_parameter":
+        target_canonical, calls = _registry.expand_update_parameters(args)
+        target_entry = _registry.get_command_entry("revit", target_canonical)
+        pipe = _get_revit_pipe()
+        if pipe.available and target_entry is not None:
+            updated, failed = 0, []
+            for call in calls:
+                res = _dispatch_via_pipe(
+                    "revit", pipe, target_canonical, target_entry, call
+                )
+                if isinstance(res, dict) and res.get("success"):
+                    updated += 1
+                else:
+                    failed.append(call.get("name"))
+            return {
+                "success": not failed,
+                "updated": updated,
+                "failed": failed,
+                "message": "Parameters updated" if not failed else "Some parameters failed",
+            }
+        # fall through to local handler below
+
+    if entry is not None and _pipe_routed("revit", entry):
         pipe = _get_revit_pipe()
         if pipe.available:
-            logger.info("[Revit] Routing %s via Named Pipe (C# Add-in)", action)
-            return pipe.send(action, args)
-        else:
-            logger.warning(
-                "[Revit] Named Pipe unavailable for %s — "
-                "is BazSparkRevitBridge Add-in loaded in Revit?",
-                action,
-            )
-            # Fall through to RevitService (pythonnet) below
+            return _dispatch_via_pipe("revit", pipe, action, entry, args)
+        logger.warning(
+            "[Revit] Named Pipe unavailable for %s — "
+            "is BazSparkRevitBridge Add-in loaded in Revit?",
+            action,
+        )
+        # Fall through to RevitService (pythonnet) below
 
     svc = _get_revit()
     if svc is None:
@@ -823,10 +939,14 @@ def _dispatch_revit(
         return action_handlers[action](svc, args)
     elif action in ("get_views", "get_levels", "get_grids", "get_worksets"):
         return _handle_revit_get_special_actions(svc, {"special_action": action})
-    elif action == "speckle_pull":
+    elif entry is not None:
+        # Registered but pipe-only (e.g. post_command / export_pdf / capture_screen).
         return {
             "success": False,
-            "error": "speckle_pull is only supported when BazSparkRevitBridge C# add-in is loaded.",
+            "error": (
+                f"{action} requires the BazSparkRevitBridge C# Add-in "
+                "(named pipe). Start Revit with the Add-in loaded first."
+            ),
         }
     else:
         return {"error": f"Unknown Revit action: {action}"}
@@ -848,13 +968,42 @@ def _dispatch(action_full: str, args: dict[str, Any]) -> Any:
 # ── WebSocket agent loop ──────────────────────────────────────────────────────
 
 
+def _build_ws_connect_kwargs(api_key: str) -> dict:
+    """Build websockets.connect kwargs across library versions.
+
+    websockets >= 14 renamed ``extra_headers`` to ``additional_headers``;
+    older releases only accept ``extra_headers``. Detected at runtime so the
+    agent works with either install.
+    """
+    import inspect
+
+    kwargs: dict[str, Any] = {"ping_interval": 20, "ping_timeout": 30}
+    if not api_key:
+        return kwargs
+
+    try:
+        params = inspect.signature(websockets.connect).parameters
+    except (TypeError, ValueError):  # pragma: no cover — defensive
+        return kwargs
+
+    if "additional_headers" in params:
+        # websockets >= 14: list of 2-tuples.
+        kwargs["additional_headers"] = [("X-API-Key", api_key)]
+    elif "extra_headers" in params:
+        kwargs["extra_headers"] = {"X-API-Key": api_key}
+    else:  # pragma: no cover — unknown future signature
+        logger.warning(
+            "websockets.connect supports no header argument; "
+            "pass the key via ?token= query param instead"
+        )
+    return kwargs
+
+
 async def _agent_loop(uri: str, api_key: str = "") -> None:
     """Connect, listen for commands, execute them, and send back results."""
     logger.info("Connecting to %s …", uri)
-    extra_headers = {"X-API-Key": api_key} if api_key else None
-    async with websockets.connect(
-        uri, ping_interval=20, ping_timeout=30, extra_headers=extra_headers
-    ) as ws:
+    connect_kwargs = _build_ws_connect_kwargs(api_key)
+    async with websockets.connect(uri, **connect_kwargs) as ws:
         logger.info("✅ Connected to BAZspark server. Waiting for commands …")
         async for raw in ws:
             try:
@@ -866,6 +1015,13 @@ async def _agent_loop(uri: str, api_key: str = "") -> None:
             msg_type = msg.get("type")
 
             if msg_type == "pong":
+                continue
+
+            if msg_type == "ping":
+                # Server heartbeat (WS_PING_INTERVAL_SECONDS): MUST be
+                # answered or the server closes the socket with 4008 after
+                # WS_HEARTBEAT_TIMEOUT_SECONDS, dropping in-flight commands.
+                await ws.send(json.dumps({"type": "pong"}))
                 continue
 
             if msg_type == "command":

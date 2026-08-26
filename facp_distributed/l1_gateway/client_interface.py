@@ -17,7 +17,8 @@ from .gateway import L1Gateway
 class ClientInterface:
     """Interface layer that handles external client connections (IDEs, etc.)"""
 
-    def __init__(self, l1_gateway: L1Gateway, host: str = "0.0.0.0", port: int = 8000):
+    def __init__(self, l1_gateway: L1Gateway, host: str = "0.0.0.0", port: int = 18100):
+        # A8 FIX: default moved off 8000 (collides with the main FastAPI API).
         self.l1_gateway = l1_gateway
         self.host = host
         self.port = port
@@ -347,7 +348,7 @@ def create_client_interface_with_gateway(
     # Create HTTP transport for the gateway
     transport = HTTPTransport(
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
-        port=transport_config.get("gateway_port", 8001) if transport_config else 8001,
+        port=transport_config.get("gateway_port", 18101) if transport_config else 18101,
         node_type="l1_gateway",
     )
 
@@ -358,5 +359,5 @@ def create_client_interface_with_gateway(
     return ClientInterface(
         l1_gateway=l1_gateway,
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
-        port=transport_config.get("interface_port", 8000) if transport_config else 8000,
+        port=transport_config.get("interface_port", 18100) if transport_config else 18100,
     )

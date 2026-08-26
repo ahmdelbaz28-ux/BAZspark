@@ -22,6 +22,8 @@
       <HintPath>$(REVIT_API_PATH)\RevitAPIUI.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- T2 visual awareness: PrintWindow capture (ScreenCapture.cs) -->
+    <Reference Include="System.Drawing" />
   </ItemGroup>
 
   <ItemGroup>
