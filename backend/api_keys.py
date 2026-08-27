@@ -18,6 +18,7 @@ import os
 import secrets
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -427,7 +428,7 @@ def _save_keys(keys: dict[str, Any]) -> None:
     """
     path = Path(_get_keys_file_path())
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path = path.with_suffix(f".tmp.{os.getpid()}.{uuid.uuid4().hex}")
     # Write to temp file
     fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
