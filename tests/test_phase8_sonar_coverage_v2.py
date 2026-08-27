@@ -422,7 +422,7 @@ class TestSettingsLoggerException:
     @pytest.mark.asyncio
     async def test_test_vision_key_decryption_failure_logs_exception(self):
         """Cover L859: logger.exception is called when decrypt_key raises ValueError."""
-        from backend.routers.settings import test_vision_key
+        from backend.routers.settings import test_provider_key
 
         mock_db = MagicMock()
         mock_cur = MagicMock()
@@ -439,7 +439,12 @@ class TestSettingsLoggerException:
         with patch("backend.routers.settings.get_db", return_value=mock_db), \
              patch("backend.routers.settings.decrypt_key", side_effect=ValueError("Corrupted key")), \
              patch("backend.routers.settings._ensure_v152_columns"):
-            resp = await test_vision_key(provider="openai", key_id="key123")
+            resp = await test_provider_key(
+                provider="openai",
+                key_id="key123",
+                request=MagicMock(),
+                _role=MagicMock(),
+            )
             assert resp.ok is False
             assert "Decryption failed" in resp.error
 
