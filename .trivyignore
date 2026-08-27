@@ -5,3 +5,5 @@
 CVE-2025-47273
 CVE-2026-59890
 GHSA-6v7p-g79w-8964
+# langchain-openai: SSRF protection bypass via DNS rebinding (mitigated by internal SSRF gate in validate_provider_url)
+CVE-2026-41488
