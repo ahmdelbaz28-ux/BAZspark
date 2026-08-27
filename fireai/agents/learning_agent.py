@@ -155,6 +155,13 @@ class LearningAgent:
         self._lock = threading.RLock()
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        # B5 SQLite hardening: WAL mode allows concurrent readers alongside a
+        # single writer — critical for FastAPI/async pipeline scenarios where
+        # EventBus callbacks and API routes access the DB simultaneously.
+        # busy_timeout=5000 ms: instead of raising SQLITE_BUSY immediately,
+        # the connection retries for up to 5 seconds before giving up.
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")
         self._create_tables()
 
         # D1.1: EventBus integration — LearningAgent subscribes to ANALYSIS_COMPLETE

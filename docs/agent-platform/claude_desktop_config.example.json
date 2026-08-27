@@ -1,0 +1,26 @@
+{
+  "_comment": "FireAI Revit MCP Server — Claude Desktop config example (Stage D2 agent-platform-rebuild).",
+  "_instructions": [
+    "1. Copy this file content into your Claude Desktop configuration file:",
+    "   - Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+    "   - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json",
+    "2. Adjust <REPO_ROOT> to your workspace path.",
+    "3. Adjust python executable path (.venv/Scripts/python.exe on Windows, .venv/bin/python on Unix).",
+    "4. Restart Claude Desktop."
+  ],
+  "mcpServers": {
+    "fireai-revit": {
+      "command": "<REPO_ROOT>/.venv/Scripts/python.exe",
+      "args": [
+        "-m",
+        "fireai.mcp_server.revit_mcp_server"
+      ],
+      "cwd": "<REPO_ROOT>",
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "FIREAI_ENV": "development",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}

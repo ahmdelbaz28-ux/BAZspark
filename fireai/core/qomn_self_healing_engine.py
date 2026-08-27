@@ -335,6 +335,13 @@ class Config:
         # LLM / Ollama Configuration
         self.OLLAMA_TIMEOUT: float = self._safe_float("QOMN_OLLAMA_TIMEOUT", 2.0, min_val=0.1)
         self.OLLAMA_MAX_RPS: float = self._safe_float("QOMN_OLLAMA_MAX_RPS", 5.0, min_val=1.0)
+        # B5: env-configurable Ollama host and model (replaces hardcoded defaults).
+        # Set QOMN_OLLAMA_HOST to use a remote/alternative Ollama endpoint.
+        # Set QOMN_HEALING_MODEL to use a different local model (e.g. llama3.2, mistral).
+        self.OLLAMA_HOST: str = os.environ.get("QOMN_OLLAMA_HOST", "http://localhost:11434").rstrip(
+            "/"
+        )
+        self.HEALING_MODEL: str = os.environ.get("QOMN_HEALING_MODEL", "llama3")
 
         # SAFETY GATE: LLM-generated engineering values are DISABLED by default.
         # Set QOMN_ENABLE_LLM_HEALING=true to enable Tier 2 LLM recovery.
@@ -345,6 +352,19 @@ class Config:
             "1",
             "true",
             "yes",
+        )
+
+        # B5: Tier-2 human-acknowledgement gate.
+        # TIER_2_REQUIRES_HUMAN_ACK=true (default): every Tier-2 suggestion is
+        # tagged requires_ack=True and status=DEGRADED so callers can surface an
+        # approval request to the responsible engineer before acting on the value.
+        # TIER2_MAX_AUTO_DEVIATION_PCT: if |deviation| < this threshold AND
+        # TIER_2_REQUIRES_HUMAN_ACK=false, auto-approve without human review.
+        self.TIER_2_REQUIRES_HUMAN_ACK: bool = os.environ.get(
+            "TIER_2_REQUIRES_HUMAN_ACK", "true"
+        ).lower() not in ("0", "false", "no")
+        self.TIER2_MAX_AUTO_DEVIATION_PCT: float = self._safe_float(
+            "TIER2_MAX_AUTO_DEVIATION_PCT", 5.0, min_val=0.0
         )
 
         # Audit Logger Configuration
@@ -1863,7 +1883,15 @@ def query_local_ollama_engine(
     V58 FIX (BUG #12): NaN/Inf detection uses math module, not fragile string comparison.
     V2.0 EXTENSION: Configurable timeout via parameter.
     """
-    url = "http://localhost:11434/api/generate"
+    # B5: read from module-level singleton Config instead of hardcoding.
+    host = _config.OLLAMA_HOST  # default: http://localhost:11434
+    if not (host.startswith("http://") or host.startswith("https://")):
+        logging.warning(
+            f"[LOCAL OLLAMA] Insecure or invalid host scheme '{host}'. Defaulting to http://localhost:11434"
+        )
+        host = "http://localhost:11434"
+    model = _config.HEALING_MODEL  # default: llama3
+    url = f"{host}/api/generate"
 
     prompt = (
         f"You are a Safety-Critical Fire Protection Engineering Assistant.\n"
@@ -1878,7 +1906,7 @@ def query_local_ollama_engine(
         f"Do not include code blocks, explanations, markdown or extra characters."
     )
 
-    payload = {"model": "llama3", "prompt": prompt, "stream": False, "format": "json"}
+    payload = {"model": model, "prompt": prompt, "stream": False, "format": "json"}
 
     req_body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -1887,7 +1915,7 @@ def query_local_ollama_engine(
 
     try:
         # Enforce strict timeout to prevent stalling the safety thread
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec B310 — scheme validated to http/https only
             res_body = response.read().decode("utf-8")
             res_json = json.loads(res_body)
             llm_text = res_json.get("response", "{}")
