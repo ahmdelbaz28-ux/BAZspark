@@ -825,7 +825,7 @@ class TestCoverageBooster:
             auditReference="b" * 64,
             payload={"devices": []},
         )
-        committed, err = store.commit_transaction(
+        committed, _err = store.commit_transaction(
             command=cmd,
             new_revision=2,
             exec_result={"devices": []},

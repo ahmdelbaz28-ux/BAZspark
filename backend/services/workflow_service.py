@@ -48,7 +48,7 @@ import os
 import time
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Callable, TypedDict, TypeVar  # noqa: UP035
+from typing import Any, TypedDict  # noqa: UP035
 
 try:
     from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -73,9 +73,8 @@ try:
     STUCK_DETECTION_AVAILABLE = True
 except ImportError:
     STUCK_DETECTION_AVAILABLE = False
-    _F = TypeVar("_F", bound=Callable[..., Any])
 
-    def with_stuck_detection(func: _F) -> _F:
+    def with_stuck_detection[T](func: T) -> T:
         return func
 
 

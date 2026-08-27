@@ -57,7 +57,7 @@ import enum
 
 if not hasattr(enum, "StrEnum"):
 
-    class _StrEnum(str, enum.Enum):
+    class _StrEnum(str, enum.Enum):  # noqa: UP042
         pass
 
     enum.StrEnum = _StrEnum
