@@ -138,13 +138,13 @@ def is_retryable_exception(exc: BaseException) -> bool:
     if isinstance(exc, httpx.HTTPStatusError):
         return exc.response.status_code in _RETRYABLE_STATUS
     # Transport-level errors (connect/timeout/read) are always transient.
-    if isinstance(exc, (httpx.HTTPError, httpx.TimeoutException)):
+    if isinstance(exc, httpx.HTTPError | httpx.TimeoutException):
         return True
     # openai SDK connection/timeout errors
     try:
         from openai import APIConnectionError, APITimeoutError
 
-        if isinstance(exc, (APIConnectionError, APITimeoutError)):
+        if isinstance(exc, APIConnectionError | APITimeoutError):
             return True
     except ImportError:  # pragma: no cover
         pass
@@ -249,8 +249,9 @@ class BaseLLMAdapter(ABC):
         use_max = max_tokens or self.max_tokens
         use_model = model or self.default_model
         result: LLMResponse = await run_with_retry(
-            lambda: self._chat_once(messages, model=use_model, temperature=temperature,
-                                    max_tokens=use_max)
+            lambda: self._chat_once(
+                messages, model=use_model, temperature=temperature, max_tokens=use_max
+            )
         )
         return result
 
@@ -273,8 +274,9 @@ class BaseLLMAdapter(ABC):
         max_tokens: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         use_max = max_tokens or self.max_tokens
-        return self._stream_impl(messages, model=model or self.default_model,
-                                 temperature=temperature, max_tokens=use_max)
+        return self._stream_impl(
+            messages, model=model or self.default_model, temperature=temperature, max_tokens=use_max
+        )
 
     @abstractmethod
     def _stream_impl(
@@ -300,9 +302,7 @@ class BaseLLMAdapter(ABC):
         return {"type": "chunk", "content": content, "model": model, "source": source}
 
     @staticmethod
-    def _done_event(
-        content: str, model: str, source: str, usage: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _done_event(content: str, model: str, source: str, usage: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "done",
             "content": content,
@@ -382,11 +382,7 @@ class OpenAICompatibleAdapter(BaseLLMAdapter):
             content = completion.choices[0].message.content or ""
             finish_reason = completion.choices[0].finish_reason or "stop"
         usage = getattr(completion, "usage", None)
-        raw = (
-            completion.model_dump()
-            if hasattr(completion, "model_dump")
-            else {}
-        )
+        raw = completion.model_dump() if hasattr(completion, "model_dump") else {}
         return LLMResponse(
             content=content,
             model=getattr(completion, "model", model),
@@ -601,8 +597,14 @@ class AnthropicAdapter(BaseLLMAdapter):
         timeout: float,
         max_tokens: int,
     ) -> None:
-        super().__init__(name, api_key, base_url or f"https://{_ANTHROPIC_DEFAULT_HOST}",
-                         model, timeout, max_tokens)
+        super().__init__(
+            name,
+            api_key,
+            base_url or f"https://{_ANTHROPIC_DEFAULT_HOST}",
+            model,
+            timeout,
+            max_tokens,
+        )
         self._http: httpx.AsyncClient | None = None
 
     def _ensure_http(self) -> httpx.AsyncClient:
@@ -700,16 +702,14 @@ class AnthropicAdapter(BaseLLMAdapter):
             http = adapter._ensure_http()
             usage_data: dict[str, Any] = {}
             full = ""
-            async with http.stream(
-                "POST", f"{adapter.base_url}/v1/messages", json=body
-            ) as resp:
+            async with http.stream("POST", f"{adapter.base_url}/v1/messages", json=body) as resp:
                 if resp.status_code >= 400:
                     body_text = (await resp.aread()).decode("utf-8", errors="replace")
                     raise RuntimeError(f"Anthropic HTTP {resp.status_code}: {body_text[:200]}")
                 async for line in resp.aiter_lines():
                     if not line.startswith("data:"):
                         continue
-                    payload = line[len("data:"):].strip()
+                    payload = line[len("data:") :].strip()
                     if not payload or payload == "[DONE]":
                         continue
                     event = json.loads(payload)
@@ -775,7 +775,11 @@ class GeminiAdapter(BaseLLMAdapter):
         max_tokens: int,
     ) -> None:
         super().__init__(
-            name, api_key, base_url or f"https://{_GEMINI_DEFAULT_HOST}", model, timeout,
+            name,
+            api_key,
+            base_url or f"https://{_GEMINI_DEFAULT_HOST}",
+            model,
+            timeout,
             max_tokens,
         )
         self._client: Any = None
