@@ -45,8 +45,16 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+try:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    _MCP_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    ClientSession = Any  # type: ignore[assignment,misc]
+    StdioServerParameters = Any  # type: ignore[assignment,misc]
+    stdio_client = None  # type: ignore[assignment]
+    _MCP_AVAILABLE = False
 
 from fireai.agents.tool_selector import Capability, ToolSelector
 from fireai.core.event_bus import EventBus

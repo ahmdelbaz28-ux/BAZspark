@@ -1,6 +1,5 @@
 """
 FireAI Digital Twin - Pydantic V2 API Schemas.
-=============================================
 Maps to core/models.py dataclasses for REST API request/response validation.
 
 V300: Shared base utilities (CamelModel, _to_camel, _validate_json_size_and_depth)
@@ -10,7 +9,6 @@ now live in backend/schema_base.py to eliminate duplication with backend/models.
 from __future__ import annotations
 
 from enum import StrEnum
-<<<<<<< HEAD
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
