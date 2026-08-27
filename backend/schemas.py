@@ -10,7 +10,8 @@ now live in backend/schema_base.py to eliminate duplication with backend/models.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, TypeVar
+<<<<<<< HEAD
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -461,7 +462,7 @@ class StatisticsResponse(CamelModel):
 _T = TypeVar("_T")
 
 
-class ApiResponse[T](CamelModel):
+class ApiResponse(CamelModel, Generic[_T]):
     """Universal response wrapper for all API endpoints."""
 
     success: bool
@@ -469,7 +470,7 @@ class ApiResponse[T](CamelModel):
     message: str | None = None
 
 
-class PaginatedData[T](CamelModel):
+class PaginatedData(CamelModel, Generic[_T]):
     """Wrapper for paginated data inside ApiResponse."""
 
     items: list[_T]

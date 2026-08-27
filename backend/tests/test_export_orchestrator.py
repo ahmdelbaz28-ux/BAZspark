@@ -406,4 +406,3 @@ class TestExportPathHardening:
             "proj-exp-01", 1, "json", principal=principal
         )
         assert Path(result.artifact.artifact_path).resolve().is_relative_to(root)
-
