@@ -272,7 +272,9 @@ class TestMaxExecutionTime:
 
 
 class TestToolSelectorRegistration:
-    def test_capability_registration(self, tmp_path: Path, loader: SkillLoader, fake_tool_selector: ToolSelector) -> None:
+    def test_capability_registration(
+        self, tmp_path: Path, loader: SkillLoader, fake_tool_selector: ToolSelector
+    ) -> None:
         _write_skill_file(tmp_path)
         loader.load_all()
         assert "test-skill" in fake_tool_selector._tools
@@ -280,7 +282,9 @@ class TestToolSelectorRegistration:
         assert "skill:test" in caps
         assert "skill:testing" in caps
 
-    def test_score_fn_works(self, tmp_path: Path, loader: SkillLoader, fake_tool_selector: ToolSelector) -> None:
+    def test_score_fn_works(
+        self, tmp_path: Path, loader: SkillLoader, fake_tool_selector: ToolSelector
+    ) -> None:
         from fireai.agents.tool_selector import Task
 
         _write_skill_file(tmp_path)
@@ -296,7 +300,9 @@ class TestToolSelectorRegistration:
 
 
 class TestEventBus:
-    def test_skill_loaded_event(self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus) -> None:
+    def test_skill_loaded_event(
+        self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus
+    ) -> None:
         events: list = []
         fake_event_bus.subscribe(EVENT_SKILL_LOADED, events.append)
         _write_skill_file(tmp_path)
@@ -304,7 +310,9 @@ class TestEventBus:
         assert len(events) == 1
         assert events[0].data["name"] == "test-skill"
 
-    def test_skill_rejected_event(self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus) -> None:
+    def test_skill_rejected_event(
+        self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus
+    ) -> None:
         bad_fm = textwrap.dedent("""\
             ---
             metadata:
@@ -321,7 +329,9 @@ class TestEventBus:
         assert len(events) == 1
         assert events[0].data["gate"] == "validation"
 
-    def test_scan_event(self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus) -> None:
+    def test_scan_event(
+        self, tmp_path: Path, loader: SkillLoader, fake_event_bus: EventBus
+    ) -> None:
         events: list = []
         fake_event_bus.subscribe(EVENT_SKILL_DIRS_SCANNED, events.append)
         _write_skill_file(tmp_path)
@@ -340,9 +350,10 @@ class TestReload:
         path2 = tmp_path / "skill_b" / "SKILL.md"
         path1.parent.mkdir(parents=True, exist_ok=True)
         path2.parent.mkdir(parents=True, exist_ok=True)
-        path1.write_text(VALID_FRONTMATTER.replace("test-skill", "skill-a").replace(
-            "test-skill", "skill-a"
-        ), encoding="utf-8")
+        path1.write_text(
+            VALID_FRONTMATTER.replace("test-skill", "skill-a").replace("test-skill", "skill-a"),
+            encoding="utf-8",
+        )
         path2.write_text(VALID_FRONTMATTER.replace("test-skill", "skill-b"), encoding="utf-8")
 
         loaded_a, _ = loader.load_all()

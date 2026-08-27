@@ -66,13 +66,17 @@ class TestParseServers:
         assert MCPOrchestrator._parse_servers("   ") == []
 
     def test_valid_single_server(self) -> None:
-        config = json.dumps([{
-            "name": "revit",
-            "transport": "stdio",
-            "command": "python",
-            "args": ["-m", "server"],
-            "env": {"FOO": "bar"},
-        }])
+        config = json.dumps(
+            [
+                {
+                    "name": "revit",
+                    "transport": "stdio",
+                    "command": "python",
+                    "args": ["-m", "server"],
+                    "env": {"FOO": "bar"},
+                }
+            ]
+        )
         result = MCPOrchestrator._parse_servers(config)
         assert len(result) == 1
         cfg = result[0]
@@ -84,10 +88,12 @@ class TestParseServers:
         assert cfg.url is None
 
     def test_multiple_servers(self) -> None:
-        config = json.dumps([
-            {"name": "srv1", "command": "cmd1"},
-            {"name": "srv2", "command": "cmd2"},
-        ])
+        config = json.dumps(
+            [
+                {"name": "srv1", "command": "cmd1"},
+                {"name": "srv2", "command": "cmd2"},
+            ]
+        )
         result = MCPOrchestrator._parse_servers(config)
         assert len(result) == 2
         assert result[0].name == "srv1"
@@ -116,7 +122,9 @@ class TestParseServers:
         assert cfg.required_permissions == []
 
     def test_url_field(self) -> None:
-        config = json.dumps([{"name": "sse-srv", "transport": "sse", "url": "http://localhost:8080"}])
+        config = json.dumps(
+            [{"name": "sse-srv", "transport": "sse", "url": "http://localhost:8080"}]
+        )
         result = MCPOrchestrator._parse_servers(config)
         assert result[0].url == "http://localhost:8080"
 
@@ -322,8 +330,11 @@ class TestCallTool:
 class TestToolLookup:
     def test_get_tool_found(self, orchestrator: MCPOrchestrator) -> None:
         tool = DiscoveredTool(
-            name="foo", description="foo tool", input_schema={},
-            server_name="srv", server_config=McpServerConfig(name="srv"),
+            name="foo",
+            description="foo tool",
+            input_schema={},
+            server_name="srv",
+            server_config=McpServerConfig(name="srv"),
         )
         with orchestrator._lock:
             orchestrator._tools["srv.foo"] = tool
@@ -335,8 +346,11 @@ class TestToolLookup:
 
     def test_tools_property_returns_copy(self, orchestrator: MCPOrchestrator) -> None:
         tool = DiscoveredTool(
-            name="bar", description="bar tool", input_schema={},
-            server_name="srv", server_config=McpServerConfig(name="srv"),
+            name="bar",
+            description="bar tool",
+            input_schema={},
+            server_name="srv",
+            server_config=McpServerConfig(name="srv"),
         )
         with orchestrator._lock:
             orchestrator._tools["srv.bar"] = tool
@@ -384,7 +398,9 @@ class TestRegisterTool:
         assert "srv.net_tool" not in selector._tools
         selector.close()
 
-    def test_allowed_tool_registered(self, orchestrator: MCPOrchestrator, fake_tool_selector: ToolSelector) -> None:
+    def test_allowed_tool_registered(
+        self, orchestrator: MCPOrchestrator, fake_tool_selector: ToolSelector
+    ) -> None:
         tool = DiscoveredTool(
             name="safe_tool",
             description="Safe tool",

@@ -125,9 +125,7 @@ class SkillLoader:
         self._bus = event_bus or EventBus.instance()
 
         env_dirs = skills_dirs or os.environ.get("SKILLS_DIRS", _DEFAULT_SKILLS_DIRS)
-        self._dirs: list[str] = [
-            d.strip() for d in env_dirs.split(",") if d.strip()
-        ]
+        self._dirs: list[str] = [d.strip() for d in env_dirs.split(",") if d.strip()]
 
         deny_str = deny_permissions or os.environ.get("SKILL_DENY_PERMISSIONS", "")
         self._deny_permissions: set[str] = {
@@ -135,11 +133,12 @@ class SkillLoader:
         }
 
         self._max_exec_time = (
-            int(max_exec_time) if max_exec_time is not None
+            int(max_exec_time)
+            if max_exec_time is not None
             else int(os.environ.get("SKILL_MAX_EXEC_TIME", _MAX_EXECUTION_TIME_LIMIT))
         )
-        self._system_version = (
-            system_version or os.environ.get("SKILL_SYSTEM_VERSION", _SYSTEM_VERSION)
+        self._system_version = system_version or os.environ.get(
+            "SKILL_SYSTEM_VERSION", _SYSTEM_VERSION
         )
 
         # Track loaded skills for introspection / tests.
@@ -260,11 +259,10 @@ class SkillLoader:
         name = manifest.metadata.name
 
         # Gate 2: Version compatibility
-        if not validate_version_compatibility(
-            manifest.version_compatibility, self._system_version
-        ):
+        if not validate_version_compatibility(manifest.version_compatibility, self._system_version):
             self._reject(
-                path, name,
+                path,
+                name,
                 f"incompatible with system v{self._system_version} "
                 f"(skill requires v{manifest.version_compatibility})",
                 "version_compatibility",
@@ -275,7 +273,8 @@ class SkillLoader:
         denied = self._check_permissions(manifest.requirements.permissions)
         if denied:
             self._reject(
-                path, name,
+                path,
+                name,
                 f"permission(s) denied by deny-list: {sorted(denied)}",
                 "permissions",
             )
@@ -285,7 +284,8 @@ class SkillLoader:
         max_time = manifest.requirements.max_execution_time
         if max_time > self._max_exec_time:
             self._reject(
-                path, name,
+                path,
+                name,
                 f"max_execution_time {max_time}s exceeds system limit {self._max_exec_time}s",
                 "execution_time",
             )
@@ -313,7 +313,12 @@ class SkillLoader:
             },
             source="skill_loader",
         )
-        logger.info("Skill loaded: %s v%s (%d capabilities)", name, manifest.metadata.version, len(capabilities))
+        logger.info(
+            "Skill loaded: %s v%s (%d capabilities)",
+            name,
+            manifest.metadata.version,
+            len(capabilities),
+        )
         return skill
 
     @staticmethod
@@ -394,9 +399,7 @@ class SkillLoader:
             score_fn=_score_fn,
         )
 
-    def _publish_scan_event(
-        self, loaded: list[LoadedSkill], rejected: list[RejectedSkill]
-    ) -> None:
+    def _publish_scan_event(self, loaded: list[LoadedSkill], rejected: list[RejectedSkill]) -> None:
         self._bus.publish(
             EVENT_SKILL_DIRS_SCANNED,
             data={

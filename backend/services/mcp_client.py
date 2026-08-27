@@ -265,7 +265,11 @@ class MCPOrchestrator:
     async def _connect_server(self, config: McpServerConfig) -> None:
         """Connect to a single MCP server and discover its tools."""
         if config.transport != "stdio":
-            logger.warning("MCP server '%s' uses unsupported transport '%s' — skipping", config.name, config.transport)
+            logger.warning(
+                "MCP server '%s' uses unsupported transport '%s' — skipping",
+                config.name,
+                config.transport,
+            )
             self._bus.publish(
                 EVENT_MCP_SCAN_ERROR,
                 data={"server": config.name, "error": f"unsupported transport: {config.transport}"},
@@ -302,9 +306,7 @@ class MCPOrchestrator:
             )
             logger.exception("Failed to connect to MCP server '%s'", config.name)
 
-    async def _refresh_tools(
-        self, config: McpServerConfig, session: ClientSession
-    ) -> None:
+    async def _refresh_tools(self, config: McpServerConfig, session: ClientSession) -> None:
         """List tools from a server and register/deregister in ToolSelector."""
         try:
             result = await session.list_tools()
@@ -334,12 +336,15 @@ class MCPOrchestrator:
         # Remove tools that disappeared
         with self._lock:
             stale = {
-                tn for tn in self._tools
+                tn
+                for tn in self._tools
                 if tn.startswith(f"{config.name}.") and tn not in current_names
             }
             for tn in stale:
                 del self._tools[tn]
-        logger.debug("Refreshed tools for MCP server '%s': %d tools", config.name, len(current_names))
+        logger.debug(
+            "Refreshed tools for MCP server '%s': %d tools", config.name, len(current_names)
+        )
 
     # ── ToolSelector integration ──────────────────────────────────────
 
@@ -381,7 +386,8 @@ class MCPOrchestrator:
         if denied:
             logger.warning(
                 "MCP tool '%s' rejected — denied permissions: %s",
-                tool.name, sorted(denied),
+                tool.name,
+                sorted(denied),
             )
             self._bus.publish(
                 EVENT_MCP_TOOL_ERROR,
@@ -401,11 +407,9 @@ class MCPOrchestrator:
                 if not hasattr(task, "description"):
                     return 0.0
                 task_text = (task.description or "").lower()
-                matches = sum(
-                    1 for c in cap_names
-                    if c.split(":")[-1] in task_text
-                )
+                matches = sum(1 for c in cap_names if c.split(":")[-1] in task_text)
                 return float(matches) / max(len(cap_names), 1) if matches else 0.0
+
             return _score_fn
 
         self._selector.register_tool(
