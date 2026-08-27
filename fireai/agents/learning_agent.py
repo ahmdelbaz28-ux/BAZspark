@@ -21,6 +21,13 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Lazy import to avoid triggering eager fireai.core.__init__ at agents import time.
+try:
+    from fireai.core.event_bus import EventBus, Events
+except ImportError:  # pragma: no cover
+    EventBus = None  # type: ignore[misc]
+    Events = None  # type: ignore[misc]
+
 # ── data classes ──────────────────────────────────────────────────────────────
 
 
@@ -149,6 +156,15 @@ class LearningAgent:
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
+
+        # D1.1: EventBus integration — LearningAgent subscribes to ANALYSIS_COMPLETE
+        # events (read-only) and stores a DesignExperience for each completed room
+        # analysis, building a persistent knowledge base across sessions.
+        self._bus: Any = None
+        self._subscribed = False
+        if EventBus is not None:
+            self._bus = EventBus.instance()
+            self.subscribe_to_events()
 
     def _create_tables(self) -> None:
         with self._lock:
@@ -361,7 +377,50 @@ class LearningAgent:
             )
         return results
 
+    def _on_room_analysis_complete(self, event: Any) -> None:
+        """Callback for ROOM_ANALYSIS_COMPLETE events.
+
+        Read-only subscriber: stores a DesignExperience whenever a room
+        analysis completes, feeding the persistent knowledge base.
+        """
+        data = event.data if hasattr(event, "data") else (event if isinstance(event, dict) else {})
+        room_id = data.get("room_id", "unknown")
+        try:
+            experience = DesignExperience(
+                room_config=json.dumps(data),
+                detector_count=data.get("detector_count", 0),
+                coverage_pct=data.get("coverage_pct", 0.0),
+                compliance_passed=data.get("nfpa_valid", False),
+                outcome="success"
+                if data.get("success") and data.get("nfpa_valid")
+                else ("partial" if data.get("success") else "failure"),
+                patterns_used=[room_id],
+            )
+            self.store_experience(experience)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("LearningAgent failed to store experience for room %s: %s", room_id, e)
+
+    def subscribe_to_events(self) -> None:
+        """Subscribe to EventBus events (read-only).
+
+        Subscribes to ROOM_ANALYSIS_COMPLETE to accumulate design experiences.
+        Idempotent — calling twice is a no-op.
+        """
+        if self._subscribed or self._bus is None or Events is None:
+            return
+        self._bus.subscribe(Events.ROOM_ANALYSIS_COMPLETE, self._on_room_analysis_complete)
+        self._subscribed = True
+        logger.debug("LearningAgent subscribed to %s", Events.ROOM_ANALYSIS_COMPLETE)
+
+    def unsubscribe_from_events(self) -> None:
+        """Unsubscribe from all EventBus events."""
+        if not self._subscribed or self._bus is None or Events is None:
+            return
+        self._bus.unsubscribe(Events.ROOM_ANALYSIS_COMPLETE, self._on_room_analysis_complete)
+        self._subscribed = False
+
     def close(self) -> None:
+        self.unsubscribe_from_events()
         with self._lock:
             if self.conn:
                 self.conn.close()

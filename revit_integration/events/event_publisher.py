@@ -9,8 +9,90 @@ Principal Software Architect: Eng. Ahmed Elbaz
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
+
+
+class EventBusAdapter:
+    """Async-compatible adapter over the synchronous fireai.core EventBus.
+
+    The Revit integration layer was built around an async MockEventBus interface
+    (``async publish`` / ``async subscribe`` returning ``bool``).  The real
+    fireai EventBus is synchronous by design (predictable ordering, no event-loop
+    dependency).  This adapter bridges the gap:
+
+    * ``publish`` — wraps the sync ``EventBus.publish`` in an async method
+      so ``await publisher._publish_to_bus(...)`` continues to work.
+    * ``subscribe`` — wraps async handlers in a sync callback suitable for
+      the EventBus.  If an event loop is running the handler is scheduled as a
+      task; otherwise it is invoked inline (sync handlers) or skipped with a
+      debug log (async handlers without a loop).
+    """
+
+    def __init__(self) -> None:
+        from fireai.core.event_bus import EventBus
+
+        self.logger = logging.getLogger(__name__)
+        self._bus = EventBus.instance()
+        self.subscribers: dict[str, list[Any]] = {}
+
+    async def publish(self, event_data: dict[str, Any]) -> bool:
+        """
+        Publish an event to the fireai EventBus.
+
+        Args:
+            event_data: Event payload dict (includes event_type, payload, source, ...).
+
+        Returns:
+            bool: True if published successfully.
+        """
+        try:
+            event_type = event_data.get("event_type", "")
+            self._bus.publish(
+                event_type=event_type,
+                data=event_data,
+                source=event_data.get("source", "revit_integration"),
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Error publishing to EventBus: {e}")
+            return False
+
+    async def subscribe(self, event_type: str, handler: Callable[[Any], Any]) -> bool:
+        """
+        Subscribe to an event type on the fireai EventBus.
+
+        Wraps async handlers in a sync callback compatible with the
+        EventBus's synchronous dispatch model.
+
+        Args:
+            event_type: The event type string to subscribe to.
+            handler: Callable invoked when the event fires.
+
+        Returns:
+            bool: True if subscription was successful.
+        """
+
+        def _sync_callback(event: Any) -> None:
+            data = event.data if hasattr(event, "data") else event
+            if asyncio.iscoroutinefunction(handler):
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(handler(data))
+                except RuntimeError:
+                    self.logger.debug(
+                        "No running event loop; async handler for %s not scheduled", event_type
+                    )
+            else:
+                handler(data)
+
+        # Keep a reference so callers can inspect / manage subscriptions
+        self.subscribers.setdefault(event_type, []).append(_sync_callback)
+        self._bus.subscribe(event_type, _sync_callback)
+        self.logger.info(f"Subscribed to event: {event_type}")
+        return True
+
 
 from .event_definitions import (
     EVENT_PRIORITIES,
@@ -37,13 +119,13 @@ class RevitEventPublisher:
 
     def _initialize_event_bus(self):
         """
-        Initialize connection to ETAP EventBus.
-        In a real implementation, this would connect to the actual EventBus.
+        Initialize connection to the fireai EventBus.
+
+        D1.3: Returns an EventBusAdapter wrapping the real
+        fireai.core.event_bus.EventBus singleton instead of a mock.
         """
-        # This is a placeholder - in a real implementation, this would
-        # connect to the actual ETAP EventBus system
-        self.logger.info("Initializing mock event bus connection for Revit integration")
-        return MockEventBus()
+        self.logger.info("Initializing EventBus adapter for Revit integration")
+        return EventBusAdapter()
 
     async def publish_event(self, event_type: str, payload: dict[str, Any]) -> bool:
         """
@@ -83,7 +165,7 @@ class RevitEventPublisher:
         }
 
         try:
-            # Publish to EventBus
+            # Publish to EventBus via the adapter
             success = await self._publish_to_bus(event_data)
 
             if success:
@@ -105,7 +187,7 @@ class RevitEventPublisher:
 
     async def _publish_to_bus(self, event_data: dict[str, Any]) -> bool:
         """
-        Publish event to the actual EventBus.
+        Publish event to the EventBus (via the adapter).
 
         Args:
             event_data: Event data to publish
@@ -113,8 +195,7 @@ class RevitEventPublisher:
         Returns:
             bool: True if published successfully
         """
-        # In a real implementation, this would publish to the actual EventBus
-        # For now, we'll use our mock event bus
+        # Delegate to the adapter, which wraps the synchronous EventBus
         return await self.event_bus.publish(event_data)
 
     async def _handle_specific_event(self, event_type: str, payload: dict[str, Any]) -> None:
@@ -196,7 +277,7 @@ class RevitEventPublisher:
         self.logger.debug("Performing post-sync operations")
         # In a real implementation, this might trigger validation, reporting, etc.
 
-    async def subscribe_to_event(self, event_type: str, handler: callable) -> bool:
+    async def subscribe_to_event(self, event_type: str, handler: Callable[[Any], Any]) -> bool:
         """
         Subscribe to an event type.
 
@@ -208,7 +289,6 @@ class RevitEventPublisher:
             bool: True if subscription was successful
         """
         try:
-            # In a real implementation, this would subscribe to the actual EventBus
             return await self.event_bus.subscribe(event_type, handler)
         except Exception as e:
             self.logger.error(f"Error subscribing to event {event_type}: {e}")
@@ -222,15 +302,13 @@ class RevitEventPublisher:
         """Get list of failed events."""
         return self.failed_events.copy()
 
-    async def get_event_stats(self) -> dict[str, int]:
+    async def get_event_stats(self) -> dict[str, Any]:
         """Get statistics about published events."""
+        total = len(self.published_events) + len(self.failed_events)
         return {
             "published_count": len(self.published_events),
             "failed_count": len(self.failed_events),
-            "success_rate": len(self.published_events)
-            / (len(self.published_events) + len(self.failed_events))
-            if (len(self.published_events) + len(self.failed_events)) > 0
-            else 0,
+            "success_rate": len(self.published_events) / total if total > 0 else 0.0,
         }
 
     async def flush_events(self) -> None:
@@ -242,13 +320,16 @@ class RevitEventPublisher:
 class MockEventBus:
     """
     Mock EventBus for development purposes.
-    In a real implementation, this would connect to the actual ETAP EventBus.
+
+    .. deprecated::
+        Use :class:`EventBusAdapter` instead.  This class is kept for
+        backward-compatibility with tests that explicitly inject a mock.
     """
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.subscribers = {}
-        self.event_queue = asyncio.Queue()
+        self.event_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self.running = False
         # Strong refs to background tasks so the event loop doesn't GC them
         # before completion (fixes SonarCloud python:S7502).
@@ -288,7 +369,7 @@ class MockEventBus:
             self.logger.error(f"Error publishing to mock event bus: {e}")
             return False
 
-    async def subscribe(self, event_type: str, handler: callable) -> bool:
+    async def subscribe(self, event_type: str, handler: Callable[[Any], Any]) -> bool:
         """
         Subscribe to an event type.
 
@@ -311,7 +392,7 @@ class MockEventBus:
         self.running = True
         while self.running:
             try:
-                event_data = await self.event_queue.get(timeout=1.0)
+                event_data = await asyncio.wait_for(self.event_queue.get(), timeout=1.0)
                 self.logger.debug(f"Processing event: {event_data['event_type']}")
                 self.event_queue.task_done()
             except TimeoutError:

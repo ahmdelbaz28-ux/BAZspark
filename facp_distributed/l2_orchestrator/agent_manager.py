@@ -93,15 +93,31 @@ class PlannerAgent(BaseAgent):
 
         if method.startswith("schedule."):
             # Optimize a schedule
+            # D2 FIX: PlannerAgent produces placeholder optimization values.
+            # Real scheduling requires integration with a calculation kernel or
+            # engine controller — the 15.5% figure below is a fabricated estimate.
             schedule_params = params.get("payload", {}).get("schedule", {})
 
             result = {
                 "optimized_schedule": schedule_params.get("tasks", []),
-                "improvement_percentage": 15.5,  # Example improvement
+                "improvement_percentage": 15.5,  # D2: PLACEHOLDER — not a real measurement
                 "optimized_at": time.time(),
             }
 
-            return {"status": "success", "result": result, "agent_id": self.id, "method": method}
+            logger.warning(
+                "PlannerAgent.schedule.%s returned SIMULATED result "
+                "(improvement_percentage=15.5 is a placeholder; "
+                "bind a real scheduler integration for accurate values)",
+                method,
+            )
+
+            return {
+                "status": "success",
+                "result": result,
+                "simulated": True,
+                "agent_id": self.id,
+                "method": method,
+            }
 
         return {
             "status": "error",
@@ -314,21 +330,38 @@ class OptimizerAgent(BaseAgent):
 
         if method.startswith("optimize."):
             # Optimize performance parameters
+            # D2 FIX: OptimizerAgent produces placeholder optimization metrics.
+            # Real optimization requires binding a calculation kernel — the
+            # improvement_metrics below are fabricated estimates.
             target = params.get("payload", {}).get("target", {})
-            params.get("payload", {}).get("goals", [])
+            goals = params.get("payload", {}).get("goals", [])
 
             result = {
                 "optimization_applied": True,
                 "improvement_metrics": {
-                    "performance_gain": "15%",
+                    "performance_gain": "15%",  # D2: PLACEHOLDER — not a real measurement
                     "resource_efficiency": "20% reduction",
                     "cost_savings": "10%",
                 },
                 "optimized_parameters": target.get("parameters", {}),
+                "goals_addressed": goals,
                 "optimized_at": time.time(),
             }
 
-            return {"status": "success", "result": result, "agent_id": self.id, "method": method}
+            logger.warning(
+                "OptimizerAgent.%s returned SIMULATED result "
+                "(improvement_metrics are placeholders; "
+                "bind a real optimization kernel for accurate values)",
+                method,
+            )
+
+            return {
+                "status": "success",
+                "result": result,
+                "simulated": True,
+                "agent_id": self.id,
+                "method": method,
+            }
 
         return {
             "status": "error",
