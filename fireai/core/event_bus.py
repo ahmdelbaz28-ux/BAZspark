@@ -150,6 +150,13 @@ class Events:
     HEALING_OCCURRED = "healing.occurred"
     HEALING_BLOCKED = "healing.blocked"
 
+    # ── Skill & MCP Tool Lifecycle (Stage C) ────────────────────────
+    SKILL_LOADED = "skill.loaded"
+    SKILL_REJECTED = "skill.rejected"
+    MCP_CONNECTED = "mcp.server.connected"
+    MCP_DISCONNECTED = "mcp.server.disconnected"
+    MCP_TOOL_CALLED = "mcp.tool.called"
+
 
 # ===========================================================================
 # Callback Type

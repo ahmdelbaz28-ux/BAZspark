@@ -32,6 +32,12 @@ Phase 4 — Memory Layer (this release):
     Stores and retrieves: layouts, preferences, standards, calculations,
     device mappings, engineering decisions with rationale.
     CRITICAL: Memory is ADVISORY CONTEXT only — never overrides calculations.
+
+Stage C2 — MCP Client Orchestrator:
+  - MCPOrchestrator: Connects to MCP servers (Model Context Protocol)
+    via stdio transport using the official ``mcp`` SDK.  Discovers tools
+    and routes calls through ToolSelector with permission gating and
+    secret scrubbing.  Replaces the SmitheryMCPClient stub.
 """
 
 from backend.services.air_quality_service import AirQualityData, AirQualityService
@@ -42,6 +48,13 @@ from backend.services.hazmat_service import (
     HazmatService,
     MaterialGroup,
     TemperatureClass,
+)
+from backend.services.mcp_client import (
+    DiscoveredTool,
+    MCPOrchestrator,
+    McpServerConfig,
+    get_mcp_orchestrator,
+    reset_mcp_orchestrator,
 )
 from backend.services.region_service import RegionContext, RegionService
 from backend.services.severe_weather_service import (
@@ -102,21 +115,22 @@ except ImportError:
 __all__ = [
     "AirQualityData",
     "AirQualityService",
+    "DiscoveredTool",
     "ElevationData",
-    # Phase 2
     "ElevationService",
     "GeocodingResult",
     "GeocodingService",
     "HazardousMaterialData",
     "HazmatService",
+    "MCPOrchestrator",
     "MaterialGroup",
+    "McpServerConfig",
     "MemoryAddRequest",
     "MemoryCategory",
     "MemoryResult",
     "MemoryScope",
     "MemorySearchRequest",
     "MemorySearchResponse",
-    # Phase 4 — Memory Layer (optional)
     "MemoryService",
     "MemoryServiceStatus",
     "PipelineState",
@@ -127,13 +141,13 @@ __all__ = [
     "TemperatureClass",
     "WeatherAlert",
     "WeatherData",
-    # Phase 1
     "WeatherService",
-    # Phase 3 — Workflow Engine (optional)
     "WorkflowService",
     "WorkflowStatus",
     "close_memory_service",
     "close_workflow_service",
+    "get_mcp_orchestrator",
     "get_memory_service",
     "get_workflow_service",
+    "reset_mcp_orchestrator",
 ]

@@ -380,31 +380,21 @@ class RevitAPIDocsSearcher:
 
 class SmitheryMCPClient:
     """
-    Client for Smithery MCP (Model Context Protocol) integration.
+    DEPRECATED — Stage C2 (agent-platform rebuild).
 
-    SAFETY DESIGN:
-    - READ operations (searching docs, reading BIM data) can execute directly.
-    - WRITE operations (CREATE/UPDATE/DELETE) are converted to ProposedAction
-      objects and enqueued for HUMAN REVIEW. They are NEVER executed directly.
+    This class was the *original* integration point for agentic BIM control
+    via Smithery MCP.  However, it never implemented the real MCP transport:
+    ``connect_to_smithery`` only validated API-key format and basic
+    reachability — it did NOT proxy tool calls to the Smithery cloud.
 
-    Usage:
-        client = SmitheryMCPClient()
+    The real MCP client transport now lives in
+    ``backend.services.mcp_client.MCPOrchestrator`` which uses the official
+    ``mcp`` SDK (``mcp.ClientSession`` + ``mcp.client.stdio``) to connect to
+    MCP servers advertised in the ``MCP_SERVERS`` env var.
 
-        # ✅ Safe: Read Revit API docs
-        results = client.search_revit_api("Wall", version="2023")
-
-        # ✅ Safe: Read BIM data
-        rooms = client.read_rooms_from_bim()
-
-        # ⚠️ Proposed (NOT executed): AI proposes creating a detector
-        proposal = client.propose_create_detector(
-            room_id="R-001",
-            position=(5.0, 3.0, 2.8),
-            detector_type="smoke",
-            rationale="NFPA 72 §17.6.3 requires coverage for this room",
-        )
-        # The proposal is now in ThreadSafeModelUpdateQueue.
-        # A human engineer must review and approve it in Revit.
+    This class is retained for backward compatibility (local Revit API doc
+    search, ProposedAction proposal queue).  New code MUST use
+    ``MCPOrchestrator`` instead.
     """
 
     def __init__(self, api_key: str | None = None) -> None:
