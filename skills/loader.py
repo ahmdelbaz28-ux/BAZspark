@@ -36,7 +36,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from fireai.agents.tool_selector import Capability, ToolSelector
 from fireai.core.event_bus import EventBus

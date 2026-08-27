@@ -1182,7 +1182,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
     partial_result: Any = None,
     physics_validator: Callable[[Any], bool] | None = None,
     force_mock_ollama: bool = False,
-):
+) -> Callable[[Callable[..., Any]], Callable[..., SafetyResult]]:
     """
     Self-healing decorator enforcing three tiers of system healing.
 
@@ -1198,7 +1198,7 @@ def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safe
 
     def decorator(func: Callable[..., Any]) -> Callable[..., SafetyResult]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> SafetyResult:
+        def wrapper(*args: Any, **kwargs: Any) -> SafetyResult:
             func_name = func.__name__
             input_args_dict = {"args": args, "kwargs": kwargs}
             before_hash = compute_hash(input_args_dict)
