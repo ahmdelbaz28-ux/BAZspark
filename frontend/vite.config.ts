@@ -65,7 +65,7 @@ function cspInjectPlugin(): import("vite").Plugin {
 export default defineConfig({
         base: basePath,
         plugins: [
-                !isProduction && mockupPreviewPlugin(),
+                !isProduction \&\& !isTest \&\& mockupPreviewPlugin\(\),
                 react(),
                 isTest ? null : tailwindcss(),
                 isTest ? null : cspInjectPlugin(),

@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { calculate, useClientMode, useServerMode, useTestMode } from "../index";
+import { calculate, useClientMode, useTestMode } from "../index";
 import type { EngineeringInputs } from "../index";
 
 const smokeInputs: EngineeringInputs = { tab: "smoke", ceilingHeightM: 3.0 };
-const heatInputs: EngineeringInputs = { tab: "heat", ceilingHeightM: 3.0, areaPerDetectorM2: 20 };
-const batteryInputs: EngineeringInputs = { tab: "battery", standbyLoadA: 0.5, alarmLoadA: 1.0 };
 const voltageInputs: EngineeringInputs = { tab: "voltage", currentA: 10, lengthM: 50, awgGauge: "12" };
-const detectorsInputs: EngineeringInputs = { tab: "detectors", roomAreaM2: 100, ceilingHeightM: 3 };
-const ductInputs: EngineeringInputs = { tab: "duct", ductWidthM: 0.3 };
 
-describe("engineering-calc package — index.ts entry point", () => {
+describe("engineering-calc package � index.ts entry point", () => {
 	it("should calculate voltage drop in client mode", async () => {
 		useClientMode();
 		const result = await calculate(voltageInputs);
@@ -32,4 +28,4 @@ describe("engineering-calc package — index.ts entry point", () => {
 		expect(result.spacingMeters).toBeDefined();
 		expect(result.spacingMeters).toBe(9.2);
 	});
-});
+};

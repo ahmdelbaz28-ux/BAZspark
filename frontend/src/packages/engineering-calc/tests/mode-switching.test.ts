@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { useClientMode, useServerMode, useTestMode } from "../index";
+import { useClientMode, useTestMode } from "../index";
 
-describe("engineering-calc package — mode switching", () => {
+describe("engineering-calc package � mode switching", () => {
 	it("should switch to client mode", async () => {
 		const { calculate } = await import("../index");
 		useClientMode();
@@ -16,4 +16,4 @@ describe("engineering-calc package — mode switching", () => {
 		expect(result.success).toBe(true);
 		expect(result.batteryCapacityAh).toBe(24.5);
 	});
-});
+};

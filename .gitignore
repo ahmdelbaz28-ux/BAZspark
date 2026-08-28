@@ -1,7 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
 
 # C extensions
@@ -50,72 +50,8 @@ coverage.xml
 logs/
 local_settings.py
 db.sqlite3
-db.sqlite3-journal
-# Flask stuff:
-instance/
-.webassets-cache
-# Scrapy stuff:
-.scrapy
-# Sphinx documentation
-docs/_build/
-# PyBuilder
-target/
-# Jupyter Notebook
-.ipynb_checkpoints
-# IPython
-profile_default/
-ipython_config.py
-# pyenv
-.python-version
-.pyenv
-.pyenvrc
-# pipenv
-Pipfile.lock
-# PEP 582
-__pypackages__/
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-# SageMath parsed files
-*.sage.py
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-# Spyder project settings
-.spyderproject
-.spyproject
-# Rope project settings
-.ropeproject
-# mkdocs documentation
-/site
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-# Pyre checker
-.pyre/
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-# Database
-*.sqlite3
-*.sqlite3-shm
-*.sqlite3-wal
+db.sqlite3-shm
+db.sqlite3-wal
 fireai_learning.sqlite3
 /db/
 backend/db/api_keys.json
@@ -270,17 +206,8 @@ nul
 .kilo/
 postman_collection*.json
 *.sonarbak
-# ── V230 FIX: Reject accidental Python repr filenames ──────────────────────
-# A BytesIO object accidentally passed to ezdxf.saveas() would create a file
-# named "<_io.BytesIO object at 0x7f...>". The < > characters break Vercel's
-# git checkout ("Resource provisioning failed" — every deployment fails).
-# These explicit patterns block any accidental repr-named file from being
-# tracked by git, while leaving all normal files alone.
-<_io*
-*BytesIO object at 0x*
-*object at 0x[0-9a-f]*
-# ── Cloudflare ───────────────────────────────────────────────────────────────
-.wrangler/
+# ── Cloudflare ──────────────────────────────────────────────────────────────
+-wrangler/
 .dev.vars
 .mf/
 test.ledger
@@ -290,12 +217,6 @@ revit_data/RevitAPI*.json
 # Coverage reports (regenerated on each test run)
 reports/coverage.json
 uploads/
-testsprite_tests\tmp\config.json
-# ── V234: Generated artifacts and runtime outputs ───────────────────────────
-# Playwright test results (regenerated on each test run)
-test-results/
-playwright-report/
-# Download directory (runtime output, not source code)
 # Worklog files (transient agent work logs)
 worklog.md
 # Exception: the audit worklog is committed because backend/tests/security/
@@ -313,29 +234,11 @@ bin/
 obj/
 # Agent workspace directories
 .mimocode/
-API_Test_Collection.postman_collection.json
-# Environment files (contain secrets — NEVER commit)
-.env
-.env.*
-*.secret
-!.env.example
-!.env.example.txt
-
-!frontend/src/data/
-
-# Agent Skills (Local agent settings only — do not commit to repository)
-.agents/skills/
-audit_master.json
-
-
-# ─── Root build artifacts (Phase 3 cleanup — 2026-08-03) ─────────────
-# These are NOT deployment targets. Vercel/HF build from frontend/.
-# Prevents re-adding the frozen gh-pages build that caused stale UI.
-/index.html
-/assets/
-/static/
-/404.html
-
+# Agent scratch scripts (temporary, not part of codebase)
+scratch/
+*.json.tmp
+.claude/
+feature_flags.json
 # AI prompt files � should never be committed to the repo
 /agent.md
 /agent_*.md
