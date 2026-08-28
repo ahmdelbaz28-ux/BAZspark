@@ -17,7 +17,11 @@ _device_lock = threading.Lock()
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from backend.auth import require_permission
+from backend.auth import (
+    get_current_principal,
+    get_current_role,
+    require_permission,
+)
 from backend.contract import validate_device, validate_paginated
 from backend.database import get_db
 from backend.limiter import limiter
@@ -25,7 +29,7 @@ from backend.models import (
     CreateDeviceInput,
     UpdateDeviceInput,
 )
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 from backend.response import success
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
@@ -34,16 +38,21 @@ project_router = APIRouter(prefix="/devices", tags=["devices"])
 
 @project_router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def list_global_devices(
+    request: Request,
     page: int = Query(1, ge=1),  # NOSONAR - python:S8410
     limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
     sort: str = Query("createdAt"),  # NOSONAR - python:S8410
     order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
-    """List devices globally or across the first project for compatibility."""
+    """List devices globally or across the first project accessible by the caller."""
     if order not in ("asc", "desc"):
         order = "desc"
+    role = get_current_role(request)
+    principal = get_current_principal(request)
+    author_filter = None if role == Role.ADMIN else (principal or "__unauthenticated_deny__")
+
     db = get_db()
-    projects = db.list_projects(page=1, limit=1)
+    projects = db.list_projects(page=1, limit=1, author=author_filter)
     if projects and projects.get("data"):
         project_id = projects["data"][0]["id"]
         result = db.list_devices(
@@ -54,14 +63,19 @@ async def list_global_devices(
     return success({"data": [], "total": 0, "page": page, "limit": limit})
 
 
-def _verify_project(project_id: str) -> None:
-    """Ensure the project exists before operating on its devices."""
+def _verify_project(project_id: str, request: Request | None = None) -> dict:
+    """Ensure the project exists and caller has tenant access before operating on its devices."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
         )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    if request is not None:
+        from backend.routers.projects import _verify_project_access
+
+        _verify_project_access(project, request)
+    return project
 
 
 # camelCase → snake_case sort field mapping
@@ -88,6 +102,7 @@ def _normalize_sort(sort: str) -> str:
 
 @router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def list_devices(
+    request: Request,
     project_id: str,
     page: int = Query(1, ge=1),  # NOSONAR - python:S8410
     limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
@@ -96,8 +111,8 @@ async def list_devices(
 ):
     if order not in ("asc", "desc"):
         order = "desc"
-    """List all devices in a project with pagination."""
-    _verify_project(project_id)
+    """List all devices in a project with pagination and tenant isolation."""
+    _verify_project(project_id, request)
     db = get_db()
     result = db.list_devices(
         project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
@@ -125,7 +140,7 @@ async def create_device(
     If load_unit is "W", load is divided by voltage (requires voltage > 0).
     The original unit and raw value are stored in properties for traceability.
     """
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
 
     # ── Unit conversion for life-safety ──────────────────────────────────
@@ -178,9 +193,9 @@ async def create_device(
 
 
 @router.get("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
-async def get_device(project_id: str, device_id: str):
-    """Get a device by ID within a project."""
-    _verify_project(project_id)
+async def get_device(request: Request, project_id: str, device_id: str):
+    """Get a device by ID within a project with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:
@@ -197,14 +212,14 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
     request: Request, project_id: str, device_id: str, input_data: UpdateDeviceInput
 ):
     """
-    Update an existing device.
+    Update an existing device with tenant verification.
 
     LIFE-SAFETY: The load_unit field converts the load value to Amperes
     before storage, matching the create_device behavior. Without this
     conversion, updating load: 500 intending 500mA would store 500A —
     a 1000x error in NFPA 72 battery sizing calculations.
     """
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
 
     updates = input_data.model_dump(exclude_none=True)
@@ -265,13 +280,13 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
 @limiter.limit("30/minute")
 async def delete_device(request: Request, project_id: str, device_id: str):
     """
-    Delete a device from a project.
+    Delete a device from a project with tenant verification.
 
     V114 FIX: Safety-critical device deletion now logs audit trail.
     Fire alarm devices (smoke detectors, pull stations, notification appliances)
     are safety-critical — deletion must be traceable for liability and NFPA compliance.
     """
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:

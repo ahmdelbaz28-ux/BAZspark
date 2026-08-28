@@ -1787,7 +1787,11 @@ class PingProviderResponse(BaseModel):
     error: str | None = None
 
 
-@router.post("/ping-provider", response_model=PingProviderResponse)
+@router.post(
+    "/ping-provider",
+    response_model=PingProviderResponse,
+    dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+)
 async def ping_provider_endpoint(
     req: PingProviderRequest,
 ) -> PingProviderResponse:
