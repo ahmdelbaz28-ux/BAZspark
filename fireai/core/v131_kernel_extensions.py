@@ -61,9 +61,14 @@ class NFPA72Constants:
     }
     HEAT_DEFAULT_RADIUS_M: float = 4.57
 
-    # Battery constants
-    BATTERY_STANDBY_HOURS: float = 24.0
-    BATTERY_ALARM_MINUTES: float = 5.0
+    from fireai.constants.nfpa72 import (
+        BATTERY_ALARM_MINUTES as SSoT_BATTERY_ALARM_MINUTES,
+        BATTERY_STANDBY_HOURS as SSoT_BATTERY_STANDBY_HOURS,
+    )
+
+    # Battery constants (from SSoT)
+    BATTERY_STANDBY_HOURS: float = SSoT_BATTERY_STANDBY_HOURS
+    BATTERY_ALARM_MINUTES: float = SSoT_BATTERY_ALARM_MINUTES
 
     # Audible constants
     MIN_AUDIBLE_ABOVE_AMBIENT_DBA: float = 15.0

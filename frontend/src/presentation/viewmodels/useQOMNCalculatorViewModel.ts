@@ -1,15 +1,5 @@
-/**
- * useQOMNCalculatorViewModel.ts — ViewModel for QOMN Engineering Calculator Page.
- * Implements MVVM Architecture (Presentation Layer ViewModel).
- * Handles tab navigation, calculation state, and delegates calculation requests to EngineeringRepository.
- */
-
 import { useState } from "react";
-import { engineeringRepository } from "../../data/repositories/EngineeringRepository";
-import type {
-	QOMNCalculationRequest,
-	QOMNCalculationResult,
-} from "../../domain/repositories/IEngineeringRepository";
+import { calculate, type EngineeringInputs, type EngineeringResult } from "@/packages/engineering-calc";
 
 export type QOMNTab =
 	| "smoke"
@@ -22,14 +12,12 @@ export type QOMNTab =
 export function useQOMNCalculatorViewModel() {
 	const [activeTab, setActiveTab] = useState<QOMNTab>("smoke");
 	const [calculating, setCalculating] = useState(false);
-	const [lastResult, setLastResult] = useState<QOMNCalculationResult | null>(
-		null,
-	);
+	const [lastResult, setLastResult] = useState<EngineeringResult | null>(null);
 
-	const runCalculation = async (params: QOMNCalculationRequest) => {
+	const runCalculation = async (inputs: EngineeringInputs) => {
 		setCalculating(true);
 		try {
-			const res = await engineeringRepository.calculateQOMN(params);
+			const res = await calculate(inputs);
 			setLastResult(res);
 			return res;
 		} finally {
