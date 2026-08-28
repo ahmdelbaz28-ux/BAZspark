@@ -104,7 +104,7 @@ function generateSimulatedData(): {
 	return { voltage, current, frequency, hour, fault };
 }
 
-self.onmessage = async (e) => {
+self.onmessage = async (e: MessageEvent) => {
 	const { type } = e.data;
 
 	if (type === "start") {
