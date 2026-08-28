@@ -32,13 +32,17 @@ try:
 except ImportError:  # pragma: no cover
     Paragraph = None  # type: ignore[assignment,misc]
 
-from backend.auth import require_permission
+from backend.auth import (
+    get_current_principal,
+    get_current_role,
+    require_permission,
+)
 from backend.database import get_db
 from backend.limiter import limiter
 from backend.models import GenerateReportInput
 
 GenerateReportInput.model_rebuild()
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 from backend.response import safe_filename as _safe_filename
 
 # V273 FIX (F821): Import Paragraph at module level so helper functions
@@ -55,13 +59,19 @@ router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"])
 project_router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-def _verify_project(project_id: str) -> None:
+def _verify_project(project_id: str, request: Request | None = None) -> dict:
+    """Ensure the project exists and caller has tenant access before operating on its reports."""
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
         )  # NOSONAR:S8415 — endpoint error handling is intentional  # NOSONAR
+    if request is not None:
+        from backend.routers.projects import _verify_project_access
+
+        _verify_project_access(project, request)
+    return project
 
 
 def _compute_voltage_drop_for_circuit(
@@ -807,8 +817,8 @@ async def list_reports(
 async def generate_report(
     request: Request, project_id: str, input_data: GenerateReportInput = Body(..., embed=False)
 ):
-    """Generate a new engineering report."""
-    _verify_project(project_id)
+    """Generate a new engineering report with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
 
     report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR
@@ -880,9 +890,13 @@ async def generate_report(
 async def generate_global_report(
     request: Request, input_data: GenerateReportInput = Body(..., embed=False)
 ):
-    """Generate a report globally using the first available project for compatibility."""
+    """Generate a report globally using the first available project accessible by the caller."""
+    role = get_current_role(request)
+    principal = get_current_principal(request)
+    author_filter = None if role == Role.ADMIN else (principal or "__unauthenticated_deny__")
+
     db = get_db()
-    projects = db.list_projects(page=1, limit=1)
+    projects = db.list_projects(page=1, limit=1, author=author_filter)
     if not projects or not projects.get("data"):
         raise HTTPException(
             status_code=404, detail="No projects found to generate report"
@@ -934,9 +948,9 @@ async def generate_global_report(
 
 
 @router.get("/{report_id}", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
-async def get_report(project_id: str, report_id: str):
-    """Get a report by ID."""
-    _verify_project(project_id)
+async def get_report(request: Request, project_id: str, report_id: str):
+    """Get a report by ID with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
@@ -1092,12 +1106,13 @@ def _build_dxf_report(report, report_id):
     },
 )
 async def export_report(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    request: Request,
     project_id: str,
     report_id: str,
     format: str = Query("json", pattern="^(pdf|dxf|json)$"),  # NOSONAR - python:S8410
 ):
-    """Export a report in the specified format."""
-    _verify_project(project_id)
+    """Export a report in the specified format with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
@@ -1306,7 +1321,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
     Returns:
         StreamingResponse with markdown content.
     """
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
     project = db.get_project(project_id)
     devices = db.get_all_devices_for_project(project_id)

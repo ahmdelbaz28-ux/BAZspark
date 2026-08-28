@@ -24,12 +24,19 @@ from backend.services.connection_service import ConnectionService
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
 
 
-def _verify_project(project_id: str) -> None:
-    """Ensure the project exists before operating on its connections."""
-    if not ConnectionService.verify_project_exists(project_id):
+def _verify_project(project_id: str, request: Request | None = None) -> dict:
+    """Ensure the project exists and caller has tenant access before operating on its connections."""
+    db = get_db()
+    project = db.get_project(project_id)
+    if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
         )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    if request is not None:
+        from backend.routers.projects import _verify_project_access
+
+        _verify_project_access(project, request)
+    return project
 
 
 def _normalize_sort(sort: str) -> str:
@@ -39,6 +46,7 @@ def _normalize_sort(sort: str) -> str:
 
 @router.get("", dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
 async def list_connections(
+    request: Request,
     project_id: str,
     page: int = Query(1, ge=1),  # NOSONAR - python:S8410
     limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
@@ -47,8 +55,8 @@ async def list_connections(
 ):
     if order not in ("asc", "desc"):
         order = "desc"
-    """List all connections in a project with pagination."""
-    _verify_project(project_id)
+    """List all connections in a project with pagination and tenant isolation."""
+    _verify_project(project_id, request)
     db = get_db()
     result = db.list_connections(
         project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
@@ -62,8 +70,8 @@ async def list_connections(
 )
 @limiter.limit("30/minute")
 async def create_connection(request: Request, project_id: str, input_data: CreateConnectionInput):
-    """Create a new connection in a project."""
-    _verify_project(project_id)
+    """Create a new connection in a project with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
 
     # Verify both devices exist
@@ -113,12 +121,12 @@ async def update_connection(
     | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """
-    Update an existing connection in a project.
+    Update an existing connection in a project with tenant verification.
 
     Allows updating cable size, length, and connection type.
     These parameters affect voltage drop calculations per NFPA 72.
     """
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
 
     # Check connection exists via indexed lookup
@@ -155,8 +163,8 @@ async def update_connection(
 )
 @limiter.limit("30/minute")
 async def delete_connection(request: Request, project_id: str, connection_id: str):
-    """Delete a connection from a project."""
-    _verify_project(project_id)
+    """Delete a connection from a project with tenant verification."""
+    _verify_project(project_id, request)
     db = get_db()
     deleted = db.delete_connection(project_id, connection_id)
     if not deleted:

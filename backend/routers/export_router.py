@@ -155,7 +155,7 @@ async def plan_export(
 async def execute_export(
     request: Request,
     req: ExecuteExportRequest,
-    _: None = Depends(require_permission(Permission.EXPORT_READ)),
+    _: None = Depends(require_permission(Permission.EXPORT_EXECUTE)),
 ) -> dict[str, Any]:
     """Directly execute deterministic export with OCC revision check and artifact validation."""
     principal = _get_principal(request)
@@ -199,7 +199,7 @@ async def execute_export(
 async def create_export_run(
     request: Request,
     req: CreateExportRunRequest,
-    _: None = Depends(require_permission(Permission.EXPORT_READ)),
+    _: None = Depends(require_permission(Permission.EXPORT_EXECUTE)),
 ) -> dict[str, Any]:
     """Launch a server-authoritative AgentRun lifecycle for the export pipeline."""
     principal = _get_principal(request)
