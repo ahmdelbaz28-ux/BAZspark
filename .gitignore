@@ -343,3 +343,6 @@ audit_master.json
 # Agent scratch scripts (temporary, not part of codebase)
 scratch/
 *.json.tmp
+
+.claude/
+feature_flags.json
