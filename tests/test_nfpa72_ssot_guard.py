@@ -13,7 +13,6 @@ from __future__ import annotations
 import ast
 import glob
 import os
-import pytest
 
 
 def get_canonical_constants() -> dict[str, int]:

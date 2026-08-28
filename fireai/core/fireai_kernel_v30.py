@@ -46,6 +46,13 @@ from typing import (
 import numpy as np
 from numpy.typing import NDArray
 
+from fireai.constants.nfpa72 import (
+    BATTERY_ALARM_MINUTES as SSoT_BATTERY_ALARM_MINUTES,
+)
+from fireai.constants.nfpa72 import (
+    BATTERY_STANDBY_HOURS as SSoT_BATTERY_STANDBY_HOURS,
+)
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -90,11 +97,6 @@ class NFPA72:
         9.1: 7.32,
     }
     HEAT_DEFAULT_RADIUS_M: float = 4.57
-
-    from fireai.constants.nfpa72 import (
-        BATTERY_ALARM_MINUTES as SSoT_BATTERY_ALARM_MINUTES,
-        BATTERY_STANDBY_HOURS as SSoT_BATTERY_STANDBY_HOURS,
-    )
 
     # §10.6.7.2.1 — battery (from SSoT)
     BATTERY_STANDBY_HOURS: float = SSoT_BATTERY_STANDBY_HOURS
