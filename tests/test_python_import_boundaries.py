@@ -15,6 +15,17 @@ import os
 from collections import defaultdict
 
 
+def is_type_checking_guard(node: ast.AST) -> bool:
+    """Check if an If node is guarded by TYPE_CHECKING."""
+    if isinstance(node, ast.If):
+        test = node.test
+        if isinstance(test, ast.Name) and test.id == "TYPE_CHECKING":
+            return True
+        if isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING":
+            return True
+    return False
+
+
 def build_import_graph() -> tuple[dict[str, list[str]], set[str]]:
     """Build the internal dependency graph for all workspace Python modules."""
     package_roots = ["backend", "fireai", "core", "adapters", "parsers", "services", "qomn_fire", "facp_system"]
@@ -35,15 +46,17 @@ def build_import_graph() -> tuple[dict[str, list[str]], set[str]]:
             except Exception:
                 continue
 
-            imports: list[str] = []
-            for node in ast.walk(tree):
+            top_imports: list[str] = []
+            for node in tree.body:
+                if is_type_checking_guard(node):
+                    continue  # Ignore purely static type-checking annotations
                 if isinstance(node, ast.Import):
                     for n in node.names:
-                        imports.append(n.name)
+                        top_imports.append(n.name)
                 elif isinstance(node, ast.ImportFrom):
                     if node.module:
-                        imports.append(node.module)
-            modules[mod_name] = imports
+                        top_imports.append(node.module)
+            modules[mod_name] = top_imports
 
     all_modules = set(modules.keys())
     graph: dict[str, set[str]] = defaultdict(set)

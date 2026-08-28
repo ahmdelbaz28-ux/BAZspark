@@ -432,7 +432,7 @@ export class DataService {
 		});
 		this.mockWorker.postMessage({ type: "start" });
 
-		this.mockWorker.onmessage = (e) => {
+		this.mockWorker.onmessage = (e: MessageEvent) => {
 			const { type, data } = e.data;
 			if (type === "data") {
 				this.handleData(data);

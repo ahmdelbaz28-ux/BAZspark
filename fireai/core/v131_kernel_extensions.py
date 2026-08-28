@@ -28,6 +28,13 @@ if TYPE_CHECKING:
     from fireai.core.fireai_kernel_v30 import KernelCore
 
 
+from fireai.constants.nfpa72 import (
+    BATTERY_ALARM_MINUTES as SSoT_BATTERY_ALARM_MINUTES,
+)
+from fireai.constants.nfpa72 import (
+    BATTERY_STANDBY_HOURS as SSoT_BATTERY_STANDBY_HOURS,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,11 +67,6 @@ class NFPA72Constants:
         9.1: 7.32,
     }
     HEAT_DEFAULT_RADIUS_M: float = 4.57
-
-    from fireai.constants.nfpa72 import (
-        BATTERY_ALARM_MINUTES as SSoT_BATTERY_ALARM_MINUTES,
-        BATTERY_STANDBY_HOURS as SSoT_BATTERY_STANDBY_HOURS,
-    )
 
     # Battery constants (from SSoT)
     BATTERY_STANDBY_HOURS: float = SSoT_BATTERY_STANDBY_HOURS
