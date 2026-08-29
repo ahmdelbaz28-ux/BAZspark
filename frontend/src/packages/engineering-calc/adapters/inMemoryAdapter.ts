@@ -35,6 +35,10 @@ export const inMemoryAdapter: EngineeringCalculationPort = {
 			areaPerDetectorM2: { min: 0, max: 500, unit: "_M2", description: "Area per detector in m²" },
 			standbyLoadA: { min: 0, max: 100, unit: "_A", description: "Standby load in amperes" },
 			alarmLoadA: { min: 0, max: 100, unit: "_A", description: "Alarm load in amperes" },
+			standbyHours: { min: 0, max: 168, unit: "_HOURS", description: "Standby duration in hours" },
+			alarmMinutes: { min: 0, max: 120, unit: "_MINUTES", description: "Alarm duration in minutes" },
+			safetyFactor: { min: 1.0, max: 3.0, unit: "_RATIO", description: "Battery safety/aging factor" },
+			efficiency: { min: 0.01, max: 1.0, unit: "_RATIO", description: "Battery efficiency factor (0 to 1)" },
 			currentA: { min: 0, max: 1000, unit: "_A", description: "Current in amperes" },
 			lengthM: { min: 0, max: 10000, unit: "_M", description: "Length in meters" },
 		};

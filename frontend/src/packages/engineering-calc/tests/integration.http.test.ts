@@ -57,7 +57,49 @@ describe("engineering-calc package — http adapter (mocked API)", () => {
 		expect(qomnApi.battery).toHaveBeenCalledWith({
 			standby_load_a: 0.5,
 			alarm_load_a: 1.0,
+			standby_hours: undefined,
+			alarm_minutes: undefined,
+			safety_factor: undefined,
+			efficiency: undefined,
 		});
+	});
+
+	it("should forward safety_factor and efficiency to HTTP API", async () => {
+		vi.mocked(qomnApi.battery).mockResolvedValue({ battery_capacity_ah: 32.8 });
+		useServerMode();
+		const { calculate } = await import("../index");
+		const result = await calculate({
+			tab: "battery",
+			standbyLoadA: 0.8,
+			alarmLoadA: 2.5,
+			standbyHours: 60,
+			alarmMinutes: 15,
+			safetyFactor: 1.4,
+			efficiency: 0.85,
+		});
+		expect(result.success).toBe(true);
+		expect(result.batteryCapacityAh).toBe(32.8);
+		expect(qomnApi.battery).toHaveBeenCalledWith({
+			standby_load_a: 0.8,
+			alarm_load_a: 2.5,
+			standby_hours: 60,
+			alarm_minutes: 15,
+			safety_factor: 1.4,
+			efficiency: 0.85,
+		});
+	});
+
+	it("should reject invalid inputs early in HTTP mode without calling backend", async () => {
+		useServerMode();
+		const { calculate } = await import("../index");
+		const result = await calculate({
+			tab: "battery",
+			standbyLoadA: -1,
+			alarmLoadA: 1.0,
+		});
+		expect(result.success).toBe(false);
+		expect(result.message).toBe("Validation failed");
+		expect(qomnApi.battery).not.toHaveBeenCalled();
 	});
 
 	it("should calculate detector placement via HTTP", async () => {
@@ -71,6 +113,7 @@ describe("engineering-calc package — http adapter (mocked API)", () => {
 		expect(qomnExtendedApi.placeDetectors).toHaveBeenCalledWith({
 			room_area_m2: 100,
 			ceiling_height_m: 3,
+			detector_type: undefined,
 		});
 	});
 
@@ -85,6 +128,8 @@ describe("engineering-calc package — http adapter (mocked API)", () => {
 		expect(result.ductResults).toEqual(mockDuct);
 		expect(qomnExtendedApi.placeDuct).toHaveBeenCalledWith({
 			duct_width_m: 0.3,
+			duct_velocity_mps: undefined,
+			airflow_direction: undefined,
 		});
 	});
 });

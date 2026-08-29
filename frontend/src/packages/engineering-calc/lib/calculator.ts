@@ -1,4 +1,4 @@
-import type { CalculationMode, EngineeringCalculationPort, EngineeringInputs, EngineeringResult } from "../port";
+import type { CalculationMode, EngineeringCalculationPort, EngineeringInputs, EngineeringResult, PhysicsGuards } from "../port";
 import { httpAdapter } from "../adapters/httpAdapter";
 import { clientAdapter } from "../adapters/clientAdapter";
 import { inMemoryAdapter } from "../adapters/inMemoryAdapter";
@@ -47,6 +47,19 @@ export async function calculate(
 				return clientAdapter.calculate(inputs);
 			}
 			return httpAdapter.calculate(inputs);
+	}
+}
+
+export async function getPhysicsGuards(mode?: CalculationMode): Promise<PhysicsGuards> {
+	const effectiveMode = mode ?? getCurrentMode();
+	switch (effectiveMode) {
+		case "client":
+			return clientAdapter.getPhysicsGuards();
+		case "test":
+			return inMemoryAdapter.getPhysicsGuards();
+		case "server":
+		default:
+			return httpAdapter.getPhysicsGuards();
 	}
 }
 
