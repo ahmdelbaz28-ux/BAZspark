@@ -35,6 +35,7 @@ except ImportError:  # Python < 3.9
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -47,9 +48,9 @@ SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_
 
 logger = logging.getLogger(__name__)
 
-# Router has NO prefix at the APIRouter() level.
+# Router has NO prefix at the APIRouter(route_class=StandardizedAPIRoute) level.
 # Mounted at /api/v1 by app.py's _safe_include_router loop.
-router = APIRouter(tags=["admin-config"])
+router = APIRouter(tags=["admin-config"], route_class=StandardizedAPIRoute)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -236,25 +236,26 @@ class AutoCADService:
                 # Hide AutoCAD application if we launched it
                 try:
                     self.acad_app.Visible = False
-                except BaseException:
+                except Exception:
                     pass
                 self.acad_app = None
-
+            return True
+        except Exception as e:
+            logger.exception("Error disconnecting from AutoCAD: %s", e)
+            return False
+        finally:
             self.acad_doc = None
             self.acad_util = None
             self.connected = False
             self.simulation_mode = False  # V213: reset on disconnect
 
-            # Uninitialize COM
+            # Uninitialize COM safely
             if HAS_AUTOCAD_API:
-                pythoncom.CoUninitialize()
-
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception:
+                    pass
             logger.info("Disconnected from AutoCAD")
-            return True
-
-        except Exception as e:
-            logger.exception("Error disconnecting from AutoCAD: %s", e)
-            return False
 
     def initialize(self) -> bool:
         """

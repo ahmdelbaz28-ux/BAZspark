@@ -62,6 +62,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ logger = logging.getLogger(__name__)
 #
 # Now revit.py routes are at /api/v1/revit/elements/* (Revit-specific),
 # and elements.py routes remain at /api/v1/elements/* (UDM CRUD).
-router = APIRouter(prefix="/revit", tags=["revit"])
+router = APIRouter(prefix="/revit", tags=["revit"], route_class=StandardizedAPIRoute)
 
 # ── Thread-safe service singleton ────────────────────────────────────────
 # Delegates to the unified CADGateway to ensure singleton consistency.
@@ -931,7 +932,11 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
     )
 
     return _as_element_response(
-        {"success": element_id is not None, "element_id": element_id, "message": f"Wall created: {element_id}" if element_id else None},
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Wall created: {element_id}" if element_id else None,
+        },
         "Wall created",
         simulation_mode=svc.simulation_mode,
     )
@@ -974,7 +979,11 @@ async def create_floor(request: Request, body: CreateFloorRequest) -> ElementRes
     )
 
     return _as_element_response(
-        {"success": element_id is not None, "element_id": element_id, "message": f"Floor created: {element_id}" if element_id else None},
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Floor created: {element_id}" if element_id else None,
+        },
         "Floor created",
         simulation_mode=svc.simulation_mode,
     )
@@ -1021,7 +1030,11 @@ async def create_door(request: Request, body: CreateDoorRequest) -> ElementRespo
     )
 
     return _as_element_response(
-        {"success": element_id is not None, "element_id": element_id, "message": f"Door created: {element_id}" if element_id else None},
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Door created: {element_id}" if element_id else None,
+        },
         "Door created",
         simulation_mode=svc.simulation_mode,
     )
@@ -1068,7 +1081,11 @@ async def create_window(request: Request, body: CreateWindowRequest) -> ElementR
     )
 
     return _as_element_response(
-        {"success": element_id is not None, "element_id": element_id, "message": f"Window created: {element_id}" if element_id else None},
+        {
+            "success": element_id is not None,
+            "element_id": element_id,
+            "message": f"Window created: {element_id}" if element_id else None,
+        },
         "Window created",
         simulation_mode=svc.simulation_mode,
     )

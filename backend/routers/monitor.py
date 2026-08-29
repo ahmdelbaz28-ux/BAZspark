@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import PlainTextResponse
 
 from backend.auth import require_permission
@@ -33,7 +34,7 @@ from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["monitor"])
+router = APIRouter(tags=["monitor"], route_class=StandardizedAPIRoute)
 
 
 # ════════════════════════════════════════════════════════════════════════════

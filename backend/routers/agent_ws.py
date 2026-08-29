@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.api_keys import validate_api_key
@@ -42,7 +43,7 @@ from backend.services.llm_service import ping_provider
 logger = logging.getLogger(__name__)
 
 
-router = APIRouter(prefix="/agent", tags=["agent-ws"])
+router = APIRouter(prefix="/agent", tags=["agent-ws"], route_class=StandardizedAPIRoute)
 
 # Active connections from agents
 # Map from agent_type -> list of WebSocket
@@ -367,9 +368,7 @@ def _consume_ws_ticket(ticket: str, origin: str | None) -> Any | None:
             return None
 
     logger.info("WS ticket accepted for %s (single-use)", meta["name"])
-    return SimpleNamespace(
-        role=meta["role"], name=meta["name"], email=meta["email"]
-    )
+    return SimpleNamespace(role=meta["role"], name=meta["name"], email=meta["email"])
 
 
 class AIOrchestrationService:

@@ -11,6 +11,7 @@ calculations per NFPA 72-2022 §27.4.1.2.
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.contract import validate_connection, validate_paginated
@@ -21,7 +22,7 @@ from backend.rbac import Permission
 from backend.response import success
 from backend.services.connection_service import ConnectionService
 
-router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
+router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"], route_class=StandardizedAPIRoute)
 
 
 def _verify_project(project_id: str, request: Request | None = None) -> dict:

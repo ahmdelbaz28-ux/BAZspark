@@ -25,6 +25,7 @@ import logging
 import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import get_current_principal, require_permission
@@ -125,7 +126,7 @@ def _validate_file_path(file_path: str) -> str:
     return real_path
 
 
-router = APIRouter(prefix="/workflow", tags=["workflow"])
+router = APIRouter(prefix="/workflow", tags=["workflow"], route_class=StandardizedAPIRoute)
 
 
 @router.get("/status", dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))])

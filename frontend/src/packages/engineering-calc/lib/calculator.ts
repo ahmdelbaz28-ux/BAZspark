@@ -2,7 +2,6 @@ import type { CalculationMode, EngineeringCalculationPort, EngineeringInputs, En
 import { httpAdapter } from "../adapters/httpAdapter";
 import { clientAdapter } from "../adapters/clientAdapter";
 import { inMemoryAdapter } from "../adapters/inMemoryAdapter";
-import { validate } from "./validator";
 
 let currentAdapter: EngineeringCalculationPort = httpAdapter;
 
@@ -51,4 +50,4 @@ export async function calculate(
 	}
 }
 
-export { validate };
+export { validate } from "./validator";

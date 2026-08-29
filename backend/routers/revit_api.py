@@ -29,6 +29,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import require_permission
@@ -48,7 +49,7 @@ from revit_integration.dto.revit_dto import (
 from revit_integration.services.revit_sync_service import RevitSyncService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/revit-integration", tags=["Revit Integration"])
+router = APIRouter(prefix="/revit-integration", tags=["Revit Integration"], route_class=StandardizedAPIRoute)
 
 # Initialize services
 # In a real implementation, these would be injected via DI container

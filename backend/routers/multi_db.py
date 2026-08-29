@@ -22,6 +22,7 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.limiter import limiter
@@ -31,7 +32,7 @@ from backend.schemas import ApiResponse
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/multi-db", tags=["multi-db"])
+router = APIRouter(prefix="/multi-db", tags=["multi-db"], route_class=StandardizedAPIRoute)
 
 
 @router.get("/health", response_model=ApiResponse[dict[str, bool]])

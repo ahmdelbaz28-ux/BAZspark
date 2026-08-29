@@ -27,6 +27,7 @@ import os
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.api_keys import validate_api_key
 from backend.auth import require_permission
@@ -36,14 +37,14 @@ from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/projects/{project_id}/sync", tags=["sync"])
+router = APIRouter(prefix="/projects/{project_id}/sync", tags=["sync"], route_class=StandardizedAPIRoute)
 
 # _FIREAI_API_KEY removed — now read at runtime for lazy loading
 # and validated against RBAC key store via backend.api_keys.validate_api_key
 
 # ── WebSocket connection manager ────────────────────────────────────────────
 
-ws_router = APIRouter(tags=["websocket"])
+ws_router = APIRouter(tags=["websocket"], route_class=StandardizedAPIRoute)
 
 
 class ConnectionManager:

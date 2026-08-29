@@ -35,6 +35,7 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends, Query
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.rbac import Permission
@@ -59,6 +60,7 @@ router = APIRouter(
     prefix="/environment",
     tags=["environment"],
     dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+    route_class=StandardizedAPIRoute,
 )
 
 

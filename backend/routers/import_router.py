@@ -12,6 +12,7 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -35,7 +36,7 @@ from backend.rbac import Permission
 
 logger = logging.getLogger("fireai.routers.import")
 
-router = APIRouter(prefix="/import", tags=["import-v2"])
+router = APIRouter(prefix="/import", tags=["import-v2"], route_class=StandardizedAPIRoute)
 
 # Permissions
 ImportReadRole = Annotated[None, Depends(require_permission(Permission.PROJECT_READ))]

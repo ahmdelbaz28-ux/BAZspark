@@ -15,6 +15,7 @@ import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
 
 from backend.auth import (
@@ -37,7 +38,7 @@ from backend.project_bridge import (
 from backend.rbac import Permission, Role
 from backend.response import success
 
-router = APIRouter(prefix="/projects", tags=["projects"])
+router = APIRouter(prefix="/projects", tags=["projects"], route_class=StandardizedAPIRoute)
 _SORT_MAP = {
     "createdAt": "created_at",
     "updatedAt": "updated_at",
@@ -255,7 +256,9 @@ async def export_project_revit(request: Request, project_id: str) -> StreamingRe
     },
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
-async def export_project_ifc(request: Request, project_id: str, version: str | None = None) -> StreamingResponse:
+async def export_project_ifc(
+    request: Request, project_id: str, version: str | None = None
+) -> StreamingResponse:
     """Export a project as IFC (placeholder).
     Accepts optional version parameter; only known versions are allowed.
     """
@@ -289,9 +292,7 @@ async def delete_project(request: Request, project_id: str):
     db = get_db()
     existing = db.get_project(project_id)
     if not existing:
-        raise HTTPException(
-            status_code=404, detail="Project not found"
-        )
+        raise HTTPException(status_code=404, detail="Project not found")
     _verify_project_access(existing, request)
 
     deleted = db.delete_project(project_id)

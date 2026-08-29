@@ -21,6 +21,7 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -35,7 +36,7 @@ from backend.services.fds_queue_service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"])
+router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"], route_class=StandardizedAPIRoute)
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
 SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]

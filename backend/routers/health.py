@@ -17,6 +17,7 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.contract import validate_health
@@ -27,7 +28,7 @@ from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["health"])
+router = APIRouter(tags=["health"], route_class=StandardizedAPIRoute)
 
 # Track application start time
 _start_time = time.time()

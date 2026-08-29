@@ -35,12 +35,13 @@ from backend.core.export_orchestrator import (
     UnsupportedExportFormatError,
     default_export_orchestrator,
 )
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.rbac import Permission
 
 logger = logging.getLogger("fireai.routers.export")
 
-router = APIRouter(prefix="/export", tags=["export-v2"])
+router = APIRouter(prefix="/export", tags=["export-v2"], route_class=StandardizedAPIRoute)
 
 # Permissions
 ExportReadRole = Annotated[None, Depends(require_permission(Permission.EXPORT_READ))]

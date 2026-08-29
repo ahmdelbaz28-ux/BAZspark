@@ -18,6 +18,7 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.db_service import get_db_service
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 # (relative). The absolute prefix caused double-prefixing when
 # _safe_include_router added "/api/v1" via app.include_router(prefix="/api/v1"),
 # producing /api/v1/api/v1/elements which broke all tests.
-router = APIRouter(prefix="/elements", tags=["elements"])
+router = APIRouter(prefix="/elements", tags=["elements"], route_class=StandardizedAPIRoute)
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
 DbDep = Annotated[Any, Depends(get_db_service)]

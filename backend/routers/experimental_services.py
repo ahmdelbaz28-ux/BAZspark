@@ -52,6 +52,7 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -60,7 +61,7 @@ from backend.response import success
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/experimental", tags=["experimental-services"])
+router = APIRouter(prefix="/experimental", tags=["experimental-services"], route_class=StandardizedAPIRoute)
 
 SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_CONFIG))]
 

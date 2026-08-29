@@ -27,6 +27,7 @@ Reference: agent.md Rules 1-21, Priority Hierarchy
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import get_current_principal, require_permission
 from backend.limiter import limiter
@@ -93,12 +94,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/memory",
     tags=["memory"],
-    responses={
-        404: {
-            "description": "Memory not found"
-        },  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-        500: {"description": "Internal server error"},
-    },
+    route_class=StandardizedAPIRoute,
 )
 
 

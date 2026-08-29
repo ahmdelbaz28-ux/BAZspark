@@ -51,6 +51,7 @@ except ImportError:
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -82,7 +83,7 @@ _MODELS_PATH = "/models"
 _SAFE_MODEL_NAME_RE = re.compile(r"^[\w][\w./:+-]{0,127}$")
 _SAFE_KEY_ID_RE = re.compile(r"^[\w-]{1,64}$")
 
-router = APIRouter(prefix="/settings/keys", tags=["settings"])
+router = APIRouter(prefix="/settings/keys", tags=["settings"], route_class=StandardizedAPIRoute)
 
 
 # ── V151.1 Audit logging helper ──────────────────────────────────────────────

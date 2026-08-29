@@ -11,6 +11,7 @@ import logging
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import require_permission
@@ -19,7 +20,7 @@ from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/self-healing", tags=["self-healing"])
+router = APIRouter(prefix="/self-healing", tags=["self-healing"], route_class=StandardizedAPIRoute)
 
 _LLM_HEALING_ENV_VAR = "QOMN_ENABLE_LLM_HEALING"
 

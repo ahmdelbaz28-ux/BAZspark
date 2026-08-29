@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -12,7 +13,7 @@ from parsers._path_security import UnsafePathError, validate_input_path
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/cad", tags=["CAD"])
+router = APIRouter(prefix="/cad", tags=["CAD"], route_class=StandardizedAPIRoute)
 
 _CAD_PROVIDER_DESCRIPTION = "Provider: autocad or revit"
 

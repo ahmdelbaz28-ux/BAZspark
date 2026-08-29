@@ -12,13 +12,14 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import require_permission
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/engineering-copilot", tags=["Engineering Copilot"])
+router = APIRouter(prefix="/engineering-copilot", tags=["Engineering Copilot"], route_class=StandardizedAPIRoute)
 
 ai_copilot = None
 translation_engine = None

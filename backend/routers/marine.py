@@ -30,6 +30,7 @@ Endpoints:
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -46,7 +47,7 @@ from marine.core.types import (
     SpaceCategory,
 )
 
-router = APIRouter(prefix="/marine", tags=["Marine"])
+router = APIRouter(prefix="/marine", tags=["Marine"], route_class=StandardizedAPIRoute)
 
 
 # ─── Pydantic Request Models ────────────────────────────────────────────────

@@ -89,12 +89,10 @@ def _validate_autocad_file_path(filepath: str) -> str:
             parser_name="autocad_router",
         )
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail="File not found."
-        ) from exc  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="File not found.") from exc
     except UnsafePathError as exc:
         logger.warning("Path traversal blocked in autocad router: %s", exc)
-        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
             status_code=400,
             detail="File path is outside allowed directories. Contact administrator.",
         ) from exc
@@ -102,7 +100,9 @@ def _validate_autocad_file_path(filepath: str) -> str:
 
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
+from backend.core.openapi_contracts import StandardizedAPIRoute
+
+router = APIRouter(prefix="/autocad", tags=["AutoCAD"], route_class=StandardizedAPIRoute)
 
 # ── Thread-safe service singleton (FIX #18) ────────────────────────────────
 # Previously the singleton had a TOCTOU race condition — two threads could
@@ -292,7 +292,10 @@ def _agent_operation_response(res: dict[str, Any], ok_msg: str) -> OperationResp
     handle = flat.get("handle")
     return OperationResponse(
         success=bool(flat.get("success", False)),
-        message=str(flat.get("message") or (ok_msg if flat.get("success") else flat.get("error") or "Operation failed"))[:300],
+        message=str(
+            flat.get("message")
+            or (ok_msg if flat.get("success") else flat.get("error") or "Operation failed")
+        )[:300],
         handle=str(handle) if handle is not None else None,
     )
 
@@ -934,7 +937,9 @@ async def send_autocad_native_command(request: Request, body: SendCommandRequest
             status_code=503,
             detail="Requires a connected desktop agent with BazSparkAutoCADBridge loaded.",
         )
-    res = await send_agent_command("autocad", "send_command", {"command_string": body.command_string})
+    res = await send_agent_command(
+        "autocad", "send_command", {"command_string": body.command_string}
+    )
     return _flatten_agent_result(res)
 
 

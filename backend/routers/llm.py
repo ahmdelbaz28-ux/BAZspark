@@ -26,6 +26,7 @@ from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -37,7 +38,7 @@ from backend.services.llm_service import LLMResponse, get_llm_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/llm", tags=["llm"])
+router = APIRouter(prefix="/llm", tags=["llm"], route_class=StandardizedAPIRoute)
 
 # Standard disclaimer appended to all AI-generated narratives.
 # This protects the engineer and the AHJ (Authority Having Jurisdiction) by

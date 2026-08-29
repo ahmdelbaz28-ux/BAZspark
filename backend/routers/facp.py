@@ -34,6 +34,7 @@ SAFETY NOTE:
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field, model_validator
 
 from backend.auth import require_permission
@@ -53,7 +54,7 @@ logger = logging.getLogger(__name__)
 #: define a module-level constant instead of duplicating the literal.
 BATTERY_DERATING_TEMP_COMPENSATED = "Temperature-compensated (NFPA 72 §10.6.7)"
 
-router = APIRouter(tags=["facp"])
+router = APIRouter(tags=["facp"], route_class=StandardizedAPIRoute)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 NFPA_72_REF = "NFPA 72-2022 SS10.6.7"

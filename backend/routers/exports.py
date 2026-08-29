@@ -5,6 +5,7 @@ import json
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -25,7 +26,7 @@ except ImportError:  # pragma: no cover
     PatternFill = None  # type: ignore[assignment]
     get_column_letter = None  # type: ignore[assignment]
 
-project_router = APIRouter(prefix="/exports", tags=["exports"])
+project_router = APIRouter(prefix="/exports", tags=["exports"], route_class=StandardizedAPIRoute)
 
 # V273 FIX (F821): Import openpyxl at module level so helper functions can
 # reference Font, PatternFill, Alignment.  The try/except pattern is kept

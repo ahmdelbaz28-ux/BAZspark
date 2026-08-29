@@ -34,6 +34,7 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.rbac import (
@@ -50,7 +51,7 @@ SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/admin/rbac", tags=["rbac"])
+router = APIRouter(prefix="/admin/rbac", tags=["rbac"], route_class=StandardizedAPIRoute)
 
 
 @router.get("/permissions")

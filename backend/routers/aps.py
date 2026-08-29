@@ -17,13 +17,14 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.rbac import Permission
 from backend.services.aps_service import get_aps_service
 
-router = APIRouter(prefix="/api/v2/aps", tags=["Autodesk Platform Services"])
+router = APIRouter(prefix="/api/v2/aps", tags=["Autodesk Platform Services"], route_class=StandardizedAPIRoute)
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
 ApsServiceDep = Annotated[Any, Depends(get_aps_service)]

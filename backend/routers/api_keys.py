@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.admin_protection import audit_operation, require_master_admin
@@ -29,7 +30,7 @@ from backend.rbac import ROLE_PERMISSIONS, Permission, Role
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/admin/keys", tags=["admin"])
+router = APIRouter(prefix="/admin/keys", tags=["admin"], route_class=StandardizedAPIRoute)
 
 
 class GenerateKeyRequest(BaseModel):

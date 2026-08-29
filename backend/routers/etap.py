@@ -26,6 +26,7 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.integrations.etap_schemas import (
@@ -43,7 +44,7 @@ from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
+router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"], route_class=StandardizedAPIRoute)
 
 _ETAP_NOT_CONFIGURED = "ETAP integration not configured"
 _PROJECT_ID_DESCRIPTION = "Project ID"

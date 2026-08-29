@@ -19,11 +19,10 @@ export function SmartHelpDrawer({
 	open = false,
 	onOpenChange = () => {},
 	initialTopicId,
-	initialContextId,
+	initialContextId: _initialContextId,
 	initialSearch,
 }: SmartHelpDrawerProps) {
 	const activeTopic = initialTopicId ?? undefined;
-	void initialContextId; // Preserved for backward-compatible API; not passed through
 	if (!open) return null;
 	return (
 		<Suspense fallback={null}>

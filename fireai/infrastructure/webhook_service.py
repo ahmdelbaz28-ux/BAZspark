@@ -456,8 +456,8 @@ class WebhookDeliveryService:
                     raise ValueError(
                         f"Webhook URL cannot point to internal/private IP: {parsed.hostname} ({ip_addr})"
                     )
-                # Block cloud metadata endpoints (169.254.169.254)
-                if str(ip_addr) in ("169.254.169.254", "fd00:ec2::254"):
+                # Block cloud metadata endpoints (169.254.169.254, fd00:ec2::254)
+                if str(ip_addr) in ("169.254.169.254", "fd00:ec2::254"):  # NOSONAR: SSRF Zero-Trust IMDS blocklist
                     raise ValueError("Webhook URL cannot point to cloud metadata endpoint")
         except socket.gaierror:
             # DNS resolution failed - could be intentional or misconfiguration

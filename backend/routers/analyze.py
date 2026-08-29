@@ -59,8 +59,10 @@ def _physics_guard_detail(exc: Exception) -> dict[str, Any]:
 # ----------------------------------------------------------------------------
 # Routers
 # ----------------------------------------------------------------------------
-router = APIRouter(tags=["analyze"])
-project_router = APIRouter(tags=["analyze"])
+from backend.core.openapi_contracts import StandardizedAPIRoute
+
+router = APIRouter(tags=["analyze"], route_class=StandardizedAPIRoute)
+project_router = APIRouter(tags=["analyze"], route_class=StandardizedAPIRoute)
 
 
 # ----------------------------------------------------------------------------
@@ -218,9 +220,7 @@ async def analyze_project_room(
     # Scope the room_id under the project
     if not req.room_id.startswith(project_id):
         # Don't leak project_id structure in error -- use generic message
-        logger.warning(
-            "Room ID does not match project ID prefix for analysis request"
-        )
+        logger.warning("Room ID does not match project ID prefix for analysis request")
 
     try:
         result = await asyncio.to_thread(

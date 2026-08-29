@@ -252,6 +252,69 @@ class DarcyWeisbachResult:
 # ---------------------------------------------------------------------------
 
 
+def _calculate_flow_velocity(flow_rate_kg_s: float, density: float, pipe_diameter_m: float) -> float:
+    """Compute flow velocity from mass flow rate, density, and pipe diameter."""
+    if pipe_diameter_m <= 0:
+        raise ValueError(f"pipe_diameter_m must be strictly positive: {pipe_diameter_m}")
+    if density <= 0:
+        raise ValueError(f"density must be strictly positive: {density}")
+    cross_sectional_area = math.pi * (pipe_diameter_m**2) / 4.0
+    if cross_sectional_area <= 0:
+        raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
+    return flow_rate_kg_s / (density * cross_sectional_area)
+
+
+def _determine_flow_regime_and_reynolds(
+    density: float, flow_velocity: float, pipe_diameter_m: float, viscosity: float
+) -> tuple[float, str, list[str]]:
+    """Determine Reynolds number and regime with transitional warnings."""
+    if viscosity <= 0:
+        raise ValueError(f"Viscosity must be positive: {viscosity}")
+    reynolds = (density * flow_velocity * pipe_diameter_m) / viscosity
+    warnings: list[str] = []
+    if reynolds < RE_LAMINAR_MAX:
+        flow_regime = "laminar"
+    elif reynolds > RE_TURBULENT_MIN:
+        flow_regime = "turbulent"
+    else:
+        flow_regime = "transitional"
+        warnings.append(
+            f"Reynolds number {reynolds:.0f} is in transitional regime "
+            f"({RE_LAMINAR_MAX:.0f} ≤ Re ≤ {RE_TURBULENT_MIN:.0f}). "
+            f"Friction factor is calculated via continuous cubic transition in this range."
+        )
+    return reynolds, flow_regime, warnings
+
+
+def _compute_head_and_pressure_losses(
+    friction_factor: float,
+    pipe_length_m: float,
+    pipe_diameter_m: float,
+    flow_velocity: float,
+    density: float,
+) -> tuple[float, float, float]:
+    """Compute head loss (m) and pressure loss (Pa, PSI)."""
+    if pipe_diameter_m <= 0:
+        raise ValueError(f"Pipe diameter must be positive: {pipe_diameter_m}")
+    if GRAVITY_M_S2 <= 0:
+        raise ValueError(f"Gravity constant must be positive: {GRAVITY_M_S2}")
+
+    head_loss = (
+        friction_factor
+        * (pipe_length_m / pipe_diameter_m)
+        * (flow_velocity**2)
+        / (2 * GRAVITY_M_S2)
+    )
+    pressure_loss_pa = density * GRAVITY_M_S2 * head_loss
+    pressure_loss_psi = pressure_loss_pa / 6894.757
+    if pressure_loss_pa < 0:
+        raise ValueError(
+            f"Negative pressure loss ({pressure_loss_pa} Pa) — physically impossible. "
+            f"Check: friction_factor={friction_factor}, head_loss={head_loss}, density={density}."
+        )
+    return head_loss, pressure_loss_pa, pressure_loss_psi
+
+
 def calculate_darcy_weisbach_friction_loss(
     pipe_length_m: float,
     pipe_diameter_m: float,
@@ -269,8 +332,7 @@ def calculate_darcy_weisbach_friction_loss(
         pipe_diameter_m: Internal pipe diameter in metres.
         flow_rate_kg_s: Mass flow rate in kg/s.
         fluid_type: Fluid type (determines physical properties).
-        pipe_roughness_m: Optional pipe roughness in metres. If None, uses
-            fluid-specific default.
+        pipe_roughness_m: Optional pipe roughness in metres.
         density_kg_m3: Optional fluid density in kg/m³. Overrides fluid_type default.
         viscosity_pa_s: Optional fluid viscosity in Pa·s. Overrides fluid_type default.
 
@@ -281,7 +343,7 @@ def calculate_darcy_weisbach_friction_loss(
         ValueError: If any input is invalid (NaN, Inf, negative, out of bounds).
 
     """
-    # ── Input Validation (per agent.md V57 NaN/Inf bypass) ──
+    # ── Input Validation ──
     _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)
     _validate_input(
         "pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M
@@ -300,10 +362,8 @@ def calculate_darcy_weisbach_friction_loss(
     )
     _validate_input("pipe_roughness_m", roughness, min_val=MIN_ROUGHNESS_M, max_val=MAX_ROUGHNESS_M)
 
-    warnings = []
-
     # ── Edge Case: Zero flow ──
-    if flow_rate_kg_s <= 0.0 or abs(flow_rate_kg_s) < 1e-12:  # S1244: float equality check replaced with tolerance
+    if flow_rate_kg_s <= 0.0 or abs(flow_rate_kg_s) < 1e-12:
         return DarcyWeisbachResult(
             head_loss_m=0.0,
             pressure_loss_pa=0.0,
@@ -317,17 +377,7 @@ def calculate_darcy_weisbach_friction_loss(
         )
 
     # ── Compute flow velocity ──
-    # v = ṁ / (ρ × A), where A = π × d² / 4
-    if pipe_diameter_m <= 0:
-        raise ValueError(f"pipe_diameter_m must be strictly positive: {pipe_diameter_m}")
-    if density <= 0:
-        raise ValueError(f"density must be strictly positive: {density}")
-
-    cross_sectional_area = math.pi * (pipe_diameter_m**2) / 4.0
-    if cross_sectional_area <= 0:
-        raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
-    flow_velocity = flow_rate_kg_s / (density * cross_sectional_area)
-
+    flow_velocity = _calculate_flow_velocity(flow_rate_kg_s, density, pipe_diameter_m)
     if flow_velocity <= 0.0 or abs(flow_velocity) < 1e-12:
         return DarcyWeisbachResult(
             head_loss_m=0.0,
@@ -341,10 +391,7 @@ def calculate_darcy_weisbach_friction_loss(
             warnings=["Flow velocity is zero — no friction loss calculated."],
         )
 
-    # The OLD code accepted any velocity, even supersonic (1000+ m/s).
-    # For fire suppression systems, velocities > 100 m/s indicate either:
-    # (a) input error (wrong units), or (b) physically impossible scenario.
-    # Per Crane TP-410, typical fire main velocities are 3-10 m/s.
+    warnings: list[str] = []
     MAX_FLOW_VELOCITY_M_S = 100.0
     if flow_velocity > MAX_FLOW_VELOCITY_M_S:
         warnings.append(
@@ -353,60 +400,21 @@ def calculate_darcy_weisbach_friction_loss(
             f"(wrong units?) or an impossible scenario. Results may be unreliable."
         )
 
-    # ── Compute Reynolds number ──
-    # Re = ρ × v × d / μ
-    if viscosity <= 0:
-        raise ValueError(f"Viscosity must be positive: {viscosity}")
-    reynolds = (density * flow_velocity * pipe_diameter_m) / viscosity
+    # ── Flow regime and Reynolds number ──
+    reynolds, flow_regime, regime_warnings = _determine_flow_regime_and_reynolds(
+        density, flow_velocity, pipe_diameter_m, viscosity
+    )
+    warnings.extend(regime_warnings)
 
-    # ── Determine flow regime ──
-    if reynolds < RE_LAMINAR_MAX:
-        flow_regime = "laminar"
-    elif reynolds > RE_TURBULENT_MIN:
-        flow_regime = "turbulent"
-    else:
-        flow_regime = "transitional"
-        warnings.append(
-            f"Reynolds number {reynolds:.0f} is in transitional regime "
-            f"({RE_LAMINAR_MAX:.0f} ≤ Re ≤ {RE_TURBULENT_MIN:.0f}). "
-            f"Friction factor is calculated via continuous cubic transition in this range."
-        )
-
-    # ── Compute friction factor ──
+    # ── Friction factor computation ──
     friction_factor, _converged = _compute_friction_factor(
         reynolds, roughness, pipe_diameter_m, flow_regime
     )
 
-    # ── Compute head loss (Darcy-Weisbach) ──
-    # h_f = f × (L / d) × (v² / (2 × g))
-    if pipe_diameter_m <= 0:
-        raise ValueError(f"Pipe diameter must be positive: {pipe_diameter_m}")
-    if GRAVITY_M_S2 <= 0:
-        raise ValueError(f"Gravity constant must be positive: {GRAVITY_M_S2}")
-
-    head_loss = (
-        friction_factor
-        * (pipe_length_m / pipe_diameter_m)
-        * (flow_velocity**2)
-        / (2 * GRAVITY_M_S2)
+    # ── Head loss and pressure loss ──
+    head_loss, pressure_loss_pa, pressure_loss_psi = _compute_head_and_pressure_losses(
+        friction_factor, pipe_length_m, pipe_diameter_m, flow_velocity, density
     )
-
-    # ── Convert to pressure loss ──
-    # ΔP = ρ × g × h_f
-    pressure_loss_pa = density * GRAVITY_M_S2 * head_loss
-    pressure_loss_psi = pressure_loss_pa / 6894.757  # 1 psi = 6894.757 Pa
-
-    # The OLD code used abs() which masked the error. Per safety-first
-    # principle (agent.md Rule 12), we raise ValueError so the caller
-    # knows something is wrong. Physically, pressure loss CANNOT be
-    # negative — if it is, there's a bug in the calculation.
-    if pressure_loss_pa < 0:
-        raise ValueError(
-            f"Negative pressure loss ({pressure_loss_pa} Pa) — physically impossible. "
-            f"This indicates a computation error. Check: friction_factor={friction_factor}, "
-            f"head_loss={head_loss}, density={density}. "
-            f"All values should be non-negative."
-        )
 
     return DarcyWeisbachResult(
         head_loss_m=head_loss,
@@ -418,7 +426,7 @@ def calculate_darcy_weisbach_friction_loss(
         flow_regime=flow_regime,
         fluid_type=fluid_type.value,
         warnings=warnings,
-        converged=_converged,  # V138 F-5: was always True
+        converged=_converged,
     )
 
 

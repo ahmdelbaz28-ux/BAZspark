@@ -35,6 +35,7 @@ import threading
 from typing import Any, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field, field_validator
 
 from backend.auth import require_permission
@@ -91,7 +92,7 @@ def _normalize_awg_gauge(v: Any) -> str:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["qomn"])
+router = APIRouter(tags=["qomn"], route_class=StandardizedAPIRoute)
 
 # Module-level kernel instance (stateful audit log per server session)
 _kernel = None

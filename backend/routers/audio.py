@@ -14,6 +14,7 @@ import re
 from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -22,7 +23,7 @@ from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/audio", tags=["Audio"])
+router = APIRouter(prefix="/audio", tags=["Audio"], route_class=StandardizedAPIRoute)
 
 # Allowed audio MIME types for upload
 ALLOWED_AUDIO_MIME_TYPES: Final[frozenset[str]] = frozenset(

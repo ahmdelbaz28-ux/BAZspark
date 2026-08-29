@@ -66,65 +66,159 @@ class _WellKnownProvider:
 # Every default is overridable via LLM_<NAME>_BASE_URL / LLM_<NAME>_MODEL.
 _WELL_KNOWN_PROVIDERS: tuple[_WellKnownProvider, ...] = (
     # ── First-party native APIs ──────────────────────────────────────────
-    _WellKnownProvider("OPENAI_API_KEY", "openai", "openai_compatible",
-                       "https://api.openai.com/v1", "gpt-4o"),
-    _WellKnownProvider("ANTHROPIC_API_KEY", "anthropic", "anthropic",
-                       "https://api.anthropic.com", "claude-sonnet-4-5"),
-    _WellKnownProvider("GEMINI_API_KEY", "gemini", "gemini",
-                       "https://generativelanguage.googleapis.com",
-                       "gemini-2.0-flash"),
-    _WellKnownProvider("GOOGLE_API_KEY", "gemini-google", "gemini",
-                       "https://generativelanguage.googleapis.com",
-                       "gemini-2.0-flash"),
+    _WellKnownProvider(
+        "OPENAI_API_KEY", "openai", "openai_compatible", "https://api.openai.com/v1", "gpt-4o"
+    ),
+    _WellKnownProvider(
+        "ANTHROPIC_API_KEY",
+        "anthropic",
+        "anthropic",
+        "https://api.anthropic.com",
+        "claude-sonnet-4-5",
+    ),
+    _WellKnownProvider(
+        "GEMINI_API_KEY",
+        "gemini",
+        "gemini",
+        "https://generativelanguage.googleapis.com",
+        "gemini-2.0-flash",
+    ),
+    _WellKnownProvider(
+        "GOOGLE_API_KEY",
+        "gemini-google",
+        "gemini",
+        "https://generativelanguage.googleapis.com",
+        "gemini-2.0-flash",
+    ),
     _WellKnownProvider("AZURE_OPENAI_API_KEY", "azure", "azure", "", ""),
-    _WellKnownProvider("XAI_API_KEY", "xai", "openai_compatible",
-                       "https://api.x.ai/v1", "grok-2-latest"),
-    _WellKnownProvider("MISTRAL_API_KEY", "mistral", "openai_compatible",
-                       "https://api.mistral.ai/v1", "mistral-large-latest"),
-    _WellKnownProvider("DEEPSEEK_API_KEY", "deepseek", "openai_compatible",
-                       "https://api.deepseek.com/v1", "deepseek-chat"),
-    _WellKnownProvider("COHERE_API_KEY", "cohere", "openai_compatible",
-                       "https://api.cohere.ai/compatibility/v1", "command-r-plus"),
+    _WellKnownProvider(
+        "XAI_API_KEY", "xai", "openai_compatible", "https://api.x.ai/v1", "grok-2-latest"
+    ),
+    _WellKnownProvider(
+        "MISTRAL_API_KEY",
+        "mistral",
+        "openai_compatible",
+        "https://api.mistral.ai/v1",
+        "mistral-large-latest",
+    ),
+    _WellKnownProvider(
+        "DEEPSEEK_API_KEY",
+        "deepseek",
+        "openai_compatible",
+        "https://api.deepseek.com/v1",
+        "deepseek-chat",
+    ),
+    _WellKnownProvider(
+        "COHERE_API_KEY",
+        "cohere",
+        "openai_compatible",
+        "https://api.cohere.ai/compatibility/v1",
+        "command-r-plus",
+    ),
     # ── Aggregators / coding-tool gateways ───────────────────────────────
-    _WellKnownProvider("OPENROUTER_API_KEY", "openrouter", "openai_compatible",
-                       "https://openrouter.ai/api/v1", "openai/gpt-4o"),
-    _WellKnownProvider("KILOCODE_API_KEY", "kilocode", "openai_compatible",
-                       "https://api.kilocode.ai/v1", "x-ai/grok-code-fast-1"),
-    _WellKnownProvider("OPENCODE_API_KEY", "opencode", "openai_compatible",
-                       "https://opencode.ai/zen/v1/", "gpt-4o"),
-    _WellKnownProvider("ZENMUX_API_KEY", "zenmux-discovered", "openai_compatible",
-                       "https://zenmux.ai/api/v1", "z-ai/glm-4.7"),
+    _WellKnownProvider(
+        "OPENROUTER_API_KEY",
+        "openrouter",
+        "openai_compatible",
+        "https://openrouter.ai/api/v1",
+        "openai/gpt-4o",
+    ),
+    _WellKnownProvider(
+        "KILOCODE_API_KEY",
+        "kilocode",
+        "openai_compatible",
+        "https://api.kilocode.ai/v1",
+        "x-ai/grok-code-fast-1",
+    ),
+    _WellKnownProvider(
+        "OPENCODE_API_KEY", "opencode", "openai_compatible", "https://opencode.ai/zen/v1/", "gpt-4o"
+    ),
+    _WellKnownProvider(
+        "ZENMUX_API_KEY",
+        "zenmux-discovered",
+        "openai_compatible",
+        "https://zenmux.ai/api/v1",
+        "z-ai/glm-4.7",
+    ),
     # ── GPU clouds / inference hosts ─────────────────────────────────────
-    _WellKnownProvider("NVIDIA_API_KEY", "nvidia", "openai_compatible",
-                       "https://integrate.api.nvidia.com/v1",
-                       "meta/llama-3.1-8b-instruct"),
-    _WellKnownProvider("GROQ_API_KEY", "groq", "openai_compatible",
-                       "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
-    _WellKnownProvider("TOGETHER_API_KEY", "together", "openai_compatible",
-                       "https://api.together.xyz/v1",
-                       "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
-    _WellKnownProvider("FIREWORKS_API_KEY", "fireworks", "openai_compatible",
-                       "https://api.fireworks.ai/inference/v1",
-                       "accounts/fireworks/models/llama-v3p3-70b-instruct"),
-    _WellKnownProvider("DEEPINFRA_API_KEY", "deepinfra", "openai_compatible",
-                       "https://api.deepinfra.com/v1/openai",
-                       "meta-llama/Llama-3.3-70B-Instruct"),
-    _WellKnownProvider("CEREBRAS_API_KEY", "cerebras", "openai_compatible",
-                       "https://api.cerebras.ai/v1", "llama3.1-8b"),
-    _WellKnownProvider("SAMBANOVA_API_KEY", "sambanova", "openai_compatible",
-                       "https://api.sambanova.ai/v1",
-                       "Meta-Llama-3.3-70B-Instruct"),
-    _WellKnownProvider("PERPLEXITY_API_KEY", "perplexity", "openai_compatible",
-                       "https://api.perplexity.ai",
-                       "llama-3.1-sonar-small-128k-online"),
+    _WellKnownProvider(
+        "NVIDIA_API_KEY",
+        "nvidia",
+        "openai_compatible",
+        "https://integrate.api.nvidia.com/v1",
+        "meta/llama-3.1-8b-instruct",
+    ),
+    _WellKnownProvider(
+        "GROQ_API_KEY",
+        "groq",
+        "openai_compatible",
+        "https://api.groq.com/openai/v1",
+        "llama-3.3-70b-versatile",
+    ),
+    _WellKnownProvider(
+        "TOGETHER_API_KEY",
+        "together",
+        "openai_compatible",
+        "https://api.together.xyz/v1",
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    ),
+    _WellKnownProvider(
+        "FIREWORKS_API_KEY",
+        "fireworks",
+        "openai_compatible",
+        "https://api.fireworks.ai/inference/v1",
+        "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    ),
+    _WellKnownProvider(
+        "DEEPINFRA_API_KEY",
+        "deepinfra",
+        "openai_compatible",
+        "https://api.deepinfra.com/v1/openai",
+        "meta-llama/Llama-3.3-70B-Instruct",
+    ),
+    _WellKnownProvider(
+        "CEREBRAS_API_KEY",
+        "cerebras",
+        "openai_compatible",
+        "https://api.cerebras.ai/v1",
+        "llama3.1-8b",
+    ),
+    _WellKnownProvider(
+        "SAMBANOVA_API_KEY",
+        "sambanova",
+        "openai_compatible",
+        "https://api.sambanova.ai/v1",
+        "Meta-Llama-3.3-70B-Instruct",
+    ),
+    _WellKnownProvider(
+        "PERPLEXITY_API_KEY",
+        "perplexity",
+        "openai_compatible",
+        "https://api.perplexity.ai",
+        "llama-3.1-sonar-small-128k-online",
+    ),
     # ── Regional / CN providers ──────────────────────────────────────────
-    _WellKnownProvider("DASHSCOPE_API_KEY", "dashscope", "openai_compatible",
-                       "https://dashscope.aliyuncs.com/compatible-mode/v1",
-                       "qwen-plus-latest"),
-    _WellKnownProvider("MOONSHOT_API_KEY", "moonshot", "openai_compatible",
-                       "https://api.moonshot.cn/v1", "moonshot-v1-32k"),
-    _WellKnownProvider("ZHIPU_API_KEY", "zhipu", "openai_compatible",
-                       "https://open.bigmodel.cn/api/paas/v4", "glm-4-plus"),
+    _WellKnownProvider(
+        "DASHSCOPE_API_KEY",
+        "dashscope",
+        "openai_compatible",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "qwen-plus-latest",
+    ),
+    _WellKnownProvider(
+        "MOONSHOT_API_KEY",
+        "moonshot",
+        "openai_compatible",
+        "https://api.moonshot.cn/v1",
+        "moonshot-v1-32k",
+    ),
+    _WellKnownProvider(
+        "ZHIPU_API_KEY",
+        "zhipu",
+        "openai_compatible",
+        "https://open.bigmodel.cn/api/paas/v4",
+        "glm-4-plus",
+    ),
 )
 
 # Back-compat alias used by older call sites/tests.
@@ -195,9 +289,7 @@ class LLMProviderRegistry:
     def list_available(self) -> list[str]:
         """Names of configured providers in fallback order."""
         with self._lock:
-            return [
-                n for n in self._order if self._adapters[n].available
-            ]
+            return [n for n in self._order if self._adapters[n].available]
 
     def ordered_adapters(self) -> list[BaseLLMAdapter]:
         """All registered adapters in fallback order."""
@@ -213,13 +305,16 @@ class LLMProviderRegistry:
             try:
                 await adapter.aclose()
             except Exception:  # noqa: BLE001 — drain must never raise
-                logger.debug("Error closing provider '%s'", getattr(adapter, "name", "?"),
-                             exc_info=True)
+                logger.debug(
+                    "Error closing provider '%s'", getattr(adapter, "name", "?"), exc_info=True
+                )
 
     # ── Environment parsing ──────────────────────────────────────────────
 
     @staticmethod
-    def configs_from_env(environ: dict[str, str] | os._Environ[str] | None = None) -> list[ProviderConfig]:  # noqa: E501 — signature line
+    def configs_from_env(
+        environ: dict[str, str] | os._Environ[str] | None = None,
+    ) -> list[ProviderConfig]:  # noqa: E501 — signature line
         """Parse provider configuration from environment variables.
 
         Pure function of ``environ`` (defaults to os.environ) so tests can
@@ -306,9 +401,7 @@ class LLMProviderRegistry:
         new_adapters: dict[str, BaseLLMAdapter] = {}
         for config in configs:
             if not config.available:
-                logger.debug(
-                    "Provider '%s' skipped (no API key configured)", config.name
-                )
+                logger.debug("Provider '%s' skipped (no API key configured)", config.name)
                 continue
             adapter_cls = ADAPTER_KINDS[config.kind]
             kwargs: dict = {
@@ -355,8 +448,10 @@ class LLMProviderRegistry:
 _KIND_DEFAULTS: dict[str, dict[str, str]] = {
     "openai_compatible": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o"},
     "anthropic": {"base_url": "https://api.anthropic.com", "model": "claude-sonnet-4-5"},
-    "gemini": {"base_url": "https://generativelanguage.googleapis.com",
-               "model": "gemini-2.0-flash"},
+    "gemini": {
+        "base_url": "https://generativelanguage.googleapis.com",
+        "model": "gemini-2.0-flash",
+    },
     "azure": {"base_url": "", "model": ""},
 }
 

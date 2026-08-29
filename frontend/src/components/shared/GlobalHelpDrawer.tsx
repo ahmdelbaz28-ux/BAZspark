@@ -58,9 +58,8 @@ export function GlobalHelpDrawer({
 	open,
 	onOpenChange,
 	initialTopicId,
-	initialSearch,
+	initialSearch: _initialSearch,
 }: GlobalHelpDrawerProps) {
-	void initialSearch; // Preserved for API compatibility
 	const location = useSafeLocation();
 	const { i18n } = useTranslation();
 	const isAr = i18n.language === "ar";

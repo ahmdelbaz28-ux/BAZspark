@@ -346,3 +346,6 @@ scratch/
 
 .claude/
 feature_flags.json
+
+# Local environment and audit scratch
+.local/

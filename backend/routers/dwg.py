@@ -23,6 +23,7 @@ import os
 import tempfile
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import JSONResponse
 
 from backend.auth import require_permission
@@ -38,7 +39,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/parse-dwg", tags=["dwg"])
+router = APIRouter(prefix="/parse-dwg", tags=["dwg"], route_class=StandardizedAPIRoute)
 
 _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
 
@@ -92,7 +93,9 @@ async def _parse_dwg_impl(
     try:
         fd, temp_path = tempfile.mkstemp(suffix=ext, prefix="fireai_dwg_upload_")
         # Wrap the os-level fd in a Python file object for buffered writes
-        with os.fdopen(fd, "wb") as out_f:  # NOSONAR — python:S7493: buffered chunk streaming to temp file fd
+        with os.fdopen(
+            fd, "wb"
+        ) as out_f:  # NOSONAR — python:S7493: buffered chunk streaming to temp file fd
             _CHUNK_SIZE = 1024 * 1024  # 1 MB per read
             file_size = 0
             empty = True

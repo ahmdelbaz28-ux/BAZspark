@@ -34,6 +34,7 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -49,7 +50,7 @@ from backend.utils.log_sanitizer import safe_str as _safe_str
 from parsers._path_security import UnsafePathError, validate_input_path, validate_output_path
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
+router = APIRouter(prefix="/digital-twin", tags=["digital-twin"], route_class=StandardizedAPIRoute)
 
 # ── Dependency injection (FIX #24) ─────────────────────────────────────────
 # Previously, service and config_manager were created at module level,

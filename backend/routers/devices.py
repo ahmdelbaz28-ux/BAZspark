@@ -16,6 +16,7 @@ import uuid
 _device_lock = threading.Lock()
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import (
     get_current_principal,
@@ -32,8 +33,8 @@ from backend.models import (
 from backend.rbac import Permission, Role
 from backend.response import success
 
-router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
-project_router = APIRouter(prefix="/devices", tags=["devices"])
+router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"], route_class=StandardizedAPIRoute)
+project_router = APIRouter(prefix="/devices", tags=["devices"], route_class=StandardizedAPIRoute)
 
 
 @project_router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])

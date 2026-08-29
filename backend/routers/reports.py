@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
 
 try:
@@ -55,8 +56,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"])
-project_router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"], route_class=StandardizedAPIRoute)
+project_router = APIRouter(prefix="/reports", tags=["reports"], route_class=StandardizedAPIRoute)
 
 
 def _verify_project(project_id: str, request: Request | None = None) -> dict:

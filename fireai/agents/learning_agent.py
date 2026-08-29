@@ -169,7 +169,7 @@ class LearningAgent:
         # analysis, building a persistent knowledge base across sessions.
         self._bus: Any = None
         self._subscribed = False
-        if EventBus is not None:
+        if callable(getattr(EventBus, "instance", None)):
             self._bus = EventBus.instance()
             self.subscribe_to_events()
 

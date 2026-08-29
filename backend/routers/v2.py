@@ -56,6 +56,7 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -64,7 +65,7 @@ from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(route_class=StandardizedAPIRoute)
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
 SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]

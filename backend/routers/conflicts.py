@@ -13,6 +13,7 @@ import logging
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.db_service import DatabaseService, get_db_service
@@ -28,7 +29,7 @@ from backend.schemas import (
 logger = logging.getLogger(__name__)
 
 # (relative) to avoid double-prefixing when include_router adds /api/v1.
-router = APIRouter(prefix="/conflicts", tags=["conflicts"])
+router = APIRouter(prefix="/conflicts", tags=["conflicts"], route_class=StandardizedAPIRoute)
 
 
 @router.get(
