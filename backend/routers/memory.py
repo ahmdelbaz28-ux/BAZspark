@@ -27,9 +27,9 @@ Reference: agent.md Rules 1-21, Priority Hierarchy
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import get_current_principal, require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.memory_service import (

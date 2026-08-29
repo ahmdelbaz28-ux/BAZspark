@@ -26,9 +26,9 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.integrations.etap_schemas import (
     EtapConnectionSettings,
     EtapConnectionTestResponse,

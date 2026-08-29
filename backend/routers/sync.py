@@ -27,10 +27,10 @@ import os
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.api_keys import validate_api_key
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.database import get_db
 from backend.limiter import limiter
 from backend.rbac import Permission

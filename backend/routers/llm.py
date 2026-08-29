@@ -26,11 +26,11 @@ from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.llm_constants import AI_DISCLAIMER, PERSONAE
 from backend.rbac import Permission

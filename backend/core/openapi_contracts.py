@@ -6,11 +6,13 @@ eliminating repetitive per-endpoint boilerplate while maintaining strict
 OpenAPI schema contracts (resolves SonarCloud python:S8415).
 """
 
-from typing import Any, Callable, Dict, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
+
 from fastapi.routing import APIRoute
 
 # Standard RFC 7807 / FastAPI HTTP error responses
-STANDARD_ERROR_RESPONSES: Dict[int | str, Dict[str, Any]] = {
+STANDARD_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: {"description": "Bad Request — Client validation or input parameter failure."},
     401: {"description": "Unauthorized — Missing or invalid authentication token."},
     403: {"description": "Forbidden — Insufficient permissions to access this resource."},
@@ -52,7 +54,7 @@ def standardized_error_responses(
         for code in selected_codes:
             if code in STANDARD_ERROR_RESPONSES and code not in existing_responses:
                 existing_responses[code] = STANDARD_ERROR_RESPONSES[code]
-        setattr(func, "__openapi_responses__", existing_responses)
+        func.__dict__["__openapi_responses__"] = existing_responses
         return func
 
     return decorator

@@ -34,11 +34,11 @@ except ImportError:
 
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.digital_twin_service import (

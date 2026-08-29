@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.api_keys import validate_api_key
@@ -32,6 +31,7 @@ from backend.core.command_bus import (
     default_command_bus,
 )
 from backend.core.context_resolver import default_context_resolver
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.core.workflow_engine import (
     CompositeWorkflowDAG,
     WorkflowExecutor,

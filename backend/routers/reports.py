@@ -25,8 +25,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import StreamingResponse
+
+from backend.core.openapi_contracts import StandardizedAPIRoute
 
 try:
     from reportlab.platypus import Paragraph

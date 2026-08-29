@@ -21,10 +21,10 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.rbac import Permission
 from backend.routers.sync import manager as ws_manager
 from backend.services.fds_queue_service import (

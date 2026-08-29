@@ -13,9 +13,9 @@ import logging
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.db_service import DatabaseService, get_db_service
 from backend.limiter import limiter
 from backend.rbac import Permission

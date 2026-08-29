@@ -29,10 +29,10 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.rbac import Permission
 
 # ── Annotated type aliases (S8410) ────────────────────────────────────────────

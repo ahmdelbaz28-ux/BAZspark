@@ -17,10 +17,10 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
 from backend.contract import validate_health
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.database import get_db
 from backend.db_service import DatabaseService, get_db_service
 from backend.rbac import Permission

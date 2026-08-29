@@ -35,9 +35,9 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends, Query
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.rbac import Permission
 from backend.services.air_quality_service import get_air_quality_service
 from backend.services.elevation_service import get_elevation_service

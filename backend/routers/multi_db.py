@@ -22,9 +22,9 @@ except ImportError:
     from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.multi_db_service import get_multi_db_service
 from backend.rbac import Permission

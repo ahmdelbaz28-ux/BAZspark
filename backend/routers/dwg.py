@@ -23,10 +23,10 @@ import os
 import tempfile
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from fastapi.responses import JSONResponse
 
 from backend.auth import require_permission
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.rbac import Permission
 
 try:

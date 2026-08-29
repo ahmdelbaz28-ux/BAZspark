@@ -12,7 +12,6 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -31,6 +30,7 @@ from backend.core.import_orchestrator import (
     UnsupportedFormatError,
     default_import_orchestrator,
 )
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.rbac import Permission
 

@@ -25,7 +25,6 @@ import logging
 import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from backend.core.openapi_contracts import StandardizedAPIRoute
 from pydantic import BaseModel
 
 from backend.auth import get_current_principal, require_permission
@@ -40,6 +39,7 @@ from backend.core.agent_run_store import (
     ApprovalAlreadyDecidedError,
     PendingApprovalNotFoundError,
 )
+from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.limiter import limiter
 from backend.rbac import Permission, Role
 from backend.services.workflow_service import (
