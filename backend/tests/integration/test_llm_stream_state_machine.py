@@ -36,13 +36,16 @@ class TestLLMStreamStateMachine:
 
     def test_provider_registry_configuration_and_routing(self, monkeypatch):
         """Test provider registry auto-discovery with mocked environment variables."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-integration-test-key")
-        monkeypatch.setenv("GEMINI_API_KEY", "gemini-integration-test-key")
+        monkeypatch.setenv("LLM_PROVIDERS", "openai,gemini")
+        monkeypatch.setenv("LLM_OPENAI_API_KEY", "sk-integration-test-key")
+        monkeypatch.setenv("LLM_GEMINI_API_KEY", "gemini-integration-test-key")
 
         registry = LLMProviderRegistry()
         providers = registry.list_available()
         assert isinstance(providers, list)
         assert len(providers) >= 2
+        assert "openai" in providers
+        assert "gemini" in providers
 
     def test_llm_response_construction_and_validation(self):
         """Test strict validation on canonical LLMResponse objects."""
