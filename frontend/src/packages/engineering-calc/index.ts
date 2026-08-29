@@ -13,6 +13,7 @@ export {
 	useServerMode,
 	useTestMode,
 	useClientMode,
+	getCurrentMode,
+	getPhysicsGuards,
 	validate,
 } from "./lib/calculator";
-
