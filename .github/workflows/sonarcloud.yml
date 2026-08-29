@@ -91,19 +91,15 @@ jobs:
         run: |
           pytest tests/ backend/tests/ \
             --tb=short \
-            --cov=backend \
-            --cov=fireai \
-            --cov=qomn_fire \
-            --cov=qomn_conduit \
-            --cov=parsers \
-            --cov=adapters \
-            --cov=core \
+            --cov=. \
+            --cov-config=pyproject.toml \
             --cov-report=xml:coverage.xml \
             --timeout=300 \
             --continue-on-collection-errors \
             -q \
             -p no:cacheprovider \
             || echo "::warning::Some tests failed (non-blocking for SonarCloud scan)"
+
 
       - name: Run frontend tests with coverage
         run: |

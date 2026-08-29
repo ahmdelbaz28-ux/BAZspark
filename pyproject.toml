@@ -551,7 +551,8 @@ python_functions = ["test_*"]
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-source = ["backend", "fireai", "qomn_fire", "qomn_conduit", "core"]
+source = ["."]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -559,7 +560,12 @@ omit = [
     "*/venv/*",
     "*/.venv/*",
     "*/env/*",
-    "*/.env/*"
+    "*/.env/*",
+    "frontend/*",
+    "skills/*",
+    "docs/*",
+    "deploy/*",
+    "scripts/*",
 ]
 branch = true
 concurrency = ["multiprocessing", "thread"]
@@ -574,6 +580,12 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == '__main__':"
+]
+
+[tool.coverage.paths]
+source = [
+    ".",
+    "*/cad-bim-integration-platform",
 ]
 
 [tool.bandit]
@@ -848,3 +860,4 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
 dev = [
     "pytest-timeout>=2.5.0",
 ]
+

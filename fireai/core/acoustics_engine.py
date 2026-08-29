@@ -1,5 +1,5 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
+# File-level '# NOSONAR
+# Per-line justified suppressions (e.g., '# NOSONAR
 """
 acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
 ======================================================================
@@ -572,7 +572,7 @@ class AcousticsEngine:
         barriers: list[Barrier] | None = None,
         mode: str = "public",
         room_absorption_m2: float | None = None,
-        _room_volume_m3: float | None = None,  # NOSONAR:S1172: parameter retained for API stability
+        _room_volume_m3: float | None = None,  # NOSONAR
     ) -> AcousticCoverageResult:
         """
         Verify NFPA 72 §18.4 audible notification coverage.
@@ -635,7 +635,7 @@ class AcousticsEngine:
         # ── Input validation ──────────────────────────────────────────
         self._validate_coverage_inputs(speakers, check_points, mode, room_id)
 
-        logger.info(  # NOSONAR — pythonsecurity:S5145: parameters sanitized via _safe_log_fragment
+        logger.info(  # NOSONAR
             "check_coverage: room=%s mode=%s speakers=%d points=%d",
             _safe_log_fragment(room_id),
             _safe_log_fragment(mode),
@@ -769,13 +769,13 @@ class AcousticsEngine:
     ) -> None:
         """Log the coverage result (PASS/FAIL) with safe room_id."""
         if compliant:
-            logger.info(  # NOSONAR — pythonsecurity:S5145: room_id sanitized via _safe_log_fragment
+            logger.info(  # NOSONAR
                 "check_coverage PASS: room=%s margin_dba=%.1f",
                 _safe_log_fragment(room_id),
                 result.margin_dba,
             )
         else:
-            logger.warning(  # NOSONAR — pythonsecurity:S5145: room_id sanitized via _safe_log_fragment
+            logger.warning(  # NOSONAR
                 "check_coverage FAIL: room=%s violations=%d",
                 _safe_log_fragment(room_id),
                 len(violations),
@@ -785,7 +785,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — UGLD Ray Trace (Single Sensor)
     # ------------------------------------------------------------------
 
-    def ugld_raytrace(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_raytrace(  # NOSONAR
         self,
         leak_point: tuple[float, float, float],
         sensor_point: tuple[float, float, float],
@@ -1019,7 +1019,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — Multi-Sensor UGLD Coverage
     # ------------------------------------------------------------------
 
-    def ugld_multi_sensor_coverage(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def ugld_multi_sensor_coverage(  # NOSONAR
         self,
         leak_points: list[tuple[float, float, float]],
         sensor_points: list[tuple[float, float, float]],

@@ -57,7 +57,7 @@ _RETRY_MAX_WAIT = 10.0
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "[::1]"})
-_METADATA_HOSTS = frozenset({"169.254.169.254", "metadata.google.internal", "metadata.azure.com"})  # NOSONAR: SSRF IMDS blocklist
+_METADATA_HOSTS = frozenset({"169.254.169.254", "metadata.google.internal", "metadata.azure.com"})  # NOSONAR
 
 _ANTHROPIC_DEFAULT_HOST = "api.anthropic.com"
 _GEMINI_DEFAULT_HOST = "generativelanguage.googleapis.com"

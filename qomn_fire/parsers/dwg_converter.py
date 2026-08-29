@@ -1,5 +1,5 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+# File-level '# NOSONAR
+# Per-line justified suppressions (e.g., '# NOSONAR
 """
 QOMN-FIRE DWG TO DXF TRANSFORMATION WRAPPER
 Converts binary DWG files to text-based DXF format for parsing.
@@ -60,7 +60,7 @@ class DwgConverter:
     @staticmethod
     def convert_dwg_to_dxf(
         dwg_path: str, output_dxf_path: str
-    ) -> Result[str, ConversionError]:  # NOSONAR: python:S3776
+    ) -> Result[str, ConversionError]:  # NOSONAR
         """
         Invokes LibreDWG (dwg2dxf) or ODA file converter CLI to convert files.
         Returns Result containing output path or ConversionError.
@@ -84,7 +84,7 @@ class DwgConverter:
             return Result.failure(
                 ConversionError(
                     message=f"Unsafe input path: {e}",
-                    code_ref="DwgConverter.convert_dwg_to_dxf",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                    code_ref="DwgConverter.convert_dwg_to_dxf",  # NOSONAR
                     remedy="Ensure input file is in allowed upload directory with correct extension.",
                 )
             )
