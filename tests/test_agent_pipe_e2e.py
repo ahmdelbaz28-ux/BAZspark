@@ -111,9 +111,7 @@ class FakeAddinPipeServer:
 
                 # Mirror LocalAgentServer.cs: serve many messages over one
                 # connection until the client closes the pipe.
-                win32pipe.SetNamedPipeHandleState(
-                    pipe, win32pipe.PIPE_READMODE_MESSAGE, None, None
-                )
+                win32pipe.SetNamedPipeHandleState(pipe, win32pipe.PIPE_READMODE_MESSAGE, None, None)
                 buffer = b""
                 while True:
                     try:
@@ -133,9 +131,7 @@ class FakeAddinPipeServer:
                         response = self.responder(
                             str(msg.get("action")), dict(msg.get("params") or {})
                         )
-                        win32file.WriteFile(
-                            pipe, (json.dumps(response) + "\n").encode("utf-8")
-                        )
+                        win32file.WriteFile(pipe, (json.dumps(response) + "\n").encode("utf-8"))
             except pywintypes.error:
                 if not self._stop.is_set():
                     time.sleep(0.05)
@@ -347,17 +343,17 @@ def test_full_chain_rest_to_pipe(agent_ws_server, fake_addins):
     # ── Assertions on what actually hit the fake C# add-ins ──
     revit_actions = [a for a, _p in fake_addins["revit"].received]
     assert revit_actions.count("create_wall") == 1
-    assert revit_actions.count("list_views") >= 1          # get_views mapped
-    assert revit_actions.count("set_parameter") == 2        # fan-out
+    assert revit_actions.count("list_views") >= 1  # get_views mapped
+    assert revit_actions.count("set_parameter") == 2  # fan-out
     assert revit_actions.count("capture_screen") == 1
     assert "delete_element" in revit_actions
 
     wall_params = next(p for a, p in fake_addins["revit"].received if a == "create_wall")
     assert {"x1", "y1", "x2", "y2", "height"} <= set(wall_params)
-    assert "start_point" not in wall_params                  # normalized away
+    assert "start_point" not in wall_params  # normalized away
 
     del_params = next(p for a, p in fake_addins["revit"].received if a == "delete_element")
-    assert del_params.get("element_id") == 4242              # A1 unified key
+    assert del_params.get("element_id") == 4242  # A1 unified key
 
     autocad_actions = [a for a, _p in fake_addins["autocad"].received]
     assert autocad_actions.count("draw_line") == 1

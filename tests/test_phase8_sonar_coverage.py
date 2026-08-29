@@ -92,9 +92,12 @@ def test_compliance_proof_document_file_output(tmp_path):
     cli_out = tmp_path / "cli_proof.md"
     test_args = [
         "compliance_proof_document",
-        "--project", "Test",
-        "--designer", "Tester",
-        "--output", str(cli_out),
+        "--project",
+        "Test",
+        "--designer",
+        "Tester",
+        "--output",
+        str(cli_out),
     ]
     with patch.object(sys, "argv", test_args):
         _cli_main()

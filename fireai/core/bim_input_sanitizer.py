@@ -176,11 +176,32 @@ def sanitize_room_name(room_name: str) -> str:
     return sanitized.strip()
 
 
-_RESERVED_DEVICE_NAMES = frozenset({
-    "CON", "PRN", "AUX", "NUL",
-    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-})
+_RESERVED_DEVICE_NAMES = frozenset(
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+    }
+)
 
 
 def sanitize_file_path(file_path: str) -> str:
@@ -227,7 +248,9 @@ def sanitize_file_path(file_path: str) -> str:
     # Check Windows reserved device names
     base_name = os.path.splitext(os.path.basename(sanitized))[0].upper()
     if base_name in _RESERVED_DEVICE_NAMES:
-        logger.critical("[SECURITY ALERT]: Windows reserved device name used in path: %s", base_name)
+        logger.critical(
+            "[SECURITY ALERT]: Windows reserved device name used in path: %s", base_name
+        )
         raise ValueError(f"Path references reserved system device name: {base_name}")
 
     if sanitized != file_path:

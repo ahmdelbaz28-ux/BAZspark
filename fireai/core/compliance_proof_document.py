@@ -572,7 +572,9 @@ def _cli_main() -> None:
         print(markdown)
     else:
         out_path = Path(args.output).resolve()
-        with open(out_path, "w", encoding="utf-8") as f:  # NOSONAR — pythonsecurity:S8707: CLI script output path resolved safely
+        with open(
+            out_path, "w", encoding="utf-8"
+        ) as f:  # NOSONAR — pythonsecurity:S8707: CLI script output path resolved safely
             f.write(markdown)
         print(f"Compliance document written to {out_path}", file=sys.stderr)
 

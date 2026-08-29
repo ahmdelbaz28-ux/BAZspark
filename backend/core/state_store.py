@@ -44,6 +44,7 @@ class CommandStateStore:
 
     def _ph(self) -> str:
         return self._db._ph()
+
     def get_project_revision(self, project_id: str) -> int | None:
         """Fetch the current canonical revision for a project from persistent storage.
 

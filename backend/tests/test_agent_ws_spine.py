@@ -230,13 +230,30 @@ def test_database_sqlite_methods(tmp_path: Path) -> None:
     # Test Database._row_to_project branch coverage
     # 1. Dict with explicit revision
     d1 = Database._row_to_project(
-        {"id": "p1", "name": "n1", "description": "d1", "author": "a1", "created_at": "c1", "updated_at": "u1", "status": "active", "revision": 7}
+        {
+            "id": "p1",
+            "name": "n1",
+            "description": "d1",
+            "author": "a1",
+            "created_at": "c1",
+            "updated_at": "u1",
+            "status": "active",
+            "revision": 7,
+        }
     )
     assert d1["revision"] == 7
 
     # 2. Dict without revision key
     d2 = Database._row_to_project(
-        {"id": "p2", "name": "n2", "description": "d2", "author": "a2", "created_at": "c2", "updated_at": "u2", "status": "active"},
+        {
+            "id": "p2",
+            "name": "n2",
+            "description": "d2",
+            "author": "a2",
+            "created_at": "c2",
+            "updated_at": "u2",
+            "status": "active",
+        },
         revision=3,
     )
     assert d2["revision"] == 3
@@ -263,7 +280,16 @@ def test_database_sqlite_methods(tmp_path: Path) -> None:
 
     # 5. Dict with revision=None — BLK-02 contract: missing revision stays None
     d5 = Database._row_to_project(
-        {"id": "p5", "name": "n5", "description": "d5", "author": "a5", "created_at": "c5", "updated_at": "u5", "status": "active", "revision": None}
+        {
+            "id": "p5",
+            "name": "n5",
+            "description": "d5",
+            "author": "a5",
+            "created_at": "c5",
+            "updated_at": "u5",
+            "status": "active",
+            "revision": None,
+        }
     )
     assert d5["revision"] is None  # BLK-02: missing canonical revision must NOT coerce to 1
 

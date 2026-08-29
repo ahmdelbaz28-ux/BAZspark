@@ -68,9 +68,7 @@ def _mini_app(aw):
 
 def test_ws_ticket_http_endpoint_issues_single_use_ticket(monkeypatch):
     aw = _load_agent_ws()
-    monkeypatch.setattr(
-        aw, "validate_api_key", lambda key: _FakeInfo(Role.ENGINEER), raising=False
-    )
+    monkeypatch.setattr(aw, "validate_api_key", lambda key: _FakeInfo(Role.ENGINEER), raising=False)
     client = TestClient(_mini_app(aw))
     res = client.post("/api/agent/ws-ticket", headers={"x-api-key": "fireai_test"})
     assert res.status_code == 200, res.text
@@ -102,9 +100,7 @@ def test_handshake_with_invalid_ticket_closes_4401():
 
 def test_handshake_with_insufficient_role_closes_4403(monkeypatch):
     aw = _load_agent_ws()
-    monkeypatch.setattr(
-        aw, "_consume_ws_ticket", lambda t, o: _FakeInfo(Role.VIEWER)
-    )
+    monkeypatch.setattr(aw, "_consume_ws_ticket", lambda t, o: _FakeInfo(Role.VIEWER))
     client = TestClient(_mini_app(aw))
     with pytest.raises(Exception):
         with client.websocket_connect("/agent-ws?ticket=viewer-ticket") as ws:

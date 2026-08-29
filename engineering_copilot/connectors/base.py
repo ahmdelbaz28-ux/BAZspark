@@ -42,9 +42,7 @@ def get_connector(name: str, **kwargs: Any) -> ElectricalConnector:
     """Instantiate a registered connector by provider name."""
     key = name.strip().lower()
     if key not in _REGISTRY:
-        raise KeyError(
-            f"Unknown electrical connector {name!r}. Registered: {sorted(_REGISTRY)}"
-        )
+        raise KeyError(f"Unknown electrical connector {name!r}. Registered: {sorted(_REGISTRY)}")
     return _REGISTRY[key](**kwargs)
 
 

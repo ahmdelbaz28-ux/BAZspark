@@ -389,7 +389,9 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
 
     monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
-    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr(
+        "backend.routers.projects.get_current_principal", lambda request: "engineer-42"
+    )
     monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
     monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr(
@@ -415,11 +417,13 @@ def test_rest_plan_and_start_endpoints(monkeypatch: pytest.MonkeyPatch, fresh_db
     monkeypatch.setattr(_orch_mod, "default_agent_run_orchestrator", fresh_orchestrator)
     monkeypatch.setattr(_planner_mod, "default_workflow_planner", fresh_planner)
 
-    fresh_db.create_project({
-        "id": "proj-rest-test",
-        "name": "Rest Test Project",
-        "author": "engineer-42",
-    })
+    fresh_db.create_project(
+        {
+            "id": "proj-rest-test",
+            "name": "Rest Test Project",
+            "author": "engineer-42",
+        }
+    )
 
     client = TestClient(app)
 
@@ -463,7 +467,9 @@ def test_rest_workflow_context_reconciliation_validation_errors(
 
     monkeypatch.setattr("backend.auth.get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr("backend.auth.get_current_role", lambda request: Role.ENGINEER)
-    monkeypatch.setattr("backend.routers.projects.get_current_principal", lambda request: "engineer-42")
+    monkeypatch.setattr(
+        "backend.routers.projects.get_current_principal", lambda request: "engineer-42"
+    )
     monkeypatch.setattr("backend.routers.projects.get_current_role", lambda request: Role.ENGINEER)
     monkeypatch.setattr(workflow, "get_current_principal", lambda request: "engineer-42")
     monkeypatch.setattr(
@@ -473,17 +479,22 @@ def test_rest_workflow_context_reconciliation_validation_errors(
     monkeypatch.setattr("backend.database.get_db", lambda: fresh_db)
     monkeypatch.setattr("backend.routers.projects.get_db", lambda: fresh_db)
 
-    fresh_db.create_project({
-        "id": "proj-reconcile-err",
-        "name": "Reconcile Error Project",
-        "author": "engineer-42",
-    })
-    fresh_db.create_device("proj-reconcile-err", {
-        "id": "dev-01",
-        "name": "Smoke Detector 1",
-        "type": "smoke_detector",
-        "category": "initiating",
-    })
+    fresh_db.create_project(
+        {
+            "id": "proj-reconcile-err",
+            "name": "Reconcile Error Project",
+            "author": "engineer-42",
+        }
+    )
+    fresh_db.create_device(
+        "proj-reconcile-err",
+        {
+            "id": "dev-01",
+            "name": "Smoke Detector 1",
+            "type": "smoke_detector",
+            "category": "initiating",
+        },
+    )
 
     client = TestClient(app)
 

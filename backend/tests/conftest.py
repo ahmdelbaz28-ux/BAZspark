@@ -484,6 +484,7 @@ def _seed_test_canonical_revisions(request):
     try:
         from backend.core.state_store import default_state_store
         from backend.database import get_db
+
         db = get_db()
         pids = [
             "default_project",
@@ -597,7 +598,9 @@ def _seed_test_canonical_revisions(request):
         for pid in pids:
             try:
                 if not db.get_project(pid):
-                    db.create_project({"id": pid, "name": f"Test Project {pid}", "author": "test-suite"})
+                    db.create_project(
+                        {"id": pid, "name": f"Test Project {pid}", "author": "test-suite"}
+                    )
             except Exception:
                 pass
             try:
@@ -607,7 +610,6 @@ def _seed_test_canonical_revisions(request):
                 pass
     except Exception:
         pass
-
 
 
 def pytest_addoption(parser):

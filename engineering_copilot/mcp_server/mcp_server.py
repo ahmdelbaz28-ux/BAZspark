@@ -183,7 +183,9 @@ class MCPServer:
         self.app.post("/process_request", dependencies=auth_dep)(self.process_request)
         self.app.post("/convert_simready", dependencies=auth_dep)(self.convert_simready)
         self.app.post("/execute_tool", dependencies=auth_dep)(self.execute_tool_endpoint)
-        self.app.post("/write_project_file", dependencies=auth_dep)(self.write_project_file_endpoint)
+        self.app.post("/write_project_file", dependencies=auth_dep)(
+            self.write_project_file_endpoint
+        )
         self.app.post("/read_project_file", dependencies=auth_dep)(self.read_project_file_endpoint)
 
     # Request models

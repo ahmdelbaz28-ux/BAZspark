@@ -1,4 +1,4 @@
-﻿# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR â€” S3776: ...') are preserved.
 """
 test_api_keys.py â€” Direct unit tests for backend/api_keys.py.

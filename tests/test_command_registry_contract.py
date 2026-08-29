@@ -16,10 +16,10 @@ from core import command_registry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-REVIT_HANDLER = REPO_ROOT / "revit_addin" / "BazSparkRevitBridge" / "BazSparkExternalEventHandler.cs"
-AUTOCAD_HANDLER = (
-    REPO_ROOT / "autocad_addin" / "BazSparkAutoCADBridge" / "AutoCADCommandHandler.cs"
+REVIT_HANDLER = (
+    REPO_ROOT / "revit_addin" / "BazSparkRevitBridge" / "BazSparkExternalEventHandler.cs"
 )
+AUTOCAD_HANDLER = REPO_ROOT / "autocad_addin" / "BazSparkAutoCADBridge" / "AutoCADCommandHandler.cs"
 
 _SWITCH_ARM_RE = re.compile(r'"([a-z_0-9]+)"\s*=>')
 
@@ -42,9 +42,7 @@ def _registry_action_names(service: str) -> set[str]:
 def _registry_pipe_actions(service: str) -> set[str]:
     commands = command_registry.load_registry()["services"][service]["commands"]
     return {
-        entry["addin_action"]
-        for entry in commands.values()
-        if "pipe" in entry.get("channel", [])
+        entry["addin_action"] for entry in commands.values() if "pipe" in entry.get("channel", [])
     }
 
 

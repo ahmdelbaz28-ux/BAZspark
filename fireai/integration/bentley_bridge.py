@@ -347,9 +347,7 @@ class BentleyBridge:
 
     # ── Connection Management ───────────────────────────────────────────
 
-    def connect_api(
-        self, credentials: dict[str, str]
-    ) -> bool:
+    def connect_api(self, credentials: dict[str, str]) -> bool:
         """
         Connect to the Bentley iTwin API.
 

@@ -548,7 +548,11 @@ class TestA2MCPConformance:
     @staticmethod
     def _call(server, name: str, args: dict | None = None) -> dict:
         line = _jsonrpc(
-            "tools/call", {"name": name, "arguments": dict(args or TestA2MCPConformance.VALID_ARGS.get(name, {}))}
+            "tools/call",
+            {
+                "name": name,
+                "arguments": dict(args or TestA2MCPConformance.VALID_ARGS.get(name, {})),
+            },
         )
         resp = server._handle_jsonrpc_line(line)
         assert resp is not None and "result" in resp, f"{name}: JSON-RPC error: {resp}"

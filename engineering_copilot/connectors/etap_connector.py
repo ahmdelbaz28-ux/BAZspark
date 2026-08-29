@@ -133,8 +133,7 @@ class ETAPConnector(ElectricalConnector):
             # Real ETAP API binding happens here when running inside the
             # ETAP process; until that bridge lands, fail honestly.
             self.logger.warning(
-                "ETAP API bridge not implemented yet — refusing to simulate "
-                "a connected project."
+                "ETAP API bridge not implemented yet — refusing to simulate a connected project."
             )
             return False
 

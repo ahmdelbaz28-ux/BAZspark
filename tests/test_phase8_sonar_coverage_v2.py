@@ -32,6 +32,7 @@ import pytest
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def _setup_mock_revit_api():
     """Inject fake Autodesk Revit API into sys.modules."""
     clr = ModuleType("clr")
@@ -40,8 +41,15 @@ def _setup_mock_revit_api():
     db = ModuleType("Autodesk.Revit.DB")
 
     for cls_name in (
-        "XYZ", "CurveArray", "CurveLoop", "FilteredElementCollector",
-        "Floor", "FloorType", "Level", "Line", "Transaction",
+        "XYZ",
+        "CurveArray",
+        "CurveLoop",
+        "FilteredElementCollector",
+        "Floor",
+        "FloorType",
+        "Level",
+        "Line",
+        "Transaction",
     ):
         setattr(db, cls_name, MagicMock())
 
@@ -55,6 +63,7 @@ def _setup_mock_revit_api():
 # ──────────────────────────────────────────────────────────────────────────────
 # acoustics_engine.py L778: warning log (FAIL branch)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestAcousticsEngineLogs:
     def test_log_coverage_result_fail_branch(self):
@@ -106,6 +115,7 @@ class TestAcousticsEngineLogs:
 # autocad_service.py L877: simulation mode info log
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestAutoCADServiceSimulationLog:
     def test_draw_text_simulation_mode_logs(self):
         """Cover L877: simulation mode logger.info when connected but acad_doc is None."""
@@ -131,18 +141,26 @@ class TestAutoCADServiceSimulationLog:
 # compliance_proof_document.py L574-577: _cli_main file output
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestComplianceProofDocumentCLI:
     def test_cli_main_writes_file(self, tmp_path):
         """Cover L574-577: _cli_main writes markdown to file when --output given."""
         from fireai.core.compliance_proof_document import _cli_main
 
         out_file = tmp_path / "compliance_output.md"
-        with patch.object(sys, "argv", [
-            "compliance_proof_document.py",
-            "--project", "Test Project",
-            "--designer", "Ahmed Baz, PE",
-            "--output", str(out_file),
-        ]):
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "compliance_proof_document.py",
+                "--project",
+                "Test Project",
+                "--designer",
+                "Ahmed Baz, PE",
+                "--output",
+                str(out_file),
+            ],
+        ):
             _cli_main()
 
         assert out_file.exists()
@@ -152,11 +170,17 @@ class TestComplianceProofDocumentCLI:
         """Cover L572: print(markdown) when output is stdout."""
         from fireai.core.compliance_proof_document import _cli_main
 
-        with patch.object(sys, "argv", [
-            "compliance_proof_document.py",
-            "--project", "P",
-            "--designer", "D",
-        ]):
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "compliance_proof_document.py",
+                "--project",
+                "P",
+                "--designer",
+                "D",
+            ],
+        ):
             _cli_main()
 
         assert len(capsys.readouterr().out) > 0
@@ -165,6 +189,7 @@ class TestComplianceProofDocumentCLI:
 # ──────────────────────────────────────────────────────────────────────────────
 # event_bus.py L719: KafkaEventBus.start assigns _consume_task
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestKafkaEventBusStartTask:
     @pytest.mark.asyncio
@@ -198,6 +223,7 @@ class TestKafkaEventBusStartTask:
 # ──────────────────────────────────────────────────────────────────────────────
 # ifc_parser.py L805,L821: zero-volume element drops
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestIFCParserZeroVolume:
     def _build_zero_volume_element(self, ifc_class: str):
@@ -264,6 +290,7 @@ class TestIFCParserZeroVolume:
 # ──────────────────────────────────────────────────────────────────────────────
 # revit_service.py L1151,L1189,L1718: error/warning log branches
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestRevitServiceErrorBranches:
     def _make_service(self):
@@ -342,15 +369,19 @@ class TestRevitServiceErrorBranches:
 # room_lifecycle.py L928,L944,L985: math.isclose progress assertions & self-test
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestRoomLifecycleManagerProgress:
     def _full_certify(self, mgr, room_id: str) -> None:
         from fireai.core.room_lifecycle import RoomState
 
         lc = mgr.get_room(room_id)
         for state in (
-            RoomState.ANALYZING, RoomState.OPTIMIZED,
-            RoomState.VERIFYING, RoomState.VERIFIED,
-            RoomState.CERTIFYING, RoomState.CERTIFIED,
+            RoomState.ANALYZING,
+            RoomState.OPTIMIZED,
+            RoomState.VERIFYING,
+            RoomState.VERIFIED,
+            RoomState.CERTIFYING,
+            RoomState.CERTIFIED,
         ):
             lc.transition_to(state, "step", "system")
 
@@ -410,6 +441,7 @@ class TestRoomLifecycleManagerProgress:
 # settings.py L859: logger.exception branch
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestSettingsLoggerException:
     def test_safe_log_fragment_sanitizes_control_chars(self):
         """Cover helper used by the exception branch."""
@@ -445,10 +477,12 @@ class TestSettingsLoggerException:
         }
         mock_db._transaction.return_value.__enter__.return_value = mock_cur
 
-        with patch("backend.routers.settings.get_db", return_value=mock_db), \
-             patch("backend.routers.settings.decrypt_key", side_effect=ValueError("Corrupted key")), \
-             patch("backend.routers.settings._ensure_v152_columns"), \
-             patch("backend.routers.settings.limiter") as mock_limiter:
+        with (
+            patch("backend.routers.settings.get_db", return_value=mock_db),
+            patch("backend.routers.settings.decrypt_key", side_effect=ValueError("Corrupted key")),
+            patch("backend.routers.settings._ensure_v152_columns"),
+            patch("backend.routers.settings.limiter") as mock_limiter,
+        ):
             # Make limiter a no-op so rate-limiting doesn't block the test
             mock_limiter.limit.return_value = lambda fn: fn
 
@@ -465,6 +499,7 @@ class TestSettingsLoggerException:
 # ──────────────────────────────────────────────────────────────────────────────
 # fireai/api/settings_router.py L33-36,L42: _persist_flags + asyncio.to_thread
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestFireaiSettingsRouterPersist:
     @pytest.mark.asyncio

@@ -119,7 +119,9 @@ class TransportLayer(ABC):
 class HTTPTransport(TransportLayer):
     """HTTP transport implementation for distributed FACP"""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 19000, node_type: str = "l2_orchestrator"):
+    def __init__(
+        self, host: str = "0.0.0.0", port: int = 19000, node_type: str = "l2_orchestrator"
+    ):
         # A8 FIX: default moved off 8000 (collides with the main FastAPI API).
         super().__init__()
         self.host = host

@@ -166,10 +166,18 @@ class TestPersonaWhitelist:
         class _FakeSvc:
             available = True
 
-            async def chat_stream(self, prompt: str, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+            async def chat_stream(
+                self, prompt: str, **kwargs: Any
+            ) -> AsyncIterator[dict[str, Any]]:
                 captured["system"] = kwargs.get("system")
-                yield {"type": "done", "content": "ok", "model": "m", "source": "zenmux",
-                       "usage": {}, "disclaimer": AI_DISCLAIMER}
+                yield {
+                    "type": "done",
+                    "content": "ok",
+                    "model": "m",
+                    "source": "zenmux",
+                    "usage": {},
+                    "disclaimer": AI_DISCLAIMER,
+                }
 
         with patch("backend.routers.llm.get_llm_service", return_value=_FakeSvc()):
             resp = client.post(
@@ -202,9 +210,12 @@ class TestSourceTagging:
         from backend.services.providers.adapters import OpenAICompatibleAdapter
 
         adapter = OpenAICompatibleAdapter(
-            name="zenmux", api_key="sk-test",
-            base_url="https://zenmux.ai/api/v1", model="z-ai/glm-4.7",
-            timeout=10.0, max_tokens=100,
+            name="zenmux",
+            api_key="sk-test",
+            base_url="https://zenmux.ai/api/v1",
+            model="z-ai/glm-4.7",
+            timeout=10.0,
+            max_tokens=100,
         )
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=_make_completion())
@@ -212,7 +223,9 @@ class TestSourceTagging:
             result = asyncio.run(adapter.chat([{"role": "user", "content": "q"}]))
         assert result.source == "zenmux"
 
-    def test_fallback_success_tags_source_with_fallback_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_fallback_success_tags_source_with_fallback_name(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
         monkeypatch.setenv("LLM_FALLBACK_ENABLED", "true")
@@ -255,7 +268,9 @@ class TestSourceTagging:
 
 
 class TestNeverRaisesChatPaths:
-    def test_chat_endpoint_returns_502_llm_request_failed_on_provider_error(self, client: Any) -> None:
+    def test_chat_endpoint_returns_502_llm_request_failed_on_provider_error(
+        self, client: Any
+    ) -> None:
         class _FailingSvc:
             available = True
 
@@ -310,7 +325,9 @@ class TestNeverRaisesChatPaths:
         assert resp.status_code == 503
         assert resp.json()["detail"]["error"] == "LLM_SERVICE_UNAVAILABLE"
 
-    def test_chat_stream_yields_error_event_instead_of_raising(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_chat_stream_yields_error_event_instead_of_raising(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
         import backend.services.llm_service as mod
@@ -334,7 +351,9 @@ class TestNeverRaisesChatPaths:
         assert AI_DISCLAIMER in events[-1]["disclaimer"]
         mod._llm_service = None
 
-    def test_health_never_raises_with_broken_subsystems(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_health_never_raises_with_broken_subsystems(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _clean_llm_env(monkeypatch)
         from backend.services.llm_service import LLMService
 
@@ -356,17 +375,14 @@ class TestTokenCapsAndHistoryTruncation:
         history = [
             {"role": "user" if i % 2 == 0 else "assistant", "content": "msg"} for i in range(21)
         ]
-        resp = client.post(
-            "/api/v1/llm/chat", json={"prompt": "hi", "history": history}
-        )
+        resp = client.post("/api/v1/llm/chat", json={"prompt": "hi", "history": history})
         assert resp.status_code == 422
 
     def test_assemble_messages_keeps_newest_20_turns(self) -> None:
         from backend.services.llm_service import LLMService
 
         history = [
-            {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"}
-            for i in range(30)
+            {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"} for i in range(30)
         ]
         messages = LLMService._assemble_messages(system=None, prompt="final", history=history)
         # 20 kept turns + current user message
@@ -392,7 +408,9 @@ class TestTokenCapsAndHistoryTruncation:
             )
         with pytest.raises(ValueError):
             LLMService._assemble_messages(
-                system=None, prompt="q", history=["not a dict"]  # type: ignore[list-item]
+                system=None,
+                prompt="q",
+                history=["not a dict"],  # type: ignore[list-item]
             )
 
     def test_assembly_never_exceeds_22_messages_regardless_of_history_size(self) -> None:
@@ -406,12 +424,9 @@ class TestTokenCapsAndHistoryTruncation:
 
         for size in (0, 1, 20, 21, 50, 500):
             history = [
-                {"role": "user" if i % 2 == 0 else "assistant", "content": "m"}
-                for i in range(size)
+                {"role": "user" if i % 2 == 0 else "assistant", "content": "m"} for i in range(size)
             ]
-            messages = LLMService._assemble_messages(
-                system="s", prompt="q", history=history
-            )
+            messages = LLMService._assemble_messages(system="s", prompt="q", history=history)
             assert len(messages) <= 22
 
 
@@ -481,7 +496,9 @@ class TestSSEEvents:
         assert "chunk" in types
         assert types[-1] == "done"
 
-    def test_chunk_event_carries_content_model_source(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_chunk_event_carries_content_model_source(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
         import backend.services.llm_service as mod
@@ -506,7 +523,9 @@ class TestSSEEvents:
         assert chunk_events[0]["source"] == "zenmux"
         assert chunk_events[0]["model"] == "z-ai/glm-4.7"
 
-    def test_done_event_carries_full_text_usage_and_disclaimer(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_done_event_carries_full_text_usage_and_disclaimer(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _clean_llm_env(monkeypatch)
         _configured(monkeypatch)
         import backend.services.llm_service as mod
@@ -542,9 +561,15 @@ class TestSSEEvents:
         class _FakeSvc:
             available = True
 
-            async def chat_stream(self, prompt: str, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+            async def chat_stream(
+                self, prompt: str, **kwargs: Any
+            ) -> AsyncIterator[dict[str, Any]]:
                 yield {"type": "chunk", "content": "He", "model": "m", "source": "zenmux"}
-                yield {"type": "error", "message": "mid-stream failure", "disclaimer": AI_DISCLAIMER}
+                yield {
+                    "type": "error",
+                    "message": "mid-stream failure",
+                    "disclaimer": AI_DISCLAIMER,
+                }
 
         with patch("backend.routers.llm.get_llm_service", return_value=_FakeSvc()):
             resp = client.post("/api/v1/llm/chat/stream", json={"prompt": "hi"})
@@ -556,7 +581,7 @@ class TestSSEEvents:
             if not block:
                 continue
             assert block.startswith("data: ")
-            events.append(json.loads(block[len("data: "):]))
+            events.append(json.loads(block[len("data: ") :]))
         assert [e["type"] for e in events] == ["chunk", "error"]
         assert events[1]["message"] == "mid-stream failure"
 
@@ -573,9 +598,7 @@ class TestRetryPolicyCurrentBehavior:
 
         assert is_retryable_exception(httpx.ConnectError("x"))
         assert is_retryable_exception(httpx.TimeoutException("x"))
-        assert is_retryable_exception(
-            APIConnectionError(request=httpx.Request("GET", "https://x"))
-        )
+        assert is_retryable_exception(APIConnectionError(request=httpx.Request("GET", "https://x")))
         assert is_retryable_exception(APITimeoutError(httpx.Request("GET", "https://x")))
 
     def test_429_and_5xx_are_now_retried(self) -> None:
@@ -590,7 +613,9 @@ class TestRetryPolicyCurrentBehavior:
         for status in (429, 500, 502, 503, 504):
             exc = APIStatusError(
                 message=f"HTTP {status}",
-                response=httpx.Response(status_code=status, request=httpx.Request("GET", "https://x")),
+                response=httpx.Response(
+                    status_code=status, request=httpx.Request("GET", "https://x")
+                ),
                 body=None,
             )
             assert is_retryable_exception(exc), f"{status} must be retryable"
@@ -603,7 +628,9 @@ class TestRetryPolicyCurrentBehavior:
         for status in (400, 401, 403, 404):
             exc = APIStatusError(
                 message=f"HTTP {status}",
-                response=httpx.Response(status_code=status, request=httpx.Request("GET", "https://x")),
+                response=httpx.Response(
+                    status_code=status, request=httpx.Request("GET", "https://x")
+                ),
                 body=None,
             )
             assert not is_retryable_exception(exc), f"{status} must NOT be retryable"
@@ -616,13 +643,15 @@ class TestSSRFGates:
     def test_allowed_cloud_hosts_constant_is_locked(self) -> None:
         from backend.services.llm_service import ALLOWED_CLOUD_HOSTS
 
-        assert ALLOWED_CLOUD_HOSTS == frozenset({
-            "api.anthropic.com",
-            "generativelanguage.googleapis.com",
-            "api.openai.com",
-            "zenmux.ai",
-            "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
-        })
+        assert ALLOWED_CLOUD_HOSTS == frozenset(
+            {
+                "api.anthropic.com",
+                "generativelanguage.googleapis.com",
+                "api.openai.com",
+                "zenmux.ai",
+                "ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com",
+            }
+        )
 
     def test_local_providers_limited_to_loopback(self) -> None:
         from backend.services.llm_service import validate_provider_url
@@ -641,7 +670,9 @@ class TestSSRFGates:
         bad, _, berr = validate_provider_url("anthropic", "https://evil.example.com")
         assert not bad
         assert "SSRF_BLOCKED" in (berr or "")
-        no_tls, _, nerr = validate_provider_url("gemini", "http://generativelanguage.googleapis.com")
+        no_tls, _, nerr = validate_provider_url(
+            "gemini", "http://generativelanguage.googleapis.com"
+        )
         assert not no_tls
         assert "HTTPS is required" in (nerr or "")
 
@@ -667,15 +698,15 @@ class TestSSRFGates:
 
         called = False
 
-        def _fail_get(*args: Any, **kwargs: Any) -> httpx.Response:  # pragma: no cover - must not be reached
+        def _fail_get(
+            *args: Any, **kwargs: Any
+        ) -> httpx.Response:  # pragma: no cover - must not be reached
             nonlocal called
             called = True
             raise AssertionError("network call attempted despite SSRF rejection")
 
         with patch("httpx.AsyncClient.get", side_effect=_fail_get):
-            success, latency, err = asyncio.run(
-                ping_provider("ollama", "http://10.9.9.9:11434")
-            )
+            success, latency, err = asyncio.run(ping_provider("ollama", "http://10.9.9.9:11434"))
         assert success is False
         assert latency == 0.0
         assert "SSRF_BLOCKED" in (err or "")

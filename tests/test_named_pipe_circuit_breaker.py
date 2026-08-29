@@ -113,7 +113,9 @@ class TestRevitNamedPipeClientCircuitBreaker:
         assert client.circuit_breaker.state == CircuitState.OPEN
 
         # Should fast-fail with BRIDGE_PROCESS_UNRESPONSIVE
-        res = client.send_command({"action": "set_parameter", "element_id": "100", "parameter_name": "dia", "value": 25.0})
+        res = client.send_command(
+            {"action": "set_parameter", "element_id": "100", "parameter_name": "dia", "value": 25.0}
+        )
         assert res["status"] == "error"
         assert res["error_code"] == "BRIDGE_PROCESS_UNRESPONSIVE"
         assert res["circuit_state"] == "OPEN"
@@ -175,7 +177,10 @@ class TestRevitNamedPipeClientCircuitBreaker:
         mock_pywintypes.error = type("pywintypes_error", (Exception,), {})
         mock_win32file = MagicMock()
         mock_win32file.CreateFile.side_effect = mock_pywintypes.error("File not found")
-        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}):
+        with patch.dict(
+            "sys.modules",
+            {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()},
+        ):
             res = client.send_command({"action": "set_parameter"})
             assert res["status"] == "error"
             assert res["error_code"] == "PIPE_CONNECTION_FAILED"
@@ -189,7 +194,10 @@ class TestRevitNamedPipeClientCircuitBreaker:
         mock_win32file = MagicMock()
         mock_win32file.CreateFile.return_value = 12345
         mock_win32file.WriteFile.side_effect = RuntimeError("Pipe broken")
-        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}):
+        with patch.dict(
+            "sys.modules",
+            {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()},
+        ):
             res = client.send_command({"action": "set_parameter"})
             assert res["status"] == "error"
             assert res["error_code"] == "PIPE_IO_ERROR"
@@ -202,8 +210,21 @@ class TestRevitNamedPipeClientCircuitBreaker:
         mock_pywintypes.error = type("pywintypes_error", (Exception,), {})
         mock_win32file = MagicMock()
         mock_win32file.CreateFile.return_value = 12345
-        with patch.dict("sys.modules", {"pywintypes": mock_pywintypes, "win32file": mock_win32file, "win32pipe": MagicMock()}), \
-             patch.object(client, "_read_pipe_response", return_value=b'{"status": "queued", "pending_count": 0}\n'):
+        with (
+            patch.dict(
+                "sys.modules",
+                {
+                    "pywintypes": mock_pywintypes,
+                    "win32file": mock_win32file,
+                    "win32pipe": MagicMock(),
+                },
+            ),
+            patch.object(
+                client,
+                "_read_pipe_response",
+                return_value=b'{"status": "queued", "pending_count": 0}\n',
+            ),
+        ):
             res = client.send_command({"action": "set_parameter"})
             assert res["status"] == "queued"
             assert res["pending_count"] == 0

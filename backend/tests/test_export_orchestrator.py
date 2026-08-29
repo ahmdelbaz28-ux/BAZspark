@@ -247,11 +247,13 @@ class TestExportExecutionLifecycle:
         principal: AuthenticatedPrincipal,
     ):
         # Create a project with malicious path-traversal name
-        test_db.create_project({
-            "id": "proj-traversal-test",
-            "name": "../../../etc/shadow/malicious_export",
-            "author": "engineer-42",
-        })
+        test_db.create_project(
+            {
+                "id": "proj-traversal-test",
+                "name": "../../../etc/shadow/malicious_export",
+                "author": "engineer-42",
+            }
+        )
         rev = state_store.get_project_revision("proj-traversal-test")
         result = export_orchestrator.execute_export(
             project_id="proj-traversal-test",
@@ -269,9 +271,7 @@ class TestExportExecutionLifecycle:
         export_orchestrator: ExportOrchestrator,
     ):
         # Attempt direct path resolution
-        resolved = export_orchestrator._resolve_contained_artifact_path(
-            "art-123", "pdf"
-        )
+        resolved = export_orchestrator._resolve_contained_artifact_path("art-123", "pdf")
         assert export_orchestrator.artifact_dir.resolve() in resolved.parents
 
         # Verify that an escaping path raises ExportExecutionError
@@ -359,9 +359,7 @@ class TestExportPathHardening:
         hostile = "..\\..\\..\\evil <>|&%$ \x00traversal"
         export_orchestrator._db.update_project("proj-exp-01", {"name": hostile})
 
-        result = export_orchestrator.execute_export(
-            "proj-exp-01", 1, "json", principal=principal
-        )
+        result = export_orchestrator.execute_export("proj-exp-01", 1, "json", principal=principal)
 
         written = [p.name for p in (tmp_path / "artifacts").iterdir() if p.is_file()]
         assert written, "expected artifact files on disk"
@@ -385,7 +383,9 @@ class TestExportPathHardening:
         seg_a = Path(res_a.artifact.artifact_path).name.split("_", 1)[1]
 
         # Same inputs through a fresh orchestrator → same hash segment.
-        orch_b = ExportOrchestrator(db=test_db, state_store=state_store, artifact_dir=tmp_path / "b")
+        orch_b = ExportOrchestrator(
+            db=test_db, state_store=state_store, artifact_dir=tmp_path / "b"
+        )
         res_b = orch_b.execute_export("proj-exp-01", rev, "json", principal=principal)
         seg_b = Path(res_b.artifact.artifact_path).name.split("_", 1)[1]
         assert seg_a == seg_b
@@ -402,7 +402,5 @@ class TestExportPathHardening:
         tmp_path: Path,
     ):
         root = tmp_path.resolve()
-        result = export_orchestrator.execute_export(
-            "proj-exp-01", 1, "json", principal=principal
-        )
+        result = export_orchestrator.execute_export("proj-exp-01", 1, "json", principal=principal)
         assert Path(result.artifact.artifact_path).resolve().is_relative_to(root)

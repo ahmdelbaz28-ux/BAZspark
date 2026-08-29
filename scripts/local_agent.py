@@ -101,9 +101,7 @@ except Exception as e:  # noqa: BLE001
 _READ_BUFFER_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
-def _send_pipe_command(
-    pipe_name: str, payload: dict, timeout_sec: float
-) -> dict:
+def _send_pipe_command(pipe_name: str, payload: dict, timeout_sec: float) -> dict:
     """Send one JSON command over a named pipe and read the response.
 
     A5 FIX: ``win32file.ReadFile`` blocks forever when the add-in never
@@ -614,8 +612,7 @@ def _dispatch_autocad(
             except RuntimeError:
                 pass  # stale singleton or pipe vanished mid-call — fall through to fallback
         logger.warning(
-            "[AutoCAD] Named Pipe unavailable for %s — "
-            "is BazSparkAutoCADBridge loaded in AutoCAD?",
+            "[AutoCAD] Named Pipe unavailable for %s — is BazSparkAutoCADBridge loaded in AutoCAD?",
             action,
         )
 
@@ -888,9 +885,7 @@ def _dispatch_revit(
             updated, failed = 0, []
             for call in calls:
                 try:
-                    res = _dispatch_via_pipe(
-                        "revit", pipe, target_canonical, target_entry, call
-                    )
+                    res = _dispatch_via_pipe("revit", pipe, target_canonical, target_entry, call)
                 except RuntimeError:
                     failed.append(call.get("name"))
                     continue

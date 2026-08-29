@@ -49,9 +49,7 @@ class TestDeclaredDependenciesImportable:
         import sys
 
         root = pathlib.Path(__file__).resolve().parents[2]
-        source = (root / "fireai" / "infrastructure" / "mem0_setup.py").read_text(
-            encoding="utf-8"
-        )
+        source = (root / "fireai" / "infrastructure" / "mem0_setup.py").read_text(encoding="utf-8")
         assert "google.generativeai as genai" not in source
         module = sys.modules.get("fireai.infrastructure.mem0_setup")
         if module is not None:
@@ -80,9 +78,7 @@ class TestEmbeddingDimensionsUnchanged:
             monkeypatch.delenv(env, raising=False)
         monkeypatch.setenv(primary_key_env, "sk-test")
         monkeypatch.setattr(ms, "_test_openai_connectivity", lambda key: True)
-        monkeypatch.setattr(
-            ms, "_test_openai_compatible_connectivity", lambda base_url, key: True
-        )
+        monkeypatch.setattr(ms, "_test_openai_compatible_connectivity", lambda base_url, key: True)
         monkeypatch.setattr(ms, "_test_gemini_connectivity", lambda key: True)
         monkeypatch.setattr(ms, "_detect_provider_cache", None)
         info: dict[str, Any] = dict(ms._detect_provider_uncached())

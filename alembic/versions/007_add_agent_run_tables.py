@@ -160,7 +160,9 @@ def downgrade() -> None:
     op.drop_index(
         "uq_pending_approvals_run_step_pending", table_name="pending_approvals", if_exists=True
     )
-    op.drop_index("idx_approval_decisions_approval", table_name="approval_decisions", if_exists=True)
+    op.drop_index(
+        "idx_approval_decisions_approval", table_name="approval_decisions", if_exists=True
+    )
     op.drop_index("idx_approval_decisions_run", table_name="approval_decisions", if_exists=True)
     op.drop_table("approval_decisions", if_exists=True)
 

@@ -103,7 +103,9 @@ class NamedPipeCircuitBreaker:
                 now = time.monotonic()
                 if now - self.last_failure_time >= self.recovery_timeout:
                     self.state = CircuitState.HALF_OPEN
-                    logger.info("NamedPipeCircuitBreaker: Cooldown expired -> state transitioning to HALF_OPEN")
+                    logger.info(
+                        "NamedPipeCircuitBreaker: Cooldown expired -> state transitioning to HALF_OPEN"
+                    )
                     return True
                 return False
             if self.state == CircuitState.HALF_OPEN:
@@ -114,7 +116,9 @@ class NamedPipeCircuitBreaker:
         """Record a successful native IPC communication."""
         with self._lock:
             if self.state in (CircuitState.HALF_OPEN, CircuitState.OPEN):
-                logger.info("NamedPipeCircuitBreaker: Probe successful -> circuit transitioned to CLOSED")
+                logger.info(
+                    "NamedPipeCircuitBreaker: Probe successful -> circuit transitioned to CLOSED"
+                )
             self.state = CircuitState.CLOSED
             self.failure_count = 0
             self.last_failure_time = 0.0
@@ -259,7 +263,9 @@ class RevitNamedPipeClient:
                 "consecutive_failures": self.circuit_breaker.failure_count,
             }
 
-    def send_command(self, command: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:  # NOSONAR — S3776: Multi-stage named pipe IPC lifecycle
+    def send_command(
+        self, command: dict[str, Any], timeout: float | None = None
+    ) -> dict[str, Any]:  # NOSONAR — S3776: Multi-stage named pipe IPC lifecycle
         """
         Send a JSON command to the C# Revit add-in via named pipe with circuit breaker protection.
 
@@ -326,7 +332,9 @@ class RevitNamedPipeClient:
             is_open = self.circuit_breaker.state == CircuitState.OPEN
             return {
                 "status": "error",
-                "error_code": "BRIDGE_PROCESS_UNRESPONSIVE" if is_open else "PIPE_CONNECTION_FAILED",
+                "error_code": "BRIDGE_PROCESS_UNRESPONSIVE"
+                if is_open
+                else "PIPE_CONNECTION_FAILED",
                 "message": (
                     f"Cannot connect to named pipe '{self._pipe_name}'. "
                     f"Is the FireAI Revit add-in running? Error: {e}"

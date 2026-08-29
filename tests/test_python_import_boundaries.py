@@ -28,7 +28,16 @@ def is_type_checking_guard(node: ast.AST) -> bool:
 
 def build_import_graph() -> tuple[dict[str, list[str]], set[str]]:
     """Build the internal dependency graph for all workspace Python modules."""
-    package_roots = ["backend", "fireai", "core", "adapters", "parsers", "services", "qomn_fire", "facp_system"]
+    package_roots = [
+        "backend",
+        "fireai",
+        "core",
+        "adapters",
+        "parsers",
+        "services",
+        "qomn_fire",
+        "facp_system",
+    ]
     modules: dict[str, list[str]] = {}
 
     for root_dir in package_roots:
@@ -98,7 +107,9 @@ def test_zero_circular_imports_in_python_backend():
             dfs(mod, [])
 
     formatted_cycles = [" -> ".join(c) for c in cycles]
-    assert not cycles, f"Found {len(cycles)} circular import cycle(s):\n" + "\n".join(formatted_cycles)
+    assert not cycles, f"Found {len(cycles)} circular import cycle(s):\n" + "\n".join(
+        formatted_cycles
+    )
 
 
 def test_core_does_not_import_web_routers():
@@ -112,4 +123,6 @@ def test_core_does_not_import_web_routers():
                 if t.startswith("backend.routers") or t.startswith("backend.app"):
                     boundary_violations.append((mod, t))
 
-    assert not boundary_violations, f"Architecture boundary violations detected: {boundary_violations}"
+    assert not boundary_violations, (
+        f"Architecture boundary violations detected: {boundary_violations}"
+    )

@@ -73,7 +73,9 @@ class TestDistributedOCC:
         The other MUST return CONCURRENCY_CONFLICT, leaving final revision at exactly 2.
         """
         project_id = "proj-concurrent-occ-01"
-        fresh_db.create_project({"id": project_id, "name": "OCC Test Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "OCC Test Project", "author": "lead-engineer-01"}
+        )
 
         # Worker A and Worker B separate runtime instances sharing the same DB
         worker_a = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
@@ -145,7 +147,9 @@ class TestPersistentIdempotency:
         - Revision is NOT incremented twice.
         """
         project_id = "proj-idemp-01"
-        fresh_db.create_project({"id": project_id, "name": "Idemp Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "Idemp Project", "author": "lead-engineer-01"}
+        )
         bus_instance_1 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
         bus_instance_2 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
 
@@ -186,7 +190,9 @@ class TestPersistentIdempotency:
         - Must NOT mutate state or advance revision.
         """
         project_id = "proj-idemp-collision"
-        fresh_db.create_project({"id": project_id, "name": "Collision Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "Collision Project", "author": "lead-engineer-01"}
+        )
         bus = CommandBus(default_capability_registry, CommandStateStore(fresh_db))
 
         cmd_orig = DomainCommand(
@@ -243,7 +249,9 @@ class TestTransactionRollback:
         - No domain event is written.
         """
         project_id = "proj-rollback-01"
-        fresh_db.create_project({"id": project_id, "name": "Rollback Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "Rollback Project", "author": "lead-engineer-01"}
+        )
         store = CommandStateStore(fresh_db)
 
         # Create custom capability registry with failing handler
@@ -401,7 +409,9 @@ class TestEventPersistence:
         self, fresh_db: Database, test_principal: AuthenticatedPrincipal
     ):
         project_id = "proj-events-01"
-        fresh_db.create_project({"id": project_id, "name": "Events Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "Events Project", "author": "lead-engineer-01"}
+        )
         store = CommandStateStore(fresh_db)
         bus = CommandBus(default_capability_registry, store)
 
@@ -442,7 +452,9 @@ class TestRestartRecovery:
         self, fresh_db: Database, test_principal: AuthenticatedPrincipal
     ):
         project_id = "proj-restart-01"
-        fresh_db.create_project({"id": project_id, "name": "Restart Project", "author": "lead-engineer-01"})
+        fresh_db.create_project(
+            {"id": project_id, "name": "Restart Project", "author": "lead-engineer-01"}
+        )
 
         # Session 1: Process executes commit
         bus_1 = CommandBus(default_capability_registry, CommandStateStore(fresh_db))

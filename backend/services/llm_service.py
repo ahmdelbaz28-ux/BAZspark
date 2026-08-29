@@ -131,8 +131,7 @@ class LLMService:
                 content = entry.get("content")
                 if role not in ("user", "assistant") or not isinstance(content, str):
                     raise ValueError(
-                        "history entries must have role in {'user','assistant'} "
-                        "and string content"
+                        "history entries must have role in {'user','assistant'} and string content"
                     )
                 messages.append({"role": role, "content": content[:8000]})
 
@@ -190,7 +189,8 @@ class LLMService:
                     "LLM provider '%s' failed (%s). %s",
                     adapter.name,
                     type(exc).__name__,
-                    "Trying next provider." if adapter is not adapters[-1]
+                    "Trying next provider."
+                    if adapter is not adapters[-1]
                     else "No further providers.",
                 )
         assert first_error is not None
@@ -357,17 +357,28 @@ class LLMService:
             }
             for a in adapters
         ]
-        primary = providers_block[0] if providers_block else {
-            "name": "none", "kind": "openai_compatible", "available": False,
-            "base_url": "", "model": "",
-        }
-        fallback = providers_block[1] if len(providers_block) > 1 else {
-            "name": "aliyun-maas",
-            "enabled": False,
-            "available": False,
-            "base_url": "",
-            "model": "qwen-plus-latest",
-        }
+        primary = (
+            providers_block[0]
+            if providers_block
+            else {
+                "name": "none",
+                "kind": "openai_compatible",
+                "available": False,
+                "base_url": "",
+                "model": "",
+            }
+        )
+        fallback = (
+            providers_block[1]
+            if len(providers_block) > 1
+            else {
+                "name": "aliyun-maas",
+                "enabled": False,
+                "available": False,
+                "base_url": "",
+                "model": "qwen-plus-latest",
+            }
+        )
 
         return {
             "available": self.available,
@@ -450,7 +461,9 @@ def validate_provider_url(provider: str, base_url: str | None) -> tuple[bool, st
         parsed = urlparse(url)
         port_str = f":{parsed.port}" if parsed.port else ""
         path = parsed.path.rstrip("/")
-        return f"{(parsed.scheme or '').lower()}://{(parsed.hostname or '').lower()}{port_str}{path}"
+        return (
+            f"{(parsed.scheme or '').lower()}://{(parsed.hostname or '').lower()}{port_str}{path}"
+        )
 
     if prov == "ollama":
         url = (base_url or "http://localhost:11434").strip().rstrip("/")

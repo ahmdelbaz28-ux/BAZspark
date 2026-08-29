@@ -99,14 +99,10 @@ class TestSSRFAndURLValidation:
         assert "SSRF_BLOCKED" in (err or "")
 
     def test_openai_valid_and_blocked(self):
-        is_valid, _resolved, err = validate_provider_url(
-            "openai", "https://api.openai.com/v1"
-        )
+        is_valid, _resolved, err = validate_provider_url("openai", "https://api.openai.com/v1")
         assert is_valid is True
 
-        is_valid, _resolved, err = validate_provider_url(
-            "openai", "https://zenmux.ai/api/v1"
-        )
+        is_valid, _resolved, err = validate_provider_url("openai", "https://zenmux.ai/api/v1")
         assert is_valid is True
 
         is_valid, _, err = validate_provider_url(
@@ -286,6 +282,7 @@ class TestPingProviderEndpoint:
 def _seed_dynamic_routing_projects() -> None:
     """Seed global state store with project revisions for dynamic routing tests."""
     from backend.core.state_store import default_state_store
+
     for pid in [
         "proj-dyn-route-01",
         "proj-dyn-route-02",

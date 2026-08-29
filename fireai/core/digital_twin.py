@@ -2121,9 +2121,7 @@ if __name__ == "__main__":
     check("Active detectors", report.active_detectors == 2)  # D-001 and D-003 are OK
     check("Planned detectors", report.planned_detectors == 1)  # D-002 is PLANNED
     check("Health score", 0.0 < report.health_score <= 1.0)
-    check(
-        "Coverage pct", math.isclose(report.coverage_pct, 100.0)
-    )
+    check("Coverage pct", math.isclose(report.coverage_pct, 100.0))
 
     # Test with an uncovered room
     twin.register_detector(

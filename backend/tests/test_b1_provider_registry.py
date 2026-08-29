@@ -178,8 +178,12 @@ class TestRegistryBasics:
         _clean_provider_env(monkeypatch)
         reg = self._fresh_registry()
         adapter = OpenAICompatibleAdapter(
-            name="test-prov", api_key="k", base_url="https://zenmux.ai/api/v1",
-            model="m", timeout=5.0, max_tokens=100,
+            name="test-prov",
+            api_key="k",
+            base_url="https://zenmux.ai/api/v1",
+            model="m",
+            timeout=5.0,
+            max_tokens=100,
         )
         reg.register("test-prov", adapter)
         assert reg.resolve("test-prov") is adapter
@@ -297,9 +301,7 @@ class TestLegacyBackcompatConfig:
         monkeypatch.setenv("AZURE_OPENAI_API_KEY", "azure-key")
         assert LLMProviderRegistry.configs_from_env() == []
 
-        monkeypatch.setenv(
-            "LLM_AZURE_BASE_URL", "https://myres.openai.azure.com"
-        )
+        monkeypatch.setenv("LLM_AZURE_BASE_URL", "https://myres.openai.azure.com")
         monkeypatch.setenv("LLM_AZURE_MODEL", "fireai-deployment")
         configs = LLMProviderRegistry.configs_from_env()
         assert [c.name for c in configs] == ["azure"]
@@ -363,9 +365,7 @@ class TestLegacyBackcompatConfig:
 
 
 class TestHotReload:
-    def test_reload_picks_up_new_env_and_drains_old(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_reload_picks_up_new_env_and_drains_old(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from backend.services.providers.registry import LLMProviderRegistry
 
         _clean_provider_env(monkeypatch)
@@ -420,8 +420,12 @@ class TestOpenAICompatibleAdapter:
         from backend.services.providers.adapters import OpenAICompatibleAdapter
 
         return OpenAICompatibleAdapter(
-            name="prov-x", api_key="k", base_url="https://zenmux.ai/api/v1",
-            model="z-ai/glm-4.7", timeout=10.0, max_tokens=100,
+            name="prov-x",
+            api_key="k",
+            base_url="https://zenmux.ai/api/v1",
+            model="z-ai/glm-4.7",
+            timeout=10.0,
+            max_tokens=100,
         )
 
     def test_chat_tags_source_and_usage(self) -> None:
@@ -501,8 +505,12 @@ class TestAnthropicAdapterWire:
             )
 
         adapter = AnthropicAdapter(
-            name="ant", api_key="sk-ant", base_url="https://api.anthropic.com",
-            model="claude-sonnet-4-5", timeout=10.0, max_tokens=64,
+            name="ant",
+            api_key="sk-ant",
+            base_url="https://api.anthropic.com",
+            model="claude-sonnet-4-5",
+            timeout=10.0,
+            max_tokens=64,
         )
         adapter._http = httpx.AsyncClient(transport=self._handler(_respond))
         result = asyncio.run(
@@ -544,8 +552,12 @@ class TestAnthropicAdapterWire:
             )
 
         adapter = AnthropicAdapter(
-            name="ant", api_key="sk-ant", base_url="https://api.anthropic.com",
-            model="claude-sonnet-4-5", timeout=10.0, max_tokens=64,
+            name="ant",
+            api_key="sk-ant",
+            base_url="https://api.anthropic.com",
+            model="claude-sonnet-4-5",
+            timeout=10.0,
+            max_tokens=64,
         )
         adapter._http = httpx.AsyncClient(transport=self._handler(_respond))
 
@@ -570,8 +582,12 @@ class TestGeminiAdapter:
         from backend.services.providers.adapters import GeminiAdapter
 
         adapter = GeminiAdapter(
-            name="gem", api_key="gk", base_url="", model="gemini-2.0-flash",
-            timeout=10.0, max_tokens=128,
+            name="gem",
+            api_key="gk",
+            base_url="",
+            model="gemini-2.0-flash",
+            timeout=10.0,
+            max_tokens=128,
         )
         fake_client = MagicMock()
         fake_response = MagicMock()
@@ -607,11 +623,17 @@ class TestAzureAdapter:
         from backend.services.providers.adapters import AzureOpenAIAdapter
 
         adapter = AzureOpenAIAdapter(
-            name="azu", api_key="ak", base_url="https://res.openai.azure.com",
-            model="fireai-deployment", timeout=10.0, max_tokens=100,
+            name="azu",
+            api_key="ak",
+            base_url="https://res.openai.azure.com",
+            model="fireai-deployment",
+            timeout=10.0,
+            max_tokens=100,
         )
         completions = MagicMock()
-        completions.create = AsyncMock(return_value=_make_openai_completion(model="fireai-deployment"))
+        completions.create = AsyncMock(
+            return_value=_make_openai_completion(model="fireai-deployment")
+        )
 
         class _FakeOuter:
             chat = MagicMock()
@@ -629,9 +651,7 @@ class TestAzureAdapter:
         with (
             _patch("openai.AzureOpenAI", side_effect=_fake_azure_client),
         ):
-            result = asyncio.run(
-                adapter.chat([{"role": "user", "content": "q"}])
-            )
+            result = asyncio.run(adapter.chat([{"role": "user", "content": "q"}]))
         assert completions.create.call_args.kwargs["model"] == "fireai-deployment"
         assert result.source == "azu"
 

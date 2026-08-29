@@ -37,6 +37,12 @@
       "skillPath": "skills/ci-cd-and-automation/SKILL.md",
       "computedHash": "578b098a7d2352ccdac8b8abdc40eb6803538e81cf8382f138da6188a655087c"
     },
+    "cloudflare": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare/SKILL.md",
+      "computedHash": "8581f52e9f307d6ae298e016f93720bae2739d13a2169fa96d47df516c38f63c"
+    },
     "code-review": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -49,17 +55,35 @@
       "skillPath": "skills/code-review-and-quality/SKILL.md",
       "computedHash": "6231479cc74c7ed70a5618b81b3f94034d9806c0319a1a23d15f9b94a368c581"
     },
+    "cognee-integrations": {
+      "source": "topoteretes/cognee",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/cognee-integrations/SKILL.md",
+      "computedHash": "47737ff2de8a81f482f02fae17012cb350b6b6dd827ddd734c62d4b86465adef"
+    },
     "create-readme": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/create-readme/SKILL.md",
       "computedHash": "a93f9161bef324e3a1550fc79d4f01b660a3fb7eadc4455677d9ace4da2965ac"
     },
+    "daytona-chrome-cdp": {
+      "source": "different-ai/openwork",
+      "sourceType": "github",
+      "skillPath": ".opencode/skills/daytona-chrome-cdp/SKILL.md",
+      "computedHash": "8ea2eaabb5a3689af9beb0a4c46556f5e7812ef3c5b3fc6f8971cae0cb5df958"
+    },
     "debugging-wizard": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "skillPath": "skills/debugging-wizard/SKILL.md",
       "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
+    },
+    "docker-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/docker-patterns/SKILL.md",
+      "computedHash": "af6deba271429bcb5198a7e56a4f71f948509e06037e6a3210d0ad5f516eeb29"
     },
     "documentation-and-adrs": {
       "source": "addyosmani/agent-skills",
@@ -115,6 +139,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "f7fd27287067900e816b87a8917347424ad6780435ce4157d69ba8c5e8e13fba"
     },
+    "langfuse-codebase-navigator": {
+      "source": "langfuse/langfuse",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/langfuse-codebase-navigator/SKILL.md",
+      "computedHash": "b510825c6bcb0b904a007bfa187031c71cae67e5d949a3ee5c5af5ee926c0ed6"
+    },
     "lint": {
       "source": "helderberto/agent-skills",
       "sourceType": "github",
@@ -145,6 +175,12 @@
       "skillPath": "playwright-best-practices/SKILL.md",
       "computedHash": "88623575c97314e115f0e361a7d942e31d3b7a4e8925832257e1ad33f52096e4"
     },
+    "postgres-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/postgres-patterns/SKILL.md",
+      "computedHash": "5ec6a4f0504f15fe9464ccaed3ab51afcb52345b9456f36b65afc4e5af1fc6aa"
+    },
     "production-audit": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
@@ -162,6 +198,12 @@
       "sourceType": "github",
       "skillPath": "skills/rag-eval/SKILL.md",
       "computedHash": "3c8d0780708a1d4d40a9286b77ff34f79ae8b2a62f4ca685cee21a154762f916"
+    },
+    "react-performance": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/react-performance/SKILL.md",
+      "computedHash": "7b5b19e9c15a6b442fa0e7a0a1cb7ced951ab5872a96ff876b099b6bdfc9ae86"
     },
     "readme-wizard": {
       "source": "debs-obrien/learn-agent-skills",
@@ -222,6 +264,18 @@
       "sourceType": "github",
       "skillPath": "skills/shipping-and-launch/SKILL.md",
       "computedHash": "47c62d418e9f3f395092864e6080b5c4b84fe3ef8abbbb6a3397ed655dda0ba8"
+    },
+    "smithery-ai-cli": {
+      "source": "arcadeai-labs/smithery-cli",
+      "sourceType": "github",
+      "skillPath": "skills/smithery-ai-cli/SKILL.md",
+      "computedHash": "b072e2d020e08254efa99d48a5c9a06892c7805a45b19b45f195bd2017813507"
+    },
+    "sonarqube-audit": {
+      "source": "netdata/netdata",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/sonarqube-audit/SKILL.md",
+      "computedHash": "5727cc50591ae23725d27964b9fa8884ac336e4605481fddddf8e279ba6d4420"
     },
     "systematic-debugging": {
       "source": "obra/superpowers",

@@ -161,6 +161,41 @@ export default defineConfig({
                                         if (id.includes("node_modules/lucide-react/")) {
                                                 return "vendor-icons";
                                         }
+                                        if (
+                                                id.includes("node_modules/framer-motion/") ||
+                                                id.includes("node_modules/motion-dom/") ||
+                                                id.includes("node_modules/motion-utils/")
+                                        ) {
+                                                return "vendor-motion";
+                                        }
+                                        if (id.includes("node_modules/zod/")) {
+                                                return "vendor-zod";
+                                        }
+                                        if (id.includes("node_modules/@sentry/")) {
+                                                return "vendor-sentry";
+                                        }
+                                        if (id.includes("node_modules/sonner/")) {
+                                                return "vendor-sonner";
+                                        }
+                                        if (id.includes("node_modules/@vercel/")) {
+                                                return "vendor-vercel";
+                                        }
+                                        if (
+                                                id.includes("node_modules/clsx/") ||
+                                                id.includes("node_modules/tailwind-merge/") ||
+                                                id.includes("node_modules/class-variance-authority/")
+                                        ) {
+                                                return "vendor-utils";
+                                        }
+                                        if (
+                                                id.includes("node_modules/react-hook-form/") ||
+                                                id.includes("node_modules/@hookform/")
+                                        ) {
+                                                return "vendor-form";
+                                        }
+                                        if (id.includes("node_modules/date-fns/")) {
+                                                return "vendor-date";
+                                        }
                                 },
                         },
                         // V216/V287 FIX (Gate 4b — Visual Regression):

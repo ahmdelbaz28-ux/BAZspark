@@ -163,7 +163,9 @@ class TestBLK02CanonicalRevisionRemediation:
         """5. WorkflowPlanner.plan_workflow must raise AutonomousPlannerError for missing project."""
         store = CommandStateStore(fresh_db)
         bus = CommandBus(default_capability_registry, store)
-        planner = AutonomousWorkflowPlanner(command_bus=bus, capability_registry=default_capability_registry)
+        planner = AutonomousWorkflowPlanner(
+            command_bus=bus, capability_registry=default_capability_registry
+        )
         missing_id = "missing-project-uuid-005"
 
         with pytest.raises(AutonomousPlannerError) as exc_info:
@@ -249,9 +251,12 @@ class TestBLK02CanonicalRevisionRemediation:
         self, fresh_db: Database
     ) -> None:
         """9. Workflow execution context reconciliation raises HTTP 400/404 for missing project."""
+
         class DummyRequest:
             headers = Headers({"content-type": "application/json"})
-            state = type("State", (), {"user": {"sub": "lead-engineer-01", "role": "lead_engineer"}})()
+            state = type(
+                "State", (), {"user": {"sub": "lead-engineer-01", "role": "lead_engineer"}}
+            )()
 
         req = DummyRequest()
 

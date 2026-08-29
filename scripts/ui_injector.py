@@ -30,10 +30,10 @@ ENV_FLAG = "FIREAI_ENABLE_UI_INJECTION"
 # Allowed action primitives. Anything else is rejected — no raw key chords,
 # no arbitrary window messages, no clipboard dumping.
 _ALLOWED_ACTIONS = {
-    "type_text",      # {"text": str}          — types literal text
-    "press_key",      # {"key": str}           — single named key (Enter/Esc/…)
-    "command_line",   # {"command": str}       — type into the app command line + Enter
-    "menu",           # {"path": [str, ...]}   — walk menu items by caption
+    "type_text",  # {"text": str}          — types literal text
+    "press_key",  # {"key": str}           — single named key (Enter/Esc/…)
+    "command_line",  # {"command": str}       — type into the app command line + Enter
+    "menu",  # {"path": [str, ...]}   — walk menu items by caption
 }
 
 _MAX_TEXT_LEN = 2000
@@ -66,10 +66,7 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
             problems.append(f"action[{i}]: disallowed type {kind!r}")
             continue
         value = (
-            action.get("text")
-            or action.get("key")
-            or action.get("command")
-            or action.get("path")
+            action.get("text") or action.get("key") or action.get("command") or action.get("path")
         )
         if len(str(value or "")) > _MAX_TEXT_LEN:
             problems.append(f"action[{i}]: payload exceeds {_MAX_TEXT_LEN} chars")
@@ -90,11 +87,19 @@ def confirm_and_execute(plan: dict[str, Any], *, confirm: bool) -> dict[str, Any
 
     if not is_enabled():
         logger.warning("UI injection refused: %s is not enabled.", ENV_FLAG)
-        return {"success": False, "error": f"Disabled — set {ENV_FLAG}=1 to opt in.", "digest": digest}
+        return {
+            "success": False,
+            "error": f"Disabled — set {ENV_FLAG}=1 to opt in.",
+            "digest": digest,
+        }
 
     if not confirm:
         logger.warning("UI injection refused: missing explicit confirm=true.")
-        return {"success": False, "error": "Confirmation required (confirm=True).", "digest": digest}
+        return {
+            "success": False,
+            "error": "Confirmation required (confirm=True).",
+            "digest": digest,
+        }
 
     problems = validate_plan(plan)
     if problems:
@@ -104,7 +109,11 @@ def confirm_and_execute(plan: dict[str, Any], *, confirm: bool) -> dict[str, Any
         import pyautogui  # type: ignore
         import pyperclip  # type: ignore
     except ImportError as exc:
-        return {"success": False, "error": f"pyautogui/pyperclip unavailable: {exc}", "digest": digest}
+        return {
+            "success": False,
+            "error": f"pyautogui/pyperclip unavailable: {exc}",
+            "digest": digest,
+        }
 
     pyautogui.FAILSAFE = True  # slam mouse to screen corner to abort
     results: list[dict[str, Any]] = []

@@ -120,7 +120,9 @@ class TestExportRouterRBAC:
         client = test_env["client"]
         engineer_key = test_env["keys"]["engineer_a"]
 
-        with patch("backend.routers.export_router.default_export_orchestrator.execute_export") as mock_exec:
+        with patch(
+            "backend.routers.export_router.default_export_orchestrator.execute_export"
+        ) as mock_exec:
             mock_res = MagicMock()
             mock_res.to_dict.return_value = {"exportId": "exp-123", "status": "completed"}
             mock_exec.return_value = mock_res
@@ -181,7 +183,13 @@ class TestTenantIsolationChildResources:
         r = client.post(
             f"/api/v1/projects/{proj_a_id}/devices",
             headers=headers_b,
-            json={"type": "HEAT_DETECTOR", "name": "Injected Device", "category": "initiating", "x": 0.0, "y": 0.0},
+            json={
+                "type": "HEAT_DETECTOR",
+                "name": "Injected Device",
+                "category": "initiating",
+                "x": 0.0,
+                "y": 0.0,
+            },
         )
         assert r.status_code == 404
 
@@ -267,7 +275,9 @@ class TestGlobalDeviceListingTenantScoping:
 
         # Create Tenant A project and device
         proj_a_id = f"proj-a-{uuid.uuid4().hex[:8]}"
-        db.create_project({"id": proj_a_id, "name": "Tenant A Secret Project", "author": principal_a})
+        db.create_project(
+            {"id": proj_a_id, "name": "Tenant A Secret Project", "author": principal_a}
+        )
         db.create_device(
             proj_a_id,
             {
@@ -326,7 +336,9 @@ class TestAgentWsPingProviderRBAC:
             headers={"X-API-Key": viewer_key},
             json={"provider": "ollama", "baseUrl": "http://127.0.0.1:11434"},
         )
-        assert resp.status_code == 403, "Viewer must be denied CALCULATION_EXECUTE on /ping-provider"
+        assert resp.status_code == 403, (
+            "Viewer must be denied CALCULATION_EXECUTE on /ping-provider"
+        )
 
     def test_engineer_authorized_ping_provider(self, test_env):
         """Engineer role is authorized to invoke ping-provider."""

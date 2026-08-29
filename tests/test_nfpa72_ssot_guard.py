@@ -51,7 +51,9 @@ def _is_ssot_reference(val_node: ast.AST | None) -> bool:
     if isinstance(val_node, ast.Name):
         return val_node.id.startswith("SSoT_") or "nfpa72" in val_node.id.lower()
     if isinstance(val_node, ast.Attribute):
-        return "nfpa72" in getattr(val_node.value, "id", "").lower() or val_node.attr.startswith("SSoT_")
+        return "nfpa72" in getattr(val_node.value, "id", "").lower() or val_node.attr.startswith(
+            "SSoT_"
+        )
     return False
 
 
@@ -82,4 +84,6 @@ def test_no_local_constant_redefinitions_in_core():
                     if not _is_ssot_reference(node.value):
                         violations.append((fpath, node.target.id, getattr(node, "lineno", 0)))
 
-    assert not violations, f"Found conflicting local constant redefinitions in fireai/core: {violations}"
+    assert not violations, (
+        f"Found conflicting local constant redefinitions in fireai/core: {violations}"
+    )

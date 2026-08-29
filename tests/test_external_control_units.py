@@ -90,7 +90,10 @@ def test_expand_update_parameters_fans_out_with_ids():
 def test_validate_params_reports_missing_required():
     err = command_registry.validate_params("autocad", "draw_circle", {"center": [0, 0]})
     assert err is not None and "radius" in err
-    assert command_registry.validate_params("autocad", "draw_circle", {"center": [0, 0], "radius": 5}) is None
+    assert (
+        command_registry.validate_params("autocad", "draw_circle", {"center": [0, 0], "radius": 5})
+        is None
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -111,9 +114,7 @@ def test_validate_command_against_registry_paths(agent_ws_module):
     from fastapi import HTTPException as _HE
 
     # Allowed + params complete -> no exception
-    agent_ws_module._validate_command_against_registry(
-        "revit", "delete_element", {"element_id": 1}
-    )
+    agent_ws_module._validate_command_against_registry("revit", "delete_element", {"element_id": 1})
     # Unknown command -> 400
     with pytest.raises(_HE) as exc_unknown:
         agent_ws_module._validate_command_against_registry("revit", "nuke_model", {})

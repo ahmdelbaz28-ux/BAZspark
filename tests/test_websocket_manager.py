@@ -225,4 +225,3 @@ class TestWebSocketOriginValidation:
         ws = MagicMock()
         ws.headers = {}
         _validate_ws_origin(ws)  # Non-browser client should pass
-

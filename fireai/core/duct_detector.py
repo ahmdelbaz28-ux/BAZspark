@@ -232,7 +232,12 @@ def analyse_duct(
 
     if not cfm_override and not cfm_unknown_blocks_exemption:
         # ── Exemption: zero-dimension ducts ──────────────────────────────
-        if math.isclose(duct.width_m, 0.0) or math.isclose(duct.length_m, 0.0) or duct.width_m <= 0.0 or duct.length_m <= 0.0:
+        if (
+            math.isclose(duct.width_m, 0.0)
+            or math.isclose(duct.length_m, 0.0)
+            or duct.width_m <= 0.0
+            or duct.length_m <= 0.0
+        ):
             return DuctAnalysisResult(
                 duct_id=duct.duct_id,
                 duct_length_m=duct.length_m,

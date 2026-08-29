@@ -297,7 +297,11 @@ def main():
         "--port", type=int, default=18100, help="Port for L1 interface (A8 port map)"
     )
     parser.add_argument(
-        "--l2-port", dest="l2_port", type=int, default=18101, help="Port for L2 orchestrator (A8 port map)"
+        "--l2-port",
+        dest="l2_port",
+        type=int,
+        default=18101,
+        help="Port for L2 orchestrator (A8 port map)",
     )
 
     args = parser.parse_args()

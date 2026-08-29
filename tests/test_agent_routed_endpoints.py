@@ -1,4 +1,4 @@
-﻿"""Agent-branch endpoint coverage (Sonar new-code gate).
+"""Agent-branch endpoint coverage (Sonar new-code gate).
 
 Exercises the A3/A11 agent-first branches and the B2/B4 endpoints with the
 desktop-agent layer monkeypatched, plus the A7 honest-failure endpoints.
@@ -164,9 +164,7 @@ def test_autocad_draw_endpoints_route_via_agent(client):
     assert ok.status_code == 200
     ok = client.post("/api/autocad/draw_circle", json={"center": [0, 0], "radius": 4})
     assert ok.status_code == 200
-    ok = client.post(
-        "/api/autocad/draw_text", json={"text": "hi", "insertion_point": [0, 0]}
-    )
+    ok = client.post("/api/autocad/draw_text", json={"text": "hi", "insertion_point": [0, 0]})
     assert ok.status_code == 200
 
 

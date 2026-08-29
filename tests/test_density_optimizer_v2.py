@@ -76,10 +76,15 @@ class TestDensityOptimizerV2:
                 ("r1", {"coverage": 95.0}),
                 ("r2", {"error": "Invalid polygon"}),
             ]
-            res = opt.optimize_batch({
-                "r1": {"ceiling_height_m": 3.0, "vertices": [[0, 0], [10, 0], [10, 10], [0, 10]]},
-                "r2": {"ceiling_height_m": 3.0, "vertices": [[0, 0], [5, 0], [5, 5], [0, 5]]},
-            })
+            res = opt.optimize_batch(
+                {
+                    "r1": {
+                        "ceiling_height_m": 3.0,
+                        "vertices": [[0, 0], [10, 0], [10, 10], [0, 10]],
+                    },
+                    "r2": {"ceiling_height_m": 3.0, "vertices": [[0, 0], [5, 0], [5, 5], [0, 5]]},
+                }
+            )
             assert res.total_rooms == 2
             assert res.successful == 1
             assert res.failed == 1
@@ -100,20 +105,32 @@ class TestDensityOptimizerV2:
             assert "error" in res
 
     def test_real_worker_execution(self):
-        room_id, res = _optimize_room_worker((
-            "room_test_real",
-            {"room_name": "Conference", "ceiling_height_m": 3.0, "vertices": [[0, 0], [8, 0], [8, 8], [0, 8]]},
-            "smoke",
-            {},
-        ))
+        room_id, res = _optimize_room_worker(
+            (
+                "room_test_real",
+                {
+                    "room_name": "Conference",
+                    "ceiling_height_m": 3.0,
+                    "vertices": [[0, 0], [8, 0], [8, 8], [0, 8]],
+                },
+                "smoke",
+                {},
+            )
+        )
         assert room_id == "room_test_real"
         assert res is not None
 
     def test_real_sequential_batch(self):
         opt = DensityOptimizerV2(n_workers=1)
-        res = opt.optimize_batch({
-            "room_a": {"room_name": "A", "ceiling_height_m": 3.0, "vertices": [[0, 0], [5, 0], [5, 5], [0, 5]]},
-        })
+        res = opt.optimize_batch(
+            {
+                "room_a": {
+                    "room_name": "A",
+                    "ceiling_height_m": 3.0,
+                    "vertices": [[0, 0], [5, 0], [5, 5], [0, 5]],
+                },
+            }
+        )
         assert res.total_rooms == 1
         assert "room_a" in res.results
 
@@ -123,10 +140,20 @@ class TestDensityOptimizerV2:
     def test_parallel_fallback_on_unsupported_platform(self):
         opt = DensityOptimizerV2(n_workers=2)
         # On Windows or when fork raises error, it falls back to sequential gracefully
-        res = opt.optimize_batch({
-            "room_p1": {"room_name": "P1", "ceiling_height_m": 3.0, "vertices": [[0, 0], [6, 0], [6, 6], [0, 6]]},
-            "room_p2": {"room_name": "P2", "ceiling_height_m": 3.0, "vertices": [[0, 0], [4, 0], [4, 4], [0, 4]]},
-        })
+        res = opt.optimize_batch(
+            {
+                "room_p1": {
+                    "room_name": "P1",
+                    "ceiling_height_m": 3.0,
+                    "vertices": [[0, 0], [6, 0], [6, 6], [0, 6]],
+                },
+                "room_p2": {
+                    "room_name": "P2",
+                    "ceiling_height_m": 3.0,
+                    "vertices": [[0, 0], [4, 0], [4, 4], [0, 4]],
+                },
+            }
+        )
         assert res.total_rooms == 2
         assert "room_p1" in res.results
         assert "room_p2" in res.results
