@@ -535,10 +535,16 @@ async def websocket_endpoint(
                         (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
                         or bool(env_match)
                     )
-                    is_author = (
+                    rbac_ids = {
+                        getattr(rbac_info, "user_id", None),
+                        getattr(rbac_info, "name", None),
+                        getattr(rbac_info, "email", None),
+                    } - {None, ""}
+                    is_author = bool(
                         project
                         and rbac_info
-                        and project.get("author") == getattr(rbac_info, "name", None)
+                        and project.get("author")
+                        and project.get("author") in rbac_ids
                     )
                     if not is_admin and (not project or not is_author):
                         await websocket.send_json(
@@ -567,10 +573,16 @@ async def websocket_endpoint(
                         (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
                         or bool(env_match)
                     )
-                    is_author = (
+                    rbac_ids = {
+                        getattr(rbac_info, "user_id", None),
+                        getattr(rbac_info, "name", None),
+                        getattr(rbac_info, "email", None),
+                    } - {None, ""}
+                    is_author = bool(
                         project
                         and rbac_info
-                        and project.get("author") == getattr(rbac_info, "name", None)
+                        and project.get("author")
+                        and project.get("author") in rbac_ids
                     )
                     if not is_admin and (not project or not is_author):
                         await websocket.send_json(
