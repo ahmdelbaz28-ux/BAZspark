@@ -2,8 +2,8 @@
 **Document ID:** STATUS-2026-08-30-CANONICAL  
 **Status:** CANONICAL TRUTH (Single Source of Truth)  
 **Last Updated:** 2026-08-30  
-**Baseline Hash:** `610ed62` (Track A / Batch 1 Final Closure)  
-**Active Execution Branch:** `feature/track-a-batch-2-truthfulness-deployment-hygiene`
+**Baseline Hash:** `de5d6d59` (Track A / Batch 2 Final Closure)  
+**Active Execution Branch:** `feature/phase-1-capability-contract`
 
 ---
 
@@ -14,8 +14,8 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | Track / Phase | Scope | Status | Verification Evidence |
 |---|---|---|---|
 | **Track A / Batch 1** | Protocol Correctness & Security (A1, A2, A4, A5) | **PASS (FINAL)** | Forensic Gate 1A review (`610ed62`); 12/12 security suite passed; 0-byte token query fallback |
-| **Track A / Batch 2** | Truthfulness, Deployment Containment & Repo Hygiene (A3, A6, A7) | **ACTIVE** | Execution Contract Batch 2; A3 (fake artifacts removed), A6 (replicas=1 containment), A7 (root hygiene & deduplication) |
-| **Phase 1** | Canonical Capability Contract & Registry Refactor | **NOT AUTHORIZED** | Awaiting Forensic Gate 1B closure and explicit authorization |
+| **Track A / Batch 2** | Truthfulness, Deployment Containment & Repo Hygiene (A3, A6, A7) | **PASS (FINAL)** | Forensic Gate 1B review (`de5d6d59`); R1-B & R2-B closed; 28/28 valid doc links |
+| **Phase 1** | Canonical Capability Contract & Registry Refactor (D-1a – D-1d) | **ACTIVE** | Executive Contract Phase 1; `CapabilityContract` typed registry, OCC `MISSING_EXPECTED_REVISION` enforcement, Gate 1 conformance suite |
 | **Phases 2 – 7** | Multi-step Workflows, Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
 
 ---
