@@ -145,25 +145,25 @@ _BLOCKED_HOSTNAMES = frozenset(
 _BLOCKED_NETWORKS = tuple(
     ipaddress.ip_network(net)
     for net in [
-        "0.0.0.0/8",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "10.0.0.0/8",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "100.64.0.0/10",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "127.0.0.0/8",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "169.254.0.0/16",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "172.16.0.0/12",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "192.0.0.0/24",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "192.0.2.0/24",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "192.168.0.0/16",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "198.18.0.0/15",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "198.51.100.0/24",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "203.0.113.0/24",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "224.0.0.0/4",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "240.0.0.0/4",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "::1/128",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "::/128",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "fc00::/7",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "fe80::/10",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
-        "ff00::/8",  # NOSONAR: SSRF Zero-Trust Defense Guard (RFC 1918 / IMDS blocklist)
+        "0.0.0.0/8",  # NOSONAR
+        "10.0.0.0/8",  # NOSONAR
+        "100.64.0.0/10",  # NOSONAR
+        "127.0.0.0/8",  # NOSONAR
+        "169.254.0.0/16",  # NOSONAR
+        "172.16.0.0/12",  # NOSONAR
+        "192.0.0.0/24",  # NOSONAR
+        "192.0.2.0/24",  # NOSONAR
+        "192.168.0.0/16",  # NOSONAR
+        "198.18.0.0/15",  # NOSONAR
+        "198.51.100.0/24",  # NOSONAR
+        "203.0.113.0/24",  # NOSONAR
+        "224.0.0.0/4",  # NOSONAR
+        "240.0.0.0/4",  # NOSONAR
+        "::1/128",  # NOSONAR
+        "::/128",  # NOSONAR
+        "fc00::/7",  # NOSONAR
+        "fe80::/10",  # NOSONAR
+        "ff00::/8",  # NOSONAR
     ]
 )
 
@@ -286,7 +286,7 @@ def _resolve_host_with_timeout(host: str, dns_timeout: float) -> list[str]:
         global _DNS_THREAD_COUNT
         try:
             result_box.append(_resolve_host(host))
-        except BaseException as e:  # noqa: BLE001  # NOSONAR — python:S5754: BaseException needed to catch thread SystemExit; re-raised via exc_box
+        except BaseException as e:  # noqa: BLE001  # NOSONAR
             exc_box.append(e)
         finally:
             with _DNS_THREAD_COUNT_LOCK:

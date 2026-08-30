@@ -1,5 +1,5 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
+# File-level '# NOSONAR
+# Per-line justified suppressions (e.g., '# NOSONAR
 from __future__ import annotations
 
 """
@@ -1175,7 +1175,7 @@ def compute_hash(data: Any) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def self_healing(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+def self_healing(  # NOSONAR
     safe_minimum: float = 0.0,
     default_value: Any = None,
     conservative_estimate: Any = 1.0,

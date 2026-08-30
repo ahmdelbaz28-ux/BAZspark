@@ -68,7 +68,7 @@ def _verify_project(project_id: str, request: Request | None = None) -> dict:
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
-        )  # NOSONAR:S8415 — endpoint error handling is intentional  # NOSONAR
+        )  # NOSONAR
     if request is not None:
         from backend.routers.projects import _verify_project_access
 
@@ -796,10 +796,10 @@ def _normalize_sort(sort: str) -> str:
 @router.get("", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def list_reports(
     project_id: str,
-    page: int = Query(1, ge=1),  # NOSONAR - python:S8410
-    limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
-    sort: str = Query("createdAt"),  # NOSONAR - python:S8410
-    order: str = Query("desc"),  # NOSONAR - python:S8410
+    page: int = Query(1, ge=1),  # NOSONAR
+    limit: int = Query(20, ge=1, le=100),  # NOSONAR
+    sort: str = Query("createdAt"),  # NOSONAR
+    order: str = Query("desc"),  # NOSONAR
 ):
     if order not in ("asc", "desc"):
         order = "desc"
@@ -856,7 +856,7 @@ async def generate_report(
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        # NOSONAR:S5145 — project_id is validated by _verify_project() above
+        # NOSONAR
         # (raises 404 if not a real DB record) so it cannot contain arbitrary
         # log-injection payloads; the taint analyzer does not recognize the
         # DB-existence check as a sanitizer.
@@ -902,7 +902,7 @@ async def generate_global_report(
     if not projects or not projects.get("data"):
         raise HTTPException(
             status_code=404, detail="No projects found to generate report"
-        )  # NOSONAR:S8415 — endpoint error handling is intentional  # NOSONAR
+        )  # NOSONAR
 
     project_id = projects["data"][0]["id"]
     report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR
@@ -958,7 +958,7 @@ async def get_report(request: Request, project_id: str, report_id: str):
     if not report:
         raise HTTPException(
             status_code=404, detail="Report not found"
-        )  # NOSONAR:S8415 — endpoint error handling is intentional  # NOSONAR
+        )  # NOSONAR
     return {"data": report, "success": True}
 
 
@@ -1107,11 +1107,11 @@ def _build_dxf_report(report, report_id):
         503: {"description": "PDF export unavailable: reportlab package not installed"},
     },
 )
-async def export_report(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def export_report(  # NOSONAR
     request: Request,
     project_id: str,
     report_id: str,
-    format: str = Query("json", pattern="^(pdf|dxf|json)$"),  # NOSONAR - python:S8410
+    format: str = Query("json", pattern="^(pdf|dxf|json)$"),  # NOSONAR
 ):
     """Export a report in the specified format with tenant verification."""
     _verify_project(project_id, request)
@@ -1120,10 +1120,10 @@ async def export_report(  # NOSONAR:S3776: cognitive complexity is inherent to t
     if not report:
         raise HTTPException(
             status_code=404, detail="Report not found"
-        )  # NOSONAR:S8415 — endpoint error handling is intentional  # NOSONAR
+        )  # NOSONAR
 
     if report["status"] != "completed":
-        raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
+        raise HTTPException(  # NOSONAR
             status_code=400,
             detail=f"Report is not ready (status: {report['status']})",
         )
@@ -1141,13 +1141,13 @@ async def export_report(  # NOSONAR:S3776: cognitive complexity is inherent to t
         try:
             return _build_pdf_report(report, report_id)
         except ImportError:
-            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR
                 status_code=501,
                 detail="PDF export requires the reportlab package",
             )
         except Exception:
             logger.exception("PDF generation failed", exc_info=True)
-            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR
                 status_code=500,
                 detail="PDF generation failed — an internal error occurred. Contact administrator.",
             )
@@ -1155,14 +1155,14 @@ async def export_report(  # NOSONAR:S3776: cognitive complexity is inherent to t
         try:
             return _build_dxf_report(report, report_id)
         except ImportError:
-            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR
                 status_code=501,
                 detail="DXF export requires ezdxf package",
             )
     else:
         raise HTTPException(
             status_code=400, detail=f"Unsupported format: {format}"
-        )  # NOSONAR:S8415: assignment kept for readability / debuggability
+        )  # NOSONAR
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1337,7 +1337,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
         )
     except ImportError as ie:
         logger.exception("AHJ document dependencies not available: %s", ie)
-        raise HTTPException(  # NOSONAR:S8415: assignment kept for readability
+        raise HTTPException(  # NOSONAR
             status_code=503,
             detail={
                 "success": False,
@@ -1357,7 +1357,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
     optimizer = DensityOptimizer()
     rooms = _build_ahj_rooms(body, devices, Room)
     if not rooms:
-        raise HTTPException(  # NOSONAR:S8415: assignment kept for readability
+        raise HTTPException(  # NOSONAR
             status_code=400,
             detail=(
                 "No rooms provided and no devices found in project. "
@@ -1375,7 +1375,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
         markdown_content = doc.generate()
     except Exception as gen_err:
         logger.exception("AHJ document generation failed: %s", gen_err)
-        raise HTTPException(  # NOSONAR:S8415: assignment kept for readability
+        raise HTTPException(  # NOSONAR
             status_code=500,
             detail="AHJ document generation failed — see server logs.",
         )

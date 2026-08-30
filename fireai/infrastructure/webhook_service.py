@@ -177,7 +177,7 @@ class WebhookSubscription:
         .isoformat()
         .replace(
             "+00:00", "Z"
-        )  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+        )  # NOSONAR
     )
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -403,7 +403,7 @@ class WebhookDeliveryService:
 
     def _validate_subscription(
         self, sub: WebhookSubscription
-    ) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    ) -> None:  # NOSONAR
         """
         Validate a subscription before registering.
 
@@ -457,7 +457,7 @@ class WebhookDeliveryService:
                         f"Webhook URL cannot point to internal/private IP: {parsed.hostname} ({ip_addr})"
                     )
                 # Block cloud metadata endpoints (169.254.169.254, fd00:ec2::254)
-                if str(ip_addr) in ("169.254.169.254", "fd00:ec2::254"):  # NOSONAR: SSRF Zero-Trust IMDS blocklist
+                if str(ip_addr) in ("169.254.169.254", "fd00:ec2::254"):  # NOSONAR
                     raise ValueError("Webhook URL cannot point to cloud metadata endpoint")
         except socket.gaierror:
             # DNS resolution failed - could be intentional or misconfiguration
@@ -487,7 +487,7 @@ class WebhookDeliveryService:
     # Event Publishing
     # ------------------------------------------------------------------
 
-    def publish_event(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def publish_event(  # NOSONAR
         self,
         event_type: str,
         source: str,
@@ -830,7 +830,7 @@ class WebhookDeliveryService:
                     )
 
                 # Explicitly block cloud metadata endpoint
-                if str(ip).startswith("169.254.169.254"):  # NOSONAR - python:S1313
+                if str(ip).startswith("169.254.169.254"):  # NOSONAR
                     return f"hostname resolves to cloud metadata endpoint {ip}"
 
             return None  # All resolved IPs are public

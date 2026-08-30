@@ -1,5 +1,5 @@
 # File-level issue suppression removed per AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR:S3776: ...') are preserved.
+# Per-line justified suppressions (e.g., '# NOSONAR
 """
 backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================
@@ -96,7 +96,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
     """
     # Validate filename at source to prevent path traversal
     if not re.match(r"^[a-zA-Z0-9._\- ]{1,255}$", filename):
-        raise HTTPException(  # NOSONAR:S8415: endpoint error handling is intentional(
+        raise HTTPException(  # NOSONAR
             status_code=400,
             detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed.",
         )
@@ -118,13 +118,13 @@ def _safe_resolve_upload_path(filename: str) -> str:
             if not resolved.is_relative_to(abs_upload):
                 raise HTTPException(
                     status_code=400, detail="Invalid file path"
-                )  # NOSONAR:S8415: endpoint error handling is intentional
+                )  # NOSONAR
         else:
             resolved.relative_to(abs_upload)
     except ValueError:
         raise HTTPException(
             status_code=400, detail="Invalid file path"
-        )  # NOSONAR:S8415: endpoint error handling is intentional
+        )  # NOSONAR
     return str(resolved)
 
 
@@ -309,7 +309,7 @@ async def _resolve_source_filepath(request: ConvertRequest, source_format: str) 
         source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
         # Create the dummy source file if it doesn't exist
         if not os.path.exists(source_filepath):
-            import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
+            import anyio  # NOSONAR
 
             async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                 await f.write("MOCK SOURCE DATA")
@@ -355,7 +355,7 @@ def _execute_conversion(
             source_filepath,
             target_filepath,
         )
-    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+    raise HTTPException(  # NOSONAR
         status_code=400,
         detail=f"Invalid conversion type: {conversion_type}",
     )
@@ -363,7 +363,7 @@ def _execute_conversion(
 
 @router.post(
     "/convert",
-    response_model=ConvertResponse,  # NOSONAR - python:S8409
+    response_model=ConvertResponse,  # NOSONAR
     responses={
         400: {"description": "Invalid request: bad conversion type, source path, or target path"},
     },
@@ -392,7 +392,7 @@ async def convert_files(
         )
 
         if conversion_type not in _VALID_CONVERSION_TYPES:
-            raise HTTPException(  # NOSONAR:S8415: assignment kept for readability / debuggability
+            raise HTTPException(  # NOSONAR
                 status_code=400,
                 detail=f"Invalid conversion type: {conversion_type}",
             )
@@ -441,7 +441,7 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
     dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
 )
 @limiter.limit("10/minute")  # V243: Rate limit expensive upload+convert
-async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def upload_and_convert(  # NOSONAR
     service: DigitalTwinServiceDep,
     request: Request,  # V243: Required by slowapi rate limiter
     file: UploadFile = File(...),
@@ -529,14 +529,14 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
                 os.remove(source_path)
             except OSError:
                 pass
-            raise HTTPException(  # NOSONAR:S8415: endpoint error handling is intentional(
+            raise HTTPException(  # NOSONAR
                 status_code=413,
                 detail=(
                     f"File too large. Maximum upload size is "
                     f"{_MAX_UPLOAD_SIZE // (1024 * 1024)} MB."
                 ),
             )
-        with open(source_path, "wb") as f:  # NOSONAR — python:S7493
+        with open(source_path, "wb") as f:  # NOSONAR
             f.write(content)
 
         logger.info("File uploaded: %s (%d bytes)", _safe_str(source_path), len(content))
@@ -584,7 +584,7 @@ async def upload_and_convert(  # NOSONAR:S3776: cognitive complexity is inherent
         raise _safe_error(500, "Upload and convert failed", e)
 
 
-@router.get("/history", response_model=HistoryResponse)  # NOSONAR - python:S8409
+@router.get("/history", response_model=HistoryResponse)  # NOSONAR
 async def get_conversion_history(
     service: DigitalTwinServiceDep,
 ) -> HistoryResponse:
@@ -596,7 +596,7 @@ async def get_conversion_history(
         raise _safe_error(500, "Error getting conversion history", e)
 
 
-@router.post("/configure", response_model=ConfigureResponse)  # NOSONAR - python:S8409
+@router.post("/configure", response_model=ConfigureResponse)  # NOSONAR
 async def configure_conversion(
     request: ConfigureRequest,
     config_mgr: ConfigManagerDep,
@@ -614,7 +614,7 @@ async def configure_conversion(
             )
         raise HTTPException(
             status_code=500, detail="Failed to save configuration"
-        )  # NOSONAR:S8415: assignment kept for readability / debuggability
+        )  # NOSONAR
     except HTTPException:
         raise
     except Exception as e:
@@ -623,7 +623,7 @@ async def configure_conversion(
 
 @router.post(
     "/rollback/{version_id}",
-    response_model=OperationResponse,  # NOSONAR - python:S8409
+    response_model=OperationResponse,  # NOSONAR
     dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
 )
 async def rollback_to_version(
@@ -656,7 +656,7 @@ async def rollback_to_version(
         raise _safe_error(500, "Rollback failed", e)
 
 
-@router.get("/mappings", response_model=MappingsResponse)  # NOSONAR - python:S8409
+@router.get("/mappings", response_model=MappingsResponse)  # NOSONAR
 async def get_available_mappings(
     config_mgr: ConfigManagerDep,
 ) -> MappingsResponse:
@@ -720,7 +720,7 @@ async def update_single_mapping(
             }
         raise HTTPException(
             status_code=500, detail="Failed to update mapping"
-        )  # NOSONAR:S8415: assignment kept for readability / debuggability
+        )  # NOSONAR
     except HTTPException:
         raise
     except Exception as e:
@@ -754,7 +754,7 @@ async def get_config(
 
 @router.put(
     "/config",
-    response_model=OperationResponse,  # NOSONAR - python:S8409
+    response_model=OperationResponse,  # NOSONAR
     dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
 )
 async def update_config(

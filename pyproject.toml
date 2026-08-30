@@ -29,6 +29,7 @@ keywords = ["cad", "bim", "revit", "autocad", "digital-twin", "engineering", "in
 dependencies = [
     "fastapi>=0.100.0,<2.0.0",
     "starlette>=0.27.0,<2.0.0",
+    "anyio>=3.7.0,<5.0.0",
     "uvicorn[standard]>=0.20.0,<1.0.0",
     "pydantic>=2.0.0,<3.0.0",
     "pydantic-settings>=2.14.2,<3.0.0",
@@ -551,7 +552,8 @@ python_functions = ["test_*"]
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-source = ["backend", "fireai", "qomn_fire", "qomn_conduit", "core"]
+source = ["."]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -559,7 +561,12 @@ omit = [
     "*/venv/*",
     "*/.venv/*",
     "*/env/*",
-    "*/.env/*"
+    "*/.env/*",
+    "frontend/*",
+    "skills/*",
+    "docs/*",
+    "deploy/*",
+    "scripts/*",
 ]
 branch = true
 concurrency = ["multiprocessing", "thread"]
@@ -574,6 +581,12 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == '__main__':"
+]
+
+[tool.coverage.paths]
+source = [
+    ".",
+    "*/cad-bim-integration-platform",
 ]
 
 [tool.bandit]
@@ -848,3 +861,4 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
 dev = [
     "pytest-timeout>=2.5.0",
 ]
+
