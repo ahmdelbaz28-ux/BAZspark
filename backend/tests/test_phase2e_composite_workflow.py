@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 from backend.core.capability_registry import (
+    CapabilityContract,
     CapabilityDefinition,
     CapabilityRegistry,
 )
@@ -143,8 +144,15 @@ def populated_registry() -> CapabilityRegistry:
             handler=spatial_handler,
             required_scopes=["design:write"],
             risk_class="MEDIUM",
-            input_schema={},
-            output_schema={},
+            contract=CapabilityContract(
+                input_schema={},
+                output_schema={},
+                revision_binding="none",
+                execution_mode="inline",
+                scopes=["design:write"],
+                risk="MEDIUM",
+                mutation_type="read_only",
+            ),
         )
     )
     reg.register(
@@ -156,8 +164,15 @@ def populated_registry() -> CapabilityRegistry:
             handler=electrical_drop_handler,
             required_scopes=["engineering:calculate"],
             risk_class="ENGINEERING_MUTATION",
-            input_schema={},
-            output_schema={},
+            contract=CapabilityContract(
+                input_schema={},
+                output_schema={},
+                revision_binding="none",
+                execution_mode="inline",
+                scopes=["engineering:calculate"],
+                risk="ENGINEERING_MUTATION",
+                mutation_type="read_only",
+            ),
         )
     )
     reg.register(
@@ -169,8 +184,15 @@ def populated_registry() -> CapabilityRegistry:
             handler=battery_handler,
             required_scopes=["engineering:calculate"],
             risk_class="ENGINEERING_MUTATION",
-            input_schema={},
-            output_schema={},
+            contract=CapabilityContract(
+                input_schema={},
+                output_schema={},
+                revision_binding="none",
+                execution_mode="inline",
+                scopes=["engineering:calculate"],
+                risk="ENGINEERING_MUTATION",
+                mutation_type="read_only",
+            ),
         )
     )
     reg.register(
@@ -182,8 +204,15 @@ def populated_registry() -> CapabilityRegistry:
             handler=hydraulics_handler,
             required_scopes=["engineering:calculate"],
             risk_class="ENGINEERING_MUTATION",
-            input_schema={},
-            output_schema={},
+            contract=CapabilityContract(
+                input_schema={},
+                output_schema={},
+                revision_binding="none",
+                execution_mode="inline",
+                scopes=["engineering:calculate"],
+                risk="ENGINEERING_MUTATION",
+                mutation_type="read_only",
+            ),
         )
     )
 
@@ -413,8 +442,15 @@ class TestAllOrNothingRollback:
                 handler=faulty_handler,
                 required_scopes=["design:write"],
                 risk_class="MEDIUM",
-                input_schema={},
-                output_schema={},
+                contract=CapabilityContract(
+                    input_schema={},
+                    output_schema={},
+                    revision_binding="none",
+                    execution_mode="inline",
+                    scopes=["design:write"],
+                    risk="MEDIUM",
+                    mutation_type="read_only",
+                ),
             )
         )
 

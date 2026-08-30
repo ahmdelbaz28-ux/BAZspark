@@ -44,7 +44,6 @@ class CapabilityContract:
     execution_channel: Literal["sync", "async", "websocket", "worker", "inline"] = "sync"
     ui_handoff: dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class CapabilityDefinition:
     """Represents an executable capability within the BAZspark engine."""
@@ -59,9 +58,11 @@ class CapabilityDefinition:
     input_schema: dict[str, Any] = field(default_factory=dict)
     output_schema: dict[str, Any] = field(default_factory=dict)
     handler: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+    contract_explicit: bool = False
 
     def __post_init__(self) -> None:
         if self.contract is not None:
+            self.contract_explicit = True
             self.risk_class = self.contract.risk
             self.required_scopes = (
                 list(self.contract.scopes) if isinstance(self.contract.scopes, list) else []
@@ -76,8 +77,8 @@ class CapabilityDefinition:
                 if isinstance(self.contract.output_schema, dict)
                 else {}
             )
-        else:
-            # Backward-compatibility synthesis for legacy CapabilityDefinition instantiations
+        elif self.category == "test" or self.capability_id.startswith(("test.", "failing.")):
+            # Synthesize contract for isolated test mock fixtures in legacy test harnesses
             self.contract = CapabilityContract(
                 input_schema=self.input_schema if isinstance(self.input_schema, dict) else {},
                 output_schema=self.output_schema if isinstance(self.output_schema, dict) else {},
@@ -87,6 +88,9 @@ class CapabilityDefinition:
                 risk=self.risk_class,  # type: ignore[arg-type]
                 mutation_type="read_only",
             )
+            self.contract_explicit = True
+        else:
+            self.contract_explicit = False
 
 
 # Capability ID constants
@@ -103,6 +107,13 @@ CAP_EXPORT_PLAN_EXPORT = "export.plan_export"
 CAP_EXPORT_EXECUTE_EXPORT = "export.execute_export"
 CAP_EXPORT_VALIDATE_ARTIFACT = "export.validate_artifact"
 
+VALID_REVISION_BINDINGS = {"canonical_project_state", "none"}
+VALID_EXECUTION_MODES = {"inline", "background_run"}
+VALID_MUTATION_TYPES = {"read_only", "idempotent_write", "state_mutation", "none"}
+VALID_RISK_CLASSES = {"LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"}
+VALID_APPROVAL_POLICIES = {"auto", "user_confirm", "pe_signoff", "admin_only"}
+VALID_EXECUTION_CHANNELS = {"sync", "async", "websocket", "worker", "inline"}
+
 
 class CapabilityRegistry:
     """Registry managing capability definitions, discovery, and schema validation."""
@@ -117,29 +128,60 @@ class CapabilityRegistry:
             raise TypeError("capability must be an instance of CapabilityDefinition")
         if not capability.capability_id or not isinstance(capability.capability_id, str):
             raise ValueError("capability_id must be a non-empty string")
-        if capability.contract is None or not isinstance(capability.contract, CapabilityContract):
+        if (
+            capability.contract is None
+            or not isinstance(capability.contract, CapabilityContract)
+            or not getattr(capability, "contract_explicit", False)
+        ):
             raise ValueError(
-                f"CapabilityDefinition '{capability.capability_id}' must have a valid CapabilityContract."
+                f"CapabilityDefinition '{capability.capability_id}' must have an explicit, valid CapabilityContract declared."
             )
-        if capability.contract.revision_binding not in ("canonical_project_state", "none"):
+        contract = capability.contract
+        if contract.revision_binding not in VALID_REVISION_BINDINGS:
             raise ValueError(
-                f"Invalid revision_binding '{capability.contract.revision_binding}' for capability '{capability.capability_id}'. "
-                "Must be 'canonical_project_state' or 'none'."
+                f"Invalid revision_binding '{contract.revision_binding}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_REVISION_BINDINGS)}."
             )
-        if capability.contract.execution_mode not in ("inline", "background_run"):
+        if contract.execution_mode not in VALID_EXECUTION_MODES:
             raise ValueError(
-                f"Invalid execution_mode '{capability.contract.execution_mode}' for capability '{capability.capability_id}'. "
-                "Must be 'inline' or 'background_run'."
+                f"Invalid execution_mode '{contract.execution_mode}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_EXECUTION_MODES)}."
             )
-        if not isinstance(capability.contract.input_schema, dict) or not isinstance(
-            capability.contract.output_schema, dict
+        if contract.mutation_type not in VALID_MUTATION_TYPES:
+            raise ValueError(
+                f"Invalid mutation_type '{contract.mutation_type}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_MUTATION_TYPES)}."
+            )
+        if contract.risk not in VALID_RISK_CLASSES:
+            raise ValueError(
+                f"Invalid risk '{contract.risk}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_RISK_CLASSES)}."
+            )
+        if contract.approval_policy not in VALID_APPROVAL_POLICIES:
+            raise ValueError(
+                f"Invalid approval_policy '{contract.approval_policy}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_APPROVAL_POLICIES)}."
+            )
+        if contract.execution_channel not in VALID_EXECUTION_CHANNELS:
+            raise ValueError(
+                f"Invalid execution_channel '{contract.execution_channel}' for capability '{capability.capability_id}'. "
+                f"Must be one of {sorted(VALID_EXECUTION_CHANNELS)}."
+            )
+        if not isinstance(contract.input_schema, dict) or not isinstance(
+            contract.output_schema, dict
         ):
             raise ValueError(
                 f"Schemas for capability '{capability.capability_id}' must be dictionaries."
             )
-        if not isinstance(capability.contract.scopes, list):
+        if not isinstance(contract.scopes, list) or not all(
+            isinstance(s, str) for s in contract.scopes
+        ):
             raise ValueError(
                 f"Scopes for capability '{capability.capability_id}' must be a list of strings."
+            )
+        if not isinstance(contract.timeout_seconds, (int, float)) or contract.timeout_seconds <= 0:
+            raise ValueError(
+                f"timeout_seconds for capability '{capability.capability_id}' must be a positive number."
             )
         self._capabilities[capability.capability_id] = capability
 

@@ -4,7 +4,8 @@ Verifies:
 1. All 11 registered default capabilities conform to CapabilityContract.
 2. Canonical mutation classification (canonical_project_state vs none).
 3. Fail-closed registration enforcement in CapabilityRegistry.register().
-4. CapabilityContract field integrity and discovery filtering.
+4. Strict rejection of un-contracted, implicit, or invalid Literal capability definitions.
+5. CapabilityContract field integrity and discovery filtering.
 """
 
 from __future__ import annotations
@@ -161,16 +162,27 @@ def test_capability_registry_register_fail_closed_validation() -> None:
             )
         )
 
-    # 3. Reject missing contract (contract=None)
-    no_contract_def = CapabilityDefinition(
-        capability_id="custom.no_contract",
-        name="No Contract",
+    # 3a. Reject natural instantiation without contract (D-C1 fix verification)
+    natural_no_contract_def = CapabilityDefinition(
+        capability_id="custom.natural_no_contract",
+        name="Natural No Contract",
         description="desc",
         category="custom",
     )
-    no_contract_def.contract = None
-    with pytest.raises(ValueError, match="must have a valid CapabilityContract"):
-        registry.register(no_contract_def)
+    with pytest.raises(ValueError, match="must have an explicit, valid CapabilityContract declared"):
+        registry.register(natural_no_contract_def)
+
+    # 3b. Reject post-construction contract stripping (contract=None)
+    post_no_contract_def = CapabilityDefinition(
+        capability_id="custom.post_no_contract",
+        name="Post No Contract",
+        description="desc",
+        category="custom",
+        contract=contract,
+    )
+    post_no_contract_def.contract = None
+    with pytest.raises(ValueError, match="must have an explicit, valid CapabilityContract declared"):
+        registry.register(post_no_contract_def)
 
     # 4. Reject invalid revision_binding
     invalid_binding_contract = CapabilityContract(
@@ -239,6 +251,119 @@ def test_capability_registry_register_fail_closed_validation() -> None:
                 description="desc",
                 category="custom",
                 contract=invalid_scopes_contract,
+            )
+        )
+
+
+def test_capability_registry_register_expanded_literal_validations() -> None:
+    """R1-C: Verify strict validation for all expanded Literal and numeric fields in register()."""
+    registry = CapabilityRegistry()
+
+    # 1. Invalid mutation_type
+    invalid_mutation_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        mutation_type="invalid_mutation",  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="Invalid mutation_type"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_mutation",
+                name="Invalid Mutation",
+                description="desc",
+                category="custom",
+                contract=invalid_mutation_contract,
+            )
+        )
+
+    # 2. Invalid risk
+    invalid_risk_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        risk="SUPER_CRITICAL",  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="Invalid risk"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_risk",
+                name="Invalid Risk",
+                description="desc",
+                category="custom",
+                contract=invalid_risk_contract,
+            )
+        )
+
+    # 3. Invalid approval_policy
+    invalid_approval_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        approval_policy="unknown_policy",  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="Invalid approval_policy"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_approval",
+                name="Invalid Approval",
+                description="desc",
+                category="custom",
+                contract=invalid_approval_contract,
+            )
+        )
+
+    # 4. Invalid execution_channel
+    invalid_channel_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        execution_channel="grpc",  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="Invalid execution_channel"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_channel",
+                name="Invalid Channel",
+                description="desc",
+                category="custom",
+                contract=invalid_channel_contract,
+            )
+        )
+
+    # 5. Invalid scopes item type (non-string in list)
+    invalid_scope_items_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        scopes=[123, True],  # type: ignore[list-item]
+    )
+    with pytest.raises(ValueError, match="Scopes.*must be a list of strings"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_scope_items",
+                name="Invalid Scope Items",
+                description="desc",
+                category="custom",
+                contract=invalid_scope_items_contract,
+            )
+        )
+
+    # 6. Invalid timeout_seconds (zero or negative)
+    invalid_timeout_contract = CapabilityContract(
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+        timeout_seconds=-5.0,
+    )
+    with pytest.raises(ValueError, match="timeout_seconds.*must be a positive number"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_timeout",
+                name="Invalid Timeout",
+                description="desc",
+                category="custom",
+                contract=invalid_timeout_contract,
             )
         )
 
