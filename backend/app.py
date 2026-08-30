@@ -656,7 +656,7 @@ for _router_name in (
     "experimental_services",  # V270: /api/v1/experimental/{features,ocr,scan-to-bim,speckle}
     "billing",  # Meeza Payment Gateway (شبكة ميزة) — /api/v1/billing/meeza/*
     "audio",  # V280: Voice Control & Audio Processing — /api/v1/audio/{transcribe,sanitize}
-    "capability_discovery",  # Phase 2: /api/v1/capabilities/discovery (D-2c)
+    "capability_discovery",  # Phase 2: /api/v1/capabilities (D-2c)
 ):
     _safe_include_router(_router_name)
 

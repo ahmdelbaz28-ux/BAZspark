@@ -229,6 +229,7 @@ class CapabilityRegistry:
 
         BAZSPARK V2.2 Phase 2 Discovery Specification:
         - Authorization rule (AND): Returns capability only if principal scopes ⊇ required_scopes (or admin).
+        - Programmatic registry callers may pass is_admin=True or administrative tokens ('*', 'admin') for bypass.
         - Fail-closed: Raises ValueError on unknown category or execution_channel filter.
         - Lean payload: Returns lean schema metadata; strictly excludes handler and raw state.
         """
