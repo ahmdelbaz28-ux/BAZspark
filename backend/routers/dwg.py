@@ -19,7 +19,7 @@ import os
 import tempfile
 from typing import Any
 
-import aiofiles
+import anyio
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
@@ -71,7 +71,7 @@ async def _stream_upload_to_disk(file: UploadFile, ext: str) -> str:
     empty = True
 
     try:
-        async with aiofiles.open(temp_path, "wb") as out_f:
+        async with await anyio.open_file(temp_path, "wb") as out_f:
             while True:
                 chunk = await file.read(_CHUNK_SIZE)
                 if not chunk:
