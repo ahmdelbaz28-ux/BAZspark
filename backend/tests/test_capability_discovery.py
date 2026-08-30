@@ -6,7 +6,7 @@ Verifies:
 3. Lean schema payload format (all 15 keys present, strict exclusion of handler and raw state).
 4. Schema versioning ("major.minor" pattern validation and 1.0 baseline).
 5. O-C1 resolution: export.execute_export requires write scope ("export:write").
-6. Read-only HTTP surface (/api/v1/capabilities and /api/v1/capabilities/discovery) over TestClient.
+6. Read-only HTTP surface (/api/v1/capabilities) over TestClient.
 """
 
 from __future__ import annotations

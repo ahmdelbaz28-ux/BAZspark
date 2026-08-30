@@ -58,15 +58,8 @@ async def discover_capabilities(
     # 2. Extract principal role and granted scopes from existing auth context
     role = get_current_role(request)
     is_admin = role == Role.ADMIN
-
-    # Check if custom scopes are stamped on request.state (e.g. from token/session)
-    custom_scopes = getattr(request.state, "fireai_scopes", None)
-    if custom_scopes is not None and isinstance(custom_scopes, (list, set)):
-        granted_scopes = [str(s) for s in custom_scopes]
-    else:
-        # Default to permissions associated with the validated role
-        role_perms = ROLE_PERMISSIONS.get(role, set())
-        granted_scopes = [p.value for p in role_perms]
+    role_perms = ROLE_PERMISSIONS.get(role, set())
+    granted_scopes = [p.value for p in role_perms]
 
     # 3. Query registry for authorized capabilities
     try:
