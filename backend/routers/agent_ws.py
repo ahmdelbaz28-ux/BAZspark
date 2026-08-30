@@ -1359,6 +1359,52 @@ async def _handle_run_start(
             )
             return
 
+    # Derive targeted capabilities to inspect revision_binding contract (D-1b)
+    target_cap_ids: list[str] = []
+    for step in steps:
+        if isinstance(step, dict):
+            cid = step.get("capability_id") or step.get("capabilityId") or step.get("action")
+            if cid and isinstance(cid, str):
+                target_cap_ids.append(cid)
+
+    plan_obj = msg.get("plan")
+    if isinstance(plan_obj, dict):
+        plan_steps = plan_obj.get("steps") or plan_obj.get("nodes") or []
+        if isinstance(plan_steps, list):
+            for ps in plan_steps:
+                if isinstance(ps, dict):
+                    cid = ps.get("capability_id") or ps.get("capabilityId") or ps.get("action")
+                    if cid and isinstance(cid, str):
+                        target_cap_ids.append(cid)
+
+    msg_cap_id = msg.get("capability_id") or msg.get("capabilityId")
+    if msg_cap_id and isinstance(msg_cap_id, str):
+        target_cap_ids.append(msg_cap_id)
+
+    requires_canonical_revision = False
+    for cid in target_cap_ids:
+        cap_def = default_capability_registry.get(cid)
+        if (
+            cap_def
+            and cap_def.contract
+            and cap_def.contract.revision_binding == "canonical_project_state"
+        ):
+            requires_canonical_revision = True
+            break
+
+    if requires_canonical_revision and expected_rev is None:
+        await websocket.send_json(
+            {
+                "type": "run_error",
+                "errorCode": "MISSING_EXPECTED_REVISION",
+                "message": (
+                    f"run_start targets capability requiring canonical project state revision binding, "
+                    f"but expected_revision was not provided for project '{project_id}'."
+                ),
+            }
+        )
+        return
+
     # Context reconciliation & OCC validation if project_id is specified
     if project_id:
         import backend.database as _db_mod
@@ -1368,10 +1414,10 @@ async def _handle_run_start(
         if project:
             author = project.get("author", "")
             principal_ids = {
-                principal.user_id,
-                getattr(principal, "name", ""),
-                getattr(principal, "email", ""),
-            }
+                getattr(principal, "user_id", None),
+                getattr(principal, "name", None),
+                getattr(principal, "email", None),
+            } - {None, ""}
             if principal.role != "admin" and author and author not in principal_ids:
                 await websocket.send_json(
                     {
