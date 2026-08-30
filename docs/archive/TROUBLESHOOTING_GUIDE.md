@@ -1,3 +1,6 @@
+> [!NOTE]
+> **SUPERSEDED — See canonical [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**
+
 # FireAI Platform Troubleshooting Guide
 
 ## Table of Contents

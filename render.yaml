@@ -2,6 +2,7 @@
 # - CORS_ORIGINS → CORS_ALLOWED_ORIGINS (matches backend/security_middleware.py)
 # - Added FIREAI_SESSION_SECRET (backend hard-fails without it)
 # - Updated repo URL to the correct GitHub repository
+# - CONTAINMENT (A6): Single-instance web service (scaling contained until state externalization). Reference: docs/DEPLOYMENT_SCALING_DECISION.md
 services:
   - type: web
     name: bazspark

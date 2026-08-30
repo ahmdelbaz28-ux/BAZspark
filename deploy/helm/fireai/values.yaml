@@ -34,8 +34,10 @@ namespace:
   annotations: {}
 
 # ── Replica Counts ───────────────────────────────────────────────────────────
+# CONTAINMENT (A6): Single-instance containment until Platform Hardening Track.
+# Reference: docs/DEPLOYMENT_SCALING_DECISION.md
 replicas:
-  api: 3
+  api: 1
   worker: 1
 
 # ── Rolling Update ───────────────────────────────────────────────────────────
@@ -487,10 +489,12 @@ logging:
     max-file: "3"
 
 # ── Autoscaling (optional) ───────────────────────────────────────────────────
+# CONTAINMENT (A6): Autoscaling pinned to single instance until state externalization.
+# Reference: docs/DEPLOYMENT_SCALING_DECISION.md
 autoscaling:
   api:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 10
+    minReplicas: 1
+    maxReplicas: 1
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80

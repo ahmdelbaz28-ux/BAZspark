@@ -31,6 +31,14 @@ vi.mock("@/hooks/useVoiceControl", () => ({
 	}),
 }));
 
+// Mock agentWorkflowApi
+vi.mock("@/services/agentWorkflowApi", () => ({
+	agentWorkflowApi: {
+		planWorkflow: vi.fn().mockResolvedValue({ steps: [] }),
+		startPlannedRun: vi.fn().mockResolvedValue({ runId: "test-run" }),
+	},
+}));
+
 describe("AgentChatPage", () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();
@@ -75,5 +83,13 @@ describe("AgentChatPage", () => {
 		await waitFor(() => {
 			expect(mockSendMessage).toHaveBeenCalledWith("How do I calculate cable size?");
 		});
+	});
+
+	it("does not fabricate fake artifacts when run status is COMPLETED without real exports", () => {
+		renderComponent();
+
+		// Zero occurrences of hardcoded fake artifact filenames in rendered UI
+		expect(screen.queryByText("NFPA_72_Compliance_Report.pdf")).toBeNull();
+		expect(screen.queryByText("Device_Layout_Rev2.dxf")).toBeNull();
 	});
 });

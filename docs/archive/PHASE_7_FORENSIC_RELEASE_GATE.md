@@ -1,3 +1,6 @@
+> [!CAUTION]
+> **SUPERSEDED — راجع [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)**
+
 # Phase 7 — Final Forensic Release Gate & Release Execution
 
 **Repository:** `ahmdelbaz28-ux/BAZspark`  

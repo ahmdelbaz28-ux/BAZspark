@@ -125,7 +125,9 @@ services:
       - fireai-net
     deploy:
       mode: replicated
-      replicas: 2
+      # CONTAINMENT (A6): Single-instance only until Redis-backed state externalization in Platform Hardening Track.
+      # See docs/DEPLOYMENT_SCALING_DECISION.md for details.
+      replicas: 1
       resources:
         limits:
           cpus: "2.0"
