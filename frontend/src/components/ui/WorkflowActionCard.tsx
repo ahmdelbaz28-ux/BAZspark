@@ -51,6 +51,10 @@ interface ComplianceBadge {
 export interface WorkflowActionCardProps {
 	lifecycleState: WorkflowLifecycleState;
 	isLoading?: boolean;
+	/** Whether this workflow is executing against live backend or a visual preview shell */
+	isLiveExecution?: boolean;
+	/** Optional descriptive label for preview mode */
+	statusDescription?: string;
 	/** Server-authoritative pending approval data from backend Agent Run */
 	pendingApproval?: PendingApprovalData | null;
 	/** PLAN: DAG topology — ordered list of [nodeId, capabilityId] pairs */
@@ -471,6 +475,8 @@ const STATE_ORDER: WorkflowLifecycleState[] = [
 export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 	lifecycleState,
 	isLoading = false,
+	isLiveExecution,
+	statusDescription,
 	pendingApproval,
 	dagNodes,
 	previewDevices,
@@ -543,19 +549,21 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 						)}
 						Refresh Context & Re-plan
 					</button>
-					<button
-						type="button"
-						onClick={onDiscard}
-						className="w-full px-3 py-2 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:border-border/80 transition-colors"
-					>
-						Discard Proposal
-					</button>
+					{onDiscard && (
+						<button
+							type="button"
+							onClick={onDiscard}
+							className="px-3 py-1.5 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"
+						>
+							Discard Proposal
+						</button>
+					)}
 				</div>
 			</div>
 		);
 	}
 
-	// ── IDLE ──────────────────────────────────────────────────────────────────
+	// ── IDLE / Uninitialized state ───────────────────────────────────────────
 	if (lifecycleState === "IDLE") {
 		return (
 			<div
@@ -620,6 +628,18 @@ export const WorkflowActionCard: React.FC<WorkflowActionCardProps> = ({
 
 			{/* Content */}
 			<div className="p-4 space-y-3">
+				{/* Truthfulness Banner for non-executing preview mode (R1-B / A3) */}
+				{isLiveExecution === false && (
+					<div
+						className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono"
+						data-testid="preview-shell-banner"
+						role="status"
+					>
+						<ShieldAlert className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+						<span>{statusDescription || "Preview Shell — Non-executing visual preview context"}</span>
+					</div>
+				)}
+
 				{lifecycleState === "PLAN" && <PlanView nodes={dagNodes} />}
 
 				{lifecycleState === "PREVIEW" && (

@@ -321,5 +321,22 @@ describe("WorkflowActionCard", () => {
 		expect(screen.getByText("470")).toBeInTheDocument();
 		expect(screen.getByText(/ollama · qwen2.5-coder:7b/)).toBeInTheDocument();
 	});
+
+	// ── Truthfulness Preview Shell Banner (R1-B / A3) ─────────────────────────
+
+	it("renders truthfulness preview shell banner when isLiveExecution is false (R1-B / A3)", () => {
+		render(
+			<WorkflowActionCard
+				lifecycleState="PREVIEW"
+				isLiveExecution={false}
+				statusDescription="Preview Shell — Non-executing visual preview context"
+			/>,
+		);
+		const banner = screen.getByTestId("preview-shell-banner");
+		expect(banner).toBeInTheDocument();
+		expect(
+			screen.getByText("Preview Shell — Non-executing visual preview context"),
+		).toBeInTheDocument();
+	});
 });
 
