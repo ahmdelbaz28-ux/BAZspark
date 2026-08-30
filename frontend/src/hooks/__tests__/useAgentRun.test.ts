@@ -11,6 +11,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAgentRun } from "@/hooks/useAgentRun";
+import { api } from "@/services/api";
 import { agentRunsApi } from "@/services/fullApi";
 
 // Mock fullApi
@@ -21,6 +22,13 @@ vi.mock("@/services/fullApi", () => ({
 		cancel: vi.fn(),
 		retry: vi.fn(),
 		decideApproval: vi.fn(),
+	},
+}));
+
+// Mock api
+vi.mock("@/services/api", () => ({
+	api: {
+		post: vi.fn(),
 	},
 }));
 
@@ -251,5 +259,86 @@ describe("useAgentRun", () => {
 		await act(async () => {
 			await result.current.pauseRun();
 		});
+	});
+
+	it("acquires ticket via POST /agent/ws-ticket and handles ping-pong heartbeat", async () => {
+		vi.mocked(api.post).mockResolvedValue({ success: true, ticket: "ticket-xyz-456" });
+
+		const mockWsInstances: Array<{
+			url: string;
+			send: ReturnType<typeof vi.fn>;
+			onopen: (() => void) | null;
+			onmessage: ((event: { data: string }) => void) | null;
+			readyState: number;
+		}> = [];
+
+		class MockWs {
+			static readonly CONNECTING = 0;
+			static readonly OPEN = 1;
+			static readonly CLOSING = 2;
+			static readonly CLOSED = 3;
+
+			url: string;
+			send = vi.fn();
+			close = vi.fn();
+			onopen: (() => void) | null = null;
+			onmessage: ((event: { data: string }) => void) | null = null;
+			onclose: (() => void) | null = null;
+			onerror: (() => void) | null = null;
+			readyState = 1; // OPEN
+
+			constructor(url: string) {
+				this.url = url;
+				mockWsInstances.push(this);
+				setTimeout(() => {
+					if (this.onopen) this.onopen();
+				}, 10);
+			}
+		}
+
+		vi.stubGlobal("WebSocket", MockWs);
+		globalThis.WebSocket = MockWs as unknown as typeof WebSocket;
+		window.WebSocket = MockWs as unknown as typeof WebSocket;
+
+		const { result } = renderHook(() => useAgentRun("proj-101"));
+
+		// Allow async connectWs to resolve ticket and construct WebSocket
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
+		expect(api.post).toHaveBeenCalledWith("/agent/ws-ticket", {});
+		expect(mockWsInstances.length).toBeGreaterThan(0);
+		expect(mockWsInstances[0].url).toContain("ticket=ticket-xyz-456");
+		// §4.11 / C7: Ensure 0 occurrences of raw credentials or API keys in WebSocket URL
+		expect(mockWsInstances[0].url).not.toMatch(/[?&](api_key|token|auth_token)=/i);
+
+		// Simulate server sending {"type": "ping"}
+		const wsInstance = mockWsInstances[0];
+		act(() => {
+			if (wsInstance.onmessage) {
+				wsInstance.onmessage({ data: JSON.stringify({ type: "ping" }) });
+			}
+		});
+
+		// Expect client to immediately send {"type": "pong"}
+		expect(wsInstance.send).toHaveBeenCalledWith(JSON.stringify({ type: "pong" }));
+
+		// Test startRun carries modelId and expectedRevision in WebSocket run_start frame
+		await act(async () => {
+			await result.current.startRun({
+				projectId: "proj-101",
+				modelId: "dt-model-101",
+				expectedRevision: 4,
+				steps: [{ step_id: "s1", capability_id: "spatial.place_devices" }],
+			});
+		});
+
+		const lastCall = wsInstance.send.mock.calls[wsInstance.send.mock.calls.length - 1][0];
+		const parsed = JSON.parse(lastCall);
+		expect(parsed.type).toBe("run_start");
+		expect(parsed.projectId).toBe("proj-101");
+		expect(parsed.model_id).toBe("dt-model-101");
+		expect(parsed.expected_revision).toBe(4);
 	});
 });

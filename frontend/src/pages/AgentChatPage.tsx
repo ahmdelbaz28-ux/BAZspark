@@ -168,7 +168,7 @@ interface AgentChatPageProps {
 export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps = {}) {
 	const { i18n } = useTranslation();
 	const isArabic = Boolean(i18n.language?.startsWith("ar"));
-	const { activeProjectId, activeRevision } = useActiveProject();
+	const { activeProjectId, activeRevision, activeModelId } = useActiveProject();
 	const effectiveProjectId = propProjectId || activeProjectId;
 
 	// Conversational LLM chat hook
@@ -463,6 +463,8 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 				const plan = await agentWorkflowApi.planWorkflow({
 					prompt,
 					projectId: runState.projectId,
+					modelId: activeModelId || undefined,
+					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
 					approvalMode: runState.approvalMode,
 					compositeSpec: attachedFiles.length > 0 ? { file_id: attachedFiles[0].id, filename: attachedFiles[0].name } : undefined,
 				});
@@ -470,6 +472,8 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 				if (plan.steps && plan.steps.length > 0) {
 					await startRun({
 						projectId: runState.projectId,
+						modelId: activeModelId || undefined,
+						expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
 						steps: plan.steps.map((s) => ({
 							step_id: s.step_id,
 							capability_id: s.capability_id,

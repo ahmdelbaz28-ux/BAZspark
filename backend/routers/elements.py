@@ -19,11 +19,11 @@ except ImportError:
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from backend.auth import require_permission
+from backend.auth import get_current_principal, get_current_role, require_permission
 from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.db_service import get_db_service
 from backend.limiter import limiter
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 from backend.schemas import (
     ApiResponse,
     ElementCreate,
@@ -44,12 +44,30 @@ DbDep = Annotated[Any, Depends(get_db_service)]
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _verify_project(project_id: str, request: Request | None = None) -> dict:
+    """Ensure the project exists and caller has tenant access before operating on its elements."""
+    from backend.database import get_db
+
+    db = get_db()
+    project = db.get_project(project_id)
+    if not project:
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    if request is not None:
+        from backend.routers.projects import _verify_project_access
+
+        _verify_project_access(project, request)
+    return project
+
+
 @router.get(
     "",
     response_model=ApiResponse[PaginatedData[ElementResponse]],
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 async def list_elements(
+    request: Request,
     db: DbDep,
     element_type: str | None = Query(None, description="Filter by element type"),
     project_id: str | None = Query(None, description="Filter by project ID"),
@@ -59,19 +77,64 @@ async def list_elements(
     sort_by: str = Query("created_timestamp", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)"),
 ):
-    """List elements with optional filtering and pagination."""
+    """List elements with optional filtering, pagination, and tenant isolation."""
     if sort_order not in ("asc", "desc"):
         sort_order = "desc"
     try:
-        elements, total = db.list_elements(
-            element_type=element_type,
-            project_id=project_id,
-            is_deleted=is_deleted,
-            page=page,
-            page_size=page_size,
-            sort_by=sort_by,
-            sort_order=sort_order,
-        )
+        role = get_current_role(request)
+        principal = get_current_principal(request)
+
+        if project_id:
+            if role != Role.ADMIN:
+                _verify_project(project_id, request)
+            elements, total = db.list_elements(
+                element_type=element_type,
+                project_id=project_id,
+                is_deleted=is_deleted,
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_order=sort_order,
+            )
+        else:
+            if role == Role.ADMIN:
+                elements, total = db.list_elements(
+                    element_type=element_type,
+                    project_id=None,
+                    is_deleted=is_deleted,
+                    page=page,
+                    page_size=page_size,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                )
+            else:
+                if not principal:
+                    elements, total = [], 0
+                else:
+                    from backend.database import get_db
+
+                    db_backend = get_db()
+                    user_projects = db_backend.list_projects(page=1, limit=1000, author=principal)
+                    user_project_ids = {p["id"] for p in user_projects.get("data", [])}
+                    if not user_project_ids:
+                        elements, total = [], 0
+                    else:
+                        raw_elements, _ = db.list_elements(
+                            element_type=element_type,
+                            project_id=None,
+                            is_deleted=is_deleted,
+                            page=1,
+                            page_size=100000,
+                            sort_by=sort_by,
+                            sort_order=sort_order,
+                        )
+                        filtered = [
+                            elem for elem in raw_elements if elem.project_id in user_project_ids
+                        ]
+                        total = len(filtered)
+                        start_idx = (page - 1) * page_size
+                        elements = filtered[start_idx : start_idx + page_size]
+
         total_pages = math.ceil(total / page_size) if total > 0 else 0
 
         return ApiResponse(
@@ -84,6 +147,8 @@ async def list_elements(
                 total_pages=total_pages,
             ),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("list_elements failed: %s", e)
         raise HTTPException(
@@ -103,7 +168,9 @@ async def create_element(
     element_data: ElementCreate,
     db: DbDep,
 ):
-    """Create a new element."""
+    """Create a new element with tenant verification."""
+    if element_data.project_id:
+        _verify_project(element_data.project_id, request)
     try:
         element = db.create_element(element_data)
         return ApiResponse(success=True, data=element, message="Element created successfully")
@@ -116,6 +183,8 @@ async def create_element(
         raise HTTPException(
             status_code=400, detail=safe_msg
         )  # NOSONAR — S8415: assignment kept for readability / debuggability
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("create_element failed: %s", e)
         raise HTTPException(
@@ -129,16 +198,19 @@ async def create_element(
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 async def get_element(
+    request: Request,
     element_id: str,
     db: DbDep,
 ):
-    """Get an element by ID."""
+    """Get an element by ID with tenant verification."""
     try:
         element = db.get_element(element_id)
         if element is None:
             raise HTTPException(
                 status_code=404, detail=f"Element {element_id} not found"
             )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        if element.project_id:
+            _verify_project(element.project_id, request)
         return ApiResponse(success=True, data=element)
     except HTTPException:
         raise
@@ -161,8 +233,19 @@ async def update_element(
     element_data: ElementUpdate,
     db: DbDep,
 ):
-    """Update an element."""
+    """Update an element with tenant verification."""
     try:
+        existing = db.get_element(element_id)
+        if existing is None:
+            raise HTTPException(
+                status_code=404, detail=f"Element {element_id} not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        if existing.project_id:
+            _verify_project(existing.project_id, request)
+        new_project_id = getattr(element_data, "project_id", None)
+        if new_project_id and new_project_id != existing.project_id:
+            _verify_project(new_project_id, request)
+
         element = db.update_element(element_id, element_data)
         if element is None:
             raise HTTPException(
@@ -189,8 +272,16 @@ async def delete_element(
     element_id: str,
     db: DbDep,
 ):
-    """Soft delete an element."""
+    """Soft delete an element with tenant verification."""
     try:
+        existing = db.get_element(element_id)
+        if existing is None:
+            raise HTTPException(
+                status_code=404, detail=f"Element {element_id} not found"
+            )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        if existing.project_id:
+            _verify_project(existing.project_id, request)
+
         success = db.delete_element(element_id)
         if not success:
             raise HTTPException(
