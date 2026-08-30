@@ -424,109 +424,77 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 
 		const lower = prompt.toLowerCase();
 
-		// Check for export intent
-		if (
-			lower.includes("export") ||
-			lower.includes("download dxf") ||
-			lower.includes("download ifc") ||
-			lower.includes("download revit") ||
-			lower.includes("download boq") ||
-			lower.includes("download excel")
-		) {
-			let targetFmt: ExportTargetFormat = "dxf";
-			if (lower.includes("ifc")) targetFmt = "ifc";
-			else if (lower.includes("revit")) targetFmt = "revit";
-			else if (lower.includes("excel") || lower.includes("xlsx") || lower.includes("boq"))
-				targetFmt = "xlsx";
-			else if (lower.includes("csv")) targetFmt = "csv";
-			else if (lower.includes("pdf") || lower.includes("report")) targetFmt = "pdf";
-			else if (lower.includes("json")) targetFmt = "json";
+		// Dev-only local export trigger shortcut (guarded from production builds)
+		if (import.meta.env.DEV) {
+			if (
+				lower.includes("export") ||
+				lower.includes("download dxf") ||
+				lower.includes("download ifc") ||
+				lower.includes("download revit") ||
+				lower.includes("download boq") ||
+				lower.includes("download excel")
+			) {
+				let targetFmt: ExportTargetFormat = "dxf";
+				if (lower.includes("ifc")) targetFmt = "ifc";
+				else if (lower.includes("revit")) targetFmt = "revit";
+				else if (lower.includes("excel") || lower.includes("xlsx") || lower.includes("boq"))
+					targetFmt = "xlsx";
+				else if (lower.includes("csv")) targetFmt = "csv";
+				else if (lower.includes("pdf") || lower.includes("report")) targetFmt = "pdf";
+				else if (lower.includes("json")) targetFmt = "json";
 
-			await handlePlanExport(targetFmt);
-			return;
+				await handlePlanExport(targetFmt);
+				return;
+			}
 		}
 
-		// Check if user is asking for an engineering action
-		const isEngineeringRunIntent =
-			lower.includes("place") ||
-			lower.includes("detector") ||
-			lower.includes("voltage") ||
-			lower.includes("battery") ||
-			lower.includes("hydraulic") ||
-			lower.includes("audit") ||
-			lower.includes("nfpa") ||
-			lower.includes("layout") ||
-			lower.includes("circuit");
+		// Route through real backend workflow planner (A5 wireup)
+		try {
+			const plan = await agentWorkflowApi.planWorkflow({
+				prompt,
+				projectId: runState.projectId,
+				modelId: activeModelId || undefined,
+				expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+				approvalMode: runState.approvalMode,
+				compositeSpec: attachedFiles.length > 0 ? { file_id: attachedFiles[0].id, filename: attachedFiles[0].name } : undefined,
+			});
 
-		if (isEngineeringRunIntent) {
-			try {
-				const plan = await agentWorkflowApi.planWorkflow({
-					prompt,
+			if (plan.steps && plan.steps.length > 0) {
+				await startRun({
 					projectId: runState.projectId,
 					modelId: activeModelId || undefined,
 					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+					steps: plan.steps.map((s) => ({
+						step_id: s.step_id,
+						capability_id: s.capability_id,
+						description: s.description,
+						payload: s.payload,
+					})),
 					approvalMode: runState.approvalMode,
-					compositeSpec: attachedFiles.length > 0 ? { file_id: attachedFiles[0].id, filename: attachedFiles[0].name } : undefined,
+					plan: {
+						plan_id: plan.plan_id,
+						intent_summary: plan.intent_summary,
+						dag: plan.dag,
+					},
 				});
 
-				if (plan.steps && plan.steps.length > 0) {
-					await startRun({
-						projectId: runState.projectId,
-						modelId: activeModelId || undefined,
-						expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
-						steps: plan.steps.map((s) => ({
-							step_id: s.step_id,
-							capability_id: s.capability_id,
-							description: s.description,
-							payload: s.payload,
-						})),
-						approvalMode: runState.approvalMode,
-						plan: {
-							plan_id: plan.plan_id,
-							intent_summary: plan.intent_summary,
-							dag: plan.dag,
-						},
-					});
-
-					await sendMessage(
-						`⚡ Autonomous Engineering Workflow Initiated: ${plan.intent_summary} (${plan.steps.length} steps). Execution Policy: ${plan.overall_policy_decision}. Requires Approval: ${plan.requires_human_approval ? "YES" : "NO"}.`,
-					);
-					return;
-				}
-			} catch (err) {
-				console.warn("Autonomous planner fallback to LLM stream:", err);
+				await sendMessage(
+					`⚡ Autonomous Engineering Workflow Initiated: ${plan.intent_summary} (${plan.steps.length} steps). Execution Policy: ${plan.overall_policy_decision}. Requires Approval: ${plan.requires_human_approval ? "YES" : "NO"}.`,
+				);
+				return;
 			}
+		} catch (err) {
+			console.warn("Autonomous planner fallback to LLM stream:", err);
 		}
 
 		// Standard conversational LLM stream
 		await sendMessage(prompt);
 	};
 
-	// Artifacts produced by run or direct export
+	// Artifacts produced by real run or real direct export (truthful empty state when none exist)
 	const producedArtifacts: ProducedArtifact[] = useMemo(() => {
-		const list: ProducedArtifact[] = [...exportedArtifacts];
-		if (runState.status === "COMPLETED") {
-			list.push(
-				{
-					artifact_id: `art-calc-${runState.runId || "completed"}`,
-					filename: "NFPA_72_Compliance_Report.pdf",
-					format: "PDF",
-					size_bytes: 245000,
-					status: "ready",
-					download_url: "#",
-				},
-				{
-					artifact_id: `art-dwg-${runState.runId || "completed"}`,
-					filename: "Device_Layout_Rev2.dxf",
-					format: "DXF",
-					size_bytes: 1840000,
-					status: "ready",
-					download_url: "#",
-				},
-			);
-		}
-		return list;
-	}, [runState.status, runState.runId, exportedArtifacts]);
+		return [...exportedArtifacts];
+	}, [exportedArtifacts]);
 
 	return (
 		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">

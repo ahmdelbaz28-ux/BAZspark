@@ -115,6 +115,8 @@ export interface DomainCommandPreview {
 export interface AIControllerContextValue {
 	isAiActive: boolean;
 	isPlanning: boolean;
+	isLiveExecution: boolean;
+	statusDescription: string;
 	previewDevices: PreviewDevice[];
 	proposedCommand: DomainCommandPreview | null;
 	compositeProposal: CompositeWorkflowPreview | null;
@@ -730,6 +732,8 @@ export const AIControllerProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		() => ({
 			isAiActive,
 			isPlanning,
+			isLiveExecution: false,
+			statusDescription: "Preview Shell — Non-executing visual preview context",
 			previewDevices,
 			proposedCommand,
 			compositeProposal,

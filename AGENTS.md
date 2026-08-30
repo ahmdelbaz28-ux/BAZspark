@@ -103,7 +103,7 @@ Single-context layout. See `docs/agents/domain.md`.
 
 ## CI/CD Policy (MANDATORY)
 
-All agents **MUST** adhere to the [**CI/CD Policy**](./CI-CD-POLICY.md) — 12
+All agents **MUST** adhere to the [**CI/CD Policy**](./docs/CI-CD-POLICY.md) — 12
 mandatory rules governing every code change:
 
 | Rule | Summary | Critical For Agents |

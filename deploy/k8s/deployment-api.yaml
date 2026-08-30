@@ -12,7 +12,9 @@ metadata:
     app.kubernetes.io/part-of: fireai
     security.fireai.com/tier: critical
 spec:
-  replicas: 3
+  # CONTAINMENT (A6): Single-instance only until state externalization.
+  # Reference: docs/DEPLOYMENT_SCALING_DECISION.md
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:

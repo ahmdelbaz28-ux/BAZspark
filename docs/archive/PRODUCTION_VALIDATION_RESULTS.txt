@@ -1,3 +1,6 @@
+# SUPERSEDED — راجع docs/PROJECT_STATUS.md
+# Historical Snapshot (2026-08-06)
+
 BAZspark Production Validation Results — Real Snapshot
 Date: 2026-08-06
 Commit: a403828f
