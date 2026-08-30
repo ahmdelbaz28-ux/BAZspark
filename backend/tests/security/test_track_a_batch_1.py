@@ -10,7 +10,7 @@ Tests:
    - Elements: create, get, update, delete, list with foreign project -> 404 anti-enumeration.
    - Sync: sync_project, get_sync_status, WS subscribe, WS get_status -> 404 / unauthorized error.
    - Reports: list_reports with foreign project -> 404 anti-enumeration.
-5. run_start OCC revision conflict and missing expected_revision rejection.
+5. run_start OCC revision conflict and malformed expected_revision rejection.
 6. CI grep checks: 0 matches for query-string token fallback in WS handshake (agent_ws.py & revit_api.py).
 """
 
@@ -377,6 +377,41 @@ async def test_run_start_occ_revision_conflict_frame():
     assert len(ws.sent) == 1
     assert ws.sent[0]["type"] == "run_error"
     assert ws.sent[0]["errorCode"] == "REVISION_CONFLICT"
+
+
+@pytest.mark.asyncio
+async def test_run_start_malformed_expected_revision_rejected():
+    """5c. WS run_start malformed expected_revision (non-integer string) returns INVALID_EXPECTED_REVISION."""
+    from backend.routers import agent_ws
+    from backend.core.command_bus import AuthenticatedPrincipal
+
+    class MockWs:
+        def __init__(self):
+            self.sent = []
+        async def send_json(self, data):
+            self.sent.append(data)
+
+    ws = MockWs()
+    principal = AuthenticatedPrincipal(
+        user_id="alice_user",
+        email="alice@bazspark.com",
+        role="engineer",
+        scopes=["*"],
+        is_authenticated=True,
+    )
+
+    # Trigger with malformed (non-integer string) expectedRevision
+    msg = {
+        "type": "run_start",
+        "projectId": "proj-any",
+        "expectedRevision": "garbage_not_a_number",
+        "steps": [{"step_id": "s1", "capability_id": "spatial.place_devices", "payload": {}}],
+    }
+    await agent_ws._handle_run_start(ws, principal, msg)
+    assert len(ws.sent) == 1
+    assert ws.sent[0]["type"] == "run_error"
+    assert ws.sent[0]["errorCode"] == "INVALID_EXPECTED_REVISION"
+    assert "expected_revision must be an integer" in ws.sent[0]["message"]
 
 
 # ─── 10. CI Grep Checks ─────────────────────────────────────────────────────

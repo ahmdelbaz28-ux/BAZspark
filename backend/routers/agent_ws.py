@@ -1350,7 +1350,14 @@ async def _handle_run_start(
         try:
             expected_rev = int(expected_rev)
         except (ValueError, TypeError):
-            expected_rev = None
+            await websocket.send_json(
+                {
+                    "type": "run_error",
+                    "errorCode": "INVALID_EXPECTED_REVISION",
+                    "message": f"expected_revision must be an integer, got: {msg.get('expectedRevision', msg.get('expected_revision'))!r}",
+                }
+            )
+            return
 
     # Context reconciliation & OCC validation if project_id is specified
     if project_id:
