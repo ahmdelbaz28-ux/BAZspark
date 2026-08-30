@@ -178,16 +178,10 @@ BAZspark/
 ├── qomn_fire/             # Independent QOMN-FIRE computational physics kernel
 ├── scripts/               # Operational utilities, secret scanners, and validation scripts
 ├── tests/                 # Full backend Pytest suite (unit, integration, property-based)
-├── ARCHITECTURE.md        # Comprehensive system architecture document
-├── CHANGELOG.md           # Release history and version migration notes
-├── CI-CD-POLICY.md        # Mandatory 12-rule CI/CD and feature branching policy
-├── CONFIGURATION_GUIDE.md # Detailed environment configuration reference
-├── CONTRIBUTING.md        # Engineering guidelines, PR standards, and review processes
+├── docs/                  # System architecture, engineering basis, security, and CI/CD policies
 ├── Dockerfile             # Multi-stage production container image
-├── ENGINEERING_BASIS.md   # Mathematical formulas, NFPA citations, and derivations
 ├── LICENSE                # MIT Open Source License
-├── ONBOARDING.md          # Step-by-step developer onboarding manual
-├── SECURITY.md            # Defense-in-depth security model and disclosure policy
+├── worklog.md             # Security verification and remediation audit trail
 └── VERSION                # Authoritative semantic version identifier
 ```
 
@@ -280,7 +274,7 @@ Create a `.env` file in the root directory (refer to [.env.example](.env.example
 | `CORS_ORIGINS` | Optional | `http://localhost:5173,...` | Comma-separated allowed CORS origin URLs |
 | `VITE_API_BASE_URL` | Optional | `http://localhost:8000` | (Frontend) Target backend base URL |
 
-*(For full configuration options, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) and [docs/API_KEYS_GUIDE.md](docs/API_KEYS_GUIDE.md)).*
+*(For full configuration options, see [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) and [docs/API_KEYS_GUIDE.md](docs/API_KEYS_GUIDE.md)).*
 
 ---
 
@@ -331,7 +325,7 @@ pytest tests/ -k "calculation or voltage or battery"
   - Hosted FastAPI application serving calculations, OpenAPI documentation (`/docs`), and database services.
 
 ### CI/CD Enforcement (12 Mandatory Rules)
-All pull requests and code modifications must adhere to [CI-CD-POLICY.md](CI-CD-POLICY.md):
+All pull requests and code modifications must adhere to [docs/CI-CD-POLICY.md](docs/CI-CD-POLICY.md):
 - **Rule 1 (Root Cause First):** Symptom workarounds are strictly rejected.
 - **Rule 4 (Safe Push):** Local linting, typecheck, boundaries, and test suites must pass before push.
 - **Rule 8 (Git Safety):** Force pushes and history rewrites on shared branches are strictly forbidden.
@@ -346,7 +340,7 @@ BAZspark incorporates a defense-in-depth security model:
 3. **Cryptographic Tamper-Evidence:** Calculations generate append-only SHA-256 hash chains with HMAC validation, preserving a cryptographically verifiable chain of custody.
 4. **Secret Scanning:** Automated CI workflows scan all commits and PR diffs for accidental credential leakage.
 
-*(For vulnerability disclosure and policy, refer to [SECURITY.md](SECURITY.md)).*
+*(For vulnerability disclosure and policy, refer to [docs/SECURITY.md](docs/SECURITY.md)).*
 
 ---
 
@@ -374,14 +368,15 @@ BAZspark incorporates a defense-in-depth security model:
 
 | Documentation File | Subject & Scope |
 | :--- | :--- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | In-depth system architecture, module boundaries, and data flow |
-| [ENGINEERING_BASIS.md](ENGINEERING_BASIS.md) | Mathematical formulas, NFPA 72 derivations, and electrical citations |
-| [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Complete environment variable specifications and secrets guide |
-| [SECURITY.md](SECURITY.md) | Defense-in-depth architecture and vulnerability reporting |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Code contribution guidelines, branching rules, and PR checklist |
-| [ONBOARDING.md](ONBOARDING.md) | Step-by-step onboarding walkthrough for new developers |
-| [CI-CD-POLICY.md](CI-CD-POLICY.md) | 12 mandatory rules governing testing, branching, and deployments |
-| [TROUBLESHOOTING_GUIDE.md](TROUBLESHOOTING_GUIDE.md) | Diagnostics, common errors, and resolution recipes |
+| [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) | **Canonical Single Source of Truth** — Current project status, track progress, and release gates |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | In-depth system architecture, module boundaries, and data flow |
+| [docs/ENGINEERING_BASIS.md](docs/ENGINEERING_BASIS.md) | Mathematical formulas, NFPA 72 derivations, and electrical citations |
+| [docs/CONFIGURATION_GUIDE.md](docs/CONFIGURATION_GUIDE.md) | Complete environment variable specifications and secrets guide |
+| [docs/SECURITY.md](docs/SECURITY.md) | Defense-in-depth architecture and vulnerability reporting |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Code contribution guidelines, branching rules, and PR checklist |
+| [docs/ONBOARDING.md](docs/ONBOARDING.md) | Step-by-step onboarding walkthrough for new developers |
+| [docs/CI-CD-POLICY.md](docs/CI-CD-POLICY.md) | 12 mandatory rules governing testing, branching, and deployments |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Diagnostics, common errors, and resolution recipes (see also [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)) |
 | [docs/FACP_SPECIFICATION.md](docs/FACP_SPECIFICATION.md) | FACP calculation protocols, loop classes, and standards |
 | [docs/PRODUCTION_DEPLOYMENT_GUIDE.md](docs/PRODUCTION_DEPLOYMENT_GUIDE.md) | Detailed Docker Compose, Kubernetes, and Vercel setup |
 
@@ -391,7 +386,7 @@ BAZspark incorporates a defense-in-depth security model:
 
 We welcome engineering contributions from fire protection engineers, BIM coordinators, and software developers. 
 
-Please review [CONTRIBUTING.md](CONTRIBUTING.md) and [ONBOARDING.md](ONBOARDING.md) before submitting code. Any modifications to calculation algorithms (`fireai/calculations/`) or NFPA constants require 100% branch coverage and property-based regression tests.
+Please review [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and [docs/ONBOARDING.md](docs/ONBOARDING.md) before submitting code. Any modifications to calculation algorithms (`fireai/calculations/`) or NFPA constants require 100% branch coverage and property-based regression tests.
 
 <div align="center">
 
