@@ -1,14 +1,16 @@
 """backend/core/capability_registry.py — Capability Discovery and Schema Registry.
 
-BAZspark V2.2 Phase 1 Canonical Capability Contract Architecture:
+BAZspark V2.2 Canonical Capability Contract & Discovery Architecture:
+- Phase 1: Every capability is governed by a strict, validated CapabilityContract.
+- Phase 2: Queryable authorized capability discovery registry with schema versioning.
 - The LLM receives capabilities (tools), not authority.
-- Every capability is governed by a strict, validated CapabilityContract.
 - Dynamic capability discovery with strict category, scope, and revision binding validation.
 - All default engineering capabilities conform to canonical V2.2 contracts.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -24,11 +26,12 @@ from fireai.core.device_placement import (
 
 @dataclass
 class CapabilityContract:
-    """Canonical capability contract per BAZSPARK_PLAN_V2_2 Phase 1 specification."""
+    """Canonical capability contract per BAZSPARK_PLAN_V2_2 Phase 1 & 2 specifications."""
 
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
     revision_binding: Literal["canonical_project_state", "none"]
+    schema_version: str = "1.0"
     execution_mode: Literal["inline", "background_run"] = "inline"
     context_requirements: list[str] = field(default_factory=list)
     scopes: list[str] = field(default_factory=list)
@@ -80,6 +83,7 @@ class CapabilityDefinition:
         elif self.category == "test" or self.capability_id.startswith(("test.", "failing.")):
             # Synthesize contract for isolated test mock fixtures in legacy test harnesses
             self.contract = CapabilityContract(
+                schema_version="1.0",
                 input_schema=self.input_schema if isinstance(self.input_schema, dict) else {},
                 output_schema=self.output_schema if isinstance(self.output_schema, dict) else {},
                 revision_binding="none",
@@ -113,6 +117,8 @@ VALID_MUTATION_TYPES = {"read_only", "idempotent_write", "state_mutation", "none
 VALID_RISK_CLASSES = {"LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"}
 VALID_APPROVAL_POLICIES = {"auto", "user_confirm", "pe_signoff", "admin_only"}
 VALID_EXECUTION_CHANNELS = {"sync", "async", "websocket", "worker", "inline"}
+VALID_CATEGORIES = {"spatial", "compliance", "electrical", "hydraulics", "import", "export"}
+SCHEMA_VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 
 
 class CapabilityRegistry:
@@ -137,6 +143,13 @@ class CapabilityRegistry:
                 f"CapabilityDefinition '{capability.capability_id}' must have an explicit, valid CapabilityContract declared."
             )
         contract = capability.contract
+        if not isinstance(contract.schema_version, str) or not SCHEMA_VERSION_PATTERN.match(
+            contract.schema_version
+        ):
+            raise ValueError(
+                f"Invalid schema_version '{contract.schema_version}' for capability '{capability.capability_id}'. "
+                f"Must follow numeric 'major.minor' format (e.g. '1.0')."
+            )
         if contract.revision_binding not in VALID_REVISION_BINDINGS:
             raise ValueError(
                 f"Invalid revision_binding '{contract.revision_binding}' for capability '{capability.capability_id}'. "
@@ -205,6 +218,82 @@ class CapabilityRegistry:
             results.append(cap)
         return results
 
+    def discover_authorized(
+        self,
+        scopes: list[str] | set[str] | None = None,
+        is_admin: bool = False,
+        execution_channel: str | None = None,
+        category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Discover authorized capabilities matching principal scopes and optional filters.
+
+        BAZSPARK V2.2 Phase 2 Discovery Specification:
+        - Authorization rule (AND): Returns capability only if principal scopes ⊇ required_scopes (or admin).
+        - Fail-closed: Raises ValueError on unknown category or execution_channel filter.
+        - Lean payload: Returns lean schema metadata; strictly excludes handler and raw state.
+        """
+        # 1. Fail-closed filter validation
+        if category is not None and category not in VALID_CATEGORIES:
+            raise ValueError(
+                f"Invalid category filter '{category}'. Must be one of {sorted(VALID_CATEGORIES)}."
+            )
+        if execution_channel is not None and execution_channel not in VALID_EXECUTION_CHANNELS:
+            raise ValueError(
+                f"Invalid execution_channel filter '{execution_channel}'. Must be one of {sorted(VALID_EXECUTION_CHANNELS)}."
+            )
+
+        # 2. Resolve principal authorization
+        principal_scopes: set[str] = set(scopes) if scopes is not None else set()
+        admin_mode = is_admin or "*" in principal_scopes or "admin" in principal_scopes
+
+        results: list[dict[str, Any]] = []
+        for cap in self._capabilities.values():
+            contract = cap.contract
+            if contract is None:
+                continue
+
+            # Category filter
+            if category is not None and cap.category != category:
+                continue
+
+            # Execution channel filter
+            if execution_channel is not None and contract.execution_channel != execution_channel:
+                continue
+
+            # Authorization rule: principal must possess ALL required scopes (unless admin)
+            if not admin_mode:
+                if not cap.required_scopes:
+                    # If capability has no required scopes, it is accessible
+                    pass
+                elif not principal_scopes:
+                    # Non-admin principal with no scopes cannot access scoped capabilities
+                    continue
+                elif not set(cap.required_scopes).issubset(principal_scopes):
+                    continue
+
+            # Lean capability payload (excludes handler and raw CAD/project state)
+            results.append(
+                {
+                    "capability_id": cap.capability_id,
+                    "name": cap.name,
+                    "description": cap.description,
+                    "category": cap.category,
+                    "schema_version": contract.schema_version,
+                    "input_schema": dict(contract.input_schema),
+                    "output_schema": dict(contract.output_schema),
+                    "revision_binding": contract.revision_binding,
+                    "execution_mode": contract.execution_mode,
+                    "execution_channel": contract.execution_channel,
+                    "mutation_type": contract.mutation_type,
+                    "risk": contract.risk,
+                    "scopes": list(contract.scopes),
+                    "approval_policy": contract.approval_policy,
+                    "ui_handoff": dict(contract.ui_handoff),
+                }
+            )
+
+        return results
+
     def _register_default_phase1_capabilities(self) -> None:
         """Register default capabilities across all active engineering domains."""
         self._register_spatial_capabilities()
@@ -268,6 +357,7 @@ class CapabilityRegistry:
                 description="Deterministically calculate NFPA 72 device placement grid for a room.",
                 category="spatial",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -341,6 +431,7 @@ class CapabilityRegistry:
                 description="Verify placed detectors against NFPA 72 spacing and coverage criteria.",
                 category="compliance",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -437,6 +528,7 @@ class CapabilityRegistry:
                 description="Deterministically calculate voltage drop and verify NFPA 72 compliance for NAC/SLC circuits.",
                 category="electrical",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -598,6 +690,7 @@ class CapabilityRegistry:
                 description="Deterministically calculate pipe friction loss, flow velocity, Reynolds number, and Darcy friction factor.",
                 category="hydraulics",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -762,6 +855,7 @@ class CapabilityRegistry:
                 description="Deterministically calculate secondary power supply battery capacity with temperature and aging deratings per NFPA 72 §10.6.7.",
                 category="electrical",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -862,6 +956,7 @@ class CapabilityRegistry:
                 description="Deterministically inspect staged drawing/BIM file and extract entity metadata and layout confidence.",
                 category="import",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -906,6 +1001,7 @@ class CapabilityRegistry:
                 description="Build a deterministic import plan bound to target project's canonical revision.",
                 category="import",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -952,6 +1048,7 @@ class CapabilityRegistry:
                 description="Atomically ingest parsed drawing/BIM elements into canonical project state with OCC verification.",
                 category="import",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -1036,6 +1133,7 @@ class CapabilityRegistry:
                 description="Deterministic export planning and format-loss impact analysis bound to project revision.",
                 category="export",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -1083,6 +1181,7 @@ class CapabilityRegistry:
                 description="Deterministically generate format artifact (DXF, Revit, IFC, XLSX, CSV, JSON, PDF) with OCC check.",
                 category="export",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
@@ -1106,7 +1205,7 @@ class CapabilityRegistry:
                     execution_mode="inline",
                     execution_channel="sync",
                     context_requirements=["canonical_project_elements", "occ_verification"],
-                    scopes=["export:read", "project:read"],
+                    scopes=["export:write", "project:read"],
                     mutation_type="state_mutation",
                     risk="MEDIUM",
                     approval_policy="auto",
@@ -1129,6 +1228,7 @@ class CapabilityRegistry:
                 description="Verify structural integrity, checksum, and format compliance of generated export artifacts.",
                 category="export",
                 contract=CapabilityContract(
+                    schema_version="1.0",
                     input_schema={
                         "type": "object",
                         "properties": {
