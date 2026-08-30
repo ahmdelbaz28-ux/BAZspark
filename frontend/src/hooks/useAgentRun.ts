@@ -9,6 +9,7 @@
  * - Idempotency & safe retry/resume/cancel/approval controls
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "@/services/api";
 import { agentRunsApi, type AgentRunResponse } from "@/services/fullApi";
 
 export type AgentRunStatus =
@@ -75,6 +76,8 @@ export interface AgentRunState {
 
 export interface StartRunOptions {
 	projectId: string;
+	modelId?: string;
+	expectedRevision?: number;
 	steps: Array<{
 		step_id: string;
 		capability_id: string;
@@ -163,6 +166,7 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 	}
 
 	const wsRef = useRef<WebSocket | null>(null);
+	const isConnectingRef = useRef(false);
 	const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const reconnectAttemptsRef = useRef(0);
 	const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -275,6 +279,13 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			const data = JSON.parse(event.data);
 			if (!data || typeof data !== "object") return;
 
+			if (data.type === "ping") {
+				if (wsRef.current?.readyState === WebSocket.OPEN) {
+					wsRef.current.send(JSON.stringify({ type: "pong" }));
+				}
+				return;
+			}
+
 			if (data.type === "run_status_update") {
 				applyRunUpdate({
 					run_id: data.runId,
@@ -322,20 +333,41 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 	const connectWsRef = useRef<() => void>(() => {});
 
 	// WebSocket connection setup
-	const connectWs = useCallback(() => {
-		if (wsRef.current?.readyState === WebSocket.OPEN) return;
+	const connectWs = useCallback(async () => {
+		if (wsRef.current?.readyState === WebSocket.OPEN || isConnectingRef.current) return;
+		isConnectingRef.current = true;
 
 		try {
+			// A1 FIX: Request single-use ticket via POST /agent/ws-ticket
+			let ticket = "";
+			try {
+				const ticketRes = await api.post<{ success: boolean; ticket: string }>("/agent/ws-ticket", {});
+				if (ticketRes && ticketRes.ticket) {
+					ticket = ticketRes.ticket;
+				}
+			} catch (ticketErr) {
+				console.warn("Failed to acquire WebSocket ticket:", ticketErr);
+			}
+
 			const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 			const host = window.location.host;
-			const wsUrl = `${protocol}//${host}/api/v1/agent/ws`;
+			const wsUrl = ticket
+				? `${protocol}//${host}/api/v1/agent/ws?ticket=${encodeURIComponent(ticket)}`
+				: `${protocol}//${host}/api/v1/agent/ws`;
 
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
 
 			ws.onopen = () => {
-				reconnectAttemptsRef.current = 0;
+				isConnectingRef.current = false;
 				setState((prev) => ({ ...prev, isConnected: true, isReconnecting: false }));
+
+				// Reset backoff attempts only after connection remains stable
+				setTimeout(() => {
+					if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) {
+						reconnectAttemptsRef.current = 0;
+					}
+				}, 5000);
 
 				// If there is an active run, request status resync
 				if (activeRunIdRef.current) {
@@ -346,6 +378,7 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			ws.onmessage = handleWsMessage;
 
 			ws.onclose = () => {
+				isConnectingRef.current = false;
 				setState((prev) => ({ ...prev, isConnected: false }));
 				// Exponential backoff reconnect
 				if (reconnectAttemptsRef.current < 8) {
@@ -359,9 +392,11 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			};
 
 			ws.onerror = () => {
+				isConnectingRef.current = false;
 				setState((prev) => ({ ...prev, isConnected: false }));
 			};
 		} catch {
+			isConnectingRef.current = false;
 			// Connection errors are handled asynchronously in onerror/onclose
 		}
 	}, [handleWsMessage]);
@@ -437,6 +472,8 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		const payload = {
 			type: "run_start",
 			projectId: options.projectId,
+			model_id: options.modelId,
+			expected_revision: options.expectedRevision,
 			steps: options.steps,
 			approvalMode: options.approvalMode || state.approvalMode,
 			conversationId: options.conversationId || `conv-${Date.now()}`,

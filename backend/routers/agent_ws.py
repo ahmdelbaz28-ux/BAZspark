@@ -85,7 +85,7 @@ def get_agent_lock(websocket: WebSocket) -> asyncio.Lock:
 
 
 def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
-    """Pull the API key or JWT auth token from headers, subprotocol, or connection parameters."""
+    """Pull the API key or JWT auth token from headers or subprotocol."""
     # 1. Header-based (preferred)
     headers = websocket.headers
     for name in ("x-api-key", "X-API-Key", "authorization"):
@@ -99,12 +99,6 @@ def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
     if protocols:
         # The first token is the API key (client must send it as the subprotocol)
         return protocols.split(",")[0].strip()
-    # 3. Query parameter or initial auth token (single-use WS tickets are
-    # handled separately in _authenticate_agent_websocket)
-    for qparam in ("token", "api_key", "auth_token"):
-        qval = websocket.query_params.get(qparam)
-        if qval:
-            return qval.strip()
     return ""
 
 
@@ -1345,10 +1339,73 @@ async def _handle_run_start(
         )
         return
 
+    project_id = str(msg.get("projectId") or msg.get("project_id") or "")
+    model_id = msg.get("modelId") or msg.get("model_id")
+    expected_rev = (
+        msg.get("expectedRevision")
+        if msg.get("expectedRevision") is not None
+        else msg.get("expected_revision")
+    )
+    if expected_rev is not None:
+        try:
+            expected_rev = int(expected_rev)
+        except (ValueError, TypeError):
+            expected_rev = None
+
+    # Context reconciliation & OCC validation if project_id is specified
+    if project_id:
+        import backend.database as _db_mod
+
+        db = getattr(default_agent_run_orchestrator._store, "_db", None) or _db_mod.get_db()
+        project = db.get_project(project_id)
+        if project:
+            author = project.get("author", "")
+            principal_ids = {
+                principal.user_id,
+                getattr(principal, "name", ""),
+                getattr(principal, "email", ""),
+            }
+            if principal.role != "admin" and author and author not in principal_ids:
+                await websocket.send_json(
+                    {
+                        "type": "run_error",
+                        "errorCode": "PROJECT_NOT_FOUND",
+                        "message": f"Project '{project_id}' not found",
+                    }
+                )
+                return
+
+            canonical_model_id = project.get("modelId") or f"dt-{project_id}"
+            if model_id and model_id != canonical_model_id:
+                await websocket.send_json(
+                    {
+                        "type": "run_error",
+                        "errorCode": "INVALID_MODEL_ID",
+                        "message": f"Model '{model_id}' does not belong to project '{project_id}'",
+                    }
+                )
+                return
+
+        # Check revision against state_store or project
+        canonical_rev = default_agent_run_orchestrator._bus.state_store.get_project_revision(
+            project_id
+        )
+        if canonical_rev is None and project:
+            canonical_rev = project.get("revision", 1)
+        if canonical_rev is not None and expected_rev is not None and expected_rev != canonical_rev:
+            await websocket.send_json(
+                {
+                    "type": "run_error",
+                    "errorCode": "REVISION_CONFLICT",
+                    "message": f"Project revision conflict: expected {expected_rev}, current canonical is {canonical_rev}",
+                }
+            )
+            return
+
     def _op():
         return default_agent_run_orchestrator.start_run(
             principal,
-            project_id=str(msg.get("projectId") or ""),
+            project_id=project_id,
             steps=steps,
             approval_mode=str(msg.get("approvalMode", "AUTO")),
             conversation_id=str(msg.get("conversationId", "")),

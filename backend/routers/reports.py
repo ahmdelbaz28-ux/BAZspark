@@ -795,6 +795,7 @@ def _normalize_sort(sort: str) -> str:
 
 @router.get("", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def list_reports(
+    request: Request,
     project_id: str,
     page: int = Query(1, ge=1),  # NOSONAR
     limit: int = Query(20, ge=1, le=100),  # NOSONAR
@@ -804,7 +805,7 @@ async def list_reports(
     if order not in ("asc", "desc"):
         order = "desc"
     """list all reports for a project."""
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
     result = db.list_reports(
         project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order

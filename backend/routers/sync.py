@@ -33,7 +33,7 @@ from backend.auth import require_permission
 from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.database import get_db
 from backend.limiter import limiter
-from backend.rbac import Permission
+from backend.rbac import Permission, Role
 
 logger = logging.getLogger(__name__)
 
@@ -175,20 +175,25 @@ manager = ConnectionManager()
 # ── Sync endpoints ──────────────────────────────────────────────────────────
 
 
-def _verify_project(project_id: str) -> None:
+def _verify_project(project_id: str, request: Request | None = None) -> dict:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(
             status_code=404, detail="Project not found"
         )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    if request is not None:
+        from backend.routers.projects import _verify_project_access
+
+        _verify_project_access(project, request)
+    return project
 
 
 @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
 @limiter.limit("30/minute")
 async def sync_project(request: Request, project_id: str):
     """Trigger project synchronization."""
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
 
     # Set status to syncing
@@ -252,9 +257,9 @@ async def sync_project(request: Request, project_id: str):
 
 
 @router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
-async def get_sync_status(project_id: str):
+async def get_sync_status(request: Request, project_id: str):
     """Get the current sync status of a project."""
-    _verify_project(project_id)
+    _verify_project(project_id, request)
     db = get_db()
     sync_status = db.get_sync_status(project_id)
     return {"data": sync_status, "success": True}
@@ -524,6 +529,26 @@ async def websocket_endpoint(
             elif action == "subscribe":
                 project_id = message.get("projectId", "")
                 if project_id:
+                    db = get_db()
+                    project = db.get_project(project_id)
+                    is_admin = (
+                        (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
+                        or bool(env_match)
+                    )
+                    is_author = (
+                        project
+                        and rbac_info
+                        and project.get("author") == getattr(rbac_info, "name", None)
+                    )
+                    if not is_admin and (not project or not is_author):
+                        await websocket.send_json(
+                            {
+                                "channel": "error",
+                                "type": "unauthorized",
+                                "data": {"error": f"Project '{project_id}' not found or access denied"},
+                            }
+                        )
+                        continue
                     manager.subscribe(websocket, project_id)
                 await websocket.send_json(
                     {
@@ -537,6 +562,25 @@ async def websocket_endpoint(
                 project_id = message.get("projectId", "")
                 if project_id:
                     db = get_db()
+                    project = db.get_project(project_id)
+                    is_admin = (
+                        (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
+                        or bool(env_match)
+                    )
+                    is_author = (
+                        project
+                        and rbac_info
+                        and project.get("author") == getattr(rbac_info, "name", None)
+                    )
+                    if not is_admin and (not project or not is_author):
+                        await websocket.send_json(
+                            {
+                                "channel": "error",
+                                "type": "unauthorized",
+                                "data": {"error": f"Project '{project_id}' not found or access denied"},
+                            }
+                        )
+                        continue
                     sync_status = db.get_sync_status(project_id)
                     await websocket.send_json(
                         {

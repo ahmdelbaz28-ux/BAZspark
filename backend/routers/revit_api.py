@@ -449,14 +449,16 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
         await websocket.close(code=4001, reason="Unauthorized origin")
         return
 
-    # Authenticate via header before accepting WebSocket connection
+    # Authenticate via header or subprotocol before accepting WebSocket connection
     from backend.api_keys import validate_api_key
 
-    api_key = websocket.headers.get("x-api-key") or websocket.headers.get("X-API-Key")
+    api_key = websocket.headers.get("x-api-key") or websocket.headers.get("X-API-Key") or websocket.headers.get("authorization")
+    if api_key and api_key.lower().startswith("bearer "):
+        api_key = api_key[7:].strip()
     if not api_key:
-        api_key = websocket.query_params.get("api_key")
-        if api_key:
-            logger.warning("Query parameter auth for WebSocket is deprecated; use X-API-Key header")
+        protocols = websocket.headers.get("sec-websocket-protocol", "")
+        if protocols:
+            api_key = protocols.split(",")[0].strip()
 
     principal = validate_api_key(api_key) if api_key else None
     if not principal:
