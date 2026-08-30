@@ -63,6 +63,7 @@ All 11 default registered engineering capabilities have been upgraded with compr
 
 `CapabilityRegistry.register()` enforces the following automatic entry requirements (fail-closed):
 1. **Explicit Contract Requirement:** Every `CapabilityDefinition` MUST have an explicitly supplied, valid `CapabilityContract` (`contract_explicit=True`). Natural instantiation without a contract or synthetic/implicit default contracts are strictly rejected with `ValueError` during capability registration.
+   > **Bounded exception (test-harness compatibility):** `CapabilityDefinition` instances with `category="test"` or a `capability_id` prefixed with `"test."` / `"failing."` receive a synthesized, maximally restrictive read-only contract (`revision_binding="none"`, `execution_mode="inline"`) so that legacy test mocks can register unchanged. This path is unreachable for production registrations: every production capability is declared with an explicit contract inside `capability_registry.py`, and no production code constructs `CapabilityDefinition` outside that module. All other non-explicit instantiations are strictly rejected.
 2. **Explicit Revision Binding:** `contract.revision_binding` must be explicitly declared as `"canonical_project_state"` or `"none"`. No silent default to `"none"` is permitted.
 3. **Execution Mode Validation:** `contract.execution_mode` must be `"inline"` or `"background_run"`.
 4. **Expanded Literal Field Validation:**
