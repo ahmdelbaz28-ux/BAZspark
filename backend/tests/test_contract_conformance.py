@@ -47,7 +47,7 @@ CANONICAL_11_CAPABILITIES = [
 
 
 def test_all_11_capabilities_registered_with_valid_contracts() -> None:
-    """Gate 1: Verify all 11 default capabilities exist and possess a valid CapabilityContract."""
+    """Gate 1 & 2: Verify all 11 default capabilities exist and possess a valid CapabilityContract."""
     for cap_id in CANONICAL_11_CAPABILITIES:
         cap = default_capability_registry.get(cap_id)
         assert cap is not None, f"Capability '{cap_id}' must be registered in default registry"
@@ -55,6 +55,7 @@ def test_all_11_capabilities_registered_with_valid_contracts() -> None:
         assert isinstance(
             cap.contract, CapabilityContract
         ), f"Capability '{cap_id}' contract must be an instance of CapabilityContract"
+        assert cap.contract.schema_version == "1.0", f"'{cap_id}' schema_version must be '1.0'"
         assert cap.contract.revision_binding in (
             "canonical_project_state",
             "none",
@@ -79,17 +80,20 @@ def test_all_11_capabilities_registered_with_valid_contracts() -> None:
 
 
 def test_canonical_mutation_binding_classification() -> None:
-    """Gate 1: Verify classification of canonical mutations vs read/calc capabilities."""
+    """Gate 1 & 2: Verify classification of canonical mutations vs read/calc capabilities."""
     # State-mutating capabilities that write to canonical project state
     import_exec = default_capability_registry.get(CAP_IMPORT_EXECUTE_IMPORT)
     assert import_exec is not None and import_exec.contract is not None
     assert import_exec.contract.revision_binding == "canonical_project_state"
     assert import_exec.contract.mutation_type == "state_mutation"
+    assert import_exec.contract.scopes == ["import:write", "project:write"]
 
     export_exec = default_capability_registry.get(CAP_EXPORT_EXECUTE_EXPORT)
     assert export_exec is not None and export_exec.contract is not None
     assert export_exec.contract.revision_binding == "canonical_project_state"
     assert export_exec.contract.mutation_type == "state_mutation"
+    # D-2d / O-C1 Resolution: write scope present
+    assert export_exec.contract.scopes == ["export:write", "project:read"]
 
     # Deterministic calculations & verifications (binding = none)
     calc_caps = [
@@ -128,6 +132,7 @@ def test_capability_contract_dataclass_fields() -> None:
         output_schema={"type": "object"},
         revision_binding="canonical_project_state",
     )
+    assert contract.schema_version == "1.0"
     assert contract.revision_binding == "canonical_project_state"
     assert contract.execution_mode == "inline"
     assert contract.mutation_type == "read_only"
@@ -364,6 +369,24 @@ def test_capability_registry_register_expanded_literal_validations() -> None:
                 description="desc",
                 category="custom",
                 contract=invalid_timeout_contract,
+            )
+        )
+
+    # 7. Invalid schema_version (non-semver major.minor)
+    invalid_version_contract = CapabilityContract(
+        schema_version="invalid_1",
+        input_schema={},
+        output_schema={},
+        revision_binding="none",
+    )
+    with pytest.raises(ValueError, match="Invalid schema_version"):
+        registry.register(
+            CapabilityDefinition(
+                capability_id="custom.invalid_version",
+                name="Invalid Version",
+                description="desc",
+                category="custom",
+                contract=invalid_version_contract,
             )
         )
 
