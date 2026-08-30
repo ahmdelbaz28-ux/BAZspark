@@ -1,18 +1,17 @@
 """backend/core/capability_registry.py — Capability Discovery and Schema Registry.
 
-Frozen Phase 1 Architecture:
+BAZspark V2.2 Phase 1 Canonical Capability Contract Architecture:
 - The LLM receives capabilities (tools), not authority.
-- Dynamic capability discovery with strict category/scope filtering.
-- For Phase 1, exposes exactly:
-    - spatial.place_devices
-    - compliance.verify_detector_spacing
+- Every capability is governed by a strict, validated CapabilityContract.
+- Dynamic capability discovery with strict category, scope, and revision binding validation.
+- All default engineering capabilities conform to canonical V2.2 contracts.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Literal
 
 from fireai.core.device_placement import (
     CeilingType,
@@ -24,16 +23,70 @@ from fireai.core.device_placement import (
 
 
 @dataclass
+class CapabilityContract:
+    """Canonical capability contract per BAZSPARK_PLAN_V2_2 Phase 1 specification."""
+
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any]
+    revision_binding: Literal["canonical_project_state", "none"]
+    execution_mode: Literal["inline", "background_run"] = "inline"
+    context_requirements: list[str] = field(default_factory=list)
+    scopes: list[str] = field(default_factory=list)
+    mutation_type: Literal["read_only", "idempotent_write", "state_mutation", "none"] = "read_only"
+    risk: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"] = "LOW"
+    approval_policy: Literal["auto", "user_confirm", "pe_signoff", "admin_only"] = "auto"
+    preconditions: list[str] = field(default_factory=list)
+    postconditions: list[str] = field(default_factory=list)
+    timeout_seconds: float = 30.0
+    retry_policy: dict[str, Any] = field(default_factory=dict)
+    idempotent: bool = True
+    audit: dict[str, Any] = field(default_factory=dict)
+    execution_channel: Literal["sync", "async", "websocket", "worker", "inline"] = "sync"
+    ui_handoff: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
 class CapabilityDefinition:
+    """Represents an executable capability within the BAZspark engine."""
+
     capability_id: str
     name: str
     description: str
-    category: str  # e.g., "spatial", "compliance"
-    risk_class: str  # "LOW", "MEDIUM", "HIGH", "CRITICAL"
-    required_scopes: list[str]
-    input_schema: dict[str, Any]
-    output_schema: dict[str, Any]
+    category: str  # e.g., "spatial", "compliance", "electrical", "hydraulics", "import", "export"
+    contract: CapabilityContract | None = None
+    risk_class: str = "LOW"  # "LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"
+    required_scopes: list[str] = field(default_factory=list)
+    input_schema: dict[str, Any] = field(default_factory=dict)
+    output_schema: dict[str, Any] = field(default_factory=dict)
     handler: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+    def __post_init__(self) -> None:
+        if self.contract is not None:
+            self.risk_class = self.contract.risk
+            self.required_scopes = (
+                list(self.contract.scopes) if isinstance(self.contract.scopes, list) else []
+            )
+            self.input_schema = (
+                dict(self.contract.input_schema)
+                if isinstance(self.contract.input_schema, dict)
+                else {}
+            )
+            self.output_schema = (
+                dict(self.contract.output_schema)
+                if isinstance(self.contract.output_schema, dict)
+                else {}
+            )
+        else:
+            # Backward-compatibility synthesis for legacy CapabilityDefinition instantiations
+            self.contract = CapabilityContract(
+                input_schema=self.input_schema if isinstance(self.input_schema, dict) else {},
+                output_schema=self.output_schema if isinstance(self.output_schema, dict) else {},
+                revision_binding="none",
+                execution_mode="inline",
+                scopes=list(self.required_scopes) if isinstance(self.required_scopes, list) else [],
+                risk=self.risk_class,  # type: ignore[arg-type]
+                mutation_type="read_only",
+            )
 
 
 # Capability ID constants
@@ -59,6 +112,35 @@ class CapabilityRegistry:
         self._register_default_phase1_capabilities()
 
     def register(self, capability: CapabilityDefinition) -> None:
+        """Register a capability definition after validating its contract conformance (fail-closed)."""
+        if not isinstance(capability, CapabilityDefinition):
+            raise TypeError("capability must be an instance of CapabilityDefinition")
+        if not capability.capability_id or not isinstance(capability.capability_id, str):
+            raise ValueError("capability_id must be a non-empty string")
+        if capability.contract is None or not isinstance(capability.contract, CapabilityContract):
+            raise ValueError(
+                f"CapabilityDefinition '{capability.capability_id}' must have a valid CapabilityContract."
+            )
+        if capability.contract.revision_binding not in ("canonical_project_state", "none"):
+            raise ValueError(
+                f"Invalid revision_binding '{capability.contract.revision_binding}' for capability '{capability.capability_id}'. "
+                "Must be 'canonical_project_state' or 'none'."
+            )
+        if capability.contract.execution_mode not in ("inline", "background_run"):
+            raise ValueError(
+                f"Invalid execution_mode '{capability.contract.execution_mode}' for capability '{capability.capability_id}'. "
+                "Must be 'inline' or 'background_run'."
+            )
+        if not isinstance(capability.contract.input_schema, dict) or not isinstance(
+            capability.contract.output_schema, dict
+        ):
+            raise ValueError(
+                f"Schemas for capability '{capability.capability_id}' must be dictionaries."
+            )
+        if not isinstance(capability.contract.scopes, list):
+            raise ValueError(
+                f"Scopes for capability '{capability.capability_id}' must be a list of strings."
+            )
         self._capabilities[capability.capability_id] = capability
 
     def get(self, capability_id: str) -> CapabilityDefinition | None:
@@ -143,28 +225,47 @@ class CapabilityRegistry:
                 name="Place Fire Alarm Devices",
                 description="Deterministically calculate NFPA 72 device placement grid for a room.",
                 category="spatial",
-                risk_class="MEDIUM",
-                required_scopes=["spatial:write"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "room_id": {"type": "string"},
-                        "width_m": {"type": "number", "minimum": 0.5},
-                        "length_m": {"type": "number", "minimum": 0.5},
-                        "ceiling_height_m": {"type": "number", "minimum": 2.0, "maximum": 12.0},
-                        "detector_type": {"type": "string", "enum": ["smoke", "heat"]},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "room_id": {"type": "string"},
+                            "width_m": {"type": "number", "minimum": 0.5},
+                            "length_m": {"type": "number", "minimum": 0.5},
+                            "ceiling_height_m": {
+                                "type": "number",
+                                "minimum": 2.0,
+                                "maximum": 12.0,
+                            },
+                            "detector_type": {"type": "string", "enum": ["smoke", "heat"]},
+                        },
+                        "required": ["room_id", "width_m", "length_m"],
                     },
-                    "required": ["room_id", "width_m", "length_m"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "room_id": {"type": "string"},
-                        "devices": {"type": "array"},
-                        "coverage_pct": {"type": "number"},
-                        "is_compliant": {"type": "boolean"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "room_id": {"type": "string"},
+                            "devices": {"type": "array"},
+                            "coverage_pct": {"type": "number"},
+                            "is_compliant": {"type": "boolean"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["geometry", "room_specs"],
+                    scopes=["spatial:write"],
+                    mutation_type="read_only",
+                    risk="MEDIUM",
+                    approval_policy="auto",
+                    preconditions=["valid_room_dimensions"],
+                    postconditions=["devices_placed_within_boundaries"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "device_grid", "component": "SpatialCanvas"},
+                ),
                 handler=_place_devices_handler,
             )
         )
@@ -197,26 +298,41 @@ class CapabilityRegistry:
                 name="Verify Detector Spacing",
                 description="Verify placed detectors against NFPA 72 spacing and coverage criteria.",
                 category="compliance",
-                risk_class="LOW",
-                required_scopes=["compliance:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "room_id": {"type": "string"},
-                        "width_m": {"type": "number"},
-                        "length_m": {"type": "number"},
-                        "ceiling_height_m": {"type": "number"},
-                        "devices": {"type": "array"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "room_id": {"type": "string"},
+                            "width_m": {"type": "number"},
+                            "length_m": {"type": "number"},
+                            "ceiling_height_m": {"type": "number"},
+                            "devices": {"type": "array"},
+                        },
+                        "required": ["width_m", "length_m"],
                     },
-                    "required": ["width_m", "length_m"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "verified": {"type": "boolean"},
-                        "standard": {"type": "string"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "verified": {"type": "boolean"},
+                            "standard": {"type": "string"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["device_layout", "nfpa_standards"],
+                    scopes=["compliance:read"],
+                    mutation_type="read_only",
+                    risk="LOW",
+                    approval_policy="auto",
+                    preconditions=["devices_list_present"],
+                    postconditions=["compliance_verdict_issued"],
+                    timeout_seconds=15.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "compliance_badge", "component": "ComplianceReport"},
+                ),
                 handler=_verify_detector_spacing_handler,
             )
         )
@@ -278,41 +394,56 @@ class CapabilityRegistry:
                 name="Calculate Circuit Voltage Drop",
                 description="Deterministically calculate voltage drop and verify NFPA 72 compliance for NAC/SLC circuits.",
                 category="electrical",
-                risk_class="ENGINEERING_MUTATION",
-                required_scopes=["electrical:write"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "circuit_id": {"type": "string"},
-                        "current_a": {"type": "number", "minimum": 0.0},
-                        "one_way_length_m": {"type": "number", "minimum": 0.0},
-                        "awg": {
-                            "type": "string",
-                            "enum": ["18", "16", "14", "12", "10", "8", "6", "4"],
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "circuit_id": {"type": "string"},
+                            "current_a": {"type": "number", "minimum": 0.0},
+                            "one_way_length_m": {"type": "number", "minimum": 0.0},
+                            "awg": {
+                                "type": "string",
+                                "enum": ["18", "16", "14", "12", "10", "8", "6", "4"],
+                            },
+                            "nominal_voltage": {"type": "number", "minimum": 1.0, "default": 24.0},
+                            "temperature_c": {
+                                "type": "number",
+                                "minimum": -40.0,
+                                "maximum": 200.0,
+                                "default": 75.0,
+                            },
                         },
-                        "nominal_voltage": {"type": "number", "minimum": 1.0, "default": 24.0},
-                        "temperature_c": {
-                            "type": "number",
-                            "minimum": -40.0,
-                            "maximum": 200.0,
-                            "default": 75.0,
+                        "required": ["current_a", "one_way_length_m", "awg"],
+                    },
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "circuit_id": {"type": "string"},
+                            "voltage_drop_v": {"type": "number"},
+                            "voltage_drop_pct": {"type": "number"},
+                            "terminal_voltage_v": {"type": "number"},
+                            "resistance_total_ohm": {"type": "number"},
+                            "is_compliant": {"type": "boolean"},
+                            "recommended_awg": {"type": "string"},
+                            "violations": {"type": "array"},
                         },
                     },
-                    "required": ["current_a", "one_way_length_m", "awg"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "circuit_id": {"type": "string"},
-                        "voltage_drop_v": {"type": "number"},
-                        "voltage_drop_pct": {"type": "number"},
-                        "terminal_voltage_v": {"type": "number"},
-                        "resistance_total_ohm": {"type": "number"},
-                        "is_compliant": {"type": "boolean"},
-                        "recommended_awg": {"type": "string"},
-                        "violations": {"type": "array"},
-                    },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["circuit_specs", "wire_tables"],
+                    scopes=["electrical:write"],
+                    mutation_type="read_only",
+                    risk="ENGINEERING_MUTATION",
+                    approval_policy="auto",
+                    preconditions=["positive_current_and_length"],
+                    postconditions=["voltage_drop_and_compliance_calculated"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "circuit_calc_card", "component": "ElectricalCalcView"},
+                ),
                 handler=_calculate_voltage_drop_handler,
             )
         )
@@ -424,51 +555,66 @@ class CapabilityRegistry:
                 name="Solve Darcy-Weisbach Hydraulic Friction Loss",
                 description="Deterministically calculate pipe friction loss, flow velocity, Reynolds number, and Darcy friction factor.",
                 category="hydraulics",
-                risk_class="ENGINEERING_MUTATION",
-                required_scopes=["hydraulics:write"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "pipe_segment_id": {"type": "string"},
-                        "length_m": {"type": "number", "minimum": 0.0},
-                        "diameter_mm": {"type": "number", "minimum": 5.0, "maximum": 1000.0},
-                        "flow_rate_kg_s": {"type": "number", "minimum": 0.0},
-                        "flow_l_min": {"type": "number", "minimum": 0.0},
-                        "fluid_type": {
-                            "type": "string",
-                            "enum": [
-                                "water",
-                                "co2_liquid",
-                                "co2_vapor",
-                                "fm200",
-                                "novec1230",
-                                "inergen_ig541",
-                                "afff_foam",
-                                "custom",
-                            ],
-                            "default": "water",
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "pipe_segment_id": {"type": "string"},
+                            "length_m": {"type": "number", "minimum": 0.0},
+                            "diameter_mm": {"type": "number", "minimum": 5.0, "maximum": 1000.0},
+                            "flow_rate_kg_s": {"type": "number", "minimum": 0.0},
+                            "flow_l_min": {"type": "number", "minimum": 0.0},
+                            "fluid_type": {
+                                "type": "string",
+                                "enum": [
+                                    "water",
+                                    "co2_liquid",
+                                    "co2_vapor",
+                                    "fm200",
+                                    "novec1230",
+                                    "inergen_ig541",
+                                    "afff_foam",
+                                    "custom",
+                                ],
+                                "default": "water",
+                            },
+                            "roughness_mm": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+                            "elevation_m": {"type": "number", "default": 0.0},
                         },
-                        "roughness_mm": {"type": "number", "minimum": 0.0, "maximum": 10.0},
-                        "elevation_m": {"type": "number", "default": 0.0},
+                        "required": ["length_m", "diameter_mm"],
                     },
-                    "required": ["length_m", "diameter_mm"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "pipe_segment_id": {"type": "string"},
-                        "flow_velocity_m_s": {"type": "number"},
-                        "reynolds_number": {"type": "number"},
-                        "friction_factor": {"type": "number"},
-                        "flow_regime": {"type": "string"},
-                        "head_loss_m": {"type": "number"},
-                        "pressure_loss_pa": {"type": "number"},
-                        "pressure_loss_psi": {"type": "number"},
-                        "total_pressure_loss_psi": {"type": "number"},
-                        "is_compliant": {"type": "boolean"},
-                        "warnings": {"type": "array"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "pipe_segment_id": {"type": "string"},
+                            "flow_velocity_m_s": {"type": "number"},
+                            "reynolds_number": {"type": "number"},
+                            "friction_factor": {"type": "number"},
+                            "flow_regime": {"type": "string"},
+                            "head_loss_m": {"type": "number"},
+                            "pressure_loss_pa": {"type": "number"},
+                            "pressure_loss_psi": {"type": "number"},
+                            "total_pressure_loss_psi": {"type": "number"},
+                            "is_compliant": {"type": "boolean"},
+                            "warnings": {"type": "array"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["pipe_geometry", "fluid_properties"],
+                    scopes=["hydraulics:write"],
+                    mutation_type="read_only",
+                    risk="ENGINEERING_MUTATION",
+                    approval_policy="auto",
+                    preconditions=["positive_pipe_length_and_diameter"],
+                    postconditions=["hydraulic_friction_loss_computed"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "hydraulic_loss_card", "component": "HydraulicSolverView"},
+                ),
                 handler=_solve_darcy_weisbach_handler,
             )
         )
@@ -573,55 +719,70 @@ class CapabilityRegistry:
                 name="Calculate Battery Capacity and Thermal Derating",
                 description="Deterministically calculate secondary power supply battery capacity with temperature and aging deratings per NFPA 72 §10.6.7.",
                 category="electrical",
-                risk_class="ENGINEERING_MUTATION",
-                required_scopes=["electrical:write"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "panel_id": {"type": "string"},
-                        "standby_load_amps": {"type": "number", "minimum": 0.0},
-                        "alarm_load_amps": {"type": "number", "minimum": 0.0},
-                        "standby_hours": {"type": "number", "minimum": 0.0, "default": 24.0},
-                        "alarm_hours": {"type": "number", "minimum": 0.0, "default": 0.0833},
-                        "min_temperature_c": {
-                            "type": "number",
-                            "minimum": -40.0,
-                            "maximum": 70.0,
-                            "default": 20.0,
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "panel_id": {"type": "string"},
+                            "standby_load_amps": {"type": "number", "minimum": 0.0},
+                            "alarm_load_amps": {"type": "number", "minimum": 0.0},
+                            "standby_hours": {"type": "number", "minimum": 0.0, "default": 24.0},
+                            "alarm_hours": {"type": "number", "minimum": 0.0, "default": 0.0833},
+                            "min_temperature_c": {
+                                "type": "number",
+                                "minimum": -40.0,
+                                "maximum": 70.0,
+                                "default": 20.0,
+                            },
+                            "service_life_years": {"type": "number", "minimum": 1.0, "default": 5.0},
+                            "battery_type": {
+                                "type": "string",
+                                "enum": ["vrla", "flooded", "lifepo4", "nicad"],
+                                "default": "vrla",
+                            },
+                            "installed_ah": {"type": "number", "minimum": 0.0},
+                            "cells": {"type": "integer", "minimum": 1, "default": 12},
+                            "safety_margin_pct": {
+                                "type": "number",
+                                "minimum": 0.0,
+                                "maximum": 100.0,
+                                "default": 0.0,
+                            },
+                            "aging_factor": {"type": "number", "minimum": 1.0, "default": 1.25},
                         },
-                        "service_life_years": {"type": "number", "minimum": 1.0, "default": 5.0},
-                        "battery_type": {
-                            "type": "string",
-                            "enum": ["vrla", "flooded", "lifepo4", "nicad"],
-                            "default": "vrla",
-                        },
-                        "installed_ah": {"type": "number", "minimum": 0.0},
-                        "cells": {"type": "integer", "minimum": 1, "default": 12},
-                        "safety_margin_pct": {
-                            "type": "number",
-                            "minimum": 0.0,
-                            "maximum": 100.0,
-                            "default": 0.0,
-                        },
-                        "aging_factor": {"type": "number", "minimum": 1.0, "default": 1.25},
+                        "required": ["standby_load_amps", "alarm_load_amps"],
                     },
-                    "required": ["standby_load_amps", "alarm_load_amps"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "panel_id": {"type": "string"},
-                        "base_capacity_ah": {"type": "number"},
-                        "temperature_derating": {"type": "number"},
-                        "aging_derating": {"type": "number"},
-                        "required_ah": {"type": "number"},
-                        "installed_ah": {"type": "number"},
-                        "usable_ah": {"type": "number"},
-                        "is_adequate": {"type": "boolean"},
-                        "margin_pct": {"type": "number"},
-                        "warnings": {"type": "array"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "panel_id": {"type": "string"},
+                            "base_capacity_ah": {"type": "number"},
+                            "temperature_derating": {"type": "number"},
+                            "aging_derating": {"type": "number"},
+                            "required_ah": {"type": "number"},
+                            "installed_ah": {"type": "number"},
+                            "usable_ah": {"type": "number"},
+                            "is_adequate": {"type": "boolean"},
+                            "margin_pct": {"type": "number"},
+                            "warnings": {"type": "array"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["panel_loads", "thermal_derating_curves"],
+                    scopes=["electrical:write"],
+                    mutation_type="read_only",
+                    risk="ENGINEERING_MUTATION",
+                    approval_policy="auto",
+                    preconditions=["non_negative_loads", "valid_temperature_range"],
+                    postconditions=["battery_sizing_and_deratings_computed"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "battery_sizing_card", "component": "BatteryCalcView"},
+                ),
                 handler=_calculate_battery_handler,
             )
         )
@@ -658,25 +819,40 @@ class CapabilityRegistry:
                 name="Inspect Drawing or BIM File",
                 description="Deterministically inspect staged drawing/BIM file and extract entity metadata and layout confidence.",
                 category="import",
-                risk_class="LOW",
-                required_scopes=["import:read", "project:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "file_id": {"type": "string"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "file_id": {"type": "string"},
+                        },
+                        "required": ["file_id"],
                     },
-                    "required": ["file_id"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "file_id": {"type": "string"},
-                        "detected_format": {"type": "string"},
-                        "rooms_count": {"type": "integer"},
-                        "devices_count": {"type": "integer"},
-                        "confidence_score": {"type": "number"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "file_id": {"type": "string"},
+                            "detected_format": {"type": "string"},
+                            "rooms_count": {"type": "integer"},
+                            "devices_count": {"type": "integer"},
+                            "confidence_score": {"type": "number"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["staged_file_metadata"],
+                    scopes=["import:read", "project:read"],
+                    mutation_type="read_only",
+                    risk="LOW",
+                    approval_policy="auto",
+                    preconditions=["staged_file_exists"],
+                    postconditions=["file_metadata_extracted"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 2, "backoff_seconds": 1.0},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "file_inspection_modal", "component": "ImportInspector"},
+                ),
                 handler=_inspect_file_handler,
             )
         )
@@ -687,27 +863,42 @@ class CapabilityRegistry:
                 name="Plan Drawing Import",
                 description="Build a deterministic import plan bound to target project's canonical revision.",
                 category="import",
-                risk_class="LOW",
-                required_scopes=["import:read", "project:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "file_id": {"type": "string"},
-                        "project_id": {"type": "string"},
-                        "options": {"type": "object"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "file_id": {"type": "string"},
+                            "project_id": {"type": "string"},
+                            "options": {"type": "object"},
+                        },
+                        "required": ["file_id", "project_id"],
                     },
-                    "required": ["file_id", "project_id"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "plan_id": {"type": "string"},
-                        "file_id": {"type": "string"},
-                        "project_id": {"type": "string"},
-                        "expected_revision": {"type": "integer"},
-                        "summary": {"type": "string"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "plan_id": {"type": "string"},
+                            "file_id": {"type": "string"},
+                            "project_id": {"type": "string"},
+                            "expected_revision": {"type": "integer"},
+                            "summary": {"type": "string"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["staged_file_metadata", "project_state"],
+                    scopes=["import:read", "project:read"],
+                    mutation_type="read_only",
+                    risk="LOW",
+                    approval_policy="auto",
+                    preconditions=["staged_file_exists", "project_exists"],
+                    postconditions=["import_plan_created_with_expected_revision"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "import_plan_diff", "component": "ImportPlanCard"},
+                ),
                 handler=_plan_import_handler,
             )
         )
@@ -718,29 +909,44 @@ class CapabilityRegistry:
                 name="Execute Drawing / BIM Ingestion",
                 description="Atomically ingest parsed drawing/BIM elements into canonical project state with OCC verification.",
                 category="import",
-                risk_class="MEDIUM",
-                required_scopes=["import:write", "project:write"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "file_id": {"type": "string"},
-                        "project_id": {"type": "string"},
-                        "expected_revision": {"type": "integer"},
-                        "options": {"type": "object"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "file_id": {"type": "string"},
+                            "project_id": {"type": "string"},
+                            "expected_revision": {"type": "integer"},
+                            "options": {"type": "object"},
+                        },
+                        "required": ["file_id", "project_id", "expected_revision"],
                     },
-                    "required": ["file_id", "project_id", "expected_revision"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "import_id": {"type": "string"},
-                        "project_id": {"type": "string"},
-                        "new_revision": {"type": "integer"},
-                        "imported_devices": {"type": "integer"},
-                        "audit_hash": {"type": "string"},
-                        "success": {"type": "boolean"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "import_id": {"type": "string"},
+                            "project_id": {"type": "string"},
+                            "new_revision": {"type": "integer"},
+                            "imported_devices": {"type": "integer"},
+                            "audit_hash": {"type": "string"},
+                            "success": {"type": "boolean"},
+                        },
                     },
-                },
+                    revision_binding="canonical_project_state",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["staged_file_data", "canonical_project_store", "occ_lock"],
+                    scopes=["import:write", "project:write"],
+                    mutation_type="state_mutation",
+                    risk="MEDIUM",
+                    approval_policy="auto",
+                    preconditions=["project_revision_matches_expected", "staged_file_valid"],
+                    postconditions=["elements_persisted_to_canonical_state", "project_revision_incremented"],
+                    timeout_seconds=60.0,
+                    retry_policy={"max_retries": 0},
+                    idempotent=False,
+                    audit={"enabled": True, "log_level": "INFO", "record_lineage": True},
+                    ui_handoff={"render_type": "import_result_summary", "component": "ImportResultView"},
+                ),
                 handler=_execute_import_handler,
             )
         )
@@ -787,28 +993,43 @@ class CapabilityRegistry:
                 name="Plan Engineering Export",
                 description="Deterministic export planning and format-loss impact analysis bound to project revision.",
                 category="export",
-                risk_class="LOW",
-                required_scopes=["export:read", "project:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "project_id": {"type": "string"},
-                        "target_format": {"type": "string"},
-                        "options": {"type": "object"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "project_id": {"type": "string"},
+                            "target_format": {"type": "string"},
+                            "options": {"type": "object"},
+                        },
+                        "required": ["project_id", "target_format"],
                     },
-                    "required": ["project_id", "target_format"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "plan_id": {"type": "string"},
-                        "project_id": {"type": "string"},
-                        "expected_revision": {"type": "integer"},
-                        "target_format": {"type": "string"},
-                        "mapping_status": {"type": "string"},
-                        "summary": {"type": "string"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "plan_id": {"type": "string"},
+                            "project_id": {"type": "string"},
+                            "expected_revision": {"type": "integer"},
+                            "target_format": {"type": "string"},
+                            "mapping_status": {"type": "string"},
+                            "summary": {"type": "string"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["project_state", "export_format_schema"],
+                    scopes=["export:read", "project:read"],
+                    mutation_type="read_only",
+                    risk="LOW",
+                    approval_policy="auto",
+                    preconditions=["project_exists", "supported_target_format"],
+                    postconditions=["export_plan_generated"],
+                    timeout_seconds=30.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "export_plan_preview", "component": "ExportPlanCard"},
+                ),
                 handler=_plan_export_handler,
             )
         )
@@ -819,27 +1040,42 @@ class CapabilityRegistry:
                 name="Execute Engineering Export",
                 description="Deterministically generate format artifact (DXF, Revit, IFC, XLSX, CSV, JSON, PDF) with OCC check.",
                 category="export",
-                risk_class="MEDIUM",
-                required_scopes=["export:read", "project:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "project_id": {"type": "string"},
-                        "expected_revision": {"type": "integer"},
-                        "target_format": {"type": "string"},
-                        "options": {"type": "object"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "project_id": {"type": "string"},
+                            "expected_revision": {"type": "integer"},
+                            "target_format": {"type": "string"},
+                            "options": {"type": "object"},
+                        },
+                        "required": ["project_id", "expected_revision", "target_format"],
                     },
-                    "required": ["project_id", "expected_revision", "target_format"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "export_id": {"type": "string"},
-                        "artifact": {"type": "object"},
-                        "audit_hash": {"type": "string"},
-                        "success": {"type": "boolean"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "export_id": {"type": "string"},
+                            "artifact": {"type": "object"},
+                            "audit_hash": {"type": "string"},
+                            "success": {"type": "boolean"},
+                        },
                     },
-                },
+                    revision_binding="canonical_project_state",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["canonical_project_elements", "occ_verification"],
+                    scopes=["export:read", "project:read"],
+                    mutation_type="state_mutation",
+                    risk="MEDIUM",
+                    approval_policy="auto",
+                    preconditions=["project_revision_matches_expected", "export_generators_ready"],
+                    postconditions=["artifact_file_generated_and_validated", "audit_trail_recorded"],
+                    timeout_seconds=60.0,
+                    retry_policy={"max_retries": 0},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO", "record_lineage": True},
+                    ui_handoff={"render_type": "export_download_dialog", "component": "ExportArtifactView"},
+                ),
                 handler=_execute_export_handler,
             )
         )
@@ -850,24 +1086,39 @@ class CapabilityRegistry:
                 name="Validate Export Artifact",
                 description="Verify structural integrity, checksum, and format compliance of generated export artifacts.",
                 category="export",
-                risk_class="LOW",
-                required_scopes=["export:read"],
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "artifact_path": {"type": "string"},
-                        "target_format": {"type": "string"},
+                contract=CapabilityContract(
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "artifact_path": {"type": "string"},
+                            "target_format": {"type": "string"},
+                        },
+                        "required": ["artifact_path", "target_format"],
                     },
-                    "required": ["artifact_path", "target_format"],
-                },
-                output_schema={
-                    "type": "object",
-                    "properties": {
-                        "valid": {"type": "boolean"},
-                        "size_bytes": {"type": "integer"},
-                        "format": {"type": "string"},
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "valid": {"type": "boolean"},
+                            "size_bytes": {"type": "integer"},
+                            "format": {"type": "string"},
+                        },
                     },
-                },
+                    revision_binding="none",
+                    execution_mode="inline",
+                    execution_channel="sync",
+                    context_requirements=["artifact_file_system"],
+                    scopes=["export:read"],
+                    mutation_type="read_only",
+                    risk="LOW",
+                    approval_policy="auto",
+                    preconditions=["artifact_file_present"],
+                    postconditions=["artifact_validity_confirmed"],
+                    timeout_seconds=15.0,
+                    retry_policy={"max_retries": 1, "backoff_seconds": 0.5},
+                    idempotent=True,
+                    audit={"enabled": True, "log_level": "INFO"},
+                    ui_handoff={"render_type": "artifact_status_badge", "component": "ArtifactValidatorView"},
+                ),
                 handler=_validate_artifact_handler,
             )
         )
