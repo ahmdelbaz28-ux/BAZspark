@@ -61,11 +61,16 @@ All 11 default registered engineering capabilities have been upgraded with compr
 
 ## 4. Contract Registration & Fail-Closed Invariants
 
-`CapabilityRegistry.register()` enforces the following automatic entry requirements:
-1. **Contract Requirement:** The `CapabilityDefinition` must contain a non-null `CapabilityContract`.
+`CapabilityRegistry.register()` enforces the following automatic entry requirements (fail-closed):
+1. **Explicit Contract Requirement:** Every `CapabilityDefinition` MUST have an explicitly supplied, valid `CapabilityContract` (`contract_explicit=True`). Natural instantiation without a contract or synthetic/implicit default contracts are strictly rejected with `ValueError` during capability registration.
 2. **Explicit Revision Binding:** `contract.revision_binding` must be explicitly declared as `"canonical_project_state"` or `"none"`. No silent default to `"none"` is permitted.
 3. **Execution Mode Validation:** `contract.execution_mode` must be `"inline"` or `"background_run"`.
-4. **Schema & Scope Typing:** `input_schema` and `output_schema` must be dictionaries, and `scopes` must be a list of authorized strings.
+4. **Expanded Literal Field Validation:**
+   - `mutation_type`: Strictly validated against `{"read_only", "idempotent_write", "state_mutation", "none"}`.
+   - `risk`: Strictly validated against `{"LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"}`.
+   - `approval_policy`: Strictly validated against `{"auto", "user_confirm", "pe_signoff", "admin_only"}`.
+   - `execution_channel`: Strictly validated against `{"sync", "async", "websocket", "worker", "inline"}`.
+5. **Schema, Scope, and Timeout Typing:** `input_schema` and `output_schema` must be dictionaries, `scopes` must be a list of strings, and `timeout_seconds` must be a positive number.
 
 ---
 
@@ -78,6 +83,6 @@ All 11 default registered engineering capabilities have been upgraded with compr
 
 ## 6. Verification Evidence
 
-- **Automated Conformance Gate:** `backend/tests/test_contract_conformance.py` (5/5 PASS).
+- **Automated Conformance Gate:** `backend/tests/test_contract_conformance.py` (6/6 PASS).
 - **Protocol & OCC Gate:** `backend/tests/test_track_a_phase1_protocol.py` (8/8 PASS).
-- **Regression Invariance:** `backend/tests/security/test_track_a_batch_1.py` (12/12 PASS).
+- **Regression Invariance:** `backend/tests/security/test_track_a_batch_1.py` (12/12 PASS), `backend/tests/test_phase2e_composite_workflow.py` (14/14 PASS).
