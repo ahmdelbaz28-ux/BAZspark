@@ -17,6 +17,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pytest
+import pydantic.root_model
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -196,3 +197,124 @@ class TestFileSizeEnforcement:
         assert response.status_code in (403, 413, 422, 400, 500), (
             f"Unexpected status: {response.status_code}"
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Unit Tests: Helper Functions & Direct Branch Coverage
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestDWGHelpers:
+    """Direct unit tests for internal helper functions in backend/routers/dwg.py."""
+
+    def test_validate_dwg_extension_none(self):
+        from backend.routers.dwg import _validate_dwg_extension
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc:
+            _validate_dwg_extension(None)
+        assert exc.value.status_code == 400
+        assert "No file provided" in exc.value.detail
+
+    def test_validate_dwg_extension_invalid(self):
+        from backend.routers.dwg import _validate_dwg_extension
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc:
+            _validate_dwg_extension("malicious.exe")
+        assert exc.value.status_code == 400
+        assert "Unsupported file extension" in exc.value.detail
+
+    def test_validate_dwg_extension_valid(self):
+        from backend.routers.dwg import _validate_dwg_extension
+
+        assert _validate_dwg_extension("drawing.dwg") == ".dwg"
+        assert _validate_dwg_extension("plan.DXF") == ".dxf"
+
+    @pytest.mark.asyncio
+    async def test_stream_upload_to_disk_empty(self):
+        import io
+        from backend.routers.dwg import _stream_upload_to_disk
+        from fastapi import HTTPException, UploadFile
+
+        empty_file = UploadFile(filename="empty.dxf", file=io.BytesIO(b""))
+        with pytest.raises(HTTPException) as exc:
+            await _stream_upload_to_disk(empty_file, ".dxf")
+        assert exc.value.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_stream_upload_to_disk_success(self):
+        import io
+        import os
+        from backend.routers.dwg import _stream_upload_to_disk
+        from fastapi import UploadFile
+
+        valid_content = b"0\nSECTION\n0\nEOF"
+        f = UploadFile(filename="valid.dxf", file=io.BytesIO(valid_content))
+        temp_path = await _stream_upload_to_disk(f, ".dxf")
+        try:
+            assert os.path.exists(temp_path)
+            with open(temp_path, "rb") as rf:
+                assert rf.read() == valid_content
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    def test_format_parse_response_success(self):
+        from unittest.mock import MagicMock
+        from backend.routers.dwg import _format_parse_response
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.room_count = 5
+        mock_result.conversion_time_s = 0.42
+        mock_result.errors = []
+        mock_result.warnings = []
+
+        res = _format_parse_response(mock_result, "sample.dwg")
+        assert res["success"] is True
+        assert res["room_count"] == 5
+        assert res["source"] == "sample.dwg"
+
+    def test_format_parse_response_security_error(self):
+        from unittest.mock import MagicMock
+        from backend.routers.dwg import _format_parse_response
+
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.errors = ["[SECURITY] Directory traversal blocked"]
+        mock_result.warnings = []
+        mock_result.room_count = 0
+        mock_result.conversion_time_s = 0.01
+
+        resp = _format_parse_response(mock_result, "bad.dwg")
+        assert resp.status_code == 400
+
+    def test_format_parse_response_not_found(self):
+        from unittest.mock import MagicMock
+        from backend.routers.dwg import _format_parse_response
+
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.errors = ["Entity not found"]
+        mock_result.warnings = []
+        mock_result.room_count = 0
+        mock_result.conversion_time_s = 0.01
+
+        resp = _format_parse_response(mock_result, "missing.dwg")
+        assert resp.status_code == 404
+
+    def test_format_parse_response_generic_error(self):
+        from unittest.mock import MagicMock
+        from backend.routers.dwg import _format_parse_response
+
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.errors = ["Malformed token"]
+        mock_result.warnings = []
+        mock_result.room_count = 0
+        mock_result.conversion_time_s = 0.01
+
+        resp = _format_parse_response(mock_result, "corrupt.dwg")
+        assert resp.status_code == 422
+
