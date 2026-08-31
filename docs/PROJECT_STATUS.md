@@ -18,8 +18,9 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 1** | Canonical Capability Contract & Registry Refactor (D-1a – D-1d) | **PASS (FINAL)** | Forensic Gate 1C review (`1d9d9ed5`); `CapabilityContract` typed registry, Gate 1 conformance suite |
 | **Phase 2** | Authorized Capability Discovery & Schema Versioning (D-2a – D-2d) | **PASS (FINAL)** | Forensic Gate 2 review (`ba595038`); G-2-C1 verified (`3c44616f`), `discover_authorized()`, `/capabilities` |
 | **Phase 3** | Universal Context + Wire Contract (D-3a – D-3d) | **PASS (FINAL)** | Forensic Gate 3 review; `UniversalSessionContext` 5-field matrix, dynamic revision derivation, ticket auth |
-| **Phase 4** | Mutation Authority & State Externalization (S1 – S5) | **PASS (FINAL)** | Forensic Gate 4 review; 220 mutation points cataloged, AST CI gate, CAD dispatch Principle 3, shared state store, A6 lifted (replicas >= 2) |
-| **Phases 5 – 7** | Multi-step Workflows, Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
+| **Phase 4** | Mutation Authority & State Externalization (S1 – S5) | **PASS (FINAL)** | Forensic Gate 4 review (`3819193c`); 220 mutation points cataloged, AST CI gate, CAD dispatch Principle 3, shared state store, A6 lifted (replicas >= 2) |
+| **Phase 5** | Generic Planner & Retirement Protocol (S1 – S6) | **IMPLEMENTED (FG-5 READY)** | Forensic Gate 5 deliverables (S1–S6) complete; dynamic capability discovery, DAG schema validator, disambiguation loop, prompt injection shield, default `dry_run=true`, 33/33 intent & architecture suite passed |
+| **Phases 6 – 7** | Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
 
 ---
 

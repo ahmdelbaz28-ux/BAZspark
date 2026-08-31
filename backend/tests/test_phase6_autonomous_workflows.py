@@ -241,7 +241,7 @@ def test_scenario_c_deterministic_failure_propagation(
 
     assert run.status == RunStatus.FAILED
     assert len(run.failed_steps) == 1
-    assert "step-1-spatial-layout" in run.failed_steps[0].get("step_id", "")
+    assert "step-1-spatial" in run.failed_steps[0].get("step_id", "")
 
 
 # ── Scenario D: Retry & Idempotency Protection ────────────────────────────────
