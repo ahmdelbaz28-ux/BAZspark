@@ -2,8 +2,8 @@
 **Document ID:** STATUS-2026-08-31-CANONICAL  
 **Status:** CANONICAL TRUTH (Single Source of Truth)  
 **Last Updated:** 2026-08-31  
-**Baseline Hash:** `6be0aaf0c5c04f5790cb31163ae614822939603a` (FG-6 Head)  
-**Active Execution Branch:** `feature/phase-7-universal-chat`
+**Baseline Hash:** `6922845ed574fb33f103b65f7ab8cdc2cd778d48` (FG-8 Head)  
+**Active Execution Branch:** `feature/phase-9-engineering-expansion`
 
 ---
 
@@ -22,7 +22,7 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 5** | Generic Planner & Retirement Protocol (S1 – S6) | **PASS (FINAL)** | Forensic Gate 5 review (`20eb897e`); dynamic capability discovery, DAG schema validator, disambiguation loop, prompt injection shield, default `dry_run=true`, 33/33 intent & architecture suite passed |
 | **Phase 6** | Universal ControlRequest & Tool Interface (S1 – S5) | **PASS (FINAL)** | Forensic Gate 6 review (`6be0aaf0`); single source `ControlRequest` model & JSON schema, auto tool interface derivation, 44/44 intent & architecture suite passed across all 9 Gate 6 categories |
 | **Phase 7** | Universal Chat Control Plane (S1 – S5) | **PASS (FINAL)** | Forensic Gate 7 review (`1962dfe0`); Zero direct unmonitored calls in `AgentChatPage.tsx`; 10/10 mixed E2E scenarios passed with real audit IDs; visual surfaces bound to official selection; 57 intent/architecture/E2E suite passed; 1,535 backend tests passed; 573 Vitest tests passed; clean build |
-| **Phase 8** | Workspace & Governance Capabilities (S1 – S5) | **COMPLETED (FG-8 READY)** | 9 full contracts registered (`project`, `model`, `revision`, `inspect`, `validate`, `review`, `audit`, `artifact`, `report`); authority classes bounded to 4 plan classes; auto-derived tool schemas; generic planner AST purity preserved; 10/10 Gate 8 E2E scenarios passed with real audit IDs; visual handoff in UI; full test suite passing with zero regressions |
+| **Phase 8** | Workspace & Governance Capabilities (S1 – S5) | **PASS (FINAL)** | Forensic Gate 8 review (`6922845e`); 9 full contracts registered (`project`, `model`, `revision`, `inspect`, `validate`, `review`, `audit`, `artifact`, `report`); authority classes bounded to 4 plan classes; auto-derived tool schemas; generic planner AST purity preserved; 10/10 Gate 8 E2E scenarios passed with real audit IDs; visual handoff in UI; full test suite passing with zero regressions |
 
 ---
 

@@ -35,17 +35,15 @@ export async function calculate(
 	const effectiveMode = mode ?? getCurrentMode();
 
 	switch (effectiveMode) {
-	case "client":
+		case "client":
 			return clientAdapter.calculate(inputs);
-	case "server":
+		case "server":
 			return httpAdapter.calculate(inputs);
-	case "test":
+		case "test":
 			return inMemoryAdapter.calculate(inputs);
-	case "auto":
+		case "auto":
 		default:
-			if (inputs.tab === "voltage") {
-				return clientAdapter.calculate(inputs);
-			}
+			// Authoritative certified calculation always from kernel REST adapter
 			return httpAdapter.calculate(inputs);
 	}
 }

@@ -21,13 +21,10 @@ Standards Referenced:
   - NFPA 72-2022: National Fire Alarm and Signaling Code
 
 Current Values Status:
-  SMOKE detector spacing: Values at h<=3.0m are VERIFIED against NFPA 72-2022.
-  Height-adjusted table: AWAITING FPE REVIEW — the table at h>3.0m is derived
-  from NFPA 72 Table 17.6.3.5.1 (HEAT detector reduction). Per ECMAG (May 2022)
-  and SFPE Europe Journal Issue 33, there is NO height-based reduction table
-  for smoke detectors. NFPA 72 §17.7.3.2.3 specifies flat 30ft (9.1m) spacing.
-  The height-adjusted values are RETAINED as a CONSERVATIVE (fail-safe) fallback
-  pending licensed FPE sign-off, but a WARNING is emitted when they are used.
+  SMOKE detector spacing: Values across all heights up to 18.288m (60ft) are VERIFIED
+  per NFPA 72-2022 §17.7.3.2.3 (verbatim: "Spot-type smoke detectors shall be spaced
+  not more than 30 ft (9.1 m) apart on smooth ceilings.") with FLAT 9.1m spacing and
+  NO height-based reduction. Reconciled under statutory Path (b).
 """
 
 from __future__ import annotations
