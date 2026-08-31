@@ -69,6 +69,10 @@ class ControlRequest(BaseModel):
         # 4. Resolve params
         raw_params = data.get("params") or data.get("composite_spec") or data.get("compositeSpec") or data.get("spec") or data.get("payload")
         params = dict(raw_params) if isinstance(raw_params, dict) else {}
+        if "explicit_capabilities" in data and "explicit_capabilities" not in params:
+            params["explicit_capabilities"] = data["explicit_capabilities"]
+        elif "explicitCapabilities" in data and "explicit_capabilities" not in params:
+            params["explicit_capabilities"] = data["explicitCapabilities"]
 
         # 5. Resolve policy_hints
         raw_hints = data.get("policy_hints") or data.get("policyHints")
