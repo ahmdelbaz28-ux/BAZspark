@@ -1,0 +1,1902 @@
+version: '1.0'
+inventory:
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_FEATURE_FLAG
+  path_anchor: backend/routers/admin_config.py:378 (update_feature_flag)
+  method: POST
+  path: /feature-flags
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_FEATURE_FLAGS_BATCH
+  path_anchor: backend/routers/admin_config.py:405 (update_feature_flags_batch)
+  method: POST
+  path: /settings/feature-flags
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_RUNTIME_SETTINGS
+  path_anchor: backend/routers/admin_config.py:454 (update_runtime_settings)
+  method: POST
+  path: /settings/runtime
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_ENV_CONFIG
+  path_anchor: backend/routers/admin_config.py:889 (update_env_config)
+  method: PUT
+  path: /env-config
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_ENGINEERING_CONFIG
+  path_anchor: backend/routers/admin_config.py:983 (update_engineering_config)
+  method: PUT
+  path: /settings/engineering-config
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_CAD_CONFIG
+  path_anchor: backend/routers/admin_config.py:1030 (update_cad_config)
+  method: PUT
+  path: /settings/cad-config
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-ROTATE_SECRET
+  path_anchor: backend/routers/admin_config.py:1067 (rotate_secret)
+  method: POST
+  path: /settings/secret-rotation/rotate
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-ADMIN_CONFIG-ROTATE_ADMIN_TOKEN
+  path_anchor: backend/routers/admin_config.py:1122 (rotate_admin_token)
+  method: POST
+  path: /settings/admin-token/rotate
+  mutation_target: admin_config state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-AGENT_WS-CREATE_WS_TICKET
+  path_anchor: backend/routers/agent_ws.py:200 (create_ws_ticket)
+  method: POST
+  path: /ws-ticket
+  mutation_target: agent_ws state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AGENT_WS-AGENT_WEBSOCKET_ENDPOINT
+  path_anchor: backend/routers/agent_ws.py:1809 (agent_websocket_endpoint)
+  method: WEBSOCKET
+  path: /ws
+  mutation_target: agent_ws state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AGENT_WS-PING_PROVIDER_ENDPOINT
+  path_anchor: backend/routers/agent_ws.py:2002 (ping_provider_endpoint)
+  method: POST
+  path: /ping-provider
+  mutation_target: agent_ws state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-ANALYZE-ANALYZE_BATTERY
+  path_anchor: backend/routers/analyze.py:133 (analyze_battery)
+  method: POST
+  path: /analyze/battery
+  mutation_target: analyze state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-ANALYZE-ANALYZE_VOLTAGE
+  path_anchor: backend/routers/analyze.py:173 (analyze_voltage)
+  method: POST
+  path: /analyze/voltage
+  mutation_target: analyze state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-ANALYZE-ANALYZE_PROJECT_ROOM
+  path_anchor: backend/routers/analyze.py:211 (analyze_project_room)
+  method: POST
+  path: /projects/{project_id}/analyze/room
+  mutation_target: analyze state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-API_KEYS-CREATE_KEY
+  path_anchor: backend/routers/api_keys.py:66 (create_key)
+  method: POST
+  path: ''
+  mutation_target: api_keys state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-API_KEYS-DELETE_KEY
+  path_anchor: backend/routers/api_keys.py:111 (delete_key)
+  method: DELETE
+  path: /{key_hash}
+  mutation_target: api_keys state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-API_KEYS-UPDATE_KEY_ROLE_ENDPOINT
+  path_anchor: backend/routers/api_keys.py:134 (update_key_role_endpoint)
+  method: PUT
+  path: /{key_hash}
+  mutation_target: api_keys state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-APS-PROCESS_FILE_IN_CLOUD
+  path_anchor: backend/routers/aps.py:44 (process_file_in_cloud)
+  method: POST
+  path: /process
+  mutation_target: aps state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-AUDIO-SANITIZE_VOICE_TEXT
+  path_anchor: backend/routers/audio.py:111 (sanitize_voice_text)
+  method: POST
+  path: /sanitize
+  mutation_target: audio state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-AUDIO-TRANSCRIBE_AUDIO_FILE
+  path_anchor: backend/routers/audio.py:132 (transcribe_audio_file)
+  method: POST
+  path: /transcribe
+  mutation_target: audio state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-AUTH-LOGIN
+  path_anchor: backend/routers/auth.py:255 (login)
+  method: POST
+  path: /login
+  mutation_target: auth state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-AUTH-LOGIN-L255
+  path_anchor: backend/routers/auth.py:255 (login)
+  method: POST
+  path: /session/login
+  mutation_target: auth state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-AUTH-LOGOUT
+  path_anchor: backend/routers/auth.py:406 (logout)
+  method: POST
+  path: /logout
+  mutation_target: auth state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-AUTH-VERIFY_TOKEN
+  path_anchor: backend/routers/auth.py:459 (verify_token)
+  method: POST
+  path: /verify
+  mutation_target: auth state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-AUTOCAD-CONNECT_TO_AUTOCAD
+  path_anchor: backend/routers/autocad.py:312 (connect_to_autocad)
+  method: POST
+  path: /connect
+  mutation_target: autocad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-AUTOCAD-DISCONNECT_FROM_AUTOCAD
+  path_anchor: backend/routers/autocad.py:358 (disconnect_from_autocad)
+  method: POST
+  path: /disconnect
+  mutation_target: autocad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-AUTOCAD-READ_DWG_FILE
+  path_anchor: backend/routers/autocad.py:423 (read_dwg_file)
+  method: POST
+  path: /read_dwg
+  mutation_target: autocad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-AUTOCAD-WRITE_DWG_FILE
+  path_anchor: backend/routers/autocad.py:458 (write_dwg_file)
+  method: POST
+  path: /write_dwg
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-DRAW_LINE
+  path_anchor: backend/routers/autocad.py:491 (draw_line)
+  method: POST
+  path: /draw_line
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-DRAW_POLYLINE
+  path_anchor: backend/routers/autocad.py:543 (draw_polyline)
+  method: POST
+  path: /draw_polyline
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-DRAW_CIRCLE
+  path_anchor: backend/routers/autocad.py:592 (draw_circle)
+  method: POST
+  path: /draw_circle
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-DRAW_TEXT
+  path_anchor: backend/routers/autocad.py:641 (draw_text)
+  method: POST
+  path: /draw_text
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-SAVE_DOCUMENT
+  path_anchor: backend/routers/autocad.py:718 (save_document)
+  method: POST
+  path: /save
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-UPLOAD_AND_READ_DWG
+  path_anchor: backend/routers/autocad.py:767 (upload_and_read_dwg)
+  method: POST
+  path: /upload_dwg
+  mutation_target: autocad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-AUTOCAD-UPLOAD_AND_READ_DWG-L767
+  path_anchor: backend/routers/autocad.py:767 (upload_and_read_dwg)
+  method: POST
+  path: /upload
+  mutation_target: autocad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-AUTOCAD-DELETE_ENTITY
+  path_anchor: backend/routers/autocad.py:831 (delete_entity)
+  method: DELETE
+  path: /entity/{handle}
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-UPDATE_ENTITY
+  path_anchor: backend/routers/autocad.py:878 (update_entity)
+  method: PUT
+  path: /entity/{handle}
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-SEND_AUTOCAD_NATIVE_COMMAND
+  path_anchor: backend/routers/autocad.py:927 (send_autocad_native_command)
+  method: POST
+  path: /send_command
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-AUTOCAD-INSERT_BLOCK
+  path_anchor: backend/routers/autocad.py:951 (insert_block)
+  method: POST
+  path: /insert_block
+  mutation_target: autocad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-BILLING-CREATE_ORDER
+  path_anchor: backend/routers/billing.py:197 (create_order)
+  method: POST
+  path: /orders
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-BILLING-INITIATE_CHECKOUT
+  path_anchor: backend/routers/billing.py:266 (initiate_checkout)
+  method: POST
+  path: /orders/{order_id}/checkout
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-BILLING-DIRECT_CHECKOUT
+  path_anchor: backend/routers/billing.py:301 (direct_checkout)
+  method: POST
+  path: /checkout
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-BILLING-MEEZA_WEBHOOK
+  path_anchor: backend/routers/billing.py:408 (meeza_webhook)
+  method: POST
+  path: /webhooks/meeza
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-BILLING-MEEZA_WEBHOOK_ALIAS
+  path_anchor: backend/routers/billing.py:447 (meeza_webhook_alias)
+  method: POST
+  path: /webhook
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-BILLING-SIMULATE_WEBHOOK
+  path_anchor: backend/routers/billing.py:467 (simulate_webhook)
+  method: POST
+  path: /orders/{order_id}/simulate-webhook
+  mutation_target: billing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-CAD-CONNECT_CAD
+  path_anchor: backend/routers/cad.py:145 (connect_cad)
+  method: POST
+  path: /connect
+  mutation_target: cad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-CAD-DISCONNECT_CAD
+  path_anchor: backend/routers/cad.py:169 (disconnect_cad)
+  method: POST
+  path: /disconnect
+  mutation_target: cad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-CAD-READ_DRAWING
+  path_anchor: backend/routers/cad.py:204 (read_drawing)
+  method: POST
+  path: /read
+  mutation_target: cad state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-CAD-WRITE_DRAWING
+  path_anchor: backend/routers/cad.py:239 (write_drawing)
+  method: POST
+  path: /write
+  mutation_target: cad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-CAD-DRAW_LINE
+  path_anchor: backend/routers/cad.py:267 (draw_line)
+  method: POST
+  path: /draw_line
+  mutation_target: cad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-CAD-DRAW_POLYLINE
+  path_anchor: backend/routers/cad.py:301 (draw_polyline)
+  method: POST
+  path: /draw_polyline
+  mutation_target: cad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-CAD-DRAW_CIRCLE
+  path_anchor: backend/routers/cad.py:335 (draw_circle)
+  method: POST
+  path: /draw_circle
+  mutation_target: cad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-CAD-DRAW_TEXT
+  path_anchor: backend/routers/cad.py:369 (draw_text)
+  method: POST
+  path: /draw_text
+  mutation_target: cad state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-CONFLICTS-DETECT_CONFLICTS
+  path_anchor: backend/routers/conflicts.py:86 (detect_conflicts)
+  method: POST
+  path: /detect
+  mutation_target: conflicts state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONFLICTS-RESOLVE_CONFLICT
+  path_anchor: backend/routers/conflicts.py:111 (resolve_conflict)
+  method: POST
+  path: /{conflict_id}/resolve
+  mutation_target: conflicts state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS-CREATE_CONNECTION
+  path_anchor: backend/routers/connections.py:73 (create_connection)
+  method: POST
+  path: ''
+  mutation_target: connections state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS-UPDATE_CONNECTION
+  path_anchor: backend/routers/connections.py:115 (update_connection)
+  method: PUT
+  path: /{connection_id}
+  mutation_target: connections state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS-DELETE_CONNECTION
+  path_anchor: backend/routers/connections.py:166 (delete_connection)
+  method: DELETE
+  path: /{connection_id}
+  mutation_target: connections state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS_V2-CREATE_CONNECTION
+  path_anchor: backend/routers/connections_v2.py:96 (create_connection)
+  method: POST
+  path: ''
+  mutation_target: connections_v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS_V2-UPDATE_CONNECTION
+  path_anchor: backend/routers/connections_v2.py:124 (update_connection)
+  method: PUT
+  path: /{connection_id}
+  mutation_target: connections_v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-CONNECTIONS_V2-DELETE_CONNECTION
+  path_anchor: backend/routers/connections_v2.py:153 (delete_connection)
+  method: DELETE
+  path: /{connection_id}
+  mutation_target: connections_v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-DEVICES-CREATE_DEVICE
+  path_anchor: backend/routers/devices.py:132 (create_device)
+  method: POST
+  path: ''
+  mutation_target: devices state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-DEVICES-UPDATE_DEVICE
+  path_anchor: backend/routers/devices.py:212 (update_device)
+  method: PUT
+  path: /{device_id}
+  mutation_target: devices state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-DEVICES-DELETE_DEVICE
+  path_anchor: backend/routers/devices.py:282 (delete_device)
+  method: DELETE
+  path: /{device_id}
+  mutation_target: devices state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_FILES
+  path_anchor: backend/routers/digital_twin.py:372 (convert_files)
+  method: POST
+  path: /convert
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-DIGITAL_TWIN-UPLOAD_AND_CONVERT
+  path_anchor: backend/routers/digital_twin.py:444 (upload_and_convert)
+  method: POST
+  path: /upload-and-convert
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-DIGITAL_TWIN-CONFIGURE_CONVERSION
+  path_anchor: backend/routers/digital_twin.py:600 (configure_conversion)
+  method: POST
+  path: /configure
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-DIGITAL_TWIN-ROLLBACK_TO_VERSION
+  path_anchor: backend/routers/digital_twin.py:629 (rollback_to_version)
+  method: POST
+  path: /rollback/{version_id}
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_SINGLE_MAPPING
+  path_anchor: backend/routers/digital_twin.py:702 (update_single_mapping)
+  method: POST
+  path: /update_mapping
+  mutation_target: digital_twin state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_CONFIG
+  path_anchor: backend/routers/digital_twin.py:760 (update_config)
+  method: PUT
+  path: /config
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
+  path_anchor: backend/routers/digital_twin.py:819 (convert_cad_to_simready_endpoint)
+  method: POST
+  path: /cad-to-simready
+  mutation_target: digital_twin state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ELEMENTS-CREATE_ELEMENT
+  path_anchor: backend/routers/elements.py:166 (create_element)
+  method: POST
+  path: ''
+  mutation_target: elements state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-ELEMENTS-UPDATE_ELEMENT
+  path_anchor: backend/routers/elements.py:230 (update_element)
+  method: PUT
+  path: /{element_id}
+  mutation_target: elements state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-ELEMENTS-DELETE_ELEMENT
+  path_anchor: backend/routers/elements.py:270 (delete_element)
+  method: DELETE
+  path: /{element_id}
+  mutation_target: elements state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-CHAT_WITH_COPILOT
+  path_anchor: backend/routers/engineering_copilot.py:77 (chat_with_copilot)
+  method: POST
+  path: /chat
+  mutation_target: engineering_copilot state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-PROCESS_ENGINEERING_REQUEST
+  path_anchor: backend/routers/engineering_copilot.py:115 (process_engineering_request)
+  method: POST
+  path: /process-request
+  mutation_target: engineering_copilot state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-CREATE_ENGINEERING_ENTITY
+  path_anchor: backend/routers/engineering_copilot.py:159 (create_engineering_entity)
+  method: POST
+  path: /create-entity
+  mutation_target: engineering_copilot state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-TRANSLATE_ENGINEERING_MODEL
+  path_anchor: backend/routers/engineering_copilot.py:313 (translate_engineering_model)
+  method: POST
+  path: /translate-model
+  mutation_target: engineering_copilot state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-VALIDATE_ENGINEERING_MODEL
+  path_anchor: backend/routers/engineering_copilot.py:367 (validate_engineering_model)
+  method: POST
+  path: /validate-model
+  mutation_target: engineering_copilot state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-ENGINEERING_COPILOT-GENERATE_ENGINEERING_REPORTS
+  path_anchor: backend/routers/engineering_copilot.py:404 (generate_engineering_reports)
+  method: POST
+  path: /generate-reports
+  mutation_target: engineering_copilot state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-ETAP-CONNECT_TO_ETAP
+  path_anchor: backend/routers/etap.py:69 (connect_to_etap)
+  method: POST
+  path: /connect
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-DISCONNECT
+  path_anchor: backend/routers/etap.py:91 (disconnect)
+  method: POST
+  path: /disconnect
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-EXPORT_TO_ETAP
+  path_anchor: backend/routers/etap.py:148 (export_to_etap)
+  method: POST
+  path: /export
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-IMPORT_FROM_ETAP
+  path_anchor: backend/routers/etap.py:175 (import_from_etap)
+  method: POST
+  path: /import
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-CREATE_SETTINGS
+  path_anchor: backend/routers/etap.py:216 (create_settings)
+  method: POST
+  path: /settings
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-UPDATE_SETTINGS
+  path_anchor: backend/routers/etap.py:261 (update_settings)
+  method: PUT
+  path: /settings
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-ETAP-DELETE_SETTINGS
+  path_anchor: backend/routers/etap.py:297 (delete_settings)
+  method: DELETE
+  path: /settings
+  mutation_target: etap state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_OCR
+  path_anchor: backend/routers/experimental_services.py:224 (process_ocr)
+  method: POST
+  path: /ocr/process
+  mutation_target: experimental_services state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_SCAN_TO_BIM
+  path_anchor: backend/routers/experimental_services.py:274 (process_scan_to_bim)
+  method: POST
+  path: /scan-to-bim/process
+  mutation_target: experimental_services state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_PUSH
+  path_anchor: backend/routers/experimental_services.py:331 (speckle_push)
+  method: POST
+  path: /speckle/push
+  mutation_target: experimental_services state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_RECEIVE
+  path_anchor: backend/routers/experimental_services.py:359 (speckle_receive)
+  method: POST
+  path: /speckle/receive
+  mutation_target: experimental_services state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPORT_ROUTER-PLAN_EXPORT
+  path_anchor: backend/routers/export_router.py:118 (plan_export)
+  method: POST
+  path: /plan
+  mutation_target: export_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPORT_ROUTER-EXECUTE_EXPORT
+  path_anchor: backend/routers/export_router.py:156 (execute_export)
+  method: POST
+  path: /execute
+  mutation_target: export_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPORT_ROUTER-CREATE_EXPORT_RUN
+  path_anchor: backend/routers/export_router.py:200 (create_export_run)
+  method: POST
+  path: /run
+  mutation_target: export_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-EXPORTS-EXPORT_DATA_GLOBAL
+  path_anchor: backend/routers/exports.py:260 (export_data_global)
+  method: POST
+  path: ''
+  mutation_target: exports state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-FACP-SELECT_FACP
+  path_anchor: backend/routers/facp.py:271 (select_facp)
+  method: POST
+  path: /facp/select
+  mutation_target: facp state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-FACP-VERIFY_FACP
+  path_anchor: backend/routers/facp.py:357 (verify_facp)
+  method: POST
+  path: /facp/verify
+  mutation_target: facp state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-FACP-GENERATE_FACP_SCHEDULE
+  path_anchor: backend/routers/facp.py:465 (generate_facp_schedule)
+  method: POST
+  path: /facp/schedule
+  mutation_target: facp state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-FACP-GENERATE_FACP_SPEC
+  path_anchor: backend/routers/facp.py:524 (generate_facp_spec)
+  method: POST
+  path: /facp/spec
+  mutation_target: facp state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-FDS_WEBHOOK-SUBMIT_SIMULATION
+  path_anchor: backend/routers/fds_webhook.py:73 (submit_simulation)
+  method: POST
+  path: /submit
+  mutation_target: fds_webhook state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-FDS_WEBHOOK-FDS_RESULT_WEBHOOK
+  path_anchor: backend/routers/fds_webhook.py:129 (fds_result_webhook)
+  method: POST
+  path: /webhook
+  mutation_target: fds_webhook state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Billing orders and external incoming webhook event processing (financial/integration
+    ledger)
+- id: MUT-ROUTER-IMPORT_ROUTER-UPLOAD_AND_STAGE_FILE
+  path_anchor: backend/routers/import_router.py:109 (upload_and_stage_file)
+  method: POST
+  path: /upload
+  mutation_target: import_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-IMPORT_ROUTER-INSPECT_STAGED_FILE
+  path_anchor: backend/routers/import_router.py:146 (inspect_staged_file)
+  method: POST
+  path: /inspect
+  mutation_target: import_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-IMPORT_ROUTER-PLAN_IMPORT
+  path_anchor: backend/routers/import_router.py:173 (plan_import)
+  method: POST
+  path: /plan
+  mutation_target: import_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-IMPORT_ROUTER-EXECUTE_IMPORT
+  path_anchor: backend/routers/import_router.py:205 (execute_import)
+  method: POST
+  path: /execute
+  mutation_target: import_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-IMPORT_ROUTER-CREATE_IMPORT_RUN
+  path_anchor: backend/routers/import_router.py:243 (create_import_run)
+  method: POST
+  path: /runs
+  mutation_target: import_router state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-LLM-LLM_CHAT
+  path_anchor: backend/routers/llm.py:193 (llm_chat)
+  method: POST
+  path: /chat
+  mutation_target: llm state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-LLM-LLM_EXPLAIN
+  path_anchor: backend/routers/llm.py:246 (llm_explain)
+  method: POST
+  path: /explain
+  mutation_target: llm state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-LLM-LLM_COMPLIANCE_NARRATIVE
+  path_anchor: backend/routers/llm.py:283 (llm_compliance_narrative)
+  method: POST
+  path: /compliance-narrative
+  mutation_target: llm state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-LLM-LLM_CHAT_STREAM
+  path_anchor: backend/routers/llm.py:359 (llm_chat_stream)
+  method: POST
+  path: /chat/stream
+  mutation_target: llm state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MARINE-VALIDATE_SHIP
+  path_anchor: backend/routers/marine.py:272 (validate_ship)
+  method: POST
+  path: /ship/validate
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-DESIGN_FULL
+  path_anchor: backend/routers/marine.py:303 (design_full)
+  method: POST
+  path: /ship/design
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-DIVIDE_ZONES
+  path_anchor: backend/routers/marine.py:329 (divide_zones)
+  method: POST
+  path: /zones/divide
+  mutation_target: marine state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-MARINE-DESIGN_EXTINGUISHING
+  path_anchor: backend/routers/marine.py:346 (design_extinguishing)
+  method: POST
+  path: /extinguishing/design
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_ALARM_LOGIC
+  path_anchor: backend/routers/marine.py:363 (generate_alarm_logic)
+  method: POST
+  path: /alarm-logic/generate
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_SCADA
+  path_anchor: backend/routers/marine.py:394 (generate_scada)
+  method: POST
+  path: /integrations/scada
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-DESIGN_DETECTION
+  path_anchor: backend/routers/marine.py:418 (design_detection)
+  method: POST
+  path: /detection/design
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_DIVISIONS
+  path_anchor: backend/routers/marine.py:462 (generate_divisions)
+  method: POST
+  path: /divisions/generate
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-DESIGN_POWER
+  path_anchor: backend/routers/marine.py:486 (design_power)
+  method: POST
+  path: /power/design
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_ETAP
+  path_anchor: backend/routers/marine.py:508 (generate_etap)
+  method: POST
+  path: /integrations/etap
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_DXF
+  path_anchor: backend/routers/marine.py:544 (generate_dxf)
+  method: POST
+  path: /integrations/dxf
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MARINE-GENERATE_REVIT
+  path_anchor: backend/routers/marine.py:570 (generate_revit)
+  method: POST
+  path: /integrations/revit
+  mutation_target: marine state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MEMORY-ADD_MEMORY
+  path_anchor: backend/routers/memory.py:142 (add_memory)
+  method: POST
+  path: /add
+  mutation_target: memory state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MEMORY-SEARCH_MEMORIES
+  path_anchor: backend/routers/memory.py:179 (search_memories)
+  method: POST
+  path: /search
+  mutation_target: memory state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MEMORY-DELETE_MEMORY
+  path_anchor: backend/routers/memory.py:255 (delete_memory)
+  method: DELETE
+  path: /{memory_id}
+  mutation_target: memory state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MINING-METHANE_CHECK
+  path_anchor: backend/routers/mining.py:99 (methane_check)
+  method: POST
+  path: /methane-check
+  mutation_target: mining state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MINING-VENTILATION_CHECK
+  path_anchor: backend/routers/mining.py:132 (ventilation_check)
+  method: POST
+  path: /ventilation-check
+  mutation_target: mining state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MINING-CO_CHECK
+  path_anchor: backend/routers/mining.py:170 (co_check)
+  method: POST
+  path: /co-check
+  mutation_target: mining state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-MINING-CONVEYOR_SUPPRESSION
+  path_anchor: backend/routers/mining.py:209 (conveyor_suppression)
+  method: POST
+  path: /conveyor-suppression
+  mutation_target: mining state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-MINING-COMPLIANCE_REPORT
+  path_anchor: backend/routers/mining.py:252 (compliance_report)
+  method: POST
+  path: /compliance-report
+  mutation_target: mining state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-MULTI_DB-SET_IN_REDIS
+  path_anchor: backend/routers/multi_db.py:81 (set_in_redis)
+  method: POST
+  path: /redis/set
+  mutation_target: multi_db state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MULTI_DB-CACHE_BIM_ELEMENT
+  path_anchor: backend/routers/multi_db.py:112 (cache_bim_element)
+  method: POST
+  path: /bim/cache-element
+  mutation_target: multi_db state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MULTI_DB-STORE_ELEMENT_EMBEDDINGS
+  path_anchor: backend/routers/multi_db.py:164 (store_element_embeddings)
+  method: POST
+  path: /bim/store-embeddings
+  mutation_target: multi_db state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MULTI_DB-FIND_SIMILAR_ELEMENTS
+  path_anchor: backend/routers/multi_db.py:190 (find_similar_elements)
+  method: POST
+  path: /bim/find-similar
+  mutation_target: multi_db state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-MULTI_DB-CREATE_ELEMENT_RELATIONSHIPS
+  path_anchor: backend/routers/multi_db.py:214 (create_element_relationships)
+  method: POST
+  path: /bim/create-relationships
+  mutation_target: multi_db state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-PROJECTS-CREATE_PROJECT
+  path_anchor: backend/routers/projects.py:122 (create_project)
+  method: POST
+  path: ''
+  mutation_target: projects state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-PROJECTS-UPDATE_PROJECT
+  path_anchor: backend/routers/projects.py:180 (update_project)
+  method: PUT
+  path: /{project_id}
+  mutation_target: projects state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-PROJECTS-DELETE_PROJECT
+  path_anchor: backend/routers/projects.py:290 (delete_project)
+  method: DELETE
+  path: /{project_id}
+  mutation_target: projects state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
+    in S2
+  owner: '@core-team'
+  deadline: Phase 4.2 (S2)
+- id: MUT-ROUTER-QOMN-COMPUTE_SMOKE_SPACING
+  path_anchor: backend/routers/qomn.py:293 (compute_smoke_spacing)
+  method: POST
+  path: /qomn/smoke-spacing
+  mutation_target: qomn state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-QOMN-COMPUTE_HEAT_SPACING
+  path_anchor: backend/routers/qomn.py:319 (compute_heat_spacing)
+  method: POST
+  path: /qomn/heat-spacing
+  mutation_target: qomn state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-QOMN-COMPUTE_BATTERY
+  path_anchor: backend/routers/qomn.py:339 (compute_battery)
+  method: POST
+  path: /qomn/battery
+  mutation_target: qomn state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-QOMN-COMPUTE_VOLTAGE_DROP
+  path_anchor: backend/routers/qomn.py:365 (compute_voltage_drop)
+  method: POST
+  path: /qomn/voltage-drop
+  mutation_target: qomn state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-QOMN-PLACE_DETECTORS
+  path_anchor: backend/routers/qomn.py:390 (place_detectors)
+  method: POST
+  path: /qomn/place-detectors
+  mutation_target: qomn state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-QOMN-PLACE_DUCT_DETECTOR
+  path_anchor: backend/routers/qomn.py:541 (place_duct_detector)
+  method: POST
+  path: /qomn/place-duct
+  mutation_target: qomn state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-QOMN-RUN_GOLDEN_TESTS
+  path_anchor: backend/routers/qomn.py:755 (run_golden_tests)
+  method: POST
+  path: /qomn/golden-tests
+  mutation_target: qomn state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-QOMN-EVALUATE_ACOUSTICS
+  path_anchor: backend/routers/qomn.py:1012 (evaluate_acoustics)
+  method: POST
+  path: /qomn/acoustics/evaluate
+  mutation_target: qomn state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-REPORTS-GENERATE_REPORT
+  path_anchor: backend/routers/reports.py:820 (generate_report)
+  method: POST
+  path: ''
+  mutation_target: reports state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REPORTS-GENERATE_GLOBAL_REPORT
+  path_anchor: backend/routers/reports.py:893 (generate_global_report)
+  method: POST
+  path: /generate
+  mutation_target: reports state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REPORTS-GENERATE_AHJ_SUBMITTAL
+  path_anchor: backend/routers/reports.py:1300 (generate_ahj_submittal)
+  method: POST
+  path: /ahj-submittal
+  mutation_target: reports state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CONNECT_TO_REVIT
+  path_anchor: backend/routers/revit.py:503 (connect_to_revit)
+  method: POST
+  path: /connect
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-DISCONNECT_FROM_REVIT
+  path_anchor: backend/routers/revit.py:555 (disconnect_from_revit)
+  method: POST
+  path: /disconnect
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-OPEN_DOCUMENT
+  path_anchor: backend/routers/revit.py:610 (open_document)
+  method: POST
+  path: /document/open
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-SAVE_DOCUMENT
+  path_anchor: backend/routers/revit.py:635 (save_document)
+  method: POST
+  path: /document/save
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CLOSE_DOCUMENT
+  path_anchor: backend/routers/revit.py:661 (close_document)
+  method: POST
+  path: /document/close
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-READ_RVT_FILE
+  path_anchor: backend/routers/revit.py:686 (read_rvt_file)
+  method: POST
+  path: /read_rvt
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-WRITE_RVT_FILE
+  path_anchor: backend/routers/revit.py:711 (write_rvt_file)
+  method: POST
+  path: /write_rvt
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-UPLOAD_AND_READ_RVT
+  path_anchor: backend/routers/revit.py:751 (upload_and_read_rvt)
+  method: POST
+  path: /upload_rvt
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-UPLOAD_AND_READ_RVT-L751
+  path_anchor: backend/routers/revit.py:751 (upload_and_read_rvt)
+  method: POST
+  path: /upload
+  mutation_target: revit state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Session and file handling lifecycle for CAD adapters
+- id: MUT-ROUTER-REVIT-CREATE_WALL
+  path_anchor: backend/routers/revit.py:897 (create_wall)
+  method: POST
+  path: /elements/create/wall
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_FLOOR
+  path_anchor: backend/routers/revit.py:952 (create_floor)
+  method: POST
+  path: /elements/create/floor
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_DOOR
+  path_anchor: backend/routers/revit.py:999 (create_door)
+  method: POST
+  path: /elements/create/door
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_WINDOW
+  path_anchor: backend/routers/revit.py:1050 (create_window)
+  method: POST
+  path: /elements/create/window
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_COLUMN
+  path_anchor: backend/routers/revit.py:1149 (create_column)
+  method: POST
+  path: /elements/create/column
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_BEAM
+  path_anchor: backend/routers/revit.py:1199 (create_beam)
+  method: POST
+  path: /elements/create/beam
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-CREATE_FAMILY
+  path_anchor: backend/routers/revit.py:1249 (create_family)
+  method: POST
+  path: /elements/create/family
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-UPDATE_PARAMETERS
+  path_anchor: backend/routers/revit.py:1305 (update_parameters)
+  method: PUT
+  path: /elements/{element_id}/parameters
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-DELETE_ELEMENT
+  path_anchor: backend/routers/revit.py:1338 (delete_element)
+  method: DELETE
+  path: /elements/{element_id}
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-LOAD_FAMILY
+  path_anchor: backend/routers/revit.py:1483 (load_family)
+  method: POST
+  path: /families/load
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-LOAD_API_DATA
+  path_anchor: backend/routers/revit.py:1510 (load_api_data)
+  method: POST
+  path: /search/api/load
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-SEARCH_API_DATA
+  path_anchor: backend/routers/revit.py:1532 (search_api_data)
+  method: POST
+  path: /search/api
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT-EXECUTE_AI_COMMAND
+  path_anchor: backend/routers/revit.py:1593 (execute_ai_command)
+  method: POST
+  path: /execute
+  mutation_target: revit state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT_API-UPLOAD_REVIT_MODEL
+  path_anchor: backend/routers/revit_api.py:139 (upload_revit_model)
+  method: POST
+  path: /upload
+  mutation_target: revit_api state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT_API-SYNC_REVIT_MODEL
+  path_anchor: backend/routers/revit_api.py:200 (sync_revit_model)
+  method: POST
+  path: /sync
+  mutation_target: revit_api state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT_API-EXPORT_REVIT_DATA
+  path_anchor: backend/routers/revit_api.py:309 (export_revit_data)
+  method: POST
+  path: /export
+  mutation_target: revit_api state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-REVIT_API-WEBSOCKET_ENDPOINT
+  path_anchor: backend/routers/revit_api.py:434 (websocket_endpoint)
+  method: WEBSOCKET
+  path: /ws/{project_id}
+  mutation_target: revit_api state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
+    in S4
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-SELF_HEALING-SET_LLM_HEALING
+  path_anchor: backend/routers/self_healing.py:44 (set_llm_healing)
+  method: PUT
+  path: /llm-healing
+  mutation_target: self_healing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-SELF_HEALING-SELF_HEALING_RESET
+  path_anchor: backend/routers/self_healing.py:134 (self_healing_reset)
+  method: POST
+  path: /reset
+  mutation_target: self_healing state
+  authority_class: DIRECT_DATA_STORE
+  evidence: System observability, memory embeddings, LLM chat, and environment configuration
+    store
+- id: MUT-ROUTER-SETTINGS-STORE_PROVIDER_KEY
+  path_anchor: backend/routers/settings.py:448 (store_provider_key)
+  method: POST
+  path: /{provider}
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-STORE_OPENAI_KEY_COMPAT
+  path_anchor: backend/routers/settings.py:575 (store_openai_key_compat)
+  method: POST
+  path: /openai
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-DELETE_PROVIDER_KEY
+  path_anchor: backend/routers/settings.py:667 (delete_provider_key)
+  method: DELETE
+  path: /{provider}/{key_id}
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-BULK_DELETE_PROVIDER_KEYS
+  path_anchor: backend/routers/settings.py:718 (bulk_delete_provider_keys)
+  method: POST
+  path: /{provider}/bulk-delete
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-TEST_PROVIDER_KEY
+  path_anchor: backend/routers/settings.py:782 (test_provider_key)
+  method: POST
+  path: /{provider}/{key_id}/test
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-DELETE_OPENAI_KEY_COMPAT
+  path_anchor: backend/routers/settings.py:945 (delete_openai_key_compat)
+  method: DELETE
+  path: /openai/{key_id}
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SETTINGS-TEST_OPENAI_KEY_COMPAT
+  path_anchor: backend/routers/settings.py:956 (test_openai_key_compat)
+  method: POST
+  path: /openai/{key_id}/test
+  mutation_target: settings state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
+    state)
+- id: MUT-ROUTER-SYNC-SYNC_PROJECT
+  path_anchor: backend/routers/sync.py:194 (sync_project)
+  method: POST
+  path: ''
+  mutation_target: sync state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-SYNC-WEBSOCKET_ENDPOINT
+  path_anchor: backend/routers/sync.py:353 (websocket_endpoint)
+  method: WEBSOCKET
+  path: /ws
+  mutation_target: sync state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-V2-GENERATE_DESIGN_VARIANTS
+  path_anchor: backend/routers/v2.py:186 (generate_design_variants)
+  method: POST
+  path: /generative/design
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-EXTRACT_ROOMS
+  path_anchor: backend/routers/v2.py:251 (extract_rooms)
+  method: POST
+  path: /bim/extract-rooms
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-MAP_DETECTOR_TO_IFC43
+  path_anchor: backend/routers/v2.py:372 (map_detector_to_ifc43)
+  method: POST
+  path: /ifc43/map-detector
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-MAP_PROJECT_TO_IFC43
+  path_anchor: backend/routers/v2.py:394 (map_project_to_ifc43)
+  method: POST
+  path: /ifc43/map-project
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-EXPORT_AR_SNAPSHOT
+  path_anchor: backend/routers/v2.py:417 (export_ar_snapshot)
+  method: POST
+  path: /ar/export
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-SUBSCRIBE_WEBHOOK
+  path_anchor: backend/routers/v2.py:479 (subscribe_webhook)
+  method: POST
+  path: /webhooks/subscribe
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-UNSUBSCRIBE_WEBHOOK
+  path_anchor: backend/routers/v2.py:537 (unsubscribe_webhook)
+  method: DELETE
+  path: /webhooks/subscriptions/{sub_id}
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-PUBLISH_WEBHOOK_EVENT
+  path_anchor: backend/routers/v2.py:554 (publish_webhook_event)
+  method: POST
+  path: /webhooks/publish
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-CREATE_SMOKE_STATE
+  path_anchor: backend/routers/v2.py:582 (create_smoke_state)
+  method: POST
+  path: /smoke-simulation/state
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-STORE_MEMORY
+  path_anchor: backend/routers/v2.py:687 (store_memory)
+  method: POST
+  path: /memory/store
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-SEARCH_MEMORY
+  path_anchor: backend/routers/v2.py:711 (search_memory)
+  method: POST
+  path: /memory/search
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-ADD_TOPOLOGY_ELEMENT
+  path_anchor: backend/routers/v2.py:752 (add_topology_element)
+  method: POST
+  path: /topology/element
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-ADD_TOPOLOGY_CONNECTION
+  path_anchor: backend/routers/v2.py:782 (add_topology_connection)
+  method: POST
+  path: /topology/connection
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-ANALYZE_IMPACT
+  path_anchor: backend/routers/v2.py:813 (analyze_impact)
+  method: POST
+  path: /topology/impact
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-ADD_GRAPHRAG_KNOWLEDGE
+  path_anchor: backend/routers/v2.py:865 (add_graphrag_knowledge)
+  method: POST
+  path: /graphrag/knowledge
+  mutation_target: v2 state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
+  owner: '@core-team'
+  deadline: Phase 4.3 (S3)
+- id: MUT-ROUTER-V2-ASK_GRAPHRAG
+  path_anchor: backend/routers/v2.py:895 (ask_graphrag)
+  method: POST
+  path: /graphrag/ask
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-V2-SEARCH_GRAPHRAG
+  path_anchor: backend/routers/v2.py:915 (search_graphrag)
+  method: POST
+  path: /graphrag/search
+  mutation_target: v2 state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Stateless engineering calculation or analytical pipeline (read-only state
+    impact)
+- id: MUT-ROUTER-WORKFLOW-START_WORKFLOW
+  path_anchor: backend/routers/workflow.py:184 (start_workflow)
+  method: POST
+  path: /start
+  mutation_target: workflow state
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes directly via CommandBus / WorkflowEngine with OCC and audit
+- id: MUT-ROUTER-WORKFLOW-APPROVE_WORKFLOW
+  path_anchor: backend/routers/workflow.py:292 (approve_workflow)
+  method: POST
+  path: /{workflow_id}/approve
+  mutation_target: workflow state
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes directly via CommandBus / WorkflowEngine with OCC and audit
+- id: MUT-ROUTER-WORKFLOW-REJECT_WORKFLOW
+  path_anchor: backend/routers/workflow.py:342 (reject_workflow)
+  method: POST
+  path: /{workflow_id}/reject
+  mutation_target: workflow state
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes directly via CommandBus / WorkflowEngine with OCC and audit
+- id: MUT-ROUTER-WORKFLOW-RESUME_AGENT_RUN
+  path_anchor: backend/routers/workflow.py:492 (resume_agent_run)
+  method: POST
+  path: /runs/{run_id}/resume
+  mutation_target: workflow state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-WORKFLOW-CANCEL_AGENT_RUN
+  path_anchor: backend/routers/workflow.py:510 (cancel_agent_run)
+  method: POST
+  path: /runs/{run_id}/cancel
+  mutation_target: workflow state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-WORKFLOW-RETRY_AGENT_RUN
+  path_anchor: backend/routers/workflow.py:528 (retry_agent_run)
+  method: POST
+  path: /runs/{run_id}/retry
+  mutation_target: workflow state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-WORKFLOW-DECIDE_AGENT_RUN_APPROVAL
+  path_anchor: backend/routers/workflow.py:551 (decide_agent_run_approval)
+  method: POST
+  path: /runs/{run_id}/approvals/{approval_id}/decide
+  mutation_target: workflow state
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes directly via CommandBus / WorkflowEngine with OCC and audit
+- id: MUT-ROUTER-WORKFLOW-PLAN_AUTONOMOUS_WORKFLOW
+  path_anchor: backend/routers/workflow.py:707 (plan_autonomous_workflow)
+  method: POST
+  path: /runs/plan
+  mutation_target: workflow state
+  authority_class: LEGACY_EXCEPTION
+  evidence: Unclassified write endpoint requires classification and review
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+- id: MUT-ROUTER-WORKFLOW-START_PLANNED_AUTONOMOUS_WORKFLOW
+  path_anchor: backend/routers/workflow.py:783 (start_planned_autonomous_workflow)
+  method: POST
+  path: /runs/start-plan
+  mutation_target: workflow state
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes directly via CommandBus / WorkflowEngine with OCC and audit
+- id: MUT-WS-AGENT-APPROVAL
+  path_anchor: backend/routers/agent_ws.py:826 (handle_approval)
+  method: WS_HANDLER
+  path: '/api/v1/agent/ws (type: approval)'
+  mutation_target: Project canonical state (OCC + audit)
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes user approvals deterministically through CommandBus with DomainCommand
+- id: MUT-WS-AGENT-COMPOSITE-APPROVAL
+  path_anchor: backend/routers/agent_ws.py:1152 (handle_composite_approval)
+  method: WS_HANDLER
+  path: '/api/v1/agent/ws (type: composite_approval)'
+  mutation_target: Project canonical state composite DAG
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes composite DAG approvals through CommandBus execute with OCC revision
+    check
+- id: MUT-WS-AGENT-USER-MUTATION
+  path_anchor: backend/routers/agent_ws.py:898 (handle_user_mutation)
+  method: WS_HANDLER
+  path: '/api/v1/agent/ws (type: user_mutate)'
+  mutation_target: Project user direct mutation
+  authority_class: CANONICAL_COMMAND
+  evidence: Routes direct manual edits through CommandBus execute
+- id: MUT-WS-SEND-AGENT-COMMAND
+  path_anchor: backend/routers/agent_ws.py:1950 (send_agent_command)
+  method: WS_HANDLER
+  path: /api/v1/agent/ws (remote dispatch)
+  mutation_target: Desktop CAD live environment (Revit/AutoCAD)
+  authority_class: LEGACY_EXCEPTION
+  owner: '@core-team'
+  deadline: Phase 4.4 (S4)
+  evidence: Dispatches commands to desktop CAD agents; to be wrapped as EXTERNAL_TRANSACTION
+    in S4
+- id: MUT-MIGRATION-ALEMBIC
+  path_anchor: backend/alembic/env.py:1 (run_migrations)
+  method: MIGRATION
+  path: alembic upgrade head
+  mutation_target: Database DDL and relational schema
+  authority_class: DIRECT_DATA_STORE
+  evidence: Schema migration management outside runtime CAD command pipeline
+- id: MUT-WEBHOOK-MEEZA-IPN
+  path_anchor: backend/routers/billing.py:322 (meeza_webhook)
+  method: WEBHOOK
+  path: /api/v1/billing/webhook/meeza
+  mutation_target: Billing transactions ledger
+  authority_class: DIRECT_DATA_STORE
+  evidence: HMAC-verified incoming financial payment webhook
+- id: MUT-WEBHOOK-FDS-EVENTS
+  path_anchor: backend/routers/fds_webhook.py:75 (fds_webhook_handler)
+  method: WEBHOOK
+  path: /api/v1/fds-webhook/events
+  mutation_target: Simulation runs and progress state
+  authority_class: DIRECT_DATA_STORE
+  evidence: Fire Dynamics Simulator webhook callback handler
+- id: MUT-BACKGROUND-EXPORT-WORKER
+  path_anchor: backend/routers/export_router.py:245 (export_task)
+  method: BACKGROUND_JOB
+  path: asyncio.create_task(export_task)
+  mutation_target: Export artifact files and job status
+  authority_class: DIRECT_DATA_STORE
+  evidence: Background file artifact generator and export run recorder
