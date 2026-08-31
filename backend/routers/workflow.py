@@ -457,6 +457,12 @@ def _agent_run_http_error(exc: Exception) -> HTTPException:
         return HTTPException(status_code=409, detail=str(exc)[:300])
     if isinstance(exc, ValueError):
         return HTTPException(status_code=400, detail=str(exc)[:300])
+    from backend.core.disambiguation import DisambiguationRequiredError
+    from backend.core.generic_planner import GenericPlannerError
+    if isinstance(exc, DisambiguationRequiredError):
+        return HTTPException(status_code=400, detail=exc.disambiguation.to_dict())
+    if isinstance(exc, GenericPlannerError):
+        return HTTPException(status_code=400, detail=str(exc)[:300])
     # CodeQL: py/stack-trace-exposure — sanitize unexpected errors
     return HTTPException(status_code=500, detail="Internal agent run error (details sanitized)")
 

@@ -1,34 +1,17 @@
-"""backend/core/workflow_planner.py — Autonomous Engineering Workflow Planner.
+"""backend/core/workflow_planner.py — Autonomous Engineering Workflow Planner & Routing Router.
 
-Phase 6 Architecture:
-End-to-End Autonomous Engineering Workflows:
-    User Intent (Natural Language / Structured Spec)
-    ↓
-    Context Resolution (ContextResolver)
-    ↓
-    Capability Discovery & Scope Verification (CapabilityRegistry)
-    ↓
-    Deterministic DAG Synthesis (CompositeWorkflowDAG)
-    ↓
-    Execution Policy Evaluation (ExecutionPolicy)
-    ↓
-    Dry-Run Preview (WorkflowExecutor + EphemeralStateOverlay)
-    ↓
-    Durable Lifecycle Dispatch (AgentRunOrchestrator + CommandBus OCC)
-    ↓
-    Validation, Canonical State Update (N -> N+1), Audit Trail, Deliverable Registration
-
-Non-negotiable invariants:
-- The LLM has ZERO engineering authority: all engineering computations are executed by deterministic
-  registered capabilities.
-- The backend is the sole authority for Authentication, Authorization, RBAC, OCC, Idempotency, and Audit.
-- All step dependencies and execution ordering are strictly validated via Kahn's algorithm (CompositeWorkflowDAG).
+Phase 5 Architecture:
+- Generic Planner is the Primary Preferred Path (Dynamic Capability Discovery, JSON Schema Validation, Prompt Shield).
+- Regex Fallback Planner is strictly a Frozen Compatibility Fallback Path (Non-preferred, Telemetry-Monitored, Retirement-Contracted).
+- Zero capability additions permitted on the Regex path (Principle 11).
+- Default `dry_run=true` on all synthesized mutation plans.
 """
 
 from __future__ import annotations
 
 import logging
 import re
+import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -63,11 +46,25 @@ from backend.core.context_resolver import (
     ContextResolver,
     default_context_resolver,
 )
+from backend.core.disambiguation import DisambiguationEngine, DisambiguationRequest
 from backend.core.execution_policy import (
     PolicyResult,
     build_policy_context,
     evaluate_execution_policy,
 )
+from backend.core.generic_planner import (
+    AutonomousPlan,
+    DisambiguationRequiredError,
+    GenericPlannerError,
+    GenericWorkflowPlanner,
+    PlannedStep,
+)
+from backend.core.planner_schema import (
+    PlanSchemaValidationError,
+    validate_plan_dict,
+)
+from backend.core.planner_telemetry import default_planner_telemetry
+from backend.core.prompt_shield import PromptInjectionShield
 from backend.core.workflow_engine import (
     CompositeWorkflowDAG,
     WorkflowExecutor,
@@ -76,12 +73,28 @@ from backend.core.workflow_engine import (
 
 logger = logging.getLogger(__name__)
 
+# Frozen Legacy Capability Set — strictly frozen per Principle 11
+FROZEN_REGEX_CAPABILITIES = frozenset(
+    {
+        CAP_IMPORT_INSPECT_FILE,
+        CAP_IMPORT_PLAN_IMPORT,
+        CAP_IMPORT_EXECUTE_IMPORT,
+        CAP_EXPORT_PLAN_EXPORT,
+        CAP_EXPORT_EXECUTE_EXPORT,
+        CAP_SPATIAL_PLACE_DEVICES,
+        CAP_SPATIAL_VERIFY_SPACING,
+        CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
+        CAP_ELECTRICAL_CALCULATE_BATTERY,
+        CAP_HYDRAULICS_SOLVE_DARCY_WEISBACH,
+    }
+)
+
 
 class AutonomousPlannerError(Exception):
     """Base error for autonomous workflow planning failures."""
 
 
-class CapabilityUnavailableError(AutonomousPlannerError):
+class CapabilityUnavailableError(AutonomousPlannerError, GenericPlannerError):
     """Required capability is not available or principal lacks required scopes."""
 
 
@@ -89,81 +102,8 @@ class InvalidWorkflowIntentError(AutonomousPlannerError):
     """Intent cannot be parsed or resolved into valid engineering capabilities."""
 
 
-@dataclass
-class PlannedStep:
-    """Represents a planned, policy-evaluated step in an autonomous workflow."""
-
-    step_id: str
-    capability_id: str
-    description: str
-    dependencies: list[str] = field(default_factory=list)
-    payload: dict[str, Any] = field(default_factory=dict)
-    risk_class: str = "LOW"
-    policy_result: str = "AUTO_APPROVED"
-    requires_approval: bool = False
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass
-class AutonomousPlan:
-    """Complete, server-authoritative autonomous workflow plan ready for preview or execution."""
-
-    plan_id: str
-    project_id: str
-    expected_revision: int
-    intent_summary: str
-    intent_category: str
-    steps: list[PlannedStep]
-    dag: dict[str, Any]
-    requires_human_approval: bool
-    overall_policy_decision: str
-    projected_state: dict[str, Any]
-    combined_audit_digest: str
-    token_telemetry: dict[str, Any]
-    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
-
-    def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        data["steps"] = [s.to_dict() if hasattr(s, "to_dict") else s for s in self.steps]
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> AutonomousPlan:
-        steps_data = data.get("steps", [])
-        steps = [PlannedStep(**s) if isinstance(s, dict) else s for s in steps_data]
-        return cls(
-            plan_id=str(data.get("plan_id", "")),
-            project_id=str(data.get("project_id", "")),
-            expected_revision=int(data.get("expected_revision", 1)),
-            intent_summary=str(data.get("intent_summary", "")),
-            intent_category=str(data.get("intent_category", "composite")),
-            steps=steps,
-            dag=dict(data.get("dag", {})),
-            requires_human_approval=bool(data.get("requires_human_approval", False)),
-            overall_policy_decision=str(data.get("overall_policy_decision", "AUTO_APPROVED")),
-            projected_state=dict(data.get("projected_state", {})),
-            combined_audit_digest=str(data.get("combined_audit_digest", "")),
-            token_telemetry=dict(data.get("token_telemetry", {})),
-            created_at=str(data.get("created_at", "")),
-        )
-
-    def to_agent_run_steps(self) -> list[dict[str, Any]]:
-        """Format steps for consumption by AgentRunOrchestrator.start_run."""
-        return [
-            {
-                "step_id": s.step_id,
-                "capability_id": s.capability_id,
-                "description": s.description,
-                "payload": s.payload,
-            }
-            for s in self.steps
-        ]
-
-
-class AutonomousWorkflowPlanner:
-    """Server-authoritative planner synthesizing natural language & structured intents into validated DAGs."""
+class RegexFallbackPlanner:
+    """Frozen legacy regex planner acting as compatibility fallback under strict retirement contract."""
 
     def __init__(
         self,
@@ -179,15 +119,12 @@ class AutonomousWorkflowPlanner:
         self._orchestrator = orchestrator or default_agent_run_orchestrator
         self._environment = environment
 
-    # ── Intent Parsing & Entity Extraction ────────────────────────────────────
-
     def _extract_spatial_spec(self, prompt: str, spec: dict[str, Any]) -> dict[str, Any]:
         width = float(spec.get("width_m") or spec.get("width") or 12.0)
         length = float(spec.get("length_m") or spec.get("length") or 16.0)
         height = float(spec.get("ceiling_height_m") or spec.get("height") or 3.2)
         room_id = str(spec.get("room_id") or spec.get("roomId") or "zone-a")
 
-        # Regex extraction from prompt if present
         m_w = re.search(
             r"(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?\s*(?:x|by|×)\s*(\d+(?:\.\d+)?)\s*(?:m|meter|meters)?",
             prompt,
@@ -304,8 +241,6 @@ class AutonomousWorkflowPlanner:
             return "json"
         return "dxf"
 
-    # ── Plan Synthesis ────────────────────────────────────────────────────────
-
     def plan_workflow(
         self,
         prompt: str,
@@ -317,28 +252,33 @@ class AutonomousWorkflowPlanner:
         approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
         governance_policy: dict[str, Any] | None = None,
     ) -> AutonomousPlan:
-        """Analyze intent, resolve context, discover capabilities, synthesize DAG, evaluate policy, and run dry-run."""
+        """Synthesize plan via regex fallback path."""
         if not principal.is_authenticated:
-            raise AutonomousPlannerError(
-                "Principal must be authenticated to plan an autonomous workflow."
-            )
+            raise AutonomousPlannerError("Principal must be authenticated to plan an autonomous workflow.")
 
-        if expected_revision is None:
+        if expected_revision is None and project_id:
             expected_revision = self._bus.get_project_revision(project_id)
             if expected_revision is None:
                 raise AutonomousPlannerError(
                     f"Project '{project_id}' is uninitialized or missing canonical revision."
                 )
+        elif expected_revision is not None and project_id:
+            canonical_rev = self._bus.get_project_revision(project_id)
+            if canonical_rev is not None and expected_revision != canonical_rev:
+                raise AutonomousPlannerError(
+                    f"OCC Revision Conflict: Expected revision {expected_revision} but project '{project_id}' is at canonical revision {canonical_rev}."
+                )
+        elif expected_revision is None:
+            expected_revision = 0
 
         spec = dict(composite_spec or {})
         prompt_clean = prompt.strip()
         lower_prompt = prompt_clean.lower()
 
-        # Classify intent & construct workflow nodes
         nodes: list[WorkflowNode] = []
         intent_category = "composite"
 
-        # Check for Import Workflow Intent
+        # 1. Import
         if spec.get("file_id") or "import" in lower_prompt or "upload" in lower_prompt:
             intent_category = "import"
             file_id = str(spec.get("file_id") or "staged-drawing-01")
@@ -374,7 +314,7 @@ class AutonomousWorkflowPlanner:
                 )
             )
 
-        # Check for Pure Export Workflow Intent
+        # 2. Export
         elif (
             "export" in lower_prompt or "download" in lower_prompt or spec.get("target_format")
         ) and not any(
@@ -405,22 +345,13 @@ class AutonomousWorkflowPlanner:
                 )
             )
 
-        # Multi-step Engineering Analysis & Placement Pipeline
+        # 3. Multi-step Engineering Pipeline
         else:
             is_spatial = any(
                 k in lower_prompt
                 for k in (
-                    "place",
-                    "layout",
-                    "detector",
-                    "room",
-                    "spacing",
-                    "smoke",
-                    "heat",
-                    "area",
-                    "zone",
-                    "device",
-                    "coverage",
+                    "place", "layout", "detector", "room", "spacing",
+                    "smoke", "heat", "area", "zone", "device", "coverage",
                 )
             )
             is_electrical = any(
@@ -433,13 +364,7 @@ class AutonomousWorkflowPlanner:
             is_hydraulic = any(
                 k in lower_prompt
                 for k in (
-                    "hydraulic",
-                    "pipe",
-                    "flow",
-                    "pressure",
-                    "darcy",
-                    "head loss",
-                    "sprinkler",
+                    "hydraulic", "pipe", "flow", "pressure", "darcy", "head loss", "sprinkler",
                 )
             )
             is_export = any(
@@ -453,6 +378,7 @@ class AutonomousWorkflowPlanner:
                 )
 
             intent_category = "engineering_workflow"
+
             # Node 1: Spatial Placement
             sp_spec = self._extract_spatial_spec(lower_prompt, spec)
             nodes.append(
@@ -482,7 +408,7 @@ class AutonomousWorkflowPlanner:
                 )
             )
 
-            # Node 3: Electrical Voltage Drop (if requested or in full composite)
+            # Node 3: Electrical Voltage Drop
             if (
                 any(
                     k in lower_prompt
@@ -501,7 +427,7 @@ class AutonomousWorkflowPlanner:
                     )
                 )
 
-            # Node 4: Battery Sizing (if requested)
+            # Node 4: Battery Sizing
             if any(
                 k in lower_prompt for k in ("battery", "standby", "backup", "power", "ah", "facp")
             ):
@@ -517,17 +443,11 @@ class AutonomousWorkflowPlanner:
                     )
                 )
 
-            # Node 5: Hydraulic Calculation (if requested)
+            # Node 5: Hydraulic Calculation
             if any(
                 k in lower_prompt
                 for k in (
-                    "hydraulic",
-                    "pipe",
-                    "flow",
-                    "pressure",
-                    "darcy",
-                    "head loss",
-                    "sprinkler",
+                    "hydraulic", "pipe", "flow", "pressure", "darcy", "head loss", "sprinkler",
                 )
             ):
                 hyd_spec = self._extract_hydraulic_spec(lower_prompt, spec)
@@ -542,7 +462,7 @@ class AutonomousWorkflowPlanner:
                     )
                 )
 
-            # Node 6: Export Deliverable (if user mentioned deliverable / export / report)
+            # Node 6: Export Deliverable
             if any(
                 k in lower_prompt
                 for k in ("export", "download", "dxf", "pdf", "report", "boq", "excel")
@@ -568,7 +488,14 @@ class AutonomousWorkflowPlanner:
                 "Unable to synthesize any valid engineering steps from user prompt."
             )
 
-        # Construct and validate DAG topology (Kahn's algorithm)
+        # Enforce that only frozen capabilities exist on this path
+        for n in nodes:
+            if n.capability_id not in FROZEN_REGEX_CAPABILITIES:
+                raise AutonomousPlannerError(
+                    f"Freeze Violation: Capability '{n.capability_id}' is not in the frozen legacy regex set."
+                )
+
+        # Construct and validate DAG topology
         dag = CompositeWorkflowDAG(nodes=nodes)
         dag.validate()
 
@@ -586,13 +513,11 @@ class AutonomousWorkflowPlanner:
                     f"Required capability '{node.capability_id}' is not registered."
                 )
 
-            # Scope check
             if not all(principal.has_scope(s) for s in cap.required_scopes):
                 raise CapabilityUnavailableError(
                     f"Principal '{principal.user_id}' lacks required scopes {cap.required_scopes} for capability '{node.capability_id}'."
                 )
 
-            # Execution Policy Evaluation
             ctx = build_policy_context(
                 self._registry,
                 node.capability_id,
@@ -674,9 +599,117 @@ class AutonomousWorkflowPlanner:
             projected_state=projected_state,
             combined_audit_digest=combined_audit,
             token_telemetry=telemetry,
+            is_dry_run=True,
         )
 
-    # ── Plan Execution Dispatch ───────────────────────────────────────────────
+
+class AutonomousWorkflowPlanner:
+    """Unified Autonomous Workflow Planner routing to Generic Planner as preferred path, with fallback to frozen regex planner."""
+
+    def __init__(
+        self,
+        command_bus: CommandBus | None = None,
+        capability_registry: CapabilityRegistry | None = None,
+        context_resolver: ContextResolver | None = None,
+        orchestrator: AgentRunOrchestrator | None = None,
+        environment: str | None = None,
+    ) -> None:
+        self._bus = command_bus or default_command_bus
+        self._registry = capability_registry or default_capability_registry
+        self._resolver = context_resolver or default_context_resolver
+        self._orchestrator = orchestrator or default_agent_run_orchestrator
+        self._environment = environment
+
+        self._generic_planner = GenericWorkflowPlanner(
+            command_bus=self._bus,
+            capability_registry=self._registry,
+            context_resolver=self._resolver,
+            orchestrator=self._orchestrator,
+            environment=self._environment,
+        )
+        self._regex_planner = RegexFallbackPlanner(
+            command_bus=self._bus,
+            capability_registry=self._registry,
+            context_resolver=self._resolver,
+            orchestrator=self._orchestrator,
+            environment=self._environment,
+        )
+
+    def plan_workflow(
+        self,
+        prompt: str,
+        *,
+        principal: AuthenticatedPrincipal,
+        project_id: str = "",
+        expected_revision: int | None = None,
+        composite_spec: dict[str, Any] | None = None,
+        approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
+        governance_policy: dict[str, Any] | None = None,
+    ) -> AutonomousPlan:
+        """Route to Generic Planner first; fall back to frozen regex planner only if needed, recording telemetry."""
+        start_time = time.perf_counter()
+        invocation_id = f"inv-{uuid.uuid4().hex[:8]}"
+
+        # Preferred Path: Try Generic Planner first
+        try:
+            plan = self._generic_planner.plan_workflow(
+                prompt,
+                principal=principal,
+                project_id=project_id,
+                expected_revision=expected_revision,
+                composite_spec=composite_spec,
+                approval_mode=approval_mode,
+                governance_policy=governance_policy,
+            )
+            return plan
+        except (DisambiguationRequiredError, CapabilityUnavailableError):
+            # Do NOT fallback on explicit disambiguation or scope denials; propagate immediately
+            raise
+        except Exception as exc:
+            # Fallback path: record fallback reason in telemetry
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            fallback_reason = f"{type(exc).__name__}: {str(exc)[:150]}"
+            logger.warning(
+                "Generic planner failed, falling back to legacy regex planner: %s",
+                fallback_reason,
+            )
+
+            fallback_start = time.perf_counter()
+            try:
+                plan = self._regex_planner.plan_workflow(
+                    prompt,
+                    principal=principal,
+                    project_id=project_id,
+                    expected_revision=expected_revision,
+                    composite_spec=composite_spec,
+                    approval_mode=approval_mode,
+                    governance_policy=governance_policy,
+                )
+                fb_latency_ms = (time.perf_counter() - fallback_start) * 1000
+                default_planner_telemetry.record_invocation(
+                    invocation_id=invocation_id,
+                    planner_type="regex_fallback",
+                    intent_summary=prompt[:100],
+                    success=True,
+                    latency_ms=fb_latency_ms,
+                    fallback_reason=fallback_reason,
+                    step_count=len(plan.steps),
+                    project_id=project_id,
+                )
+                return plan
+            except Exception as fb_exc:
+                fb_latency_ms = (time.perf_counter() - fallback_start) * 1000
+                default_planner_telemetry.record_invocation(
+                    invocation_id=invocation_id,
+                    planner_type="regex_fallback",
+                    intent_summary=prompt[:100],
+                    success=False,
+                    latency_ms=fb_latency_ms,
+                    fallback_reason=fallback_reason,
+                    project_id=project_id,
+                    error_message=str(fb_exc),
+                )
+                raise
 
     def execute_plan(
         self,
@@ -688,28 +721,11 @@ class AutonomousWorkflowPlanner:
         governance_policy: dict[str, Any] | None = None,
     ) -> AgentRun:
         """Dispatch a validated plan to the durable AgentRunOrchestrator."""
-        if not principal.is_authenticated:
-            raise AutonomousPlannerError("Principal is not authenticated.")
-
-        steps_payload = plan.to_agent_run_steps()
-        plan_doc = {
-            "plan_id": plan.plan_id,
-            "intent_summary": plan.intent_summary,
-            "intent_category": plan.intent_category,
-            "dag": plan.dag,
-            "expected_revision": plan.expected_revision,
-            "combined_audit_digest": plan.combined_audit_digest,
-        }
-        if governance_policy:
-            plan_doc["governance_policy"] = governance_policy
-
-        return self._orchestrator.start_run(
-            principal,
-            project_id=plan.project_id,
-            steps=steps_payload,
+        return self._generic_planner.execute_plan(
+            plan,
+            principal=principal,
             approval_mode=approval_mode,
             conversation_id=conversation_id,
-            plan=plan_doc,
             governance_policy=governance_policy,
         )
 
