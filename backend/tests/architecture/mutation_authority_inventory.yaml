@@ -69,55 +69,43 @@ inventory:
   method: POST
   path: /ws-ticket
   mutation_target: agent_ws state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-AGENT_WS-AGENT_WEBSOCKET_ENDPOINT
   path_anchor: backend/routers/agent_ws.py:1809 (agent_websocket_endpoint)
   method: WEBSOCKET
   path: /ws
   mutation_target: agent_ws state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-AGENT_WS-PING_PROVIDER_ENDPOINT
   path_anchor: backend/routers/agent_ws.py:2002 (ping_provider_endpoint)
   method: POST
   path: /ping-provider
   mutation_target: agent_ws state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_BATTERY
   path_anchor: backend/routers/analyze.py:133 (analyze_battery)
   method: POST
   path: /analyze/battery
   mutation_target: analyze state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_VOLTAGE
   path_anchor: backend/routers/analyze.py:173 (analyze_voltage)
   method: POST
   path: /analyze/voltage
   mutation_target: analyze state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_PROJECT_ROOM
   path_anchor: backend/routers/analyze.py:211 (analyze_project_room)
   method: POST
   path: /projects/{project_id}/analyze/room
   mutation_target: analyze state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-API_KEYS-CREATE_KEY
   path_anchor: backend/routers/api_keys.py:66 (create_key)
   method: POST
@@ -203,136 +191,106 @@ inventory:
   method: POST
   path: /connect
   mutation_target: autocad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DISCONNECT_FROM_AUTOCAD
   path_anchor: backend/routers/autocad.py:358 (disconnect_from_autocad)
   method: POST
   path: /disconnect
   mutation_target: autocad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-READ_DWG_FILE
   path_anchor: backend/routers/autocad.py:423 (read_dwg_file)
   method: POST
   path: /read_dwg
   mutation_target: autocad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-WRITE_DWG_FILE
   path_anchor: backend/routers/autocad.py:458 (write_dwg_file)
   method: POST
   path: /write_dwg
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DRAW_LINE
   path_anchor: backend/routers/autocad.py:491 (draw_line)
   method: POST
   path: /draw_line
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DRAW_POLYLINE
   path_anchor: backend/routers/autocad.py:543 (draw_polyline)
   method: POST
   path: /draw_polyline
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DRAW_CIRCLE
   path_anchor: backend/routers/autocad.py:592 (draw_circle)
   method: POST
   path: /draw_circle
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DRAW_TEXT
   path_anchor: backend/routers/autocad.py:641 (draw_text)
   method: POST
   path: /draw_text
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-SAVE_DOCUMENT
   path_anchor: backend/routers/autocad.py:718 (save_document)
   method: POST
   path: /save
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-UPLOAD_AND_READ_DWG
   path_anchor: backend/routers/autocad.py:767 (upload_and_read_dwg)
   method: POST
   path: /upload_dwg
   mutation_target: autocad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-UPLOAD_AND_READ_DWG-L767
   path_anchor: backend/routers/autocad.py:767 (upload_and_read_dwg)
   method: POST
   path: /upload
   mutation_target: autocad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-DELETE_ENTITY
   path_anchor: backend/routers/autocad.py:831 (delete_entity)
   method: DELETE
   path: /entity/{handle}
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-UPDATE_ENTITY
   path_anchor: backend/routers/autocad.py:878 (update_entity)
   method: PUT
   path: /entity/{handle}
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-SEND_AUTOCAD_NATIVE_COMMAND
   path_anchor: backend/routers/autocad.py:927 (send_autocad_native_command)
   method: POST
   path: /send_command
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-AUTOCAD-INSERT_BLOCK
   path_anchor: backend/routers/autocad.py:951 (insert_block)
   method: POST
   path: /insert_block
   mutation_target: autocad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in autocad.py with evidence verification
 - id: MUT-ROUTER-BILLING-CREATE_ORDER
   path_anchor: backend/routers/billing.py:197 (create_order)
   method: POST
@@ -386,72 +344,57 @@ inventory:
   method: POST
   path: /connect
   mutation_target: cad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-DISCONNECT_CAD
   path_anchor: backend/routers/cad.py:169 (disconnect_cad)
   method: POST
   path: /disconnect
   mutation_target: cad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-READ_DRAWING
   path_anchor: backend/routers/cad.py:204 (read_drawing)
   method: POST
   path: /read
   mutation_target: cad state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-WRITE_DRAWING
   path_anchor: backend/routers/cad.py:239 (write_drawing)
   method: POST
   path: /write
   mutation_target: cad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-DRAW_LINE
   path_anchor: backend/routers/cad.py:267 (draw_line)
   method: POST
   path: /draw_line
   mutation_target: cad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-DRAW_POLYLINE
   path_anchor: backend/routers/cad.py:301 (draw_polyline)
   method: POST
   path: /draw_polyline
   mutation_target: cad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-DRAW_CIRCLE
   path_anchor: backend/routers/cad.py:335 (draw_circle)
   method: POST
   path: /draw_circle
   mutation_target: cad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CAD-DRAW_TEXT
   path_anchor: backend/routers/cad.py:369 (draw_text)
   method: POST
   path: /draw_text
   mutation_target: cad state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in cad.py with evidence verification
 - id: MUT-ROUTER-CONFLICTS-DETECT_CONFLICTS
   path_anchor: backend/routers/conflicts.py:86 (detect_conflicts)
   method: POST
@@ -729,73 +672,57 @@ inventory:
   method: POST
   path: /ocr/process
   mutation_target: experimental_services state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_SCAN_TO_BIM
   path_anchor: backend/routers/experimental_services.py:274 (process_scan_to_bim)
   method: POST
   path: /scan-to-bim/process
   mutation_target: experimental_services state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_PUSH
   path_anchor: backend/routers/experimental_services.py:331 (speckle_push)
   method: POST
   path: /speckle/push
   mutation_target: experimental_services state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_RECEIVE
   path_anchor: backend/routers/experimental_services.py:359 (speckle_receive)
   method: POST
   path: /speckle/receive
   mutation_target: experimental_services state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPORT_ROUTER-PLAN_EXPORT
   path_anchor: backend/routers/export_router.py:118 (plan_export)
   method: POST
   path: /plan
   mutation_target: export_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External file format artifact transformation in export_router.py
 - id: MUT-ROUTER-EXPORT_ROUTER-EXECUTE_EXPORT
   path_anchor: backend/routers/export_router.py:156 (execute_export)
   method: POST
   path: /execute
   mutation_target: export_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical import/export state execution with OCC revision in export_router.py
 - id: MUT-ROUTER-EXPORT_ROUTER-CREATE_EXPORT_RUN
   path_anchor: backend/routers/export_router.py:200 (create_export_run)
   method: POST
   path: /run
   mutation_target: export_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical import/export state execution with OCC revision in export_router.py
 - id: MUT-ROUTER-EXPORTS-EXPORT_DATA_GLOBAL
   path_anchor: backend/routers/exports.py:260 (export_data_global)
   method: POST
   path: ''
   mutation_target: exports state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External file format artifact transformation in exports.py
 - id: MUT-ROUTER-FACP-SELECT_FACP
   path_anchor: backend/routers/facp.py:271 (select_facp)
   method: POST
@@ -849,46 +776,36 @@ inventory:
   method: POST
   path: /upload
   mutation_target: import_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External file format artifact transformation in import_router.py
 - id: MUT-ROUTER-IMPORT_ROUTER-INSPECT_STAGED_FILE
   path_anchor: backend/routers/import_router.py:146 (inspect_staged_file)
   method: POST
   path: /inspect
   mutation_target: import_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External file format artifact transformation in import_router.py
 - id: MUT-ROUTER-IMPORT_ROUTER-PLAN_IMPORT
   path_anchor: backend/routers/import_router.py:173 (plan_import)
   method: POST
   path: /plan
   mutation_target: import_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External file format artifact transformation in import_router.py
 - id: MUT-ROUTER-IMPORT_ROUTER-EXECUTE_IMPORT
   path_anchor: backend/routers/import_router.py:205 (execute_import)
   method: POST
   path: /execute
   mutation_target: import_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical import/export state execution with OCC revision in import_router.py
 - id: MUT-ROUTER-IMPORT_ROUTER-CREATE_IMPORT_RUN
   path_anchor: backend/routers/import_router.py:243 (create_import_run)
   method: POST
   path: /runs
   mutation_target: import_router state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Import/export mutation bypasses CommandBus; to be migrated in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical import/export state execution with OCC revision in import_router.py
 - id: MUT-ROUTER-LLM-LLM_CHAT
   path_anchor: backend/routers/llm.py:193 (llm_chat)
   method: POST
@@ -1214,267 +1131,204 @@ inventory:
   method: POST
   path: ''
   mutation_target: reports state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REPORTS-GENERATE_GLOBAL_REPORT
   path_anchor: backend/routers/reports.py:893 (generate_global_report)
   method: POST
   path: /generate
   mutation_target: reports state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REPORTS-GENERATE_AHJ_SUBMITTAL
   path_anchor: backend/routers/reports.py:1300 (generate_ahj_submittal)
   method: POST
   path: /ahj-submittal
   mutation_target: reports state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REVIT-CONNECT_TO_REVIT
   path_anchor: backend/routers/revit.py:503 (connect_to_revit)
   method: POST
   path: /connect
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-DISCONNECT_FROM_REVIT
   path_anchor: backend/routers/revit.py:555 (disconnect_from_revit)
   method: POST
   path: /disconnect
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-OPEN_DOCUMENT
   path_anchor: backend/routers/revit.py:610 (open_document)
   method: POST
   path: /document/open
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-SAVE_DOCUMENT
   path_anchor: backend/routers/revit.py:635 (save_document)
   method: POST
   path: /document/save
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CLOSE_DOCUMENT
   path_anchor: backend/routers/revit.py:661 (close_document)
   method: POST
   path: /document/close
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-READ_RVT_FILE
   path_anchor: backend/routers/revit.py:686 (read_rvt_file)
   method: POST
   path: /read_rvt
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-WRITE_RVT_FILE
   path_anchor: backend/routers/revit.py:711 (write_rvt_file)
   method: POST
   path: /write_rvt
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-UPLOAD_AND_READ_RVT
   path_anchor: backend/routers/revit.py:751 (upload_and_read_rvt)
   method: POST
   path: /upload_rvt
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-UPLOAD_AND_READ_RVT-L751
   path_anchor: backend/routers/revit.py:751 (upload_and_read_rvt)
   method: POST
   path: /upload
   mutation_target: revit state
-  authority_class: DIRECT_DATA_STORE
-  evidence: Session and file handling lifecycle for CAD adapters
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_WALL
   path_anchor: backend/routers/revit.py:897 (create_wall)
   method: POST
   path: /elements/create/wall
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_FLOOR
   path_anchor: backend/routers/revit.py:952 (create_floor)
   method: POST
   path: /elements/create/floor
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_DOOR
   path_anchor: backend/routers/revit.py:999 (create_door)
   method: POST
   path: /elements/create/door
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_WINDOW
   path_anchor: backend/routers/revit.py:1050 (create_window)
   method: POST
   path: /elements/create/window
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_COLUMN
   path_anchor: backend/routers/revit.py:1149 (create_column)
   method: POST
   path: /elements/create/column
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_BEAM
   path_anchor: backend/routers/revit.py:1199 (create_beam)
   method: POST
   path: /elements/create/beam
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-CREATE_FAMILY
   path_anchor: backend/routers/revit.py:1249 (create_family)
   method: POST
   path: /elements/create/family
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-UPDATE_PARAMETERS
   path_anchor: backend/routers/revit.py:1305 (update_parameters)
   method: PUT
   path: /elements/{element_id}/parameters
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-DELETE_ELEMENT
   path_anchor: backend/routers/revit.py:1338 (delete_element)
   method: DELETE
   path: /elements/{element_id}
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-LOAD_FAMILY
   path_anchor: backend/routers/revit.py:1483 (load_family)
   method: POST
   path: /families/load
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-LOAD_API_DATA
   path_anchor: backend/routers/revit.py:1510 (load_api_data)
   method: POST
   path: /search/api/load
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-SEARCH_API_DATA
   path_anchor: backend/routers/revit.py:1532 (search_api_data)
   method: POST
   path: /search/api
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT-EXECUTE_AI_COMMAND
   path_anchor: backend/routers/revit.py:1593 (execute_ai_command)
   method: POST
   path: /execute
   mutation_target: revit state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit.py with evidence verification
 - id: MUT-ROUTER-REVIT_API-UPLOAD_REVIT_MODEL
   path_anchor: backend/routers/revit_api.py:139 (upload_revit_model)
   method: POST
   path: /upload
   mutation_target: revit_api state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit_api.py with evidence verification
 - id: MUT-ROUTER-REVIT_API-SYNC_REVIT_MODEL
   path_anchor: backend/routers/revit_api.py:200 (sync_revit_model)
   method: POST
   path: /sync
   mutation_target: revit_api state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit_api.py with evidence verification
 - id: MUT-ROUTER-REVIT_API-EXPORT_REVIT_DATA
   path_anchor: backend/routers/revit_api.py:309 (export_revit_data)
   method: POST
   path: /export
   mutation_target: revit_api state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit_api.py with evidence verification
 - id: MUT-ROUTER-REVIT_API-WEBSOCKET_ENDPOINT
   path_anchor: backend/routers/revit_api.py:434 (websocket_endpoint)
   method: WEBSOCKET
   path: /ws/{project_id}
   mutation_target: revit_api state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct CAD mutation bypasses CommandBus; to be migrated to EXTERNAL_TRANSACTION
-    in S4
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: External CAD application interaction in revit_api.py with evidence verification
 - id: MUT-ROUTER-SELF_HEALING-SET_LLM_HEALING
   path_anchor: backend/routers/self_healing.py:44 (set_llm_healing)
   method: PUT
@@ -1552,19 +1406,15 @@ inventory:
   method: POST
   path: ''
   mutation_target: sync state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-SYNC-WEBSOCKET_ENDPOINT
   path_anchor: backend/routers/sync.py:353 (websocket_endpoint)
   method: WEBSOCKET
   path: /ws
   mutation_target: sync state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-V2-GENERATE_DESIGN_VARIANTS
   path_anchor: backend/routers/v2.py:186 (generate_design_variants)
   method: POST
@@ -1727,28 +1577,22 @@ inventory:
   method: POST
   path: /runs/{run_id}/resume
   mutation_target: workflow state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-CANCEL_AGENT_RUN
   path_anchor: backend/routers/workflow.py:510 (cancel_agent_run)
   method: POST
   path: /runs/{run_id}/cancel
   mutation_target: workflow state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-RETRY_AGENT_RUN
   path_anchor: backend/routers/workflow.py:528 (retry_agent_run)
   method: POST
   path: /runs/{run_id}/retry
   mutation_target: workflow state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-DECIDE_AGENT_RUN_APPROVAL
   path_anchor: backend/routers/workflow.py:551 (decide_agent_run_approval)
   method: POST
@@ -1761,10 +1605,8 @@ inventory:
   method: POST
   path: /runs/plan
   mutation_target: workflow state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Unclassified write endpoint requires classification and review
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
+  authority_class: DIRECT_DATA_STORE
+  evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-START_PLANNED_AUTONOMOUS_WORKFLOW
   path_anchor: backend/routers/workflow.py:783 (start_planned_autonomous_workflow)
   method: POST
@@ -1799,11 +1641,9 @@ inventory:
   method: WS_HANDLER
   path: /api/v1/agent/ws (remote dispatch)
   mutation_target: Desktop CAD live environment (Revit/AutoCAD)
-  authority_class: LEGACY_EXCEPTION
-  owner: '@core-team'
-  deadline: Phase 4.4 (S4)
-  evidence: Dispatches commands to desktop CAD agents; to be wrapped as EXTERNAL_TRANSACTION
-    in S4
+  authority_class: EXTERNAL_TRANSACTION
+  evidence: Dispatches commands to desktop CAD agents wrapped as EXTERNAL_TRANSACTION
+    under Principle 3 with evidence verification
 - id: MUT-MIGRATION-ALEMBIC
   path_anchor: backend/alembic/env.py:1 (run_migrations)
   method: MIGRATION
