@@ -362,10 +362,10 @@ class GenericWorkflowPlanner:
                 expanded_prompt += f" {en_syns}"
 
         french_mappings = {
-            "detecteur": "detector detectors spatial",
-            "detecteurs": "detector detectors spatial",
-            "fumee": "smoke spatial",
-            "chaleur": "heat spatial",
+            "detecteur": "detector detectors",
+            "detecteurs": "detector detectors",
+            "fumee": "smoke",
+            "chaleur": "heat",
             "disposition": "place layout spatial",
             "tension": "voltage drop electrical",
             "batterie": "battery electrical",
@@ -373,21 +373,23 @@ class GenericWorkflowPlanner:
             "debit": "flow hydraulics",
             "exporter": "export",
             "importer": "import",
+            "conflit": "clash bim",
         }
         for fr_term, en_syns in french_mappings.items():
             if fr_term in expanded_prompt:
                 expanded_prompt += f" {en_syns}"
 
         german_mappings = {
-            "melder": "detector detectors spatial",
-            "rauch": "smoke spatial",
-            "hitze": "heat spatial",
+            "melder": "detector detectors",
+            "rauch": "smoke",
+            "hitze": "heat",
             "platzierung": "place layout spatial",
             "spannung": "voltage drop electrical",
             "rohr": "pipe hydraulics",
             "durchfluss": "flow hydraulics",
             "exportieren": "export",
             "importieren": "import",
+            "kollision": "clash bim",
         }
         for de_term, en_syns in german_mappings.items():
             if de_term in expanded_prompt:
@@ -396,13 +398,16 @@ class GenericWorkflowPlanner:
         english_mappings = {
             "layout": "place spatial grid",
             "spacing": "spacing compliance",
-            "detectors": "detector device devices spatial",
-            "detector": "device devices spatial",
+            "detectors": "detector device devices",
+            "detector": "device devices",
             "dwg": "dwg import autocad",
             "autocad": "dwg import autocad",
             "battery": "battery electrical",
             "voltage": "voltage electrical drop",
             "hydraulic": "hydraulic hydraulics darcy weisbach",
+            "clash": "clash bim collision",
+            "collision": "clash bim",
+            "bim": "bim clash ifc",
         }
         for en_term, syns in english_mappings.items():
             if en_term in expanded_prompt:
