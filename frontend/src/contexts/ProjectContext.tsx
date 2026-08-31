@@ -24,12 +24,14 @@ export interface ProjectContextValue {
 	activeModelId: string;
 	activeRevision: number;
 	selectedEntityId: string | null;
+	selectedEntityIds: string[];
 	selectedEntityType: "device" | "element" | "circuit" | null;
 	projects: Project[];
 	loading: boolean;
 	error: string | null;
 	setActiveProjectId: (id: string) => void;
 	setSelectedEntity: (id: string | null, type?: "device" | "element" | "circuit" | null) => void;
+	setSelectedEntityIds: (ids: string[]) => void;
 	refetchProjects: () => void;
 }
 
@@ -58,6 +60,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 	});
 
 	const [selectedEntityId, setSelectedEntityId] = useState<string | null>(urlEntity || null);
+	const [selectedEntityIds, setSelectedEntityIdsState] = useState<string[]>(() =>
+		urlEntity ? [urlEntity] : [],
+	);
 	const [selectedEntityType, setSelectedEntityType] = useState<"device" | "element" | "circuit" | null>(
 		urlElement ? "element" : urlDevice ? "device" : null,
 	);
@@ -109,8 +114,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 	const setSelectedEntity = (id: string | null, type: "device" | "element" | "circuit" | null = null) => {
 		setSelectedEntityId(id);
+		setSelectedEntityIdsState(id ? [id] : []);
 		setSelectedEntityType(type);
 	};
+
+	const setSelectedEntityIds = (ids: string[]) => {
+		setSelectedEntityIdsState(ids);
+		if (ids.length > 0) {
+			setSelectedEntityId(ids[0]);
+		} else {
+			setSelectedEntityId(null);
+		}
+	};
+
+	const effectiveEntityId = urlEntity || selectedEntityId;
+	const effectiveEntityIds = useMemo(() => {
+		if (urlEntity) return [urlEntity];
+		if (selectedEntityIds.length > 0) return selectedEntityIds;
+		if (selectedEntityId) return [selectedEntityId];
+		return [];
+	}, [urlEntity, selectedEntityIds, selectedEntityId]);
 
 	const value = useMemo<ProjectContextValue>(
 		() => ({
@@ -118,13 +141,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 			activeProject,
 			activeModelId,
 			activeRevision,
-			selectedEntityId: urlEntity || selectedEntityId,
+			selectedEntityId: effectiveEntityId,
+			selectedEntityIds: effectiveEntityIds,
 			selectedEntityType: urlElement ? "element" : urlDevice ? "device" : selectedEntityType,
 			projects,
 			loading,
 			error,
 			setActiveProjectId,
 			setSelectedEntity,
+			setSelectedEntityIds,
 			refetchProjects: refetch,
 		}),
 		[
@@ -132,10 +157,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 			activeProject,
 			activeModelId,
 			activeRevision,
-			urlEntity,
+			effectiveEntityId,
+			effectiveEntityIds,
 			urlElement,
 			urlDevice,
-			selectedEntityId,
 			selectedEntityType,
 			projects,
 			loading,
@@ -161,12 +186,14 @@ export function useActiveProject(): ProjectContextValue {
 			activeModelId: "",
 			activeRevision: 0,
 			selectedEntityId: null,
+			selectedEntityIds: [],
 			selectedEntityType: null,
 			projects: [],
 			loading: false,
 			error: null,
 			setActiveProjectId: () => {},
 			setSelectedEntity: () => {},
+			setSelectedEntityIds: () => {},
 			refetchProjects: () => {},
 		};
 	}

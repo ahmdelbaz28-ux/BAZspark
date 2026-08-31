@@ -222,4 +222,55 @@ describe("agentWorkflowApi", () => {
 		const result = await agentWorkflowApi.decideApproval("run-456", "appr-1", "APPROVED", "Approved by engineer");
 		expect(result.status).toBe("RUNNING");
 	});
+
+	it("serializes all 5 Universal Context fields cleanly without silent defaults in planWorkflow", async () => {
+		mockFetch.mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			json: async () => ({ success: true, data: { plan_id: "plan-789" } }),
+			text: async () => JSON.stringify({ success: true, data: { plan_id: "plan-789" } }),
+		});
+
+		await agentWorkflowApi.planWorkflow({
+			prompt: "Plan smoke layout",
+			projectId: "proj-10",
+			modelId: "dt-proj-10",
+			entityIds: ["dev-1", "dev-2"],
+			expectedRevision: 4,
+			uiSurface: "canvas_2d",
+		});
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(requestBody).toEqual(
+			expect.objectContaining({
+				project_id: "proj-10",
+				model_id: "dt-proj-10",
+				entity_ids: ["dev-1", "dev-2"],
+				expected_revision: 4,
+				ui_surface: "canvas_2d",
+			}),
+		);
+	});
+
+	it("passes undefined context fields cleanly without defaulting to empty strings", async () => {
+		mockFetch.mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			json: async () => ({ success: true, data: { run_id: "run-999" } }),
+			text: async () => JSON.stringify({ success: true, data: { run_id: "run-999" } }),
+		});
+
+		await agentWorkflowApi.startPlannedWorkflow({
+			prompt: "Stateless calculation",
+			// No projectId, modelId, expectedRevision, etc.
+		});
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(requestBody.project_id).toBeUndefined();
+		expect(requestBody.model_id).toBeUndefined();
+		expect(requestBody.expected_revision).toBeUndefined();
+		expect(requestBody.ui_surface).toBeUndefined();
+	});
 });

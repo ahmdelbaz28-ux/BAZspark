@@ -68,6 +68,8 @@ export interface AgentRunState {
 	auditReference: string | null;
 	version: number;
 	error: string | null;
+	isConflict: boolean;
+	conflictRevision: number | null;
 	elapsedSeconds: number;
 	isActionPending: boolean;
 	isConnected: boolean;
@@ -77,7 +79,10 @@ export interface AgentRunState {
 export interface StartRunOptions {
 	projectId: string;
 	modelId?: string;
+	entityId?: string;
+	entityIds?: string[];
 	expectedRevision?: number;
+	uiSurface?: string;
 	steps: Array<{
 		step_id: string;
 		capability_id: string;
@@ -102,6 +107,7 @@ export interface UseAgentRunReturn {
 	setApprovalMode: (mode: ApprovalMode) => void;
 	clearRun: () => void;
 	rehydrateRun: (runId: string) => Promise<void>;
+	recoverFromConflict: (canonicalRevision?: number) => void;
 }
 
 const STORAGE_ACTIVE_RUN_KEY = "bazspark:active-agent-run-id";
@@ -151,6 +157,8 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		auditReference: null,
 		version: 1,
 		error: null,
+		isConflict: false,
+		conflictRevision: null,
 		elapsedSeconds: 0,
 		isActionPending: false,
 		isConnected: false,
@@ -317,10 +325,58 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 					pendingApproval: pa,
 					isActionPending: false,
 				}));
-			} else if (data.type === "run_error") {
+			} else if (data.type === "approval_request") {
+				const pa: PendingApprovalData = {
+					approvalId: data.approvalId,
+					runId: data.runId,
+					stepId: data.stepId,
+					projectId: data.projectId,
+					projectRevision: data.projectRevision,
+					capabilityId: data.capabilityId,
+					policyResult: data.policyResult || {},
+					stepPayloadHash: data.stepPayloadHash,
+				};
 				setState((prev) => ({
 					...prev,
-					status: "FAILED",
+					status: "WAITING_APPROVAL",
+					pendingApproval: pa,
+					isActionPending: false,
+				}));
+			} else if (
+				data.type === "ai_conflict" ||
+				data.errorCode === "REVISION_CONFLICT" ||
+				data.errorCode === "CONCURRENCY_CONFLICT"
+			) {
+				const confRev =
+					typeof data.currentRevision === "number"
+						? data.currentRevision
+						: typeof data.canonicalRevision === "number"
+							? data.canonicalRevision
+							: null;
+				setState((prev) => ({
+					...prev,
+					status: "PAUSED",
+					isConflict: true,
+					conflictRevision: confRev,
+					error:
+						data.message ||
+						`Project revision conflict: current canonical revision is ${confRev ?? "unknown"}`,
+					isActionPending: false,
+				}));
+			} else if (data.type === "run_error" || data.type === "ai_error") {
+				const isConf =
+					data.errorCode === "REVISION_CONFLICT" || data.errorCode === "CONCURRENCY_CONFLICT";
+				const confRev =
+					typeof data.currentRevision === "number"
+						? data.currentRevision
+						: typeof data.canonicalRevision === "number"
+							? data.canonicalRevision
+							: null;
+				setState((prev) => ({
+					...prev,
+					status: isConf ? "PAUSED" : "FAILED",
+					isConflict: isConf,
+					conflictRevision: isConf ? confRev : prev.conflictRevision,
 					error: data.message || data.errorCode || "Run execution error",
 					isActionPending: false,
 				}));
@@ -338,15 +394,26 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		isConnectingRef.current = true;
 
 		try {
-			// A1 FIX: Request single-use ticket via POST /agent/ws-ticket
+			// A1 / O5 FIX: Request single-use ticket via POST /agent/ws-ticket
 			let ticket = "";
 			try {
 				const ticketRes = await api.post<{ success: boolean; ticket: string }>("/agent/ws-ticket", {});
 				if (ticketRes && ticketRes.ticket) {
 					ticket = ticketRes.ticket;
+				} else {
+					throw new Error("Invalid ticket response from server");
 				}
 			} catch (ticketErr) {
 				console.warn("Failed to acquire WebSocket ticket:", ticketErr);
+				setState((prev) => ({
+					...prev,
+					error: "Failed to acquire WebSocket authentication ticket",
+					isConnected: false,
+					isReconnecting: false,
+					isActionPending: false,
+				}));
+				isConnectingRef.current = false;
+				return; // Halt connection loop on ticket failure (O5)
 			}
 
 			const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -466,6 +533,8 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			steps,
 			elapsedSeconds: 0,
 			error: null,
+			isConflict: false,
+			conflictRevision: null,
 			isActionPending: true,
 		}));
 
@@ -473,7 +542,10 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			type: "run_start",
 			projectId: options.projectId,
 			model_id: options.modelId,
+			entity_id: options.entityId,
+			entity_ids: options.entityIds,
 			expected_revision: options.expectedRevision,
+			ui_surface: options.uiSurface,
 			steps: options.steps,
 			approvalMode: options.approvalMode || state.approvalMode,
 			conversationId: options.conversationId || `conv-${Date.now()}`,
@@ -615,6 +687,22 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		}
 	}, [state.pendingApproval, state.runId, applyRunUpdate]);
 
+	// Recover from OCC revision conflict (O6)
+	const recoverFromConflict = useCallback((canonicalRevision?: number) => {
+		setState((prev) => ({
+			...prev,
+			isConflict: false,
+			conflictRevision: null,
+			error: null,
+			status: "READY",
+			recoveryState: {
+				...prev.recoveryState,
+				recoveredAtRevision: canonicalRevision ?? prev.conflictRevision,
+			},
+			isActionPending: false,
+		}));
+	}, []);
+
 	// Update approval mode
 	const setApprovalMode = useCallback((mode: ApprovalMode) => {
 		try {
@@ -639,6 +727,8 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 			steps: [],
 			elapsedSeconds: 0,
 			error: null,
+			isConflict: false,
+			conflictRevision: null,
 			isActionPending: false,
 		}));
 	}, []);
@@ -655,5 +745,6 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		setApprovalMode,
 		clearRun,
 		rehydrateRun,
+		recoverFromConflict,
 	};
 }

@@ -40,6 +40,12 @@ from backend.core.agent_run_store import (
     PendingApprovalNotFoundError,
 )
 from backend.core.openapi_contracts import StandardizedAPIRoute
+from backend.core.session_context import (
+    ContextBudgetExceededError,
+    MissingExpectedRevisionError,
+    UniversalSessionContext,
+    validate_mutation_revision,
+)
 from backend.limiter import limiter
 from backend.rbac import Permission, Role
 from backend.services.workflow_service import (
@@ -437,6 +443,10 @@ async def _to_thread(func, *args, **kwargs):
 
 def _agent_run_http_error(exc: Exception) -> HTTPException:
     """Map orchestrator domain errors to HTTP status codes."""
+    if isinstance(exc, MissingExpectedRevisionError):
+        return HTTPException(status_code=400, detail=f"MISSING_EXPECTED_REVISION: {exc}")
+    if isinstance(exc, ContextBudgetExceededError):
+        return HTTPException(status_code=400, detail=f"CONTEXT_BUDGET_EXCEEDED: {exc}")
     if isinstance(exc, (RunNotFoundError, PendingApprovalNotFoundError)):  # noqa: UP038
         return HTTPException(status_code=404, detail=str(exc)[:300])
     if isinstance(exc, RunPermissionError):
@@ -573,15 +583,18 @@ def _reconcile_and_validate_execution_context(
     entity_id: str | None = None,
     entity_type: str | None = None,
     expected_revision: int | None = None,
+    entity_ids: list[str] | None = None,
+    ui_surface: str | None = None,
 ) -> dict:
     """
-    Authoritative reconciliation of execution context (Gate 5 Blockers B, C, F).
+    Authoritative reconciliation of execution context (Gate 5 Blockers B, C, F & Phase 3).
     Validates:
     1. Authenticated principal has access to project_id
     2. model_id belongs to project_id (rejects forged/mismatched models)
-    3. entity_id exists and belongs to project_id (zero bypasses: elem-*, mock-* forbidden unless in DB)
+    3. entity_ids / entity_id exist and belong to project_id (zero bypasses: elem-*, mock-* forbidden unless in DB)
     4. entity/entity_type is compatible
     5. expected_revision matches canonical persistent OCC revision from project_revisions
+    6. ui_surface is validated as client metadata with zero functional execution side effects
     """
     import backend.database as _db_mod
     from backend.routers.projects import _verify_project_access
@@ -604,13 +617,17 @@ def _reconcile_and_validate_execution_context(
                 detail=f"Model '{model_id}' does not belong to project '{project_id}'",
             )
 
-        # 3. entity_id exists and belongs to project_id (strictly enforced, no prefix bypasses)
-        if entity_id:
-            dev = db.get_device(project_id, entity_id)
+        # 3. entity_ids & entity_id exist and belong to project_id
+        all_eids = list(entity_ids) if entity_ids else []
+        if entity_id and entity_id not in all_eids:
+            all_eids.append(entity_id)
+
+        for eid in all_eids:
+            dev = db.get_device(project_id, eid)
             if not dev:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Entity '{entity_id}' does not belong to project '{project_id}'",
+                    detail=f"Entity '{eid}' does not belong to project '{project_id}'",
                 )
 
             # 4. entity/entity_type compatibility
@@ -633,7 +650,7 @@ def _reconcile_and_validate_execution_context(
                 ):
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Entity type '{entity_type}' is incompatible with entity '{entity_id}'",
+                        detail=f"Entity type '{entity_type}' is incompatible with entity '{eid}'",
                     )
 
         # 5. expected_revision matches canonical persistent revision
@@ -654,16 +671,17 @@ def _reconcile_and_validate_execution_context(
                 status_code=409,
                 detail=f"OCC revision conflict: expected revision {expected_revision} but project '{project_id}' is at canonical revision {canonical_rev}",
             )
-    elif entity_id:
+    elif entity_id or entity_ids:
         raise HTTPException(
             status_code=400,
-            detail="project_id is required when entity_id is specified",
+            detail="project_id is required when entity_id/entity_ids is specified",
         )
 
     return {
         "project": project,
         "canonical_model_id": project.get("modelId") if project else "",
         "canonical_revision": canonical_rev if project_id else None,
+        "ui_surface": ui_surface,
     }
 
 
@@ -672,8 +690,10 @@ class PlanWorkflowRequest(BaseModel):
     project_id: str = ""
     model_id: str | None = None
     entity_id: str | None = None
+    entity_ids: list[str] | None = None
     entity_type: str | None = None
     expected_revision: int | None = None
+    ui_surface: str | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
     governance_policy: dict | None = None
@@ -698,7 +718,7 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         scopes=["*"],
     )
 
-    # Authoritative context reconciliation (Blockers B, C, F)
+    # Authoritative context reconciliation (Blockers B, C, F & Phase 3)
     if body.project_id:
         _reconcile_and_validate_execution_context(
             request=request,
@@ -707,6 +727,8 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
             entity_id=body.entity_id,
             entity_type=body.entity_type,
             expected_revision=body.expected_revision,
+            entity_ids=body.entity_ids,
+            ui_surface=body.ui_surface,
         )
 
     spec = dict(body.composite_spec or {})
@@ -714,8 +736,12 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
         spec["model_id"] = body.model_id
     if body.entity_id:
         spec["entity_id"] = body.entity_id
+    if body.entity_ids:
+        spec["entity_ids"] = body.entity_ids
     if body.entity_type:
         spec["entity_type"] = body.entity_type
+    if body.ui_surface:
+        spec["ui_surface"] = body.ui_surface
 
     try:
         plan = await asyncio.to_thread(
@@ -739,8 +765,10 @@ class StartPlannedWorkflowRequest(BaseModel):
     project_id: str = ""
     model_id: str | None = None
     entity_id: str | None = None
+    entity_ids: list[str] | None = None
     entity_type: str | None = None
     expected_revision: int | None = None
+    ui_surface: str | None = None
     composite_spec: dict | None = None
     approval_mode: str = "AUTO"
     conversation_id: str = ""
@@ -766,7 +794,7 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
         scopes=["*"],
     )
 
-    # Authoritative context reconciliation (Blockers B, C, F)
+    # Authoritative context reconciliation (Blockers B, C, F & Phase 3)
     if body.project_id:
         _reconcile_and_validate_execution_context(
             request=request,
@@ -775,6 +803,8 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
             entity_id=body.entity_id,
             entity_type=body.entity_type,
             expected_revision=body.expected_revision,
+            entity_ids=body.entity_ids,
+            ui_surface=body.ui_surface,
         )
 
     spec = dict(body.composite_spec or {})
@@ -782,8 +812,12 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
         spec["model_id"] = body.model_id
     if body.entity_id:
         spec["entity_id"] = body.entity_id
+    if body.entity_ids:
+        spec["entity_ids"] = body.entity_ids
     if body.entity_type:
         spec["entity_type"] = body.entity_type
+    if body.ui_surface:
+        spec["ui_surface"] = body.ui_surface
 
     try:
         plan = await asyncio.to_thread(
@@ -796,6 +830,19 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
             approval_mode=body.approval_mode,
             governance_policy=body.governance_policy,
         )
+
+        # Enforce revision binding for mutations in planned workflow
+        if plan and hasattr(plan, "steps"):
+            cap_ids = [s.capability_id for s in plan.steps if hasattr(s, "capability_id")]
+            session_ctx = UniversalSessionContext.from_dict({
+                "project_id": body.project_id,
+                "model_id": body.model_id,
+                "entity_ids": body.entity_ids or ([body.entity_id] if body.entity_id else []),
+                "expected_revision": body.expected_revision,
+                "ui_surface": body.ui_surface,
+            })
+            validate_mutation_revision(session_ctx, cap_ids)
+
         run = await asyncio.to_thread(
             default_workflow_planner.execute_plan,
             plan,
