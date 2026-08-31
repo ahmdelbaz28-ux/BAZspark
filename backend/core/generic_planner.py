@@ -413,37 +413,41 @@ class GenericWorkflowPlanner:
             if en_term in expanded_prompt:
                 expanded_prompt += f" {syns}"
 
-        # Match capabilities generically by inspecting capability tags/categories/descriptions with stop-word isolation
-        p_words = {
-            w for w in re.findall(r"[a-zA-Z\u0600-\u06FF0-9]+", expanded_prompt)
-            if len(w) > 2 and w not in STOP_WORDS
-        }
-
-        matched_caps: list[Any] = []
-        for cap in authorized_caps:
-            cid = _cap_id(cap)
-            ccat = _cap_category(cap)
-            cdesc = _cap_description(cap)
-
-            id_tokens = {
-                w for w in re.findall(r"[a-zA-Z]+", cid.lower())
-                if len(w) > 2 and w not in STOP_WORDS
-            }
-            cat_tokens = {
-                w for w in re.findall(r"[a-zA-Z]+", ccat.lower())
-                if len(w) > 2 and w not in STOP_WORDS
-            }
-            desc_tokens = {
-                w for w in re.findall(r"[a-zA-Z]+", cdesc.lower())
+        explicit_cap_ids = spec.get("explicit_capabilities") or []
+        if explicit_cap_ids:
+            matched_caps = [cap for cap in authorized_caps if _cap_id(cap) in explicit_cap_ids]
+        else:
+            # Match capabilities generically by inspecting capability tags/categories/descriptions with stop-word isolation
+            p_words = {
+                w for w in re.findall(r"[a-zA-Z\u0600-\u06FF0-9]+", expanded_prompt)
                 if len(w) > 2 and w not in STOP_WORDS
             }
 
-            # Check for direct capability ID token overlap or explicit spec hints
-            has_id_match = bool(p_words.intersection(id_tokens))
-            has_spec_match = bool(spec and any(k in cid for k in spec))
+            matched_caps = []
+            for cap in authorized_caps:
+                cid = _cap_id(cap)
+                ccat = _cap_category(cap)
+                cdesc = _cap_description(cap)
 
-            if has_id_match or has_spec_match:
-                matched_caps.append(cap)
+                id_tokens = {
+                    w for w in re.findall(r"[a-zA-Z]+", cid.lower())
+                    if len(w) > 2 and w not in STOP_WORDS
+                }
+                cat_tokens = {
+                    w for w in re.findall(r"[a-zA-Z]+", ccat.lower())
+                    if len(w) > 2 and w not in STOP_WORDS
+                }
+                desc_tokens = {
+                    w for w in re.findall(r"[a-zA-Z]+", cdesc.lower())
+                    if len(w) > 2 and w not in STOP_WORDS
+                }
+
+                # Check for direct capability ID token overlap or explicit spec hints
+                has_id_match = bool(p_words.intersection(id_tokens))
+                has_spec_match = bool(spec and any(k in cid for k in spec))
+
+                if has_id_match or has_spec_match:
+                    matched_caps.append(cap)
 
         if not matched_caps:
             raise InvalidWorkflowIntentError(

@@ -44,7 +44,7 @@ class CapabilityContract:
     retry_policy: dict[str, Any] = field(default_factory=dict)
     idempotent: bool = True
     audit: dict[str, Any] = field(default_factory=dict)
-    execution_channel: Literal["sync", "async", "websocket", "worker", "inline"] = "sync"
+    execution_channel: Literal["sync", "async", "websocket", "worker", "inline", "desktop_agent"] = "sync"
     ui_handoff: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
@@ -143,7 +143,7 @@ VALID_EXECUTION_MODES = {"inline", "background_run"}
 VALID_MUTATION_TYPES = {"read_only", "idempotent_write", "state_mutation", "none"}
 VALID_RISK_CLASSES = {"LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"}
 VALID_APPROVAL_POLICIES = {"auto", "user_confirm", "pe_signoff", "admin_only"}
-VALID_EXECUTION_CHANNELS = {"sync", "async", "websocket", "worker", "inline"}
+VALID_EXECUTION_CHANNELS = {"sync", "async", "websocket", "worker", "inline", "desktop_agent"}
 VALID_CATEGORIES = {
     "spatial",
     "compliance",
@@ -161,6 +161,7 @@ VALID_CATEGORIES = {
     "bim",
     "simulation",
     "tender",
+    "cad",
 }
 SCHEMA_VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 
@@ -351,6 +352,8 @@ class CapabilityRegistry:
         self._register_workspace_and_governance_capabilities()
         self._register_engineering_expansion_capabilities()
         self._register_tender_capabilities()
+        self._register_cad_control_capabilities()
+        self._register_etap_live_capabilities()
 
     def _register_workspace_and_governance_capabilities(self) -> None:
         from backend.core.workspace_governance_contracts import register_workspace_governance_capabilities
@@ -363,6 +366,14 @@ class CapabilityRegistry:
     def _register_tender_capabilities(self) -> None:
         from backend.core.tender_contracts import register_tender_capabilities
         register_tender_capabilities(self)
+
+    def _register_cad_control_capabilities(self) -> None:
+        from backend.core.cad_control_contracts import register_cad_control_capabilities
+        register_cad_control_capabilities(self)
+
+    def _register_etap_live_capabilities(self) -> None:
+        from backend.core.etap_live_contracts import register_etap_live_capabilities
+        register_etap_live_capabilities(self)
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
