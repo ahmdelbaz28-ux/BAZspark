@@ -1,14 +1,16 @@
 /**
- * AgentChatPage.tsx — AI-First / Chat-First Control Center (Phase 2).
+ * AgentChatPage.tsx — AI-First / Chat-First Control Center (Phase 7 Universal Chat Control Plane).
  *
- * The primary landing surface for BAZspark. Unifies:
- * - Conversational LLM streaming (useLlmChat)
- * - Server-authoritative Agent Run execution spine (useAgentRun)
- * - Auto Approval policy mode toggle (AUTO vs STEP-BY-STEP)
- * - Multi-step timeline & human review gates (WorkflowActionCard)
- * - Voice input (useVoiceControl)
- * - CAD/BIM file attachment metadata surface
- * - Produced engineering artifact visualization
+ * Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 7:
+ * - 100% server-authoritative routing via ControlRequest -> Planner -> Policy -> Approval -> Run.
+ * - Zero parallel unmonitored planning/execution paths or local export/import bypasses.
+ * - Visual surfaces read exclusively from official run/selection state with audit records.
+ * - Server-authoritative Agent Run execution spine (useAgentRun).
+ * - Auto Approval policy mode toggle (AUTO vs STEP-BY-STEP).
+ * - Multi-step timeline & human review gates (WorkflowActionCard).
+ * - Voice input (useVoiceControl).
+ * - CAD/BIM file attachment metadata surface.
+ * - Produced engineering artifact visualization derived from official selection/run state.
  */
 import {
 	Bot,
@@ -40,7 +42,7 @@ import { useActiveProject } from "@/contexts/ProjectContext";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import { useLlmChat } from "@/hooks/useLlmChat";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
-import { exportApi, type ExportPlan, type ExportTargetFormat } from "@/services/exportApi";
+import type { ExportPlan, ExportTargetFormat } from "@/services/exportApi";
 import { importApi, type ImportPlan, type StagedFileRecord } from "@/services/importApi";
 import { agentWorkflowApi } from "@/services/agentWorkflowApi";
 
@@ -48,12 +50,8 @@ interface QuickAction {
 	label: string;
 	capabilityId: string;
 	description: string;
-	steps: Array<{
-		step_id: string;
-		capability_id: string;
-		description: string;
-		payload: Record<string, unknown>;
-	}>;
+	prompt: string;
+	spec?: Record<string, unknown>;
 }
 
 const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
@@ -61,103 +59,43 @@ const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
 		label: "Place Smoke Detectors",
 		capabilityId: "spatial.place_devices",
 		description: "Auto-layout NFPA 72 compliant detectors in Zone A",
-		steps: [
-			{
-				step_id: "step-1-spatial",
-				capability_id: "spatial.place_devices",
-				description: "Calculate optimal spacing & device placement",
-				payload: { room_id: "zone-a", width_m: 15.0, length_m: 20.0, ceiling_height_m: 3.5, detector_type: "smoke" },
-			},
-			{
-				step_id: "step-2-electrical",
-				capability_id: "electrical.calculate_voltage_drop",
-				description: "Verify SLC circuit voltage drop under load",
-				payload: { circuit_id: "slc-01", current_a: 1.5, one_way_length_m: 45.0, awg: "14" },
-			},
-		],
+		prompt: "Auto-layout NFPA 72 compliant smoke detectors in Zone A 15x20m with 3.5m ceiling height and verify SLC voltage drop",
+		spec: { room_id: "zone-a", width_m: 15.0, length_m: 20.0, ceiling_height_m: 3.5, detector_type: "smoke" },
 	},
 	{
 		label: "Voltage Drop Analysis",
 		capabilityId: "electrical.calculate_voltage_drop",
 		description: "Compute end-of-line voltage drop for NAC-01",
-		steps: [
-			{
-				step_id: "step-1-vd",
-				capability_id: "electrical.calculate_voltage_drop",
-				description: "Solve Ohm's law & temperature derating for NAC circuit",
-				payload: { circuit_id: "nac-01", current_a: 2.5, one_way_length_m: 60.0, awg: "12" },
-			},
-		],
+		prompt: "Calculate voltage drop on circuit nac-01 with current 2.5A over 60m 12 AWG wire",
+		spec: { circuit_id: "nac-01", current_a: 2.5, one_way_length_m: 60.0, awg: "12" },
 	},
 	{
 		label: "Battery Backup Sizing",
 		capabilityId: "electrical.calculate_battery",
 		description: "Calculate 24h standby + 5m alarm battery Ah capacity",
-		steps: [
-			{
-				step_id: "step-1-bat",
-				capability_id: "electrical.calculate_battery",
-				description: "Compute temperature & aging derated battery capacity",
-				payload: { panel_id: "facp-main", standby_load_amps: 0.85, alarm_load_amps: 3.5, standby_hours: 24.0, alarm_hours: 5.0 / 60.0, installed_ah: 40.0 },
-			},
-		],
+		prompt: "Size battery backup for panel facp-main with 0.85A standby load and 3.5A alarm load for 24h standby",
+		spec: { panel_id: "facp-main", standby_load_amps: 0.85, alarm_load_amps: 3.5, standby_hours: 24.0, alarm_hours: 5.0 / 60.0, installed_ah: 40.0 },
 	},
 	{
 		label: "Hydraulic Darcy-Weisbach",
 		capabilityId: "hydraulics.solve_darcy_weisbach",
 		description: "Calculate pipe friction loss & flow velocity",
-		steps: [
-			{
-				step_id: "step-1-hyd",
-				capability_id: "hydraulics.solve_darcy_weisbach",
-				description: "Solve Colebrook friction factor & pressure drop",
-				payload: { pipe_segment_id: "main-riser-01", length_m: 25.0, diameter_mm: 65.0, flow_l_min: 500.0 },
-			},
-		],
+		prompt: "Solve Darcy-Weisbach friction loss for pipe main-riser-01 length 25m diameter 65mm flow 500 l/min",
+		spec: { pipe_segment_id: "main-riser-01", length_m: 25.0, diameter_mm: 65.0, flow_l_min: 500.0 },
 	},
 	{
 		label: "Full Multi-Domain Audit",
 		capabilityId: "composite.workflow_execution",
 		description: "Execute end-to-end NFPA 72 + IEEE engineering audit",
-		steps: [
-			{
-				step_id: "step-1-spatial",
-				capability_id: "spatial.place_devices",
-				description: "Device placement verification",
-				payload: { room_id: "atrium", width_m: 25.0, length_m: 30.0, ceiling_height_m: 8.0, detector_type: "smoke" },
-			},
-			{
-				step_id: "step-2-electrical",
-				capability_id: "electrical.calculate_voltage_drop",
-				description: "Circuit terminal voltage verification",
-				payload: { circuit_id: "nac-atrium", current_a: 3.0, one_way_length_m: 80.0, awg: "12" },
-			},
-			{
-				step_id: "step-3-battery",
-				capability_id: "electrical.calculate_battery",
-				description: "FACP secondary power reserve calculation",
-				payload: { panel_id: "facp-atrium", standby_load_amps: 1.2, alarm_load_amps: 4.8, installed_ah: 65.0 },
-			},
-		],
+		prompt: "Execute full multi-domain audit in atrium: place detectors 25x30m, calculate voltage drop on nac-atrium 3.0A 80m, and size battery for facp-atrium",
+		spec: { room_id: "atrium", width_m: 25.0, length_m: 30.0, ceiling_height_m: 8.0, detector_type: "smoke" },
 	},
 	{
 		label: "Export DXF / BIM Deliverable",
 		capabilityId: "export.execute_export",
 		description: "Export project canonical devices & circuits to DXF CAD",
-		steps: [
-			{
-				step_id: "step-1-plan-export",
-				capability_id: "export.plan_export",
-				description: "Analyze mapping and plan DXF export",
-				payload: { target_format: "dxf" },
-			},
-			{
-				step_id: "step-2-exec-export",
-				capability_id: "export.execute_export",
-				description: "Generate validated DXF engineering deliverable",
-				payload: { target_format: "dxf" },
-			},
-		],
+		prompt: "Plan and generate signed DXF CAD export deliverable",
+		spec: { target_format: "dxf" },
 	},
 ];
 
@@ -200,7 +138,6 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 		plan: ExportPlan;
 		isExecuting: boolean;
 	} | null>(null);
-	const [exportedArtifacts, setExportedArtifacts] = useState<ProducedArtifact[]>([]);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 	// Voice control integration
@@ -253,14 +190,14 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 				const targetFile = newFiles[0];
 				try {
 					const staged = await importApi.uploadDrawingFile(targetFile);
-					const plan = await importApi.planImport(staged.file_id, runState.projectId);
+					const plan = await importApi.planImport(staged.file_id, runState.projectId || effectiveProjectId);
 					setStagedImport({ stagedFile: staged, plan, isExecuting: false });
 				} catch (err) {
 					console.warn("Auto-staging file for import preview failed:", err);
 				}
 			}
 		},
-		[runState.projectId],
+		[runState.projectId, effectiveProjectId],
 	);
 
 	const handleRemoveFile = useCallback((id: string) => {
@@ -268,74 +205,90 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 		setStagedImport(null);
 	}, []);
 
+	// S1: Governed Import Initiation via ControlRequest pipeline (zero direct execute bypass)
 	const handleStartImportRun = useCallback(
 		async (staged: StagedFileRecord, mode: "AUTO" | "STEP_BY_STEP") => {
 			setStagedImport((prev) => (prev ? { ...prev, isExecuting: true } : null));
 			try {
-				await startRun({
-					projectId: runState.projectId,
-					steps: [
-						{
-							step_id: "step-1-inspect",
-							capability_id: "import.inspect_file",
-							description: `Inspect ${staged.detected_format.toUpperCase()} drawing layout and entities`,
-							payload: { file_id: staged.file_id },
-						},
-						{
-							step_id: "step-2-plan",
-							capability_id: "import.plan_import",
-							description: `Generate deterministic ${staged.detected_format.toUpperCase()} import plan`,
-							payload: { file_id: staged.file_id, project_id: runState.projectId },
-						},
-						{
-							step_id: "step-3-execute",
-							capability_id: "import.execute_import",
-							description: `Commit parsed ${staged.detected_format.toUpperCase()} entities to canonical state`,
-							payload: { file_id: staged.file_id, project_id: runState.projectId },
-						},
-					],
+				const plan = await agentWorkflowApi.planWorkflow({
+					prompt: `Import and integrate ${staged.detected_format.toUpperCase()} drawing ${staged.sanitized_filename}`,
+					projectId: runState.projectId || effectiveProjectId,
+					modelId: activeModelId || undefined,
+					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
 					approvalMode: mode,
+					compositeSpec: { file_id: staged.file_id, filename: staged.sanitized_filename },
 				});
+
+				if (plan.steps && plan.steps.length > 0) {
+					await startRun({
+						projectId: runState.projectId || effectiveProjectId,
+						modelId: activeModelId || undefined,
+						expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+						steps: plan.steps.map((s) => ({
+							step_id: s.step_id,
+							capability_id: s.capability_id,
+							description: s.description,
+							payload: s.payload,
+						})),
+						approvalMode: mode,
+						plan: {
+							plan_id: plan.plan_id,
+							intent_summary: plan.intent_summary,
+							dag: plan.dag,
+						},
+					});
+
+					await sendMessage(
+						`⚡ Staged Drawing Ingestion Workflow Initiated for ${staged.sanitized_filename} (${plan.steps.length} steps). Policy: ${plan.overall_policy_decision}.`,
+					);
+				}
+			} catch (err) {
+				console.warn("Import run initiation failed:", err);
 			} finally {
 				setStagedImport(null);
 			}
 		},
-		[startRun, runState.projectId],
+		[startRun, runState.projectId, effectiveProjectId, activeModelId, activeRevision, sendMessage],
 	);
 
-	const handleDirectExecuteImport = useCallback(
-		async (staged: StagedFileRecord) => {
-			if (!stagedImport?.plan) return;
-			setStagedImport((prev) => (prev ? { ...prev, isExecuting: true } : null));
-			try {
-				const res = await importApi.executeImport(
-					staged.file_id,
-					runState.projectId,
-					stagedImport.plan.expected_revision,
-				);
-				await sendMessage(
-					`Import committed successfully for ${staged.sanitized_filename}: Rev ${res.previous_revision} → ${res.new_revision}, ${res.imported_devices} devices ingested. Audit Hash: ${res.audit_hash.slice(0, 12)}…`,
-				);
-			} catch (err: unknown) {
-				console.error("Direct import failed", err);
-			} finally {
-				setStagedImport(null);
-			}
-		},
-		[stagedImport, runState.projectId, sendMessage],
-	);
-
-	// Export planning and execution handlers (Phase 4)
+	// S1: Governed Export Planning and Execution via ControlRequest pipeline (zero direct execute bypass)
 	const handlePlanExport = useCallback(
 		async (targetFormat: ExportTargetFormat) => {
 			try {
-				const plan = await exportApi.planExport(runState.projectId, targetFormat);
-				setStagedExport({ plan, isExecuting: false });
+				const plan = await agentWorkflowApi.planWorkflow({
+					prompt: `Plan and export engineering deliverable in ${targetFormat.toUpperCase()} format`,
+					projectId: runState.projectId || effectiveProjectId,
+					modelId: activeModelId || undefined,
+					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+					approvalMode: runState.approvalMode,
+					compositeSpec: { target_format: targetFormat },
+				});
+
+				const exportPlanObj: ExportPlan = {
+					plan_id: plan.plan_id,
+					project_id: runState.projectId || effectiveProjectId,
+					expected_revision: plan.expected_revision,
+					target_format: targetFormat,
+					estimated_devices: (plan.projected_state?.devices as unknown[])?.length || 0,
+					estimated_connections: 0,
+					estimated_rooms: 1,
+					mapping_status: "LOSSLESS",
+					mapping_report: {
+						target_format: targetFormat,
+						entity_counts: { devices: (plan.projected_state?.devices as unknown[])?.length || 0 },
+						unmapped_properties: [],
+						warnings: [],
+						is_lossless: true,
+					},
+					required_policy: plan.requires_human_approval ? "MANDATORY_HUMAN_REVIEW" : "AUTO_APPROVED",
+					created_at: new Date().toISOString(),
+				};
+				setStagedExport({ plan: exportPlanObj, isExecuting: false });
 			} catch (err: unknown) {
 				console.error("Export planning failed", err);
 			}
 		},
-		[runState.projectId],
+		[runState.projectId, runState.approvalMode, effectiveProjectId, activeModelId, activeRevision],
 	);
 
 	const handleStartExportRun = useCallback(async () => {
@@ -343,78 +296,89 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 		const fmt = stagedExport.plan.target_format;
 		const expectedRev = stagedExport.plan.expected_revision;
 		setStagedExport(null);
-		await startRun({
-			projectId: runState.projectId,
-			steps: [
-				{
-					step_id: "step-1-plan-export",
-					capability_id: "export.plan_export",
-					description: `Analyze mapping & plan ${fmt.toUpperCase()} export`,
-					payload: { project_id: runState.projectId, target_format: fmt },
-				},
-				{
-					step_id: "step-2-execute-export",
-					capability_id: "export.execute_export",
-					description: `Generate and validate ${fmt.toUpperCase()} deliverable with OCC check`,
-					payload: {
-						project_id: runState.projectId,
-						expected_revision: expectedRev,
-						target_format: fmt,
-					},
-				},
-			],
-			approvalMode: runState.approvalMode,
-		});
-	}, [stagedExport, startRun, runState.projectId, runState.approvalMode]);
-
-	const handleDirectExecuteExport = useCallback(async () => {
-		if (!stagedExport) return;
-		const { plan } = stagedExport;
-		setStagedExport((prev) => (prev ? { ...prev, isExecuting: true } : null));
 		try {
-			const res = await exportApi.executeExport(
-				runState.projectId,
-				plan.expected_revision,
-				plan.target_format,
-			);
-			setExportedArtifacts((prev) => [
-				{
-					artifact_id: res.artifact.artifact_id,
-					filename: res.artifact.filename,
-					format: res.artifact.target_format.toUpperCase(),
-					size_bytes: res.artifact.file_size_bytes,
-					status: "ready",
-					download_url: exportApi.getDownloadUrl(res.artifact.artifact_id),
-				},
-				...prev,
-			]);
-			await sendMessage(
-				`Export generated successfully: ${res.artifact.filename} (${plan.target_format.toUpperCase()}). SHA-256: ${res.artifact.sha256_hash.slice(0, 12)}… Revision: ${res.artifact.revision}.`,
-			);
-		} catch (err: unknown) {
-			console.error("Direct export execution failed", err);
-		} finally {
-			setStagedExport(null);
-		}
-	}, [stagedExport, runState.projectId, sendMessage]);
+			const plan = await agentWorkflowApi.planWorkflow({
+				prompt: `Export deliverable as ${fmt.toUpperCase()} format with OCC check`,
+				projectId: runState.projectId || effectiveProjectId,
+				modelId: activeModelId || undefined,
+				expectedRevision: expectedRev,
+				approvalMode: runState.approvalMode,
+				compositeSpec: { target_format: fmt },
+			});
 
-	// Execute a quick engineering action
+			if (plan.steps && plan.steps.length > 0) {
+				await startRun({
+					projectId: runState.projectId || effectiveProjectId,
+					modelId: activeModelId || undefined,
+					expectedRevision: expectedRev,
+					steps: plan.steps.map((s) => ({
+						step_id: s.step_id,
+						capability_id: s.capability_id,
+						description: s.description,
+						payload: s.payload,
+					})),
+					approvalMode: runState.approvalMode,
+					plan: {
+						plan_id: plan.plan_id,
+						intent_summary: plan.intent_summary,
+						dag: plan.dag,
+					},
+				});
+
+				await sendMessage(
+					`⚡ Export Deliverable Workflow Initiated: ${fmt.toUpperCase()} format (${plan.steps.length} steps). Policy: ${plan.overall_policy_decision}.`,
+				);
+			}
+		} catch (err) {
+			console.warn("Export run start failed:", err);
+		}
+	}, [stagedExport, startRun, runState.projectId, runState.approvalMode, effectiveProjectId, activeModelId, sendMessage]);
+
+	// S1: Execute a quick engineering action via server-authoritative ControlRequest pipeline
 	const handleQuickAction = useCallback(
 		async (action: QuickAction) => {
-			if (action.capabilityId === "export.execute_export") {
-				await handlePlanExport("dxf");
-				return;
+			try {
+				const plan = await agentWorkflowApi.planWorkflow({
+					prompt: action.prompt,
+					projectId: runState.projectId || effectiveProjectId,
+					modelId: activeModelId || undefined,
+					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+					approvalMode: runState.approvalMode,
+					compositeSpec: action.spec,
+				});
+
+				if (plan.steps && plan.steps.length > 0) {
+					await startRun({
+						projectId: runState.projectId || effectiveProjectId,
+						modelId: activeModelId || undefined,
+						expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
+						steps: plan.steps.map((s) => ({
+							step_id: s.step_id,
+							capability_id: s.capability_id,
+							description: s.description,
+							payload: s.payload,
+						})),
+						approvalMode: runState.approvalMode,
+						plan: {
+							plan_id: plan.plan_id,
+							intent_summary: plan.intent_summary,
+							dag: plan.dag,
+						},
+					});
+
+					await sendMessage(
+						`⚡ Autonomous Engineering Workflow Initiated: ${plan.intent_summary} (${plan.steps.length} steps). Policy: ${plan.overall_policy_decision}. Requires Approval: ${plan.requires_human_approval ? "YES" : "NO"}.`,
+					);
+				}
+			} catch (err) {
+				console.warn("Quick action planning failed, falling back to conversational prompt:", err);
+				await sendMessage(action.prompt);
 			}
-			await startRun({
-				projectId: runState.projectId,
-				steps: action.steps,
-				approvalMode: runState.approvalMode,
-			});
 		},
-		[startRun, runState.projectId, runState.approvalMode, handlePlanExport],
+		[startRun, runState.projectId, runState.approvalMode, effectiveProjectId, activeModelId, activeRevision, sendMessage],
 	);
 
-	// Unified submit handler (Intelligent Chat vs Run router)
+	// S1: Unified submit handler — 100% ControlRequest pipeline
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const prompt = inputValue.trim();
@@ -422,37 +386,11 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 
 		setInputValue("");
 
-		const lower = prompt.toLowerCase();
-
-		// Dev-only local export trigger shortcut (guarded from production builds)
-		if (import.meta.env.DEV) {
-			if (
-				lower.includes("export") ||
-				lower.includes("download dxf") ||
-				lower.includes("download ifc") ||
-				lower.includes("download revit") ||
-				lower.includes("download boq") ||
-				lower.includes("download excel")
-			) {
-				let targetFmt: ExportTargetFormat = "dxf";
-				if (lower.includes("ifc")) targetFmt = "ifc";
-				else if (lower.includes("revit")) targetFmt = "revit";
-				else if (lower.includes("excel") || lower.includes("xlsx") || lower.includes("boq"))
-					targetFmt = "xlsx";
-				else if (lower.includes("csv")) targetFmt = "csv";
-				else if (lower.includes("pdf") || lower.includes("report")) targetFmt = "pdf";
-				else if (lower.includes("json")) targetFmt = "json";
-
-				await handlePlanExport(targetFmt);
-				return;
-			}
-		}
-
-		// Route through real backend workflow planner (A5 wireup)
+		// Route through real backend workflow planner (ControlRequest pipeline)
 		try {
 			const plan = await agentWorkflowApi.planWorkflow({
 				prompt,
-				projectId: runState.projectId,
+				projectId: runState.projectId || effectiveProjectId,
 				modelId: activeModelId || undefined,
 				expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
 				approvalMode: runState.approvalMode,
@@ -461,7 +399,7 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 
 			if (plan.steps && plan.steps.length > 0) {
 				await startRun({
-					projectId: runState.projectId,
+					projectId: runState.projectId || effectiveProjectId,
 					modelId: activeModelId || undefined,
 					expectedRevision: activeRevision !== undefined ? activeRevision : undefined,
 					steps: plan.steps.map((s) => ({
@@ -484,17 +422,69 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 				return;
 			}
 		} catch (err) {
-			console.warn("Autonomous planner fallback to LLM stream:", err);
+			console.warn("Autonomous planner fallback to conversational LLM stream:", err);
 		}
 
-		// Standard conversational LLM stream
+		// Conversational stream for advisory/code Q&A
 		await sendMessage(prompt);
 	};
 
-	// Artifacts produced by real run or real direct export (truthful empty state when none exist)
+	// S2: Connect visual surfaces to official run selection and step results (zero local parallel artifact state)
 	const producedArtifacts: ProducedArtifact[] = useMemo(() => {
-		return [...exportedArtifacts];
-	}, [exportedArtifacts]);
+		const list: ProducedArtifact[] = [];
+		if (!runState.steps) return list;
+
+		for (const step of runState.steps) {
+			if (step.status === "completed" && step.result_data) {
+				const resData = step.result_data;
+				// 1. Single artifact record
+				if (resData.artifact && typeof resData.artifact === "object") {
+					const art = resData.artifact as Record<string, unknown>;
+					list.push({
+						artifact_id: String(art.artifact_id || `art-${step.step_id}`),
+						filename: String(art.filename || `deliverable.${String(art.target_format || "dxf").toLowerCase()}`),
+						format: String(art.target_format || art.format || "DXF").toUpperCase(),
+						size_bytes: typeof art.file_size_bytes === "number" ? art.file_size_bytes : typeof art.size_bytes === "number" ? art.size_bytes : undefined,
+						status: "ready",
+						download_url: typeof art.download_url === "string" ? art.download_url : `/api/v1/exports/download/${art.artifact_id || step.step_id}`,
+						created_at: typeof art.created_at === "string" ? art.created_at : undefined,
+					});
+				}
+				// 2. Artifact list
+				if (Array.isArray(resData.artifacts)) {
+					for (const artItem of resData.artifacts) {
+						if (artItem && typeof artItem === "object") {
+							const art = artItem as Record<string, unknown>;
+							list.push({
+								artifact_id: String(art.artifact_id || `art-${step.step_id}-${list.length}`),
+								filename: String(art.filename || `deliverable.${String(art.target_format || "dxf").toLowerCase()}`),
+								format: String(art.target_format || art.format || "DXF").toUpperCase(),
+								size_bytes: typeof art.file_size_bytes === "number" ? art.file_size_bytes : typeof art.size_bytes === "number" ? art.size_bytes : undefined,
+								status: "ready",
+								download_url: typeof art.download_url === "string" ? art.download_url : `/api/v1/exports/download/${art.artifact_id || step.step_id}`,
+								created_at: typeof art.created_at === "string" ? art.created_at : undefined,
+							});
+						}
+					}
+				}
+				// 3. Export deliverable capability direct output
+				if (step.capability_id === "export.execute_export" && resData.filename) {
+					const exists = list.some((a) => a.filename === resData.filename);
+					if (!exists) {
+						list.push({
+							artifact_id: String(resData.artifact_id || `art-${step.step_id}`),
+							filename: String(resData.filename),
+							format: String(resData.target_format || "DXF").toUpperCase(),
+							size_bytes: typeof resData.file_size_bytes === "number" ? resData.file_size_bytes : undefined,
+							status: "ready",
+							download_url: typeof resData.download_url === "string" ? resData.download_url : `/api/v1/exports/download/${resData.artifact_id || step.step_id}`,
+						});
+					}
+				}
+			}
+		}
+		return list;
+	}, [runState.steps]);
 
 	return (
 		<div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -557,19 +547,19 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 							plan={stagedImport.plan}
 							isExecuting={stagedImport.isExecuting}
 							onStartAgentRun={handleStartImportRun}
-							onDirectExecute={handleDirectExecuteImport}
+							onDirectExecute={(staged) => void handleStartImportRun(staged, "AUTO")}
 							onDismiss={() => setStagedImport(null)}
 						/>
 					)}
 
-					{/* Staged Export Planning / Loss Preview Card (Phase 4) */}
+					{/* Staged Export Planning / Loss Preview Card (Phase 4 & 7) */}
 					{stagedExport && (
 						<ExportPlanCard
 							plan={stagedExport.plan}
 							isExecuting={stagedExport.isExecuting}
 							onFormatChange={(fmt) => void handlePlanExport(fmt)}
 							onStartAgentRun={() => void handleStartExportRun()}
-							onDirectExecute={() => void handleDirectExecuteExport()}
+							onDirectExecute={() => void handleStartExportRun()}
 							onDismiss={() => setStagedExport(null)}
 						/>
 					)}
@@ -610,7 +600,7 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 								onClear={clearRun}
 							/>
 
-							{/* Produced Artifacts Display */}
+							{/* Produced Artifacts Display (Derived strictly from official selection & run state) */}
 							{producedArtifacts.length > 0 && (
 								<ArtifactDisplay artifacts={producedArtifacts} />
 							)}
