@@ -1,6 +1,6 @@
 # PHASE9_ENGINEERING_EXPANSION.md — توثيق توسع القدرات الهندسية (REST-first)
 
-> **الإصدار:** v1.0 | **التاريخ:** 2026-08-31 | **الحاكم:** `BAZSPARK_PLAN_V2_2_1.md` §5 Phase 9 & Gate 9  
+> **الإصدار:** v1.0 | **التاريخ:** 2026-08-31 | **الحاكم:** `BAZSPARK_PLAN_V2_2_1.md` §5 Phase 9  
 > **الفرع:** `feature/phase-9-engineering-expansion`  
 > **الأساس المعماري:** Single Canonical Execution Chain (`ControlRequest → Generic Planner → Policy → Approval → CommandBus / Kernel Handler → Audit Reference`)
 
@@ -50,7 +50,7 @@
 
 ---
 
-## 5. مصفوفة التحقق واختبارات Gate 9
+## 5. مصفوفة التحقق واختبارات المرحلة 9
 
 1. **Kernel Numerical Verification (`backend/tests/kernel/test_phase9_engineering_kernels.py`):**
    - 16 اختبارًا حسابيًا دقيقًا تغطي النطاقات الستة بالقيم المرجعية للمعايير القياسية (SOLAS, NFPA, IEC, ISO, IEEE).
@@ -70,7 +70,7 @@
 | 13 | `tender.generate_financial_proposal` | `CANONICAL_COMMAND` | توليد العرض المالي الشامل مع أسعار قابلة للتحديث، وحساب الضرائب الإقليمية (EGP 14%, SAR 15%)، والخصومات، والمجاميع الفرعية، والشروط التجارية مع تتبع 100% لجداول الكميات. |
 | 14 | `tender.generate_technical_compliance` | `CANONICAL_COMMAND` | توليد مصفوفة المطابقة الفنية المعيارية التي تربط متطلبات العميل بالمعايير القياسية والقيم المحسوبة من النواة الهندسية مع حساب نسبة المطابقة وبصمة SHA-256. |
 
-### مصفوفة التحقق لاختبارات Gate 9b (`backend/tests/e2e/test_phase9b_tender_e2e.py`):
+### مصفوفة التحقق لاختبارات المرحلة 9b (`backend/tests/e2e/test_phase9b_tender_e2e.py`):
 1. **إصدار وثيقتين مستقلتين كاملتين:** تم التحقق E2E من إصدار وثيقة العرض المالي ووثيقة مصفوفة المطابقة الفنية.
 2. **تتبع الأرقام 100% (100% Number Traceability):** التحقق من دقة حسابات الضرائب، والخصومات، والمجاميع، وتطابق الأسعار مع جداول الكميات الناتجة عن محرك الـ BOQ.
 3. **سلامة البصمة الرقمية (SHA-256 Checksums):** التحقق من توليد بصمات رقمية فريدة وغير قابلة للتلاعب لكل وثيقة مناقصة مستخرجة.

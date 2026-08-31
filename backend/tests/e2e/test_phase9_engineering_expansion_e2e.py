@@ -476,7 +476,7 @@ def test_scenario_09_p95_latency_benchmark_under_limit(
     engineer_principal: AuthenticatedPrincipal,
     bus: CommandBus,
 ) -> None:
-    """Gate 9 Scenario 9: p95 latency benchmark for all 12 Phase 9 capabilities (asserting p95 < 250ms)."""
+    """Phase 9 Scenario 9: p95 latency benchmark for all 12 Phase 9 capabilities (asserting p95 < 250ms)."""
     p95_limit_ms = 250.0
     latencies: dict[str, list[float]] = {cap: [] for cap in ALL_PHASE9_CAPABILITIES}
 

@@ -52,12 +52,12 @@ All 9 capabilities map exclusively to the 4 canonical plan classes:
 
 ## 4. Workspace & Governance E2E Verification & Scenario Counter
 
-Gate 8 test suite (`backend/tests/e2e/test_phase8_gate8_e2e.py`) validates **10 distinct end-to-end scenarios** with zero mock pathways and real audit hashes:
+Phase 8 E2E suite (`backend/tests/e2e/test_phase8_gate8_e2e.py`) validates **10 distinct end-to-end scenarios** with zero mock pathways and real audit hashes:
 
-1. **Scenario 1 (Canonical Gate 8 Verbatim Arabic):**  
+1. **Scenario 1 (Canonical Phase 8 Verbatim Arabic):**  
    «افتح مشروع proj-gate8-arabic، شغّل validation، اعرض آخر audit»  
    $\to$ Plan synthesis $\to$ execution of `workspace.project`, `governance.validate`, and `governance.audit` with SHA-256 audit reference generation.
-2. **Scenario 2 (Gate 8 English Intent):**  
+2. **Scenario 2 (Phase 8 English Intent):**  
    "Open workspace project proj-gate8-english, run compliance validation, and show latest audit trail".
 3. **Scenario 3 (Step-by-Step Human Approval Gate):**  
    Validation of `ApprovalMode.STEP_BY_STEP` halting at approval gates and resuming upon explicit decision.
@@ -69,9 +69,9 @@ Gate 8 test suite (`backend/tests/e2e/test_phase8_gate8_e2e.py`) validates **10 
    Binding CAD model context and asserting OCC revision invariants.
 7. **Scenario 7 (Full REST API Lifecycle):**  
    POST `/api/v1/workflow/runs/plan` and `/api/v1/workflow/runs/start-plan` wire execution.
-8. **Scenario 8 (Multilingual French Gate 8 Intent):**  
+8. **Scenario 8 (Multilingual French Phase 8 Intent):**  
    "Ouvrir workspace projet proj-gate8-fr, exécuter validation règles et audit".
-9. **Scenario 9 (Multilingual German Gate 8 Intent):**  
+9. **Scenario 9 (Multilingual German Phase 8 Intent):**  
    "Projekt proj-gate8-de workspace öffnen, Validierung ausführen und Audit anzeigen".
 10. **Scenario 10 (Immutable Audit Lineage Chain Across Multi-Run Lifecycle):**  
     Sequential multi-run execution on a single project verifying tamper-evident cryptographic hash chaining.

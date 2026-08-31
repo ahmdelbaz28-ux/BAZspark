@@ -122,13 +122,13 @@ def tender_principal() -> AuthenticatedPrincipal:
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def test_gate9b_verbatim_tender_issuance_e2e(
+def test_phase9b_verbatim_tender_issuance_e2e(
     generic_planner: GenericWorkflowPlanner,
     orchestrator: AgentRunOrchestrator,
     bus: CommandBus,
     tender_principal: AuthenticatedPrincipal,
 ) -> None:
-    """Gate 9b: Issue two separate documents (Financial Proposal + Technical Compliance Matrix) with 100% number traceability."""
+    """Issue two separate documents (Financial Proposal + Technical Compliance Matrix) with 100% number traceability."""
     project_id = "proj-tender-tower-01"
     bus.state_store.set_project_revision(project_id, 1)
 
