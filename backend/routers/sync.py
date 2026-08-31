@@ -531,9 +531,12 @@ async def websocket_endpoint(
                 if project_id:
                     db = get_db()
                     project = db.get_project(project_id)
-                    is_admin = (
-                        (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
-                        or bool(env_match)
+                    is_admin = bool(
+                        rbac_info
+                        and (
+                            getattr(rbac_info, "role", None) == Role.ADMIN
+                            or getattr(rbac_info, "role", None) == "admin"
+                        )
                     )
                     rbac_ids = {
                         getattr(rbac_info, "user_id", None),
@@ -569,9 +572,12 @@ async def websocket_endpoint(
                 if project_id:
                     db = get_db()
                     project = db.get_project(project_id)
-                    is_admin = (
-                        (rbac_info and getattr(rbac_info, "role", None) == Role.ADMIN)
-                        or bool(env_match)
+                    is_admin = bool(
+                        rbac_info
+                        and (
+                            getattr(rbac_info, "role", None) == Role.ADMIN
+                            or getattr(rbac_info, "role", None) == "admin"
+                        )
                     )
                     rbac_ids = {
                         getattr(rbac_info, "user_id", None),

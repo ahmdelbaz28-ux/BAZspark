@@ -67,6 +67,16 @@ export interface AgentRunStateRecord {
 	version: number;
 }
 
+export interface UniversalContextWireParams {
+	projectId?: string;
+	modelId?: string;
+	entityId?: string;
+	entityIds?: string[];
+	entityType?: string;
+	expectedRevision?: number;
+	uiSurface?: string;
+}
+
 export const agentWorkflowApi = {
 	/**
 	 * Synthesize an autonomous workflow plan from natural language or structured specifications.
@@ -76,19 +86,23 @@ export const agentWorkflowApi = {
 		projectId?: string;
 		modelId?: string;
 		entityId?: string;
+		entityIds?: string[];
 		entityType?: string;
 		expectedRevision?: number;
+		uiSurface?: string;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
 		governancePolicy?: Record<string, unknown>;
 	}): Promise<AutonomousPlanRecord> {
 		return api.post<AutonomousPlanRecord>("/workflow/runs/plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "",
-			model_id: params.modelId || "",
-			entity_id: params.entityId || "",
-			entity_type: params.entityType || "",
+			project_id: params.projectId,
+			model_id: params.modelId,
+			entity_id: params.entityId,
+			entity_ids: params.entityIds,
+			entity_type: params.entityType,
 			expected_revision: params.expectedRevision,
+			ui_surface: params.uiSurface,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
 			governance_policy: params.governancePolicy,
@@ -103,8 +117,10 @@ export const agentWorkflowApi = {
 		projectId?: string;
 		modelId?: string;
 		entityId?: string;
+		entityIds?: string[];
 		entityType?: string;
 		expectedRevision?: number;
+		uiSurface?: string;
 		compositeSpec?: Record<string, unknown>;
 		approvalMode?: "AUTO" | "STEP_BY_STEP";
 		conversationId?: string;
@@ -112,14 +128,16 @@ export const agentWorkflowApi = {
 	}): Promise<AgentRunStateRecord> {
 		return api.post<AgentRunStateRecord>("/workflow/runs/start-plan", {
 			prompt: params.prompt,
-			project_id: params.projectId || "",
-			model_id: params.modelId || "",
-			entity_id: params.entityId || "",
-			entity_type: params.entityType || "",
+			project_id: params.projectId,
+			model_id: params.modelId,
+			entity_id: params.entityId,
+			entity_ids: params.entityIds,
+			entity_type: params.entityType,
 			expected_revision: params.expectedRevision,
+			ui_surface: params.uiSurface,
 			composite_spec: params.compositeSpec,
 			approval_mode: params.approvalMode || "AUTO",
-			conversation_id: params.conversationId || "",
+			conversation_id: params.conversationId,
 			governance_policy: params.governancePolicy,
 		});
 	},

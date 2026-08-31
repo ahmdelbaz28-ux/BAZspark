@@ -16,8 +16,9 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Track A / Batch 1** | Protocol Correctness & Security (A1, A2, A4, A5) | **PASS (FINAL)** | Forensic Gate 1A review (`610ed62`); 12/12 security suite passed; 0-byte token query fallback |
 | **Track A / Batch 2** | Truthfulness, Deployment Containment & Repo Hygiene (A3, A6, A7) | **PASS (FINAL)** | Forensic Gate 1B review (`de5d6d59`); R1-B & R2-B closed; 28/28 valid doc links |
 | **Phase 1** | Canonical Capability Contract & Registry Refactor (D-1a – D-1d) | **PASS (FINAL)** | Forensic Gate 1C review (`1d9d9ed5`); `CapabilityContract` typed registry, Gate 1 conformance suite |
-| **Phase 2** | Authorized Capability Discovery & Schema Versioning (D-2a – D-2d) | **ACTIVE** | Executive Contract Phase 2; `discover_authorized()` query, `schema_version="1.0"`, `/api/v1/capabilities` router, O-C1 resolved |
-| **Phases 3 – 7** | Multi-step Workflows, Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
+| **Phase 2** | Authorized Capability Discovery & Schema Versioning (D-2a – D-2d) | **PASS (FINAL)** | Forensic Gate 2 review (`ba595038`); G-2-C1 verified (`3c44616f`), `discover_authorized()`, `/capabilities` |
+| **Phase 3** | Universal Context + Wire Contract (D-3a – D-3d) | **PASS (FINAL)** | Forensic Gate 3 review; `UniversalSessionContext` 5-field matrix, dynamic revision derivation, ticket auth |
+| **Phases 4 – 7** | Multi-step Workflows, Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
 
 ---
 

@@ -341,4 +341,96 @@ describe("useAgentRun", () => {
 		expect(parsed.model_id).toBe("dt-model-101");
 		expect(parsed.expected_revision).toBe(4);
 	});
+
+	it("handles O5 ticket failure gracefully without connection loop", async () => {
+		vi.mocked(api.post).mockRejectedValueOnce(new Error("Network error"));
+
+		const { result } = renderHook(() => useAgentRun("proj-101"));
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 50));
+		});
+
+		expect(result.current.state.error).toContain("Failed to acquire WebSocket authentication ticket");
+		expect(result.current.state.isConnected).toBe(false);
+	});
+
+	it("handles O6 conflict frame and recovers cleanly with recoverFromConflict", async () => {
+		vi.mocked(api.post).mockResolvedValue({ success: true, ticket: "ticket-conflict-789" });
+
+		const mockWsInstances: Array<{
+			url: string;
+			send: ReturnType<typeof vi.fn>;
+			close: ReturnType<typeof vi.fn>;
+			onopen: (() => void) | null;
+			onmessage: ((event: { data: string }) => void) | null;
+			readyState: number;
+		}> = [];
+
+		class MockWs {
+			static readonly CONNECTING = 0;
+			static readonly OPEN = 1;
+			static readonly CLOSING = 2;
+			static readonly CLOSED = 3;
+
+			url: string;
+			send = vi.fn();
+			close = vi.fn();
+			onopen: (() => void) | null = null;
+			onmessage: ((event: { data: string }) => void) | null = null;
+			onclose: (() => void) | null = null;
+			onerror: (() => void) | null = null;
+			readyState = 1;
+
+			constructor(url: string) {
+				this.url = url;
+				mockWsInstances.push(this);
+				setTimeout(() => {
+					if (this.onopen) this.onopen();
+				}, 10);
+			}
+		}
+
+		vi.stubGlobal("WebSocket", MockWs);
+		globalThis.WebSocket = MockWs as unknown as typeof WebSocket;
+		window.WebSocket = MockWs as unknown as typeof WebSocket;
+
+		const { result } = renderHook(() => useAgentRun("proj-101"));
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+
+		expect(mockWsInstances.length).toBeGreaterThan(0);
+		const wsInstance = mockWsInstances[0];
+
+		// Simulate conflict event
+		act(() => {
+			if (wsInstance.onmessage) {
+				wsInstance.onmessage({
+					data: JSON.stringify({
+						type: "ai_conflict",
+						errorCode: "REVISION_CONFLICT",
+						expectedRevision: 3,
+						currentRevision: 5,
+						message: "Project revision conflict",
+					}),
+				});
+			}
+		});
+
+		expect(result.current.state.isConflict).toBe(true);
+		expect(result.current.state.conflictRevision).toBe(5);
+		expect(result.current.state.status).toBe("PAUSED");
+
+		// Execute O6 recovery
+		act(() => {
+			result.current.recoverFromConflict(5);
+		});
+
+		expect(result.current.state.isConflict).toBe(false);
+		expect(result.current.state.conflictRevision).toBeNull();
+		expect(result.current.state.status).toBe("READY");
+		expect(result.current.state.recoveryState).toEqual({ recoveredAtRevision: 5 });
+	});
 });

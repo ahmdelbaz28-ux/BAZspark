@@ -32,6 +32,13 @@ from backend.core.command_bus import (
 )
 from backend.core.context_resolver import default_context_resolver
 from backend.core.openapi_contracts import StandardizedAPIRoute
+from backend.core.session_context import (
+    ContextBudgetExceededError,
+    MissingExpectedRevisionError,
+    UniversalSessionContext,
+    is_revision_required_for_capability,
+    validate_mutation_revision,
+)
 from backend.core.workflow_engine import (
     CompositeWorkflowDAG,
     WorkflowExecutor,
@@ -811,9 +818,44 @@ class AIOrchestrationService:
         """Process user approval: execute deterministic commit with OCC validation."""
         command_id = str(msg.get("commandId", f"cmd-{uuid.uuid4().hex[:12]}"))
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
-        project_id = str(msg.get("projectId") or "")
-        expected_revision = int(msg.get("expectedRevision", 1))
-        capability_id = str(msg.get("capabilityId", CAP_SPATIAL_PLACE_DEVICES))
+        project_id = str(msg.get("projectId") or msg.get("project_id") or "")
+        capability_id = (
+            msg.get("capabilityId")
+            or msg.get("capability_id")
+            or msg.get("action")
+            or CAP_SPATIAL_PLACE_DEVICES
+        )
+
+        expected_rev_raw = msg.get("expectedRevision") if "expectedRevision" in msg else msg.get("expected_revision")
+        if expected_rev_raw is None:
+            if is_revision_required_for_capability(capability_id, self.capability_registry):
+                await websocket.send_json(
+                    {
+                        "type": "ai_error",
+                        "commandId": command_id,
+                        "errorCode": "MISSING_EXPECTED_REVISION",
+                        "message": (
+                            f"Capability '{capability_id}' requires canonical project state revision binding, "
+                            f"but expected_revision was not provided for project '{project_id}'."
+                        ),
+                    }
+                )
+                return
+            expected_revision = None
+        else:
+            try:
+                expected_revision = int(expected_rev_raw)
+            except (ValueError, TypeError):
+                await websocket.send_json(
+                    {
+                        "type": "ai_error",
+                        "commandId": command_id,
+                        "errorCode": "INVALID_EXPECTED_REVISION",
+                        "message": f"expected_revision must be an integer, got: {expected_rev_raw!r}",
+                    }
+                )
+                return
+
         payload = msg.get("payload", {})
 
         command = DomainCommand(
@@ -821,7 +863,7 @@ class AIOrchestrationService:
             correlationId=correlation_id,
             capabilityId=capability_id,
             projectId=project_id,
-            expectedRevision=expected_revision,
+            expectedRevision=expected_revision if expected_revision is not None else 0,
             timestamp=datetime.now(UTC).isoformat(),
             principal=principal,
             riskClass="ENGINEERING_MUTATION"
@@ -942,8 +984,22 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process natural language/composite spec intent into a multi-step DAG proposal."""
-        project_id = str(msg.get("projectId") or "")
-        current_rev = int(msg.get("expectedRevision", 1))
+        project_id = str(msg.get("projectId") or msg.get("project_id") or "")
+        expected_rev_raw = msg.get("expectedRevision") if "expectedRevision" in msg else msg.get("expected_revision")
+        if expected_rev_raw is not None:
+            try:
+                current_rev = int(expected_rev_raw)
+            except (ValueError, TypeError):
+                await websocket.send_json(
+                    {
+                        "type": "ai_error",
+                        "errorCode": "INVALID_EXPECTED_REVISION",
+                        "message": f"expected_revision must be an integer, got: {expected_rev_raw!r}",
+                    }
+                )
+                return
+        else:
+            current_rev = self.command_bus.get_project_revision(project_id) if project_id else 0
 
         # 1. Bounded Context Resolution (<= 1500 tokens)
         composite_spec = msg.get("compositeSpec", {})
@@ -1080,8 +1136,7 @@ class AIOrchestrationService:
         self, websocket: WebSocket, principal: AuthenticatedPrincipal, msg: dict[str, Any]
     ) -> None:
         """Process user approval for composite workflow: atomically commit all steps at expectedRevision."""
-        project_id = str(msg.get("projectId") or "")
-        expected_revision = int(msg.get("expectedRevision", 1))
+        project_id = str(msg.get("projectId") or msg.get("project_id") or "")
         workflow_id = str(msg.get("workflowId", f"wf-{uuid.uuid4().hex[:12]}"))
         correlation_id = str(msg.get("correlationId", f"corr-{uuid.uuid4().hex[:12]}"))
         dag_data = msg.get("dag", {})
@@ -1093,6 +1148,30 @@ class AIOrchestrationService:
                     "workflowId": workflow_id,
                     "errorCode": "INVALID_WORKFLOW_PAYLOAD",
                     "message": "Approval message missing DAG structure.",
+                }
+            )
+            return
+
+        expected_rev_raw = msg.get("expectedRevision") if "expectedRevision" in msg else msg.get("expected_revision")
+        if expected_rev_raw is None:
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "workflowId": workflow_id,
+                    "errorCode": "MISSING_EXPECTED_REVISION",
+                    "message": f"Composite approval mutates project state and requires expectedRevision for project '{project_id}'.",
+                }
+            )
+            return
+        try:
+            expected_revision = int(expected_rev_raw)
+        except (ValueError, TypeError):
+            await websocket.send_json(
+                {
+                    "type": "ai_error",
+                    "workflowId": workflow_id,
+                    "errorCode": "INVALID_EXPECTED_REVISION",
+                    "message": f"expected_revision must be an integer, got: {expected_rev_raw!r}",
                 }
             )
             return
@@ -1439,6 +1518,22 @@ async def _handle_run_start(
                 )
                 return
 
+            raw_eids = msg.get("entity_ids") if "entity_ids" in msg else msg.get("entityIds")
+            all_eids = [str(e) for e in raw_eids if e] if isinstance(raw_eids, list) else []
+            single_eid = msg.get("entity_id") if "entity_id" in msg else msg.get("entityId")
+            if single_eid and str(single_eid) not in all_eids:
+                all_eids.append(str(single_eid))
+            for eid in all_eids:
+                if not db.get_device(project_id, eid):
+                    await websocket.send_json(
+                        {
+                            "type": "run_error",
+                            "errorCode": "ENTITY_NOT_FOUND",
+                            "message": f"Entity '{eid}' does not belong to project '{project_id}'",
+                        }
+                    )
+                    return
+
         # Check revision against state_store or project
         canonical_rev = default_agent_run_orchestrator._bus.state_store.get_project_revision(
             project_id
@@ -1580,9 +1675,12 @@ async def _handle_agent_message(
         await default_orchestration_service.handle_composite_intent(websocket, principal, msg)
     elif msg_type in ("ai_import_intent", "import_intent") and principal:
         await default_orchestration_service.handle_import_intent(websocket, principal, msg)
-    elif msg_type in ("ai_approve_composite", "approve_composite") and principal:
+    elif (
+        msg_type in ("ai_approve_composite", "approve_composite", "composite_approval")
+        and principal
+    ):
         await default_orchestration_service.handle_composite_approval(websocket, principal, msg)
-    elif msg_type in ("ai_approve", "command_approve") and principal:
+    elif msg_type in ("ai_approve", "command_approve", "approval") and principal:
         await default_orchestration_service.handle_approval(websocket, principal, msg)
     elif msg_type in ("user_mutate", "manual_edit") and principal:
         await default_orchestration_service.handle_user_mutation(websocket, msg)
