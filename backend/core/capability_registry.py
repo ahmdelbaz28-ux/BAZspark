@@ -174,13 +174,13 @@ class CapabilityRegistry:
 
     def register(self, capability: CapabilityDefinition) -> None:
         """Register a capability definition after validating its contract conformance (fail-closed)."""
-        if not isinstance(capability, CapabilityDefinition) and getattr(capability, "__class__", None).__name__ != "CapabilityDefinition":
+        if not isinstance(capability, CapabilityDefinition):
             raise TypeError("capability must be an instance of CapabilityDefinition")
         if not capability.capability_id or not isinstance(capability.capability_id, str):
             raise ValueError("capability_id must be a non-empty string")
         if (
             capability.contract is None
-            or (not isinstance(capability.contract, CapabilityContract) and getattr(capability.contract, "__class__", None).__name__ != "CapabilityContract")
+            or not isinstance(capability.contract, CapabilityContract)
             or not getattr(capability, "contract_explicit", False)
         ):
             raise ValueError(
