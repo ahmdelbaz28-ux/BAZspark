@@ -1,15 +1,15 @@
 # BAZspark — Single Authoritative Project Status
-**Document ID:** STATUS-2026-08-30-CANONICAL  
+**Document ID:** STATUS-2026-08-31-CANONICAL  
 **Status:** CANONICAL TRUTH (Single Source of Truth)  
 **Last Updated:** 2026-08-31  
-**Baseline Hash:** `20eb897ea276bcf6f472e25875d8c5198dbc9a60` (FG-5 Head)  
-**Active Execution Branch:** `feature/phase-6-universal-control-request`
+**Baseline Hash:** `6be0aaf0c5c04f5790cb31163ae614822939603a` (FG-6 Head)  
+**Active Execution Branch:** `feature/phase-7-universal-chat`
 
 ---
 
 ## 1. Executive Summary & Gate Status
 
-BAZspark is an engineering copilot and digital twin platform for safety-critical fire alarm design (NFPA 72 compliant). The codebase is undergoing rigorous, evidence-based forensic remediation under the **BAZSPARK_PLAN_V2_2** execution framework.
+BAZspark is an engineering copilot and digital twin platform for safety-critical fire alarm design (NFPA 72 compliant). The codebase is undergoing rigorous, evidence-based forensic remediation under the **BAZSPARK_PLAN_V2_2_1** execution framework.
 
 | Track / Phase | Scope | Status | Verification Evidence |
 |---|---|---|---|
@@ -20,8 +20,8 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 3** | Universal Context + Wire Contract (D-3a – D-3d) | **PASS (FINAL)** | Forensic Gate 3 review; `UniversalSessionContext` 5-field matrix, dynamic revision derivation, ticket auth |
 | **Phase 4** | Mutation Authority & State Externalization (S1 – S5) | **PASS (FINAL)** | Forensic Gate 4 review (`3819193c`); 220 mutation points cataloged, AST CI gate, CAD dispatch Principle 3, shared state store, A6 lifted (replicas >= 2) |
 | **Phase 5** | Generic Planner & Retirement Protocol (S1 – S6) | **PASS (FINAL)** | Forensic Gate 5 review (`20eb897e`); dynamic capability discovery, DAG schema validator, disambiguation loop, prompt injection shield, default `dry_run=true`, 33/33 intent & architecture suite passed |
-| **Phase 6** | Universal ControlRequest & Tool Interface (S1 – S5) | **IMPLEMENTED (FG-6 READY)** | Forensic Gate 6 deliverables complete; single source `ControlRequest` model & JSON schema, auto tool interface derivation, 44/44 intent & architecture suite passed across all 9 Gate 6 categories |
-| **Phase 7** | Chat Universal & Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
+| **Phase 6** | Universal ControlRequest & Tool Interface (S1 – S5) | **PASS (FINAL)** | Forensic Gate 6 review (`6be0aaf0`); single source `ControlRequest` model & JSON schema, auto tool interface derivation, 44/44 intent & architecture suite passed across all 9 Gate 6 categories |
+| **Phase 7** | Universal Chat Control Plane (S1 – S5) | **COMPLETED (FG-7 READY)** | Zero direct unmonitored calls in `AgentChatPage.tsx`; 10/10 mixed E2E scenarios passed with real audit IDs; visual surfaces bound to official selection; 57 intent/architecture/E2E suite passed; 1,535 backend tests passed; 573 Vitest tests passed; clean build |
 
 ---
 
@@ -34,7 +34,7 @@ The following historical documents contain conflicting, obsolete, or premature c
    - *Reality:* Premature assertion prior to independent forensic gate audit. Real production readiness requires completing Tracks A, B, and Phases 1–7 under explicit gate verification.
 2. **`PRODUCTION_VALIDATION_RESULTS.txt` (Archived at `docs/archive/PRODUCTION_VALIDATION_RESULTS.txt`):**
    - *Conflict:* Historical test snapshot (August 6, 2026) reporting 1,405 passing tests with failing gaps.
-   - *Reality:* Current active test baseline achieves 1,475+ backend tests (100% pass rate) and 572+ frontend tests.
+   - *Reality:* Current active test baseline achieves 1,535+ backend tests (100% pass rate) and 573+ frontend tests.
 3. **`TROUBLESHOOTING_GUIDE.md` (Archived at `docs/archive/TROUBLESHOOTING_GUIDE.md`):**
    - *Conflict:* Duplicate of `docs/TROUBLESHOOTING.md`.
    - *Resolution:* Consolidated into canonical `docs/TROUBLESHOOTING.md`.
@@ -50,3 +50,4 @@ The following historical documents contain conflicting, obsolete, or premature c
 - **Truthfulness (A3):** Zero hardcoded fake artifacts or simulated completions. Production requests route through the backend workflow planner.
 - **Deployment Containment (A6 — LIFTED):** State externalized via `SharedStateStore` with PostgreSQL/Redis persistence. Multi-instance scaling restored to `replicas >= 2` in `docker-compose.yml` and `render.yaml` (see `docs/MUTATION_AUTHORITY_PHASE4.md`).
 - **Repository Hygiene (A7):** Clean repository hierarchy with root reserved for essential workspace entry points.
+- **Universal Chat Control Plane (Phase 7):** Zero direct unmonitored execution calls in `AgentChatPage.tsx`. Visual surfaces derive state exclusively from authoritative `useAgentRun` steps and official project selection. All chat cycles execute through `ControlRequest → Planner → Policy → Approval → Run`.

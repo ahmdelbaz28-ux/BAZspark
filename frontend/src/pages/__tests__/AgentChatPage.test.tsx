@@ -1,11 +1,12 @@
 /**
- * AgentChatPage.test.tsx — Integration tests for AI-First Control Center (Phase 2).
+ * AgentChatPage.test.tsx — Integration tests for AI-First Control Center (Phase 7 Universal Chat Control Plane).
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
 import { AgentChatPage } from "@/pages/AgentChatPage";
+import { agentWorkflowApi } from "@/services/agentWorkflowApi";
 
 // Mock useLlmChat
 const mockSendMessage = vi.fn().mockResolvedValue(undefined);
@@ -35,7 +36,7 @@ vi.mock("@/hooks/useVoiceControl", () => ({
 vi.mock("@/services/agentWorkflowApi", () => ({
 	agentWorkflowApi: {
 		planWorkflow: vi.fn().mockResolvedValue({ steps: [] }),
-		startPlannedRun: vi.fn().mockResolvedValue({ runId: "test-run" }),
+		startPlannedWorkflow: vi.fn().mockResolvedValue({ runId: "test-run" }),
 	},
 }));
 
@@ -82,6 +83,45 @@ describe("AgentChatPage", () => {
 
 		await waitFor(() => {
 			expect(mockSendMessage).toHaveBeenCalledWith("How do I calculate cable size?");
+		});
+	});
+
+	it("routes quick action clicks through agentWorkflowApi.planWorkflow", async () => {
+		const planSpy = vi.spyOn(agentWorkflowApi, "planWorkflow").mockResolvedValueOnce({
+			plan_id: "plan-qa-1",
+			project_id: "proj-1",
+			expected_revision: 1,
+			intent_summary: "Auto-layout detectors",
+			steps: [
+				{
+					step_id: "step-1",
+					capability_id: "spatial.place_devices",
+					description: "Place detectors",
+					dependencies: [],
+					payload: { room_id: "zone-a" },
+					risk_class: "LOW",
+					policy_result: "AUTO_APPROVED",
+					requires_approval: false,
+				},
+			],
+			dag: { nodes: [] },
+			requires_human_approval: false,
+			overall_policy_decision: "AUTO_APPROVED",
+			projected_state: {},
+		});
+
+		renderComponent();
+
+		const quickActionBtns = screen.getAllByText("Place Smoke Detectors");
+		fireEvent.click(quickActionBtns[0]);
+
+		await waitFor(() => {
+			expect(planSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					prompt: expect.stringContaining("smoke detectors"),
+					compositeSpec: expect.objectContaining({ room_id: "zone-a" }),
+				}),
+			);
 		});
 	});
 
