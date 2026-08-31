@@ -141,108 +141,6 @@ exceptions:
   deadline: Phase 4.4 (S4)
   removal_condition: Migrate MUT-ROUTER-CAD-DRAW_TEXT to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
     via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_FILES
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-CONVERT_FILES to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-UPLOAD_AND_CONVERT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-UPLOAD_AND_CONVERT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-CONFIGURE_CONVERSION
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-CONFIGURE_CONVERSION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-ROLLBACK_TO_VERSION
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-ROLLBACK_TO_VERSION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_CONFIG
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-UPDATE_CONFIG to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
-    to CANONICAL_COMMAND or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ENGINEERING_COPILOT-CHAT_WITH_COPILOT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ENGINEERING_COPILOT-CHAT_WITH_COPILOT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ENGINEERING_COPILOT-PROCESS_ENGINEERING_REQUEST
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ENGINEERING_COPILOT-PROCESS_ENGINEERING_REQUEST
-    to CANONICAL_COMMAND or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ENGINEERING_COPILOT-CREATE_ENGINEERING_ENTITY
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ENGINEERING_COPILOT-CREATE_ENGINEERING_ENTITY
-    to CANONICAL_COMMAND or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ENGINEERING_COPILOT-TRANSLATE_ENGINEERING_MODEL
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ENGINEERING_COPILOT-TRANSLATE_ENGINEERING_MODEL
-    to CANONICAL_COMMAND or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-CONNECT_TO_ETAP
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-CONNECT_TO_ETAP to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-DISCONNECT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-DISCONNECT to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
-    via CommandBus
-- id: MUT-ROUTER-ETAP-EXPORT_TO_ETAP
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-EXPORT_TO_ETAP to CANONICAL_COMMAND or
-    EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-IMPORT_FROM_ETAP
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-IMPORT_FROM_ETAP to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-CREATE_SETTINGS
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-CREATE_SETTINGS to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-UPDATE_SETTINGS
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-UPDATE_SETTINGS to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ETAP-DELETE_SETTINGS
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-ETAP-DELETE_SETTINGS to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_OCR
   reason: Unclassified write endpoint requires classification and review
   owner: '@core-team'
@@ -291,18 +189,6 @@ exceptions:
   deadline: Phase 4.4 (S4)
   removal_condition: Migrate MUT-ROUTER-EXPORTS-EXPORT_DATA_GLOBAL to CANONICAL_COMMAND
     or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-FACP-SELECT_FACP
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-FACP-SELECT_FACP to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
-    via CommandBus
-- id: MUT-ROUTER-FACP-VERIFY_FACP
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-FACP-VERIFY_FACP to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
-    via CommandBus
 - id: MUT-ROUTER-IMPORT_ROUTER-UPLOAD_AND_STAGE_FILE
   reason: Import/export mutation bypasses CommandBus; to be migrated in S4
   owner: '@core-team'
@@ -332,42 +218,6 @@ exceptions:
   owner: '@core-team'
   deadline: Phase 4.4 (S4)
   removal_condition: Migrate MUT-ROUTER-IMPORT_ROUTER-CREATE_IMPORT_RUN to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-MARINE-DIVIDE_ZONES
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-MARINE-DIVIDE_ZONES to CANONICAL_COMMAND or
-    EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-MINING-CONVEYOR_SUPPRESSION
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-MINING-CONVEYOR_SUPPRESSION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-MINING-COMPLIANCE_REPORT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-MINING-COMPLIANCE_REPORT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-QOMN-PLACE_DETECTORS
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-QOMN-PLACE_DETECTORS to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-QOMN-PLACE_DUCT_DETECTOR
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-QOMN-PLACE_DUCT_DETECTOR to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-QOMN-RUN_GOLDEN_TESTS
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-QOMN-RUN_GOLDEN_TESTS to CANONICAL_COMMAND
     or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-REPORTS-GENERATE_REPORT
   reason: Unclassified write endpoint requires classification and review
@@ -531,60 +381,6 @@ exceptions:
   owner: '@core-team'
   deadline: Phase 4.4 (S4)
   removal_condition: Migrate MUT-ROUTER-SYNC-WEBSOCKET_ENDPOINT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-EXPORT_AR_SNAPSHOT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-EXPORT_AR_SNAPSHOT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-SUBSCRIBE_WEBHOOK
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-SUBSCRIBE_WEBHOOK to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-UNSUBSCRIBE_WEBHOOK
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-UNSUBSCRIBE_WEBHOOK to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-PUBLISH_WEBHOOK_EVENT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-PUBLISH_WEBHOOK_EVENT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-CREATE_SMOKE_STATE
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-CREATE_SMOKE_STATE to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-STORE_MEMORY
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-STORE_MEMORY to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
-    via CommandBus
-- id: MUT-ROUTER-V2-ADD_TOPOLOGY_ELEMENT
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-ADD_TOPOLOGY_ELEMENT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-ADD_TOPOLOGY_CONNECTION
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-ADD_TOPOLOGY_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-V2-ADD_GRAPHRAG_KNOWLEDGE
-  reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
-  removal_condition: Migrate MUT-ROUTER-V2-ADD_GRAPHRAG_KNOWLEDGE to CANONICAL_COMMAND
     or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-WORKFLOW-RESUME_AGENT_RUN
   reason: Unclassified write endpoint requires classification and review
