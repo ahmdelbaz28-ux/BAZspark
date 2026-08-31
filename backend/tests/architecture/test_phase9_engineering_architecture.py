@@ -77,3 +77,44 @@ def test_tool_schema_auto_derivation_discovers_phase9_and_9b_capabilities() -> N
         assert sanitized_name in openai_tool_names, (
             f"Auto-generated OpenAI tool schemas missing capability '{sanitized_name}'"
         )
+
+
+def test_capability_registry_rejects_alien_class_fail_closed() -> None:
+    """Assert CapabilityRegistry.register() strictly fails closed on alien classes matching by name only (R-9.1)."""
+    from backend.core.capability_registry import CapabilityDefinition, CapabilityContract
+
+    # 1. Alien capability definition object with matching class name
+    AlienCapabilityDefinition = type("CapabilityDefinition", (), {
+        "capability_id": "alien.test_capability",
+        "contract": None,
+        "contract_explicit": True,
+    })
+    alien_def = AlienCapabilityDefinition()
+
+    reg = CapabilityRegistry()
+    with pytest.raises(TypeError, match="capability must be an instance of CapabilityDefinition"):
+        reg.register(alien_def)  # type: ignore
+
+    # 2. Legit capability definition with alien contract object matching class name
+    AlienCapabilityContract = type("CapabilityContract", (), {
+        "schema_version": "1.0",
+        "revision_binding": "none",
+        "execution_mode": "inline",
+        "mutation_type": "read_only",
+        "risk": "LOW",
+        "scopes": [],
+        "input_schema": {},
+        "output_schema": {},
+    })
+    legit_def_with_alien_contract = CapabilityDefinition(
+        capability_id="test.legit_id",
+        name="Test Legit",
+        description="Test",
+        category="compliance",
+        contract=AlienCapabilityContract(),  # type: ignore
+        handler=lambda p: {},
+        contract_explicit=True,
+    )
+    with pytest.raises(ValueError, match="must have an explicit, valid CapabilityContract declared"):
+        reg.register(legit_def_with_alien_contract)
+
