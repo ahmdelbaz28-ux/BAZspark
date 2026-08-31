@@ -17,7 +17,7 @@ Every write, mutation, or state-changing entry point in the system is strictly c
 |---|---|---|
 | **`CANONICAL_COMMAND`** | Domain mutations that alter the canonical BIM/CAD project state. | Routes through `CommandBus.execute()` with Optimistic Concurrency Control (`expected_revision`), idempotency deduplication (`idempotency_key`), and immutable SHA-256 HMAC audit chaining (`AuditStore`). |
 | **`EXTERNAL_TRANSACTION`** | External CAD live environment dispatches (Revit/AutoCAD desktop agents). | Governed by **Principle 3**: CommandBus coordinates and logs the dispatch; external adapter executes within its native CAD process; verification is evidence-based (geometry hash, element IDs); compensation callbacks are declared upon partial failure. |
-| **`DIRECT_DATA_STORE`** | Platform infrastructure, billing ledger, ephemeral logs, auth keys, and background workers. | Operations outside the canonical CAD state model (e.g. user preferences, API key revocation, Stripe/Meeza IPN records, vector embeddings, memory graph) interacting directly with their dedicated repositories. |
+| **`SYSTEM_INFRASTRUCTURE`** | Platform infrastructure, database migrations (Alembic), system health, billing ledgers, auth keys, observability, and background workers. | Operations outside the canonical CAD state model (e.g. schema DDL, user preferences, API key revocation, Stripe/Meeza IPN records, vector embeddings, memory graph) interacting directly with system infrastructure repositories. |
 | **`LEGACY_EXCEPTION`** | Temporary mutation bypass awaiting migration in Phase 4 sub-phases. | Tracked in `bypass_exceptions.yaml` with explicit `owner`, `deadline`, and `removal_condition`. Shrinks as S2, S3, and S4 are executed. |
 
 ---
