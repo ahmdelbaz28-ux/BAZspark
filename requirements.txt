@@ -134,5 +134,5 @@ typing_extensions>=4.0.0  # Annotated backport for Python 3.8/3.9 runtimes (rout
 # ── Agent Platform & LLM Dependencies ──────────────────────────────────────
 mcp>=1.0.0,<2.0.0
 openai>=1.0.0,<2.0.0
-langchain-openai>=0.3.0,<1.0.0
+langchain-openai>=0.3.0,<2.0.0
 google-genai>=1.0.0,<2.0.0
