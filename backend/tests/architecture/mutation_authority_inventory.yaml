@@ -545,63 +545,57 @@ inventory:
   method: POST
   path: /convert
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPLOAD_AND_CONVERT
   path_anchor: backend/routers/digital_twin.py:444 (upload_and_convert)
   method: POST
   path: /upload-and-convert
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-CONFIGURE_CONVERSION
   path_anchor: backend/routers/digital_twin.py:600 (configure_conversion)
   method: POST
   path: /configure
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-ROLLBACK_TO_VERSION
   path_anchor: backend/routers/digital_twin.py:629 (rollback_to_version)
   method: POST
   path: /rollback/{version_id}
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_SINGLE_MAPPING
   path_anchor: backend/routers/digital_twin.py:702 (update_single_mapping)
   method: POST
   path: /update_mapping
   mutation_target: digital_twin state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_CONFIG
   path_anchor: backend/routers/digital_twin.py:760 (update_config)
   method: PUT
   path: /config
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
   path_anchor: backend/routers/digital_twin.py:819 (convert_cad_to_simready_endpoint)
   method: POST
   path: /cad-to-simready
   mutation_target: digital_twin state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    digital_twin.py
 - id: MUT-ROUTER-ELEMENTS-CREATE_ELEMENT
   path_anchor: backend/routers/elements.py:166 (create_element)
   method: POST
@@ -631,116 +625,105 @@ inventory:
   method: POST
   path: /chat
   mutation_target: engineering_copilot state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-PROCESS_ENGINEERING_REQUEST
   path_anchor: backend/routers/engineering_copilot.py:115 (process_engineering_request)
   method: POST
   path: /process-request
   mutation_target: engineering_copilot state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-CREATE_ENGINEERING_ENTITY
   path_anchor: backend/routers/engineering_copilot.py:159 (create_engineering_entity)
   method: POST
   path: /create-entity
   mutation_target: engineering_copilot state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-TRANSLATE_ENGINEERING_MODEL
   path_anchor: backend/routers/engineering_copilot.py:313 (translate_engineering_model)
   method: POST
   path: /translate-model
   mutation_target: engineering_copilot state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-VALIDATE_ENGINEERING_MODEL
   path_anchor: backend/routers/engineering_copilot.py:367 (validate_engineering_model)
   method: POST
   path: /validate-model
   mutation_target: engineering_copilot state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-GENERATE_ENGINEERING_REPORTS
   path_anchor: backend/routers/engineering_copilot.py:404 (generate_engineering_reports)
   method: POST
   path: /generate-reports
   mutation_target: engineering_copilot state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    engineering_copilot.py
 - id: MUT-ROUTER-ETAP-CONNECT_TO_ETAP
   path_anchor: backend/routers/etap.py:69 (connect_to_etap)
   method: POST
   path: /connect
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-DISCONNECT
   path_anchor: backend/routers/etap.py:91 (disconnect)
   method: POST
   path: /disconnect
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-EXPORT_TO_ETAP
   path_anchor: backend/routers/etap.py:148 (export_to_etap)
   method: POST
   path: /export
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-IMPORT_FROM_ETAP
   path_anchor: backend/routers/etap.py:175 (import_from_etap)
   method: POST
   path: /import
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-CREATE_SETTINGS
   path_anchor: backend/routers/etap.py:216 (create_settings)
   method: POST
   path: /settings
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-UPDATE_SETTINGS
   path_anchor: backend/routers/etap.py:261 (update_settings)
   method: PUT
   path: /settings
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-ETAP-DELETE_SETTINGS
   path_anchor: backend/routers/etap.py:297 (delete_settings)
   method: DELETE
   path: /settings
   mutation_target: etap state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    etap.py
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_OCR
   path_anchor: backend/routers/experimental_services.py:224 (process_ocr)
   method: POST
@@ -818,35 +801,33 @@ inventory:
   method: POST
   path: /facp/select
   mutation_target: facp state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    facp.py
 - id: MUT-ROUTER-FACP-VERIFY_FACP
   path_anchor: backend/routers/facp.py:357 (verify_facp)
   method: POST
   path: /facp/verify
   mutation_target: facp state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    facp.py
 - id: MUT-ROUTER-FACP-GENERATE_FACP_SCHEDULE
   path_anchor: backend/routers/facp.py:465 (generate_facp_schedule)
   method: POST
   path: /facp/schedule
   mutation_target: facp state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    facp.py
 - id: MUT-ROUTER-FACP-GENERATE_FACP_SPEC
   path_anchor: backend/routers/facp.py:524 (generate_facp_spec)
   method: POST
   path: /facp/spec
   mutation_target: facp state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    facp.py
 - id: MUT-ROUTER-FDS_WEBHOOK-SUBMIT_SIMULATION
   path_anchor: backend/routers/fds_webhook.py:73 (submit_simulation)
   method: POST
@@ -946,97 +927,96 @@ inventory:
   path: /ship/validate
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_FULL
   path_anchor: backend/routers/marine.py:303 (design_full)
   method: POST
   path: /ship/design
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-DIVIDE_ZONES
   path_anchor: backend/routers/marine.py:329 (divide_zones)
   method: POST
   path: /zones/divide
   mutation_target: marine state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_EXTINGUISHING
   path_anchor: backend/routers/marine.py:346 (design_extinguishing)
   method: POST
   path: /extinguishing/design
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_ALARM_LOGIC
   path_anchor: backend/routers/marine.py:363 (generate_alarm_logic)
   method: POST
   path: /alarm-logic/generate
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_SCADA
   path_anchor: backend/routers/marine.py:394 (generate_scada)
   method: POST
   path: /integrations/scada
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_DETECTION
   path_anchor: backend/routers/marine.py:418 (design_detection)
   method: POST
   path: /detection/design
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_DIVISIONS
   path_anchor: backend/routers/marine.py:462 (generate_divisions)
   method: POST
   path: /divisions/generate
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_POWER
   path_anchor: backend/routers/marine.py:486 (design_power)
   method: POST
   path: /power/design
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_ETAP
   path_anchor: backend/routers/marine.py:508 (generate_etap)
   method: POST
   path: /integrations/etap
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_DXF
   path_anchor: backend/routers/marine.py:544 (generate_dxf)
   method: POST
   path: /integrations/dxf
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_REVIT
   path_anchor: backend/routers/marine.py:570 (generate_revit)
   method: POST
   path: /integrations/revit
   mutation_target: marine state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    marine.py
 - id: MUT-ROUTER-MEMORY-ADD_MEMORY
   path_anchor: backend/routers/memory.py:142 (add_memory)
   method: POST
@@ -1067,42 +1047,40 @@ inventory:
   path: /methane-check
   mutation_target: mining state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    mining.py
 - id: MUT-ROUTER-MINING-VENTILATION_CHECK
   path_anchor: backend/routers/mining.py:132 (ventilation_check)
   method: POST
   path: /ventilation-check
   mutation_target: mining state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    mining.py
 - id: MUT-ROUTER-MINING-CO_CHECK
   path_anchor: backend/routers/mining.py:170 (co_check)
   method: POST
   path: /co-check
   mutation_target: mining state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    mining.py
 - id: MUT-ROUTER-MINING-CONVEYOR_SUPPRESSION
   path_anchor: backend/routers/mining.py:209 (conveyor_suppression)
   method: POST
   path: /conveyor-suppression
   mutation_target: mining state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    mining.py
 - id: MUT-ROUTER-MINING-COMPLIANCE_REPORT
   path_anchor: backend/routers/mining.py:252 (compliance_report)
   method: POST
   path: /compliance-report
   mutation_target: mining state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    mining.py
 - id: MUT-ROUTER-MULTI_DB-SET_IN_REDIS
   path_anchor: backend/routers/multi_db.py:81 (set_in_redis)
   method: POST
@@ -1173,67 +1151,64 @@ inventory:
   path: /qomn/smoke-spacing
   mutation_target: qomn state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_HEAT_SPACING
   path_anchor: backend/routers/qomn.py:319 (compute_heat_spacing)
   method: POST
   path: /qomn/heat-spacing
   mutation_target: qomn state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_BATTERY
   path_anchor: backend/routers/qomn.py:339 (compute_battery)
   method: POST
   path: /qomn/battery
   mutation_target: qomn state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_VOLTAGE_DROP
   path_anchor: backend/routers/qomn.py:365 (compute_voltage_drop)
   method: POST
   path: /qomn/voltage-drop
   mutation_target: qomn state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-PLACE_DETECTORS
   path_anchor: backend/routers/qomn.py:390 (place_detectors)
   method: POST
   path: /qomn/place-detectors
   mutation_target: qomn state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-PLACE_DUCT_DETECTOR
   path_anchor: backend/routers/qomn.py:541 (place_duct_detector)
   method: POST
   path: /qomn/place-duct
   mutation_target: qomn state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-RUN_GOLDEN_TESTS
   path_anchor: backend/routers/qomn.py:755 (run_golden_tests)
   method: POST
   path: /qomn/golden-tests
   mutation_target: qomn state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-QOMN-EVALUATE_ACOUSTICS
   path_anchor: backend/routers/qomn.py:1012 (evaluate_acoustics)
   method: POST
   path: /qomn/acoustics/evaluate
   mutation_target: qomn state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    qomn.py
 - id: MUT-ROUTER-REPORTS-GENERATE_REPORT
   path_anchor: backend/routers/reports.py:820 (generate_report)
   method: POST
@@ -1596,145 +1571,136 @@ inventory:
   path: /generative/design
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-EXTRACT_ROOMS
   path_anchor: backend/routers/v2.py:251 (extract_rooms)
   method: POST
   path: /bim/extract-rooms
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-MAP_DETECTOR_TO_IFC43
   path_anchor: backend/routers/v2.py:372 (map_detector_to_ifc43)
   method: POST
   path: /ifc43/map-detector
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-MAP_PROJECT_TO_IFC43
   path_anchor: backend/routers/v2.py:394 (map_project_to_ifc43)
   method: POST
   path: /ifc43/map-project
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-EXPORT_AR_SNAPSHOT
   path_anchor: backend/routers/v2.py:417 (export_ar_snapshot)
   method: POST
   path: /ar/export
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-SUBSCRIBE_WEBHOOK
   path_anchor: backend/routers/v2.py:479 (subscribe_webhook)
   method: POST
   path: /webhooks/subscribe
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-UNSUBSCRIBE_WEBHOOK
   path_anchor: backend/routers/v2.py:537 (unsubscribe_webhook)
   method: DELETE
   path: /webhooks/subscriptions/{sub_id}
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-PUBLISH_WEBHOOK_EVENT
   path_anchor: backend/routers/v2.py:554 (publish_webhook_event)
   method: POST
   path: /webhooks/publish
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-CREATE_SMOKE_STATE
   path_anchor: backend/routers/v2.py:582 (create_smoke_state)
   method: POST
   path: /smoke-simulation/state
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-STORE_MEMORY
   path_anchor: backend/routers/v2.py:687 (store_memory)
   method: POST
   path: /memory/store
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-SEARCH_MEMORY
   path_anchor: backend/routers/v2.py:711 (search_memory)
   method: POST
   path: /memory/search
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-ADD_TOPOLOGY_ELEMENT
   path_anchor: backend/routers/v2.py:752 (add_topology_element)
   method: POST
   path: /topology/element
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-ADD_TOPOLOGY_CONNECTION
   path_anchor: backend/routers/v2.py:782 (add_topology_connection)
   method: POST
   path: /topology/connection
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-ANALYZE_IMPACT
   path_anchor: backend/routers/v2.py:813 (analyze_impact)
   method: POST
   path: /topology/impact
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-ADD_GRAPHRAG_KNOWLEDGE
   path_anchor: backend/routers/v2.py:865 (add_graphrag_knowledge)
   method: POST
   path: /graphrag/knowledge
   mutation_target: v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Domain kernel mutation bypasses CommandBus; to be migrated in S3
-  owner: '@core-team'
-  deadline: Phase 4.3 (S3)
+  authority_class: DIRECT_DATA_STORE
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-ASK_GRAPHRAG
   path_anchor: backend/routers/v2.py:895 (ask_graphrag)
   method: POST
   path: /graphrag/ask
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-V2-SEARCH_GRAPHRAG
   path_anchor: backend/routers/v2.py:915 (search_graphrag)
   method: POST
   path: /graphrag/search
   mutation_target: v2 state
   authority_class: DIRECT_DATA_STORE
-  evidence: Stateless engineering calculation or analytical pipeline (read-only state
-    impact)
+  evidence: Deterministic engineering calculation and analytical kernel pipeline in
+    v2.py
 - id: MUT-ROUTER-WORKFLOW-START_WORKFLOW
   path_anchor: backend/routers/workflow.py:184 (start_workflow)
   method: POST
