@@ -110,6 +110,15 @@ CAP_IMPORT_EXECUTE_IMPORT = "import.execute_import"
 CAP_EXPORT_PLAN_EXPORT = "export.plan_export"
 CAP_EXPORT_EXECUTE_EXPORT = "export.execute_export"
 CAP_EXPORT_VALIDATE_ARTIFACT = "export.validate_artifact"
+CAP_WORKSPACE_PROJECT = "workspace.project"
+CAP_WORKSPACE_MODEL = "workspace.model"
+CAP_WORKSPACE_REVISION = "workspace.revision"
+CAP_GOVERNANCE_INSPECT = "governance.inspect"
+CAP_GOVERNANCE_VALIDATE = "governance.validate"
+CAP_GOVERNANCE_REVIEW = "governance.review"
+CAP_GOVERNANCE_AUDIT = "governance.audit"
+CAP_GOVERNANCE_ARTIFACT = "governance.artifact"
+CAP_GOVERNANCE_REPORT = "governance.report"
 
 VALID_REVISION_BINDINGS = {"canonical_project_state", "none"}
 VALID_EXECUTION_MODES = {"inline", "background_run"}
@@ -117,7 +126,16 @@ VALID_MUTATION_TYPES = {"read_only", "idempotent_write", "state_mutation", "none
 VALID_RISK_CLASSES = {"LOW", "MEDIUM", "HIGH", "CRITICAL", "ENGINEERING_MUTATION"}
 VALID_APPROVAL_POLICIES = {"auto", "user_confirm", "pe_signoff", "admin_only"}
 VALID_EXECUTION_CHANNELS = {"sync", "async", "websocket", "worker", "inline"}
-VALID_CATEGORIES = {"spatial", "compliance", "electrical", "hydraulics", "import", "export"}
+VALID_CATEGORIES = {
+    "spatial",
+    "compliance",
+    "electrical",
+    "hydraulics",
+    "import",
+    "export",
+    "workspace",
+    "governance",
+}
 SCHEMA_VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 
 
@@ -304,6 +322,11 @@ class CapabilityRegistry:
         self._register_battery_capabilities()
         self._register_import_capabilities()
         self._register_export_capabilities()
+        self._register_workspace_and_governance_capabilities()
+
+    def _register_workspace_and_governance_capabilities(self) -> None:
+        from backend.core.workspace_governance_contracts import register_workspace_governance_capabilities
+        register_workspace_governance_capabilities(self)
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:

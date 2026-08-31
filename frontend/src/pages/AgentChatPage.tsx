@@ -97,6 +97,13 @@ const QUICK_ENGINEERING_ACTIONS: QuickAction[] = [
 		prompt: "Plan and generate signed DXF CAD export deliverable",
 		spec: { target_format: "dxf" },
 	},
+	{
+		label: "Workspace & Governance Gate",
+		capabilityId: "governance.validate",
+		description: "Open project, run NFPA 72 validation, and show audit trail",
+		prompt: "افتح مشروع المعاينة، شغّل validation، اعرض آخر audit",
+		spec: { workspace: { action: "open" }, validate: { width_m: 15.0, length_m: 20.0 }, audit: { limit: 5 } },
+	},
 ];
 
 interface AgentChatPageProps {
@@ -478,6 +485,25 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 							size_bytes: typeof resData.file_size_bytes === "number" ? resData.file_size_bytes : undefined,
 							status: "ready",
 							download_url: typeof resData.download_url === "string" ? resData.download_url : `/api/v1/exports/download/${resData.artifact_id || step.step_id}`,
+						});
+					}
+				}
+				// 4. Governance artifact or report capability output
+				if (
+					(step.capability_id === "governance.artifact" || step.capability_id === "governance.report") &&
+					(resData.artifact_id || resData.report_id || resData.filename)
+				) {
+					const fn = String(resData.filename || `${resData.report_type || "compliance"}_report.pdf`);
+					const exists = list.some((a) => a.filename === fn);
+					if (!exists) {
+						list.push({
+							artifact_id: String(resData.artifact_id || resData.report_id || `art-${step.step_id}`),
+							filename: fn,
+							format: String(resData.artifact_type || resData.format || "PDF").toUpperCase(),
+							size_bytes: typeof resData.size_bytes === "number" ? resData.size_bytes : undefined,
+							status: "ready",
+							download_url: typeof resData.download_url === "string" ? resData.download_url : `/api/v1/exports/download/${resData.artifact_id || step.step_id}`,
+							created_at: typeof resData.timestamp === "string" ? resData.timestamp : undefined,
 						});
 					}
 				}
