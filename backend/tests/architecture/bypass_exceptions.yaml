@@ -141,83 +141,6 @@ exceptions:
   deadline: Phase 4.4 (S4)
   removal_condition: Migrate MUT-ROUTER-CAD-DRAW_TEXT to CANONICAL_COMMAND or EXTERNAL_TRANSACTION
     via CommandBus
-- id: MUT-ROUTER-CONFLICTS-DETECT_CONFLICTS
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONFLICTS-DETECT_CONFLICTS to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONFLICTS-RESOLVE_CONFLICT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONFLICTS-RESOLVE_CONFLICT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS-CREATE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS-CREATE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS-UPDATE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS-UPDATE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS-DELETE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS-DELETE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS_V2-CREATE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS_V2-CREATE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS_V2-UPDATE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS_V2-UPDATE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-CONNECTIONS_V2-DELETE_CONNECTION
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-CONNECTIONS_V2-DELETE_CONNECTION to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DEVICES-CREATE_DEVICE
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-DEVICES-CREATE_DEVICE to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DEVICES-UPDATE_DEVICE
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-DEVICES-UPDATE_DEVICE to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-DEVICES-DELETE_DEVICE
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-DEVICES-DELETE_DEVICE to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_FILES
   reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
   owner: '@core-team'
@@ -254,27 +177,6 @@ exceptions:
   deadline: Phase 4.3 (S3)
   removal_condition: Migrate MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
     to CANONICAL_COMMAND or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ELEMENTS-CREATE_ELEMENT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-ELEMENTS-CREATE_ELEMENT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ELEMENTS-UPDATE_ELEMENT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-ELEMENTS-UPDATE_ELEMENT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-ELEMENTS-DELETE_ELEMENT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-ELEMENTS-DELETE_ELEMENT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-ENGINEERING_COPILOT-CHAT_WITH_COPILOT
   reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
   owner: '@core-team'
@@ -448,27 +350,6 @@ exceptions:
   owner: '@core-team'
   deadline: Phase 4.3 (S3)
   removal_condition: Migrate MUT-ROUTER-MINING-COMPLIANCE_REPORT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-PROJECTS-CREATE_PROJECT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-PROJECTS-CREATE_PROJECT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-PROJECTS-UPDATE_PROJECT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-PROJECTS-UPDATE_PROJECT to CANONICAL_COMMAND
-    or EXTERNAL_TRANSACTION via CommandBus
-- id: MUT-ROUTER-PROJECTS-DELETE_PROJECT
-  reason: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
-  removal_condition: Migrate MUT-ROUTER-PROJECTS-DELETE_PROJECT to CANONICAL_COMMAND
     or EXTERNAL_TRANSACTION via CommandBus
 - id: MUT-ROUTER-QOMN-PLACE_DETECTORS
   reason: Domain kernel mutation bypasses CommandBus; to be migrated in S3
