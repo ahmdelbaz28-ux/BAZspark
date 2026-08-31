@@ -31,6 +31,8 @@ export const clientAdapter: EngineeringCalculationPort = {
 							status: result.status,
 							limit: result.limit,
 							formula: result.formula,
+							isApproximatePreview: true,
+							certifiedSource: "kernel_rest_required",
 						},
 					});
 				} catch {
@@ -64,6 +66,8 @@ export const clientAdapter: EngineeringCalculationPort = {
 							...result,
 							efficiency,
 							finalRequiredCapacityAh: adjustedCapacity,
+							isApproximatePreview: true,
+							certifiedSource: "kernel_rest_required",
 						},
 					});
 				} catch {

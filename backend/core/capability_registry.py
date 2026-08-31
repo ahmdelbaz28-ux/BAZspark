@@ -120,6 +120,24 @@ CAP_GOVERNANCE_AUDIT = "governance.audit"
 CAP_GOVERNANCE_ARTIFACT = "governance.artifact"
 CAP_GOVERNANCE_REPORT = "governance.report"
 
+# Phase 9 Capability ID constants
+CAP_MARINE_VERIFY_SOLAS = "marine.verify_solas_compliance"
+CAP_MARINE_CALCULATE_SUPPRESSION = "marine.calculate_suppression_system"
+CAP_FACP_VERIFY_PANEL = "facp.verify_panel_capacity"
+CAP_FACP_DESIGN_LOOP = "facp.design_loop_topology"
+CAP_ETAP_CALCULATE_LOAD_FLOW = "etap.calculate_load_flow"
+CAP_ETAP_CALCULATE_SHORT_CIRCUIT = "etap.calculate_short_circuit"
+CAP_DIGITAL_TWIN_SYNCHRONIZE = "digital_twin.synchronize_telemetry"
+CAP_DIGITAL_TWIN_EVALUATE_RISK = "digital_twin.evaluate_risk_state"
+CAP_COPILOT_TRANSLATE_INTENT = "copilot.translate_code_intent"
+CAP_COPILOT_SYNTHESIZE_RECOMMENDATIONS = "copilot.synthesize_design_recommendations"
+CAP_BIM_VALIDATE_CLASH = "bim.validate_spatial_clash"
+CAP_SIMULATION_SMOKE_FLOW = "simulation.execute_smoke_flow_preview"
+
+# Phase 9b Tender Capability ID constants
+CAP_TENDER_FINANCIAL_PROPOSAL = "tender.generate_financial_proposal"
+CAP_TENDER_TECHNICAL_COMPLIANCE = "tender.generate_technical_compliance"
+
 VALID_REVISION_BINDINGS = {"canonical_project_state", "none"}
 VALID_EXECUTION_MODES = {"inline", "background_run"}
 VALID_MUTATION_TYPES = {"read_only", "idempotent_write", "state_mutation", "none"}
@@ -135,6 +153,14 @@ VALID_CATEGORIES = {
     "export",
     "workspace",
     "governance",
+    "marine",
+    "facp",
+    "etap",
+    "digital_twin",
+    "copilot",
+    "bim",
+    "simulation",
+    "tender",
 }
 SCHEMA_VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 
@@ -323,10 +349,15 @@ class CapabilityRegistry:
         self._register_import_capabilities()
         self._register_export_capabilities()
         self._register_workspace_and_governance_capabilities()
+        self._register_engineering_expansion_capabilities()
 
     def _register_workspace_and_governance_capabilities(self) -> None:
         from backend.core.workspace_governance_contracts import register_workspace_governance_capabilities
         register_workspace_governance_capabilities(self)
+
+    def _register_engineering_expansion_capabilities(self) -> None:
+        from backend.core.engineering_expansion_contracts import register_engineering_expansion_capabilities
+        register_engineering_expansion_capabilities(self)
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:

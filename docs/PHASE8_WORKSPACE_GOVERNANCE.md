@@ -50,7 +50,7 @@ All 9 capabilities map exclusively to the 4 canonical plan classes:
 
 ---
 
-## 4. Gate 8 E2E Verification & Scenario Counter
+## 4. Workspace & Governance E2E Verification & Scenario Counter
 
 Gate 8 test suite (`backend/tests/e2e/test_phase8_gate8_e2e.py`) validates **10 distinct end-to-end scenarios** with zero mock pathways and real audit hashes:
 

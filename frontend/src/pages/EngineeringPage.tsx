@@ -351,7 +351,7 @@ export function EngineeringPage() {
 		: {
 				percentage: localVDrop.percentage,
 				absolute: localVDrop.absolute,
-				source: "Local fallback (unaudited)" as const,
+				source: "Approximate Preview (Kernel Certified Calculation Required)" as const,
 			};
 
 	// FIX #11 corrected: useCallback memoizes the function reference, not the result.
