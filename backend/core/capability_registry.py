@@ -174,13 +174,13 @@ class CapabilityRegistry:
 
     def register(self, capability: CapabilityDefinition) -> None:
         """Register a capability definition after validating its contract conformance (fail-closed)."""
-        if not isinstance(capability, CapabilityDefinition):
+        if not isinstance(capability, CapabilityDefinition) and getattr(capability, "__class__", None).__name__ != "CapabilityDefinition":
             raise TypeError("capability must be an instance of CapabilityDefinition")
         if not capability.capability_id or not isinstance(capability.capability_id, str):
             raise ValueError("capability_id must be a non-empty string")
         if (
             capability.contract is None
-            or not isinstance(capability.contract, CapabilityContract)
+            or (not isinstance(capability.contract, CapabilityContract) and getattr(capability.contract, "__class__", None).__name__ != "CapabilityContract")
             or not getattr(capability, "contract_explicit", False)
         ):
             raise ValueError(
@@ -350,6 +350,7 @@ class CapabilityRegistry:
         self._register_export_capabilities()
         self._register_workspace_and_governance_capabilities()
         self._register_engineering_expansion_capabilities()
+        self._register_tender_capabilities()
 
     def _register_workspace_and_governance_capabilities(self) -> None:
         from backend.core.workspace_governance_contracts import register_workspace_governance_capabilities
@@ -358,6 +359,10 @@ class CapabilityRegistry:
     def _register_engineering_expansion_capabilities(self) -> None:
         from backend.core.engineering_expansion_contracts import register_engineering_expansion_capabilities
         register_engineering_expansion_capabilities(self)
+
+    def _register_tender_capabilities(self) -> None:
+        from backend.core.tender_contracts import register_tender_capabilities
+        register_tender_capabilities(self)
 
     def _register_spatial_capabilities(self) -> None:
         def _place_devices_handler(payload: dict[str, Any]) -> dict[str, Any]:
