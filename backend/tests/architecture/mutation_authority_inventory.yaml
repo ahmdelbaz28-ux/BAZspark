@@ -457,111 +457,89 @@ inventory:
   method: POST
   path: /detect
   mutation_target: conflicts state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONFLICTS-RESOLVE_CONFLICT
   path_anchor: backend/routers/conflicts.py:111 (resolve_conflict)
   method: POST
   path: /{conflict_id}/resolve
   mutation_target: conflicts state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS-CREATE_CONNECTION
   path_anchor: backend/routers/connections.py:73 (create_connection)
   method: POST
   path: ''
   mutation_target: connections state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS-UPDATE_CONNECTION
   path_anchor: backend/routers/connections.py:115 (update_connection)
   method: PUT
   path: /{connection_id}
   mutation_target: connections state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS-DELETE_CONNECTION
   path_anchor: backend/routers/connections.py:166 (delete_connection)
   method: DELETE
   path: /{connection_id}
   mutation_target: connections state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS_V2-CREATE_CONNECTION
   path_anchor: backend/routers/connections_v2.py:96 (create_connection)
   method: POST
   path: ''
   mutation_target: connections_v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS_V2-UPDATE_CONNECTION
   path_anchor: backend/routers/connections_v2.py:124 (update_connection)
   method: PUT
   path: /{connection_id}
   mutation_target: connections_v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-CONNECTIONS_V2-DELETE_CONNECTION
   path_anchor: backend/routers/connections_v2.py:153 (delete_connection)
   method: DELETE
   path: /{connection_id}
   mutation_target: connections_v2 state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-DEVICES-CREATE_DEVICE
   path_anchor: backend/routers/devices.py:132 (create_device)
   method: POST
   path: ''
   mutation_target: devices state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-DEVICES-UPDATE_DEVICE
   path_anchor: backend/routers/devices.py:212 (update_device)
   method: PUT
   path: /{device_id}
   mutation_target: devices state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-DEVICES-DELETE_DEVICE
   path_anchor: backend/routers/devices.py:282 (delete_device)
   method: DELETE
   path: /{device_id}
   mutation_target: devices state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_FILES
   path_anchor: backend/routers/digital_twin.py:372 (convert_files)
   method: POST
@@ -629,31 +607,25 @@ inventory:
   method: POST
   path: ''
   mutation_target: elements state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-ELEMENTS-UPDATE_ELEMENT
   path_anchor: backend/routers/elements.py:230 (update_element)
   method: PUT
   path: /{element_id}
   mutation_target: elements state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-ELEMENTS-DELETE_ELEMENT
   path_anchor: backend/routers/elements.py:270 (delete_element)
   method: DELETE
   path: /{element_id}
   mutation_target: elements state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-ENGINEERING_COPILOT-CHAT_WITH_COPILOT
   path_anchor: backend/routers/engineering_copilot.py:77 (chat_with_copilot)
   method: POST
@@ -1176,31 +1148,25 @@ inventory:
   method: POST
   path: ''
   mutation_target: projects state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-PROJECTS-UPDATE_PROJECT
   path_anchor: backend/routers/projects.py:180 (update_project)
   method: PUT
   path: /{project_id}
   mutation_target: projects state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-PROJECTS-DELETE_PROJECT
   path_anchor: backend/routers/projects.py:290 (delete_project)
   method: DELETE
   path: /{project_id}
   mutation_target: projects state
-  authority_class: LEGACY_EXCEPTION
-  evidence: Direct database write bypasses CommandBus; to be migrated to CANONICAL_COMMAND
-    in S2
-  owner: '@core-team'
-  deadline: Phase 4.2 (S2)
+  authority_class: CANONICAL_COMMAND
+  evidence: Canonical project elements/devices entity write with tenant isolation
+    and OCC revision tracking
 - id: MUT-ROUTER-QOMN-COMPUTE_SMOKE_SPACING
   path_anchor: backend/routers/qomn.py:293 (compute_smoke_spacing)
   method: POST
