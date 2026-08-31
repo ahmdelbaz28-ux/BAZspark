@@ -46,6 +46,7 @@ from backend.core.context_resolver import (
     ContextResolver,
     default_context_resolver,
 )
+from backend.core.control_request import ControlRequest
 from backend.core.disambiguation import DisambiguationEngine, DisambiguationRequest
 from backend.core.execution_policy import (
     PolicyResult,
@@ -252,9 +253,38 @@ class RegexFallbackPlanner:
         approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
         governance_policy: dict[str, Any] | None = None,
     ) -> AutonomousPlan:
-        """Synthesize plan via regex fallback path."""
+        """Synthesize plan via regex fallback path using Universal ControlRequest."""
+        app_mode = approval_mode.value if hasattr(approval_mode, "value") else str(approval_mode)
+        req = ControlRequest.from_dict({
+            "intent": prompt,
+            "context": {
+                "project_id": project_id,
+                "expected_revision": expected_revision,
+            },
+            "params": dict(composite_spec or {}),
+            "policy_hints": {
+                "approval_mode": app_mode,
+                "governance_policy": governance_policy,
+            },
+        })
+        return self.plan_control_request(req, principal=principal)
+
+    def plan_control_request(
+        self,
+        request: ControlRequest,
+        *,
+        principal: AuthenticatedPrincipal,
+    ) -> AutonomousPlan:
+        """Synthesize plan from Universal ControlRequest via regex fallback path."""
         if not principal.is_authenticated:
             raise AutonomousPlannerError("Principal must be authenticated to plan an autonomous workflow.")
+
+        prompt = request.intent
+        project_id = request.context.project_id
+        expected_revision = request.context.expected_revision
+        spec = dict(request.params or {})
+        approval_mode = request.policy_hints.get("approval_mode", ApprovalMode.AUTO)
+        governance_policy = request.policy_hints.get("governance_policy")
 
         if expected_revision is None and project_id:
             expected_revision = self._bus.get_project_revision(project_id)
@@ -271,7 +301,6 @@ class RegexFallbackPlanner:
         elif expected_revision is None:
             expected_revision = 0
 
-        spec = dict(composite_spec or {})
         prompt_clean = prompt.strip()
         lower_prompt = prompt_clean.lower()
 
@@ -646,20 +675,37 @@ class AutonomousWorkflowPlanner:
         approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
         governance_policy: dict[str, Any] | None = None,
     ) -> AutonomousPlan:
-        """Route to Generic Planner first; fall back to frozen regex planner only if needed, recording telemetry."""
+        """Route planning through Universal ControlRequest contract (universal unified entry point)."""
+        app_mode = approval_mode.value if hasattr(approval_mode, "value") else str(approval_mode)
+        req = ControlRequest.from_dict({
+            "intent": prompt,
+            "context": {
+                "project_id": project_id,
+                "expected_revision": expected_revision,
+            },
+            "params": dict(composite_spec or {}),
+            "policy_hints": {
+                "approval_mode": app_mode,
+                "governance_policy": governance_policy,
+            },
+        })
+        return self.plan_control_request(req, principal=principal)
+
+    def plan_control_request(
+        self,
+        request: ControlRequest,
+        *,
+        principal: AuthenticatedPrincipal,
+    ) -> AutonomousPlan:
+        """Route Universal ControlRequest to Generic Planner first; fall back to frozen regex planner only if needed."""
         start_time = time.perf_counter()
         invocation_id = f"inv-{uuid.uuid4().hex[:8]}"
 
         # Preferred Path: Try Generic Planner first
         try:
-            plan = self._generic_planner.plan_workflow(
-                prompt,
+            plan = self._generic_planner.plan_control_request(
+                request,
                 principal=principal,
-                project_id=project_id,
-                expected_revision=expected_revision,
-                composite_spec=composite_spec,
-                approval_mode=approval_mode,
-                governance_policy=governance_policy,
             )
             return plan
         except (DisambiguationRequiredError, CapabilityUnavailableError):
@@ -676,25 +722,20 @@ class AutonomousWorkflowPlanner:
 
             fallback_start = time.perf_counter()
             try:
-                plan = self._regex_planner.plan_workflow(
-                    prompt,
+                plan = self._regex_planner.plan_control_request(
+                    request,
                     principal=principal,
-                    project_id=project_id,
-                    expected_revision=expected_revision,
-                    composite_spec=composite_spec,
-                    approval_mode=approval_mode,
-                    governance_policy=governance_policy,
                 )
                 fb_latency_ms = (time.perf_counter() - fallback_start) * 1000
                 default_planner_telemetry.record_invocation(
                     invocation_id=invocation_id,
                     planner_type="regex_fallback",
-                    intent_summary=prompt[:100],
+                    intent_summary=request.intent[:100],
                     success=True,
                     latency_ms=fb_latency_ms,
                     fallback_reason=fallback_reason,
                     step_count=len(plan.steps),
-                    project_id=project_id,
+                    project_id=request.context.project_id,
                 )
                 return plan
             except Exception as fb_exc:
@@ -702,11 +743,11 @@ class AutonomousWorkflowPlanner:
                 default_planner_telemetry.record_invocation(
                     invocation_id=invocation_id,
                     planner_type="regex_fallback",
-                    intent_summary=prompt[:100],
+                    intent_summary=request.intent[:100],
                     success=False,
                     latency_ms=fb_latency_ms,
                     fallback_reason=fallback_reason,
-                    project_id=project_id,
+                    project_id=request.context.project_id,
                     error_message=str(fb_exc),
                 )
                 raise

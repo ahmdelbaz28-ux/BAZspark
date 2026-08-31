@@ -749,16 +749,28 @@ async def plan_autonomous_workflow(request: Request, body: PlanWorkflowRequest):
     if body.ui_surface:
         spec["ui_surface"] = body.ui_surface
 
+    from backend.core.control_request import ControlRequest
+    control_request = ControlRequest.from_dict({
+        "intent": body.prompt or "Autonomous engineering workflow",
+        "context": {
+            "project_id": body.project_id,
+            "model_id": body.model_id,
+            "entity_ids": body.entity_ids or ([body.entity_id] if body.entity_id else []),
+            "expected_revision": body.expected_revision,
+            "ui_surface": body.ui_surface,
+        },
+        "params": spec,
+        "policy_hints": {
+            "approval_mode": body.approval_mode,
+            "governance_policy": body.governance_policy,
+        },
+    })
+
     try:
         plan = await asyncio.to_thread(
-            default_workflow_planner.plan_workflow,
-            prompt=body.prompt or "Autonomous engineering workflow",
+            default_workflow_planner.plan_control_request,
+            request=control_request,
             principal=principal,
-            project_id=body.project_id,
-            expected_revision=body.expected_revision,
-            composite_spec=spec,
-            approval_mode=body.approval_mode,
-            governance_policy=body.governance_policy,
         )
     except Exception as exc:
         raise _agent_run_http_error(exc) from exc
@@ -825,28 +837,34 @@ async def start_planned_autonomous_workflow(request: Request, body: StartPlanned
     if body.ui_surface:
         spec["ui_surface"] = body.ui_surface
 
+    from backend.core.control_request import ControlRequest
+    control_request = ControlRequest.from_dict({
+        "intent": body.prompt or "Autonomous engineering workflow",
+        "context": {
+            "project_id": body.project_id,
+            "model_id": body.model_id,
+            "entity_ids": body.entity_ids or ([body.entity_id] if body.entity_id else []),
+            "expected_revision": body.expected_revision,
+            "ui_surface": body.ui_surface,
+        },
+        "params": spec,
+        "policy_hints": {
+            "approval_mode": body.approval_mode,
+            "governance_policy": body.governance_policy,
+        },
+    })
+
     try:
         plan = await asyncio.to_thread(
-            default_workflow_planner.plan_workflow,
-            prompt=body.prompt or "Autonomous engineering workflow",
+            default_workflow_planner.plan_control_request,
+            request=control_request,
             principal=principal,
-            project_id=body.project_id,
-            expected_revision=body.expected_revision,
-            composite_spec=spec,
-            approval_mode=body.approval_mode,
-            governance_policy=body.governance_policy,
         )
 
         # Enforce revision binding for mutations in planned workflow
         if plan and hasattr(plan, "steps"):
             cap_ids = [s.capability_id for s in plan.steps if hasattr(s, "capability_id")]
-            session_ctx = UniversalSessionContext.from_dict({
-                "project_id": body.project_id,
-                "model_id": body.model_id,
-                "entity_ids": body.entity_ids or ([body.entity_id] if body.entity_id else []),
-                "expected_revision": body.expected_revision,
-                "ui_surface": body.ui_surface,
-            })
+            session_ctx = control_request.context
             validate_mutation_revision(session_ctx, cap_ids)
 
         run = await asyncio.to_thread(

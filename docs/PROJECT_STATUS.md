@@ -1,9 +1,9 @@
 # BAZspark — Single Authoritative Project Status
 **Document ID:** STATUS-2026-08-30-CANONICAL  
 **Status:** CANONICAL TRUTH (Single Source of Truth)  
-**Last Updated:** 2026-08-30  
-**Baseline Hash:** `1d9d9ed5` (Phase 1 Baseline)  
-**Active Execution Branch:** `feature/phase-2-capability-discovery`
+**Last Updated:** 2026-08-31  
+**Baseline Hash:** `20eb897ea276bcf6f472e25875d8c5198dbc9a60` (FG-5 Head)  
+**Active Execution Branch:** `feature/phase-6-universal-control-request`
 
 ---
 
@@ -19,8 +19,9 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 2** | Authorized Capability Discovery & Schema Versioning (D-2a – D-2d) | **PASS (FINAL)** | Forensic Gate 2 review (`ba595038`); G-2-C1 verified (`3c44616f`), `discover_authorized()`, `/capabilities` |
 | **Phase 3** | Universal Context + Wire Contract (D-3a – D-3d) | **PASS (FINAL)** | Forensic Gate 3 review; `UniversalSessionContext` 5-field matrix, dynamic revision derivation, ticket auth |
 | **Phase 4** | Mutation Authority & State Externalization (S1 – S5) | **PASS (FINAL)** | Forensic Gate 4 review (`3819193c`); 220 mutation points cataloged, AST CI gate, CAD dispatch Principle 3, shared state store, A6 lifted (replicas >= 2) |
-| **Phase 5** | Generic Planner & Retirement Protocol (S1 – S6) | **IMPLEMENTED (FG-5 READY)** | Forensic Gate 5 deliverables (S1–S6) complete; dynamic capability discovery, DAG schema validator, disambiguation loop, prompt injection shield, default `dry_run=true`, 33/33 intent & architecture suite passed |
-| **Phases 6 – 7** | Advanced Cockpit, Distributed Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
+| **Phase 5** | Generic Planner & Retirement Protocol (S1 – S6) | **PASS (FINAL)** | Forensic Gate 5 review (`20eb897e`); dynamic capability discovery, DAG schema validator, disambiguation loop, prompt injection shield, default `dry_run=true`, 33/33 intent & architecture suite passed |
+| **Phase 6** | Universal ControlRequest & Tool Interface (S1 – S5) | **IMPLEMENTED (FG-6 READY)** | Forensic Gate 6 deliverables complete; single source `ControlRequest` model & JSON schema, auto tool interface derivation, 44/44 intent & architecture suite passed across all 9 Gate 6 categories |
+| **Phase 7** | Chat Universal & Multi-Replica Scale | **NOT AUTHORIZED** | Dependent on sequential Phase completion |
 
 ---
 

@@ -41,6 +41,7 @@ from backend.core.context_resolver import (
     ContextResolver,
     default_context_resolver,
 )
+from backend.core.control_request import ControlRequest
 from backend.core.disambiguation import (
     DisambiguationEngine,
     DisambiguationRequest,
@@ -57,6 +58,10 @@ from backend.core.planner_schema import (
 )
 from backend.core.planner_telemetry import default_planner_telemetry
 from backend.core.prompt_shield import PromptInjectionShield
+from backend.core.tool_schema_gen import (
+    derive_all_tool_schemas,
+    format_tool_schemas_for_system_prompt,
+)
 from backend.core.workflow_engine import (
     CompositeWorkflowDAG,
     WorkflowExecutor,
@@ -310,15 +315,7 @@ class GenericWorkflowPlanner:
 
     def _build_system_prompt(self, authorized_caps: list[Any]) -> str:
         """Construct prompt detailing available tool schemas without hardcoding specific capabilities."""
-        tools_desc = []
-        for cap in authorized_caps:
-            tools_desc.append(
-                f"- Capability ID: {_cap_id(cap)}\n"
-                f"  Category: {_cap_category(cap)}\n"
-                f"  Description: {_cap_description(cap)}\n"
-                f"  Risk Class: {_cap_risk(cap)}\n"
-                f"  Input Schema: {json.dumps(_cap_input_schema(cap))}\n"
-            )
+        tools_desc = format_tool_schemas_for_system_prompt(authorized_caps)
 
         return (
             "You are the BAZspark Autonomous Engineering Workflow Planner.\n"
@@ -328,7 +325,7 @@ class GenericWorkflowPlanner:
             "2. Only use the registered capabilities listed below.\n"
             "3. Dependencies must be topologically sorted (Acyclic DAG).\n"
             "4. Never hallucinate fake capability IDs.\n\n"
-            "Available Registered Capabilities:\n" + "\n".join(tools_desc)
+            "Available Registered Capabilities:\n" + tools_desc
         )
 
     def _synthesize_plan_structure(
@@ -362,6 +359,38 @@ class GenericWorkflowPlanner:
         }
         for ar_term, en_syns in arabic_mappings.items():
             if ar_term in expanded_prompt:
+                expanded_prompt += f" {en_syns}"
+
+        french_mappings = {
+            "detecteur": "detector detectors spatial",
+            "detecteurs": "detector detectors spatial",
+            "fumee": "smoke spatial",
+            "chaleur": "heat spatial",
+            "disposition": "place layout spatial",
+            "tension": "voltage drop electrical",
+            "batterie": "battery electrical",
+            "tuyau": "pipe hydraulics",
+            "debit": "flow hydraulics",
+            "exporter": "export",
+            "importer": "import",
+        }
+        for fr_term, en_syns in french_mappings.items():
+            if fr_term in expanded_prompt:
+                expanded_prompt += f" {en_syns}"
+
+        german_mappings = {
+            "melder": "detector detectors spatial",
+            "rauch": "smoke spatial",
+            "hitze": "heat spatial",
+            "platzierung": "place layout spatial",
+            "spannung": "voltage drop electrical",
+            "rohr": "pipe hydraulics",
+            "durchfluss": "flow hydraulics",
+            "exportieren": "export",
+            "importieren": "import",
+        }
+        for de_term, en_syns in german_mappings.items():
+            if de_term in expanded_prompt:
                 expanded_prompt += f" {en_syns}"
 
         english_mappings = {
@@ -491,12 +520,41 @@ class GenericWorkflowPlanner:
         approval_mode: ApprovalMode | str = ApprovalMode.AUTO,
         governance_policy: dict[str, Any] | None = None,
     ) -> AutonomousPlan:
-        """Synthesize, validate against JSON Schema, evaluate policy, and run dry-run overlay."""
+        """Synthesize plan via Universal ControlRequest contract (universal unified entry point)."""
+        app_mode = approval_mode.value if hasattr(approval_mode, "value") else str(approval_mode)
+        req = ControlRequest.from_dict({
+            "intent": prompt,
+            "context": {
+                "project_id": project_id,
+                "expected_revision": expected_revision,
+            },
+            "params": dict(composite_spec or {}),
+            "policy_hints": {
+                "approval_mode": app_mode,
+                "governance_policy": governance_policy,
+            },
+        })
+        return self.plan_control_request(req, principal=principal)
+
+    def plan_control_request(
+        self,
+        request: ControlRequest,
+        *,
+        principal: AuthenticatedPrincipal,
+    ) -> AutonomousPlan:
+        """Synthesize, validate against JSON Schema, evaluate policy, and run dry-run overlay from ControlRequest."""
         start_time = time.perf_counter()
         invocation_id = f"inv-{uuid.uuid4().hex[:8]}"
 
         if not principal.is_authenticated:
             raise GenericPlannerError("Principal must be authenticated to plan an autonomous workflow.")
+
+        prompt = request.intent
+        project_id = request.context.project_id
+        expected_revision = request.context.expected_revision
+        spec = dict(request.params or {})
+        approval_mode = request.policy_hints.get("approval_mode", ApprovalMode.AUTO)
+        governance_policy = request.policy_hints.get("governance_policy")
 
         if expected_revision is None and project_id:
             expected_revision = self._bus.get_project_revision(project_id)
@@ -512,8 +570,6 @@ class GenericWorkflowPlanner:
                 )
         elif expected_revision is None:
             expected_revision = 0
-
-        spec = dict(composite_spec or {})
 
         # Step 1: Disambiguation Check (Missing / Ambiguous Parameters)
         disambiguation = DisambiguationEngine.evaluate_intent(prompt, spec)
