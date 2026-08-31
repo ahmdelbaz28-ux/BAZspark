@@ -2,7 +2,7 @@
 **Document ID:** STATUS-2026-08-31-CANONICAL  
 **Status:** CANONICAL TRUTH (Single Source of Truth)  
 **Last Updated:** 2026-08-31  
-**Baseline Hash:** `6922845ed574fb33f103b65f7ab8cdc2cd778d48` (FG-8 Head)  
+**Baseline Hash:** `6922845ed574fb33f103b65f7ab8cdc2cd778d48` (phase-8 head)  
 **Active Execution Branch:** `feature/phase-9-engineering-expansion`
 
 ---
@@ -23,8 +23,8 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 6** | Universal ControlRequest & Tool Interface (S1 – S5) | **PASS (FINAL)** | Forensic Gate 6 review (`6be0aaf0`); single source `ControlRequest` model & JSON schema, auto tool interface derivation, 44/44 intent & architecture suite passed across all 9 Gate 6 categories |
 | **Phase 7** | Universal Chat Control Plane (S1 – S5) | **PASS (FINAL)** | Forensic Gate 7 review (`1962dfe0`); Zero direct unmonitored calls in `AgentChatPage.tsx`; 10/10 mixed E2E scenarios passed with real audit IDs; visual surfaces bound to official selection; 57 intent/architecture/E2E suite passed; 1,535 backend tests passed; 573 Vitest tests passed; clean build |
 | **Phase 8** | Workspace & Governance Capabilities (S1 – S5) | **PASS (FINAL)** | Forensic Gate 8 review (`6922845e`); 9 full contracts registered (`project`, `model`, `revision`, `inspect`, `validate`, `review`, `audit`, `artifact`, `report`); authority classes bounded to 4 plan classes; auto-derived tool schemas; generic planner AST purity preserved; 10/10 Gate 8 E2E scenarios passed with real audit IDs; visual handoff in UI; full test suite passing with zero regressions |
-| **Phase 9** | Engineering Capability Expansion (S1 – S6) | **PASS (FINAL)** | Gate 9 verified (`8be39211`); 12 deterministic REST kernels registered across 6 domains (`marine`, `facp`, `etap`, `digital_twin`, `copilot`, `bim/simulation`); zero client-side certified calculations (dual engine invalidated); statutory PE/FPE citation settled per NFPA 72-2022 §17.7.3.2.3; p95 latency < 250ms; 16 kernel reference tests + 9 E2E scenarios + 3 architecture tests passed |
-| **Phase 9b** | Tender Contracts & BOQ Traceability (S7 – S8) | **PASS (FINAL)** | Gate 9b verified (`7d9ae1bd`); 2 canonical tender contracts (`tender.generate_financial_proposal`, `tender.generate_technical_compliance`); 100% number traceability to BOQ & kernels; regional VAT support (EGP 14%, SAR 15%); SHA-256 artifact checksums; full suite (1,540 pytest, 573 vitest, clean build) passing |
+| **Phase 9** | Engineering Capability Expansion (S1 – S6) | Delivered (S1–S8) — evidence package issued; independent verification pending. | 12 deterministic REST kernels registered across 6 domains (`marine`, `facp`, `etap`, `digital_twin`, `copilot`, `bim/simulation`); zero client-side certified calculations (dual engine invalidated); statutory PE/FPE citation settled per NFPA 72-2022 §17.7.3.2.3; p95 latency < 250ms; 16 kernel reference tests + 9 E2E scenarios + 3 architecture tests passed |
+| **Phase 9b** | Tender Contracts & BOQ Traceability (S7 – S8) | Delivered (S1–S8) — evidence package issued; independent verification pending. | 2 canonical tender contracts (`tender.generate_financial_proposal`, `tender.generate_technical_compliance`); 100% number traceability to BOQ & kernels; regional VAT support (EGP 14%, SAR 15%); SHA-256 artifact checksums; full suite (1,540 pytest, 573 vitest, clean build) passing |
 
 ---
 
