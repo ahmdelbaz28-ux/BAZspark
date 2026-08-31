@@ -332,7 +332,6 @@ _ws_tickets: dict[str, dict[str, Any]] = {}
 
 def _issue_ws_ticket(api_key_info: Any, origin: str | None) -> str:
     """Create a one-time ticket bound to the caller identity (+origin)."""
-    # Opportunistic pruning of expired tickets.
     import time as _time
 
     now = _time.monotonic()
@@ -348,6 +347,12 @@ def _issue_ws_ticket(api_key_info: Any, origin: str | None) -> str:
         "email": getattr(api_key_info, "email", ""),
         "origin": (origin or "").strip().lower().rstrip("/"),
     }
+    try:
+        from backend.core.shared_state import default_shared_state
+        default_shared_state.issue_ws_ticket(api_key_info, origin, WS_TICKET_TTL_SECONDS)
+    except Exception as exc:
+        logger.warning("Shared state store issue_ws_ticket failed: %s", exc)
+
     return ticket
 
 
@@ -357,6 +362,14 @@ def _consume_ws_ticket(ticket: str, origin: str | None) -> Any | None:
     from types import SimpleNamespace
 
     meta = _ws_tickets.pop(ticket, None)  # burned immediately — single use
+    try:
+        from backend.core.shared_state import default_shared_state
+        shared_res = default_shared_state.consume_ws_ticket(ticket, origin)
+        if meta is None and shared_res is not None:
+            return shared_res
+    except Exception as exc:
+        logger.warning("Shared state store unavailable for ticket consume: %s", exc)
+
     if meta is None:
         return None
     now = _time.monotonic()
@@ -1860,8 +1873,15 @@ async def agent_websocket_endpoint(websocket: WebSocket):
 
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:
-    """Check if there is at least one active agent connected."""
-    return len(active_agents.get(_resolve_agent_bucket(agent_type), [])) > 0
+    """Check if there is at least one active agent connected across cluster."""
+    bucket = _resolve_agent_bucket(agent_type)
+    if len(active_agents.get(bucket, [])) > 0:
+        return True
+    try:
+        from backend.core.shared_state import default_shared_state
+        return default_shared_state.has_active_agent(bucket)
+    except Exception:
+        return False
 
 
 # ── ROOT-CAUSE FIX (found by the D3 E2E chain test) ─────────────────────────

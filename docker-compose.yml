@@ -63,6 +63,7 @@ services:
     tmpfs:
       - /tmp:size=100M
     deploy:
+      replicas: 2
       resources:
         limits:
           memory: 2G
