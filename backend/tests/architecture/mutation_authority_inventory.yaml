@@ -5,7 +5,7 @@ inventory:
   method: POST
   path: /feature-flags
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_FEATURE_FLAGS_BATCH
@@ -13,7 +13,7 @@ inventory:
   method: POST
   path: /settings/feature-flags
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_RUNTIME_SETTINGS
@@ -21,7 +21,7 @@ inventory:
   method: POST
   path: /settings/runtime
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_ENV_CONFIG
@@ -29,7 +29,7 @@ inventory:
   method: PUT
   path: /env-config
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_ENGINEERING_CONFIG
@@ -37,7 +37,7 @@ inventory:
   method: PUT
   path: /settings/engineering-config
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-UPDATE_CAD_CONFIG
@@ -45,7 +45,7 @@ inventory:
   method: PUT
   path: /settings/cad-config
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-ROTATE_SECRET
@@ -53,7 +53,7 @@ inventory:
   method: POST
   path: /settings/secret-rotation/rotate
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-ADMIN_CONFIG-ROTATE_ADMIN_TOKEN
@@ -61,7 +61,7 @@ inventory:
   method: POST
   path: /settings/admin-token/rotate
   mutation_target: admin_config state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-AGENT_WS-CREATE_WS_TICKET
@@ -69,49 +69,49 @@ inventory:
   method: POST
   path: /ws-ticket
   mutation_target: agent_ws state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-AGENT_WS-AGENT_WEBSOCKET_ENDPOINT
-  path_anchor: backend/routers/agent_ws.py:1809 (agent_websocket_endpoint)
+  path_anchor: backend/routers/agent_ws.py:1822 (agent_websocket_endpoint)
   method: WEBSOCKET
   path: /ws
   mutation_target: agent_ws state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-AGENT_WS-PING_PROVIDER_ENDPOINT
-  path_anchor: backend/routers/agent_ws.py:2002 (ping_provider_endpoint)
+  path_anchor: backend/routers/agent_ws.py:2022 (ping_provider_endpoint)
   method: POST
   path: /ping-provider
   mutation_target: agent_ws state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_BATTERY
   path_anchor: backend/routers/analyze.py:133 (analyze_battery)
   method: POST
   path: /analyze/battery
   mutation_target: analyze state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_VOLTAGE
   path_anchor: backend/routers/analyze.py:173 (analyze_voltage)
   method: POST
   path: /analyze/voltage
   mutation_target: analyze state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-ANALYZE-ANALYZE_PROJECT_ROOM
   path_anchor: backend/routers/analyze.py:211 (analyze_project_room)
   method: POST
   path: /projects/{project_id}/analyze/room
   mutation_target: analyze state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-API_KEYS-CREATE_KEY
   path_anchor: backend/routers/api_keys.py:66 (create_key)
   method: POST
   path: ''
   mutation_target: api_keys state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-API_KEYS-DELETE_KEY
@@ -119,7 +119,7 @@ inventory:
   method: DELETE
   path: /{key_hash}
   mutation_target: api_keys state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-API_KEYS-UPDATE_KEY_ROLE_ENDPOINT
@@ -127,7 +127,7 @@ inventory:
   method: PUT
   path: /{key_hash}
   mutation_target: api_keys state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-APS-PROCESS_FILE_IN_CLOUD
@@ -135,7 +135,7 @@ inventory:
   method: POST
   path: /process
   mutation_target: aps state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-AUDIO-SANITIZE_VOICE_TEXT
@@ -143,7 +143,7 @@ inventory:
   method: POST
   path: /sanitize
   mutation_target: audio state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-AUDIO-TRANSCRIBE_AUDIO_FILE
@@ -151,7 +151,7 @@ inventory:
   method: POST
   path: /transcribe
   mutation_target: audio state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-AUTH-LOGIN
@@ -159,7 +159,7 @@ inventory:
   method: POST
   path: /login
   mutation_target: auth state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-AUTH-LOGIN-L255
@@ -167,7 +167,7 @@ inventory:
   method: POST
   path: /session/login
   mutation_target: auth state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-AUTH-LOGOUT
@@ -175,7 +175,7 @@ inventory:
   method: POST
   path: /logout
   mutation_target: auth state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-AUTH-VERIFY_TOKEN
@@ -183,7 +183,7 @@ inventory:
   method: POST
   path: /verify
   mutation_target: auth state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-AUTOCAD-CONNECT_TO_AUTOCAD
@@ -296,7 +296,7 @@ inventory:
   method: POST
   path: /orders
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-BILLING-INITIATE_CHECKOUT
@@ -304,7 +304,7 @@ inventory:
   method: POST
   path: /orders/{order_id}/checkout
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-BILLING-DIRECT_CHECKOUT
@@ -312,7 +312,7 @@ inventory:
   method: POST
   path: /checkout
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-BILLING-MEEZA_WEBHOOK
@@ -320,7 +320,7 @@ inventory:
   method: POST
   path: /webhooks/meeza
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-BILLING-MEEZA_WEBHOOK_ALIAS
@@ -328,7 +328,7 @@ inventory:
   method: POST
   path: /webhook
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-BILLING-SIMULATE_WEBHOOK
@@ -336,7 +336,7 @@ inventory:
   method: POST
   path: /orders/{order_id}/simulate-webhook
   mutation_target: billing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-CAD-CONNECT_CAD
@@ -488,7 +488,7 @@ inventory:
   method: POST
   path: /convert
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPLOAD_AND_CONVERT
@@ -496,7 +496,7 @@ inventory:
   method: POST
   path: /upload-and-convert
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-CONFIGURE_CONVERSION
@@ -504,7 +504,7 @@ inventory:
   method: POST
   path: /configure
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-ROLLBACK_TO_VERSION
@@ -512,7 +512,7 @@ inventory:
   method: POST
   path: /rollback/{version_id}
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_SINGLE_MAPPING
@@ -520,7 +520,7 @@ inventory:
   method: POST
   path: /update_mapping
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-UPDATE_CONFIG
@@ -528,7 +528,7 @@ inventory:
   method: PUT
   path: /config
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-DIGITAL_TWIN-CONVERT_CAD_TO_SIMREADY_ENDPOINT
@@ -536,7 +536,7 @@ inventory:
   method: POST
   path: /cad-to-simready
   mutation_target: digital_twin state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     digital_twin.py
 - id: MUT-ROUTER-ELEMENTS-CREATE_ELEMENT
@@ -568,7 +568,7 @@ inventory:
   method: POST
   path: /chat
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-PROCESS_ENGINEERING_REQUEST
@@ -576,7 +576,7 @@ inventory:
   method: POST
   path: /process-request
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-CREATE_ENGINEERING_ENTITY
@@ -584,7 +584,7 @@ inventory:
   method: POST
   path: /create-entity
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-TRANSLATE_ENGINEERING_MODEL
@@ -592,7 +592,7 @@ inventory:
   method: POST
   path: /translate-model
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-VALIDATE_ENGINEERING_MODEL
@@ -600,7 +600,7 @@ inventory:
   method: POST
   path: /validate-model
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ENGINEERING_COPILOT-GENERATE_ENGINEERING_REPORTS
@@ -608,7 +608,7 @@ inventory:
   method: POST
   path: /generate-reports
   mutation_target: engineering_copilot state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     engineering_copilot.py
 - id: MUT-ROUTER-ETAP-CONNECT_TO_ETAP
@@ -616,7 +616,7 @@ inventory:
   method: POST
   path: /connect
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-DISCONNECT
@@ -624,7 +624,7 @@ inventory:
   method: POST
   path: /disconnect
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-EXPORT_TO_ETAP
@@ -632,7 +632,7 @@ inventory:
   method: POST
   path: /export
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-IMPORT_FROM_ETAP
@@ -640,7 +640,7 @@ inventory:
   method: POST
   path: /import
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-CREATE_SETTINGS
@@ -648,7 +648,7 @@ inventory:
   method: POST
   path: /settings
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-UPDATE_SETTINGS
@@ -656,7 +656,7 @@ inventory:
   method: PUT
   path: /settings
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-ETAP-DELETE_SETTINGS
@@ -664,7 +664,7 @@ inventory:
   method: DELETE
   path: /settings
   mutation_target: etap state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     etap.py
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_OCR
@@ -672,28 +672,28 @@ inventory:
   method: POST
   path: /ocr/process
   mutation_target: experimental_services state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-PROCESS_SCAN_TO_BIM
   path_anchor: backend/routers/experimental_services.py:274 (process_scan_to_bim)
   method: POST
   path: /scan-to-bim/process
   mutation_target: experimental_services state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_PUSH
   path_anchor: backend/routers/experimental_services.py:331 (speckle_push)
   method: POST
   path: /speckle/push
   mutation_target: experimental_services state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPERIMENTAL_SERVICES-SPECKLE_RECEIVE
   path_anchor: backend/routers/experimental_services.py:359 (speckle_receive)
   method: POST
   path: /speckle/receive
   mutation_target: experimental_services state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-EXPORT_ROUTER-PLAN_EXPORT
   path_anchor: backend/routers/export_router.py:118 (plan_export)
@@ -728,7 +728,7 @@ inventory:
   method: POST
   path: /facp/select
   mutation_target: facp state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     facp.py
 - id: MUT-ROUTER-FACP-VERIFY_FACP
@@ -736,7 +736,7 @@ inventory:
   method: POST
   path: /facp/verify
   mutation_target: facp state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     facp.py
 - id: MUT-ROUTER-FACP-GENERATE_FACP_SCHEDULE
@@ -744,7 +744,7 @@ inventory:
   method: POST
   path: /facp/schedule
   mutation_target: facp state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     facp.py
 - id: MUT-ROUTER-FACP-GENERATE_FACP_SPEC
@@ -752,7 +752,7 @@ inventory:
   method: POST
   path: /facp/spec
   mutation_target: facp state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     facp.py
 - id: MUT-ROUTER-FDS_WEBHOOK-SUBMIT_SIMULATION
@@ -760,7 +760,7 @@ inventory:
   method: POST
   path: /submit
   mutation_target: fds_webhook state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-FDS_WEBHOOK-FDS_RESULT_WEBHOOK
@@ -768,7 +768,7 @@ inventory:
   method: POST
   path: /webhook
   mutation_target: fds_webhook state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Billing orders and external incoming webhook event processing (financial/integration
     ledger)
 - id: MUT-ROUTER-IMPORT_ROUTER-UPLOAD_AND_STAGE_FILE
@@ -811,7 +811,7 @@ inventory:
   method: POST
   path: /chat
   mutation_target: llm state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-LLM-LLM_EXPLAIN
@@ -819,7 +819,7 @@ inventory:
   method: POST
   path: /explain
   mutation_target: llm state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-LLM-LLM_COMPLIANCE_NARRATIVE
@@ -827,7 +827,7 @@ inventory:
   method: POST
   path: /compliance-narrative
   mutation_target: llm state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-LLM-LLM_CHAT_STREAM
@@ -835,7 +835,7 @@ inventory:
   method: POST
   path: /chat/stream
   mutation_target: llm state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MARINE-VALIDATE_SHIP
@@ -843,7 +843,7 @@ inventory:
   method: POST
   path: /ship/validate
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_FULL
@@ -851,7 +851,7 @@ inventory:
   method: POST
   path: /ship/design
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-DIVIDE_ZONES
@@ -859,7 +859,7 @@ inventory:
   method: POST
   path: /zones/divide
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_EXTINGUISHING
@@ -867,7 +867,7 @@ inventory:
   method: POST
   path: /extinguishing/design
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_ALARM_LOGIC
@@ -875,7 +875,7 @@ inventory:
   method: POST
   path: /alarm-logic/generate
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_SCADA
@@ -883,7 +883,7 @@ inventory:
   method: POST
   path: /integrations/scada
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_DETECTION
@@ -891,7 +891,7 @@ inventory:
   method: POST
   path: /detection/design
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_DIVISIONS
@@ -899,7 +899,7 @@ inventory:
   method: POST
   path: /divisions/generate
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-DESIGN_POWER
@@ -907,7 +907,7 @@ inventory:
   method: POST
   path: /power/design
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_ETAP
@@ -915,7 +915,7 @@ inventory:
   method: POST
   path: /integrations/etap
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_DXF
@@ -923,7 +923,7 @@ inventory:
   method: POST
   path: /integrations/dxf
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MARINE-GENERATE_REVIT
@@ -931,7 +931,7 @@ inventory:
   method: POST
   path: /integrations/revit
   mutation_target: marine state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     marine.py
 - id: MUT-ROUTER-MEMORY-ADD_MEMORY
@@ -939,7 +939,7 @@ inventory:
   method: POST
   path: /add
   mutation_target: memory state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MEMORY-SEARCH_MEMORIES
@@ -947,7 +947,7 @@ inventory:
   method: POST
   path: /search
   mutation_target: memory state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MEMORY-DELETE_MEMORY
@@ -955,7 +955,7 @@ inventory:
   method: DELETE
   path: /{memory_id}
   mutation_target: memory state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MINING-METHANE_CHECK
@@ -963,7 +963,7 @@ inventory:
   method: POST
   path: /methane-check
   mutation_target: mining state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     mining.py
 - id: MUT-ROUTER-MINING-VENTILATION_CHECK
@@ -971,7 +971,7 @@ inventory:
   method: POST
   path: /ventilation-check
   mutation_target: mining state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     mining.py
 - id: MUT-ROUTER-MINING-CO_CHECK
@@ -979,7 +979,7 @@ inventory:
   method: POST
   path: /co-check
   mutation_target: mining state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     mining.py
 - id: MUT-ROUTER-MINING-CONVEYOR_SUPPRESSION
@@ -987,7 +987,7 @@ inventory:
   method: POST
   path: /conveyor-suppression
   mutation_target: mining state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     mining.py
 - id: MUT-ROUTER-MINING-COMPLIANCE_REPORT
@@ -995,7 +995,7 @@ inventory:
   method: POST
   path: /compliance-report
   mutation_target: mining state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     mining.py
 - id: MUT-ROUTER-MULTI_DB-SET_IN_REDIS
@@ -1003,7 +1003,7 @@ inventory:
   method: POST
   path: /redis/set
   mutation_target: multi_db state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MULTI_DB-CACHE_BIM_ELEMENT
@@ -1011,7 +1011,7 @@ inventory:
   method: POST
   path: /bim/cache-element
   mutation_target: multi_db state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MULTI_DB-STORE_ELEMENT_EMBEDDINGS
@@ -1019,7 +1019,7 @@ inventory:
   method: POST
   path: /bim/store-embeddings
   mutation_target: multi_db state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MULTI_DB-FIND_SIMILAR_ELEMENTS
@@ -1027,7 +1027,7 @@ inventory:
   method: POST
   path: /bim/find-similar
   mutation_target: multi_db state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-MULTI_DB-CREATE_ELEMENT_RELATIONSHIPS
@@ -1035,7 +1035,7 @@ inventory:
   method: POST
   path: /bim/create-relationships
   mutation_target: multi_db state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-PROJECTS-CREATE_PROJECT
@@ -1067,7 +1067,7 @@ inventory:
   method: POST
   path: /qomn/smoke-spacing
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_HEAT_SPACING
@@ -1075,7 +1075,7 @@ inventory:
   method: POST
   path: /qomn/heat-spacing
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_BATTERY
@@ -1083,7 +1083,7 @@ inventory:
   method: POST
   path: /qomn/battery
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-COMPUTE_VOLTAGE_DROP
@@ -1091,7 +1091,7 @@ inventory:
   method: POST
   path: /qomn/voltage-drop
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-PLACE_DETECTORS
@@ -1099,7 +1099,7 @@ inventory:
   method: POST
   path: /qomn/place-detectors
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-PLACE_DUCT_DETECTOR
@@ -1107,7 +1107,7 @@ inventory:
   method: POST
   path: /qomn/place-duct
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-RUN_GOLDEN_TESTS
@@ -1115,7 +1115,7 @@ inventory:
   method: POST
   path: /qomn/golden-tests
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-QOMN-EVALUATE_ACOUSTICS
@@ -1123,7 +1123,7 @@ inventory:
   method: POST
   path: /qomn/acoustics/evaluate
   mutation_target: qomn state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     qomn.py
 - id: MUT-ROUTER-REPORTS-GENERATE_REPORT
@@ -1131,21 +1131,21 @@ inventory:
   method: POST
   path: ''
   mutation_target: reports state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REPORTS-GENERATE_GLOBAL_REPORT
   path_anchor: backend/routers/reports.py:893 (generate_global_report)
   method: POST
   path: /generate
   mutation_target: reports state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REPORTS-GENERATE_AHJ_SUBMITTAL
   path_anchor: backend/routers/reports.py:1300 (generate_ahj_submittal)
   method: POST
   path: /ahj-submittal
   mutation_target: reports state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-REVIT-CONNECT_TO_REVIT
   path_anchor: backend/routers/revit.py:503 (connect_to_revit)
@@ -1334,7 +1334,7 @@ inventory:
   method: PUT
   path: /llm-healing
   mutation_target: self_healing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-SELF_HEALING-SELF_HEALING_RESET
@@ -1342,7 +1342,7 @@ inventory:
   method: POST
   path: /reset
   mutation_target: self_healing state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: System observability, memory embeddings, LLM chat, and environment configuration
     store
 - id: MUT-ROUTER-SETTINGS-STORE_PROVIDER_KEY
@@ -1350,7 +1350,7 @@ inventory:
   method: POST
   path: /{provider}
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-STORE_OPENAI_KEY_COMPAT
@@ -1358,7 +1358,7 @@ inventory:
   method: POST
   path: /openai
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-DELETE_PROVIDER_KEY
@@ -1366,7 +1366,7 @@ inventory:
   method: DELETE
   path: /{provider}/{key_id}
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-BULK_DELETE_PROVIDER_KEYS
@@ -1374,7 +1374,7 @@ inventory:
   method: POST
   path: /{provider}/bulk-delete
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-TEST_PROVIDER_KEY
@@ -1382,7 +1382,7 @@ inventory:
   method: POST
   path: /{provider}/{key_id}/test
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-DELETE_OPENAI_KEY_COMPAT
@@ -1390,7 +1390,7 @@ inventory:
   method: DELETE
   path: /openai/{key_id}
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SETTINGS-TEST_OPENAI_KEY_COMPAT
@@ -1398,7 +1398,7 @@ inventory:
   method: POST
   path: /openai/{key_id}/test
   mutation_target: settings state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Authentication, RBAC credentials, and user settings store (non-CAD project
     state)
 - id: MUT-ROUTER-SYNC-SYNC_PROJECT
@@ -1406,21 +1406,21 @@ inventory:
   method: POST
   path: ''
   mutation_target: sync state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-SYNC-WEBSOCKET_ENDPOINT
   path_anchor: backend/routers/sync.py:353 (websocket_endpoint)
   method: WEBSOCKET
   path: /ws
   mutation_target: sync state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-V2-GENERATE_DESIGN_VARIANTS
   path_anchor: backend/routers/v2.py:186 (generate_design_variants)
   method: POST
   path: /generative/design
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-EXTRACT_ROOMS
@@ -1428,7 +1428,7 @@ inventory:
   method: POST
   path: /bim/extract-rooms
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-MAP_DETECTOR_TO_IFC43
@@ -1436,7 +1436,7 @@ inventory:
   method: POST
   path: /ifc43/map-detector
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-MAP_PROJECT_TO_IFC43
@@ -1444,7 +1444,7 @@ inventory:
   method: POST
   path: /ifc43/map-project
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-EXPORT_AR_SNAPSHOT
@@ -1452,7 +1452,7 @@ inventory:
   method: POST
   path: /ar/export
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-SUBSCRIBE_WEBHOOK
@@ -1460,7 +1460,7 @@ inventory:
   method: POST
   path: /webhooks/subscribe
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-UNSUBSCRIBE_WEBHOOK
@@ -1468,7 +1468,7 @@ inventory:
   method: DELETE
   path: /webhooks/subscriptions/{sub_id}
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-PUBLISH_WEBHOOK_EVENT
@@ -1476,7 +1476,7 @@ inventory:
   method: POST
   path: /webhooks/publish
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-CREATE_SMOKE_STATE
@@ -1484,7 +1484,7 @@ inventory:
   method: POST
   path: /smoke-simulation/state
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-STORE_MEMORY
@@ -1492,7 +1492,7 @@ inventory:
   method: POST
   path: /memory/store
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-SEARCH_MEMORY
@@ -1500,7 +1500,7 @@ inventory:
   method: POST
   path: /memory/search
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-ADD_TOPOLOGY_ELEMENT
@@ -1508,7 +1508,7 @@ inventory:
   method: POST
   path: /topology/element
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-ADD_TOPOLOGY_CONNECTION
@@ -1516,7 +1516,7 @@ inventory:
   method: POST
   path: /topology/connection
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-ANALYZE_IMPACT
@@ -1524,7 +1524,7 @@ inventory:
   method: POST
   path: /topology/impact
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-ADD_GRAPHRAG_KNOWLEDGE
@@ -1532,7 +1532,7 @@ inventory:
   method: POST
   path: /graphrag/knowledge
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-ASK_GRAPHRAG
@@ -1540,7 +1540,7 @@ inventory:
   method: POST
   path: /graphrag/ask
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-V2-SEARCH_GRAPHRAG
@@ -1548,7 +1548,7 @@ inventory:
   method: POST
   path: /graphrag/search
   mutation_target: v2 state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Deterministic engineering calculation and analytical kernel pipeline in
     v2.py
 - id: MUT-ROUTER-WORKFLOW-START_WORKFLOW
@@ -1577,21 +1577,21 @@ inventory:
   method: POST
   path: /runs/{run_id}/resume
   mutation_target: workflow state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-CANCEL_AGENT_RUN
   path_anchor: backend/routers/workflow.py:510 (cancel_agent_run)
   method: POST
   path: /runs/{run_id}/cancel
   mutation_target: workflow state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-RETRY_AGENT_RUN
   path_anchor: backend/routers/workflow.py:528 (retry_agent_run)
   method: POST
   path: /runs/{run_id}/retry
   mutation_target: workflow state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-DECIDE_AGENT_RUN_APPROVAL
   path_anchor: backend/routers/workflow.py:551 (decide_agent_run_approval)
@@ -1605,7 +1605,7 @@ inventory:
   method: POST
   path: /runs/plan
   mutation_target: workflow state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: General service endpoint with localized persistence
 - id: MUT-ROUTER-WORKFLOW-START_PLANNED_AUTONOMOUS_WORKFLOW
   path_anchor: backend/routers/workflow.py:783 (start_planned_autonomous_workflow)
@@ -1649,26 +1649,26 @@ inventory:
   method: MIGRATION
   path: alembic upgrade head
   mutation_target: Database DDL and relational schema
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Schema migration management outside runtime CAD command pipeline
 - id: MUT-WEBHOOK-MEEZA-IPN
   path_anchor: backend/routers/billing.py:322 (meeza_webhook)
   method: WEBHOOK
   path: /api/v1/billing/webhook/meeza
   mutation_target: Billing transactions ledger
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: HMAC-verified incoming financial payment webhook
 - id: MUT-WEBHOOK-FDS-EVENTS
   path_anchor: backend/routers/fds_webhook.py:75 (fds_webhook_handler)
   method: WEBHOOK
   path: /api/v1/fds-webhook/events
   mutation_target: Simulation runs and progress state
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Fire Dynamics Simulator webhook callback handler
 - id: MUT-BACKGROUND-EXPORT-WORKER
   path_anchor: backend/routers/export_router.py:245 (export_task)
   method: BACKGROUND_JOB
   path: asyncio.create_task(export_task)
   mutation_target: Export artifact files and job status
-  authority_class: DIRECT_DATA_STORE
+  authority_class: SYSTEM_INFRASTRUCTURE
   evidence: Background file artifact generator and export run recorder
