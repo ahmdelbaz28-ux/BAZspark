@@ -93,7 +93,7 @@ interface VersionInfo {
 }
 
 interface DigitalTwinPageProps {
-	initialTab?: "convert" | "settings" | "history" | string;
+	initialTab?: "convert" | "settings" | "history" | "config";
 }
 
 export function DigitalTwinPage({ initialTab }: DigitalTwinPageProps = {}) {

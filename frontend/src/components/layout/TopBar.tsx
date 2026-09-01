@@ -129,9 +129,9 @@ const TopBar: React.FC<TopBarProps> = memo(
 					<BazSparkLogo size={26} className="shrink-0" />
 					<nav aria-label="breadcrumb" className="breadcrumb-container flex items-center gap-1.5 min-w-0">
 						<span className="text-xs text-muted-foreground font-mono hidden sm:inline">WORKSTATION ▸</span>
-						<h1 className="shell-page-title truncate text-sm font-semibold tracking-tight text-foreground" title={pageName}>
+						<span className="shell-page-title truncate text-sm font-semibold tracking-tight text-foreground" title={pageName}>
 							{pageName}
-						</h1>
+						</span>
 					</nav>
 				</div>
 
