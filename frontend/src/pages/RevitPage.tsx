@@ -45,7 +45,7 @@ import {
 } from "@/services/fullApi";
 
 interface RevitPageProps {
-	initialTab?: "dashboard" | "elements" | string;
+	initialTab?: "dashboard" | "elements";
 }
 
 export function RevitPage({ initialTab }: RevitPageProps = {}) {
