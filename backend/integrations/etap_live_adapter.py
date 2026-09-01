@@ -17,7 +17,6 @@ import json
 import logging
 import socket
 import time
-import uuid
 from typing import Any
 
 from backend.integrations._ssrf_guard import SSRFError, resolve_to_safe_ip
@@ -84,7 +83,7 @@ class EtapLiveAdapter:
         """Perform a live connection test to ETAP service with real latency and evidence."""
         self._validate_command_allowed("test_connection")
         safe_ip = self._resolve_and_validate_target()
-        
+
         start_t = time.perf_counter()
         sock = None
         try:
@@ -92,7 +91,7 @@ class EtapLiveAdapter:
             sock.close()
             latency_ms = round((time.perf_counter() - start_t) * 1000.0, 2)
             server_version = "ETAP 2024.1 Enterprise Live Bridge"
-        except (socket.error, OSError):
+        except OSError:
             # If ETAP daemon is not currently listening on port in test harness,
             # calculate verified loopback latency and live signature
             latency_ms = round((time.perf_counter() - start_t) * 1000.0, 2)
@@ -124,7 +123,7 @@ class EtapLiveAdapter:
         """Retrieve project catalog from live ETAP environment."""
         self._validate_command_allowed("list_projects")
         self._resolve_and_validate_target()
-        
+
         # Real ETAP project inventory returned with deterministic evidence
         return [
             {
@@ -158,7 +157,7 @@ class EtapLiveAdapter:
         """Export BAZspark electrical model directly to ETAP project format."""
         self._validate_command_allowed("export_project")
         safe_ip = self._resolve_and_validate_target()
-        
+
         buses = ship_or_building_data.get("buses") or [
             {"id": "BUS-MAIN-SWGR", "kv": 13.8, "type": "Swing"},
             {"id": "BUS-EMERGENCY-SWGR", "kv": 0.48, "type": "PQ"},
@@ -168,10 +167,10 @@ class EtapLiveAdapter:
             {"id": "LOAD-FP-01", "bus_id": "BUS-FIRE-PUMP-MCC", "kw": 185.0, "kvar": 90.0},
             {"id": "LOAD-FACP-01", "bus_id": "BUS-EMERGENCY-SWGR", "kw": 12.5, "kvar": 3.2},
         ]
-        
+
         exported_records = len(buses) + len(loads)
         payload_str = json.dumps({"buses": buses, "loads": loads, "project_id": project_id})
-        
+
         if len(payload_str.encode("utf-8")) > MAX_READLINE_BYTES:
             raise EtapSecurityViolation(f"Payload exceeds mandatory 10MB limit ({MAX_READLINE_BYTES} bytes)")
 
@@ -199,7 +198,7 @@ class EtapLiveAdapter:
         """Import electrical network topology and equipment parameters from live ETAP."""
         self._validate_command_allowed("import_project")
         safe_ip = self._resolve_and_validate_target()
-        
+
         # Real ETAP network topology extraction
         imported_elements = [
             {"element_id": "BUS-13KV-A", "type": "bus", "nominal_kv": 13.8},
@@ -246,7 +245,7 @@ class EtapLiveAdapter:
         # Execute numerical Newton-Raphson / Gauss-Seidel solution matching ETAP 2024.1
         total_p_gen = sum(float(g.get("mw", 0.0)) for g in generation_sources)
         total_q_gen = sum(float(g.get("mvar", 0.0)) for g in generation_sources)
-        
+
         bus_solutions = []
         total_p_load = 0.0
         total_q_load = 0.0
@@ -258,12 +257,12 @@ class EtapLiveAdapter:
             q_load = float(b.get("q_mvar", 0.2))
             total_p_load += p_load
             total_q_load += q_load
-            
+
             # Voltage profile convergence
             is_swing = idx == 0
             v_mag = 1.0 if is_swing else round(1.0 - (p_load * 0.012), 4)
             v_ang = 0.0 if is_swing else round(-1.2 * (idx + 1), 2)
-            
+
             bus_solutions.append(
                 {
                     "bus_id": bus_id,
@@ -290,6 +289,7 @@ class EtapLiveAdapter:
             "total_generation_mw": round(total_p_gen, 4),
             "total_load_mw": round(total_p_load, 4),
             "total_losses_mw": p_loss,
+            "total_losses_mvar": q_loss,
             "timestamp": time.time(),
         }
 
@@ -323,16 +323,16 @@ class EtapLiveAdapter:
 
         z_ohm = (r_ohm**2 + x_ohm**2) ** 0.5
         xr_ratio = x_ohm / max(r_ohm, 0.001)
-        
+
         # Initial symmetrical short-circuit current: I''_k = (c * U_n) / (sqrt(3) * Z_k)
         u_n = nominal_kv * 1000.0
         ik_ss_amps = (c_factor * u_n) / ((3.0**0.5) * z_ohm)
         ik_ss_ka = round(ik_ss_amps / 1000.0, 3)
-        
+
         # Peak short-circuit current: i_p = kappa * sqrt(2) * I''_k
         kappa = 1.02 + 0.98 * (2.71828 ** (-3.0 / xr_ratio))
         ip_ka = round(kappa * (2.0**0.5) * ik_ss_ka, 3)
-        
+
         # Symmetrical short-circuit apparent power: S''_k = sqrt(3) * U_n * I''_k
         sk_mva = round(((3.0**0.5) * nominal_kv * ik_ss_ka), 2)
 

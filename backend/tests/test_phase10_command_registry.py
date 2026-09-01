@@ -8,8 +8,6 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 10 & PHASE10_DELIVERY_CONTRACT.md (St
 
 from __future__ import annotations
 
-import pytest
-
 from backend.core import command_registry
 
 

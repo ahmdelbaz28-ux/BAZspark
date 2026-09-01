@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import pytest
 
-from backend.core.capability_registry import default_capability_registry
 from backend.core.cad_control_contracts import (
     CAP_CAD_AUTOCAD_DRAW_LINE,
     CAP_CAD_EXECUTE_DESKTOP_COMMAND,
     CAP_CAD_REVIT_CREATE_WALL,
     CAP_CAD_REVIT_GET_ELEMENTS,
 )
+from backend.core.capability_registry import default_capability_registry
 
 
 def test_cad_capabilities_registered_with_desktop_agent_channel():

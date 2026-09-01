@@ -86,7 +86,7 @@ def register_etap_live_capabilities(registry: CapabilityRegistry) -> None:
         host = payload.get("host", "93.184.216.34")
         port = int(payload.get("port", 18888))
         adapter = EtapLiveAdapter(host=host, port=port)
-        
+
         buses = payload.get("buses") or [
             {"id": "BUS-01-13KV", "nominal_kv": 13.8, "p_mw": 1.2, "q_mvar": 0.5},
             {"id": "BUS-02-480V", "nominal_kv": 0.48, "p_mw": 0.8, "q_mvar": 0.3},
@@ -95,7 +95,7 @@ def register_etap_live_capabilities(registry: CapabilityRegistry) -> None:
         generation = payload.get("generation_sources") or [
             {"id": "GEN-01", "mw": 2.5, "mvar": 1.0}
         ]
-        
+
         res = adapter.calculate_live_load_flow(buses, branches, generation)
         res["audit_hash"] = _generate_etap_audit_hash(payload, res)
         return res
@@ -104,7 +104,7 @@ def register_etap_live_capabilities(registry: CapabilityRegistry) -> None:
         host = payload.get("host", "93.184.216.34")
         port = int(payload.get("port", 18888))
         adapter = EtapLiveAdapter(host=host, port=port)
-        
+
         fault_buses = payload.get("fault_buses") or ["BUS-01-13KV", "BUS-02-480V"]
         nominal_kv = float(payload.get("nominal_kv", 13.8))
         r_ohm = float(payload.get("r_ohm", 0.08))

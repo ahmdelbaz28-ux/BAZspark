@@ -14,10 +14,9 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 from backend.database import Database
-from backend.integrations._ssrf_guard import SSRFError, resolve_to_safe_ip
+from backend.integrations._ssrf_guard import SSRFError
 from backend.integrations.etap_crypto import decrypt_password, encrypt_password
 from backend.integrations.etap_live_adapter import (
     EtapLiveAdapter,
