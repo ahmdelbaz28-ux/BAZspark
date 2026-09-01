@@ -37,12 +37,15 @@ if _REPO_ROOT_EARLY not in sys.path:
     sys.path.insert(0, _REPO_ROOT_EARLY)
 
 try:
-    from core import command_registry as _registry
+    try:
+        from backend.core import command_registry as _registry
+    except ImportError:
+        from core import command_registry as _registry
 
     _registry_available = True
 except Exception as e:  # noqa: BLE001
     logging.getLogger("bazspark-agent").warning(
-        "core.command_registry not importable (%s) — pipe routing disabled", e
+        "command_registry not importable (%s) — pipe routing disabled", e
     )
     _registry_available = False
 
