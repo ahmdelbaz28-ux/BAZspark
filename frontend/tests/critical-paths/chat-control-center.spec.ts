@@ -64,10 +64,11 @@ test.describe("Phase 2 — AI-First Chat Control Center", () => {
 		await quickCard.click();
 
 		// Execution Timeline should appear
-		await expect(page.getByTestId("execution-timeline")).toBeVisible();
-		await expect(page.getByText("Agent Execution Spine")).toBeVisible();
+		const timeline = page.getByTestId("execution-timeline");
+		await expect(timeline).toBeVisible();
+		await expect(timeline.getByText("Agent Execution Spine")).toBeVisible();
 		await expect(
-			page.getByText("Calculate optimal spacing & device placement"),
+			timeline.getByText("Calculate optimal spacing & device placement"),
 		).toBeVisible();
 	});
 
