@@ -27,7 +27,7 @@ def test_etap_service_zero_simulated_invariant():
     """Verify forensic zero-simulated invariant in backend/integrations/etap_service.py."""
     assert ETAP_SERVICE_PATH.exists(), f"Missing file: {ETAP_SERVICE_PATH}"
     source_code = ETAP_SERVICE_PATH.read_text(encoding="utf-8").lower()
-    
+
     # Invariant: zero instances of the word 'simulated'
     assert "simulated" not in source_code, (
         "Forensic Invariant Violated: 'simulated' keyword found in backend/integrations/etap_service.py"
@@ -45,7 +45,7 @@ def test_generic_planner_ast_purity():
     """Verify AST purity of generic_planner.py — no hardcoded domain branching."""
     assert GENERIC_PLANNER_PATH.exists()
     tree = ast.parse(GENERIC_PLANNER_PATH.read_text(encoding="utf-8"))
-    
+
     # Scan for any forbidden hardcoded capability or domain branching in planner class
     class PlannerASTVisitor(ast.NodeVisitor):
         def __init__(self):

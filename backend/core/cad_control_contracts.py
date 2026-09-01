@@ -47,13 +47,13 @@ def _dispatch_cad_command(service: str, command: str, params: dict[str, Any]) ->
         raise ValueError(
             f"CAD command '{service}/{command}' is not allowed (not in command_registry)."
         )
-    
+
     param_err = validate_params(service, command, params)
     if param_err:
         raise ValueError(param_err)
-    
+
     normalized = normalize_params(service, command, params)
-    
+
     # Try active live agent if available in runtime
     try:
         from backend.routers.agent_ws import active_agents
@@ -95,9 +95,9 @@ def _dispatch_cad_command(service: str, command: str, params: dict[str, Any]) ->
         elif command in ("get_elements", "list_elements"):
             category = params.get("category", "")
             elements = [
-                {"id": f"REVIT-ELEM-101", "category": category or "Walls", "name": "Basic Wall Interior"},
-                {"id": f"REVIT-ELEM-102", "category": category or "Doors", "name": "Single Flush 36x84"},
-                {"id": f"REVIT-ELEM-103", "category": category or "FireDevices", "name": "Smoke Detector Addressable"},
+                {"id": "REVIT-ELEM-101", "category": category or "Walls", "name": "Basic Wall Interior"},
+                {"id": "REVIT-ELEM-102", "category": category or "Doors", "name": "Single Flush 36x84"},
+                {"id": "REVIT-ELEM-103", "category": category or "FireDevices", "name": "Smoke Detector Addressable"},
             ]
             evidence = {
                 "service": "revit",
@@ -152,7 +152,7 @@ def _dispatch_cad_command(service: str, command: str, params: dict[str, Any]) ->
                 "handle": handle,
                 "evidence": {"service": "autocad", "command": command, "params": normalized, "timestamp": ts},
             }
-    
+
     raise ValueError(f"Unsupported desktop CAD service: '{service}'")
 
 
@@ -210,7 +210,7 @@ def register_cad_control_capabilities(registry: CapabilityRegistry) -> None:
         command = str(payload.get("command", ""))
         params = payload.get("params") or {}
         project_id = payload.get("project_id")
-        
+
         result = _dispatch_cad_command(service, command, params)
         entry = get_command_entry(service, command)
         is_mutation = entry and entry.get("risk") == "mutation"

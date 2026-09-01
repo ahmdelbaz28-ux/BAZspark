@@ -20,7 +20,6 @@ from backend.core.etap_live_contracts import (
 )
 from backend.database import get_db
 from backend.integrations.etap_live_adapter import (
-    MAX_READLINE_BYTES,
     EtapLiveAdapter,
     EtapSecurityViolation,
 )
