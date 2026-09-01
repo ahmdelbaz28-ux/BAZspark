@@ -120,6 +120,8 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
 	"/environment/context": () => import("@/pages/ContextPage"),
 	"/environment/hazmat": () => import("@/pages/HazMatPage"),
 	"/audit-trail": () => import("@/pages/AuditTrailPage"),
+	"/fire-alarm": () => import("@/pages/FireAlarmPage"),
+	"/billing": () => import("@/pages/BillingPage"),
 };
 
 interface NavItem {
@@ -284,6 +286,12 @@ const navGroups: NavGroup[] = [
 				defaultLabel: "FACP Selector",
 				icon: Cpu,
 				path: "/facp",
+			},
+			{
+				labelKey: "nav.fireAlarmDesigner",
+				defaultLabel: "Fire Alarm Designer",
+				icon: Flame,
+				path: "/fire-alarm",
 			},
 			{
 				labelKey: "nav.devices",

@@ -1,20 +1,9 @@
 /**
- * DigitalTwinHistoryPage.tsx — Full-page conversion history with rollback
+ * DigitalTwinHistoryPage.tsx — Compatibility wrapper for Digital Twin History Hub
  */
-import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
+
+import { DigitalTwinPage } from "./DigitalTwinPage";
 
 export function DigitalTwinHistoryPage() {
-	return (
-		<div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">
-					Digital Twin — History
-				</h1>
-				<p className="text-sm text-muted-foreground mt-1">
-					View conversion history and rollback to previous versions
-				</p>
-			</div>
-			<HistoryTimeline />
-		</div>
-	);
+	return <DigitalTwinPage initialTab="history" />;
 }

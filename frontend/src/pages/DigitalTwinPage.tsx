@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,9 +92,39 @@ interface VersionInfo {
 	status: "success" | "partial" | "failed";
 }
 
-export function DigitalTwinPage() {
+interface DigitalTwinPageProps {
+	initialTab?: "convert" | "settings" | "history" | string;
+}
+
+export function DigitalTwinPage({ initialTab }: DigitalTwinPageProps = {}) {
 	useTranslation(); // V249: Keep hook for language context, remove unused 't'
-	const [activeTab, setActiveTab] = useState("convert");
+	const [searchParams, setSearchParams] = useSearchParams();
+	const queryTab = searchParams.get("tab");
+	const resolveTab = useCallback((raw?: string | null) => {
+		if (!raw) return "convert";
+		if (raw === "config") return "settings";
+		if (["convert", "settings", "history"].includes(raw)) return raw;
+		return "convert";
+	}, []);
+
+	const [activeTab, setActiveTab] = useState(() =>
+		resolveTab(initialTab || queryTab),
+	);
+
+	const handleTabChange = useCallback(
+		(val: string) => {
+			setActiveTab(val);
+			setSearchParams(
+				(prev) => {
+					const next = new URLSearchParams(prev);
+					next.set("tab", val);
+					return next;
+				},
+				{ replace: true },
+			);
+		},
+		[setSearchParams],
+	);
 
 	// Conversion state
 	const [converting, setConverting] = useState(false);
@@ -376,7 +407,7 @@ export function DigitalTwinPage() {
 				</div>
 
 				{/* Main Tabs */}
-				<Tabs value={activeTab} onValueChange={setActiveTab}>
+				<Tabs value={activeTab} onValueChange={handleTabChange}>
 					<TabsList className="bg-card border border-border stagger-card">
 						<TabsTrigger
 							value="convert"
