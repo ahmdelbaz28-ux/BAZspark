@@ -177,6 +177,40 @@ export async function installApiMock(page: Page, options: MockOptions = {}) {
 
 		// ── Workflow Runs Plan endpoint ──────────────────────────
 		if (url.includes("/workflow/runs/plan") && method === "POST") {
+			let reqBody: Record<string, unknown> = {};
+			try {
+				reqBody = route.request().postDataJSON() || {};
+			} catch {
+				// not JSON
+			}
+			const promptText = String(reqBody.prompt || "").toLowerCase();
+			const isConversational =
+				promptText.startsWith("what ") ||
+				promptText.startsWith("how ") ||
+				promptText.startsWith("explain ") ||
+				promptText.startsWith("why ");
+
+			if (isConversational) {
+				return route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({
+						success: true,
+						data: {
+							plan_id: "plan-mock-conv",
+							project_id: "default_project",
+							expected_revision: 1,
+							intent_summary: "Conversational Query",
+							overall_policy_decision: "AUTO_APPROVED",
+							requires_human_approval: false,
+							steps: [],
+							dag: { nodes: [] },
+							projected_state: {},
+						},
+					}),
+				});
+			}
+
 			return route.fulfill({
 				status: 200,
 				contentType: "application/json",
