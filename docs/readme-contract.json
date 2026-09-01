@@ -39,14 +39,14 @@
     { "package": "frontend", "script": "perf:check" }
   ],
   "mandatory_documentation_links": [
-    "ARCHITECTURE.md",
-    "ENGINEERING_BASIS.md",
-    "CONFIGURATION_GUIDE.md",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "ONBOARDING.md",
-    "CI-CD-POLICY.md",
-    "TROUBLESHOOTING_GUIDE.md",
+    "docs/ARCHITECTURE.md",
+    "docs/ENGINEERING_BASIS.md",
+    "docs/CONFIGURATION_GUIDE.md",
+    "docs/SECURITY.md",
+    "docs/CONTRIBUTING.md",
+    "docs/ONBOARDING.md",
+    "docs/CI-CD-POLICY.md",
+    "docs/TROUBLESHOOTING.md",
     "LICENSE",
     "docs/FACP_SPECIFICATION.md",
     "docs/PRODUCTION_DEPLOYMENT_GUIDE.md"
