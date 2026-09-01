@@ -41,8 +41,8 @@ def test_golden_fixtures_sha256_checksum_integrity() -> None:
         expected_sha, fname = line.strip().split(maxsplit=1)
         target_path = GOLDEN_DIR / fname.strip()
         assert target_path.exists(), f"Golden fixture file '{fname}' not found in {GOLDEN_DIR}"
-
-        actual_sha = hashlib.sha256(target_path.read_bytes()).hexdigest()
+        raw_bytes = target_path.read_bytes().replace(b"\r\n", b"\n")
+        actual_sha = hashlib.sha256(raw_bytes).hexdigest()
         assert actual_sha == expected_sha, (
             f"Checksum mismatch for {fname}: expected {expected_sha}, got {actual_sha}"
         )

@@ -104,7 +104,8 @@ def update_checksums() -> None:
     for fixture_name in ["load_flow_golden.json", "short_circuit_golden.json"]:
         path = GOLDEN_DIR / fixture_name
         if path.exists():
-            sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            raw_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+            sha = hashlib.sha256(raw_bytes).hexdigest()
             lines.append(f"{sha}  {fixture_name}")
     checksum_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"[OK] Checksums updated in {checksum_file}")
