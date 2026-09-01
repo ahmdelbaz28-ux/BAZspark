@@ -11,7 +11,11 @@ import type { ElementUpdate } from "@/types";
 
 function ElementDetail() {
 	const { t } = useTranslation();
-	const { id } = useParams<{ id: string }>();
+	const { id: rawId, elementId } = useParams<{
+		id?: string;
+		elementId?: string;
+	}>();
+	const id = elementId || rawId;
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [isEditing, setIsEditing] = useState(false);
@@ -129,7 +133,10 @@ function ElementDetail() {
 				</Link>
 				<span className="text-muted-foreground/70">/</span>
 				<span className="text-white">
-					{element.properties?.name ?? element.element_id}
+					{element.properties?.name ??
+						(element as { name?: string }).name ??
+						element.element_id ??
+						id}
 				</span>
 			</div>
 
@@ -159,7 +166,7 @@ function ElementDetail() {
 									textTransform: "uppercase",
 								}}
 							>
-								EL‑{element.element_id.slice(0, 8).toUpperCase()}
+								EL‑{((element as { element_id?: string; id?: string }).element_id || (element as { element_id?: string; id?: string }).id || id || "").slice(0, 8).toUpperCase()}
 							</code>
 							{/* Compliance Badge */}
 							{element.properties?.fire_rating ? (
@@ -207,7 +214,9 @@ function ElementDetail() {
 								lineHeight: 1.2,
 							}}
 						>
-							{element.properties?.name ?? t("elementDetail.unnamedElement")}
+							{element.properties?.name ??
+								(element as { name?: string }).name ??
+								t("elementDetail.unnamedElement")}
 						</h1>
 						{/* Meta row */}
 						<div className="flex flex-wrap items-center gap-3 mt-1">
@@ -477,16 +486,24 @@ function ElementDetail() {
 							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 								<PropertyRow
 									label={t("elementDetail.area")}
-									value={`${element.geometry.area.toFixed(2)} m²`}
+									value={
+										typeof element.geometry?.area === "number"
+											? `${element.geometry.area.toFixed(2)} m²`
+											: "—"
+									}
 								/>
 								<PropertyRow
 									label={t("elementDetail.perimeter")}
-									value={`${element.geometry.perimeter.toFixed(2)} m`}
+									value={
+										typeof element.geometry?.perimeter === "number"
+											? `${element.geometry.perimeter.toFixed(2)} m`
+											: "—"
+									}
 								/>
 								<PropertyRow
 									label={t("elementDetail.closedPolyline")}
 									value={
-										element.geometry.polyline_closed
+										element.geometry?.polyline_closed
 											? t("common.yes")
 											: t("common.no")
 									}
@@ -495,16 +512,19 @@ function ElementDetail() {
 									<PropertyRow
 										label={t("elementDetail.points")}
 										value={t("elementDetail.pointsCount", {
-											count: element.geometry.points.length,
+											count: Array.isArray(element.geometry?.points)
+												? element.geometry.points.length
+												: 0,
 										})}
 									/>
-									{element.geometry.points.length > 0 && (
-										<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3 stagger-card">
-											<pre className="text-xs text-muted-foreground">
-												{JSON.stringify(element.geometry.points, null, 2)}
-											</pre>
-										</div>
-									)}
+									{Array.isArray(element.geometry?.points) &&
+										element.geometry.points.length > 0 && (
+											<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3 stagger-card">
+												<pre className="text-xs text-muted-foreground">
+													{JSON.stringify(element.geometry.points, null, 2)}
+												</pre>
+											</div>
+										)}
 								</div>
 							</div>
 						) : (
@@ -626,4 +646,5 @@ function PropertyRow({
 	);
 }
 
+export { ElementDetail };
 export default ElementDetail;

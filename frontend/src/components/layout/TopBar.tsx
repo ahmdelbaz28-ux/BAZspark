@@ -24,16 +24,30 @@ const routeLabels: Record<string, string> = {
 	"/dashboard": "Dashboard",
 	"/projects": "Projects & Model Context",
 	"/engineering": "Engineering Workspace",
+	"/marine": "Marine System Engineering",
+	"/mining": "Mining System Engineering",
+	"/api-keys": "API Key Management",
+	"/exports": "Deliverables Export",
+	"/self-healing": "Self-Healing Resilience",
+	"/facp": "FACP Panel Selector",
+	"/environment": "Environmental Context",
+	"/monitor": "Live Telemetry & Monitoring",
+	"/memory": "Agent Memory & Knowledge",
+	"/graphrag": "GraphRAG Knowledge Network",
 	"/workflow": "Review & Governance",
 	"/reports": "Reports & Deliverables",
+	"/reports/generate": "Report Generator",
 	"/settings": "Settings & Administration",
+	"/settings/cad": "CAD Defaults & Settings",
+	"/settings/database": "Database Administration",
+	"/billing": "Billing & Subscriptions",
+	"/digital-twin": "Digital Twin 3D",
 	"/fire-alarm-designer": "Fire Alarm Designer",
 	"/fire-alarm/designer": "Fire Alarm Designer",
 	"/fire-alarm": "Fire Alarm Designer",
-	"/digital-twin": "Digital Twin 3D",
 	"/elements": "Spatial Elements",
 	"/connections": "Circuit Connections",
-	"/conflicts": "Conflict Resolution",
+	"/conflicts": "Spatial Conflict Resolution",
 	"/autocad": "AutoCAD Integration",
 	"/autocad/draw": "AutoCAD Vector Draw",
 	"/revit": "Revit BIM Integration",
@@ -42,9 +56,38 @@ const routeLabels: Record<string, string> = {
 	"/digital-twin/convert": "DT Format Converter",
 	"/digital-twin/config": "Digital Twin Config",
 	"/digital-twin/history": "Digital Twin Revisions",
+	"/simready": "SimReady Assets",
+	"/etap": "ETAP Power Analysis Bridge",
+	"/fds-simulation": "FDS Fire Simulation",
+	"/bim-providers": "BIM Cloud Providers",
+	"/ifc43-mapping": "IFC 4.3 Schema Mapping",
+	"/ar-export": "AR / VR Visual Export",
+	"/dashboard/system-health": "System Health Monitor",
+	"/engineering/generative": "Generative Fire Design",
+	"/engineering/fireai": "FireAI Engineering Analysis",
+	"/engineering/pipeline": "Pipeline Layers",
+	"/engineering/topology": "Topology & Single-Line Diagram",
+	"/engineering/qomn": "QOMN Physics Kernel",
+	"/settings/rbac": "RBAC Role Management",
+	"/settings/experimental": "Experimental Services",
+	"/settings/webhooks": "Webhook Management",
+	"/analysis": "Engineering Analysis Engine",
+	"/aps": "Autodesk Platform Services (APS)",
 	"/audit-trail": "Audit Trail & Event Ledger",
-	"/exports": "Deliverables Export",
-	"/api-keys": "API Key Management",
+	"/bms": "BMS Telemetry Integration",
+	"/cad-tools": "CAD Engineering Tools",
+	"/devices": "Fire Alarm Device Catalog",
+	"/dwg": "DWG Vector Parser",
+	"/engineering-copilot": "Engineering Copilot",
+	"/engineering/guards": "Physics Rule Guards",
+	"/environment/air-quality": "Air Quality Telemetry",
+	"/environment/context": "Environmental Context Engine",
+	"/environment/hazmat": "HazMat Hazard Tracker",
+	"/security-alerts": "Security Alerts & Hardening",
+	"/settings/advanced": "Advanced System Settings",
+	"/sync": "Cross-System Data Sync",
+	"/multi-db": "Multi-Database Partitions",
+	"/settings/ai-agents": "AI Agent Configuration",
 };
 
 const TopBar: React.FC<TopBarProps> = memo(
@@ -72,7 +115,11 @@ const TopBar: React.FC<TopBarProps> = memo(
 			return () => document.removeEventListener("mousedown", handler);
 		}, []);
 
-		const pageName = routeLabels[location.pathname] || "BAZSPARK";
+		const pageName =
+			routeLabels[location.pathname] ||
+			(location.pathname.startsWith("/elements/")
+				? "Element Details"
+				: "BAZSPARK");
 		const connState = isConnected ? "online" : "offline";
 
 		return (

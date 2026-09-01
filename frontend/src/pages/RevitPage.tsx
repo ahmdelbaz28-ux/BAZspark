@@ -9,6 +9,7 @@ import {
 	Building2,
 	FileText,
 	Globe,
+	Layers,
 	Loader2,
 	Power,
 	PowerOff,
@@ -19,7 +20,9 @@ import {
 	WifiOff,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { type ElementItem, ElementList } from "@/components/shared/ElementList";
 import { FileUploader } from "@/components/shared/FileUploader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { checkCadStatus } from "@/lib/cadStatus";
 import {
 	revitApi,
@@ -40,7 +44,105 @@ import {
 	revitIntegrationApi,
 } from "@/services/fullApi";
 
-export function RevitPage() {
+interface RevitPageProps {
+	initialTab?: "dashboard" | "elements" | string;
+}
+
+export function RevitPage({ initialTab }: RevitPageProps = {}) {
+	const [searchParams, setSearchParams] = useSearchParams();
+	const queryTab = searchParams.get("tab");
+	const resolveTab = useCallback((raw?: string | null) => {
+		if (raw === "elements") return "elements";
+		return "dashboard";
+	}, []);
+
+	const [activeTab, setActiveTab] = useState(() =>
+		resolveTab(initialTab || queryTab),
+	);
+
+	const handleTabChange = useCallback(
+		(val: string) => {
+			setActiveTab(val);
+			setSearchParams(
+				(prev) => {
+					const next = new URLSearchParams(prev);
+					next.set("tab", val);
+					return next;
+				},
+				{ replace: true },
+			);
+		},
+		[setSearchParams],
+	);
+
+	// Elements state & handlers
+	const [elements, setElements] = useState<ElementItem[]>([]);
+	const [elementsLoading, setElementsLoading] = useState(false);
+
+	const fetchElements = useCallback(async () => {
+		setElementsLoading(true);
+		try {
+			const result = await revitApi.getElements();
+			const items = Array.isArray(result)
+				? result
+				: (result as { elements?: unknown[] })?.elements || [];
+			setElements(items as ElementItem[]);
+		} catch (err) {
+			toast.error(
+				`Failed to load elements: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
+			setElements([]);
+		} finally {
+			setElementsLoading(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (activeTab === "elements") {
+			let isSubscribed = true;
+			void (async () => {
+				setElementsLoading(true);
+				try {
+					const result = await revitApi.getElements();
+					if (!isSubscribed) return;
+					const items = Array.isArray(result)
+						? result
+						: (result as { elements?: unknown[] })?.elements || [];
+					setElements(items as ElementItem[]);
+				} catch (err) {
+					if (!isSubscribed) return;
+					toast.error(
+						`Failed to load elements: ${err instanceof Error ? err.message : "Unknown error"}`,
+					);
+					setElements([]);
+				} finally {
+					if (isSubscribed) {
+						setElementsLoading(false);
+					}
+				}
+			})();
+			return () => {
+				isSubscribed = false;
+			};
+		}
+	}, [activeTab]);
+
+	const handleViewElement = (el: ElementItem) => {
+		toast.info(`Viewing element: ${el.name} (${el.id})`);
+	};
+
+	const handleDeleteElement = async (el: ElementItem) => {
+		try {
+			await revitApi.deleteElement(el.id);
+			toast.success(`Deleted element: ${el.name}`);
+			fetchElements();
+		} catch (err) {
+			toast.error(
+				`Delete failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
+		}
+	};
+
 	const [connected, setConnected] = useState(false);
 	const [connecting, setConnecting] = useState(false);
 	const [simulationMode, setSimulationMode] = useState(false);
@@ -206,354 +308,406 @@ export function RevitPage() {
 				</div>
 			)}
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<Card className="border-border bg-card stagger-card">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-foreground">
-							<Power aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
-							Connection
-						</CardTitle>
-						<CardDescription className="text-muted-foreground">
-							Connect to Revit instance
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex items-center gap-3">
-							<Switch
-								checked={visible}
-								onCheckedChange={setVisible}
-								id="revit-visible"
-							/>
-							<Label htmlFor="revit-visible" className="text-foreground/90">
-								Visible window
-							</Label>
-						</div>
-						<div className="flex gap-2">
-							<Button
-								onClick={handleConnect}
-								disabled={connecting || connected}
-								data-testid="connect-revit-btn"
-								className="bg-emerald-600 hover:bg-emerald-700 text-white"
-							>
-								{connecting ? (
-									<Loader2
-										aria-hidden="true"
-										className="h-4 w-4 mr-2 animate-spin"
+			<Tabs value={activeTab} onValueChange={handleTabChange}>
+				<TabsList className="bg-card border border-border stagger-card">
+					<TabsTrigger
+						value="dashboard"
+						className="data-[state=active]:bg-secondary"
+					>
+						<Building2 aria-hidden="true" className="h-4 w-4 mr-2" />
+						Dashboard & Sync
+					</TabsTrigger>
+					<TabsTrigger
+						value="elements"
+						className="data-[state=active]:bg-secondary"
+					>
+						<Layers aria-hidden="true" className="h-4 w-4 mr-2" />
+						Revit Elements
+					</TabsTrigger>
+				</TabsList>
+
+				<TabsContent value="dashboard" className="space-y-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<Card className="border-border bg-card stagger-card">
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-foreground">
+									<Power aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
+									Connection
+								</CardTitle>
+								<CardDescription className="text-muted-foreground">
+									Connect to Revit instance
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div className="flex items-center gap-3">
+									<Switch
+										checked={visible}
+										onCheckedChange={setVisible}
+										id="revit-visible"
 									/>
+									<Label htmlFor="revit-visible" className="text-foreground/90">
+										Visible window
+									</Label>
+								</div>
+								<div className="flex gap-2">
+									<Button
+										onClick={handleConnect}
+										disabled={connecting || connected}
+										data-testid="connect-revit-btn"
+										className="bg-emerald-600 hover:bg-emerald-700 text-white"
+									>
+										{connecting ? (
+											<Loader2
+												aria-hidden="true"
+												className="h-4 w-4 mr-2 animate-spin"
+											/>
+										) : (
+											<Power aria-hidden="true" className="h-4 w-4 mr-2" />
+										)}
+										Connect
+									</Button>
+									<Button
+										onClick={handleDisconnect}
+										disabled={!connected}
+										variant="destructive"
+									>
+										<PowerOff aria-hidden="true" className="h-4 w-4 mr-2" />{" "}
+										Disconnect
+									</Button>
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card className="border-border bg-card stagger-card">
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-foreground">
+									<Activity aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
+									Status
+								</CardTitle>
+								<CardDescription className="text-muted-foreground">
+									Current Revit status
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								{status ? (
+									<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
+										{JSON.stringify(status, null, 2)}
+									</pre>
 								) : (
-									<Power aria-hidden="true" className="h-4 w-4 mr-2" />
+									<p className="text-muted-foreground text-sm">Not connected</p>
 								)}
-								Connect
-							</Button>
+							</CardContent>
+						</Card>
+					</div>
+
+					<Card className="border-border bg-card stagger-card">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<FileText aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
+								Read RVT File
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							<div className="flex gap-2">
+								<Input
+									placeholder="/path/to/file.rvt"
+									value={filepath}
+									onChange={(e) => setFilepath(e.target.value)}
+									className="bg-card border-border text-foreground stagger-card"
+								/>
+								<Button
+									onClick={handleReadRvt}
+									disabled={!connected}
+									className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
+								>
+									Read
+								</Button>
+							</div>
+							<div className="pt-2">
+								<FileUploader
+									accept=".rvt"
+									label="Or upload an RVT file"
+									onUpload={handleUpload}
+								/>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Revit API Search & NL Execute */}
+					<Card className="border-border bg-card stagger-card">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<BookOpen aria-hidden="true" className="h-5 w-5 text-primary" /> API
+								Search & Natural Language
+							</CardTitle>
+							<CardDescription className="text-muted-foreground">
+								Search Revit API docs and execute natural language commands
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex flex-wrap gap-2">
+								<Button
+									onClick={async () => {
+										try {
+											await revitExtendedApi.loadApiSearchIndex();
+											toast.success("API index loaded");
+										} catch (err) {
+											toast.error(
+												`Load failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										}
+									}}
+									variant="outline"
+								>
+									<BookOpen aria-hidden="true" className="h-4 w-4" />
+									Load API Index
+								</Button>
+							</div>
+							<div className="flex gap-2">
+								<Input
+									placeholder="Search API docs..."
+									value={apiSearchQuery}
+									onChange={(e) => setApiSearchQuery(e.target.value)}
+									className="bg-card border-border text-foreground stagger-card"
+								/>
+								<Button
+									onClick={async () => {
+										if (!apiSearchQuery) return;
+										try {
+											const res = await revitExtendedApi.searchApi({
+												query: apiSearchQuery,
+											});
+											setApiSearchResult(res as Record<string, unknown>);
+											toast.success("Search complete");
+										} catch (err) {
+											toast.error(
+												`Search failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										}
+									}}
+									disabled={!apiSearchQuery}
+								>
+									<Search aria-hidden="true" className="h-4 w-4" />
+									Search API
+								</Button>
+								<Button
+									onClick={async () => {
+										if (!apiSearchQuery) return;
+										try {
+											const res =
+												await revitExtendedApi.searchOnline(apiSearchQuery);
+											setApiSearchResult(res as Record<string, unknown>);
+											toast.success("Online search complete");
+										} catch (err) {
+											toast.error(
+												`Online search failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										}
+									}}
+									disabled={!apiSearchQuery}
+									variant="outline"
+								>
+									<Globe aria-hidden="true" className="h-4 w-4" />
+									Search Online
+								</Button>
+							</div>
+							{apiSearchResult && (
+								<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
+									{JSON.stringify(apiSearchResult, null, 2)}
+								</pre>
+							)}
+							<div className="flex gap-2">
+								<Input
+									placeholder="Natural language command..."
+									value={nlCommand}
+									onChange={(e) => setNlCommand(e.target.value)}
+									className="bg-card border-border text-foreground stagger-card"
+								/>
+								<Button
+									onClick={async () => {
+										if (!nlCommand) return;
+										try {
+											const res = await revitExtendedApi.executeNlCommand({
+												command: nlCommand,
+											});
+											setNlResult(res as Record<string, unknown>);
+											toast.success("Command executed");
+										} catch (err) {
+											toast.error(
+												`Execute failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										}
+									}}
+									disabled={!nlCommand}
+								>
+									<Terminal aria-hidden="true" className="h-4 w-4" />
+									Execute NL Command
+								</Button>
+							</div>
+							{nlResult && (
+								<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
+									{JSON.stringify(nlResult, null, 2)}
+								</pre>
+							)}
+						</CardContent>
+					</Card>
+
+					{/* Revit Integration (revit_api.py) */}
+					<Card className="border-border bg-card stagger-card">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<Building2 aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
+								Revit Integration (Cloud Sync)
+							</CardTitle>
+							<CardDescription className="text-muted-foreground">
+								Upload, sync, and export Revit models via APS cloud integration
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex gap-2">
+								<Input
+									placeholder="Project ID"
+									value={integrationProjectId}
+									onChange={(e) => setIntegrationProjectId(e.target.value)}
+									className="bg-card border-border text-foreground stagger-card"
+								/>
+							</div>
+							<div className="flex flex-wrap gap-2">
+								<Button
+									onClick={async () => {
+										if (!integrationProjectId) {
+											toast.error("Enter a project ID");
+											return;
+										}
+										setIntegrationLoading(true);
+										try {
+											const res =
+												await revitIntegrationApi.getSyncStatus(
+													integrationProjectId,
+												);
+											setIntegrationResult(res as Record<string, unknown>);
+											toast.success("Sync status retrieved");
+										} catch (err) {
+											toast.error(
+												`Failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										} finally {
+											setIntegrationLoading(false);
+										}
+									}}
+									disabled={integrationLoading || !integrationProjectId}
+									variant="outline"
+								>
+									{integrationLoading ? (
+										<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+									) : (
+										<Activity aria-hidden="true" className="h-4 w-4" />
+									)}
+									Sync Status
+								</Button>
+								<Button
+									onClick={async () => {
+										if (!integrationProjectId) {
+											toast.error("Enter a project ID");
+											return;
+										}
+										setIntegrationLoading(true);
+										try {
+											const res = await revitIntegrationApi.syncModel({
+												project_id: integrationProjectId,
+											});
+											setIntegrationResult(res as Record<string, unknown>);
+											toast.success("Sync initiated");
+										} catch (err) {
+											toast.error(
+												`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										} finally {
+											setIntegrationLoading(false);
+										}
+									}}
+									disabled={integrationLoading || !integrationProjectId}
+								>
+									{integrationLoading ? (
+										<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+									) : (
+										<RefreshCw aria-hidden="true" className="h-4 w-4" />
+									)}
+									Sync Model
+								</Button>
+								<Button
+									onClick={async () => {
+										if (!integrationProjectId) {
+											toast.error("Enter a project ID");
+											return;
+										}
+										setIntegrationLoading(true);
+										try {
+											const res = await revitIntegrationApi.exportData({
+												project_id: integrationProjectId,
+												format: "ifc",
+											});
+											setIntegrationResult(res as Record<string, unknown>);
+											toast.success("Export initiated");
+										} catch (err) {
+											toast.error(
+												`Export failed: ${err instanceof Error ? err.message : "Unknown"}`,
+											);
+										} finally {
+											setIntegrationLoading(false);
+										}
+									}}
+									disabled={integrationLoading || !integrationProjectId}
+									variant="outline"
+								>
+									{integrationLoading ? (
+										<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+									) : (
+										<FileText aria-hidden="true" className="h-4 w-4" />
+									)}
+									Export (IFC)
+								</Button>
+							</div>
+							{integrationResult && (
+								<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
+									{JSON.stringify(integrationResult, null, 2)}
+								</pre>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="elements" className="space-y-6">
+					<Card className="border-border bg-card stagger-card">
+						<CardHeader className="flex flex-row items-center justify-between pb-2">
+							<div>
+								<CardTitle className="text-foreground">
+									Revit Elements ({elements.length})
+								</CardTitle>
+								<CardDescription className="text-muted-foreground">
+									View, filter, and manage Revit model elements
+								</CardDescription>
+							</div>
 							<Button
-								onClick={handleDisconnect}
-								disabled={!connected}
-								variant="destructive"
+								onClick={fetchElements}
+								variant="outline"
+								size="sm"
+								className="border-border text-foreground/90"
 							>
-								<PowerOff aria-hidden="true" className="h-4 w-4 mr-2" />{" "}
-								Disconnect
+								<RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" /> Refresh
 							</Button>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="border-border bg-card stagger-card">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-foreground">
-							<Activity aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
-							Status
-						</CardTitle>
-						<CardDescription className="text-muted-foreground">
-							Current Revit status
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						{status ? (
-							<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
-								{JSON.stringify(status, null, 2)}
-							</pre>
-						) : (
-							<p className="text-muted-foreground text-sm">Not connected</p>
-						)}
-					</CardContent>
-				</Card>
-			</div>
-
-			<Card className="border-border bg-card stagger-card">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-foreground">
-						<FileText aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
-						Read RVT File
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<div className="flex gap-2">
-						<Input
-							placeholder="/path/to/file.rvt"
-							value={filepath}
-							onChange={(e) => setFilepath(e.target.value)}
-							className="bg-card border-border text-foreground stagger-card"
-						/>
-						<Button
-							onClick={handleReadRvt}
-							disabled={!connected}
-							className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
-						>
-							Read
-						</Button>
-					</div>
-					<div className="pt-2">
-						<FileUploader
-							accept=".rvt"
-							label="Or upload an RVT file"
-							onUpload={handleUpload}
-						/>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Revit API Search & NL Execute */}
-			<Card className="border-border bg-card stagger-card">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-foreground">
-						<BookOpen aria-hidden="true" className="h-5 w-5 text-primary" /> API
-						Search & Natural Language
-					</CardTitle>
-					<CardDescription className="text-muted-foreground">
-						Search Revit API docs and execute natural language commands
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="flex flex-wrap gap-2">
-						<Button
-							onClick={async () => {
-								try {
-									await revitExtendedApi.loadApiSearchIndex();
-									toast.success("API index loaded");
-								} catch (err) {
-									toast.error(
-										`Load failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								}
-							}}
-							variant="outline"
-						>
-							<BookOpen aria-hidden="true" className="h-4 w-4" />
-							Load API Index
-						</Button>
-					</div>
-					<div className="flex gap-2">
-						<Input
-							placeholder="Search API docs..."
-							value={apiSearchQuery}
-							onChange={(e) => setApiSearchQuery(e.target.value)}
-							className="bg-card border-border text-foreground stagger-card"
-						/>
-						<Button
-							onClick={async () => {
-								if (!apiSearchQuery) return;
-								try {
-									const res = await revitExtendedApi.searchApi({
-										query: apiSearchQuery,
-									});
-									setApiSearchResult(res as Record<string, unknown>);
-									toast.success("Search complete");
-								} catch (err) {
-									toast.error(
-										`Search failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								}
-							}}
-							disabled={!apiSearchQuery}
-						>
-							<Search aria-hidden="true" className="h-4 w-4" />
-							Search API
-						</Button>
-						<Button
-							onClick={async () => {
-								if (!apiSearchQuery) return;
-								try {
-									const res =
-										await revitExtendedApi.searchOnline(apiSearchQuery);
-									setApiSearchResult(res as Record<string, unknown>);
-									toast.success("Online search complete");
-								} catch (err) {
-									toast.error(
-										`Online search failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								}
-							}}
-							disabled={!apiSearchQuery}
-							variant="outline"
-						>
-							<Globe aria-hidden="true" className="h-4 w-4" />
-							Search Online
-						</Button>
-					</div>
-					{apiSearchResult && (
-						<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
-							{JSON.stringify(apiSearchResult, null, 2)}
-						</pre>
-					)}
-					<div className="flex gap-2">
-						<Input
-							placeholder="Natural language command..."
-							value={nlCommand}
-							onChange={(e) => setNlCommand(e.target.value)}
-							className="bg-card border-border text-foreground stagger-card"
-						/>
-						<Button
-							onClick={async () => {
-								if (!nlCommand) return;
-								try {
-									const res = await revitExtendedApi.executeNlCommand({
-										command: nlCommand,
-									});
-									setNlResult(res as Record<string, unknown>);
-									toast.success("Command executed");
-								} catch (err) {
-									toast.error(
-										`Execute failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								}
-							}}
-							disabled={!nlCommand}
-						>
-							<Terminal aria-hidden="true" className="h-4 w-4" />
-							Execute NL Command
-						</Button>
-					</div>
-					{nlResult && (
-						<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
-							{JSON.stringify(nlResult, null, 2)}
-						</pre>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* Revit Integration (revit_api.py) */}
-			<Card className="border-border bg-card stagger-card">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-foreground">
-						<Building2 aria-hidden="true" className="h-5 w-5 text-primary" />{" "}
-						Revit Integration (Cloud Sync)
-					</CardTitle>
-					<CardDescription className="text-muted-foreground">
-						Upload, sync, and export Revit models via APS cloud integration
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="flex gap-2">
-						<Input
-							placeholder="Project ID"
-							value={integrationProjectId}
-							onChange={(e) => setIntegrationProjectId(e.target.value)}
-							className="bg-card border-border text-foreground stagger-card"
-						/>
-					</div>
-					<div className="flex flex-wrap gap-2">
-						<Button
-							onClick={async () => {
-								if (!integrationProjectId) {
-									toast.error("Enter a project ID");
-									return;
-								}
-								setIntegrationLoading(true);
-								try {
-									const res =
-										await revitIntegrationApi.getSyncStatus(
-											integrationProjectId,
-										);
-									setIntegrationResult(res as Record<string, unknown>);
-									toast.success("Sync status retrieved");
-								} catch (err) {
-									toast.error(
-										`Failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								} finally {
-									setIntegrationLoading(false);
-								}
-							}}
-							disabled={integrationLoading || !integrationProjectId}
-							variant="outline"
-						>
-							{integrationLoading ? (
-								<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-							) : (
-								<Activity aria-hidden="true" className="h-4 w-4" />
-							)}
-							Sync Status
-						</Button>
-						<Button
-							onClick={async () => {
-								if (!integrationProjectId) {
-									toast.error("Enter a project ID");
-									return;
-								}
-								setIntegrationLoading(true);
-								try {
-									const res = await revitIntegrationApi.syncModel({
-										project_id: integrationProjectId,
-									});
-									setIntegrationResult(res as Record<string, unknown>);
-									toast.success("Sync initiated");
-								} catch (err) {
-									toast.error(
-										`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								} finally {
-									setIntegrationLoading(false);
-								}
-							}}
-							disabled={integrationLoading || !integrationProjectId}
-						>
-							{integrationLoading ? (
-								<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-							) : (
-								<RefreshCw aria-hidden="true" className="h-4 w-4" />
-							)}
-							Sync Model
-						</Button>
-						<Button
-							onClick={async () => {
-								if (!integrationProjectId) {
-									toast.error("Enter a project ID");
-									return;
-								}
-								setIntegrationLoading(true);
-								try {
-									const res = await revitIntegrationApi.exportData({
-										project_id: integrationProjectId,
-										format: "ifc",
-									});
-									setIntegrationResult(res as Record<string, unknown>);
-									toast.success("Export initiated");
-								} catch (err) {
-									toast.error(
-										`Export failed: ${err instanceof Error ? err.message : "Unknown"}`,
-									);
-								} finally {
-									setIntegrationLoading(false);
-								}
-							}}
-							disabled={integrationLoading || !integrationProjectId}
-							variant="outline"
-						>
-							{integrationLoading ? (
-								<Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-							) : (
-								<FileText aria-hidden="true" className="h-4 w-4" />
-							)}
-							Export (IFC)
-						</Button>
-					</div>
-					{integrationResult && (
-						<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48 stagger-card">
-							{JSON.stringify(integrationResult, null, 2)}
-						</pre>
-					)}
-				</CardContent>
-			</Card>
+						</CardHeader>
+						<CardContent>
+							<ElementList
+								elements={elements}
+								loading={elementsLoading}
+								onView={handleViewElement}
+								onDelete={handleDeleteElement}
+							/>
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</Tabs>
 		</div>
 	);
 }
