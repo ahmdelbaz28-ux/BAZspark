@@ -80,7 +80,7 @@ dependencies = [
     "asyncio-mqtt>=0.16.0,<1.0.0",
     "beautifulsoup4>=4.12.0,<5.0.0",
     "ezdxf>=1.0.0,<2.0.0",
-    "google-genai>=1.0.0,<2.0.0",  # A1: replaces deprecated google-generativeai
+    "google-genai>=1.0.0,<3.0.0",  # A1: replaces deprecated google-generativeai
     "ifcopenshell>=0.7.0,<1.0.0",
     "langfuse>=2.0.0,<5.0.0",
     "lxml>=6.1.0,<7.0.0",
@@ -177,7 +177,7 @@ integrations = [
     "mem0ai>=0.1.0,<3.0.0",
     # Google Gemini — used by mem0_setup.py as dual-primary LLM provider
     # A1: migrated from deprecated google-generativeai to google-genai.
-    "google-genai>=1.0.0,<2.0.0",
+    "google-genai>=1.0.0,<3.0.0",
     # IoT MQTT ingestion — used by fireai/integration/iot_pipeline.py
     "asyncio-mqtt>=0.16.0,<1.0.0",
     # IoT OPC-UA ingestion — used by fireai/integration/iot_pipeline.py
