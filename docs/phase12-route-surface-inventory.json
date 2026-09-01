@@ -1,0 +1,660 @@
+{
+	"version": "1.0.0",
+	"phase": "PHASE 12 — UI CONSOLIDATION",
+	"baselineCommit": "34fffc4b845e28c4372e041dfb3f9c563cb80209",
+	"totalActiveRoutes": 71,
+	"protectedRoutesCount": 69,
+	"publicRoutesCount": 1,
+	"systemCatchAllCount": 1,
+	"adminPrivilegedRoutesCount": 12,
+	"surfaceDistribution": {
+		"AI CONTROL CENTER": 4,
+		"ENGINEERING WORKSPACE": 22,
+		"PROJECT / MODEL CONTEXT": 15,
+		"REVIEW / AUDIT": 12,
+		"REPORTS / ARTIFACTS": 4,
+		"SETTINGS / ADMIN": 12,
+		"SYSTEM / AUTH / FALLBACK": 2
+	},
+	"routes": [
+		{
+			"path": "/",
+			"routeType": "canonical",
+			"component": "AgentChatPage",
+			"primarySurface": "AI CONTROL CENTER",
+			"requiredRole": null,
+			"deepLinkBehavior": "Default landing entry",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/agent",
+			"routeType": "compatibility_alias",
+			"component": "AgentChatPage",
+			"primarySurface": "AI CONTROL CENTER",
+			"requiredRole": null,
+			"deepLinkBehavior": "Legacy chat compatibility alias",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/monitor/agent",
+			"routeType": "compatibility_alias",
+			"component": "AgentChatPage",
+			"primarySurface": "AI CONTROL CENTER",
+			"requiredRole": null,
+			"deepLinkBehavior": "Legacy monitoring chat alias",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/dashboard",
+			"routeType": "canonical",
+			"component": "DashboardPage",
+			"primarySurface": "AI CONTROL CENTER",
+			"requiredRole": null,
+			"deepLinkBehavior": "Standard route",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/projects",
+			"routeType": "canonical",
+			"component": "ProjectsPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Project catalog hub",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering",
+			"routeType": "canonical",
+			"component": "EngineeringPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engineering workspace overview",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/marine",
+			"routeType": "canonical",
+			"component": "MarinePage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Marine fire & electrical domain hub",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/mining",
+			"routeType": "canonical",
+			"component": "MiningPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Mining fire & hazardous domain hub",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/api-keys",
+			"routeType": "canonical",
+			"component": "ApiKeysPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Admin API key credentials ledger",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/exports",
+			"routeType": "canonical",
+			"component": "ExportsPage",
+			"primarySurface": "REPORTS / ARTIFACTS",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Multi-format deliverables export engine",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/self-healing",
+			"routeType": "canonical",
+			"component": "SelfHealingPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Admin resilience watchdog & circuit breakers",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/facp",
+			"routeType": "canonical",
+			"component": "FACPPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "FACP panel selector & battery sizing",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/environment",
+			"routeType": "canonical",
+			"component": "EnvironmentPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Environmental context & telemetry",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/monitor",
+			"routeType": "canonical",
+			"component": "MonitorPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engine live telemetry & status",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/memory",
+			"routeType": "canonical",
+			"component": "MemoryPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "AI memory & context inspection",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/graphrag",
+			"routeType": "canonical",
+			"component": "GraphRAGPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "GraphRAG knowledge graph visualization",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/workflow",
+			"routeType": "canonical",
+			"component": "WorkflowPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Workflow pipeline audit",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/reports",
+			"routeType": "canonical",
+			"component": "ReportsPage",
+			"primarySurface": "REPORTS / ARTIFACTS",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engineering reports catalog",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/reports/generate",
+			"routeType": "canonical",
+			"component": "ReportGeneratorPage",
+			"primarySurface": "REPORTS / ARTIFACTS",
+			"requiredRole": null,
+			"deepLinkBehavior": "Automated report compiler",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings",
+			"routeType": "canonical",
+			"component": "SettingsPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": null,
+			"deepLinkBehavior": "User preferences & UI configuration",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/cad",
+			"routeType": "canonical",
+			"component": "CADSettingsPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": null,
+			"deepLinkBehavior": "CAD layers & symbol defaults",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/database",
+			"routeType": "canonical",
+			"component": "DatabaseAdminPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Database partitions & query audit",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/billing",
+			"routeType": "canonical",
+			"component": "BillingPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": null,
+			"deepLinkBehavior": "Meeza payment & subscription status",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/digital-twin",
+			"routeType": "canonical",
+			"component": "DigitalTwinPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Multi-tab digital twin workstation (?tab=convert|settings|history)",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/fire-alarm",
+			"routeType": "canonical",
+			"component": "FireAlarmPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Fire Alarm 2D canvas designer",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/elements",
+			"routeType": "canonical",
+			"component": "Elements",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Spatial element table",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/elements/:elementId",
+			"routeType": "parameterized_deep_link",
+			"component": "ElementDetail",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Dynamic element properties & geometry by ID",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/connections",
+			"routeType": "canonical",
+			"component": "Connections",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Spatial connection & topology matrix",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/conflicts",
+			"routeType": "canonical",
+			"component": "Conflicts",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Spatial conflict & clash detection ledger",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/autocad",
+			"routeType": "canonical",
+			"component": "AutoCADPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "AutoCAD IPC bridge & status",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/autocad/draw",
+			"routeType": "canonical",
+			"component": "AutoCADDrawPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Vector AutoCAD drawing interface",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/revit",
+			"routeType": "canonical",
+			"component": "RevitPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Revit multi-tab workstation (?tab=dashboard|elements)",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/revit/create",
+			"routeType": "canonical",
+			"component": "RevitCreatePage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Revit family/element creation wizard",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/revit/elements",
+			"routeType": "compatibility_wrapper",
+			"component": "RevitElementsPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Delegates to RevitPage with initialTab='elements'",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/digital-twin/convert",
+			"routeType": "compatibility_wrapper",
+			"component": "DigitalTwinConvertPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Delegates to DigitalTwinPage with initialTab='convert'",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/digital-twin/config",
+			"routeType": "compatibility_wrapper",
+			"component": "DigitalTwinConfigPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Delegates to DigitalTwinPage with initialTab='settings'",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/digital-twin/history",
+			"routeType": "compatibility_wrapper",
+			"component": "DigitalTwinHistoryPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Delegates to DigitalTwinPage with initialTab='history'",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/simready",
+			"routeType": "canonical",
+			"component": "SimReadyPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "SimReady 3D asset explorer",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/etap",
+			"routeType": "canonical",
+			"component": "EtapPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "ETAP power calculations interface",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/fds-simulation",
+			"routeType": "canonical",
+			"component": "FDSSimulationPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "FDS smoke & fire simulation submission",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/bim-providers",
+			"routeType": "canonical",
+			"component": "BIMProvidersPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Cloud BIM provider connections",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/ifc43-mapping",
+			"routeType": "canonical",
+			"component": "IFC43MappingPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "IFC 4.3 ontology mapping engine",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/ar-export",
+			"routeType": "canonical",
+			"component": "ARExportPage",
+			"primarySurface": "REPORTS / ARTIFACTS",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "AR/VR spatial package export",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/dashboard/system-health",
+			"routeType": "canonical",
+			"component": "SystemHealthPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Deep infrastructure health metrics",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/generative",
+			"routeType": "canonical",
+			"component": "GenerativeDesignPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Generative sensor placement layout",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/fireai",
+			"routeType": "canonical",
+			"component": "EngineeringFireAIPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "FireAI neural engineering analysis",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/pipeline",
+			"routeType": "canonical",
+			"component": "PipelineLayersPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Multi-layer pipeline visualization",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/topology",
+			"routeType": "canonical",
+			"component": "TopologyPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Topology & SLD network graphs",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/qomn",
+			"routeType": "canonical",
+			"component": "QOMNCalculatorPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "QOMN physics calculator",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/rbac",
+			"routeType": "canonical",
+			"component": "RbacPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Role-based permission matrix",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/experimental",
+			"routeType": "canonical",
+			"component": "ExperimentalServicesPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Experimental engine flag toggles",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/webhooks",
+			"routeType": "canonical",
+			"component": "WebhookManagementPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": null,
+			"deepLinkBehavior": "Outbound webhook dispatcher",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/analysis",
+			"routeType": "canonical",
+			"component": "AnalysisPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engineering calculation audit",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/aps",
+			"routeType": "canonical",
+			"component": "APSPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Autodesk Platform Services token & hub",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/audit-trail",
+			"routeType": "canonical",
+			"component": "AuditTrailPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Audit logs & compliance history",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/bms",
+			"routeType": "canonical",
+			"component": "BMSPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "BMS protocol connection & points",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/cad-tools",
+			"routeType": "canonical",
+			"component": "CADToolsPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "CAD vector utilities",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/devices",
+			"routeType": "canonical",
+			"component": "DevicesPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Fire & electrical device catalog",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/dwg",
+			"routeType": "canonical",
+			"component": "DWGPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "DWG vector parser & preview",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering-copilot",
+			"routeType": "canonical",
+			"component": "EngineeringCopilotPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engineering Copilot specialized panel",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/engineering/guards",
+			"routeType": "canonical",
+			"component": "GuardsPage",
+			"primarySurface": "ENGINEERING WORKSPACE",
+			"requiredRole": null,
+			"deepLinkBehavior": "Engineering safety guard checks",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/environment/air-quality",
+			"routeType": "canonical",
+			"component": "AirQualityPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Air quality sensors & PPM telemetry",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/environment/context",
+			"routeType": "canonical",
+			"component": "ContextPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Spatial weather & building exposure",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/environment/hazmat",
+			"routeType": "canonical",
+			"component": "HazMatPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": null,
+			"deepLinkBehavior": "HazMat storage & explosive classifications",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/security-alerts",
+			"routeType": "canonical",
+			"component": "SecurityAlertsPage",
+			"primarySurface": "REVIEW / AUDIT",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Security vulnerability & event logs",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/advanced",
+			"routeType": "canonical",
+			"component": "AdvancedSettingsPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Low-level kernel parameters",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/sync",
+			"routeType": "canonical",
+			"component": "SyncPage",
+			"primarySurface": "PROJECT / MODEL CONTEXT",
+			"requiredRole": null,
+			"deepLinkBehavior": "Cloud synchronization ledger",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/multi-db",
+			"routeType": "canonical",
+			"component": "MultiDBPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": "admin",
+			"deepLinkBehavior": "Postgres / DuckDB / Vector routing",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/settings/ai-agents",
+			"routeType": "canonical",
+			"component": "AgentSettingsPage",
+			"primarySurface": "SETTINGS / ADMIN",
+			"requiredRole": null,
+			"deepLinkBehavior": "Agent LLM model & temperature settings",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "/login",
+			"routeType": "public_auth",
+			"component": "LoginPage",
+			"primarySurface": "SYSTEM / AUTH / FALLBACK",
+			"requiredRole": null,
+			"deepLinkBehavior": "Public auth route rendered outside AppShell",
+			"status": "ACTIVE"
+		},
+		{
+			"path": "*",
+			"routeType": "system_fallback",
+			"component": "NotFoundPage",
+			"primarySurface": "SYSTEM / AUTH / FALLBACK",
+			"requiredRole": null,
+			"deepLinkBehavior": "Catch-all 404 handler",
+			"status": "ACTIVE"
+		}
+	]
+}
