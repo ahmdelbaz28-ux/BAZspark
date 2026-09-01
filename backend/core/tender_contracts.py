@@ -25,7 +25,6 @@ from backend.core.capability_registry import (
 )
 from fireai.core.boq_generator import UNIT_COSTS, generate_full_boq
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 # CAPABILITY ID CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════

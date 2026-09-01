@@ -15,13 +15,10 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from typing import Any
-import pytest
-from fastapi.testclient import TestClient
 
-from backend.app import app
+import pytest
+
 from backend.core.agent_run_orchestrator import (
-    AgentRun,
     AgentRunOrchestrator,
 )
 from backend.core.agent_run_store import (

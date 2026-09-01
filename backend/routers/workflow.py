@@ -43,7 +43,6 @@ from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.core.session_context import (
     ContextBudgetExceededError,
     MissingExpectedRevisionError,
-    UniversalSessionContext,
     validate_mutation_revision,
 )
 from backend.limiter import limiter

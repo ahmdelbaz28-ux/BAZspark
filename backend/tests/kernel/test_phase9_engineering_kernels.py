@@ -12,23 +12,21 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 9 & Gate 9:
 """
 
 import math
-import pytest
 
 from backend.core.engineering_expansion_contracts import (
-    handle_marine_verify_solas,
-    handle_marine_calculate_suppression,
-    handle_facp_verify_panel,
-    handle_facp_design_loop,
+    handle_bim_validate_clash,
+    handle_copilot_synthesize_recommendations,
+    handle_copilot_translate_intent,
+    handle_digital_twin_evaluate_risk,
+    handle_digital_twin_synchronize,
     handle_etap_calculate_load_flow,
     handle_etap_calculate_short_circuit,
-    handle_digital_twin_synchronize,
-    handle_digital_twin_evaluate_risk,
-    handle_copilot_translate_intent,
-    handle_copilot_synthesize_recommendations,
-    handle_bim_validate_clash,
+    handle_facp_design_loop,
+    handle_facp_verify_panel,
+    handle_marine_calculate_suppression,
+    handle_marine_verify_solas,
     handle_simulation_smoke_flow,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. MARINE KERNEL TESTS

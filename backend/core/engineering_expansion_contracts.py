@@ -23,7 +23,6 @@ import hashlib
 import json
 import logging
 import math
-from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.capability_registry import (
@@ -661,7 +660,7 @@ def handle_digital_twin_evaluate_risk(payload: dict[str, Any]) -> dict[str, Any]
 def handle_copilot_translate_intent(payload: dict[str, Any]) -> dict[str, Any]:
     """Translate natural language engineering queries into structured parameters and capability mappings."""
     intent_text = str(payload.get("natural_language_intent", "")).strip()
-    target_standard = str(payload.get("target_standard", "AUTO")).upper()
+    str(payload.get("target_standard", "AUTO")).upper()
 
     intent_lower = intent_text.lower()
     extracted_params: dict[str, Any] = {}
@@ -758,7 +757,7 @@ def handle_bim_validate_clash(payload: dict[str, Any]) -> dict[str, Any]:
     """Execute deterministic 3D Axis-Aligned Bounding Box (AABB) spatial clash detection."""
     fa_elements = payload.get("fire_alarm_elements", [])
     obstacles = payload.get("obstacle_elements", [])
-    clearance_m = float(payload.get("clearance_tolerance_m", 0.10))
+    float(payload.get("clearance_tolerance_m", 0.10))
 
     if not fa_elements:
         fa_elements = [
@@ -820,7 +819,7 @@ def handle_simulation_smoke_flow(payload: dict[str, Any]) -> dict[str, Any]:
     ambient_temp_c = float(payload.get("ambient_temp_c", 20.0))
 
     floor_area_m2 = length_m * width_m
-    room_vol_m3 = floor_area_m2 * height_m
+    floor_area_m2 * height_m
 
     # Heskestad fire plume mass flow rate and layer descent formulation
     # z_layer(t) = H / (1 + (t / t_char)^(1.5))
@@ -883,7 +882,6 @@ def handle_simulation_smoke_flow(payload: dict[str, Any]) -> dict[str, Any]:
 
 def register_engineering_expansion_capabilities(registry: CapabilityRegistry) -> None:
     """Register all 12 Phase 9 engineering capabilities into the canonical CapabilityRegistry."""
-
     # ── 1. Marine ────────────────────────────────────────────────────────
     registry.register(
         CapabilityDefinition(

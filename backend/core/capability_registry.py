@@ -237,7 +237,7 @@ class CapabilityRegistry:
             raise ValueError(
                 f"Scopes for capability '{capability.capability_id}' must be a list of strings."
             )
-        if not isinstance(contract.timeout_seconds, (int, float)) or contract.timeout_seconds <= 0:
+        if not isinstance(contract.timeout_seconds, int | float) or contract.timeout_seconds <= 0:
             raise ValueError(
                 f"timeout_seconds for capability '{capability.capability_id}' must be a positive number."
             )
@@ -356,11 +356,15 @@ class CapabilityRegistry:
         self._register_etap_live_capabilities()
 
     def _register_workspace_and_governance_capabilities(self) -> None:
-        from backend.core.workspace_governance_contracts import register_workspace_governance_capabilities
+        from backend.core.workspace_governance_contracts import (
+            register_workspace_governance_capabilities,
+        )
         register_workspace_governance_capabilities(self)
 
     def _register_engineering_expansion_capabilities(self) -> None:
-        from backend.core.engineering_expansion_contracts import register_engineering_expansion_capabilities
+        from backend.core.engineering_expansion_contracts import (
+            register_engineering_expansion_capabilities,
+        )
         register_engineering_expansion_capabilities(self)
 
     def _register_tender_capabilities(self) -> None:

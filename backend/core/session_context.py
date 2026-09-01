@@ -120,7 +120,7 @@ class UniversalSessionContext:
 
 def estimate_token_count(text_or_dict: str | dict[str, Any] | list[Any]) -> int:
     """Accurately estimate token count for JSON/string payloads (~3.8 chars per token)."""
-    if isinstance(text_or_dict, (dict, list)):
+    if isinstance(text_or_dict, dict | list):
         serialized = json.dumps(text_or_dict, separators=(",", ":"))
     else:
         serialized = str(text_or_dict)

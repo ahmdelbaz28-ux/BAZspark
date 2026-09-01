@@ -16,7 +16,7 @@ import json
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from backend.core.capability_registry import (
     CapabilityContract,
@@ -109,7 +109,7 @@ def handle_workspace_project(payload: dict[str, Any], db: Database | None = None
             cur.execute(f"SELECT COUNT(*) FROM elements WHERE project_id = {ph}", (project_id,))
             erow = cur.fetchone()
             if erow:
-                element_count = int(erow[0] if not isinstance(erow, dict) else list(erow.values())[0])
+                element_count = int(erow[0] if not isinstance(erow, dict) else next(iter(erow.values())))
         except Exception:
             pass
 
@@ -152,7 +152,7 @@ def handle_workspace_model(payload: dict[str, Any], db: Database | None = None) 
     """Select, inspect, or bind CAD/BIM model context in workspace."""
     project_id = str(payload.get("project_id", "default_project")).strip()
     model_id = str(payload.get("model_id", "primary_model")).strip()
-    action = str(payload.get("action", "select")).lower()
+    str(payload.get("action", "select")).lower()
 
     if not project_id:
         raise ValueError("project_id must be a non-empty string")
@@ -241,7 +241,7 @@ def handle_governance_inspect(payload: dict[str, Any], db: Database | None = Non
             cur.execute(f"SELECT COUNT(*) FROM elements WHERE project_id = {ph}", (project_id,))
             erow = cur.fetchone()
             if erow:
-                element_count = int(erow[0] if not isinstance(erow, dict) else list(erow.values())[0])
+                element_count = int(erow[0] if not isinstance(erow, dict) else next(iter(erow.values())))
         except Exception:
             pass
 
@@ -279,8 +279,8 @@ def handle_governance_inspect(payload: dict[str, Any], db: Database | None = Non
 def handle_governance_validate(payload: dict[str, Any], db: Database | None = None) -> dict[str, Any]:
     """Execute comprehensive NFPA 72 compliance validation over project state."""
     project_id = str(payload.get("project_id", "default_project")).strip()
-    rules = payload.get("rules", ["nfpa72_spacing", "voltage_drop", "battery_standby"])
-    devices = payload.get("devices", [])
+    payload.get("rules", ["nfpa72_spacing", "voltage_drop", "battery_standby"])
+    payload.get("devices", [])
     width_m = float(payload.get("width_m", 10.0))
     length_m = float(payload.get("length_m", 15.0))
     ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))
@@ -561,7 +561,6 @@ def handle_governance_report(payload: dict[str, Any], db: Database | None = None
 
 def register_workspace_governance_capabilities(registry: CapabilityRegistry) -> None:
     """Register the 9 Phase 8 Workspace and Governance capabilities into the given registry."""
-
     # 1. workspace.project
     registry.register(
         CapabilityDefinition(

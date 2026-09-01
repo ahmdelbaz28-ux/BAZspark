@@ -10,53 +10,36 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 7 & Gate 7:
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 import pytest
-from fastapi.testclient import TestClient
 
-from backend.app import app
 from backend.core.agent_run_orchestrator import (
-    AgentRun,
     AgentRunOrchestrator,
-    default_agent_run_orchestrator,
 )
 from backend.core.agent_run_store import (
     AgentRunStore,
     ApprovalMode,
     RunStatus,
-    default_agent_run_store,
 )
 from backend.core.capability_registry import (
     CAP_ELECTRICAL_CALCULATE_BATTERY,
     CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
-    CAP_EXPORT_EXECUTE_EXPORT,
-    CAP_EXPORT_PLAN_EXPORT,
     CAP_EXPORT_VALIDATE_ARTIFACT,
-    CAP_IMPORT_EXECUTE_IMPORT,
-    CAP_IMPORT_INSPECT_FILE,
-    CAP_IMPORT_PLAN_IMPORT,
     CAP_SPATIAL_PLACE_DEVICES,
-    CAP_SPATIAL_VERIFY_SPACING,
     CapabilityRegistry,
     default_capability_registry,
 )
 from backend.core.command_bus import (
     AuthenticatedPrincipal,
     CommandBus,
-    default_command_bus,
 )
 from backend.core.context_resolver import default_context_resolver
 from backend.core.control_request import ControlRequest
-from backend.core.execution_policy import PolicyResult
-from backend.core.generic_planner import AutonomousPlan
-from backend.core.import_orchestrator import default_import_orchestrator
 from backend.core.export_orchestrator import default_export_orchestrator
-from backend.core.session_context import UniversalSessionContext
-from backend.core.state_store import CommandStateStore, default_state_store
+from backend.core.import_orchestrator import default_import_orchestrator
+from backend.core.state_store import CommandStateStore
 from backend.core.workflow_planner import (
     AutonomousWorkflowPlanner,
-    default_workflow_planner,
 )
 from backend.database import Database
 
@@ -286,7 +269,7 @@ def test_scenario_4_battery_backup_sizing_calculation(
     assert run.audit_reference is not None
 
 
-# ── Scenario 5: Multi-Step Composite Workflow (Spatial + Electrical + Battery) 
+# ── Scenario 5: Multi-Step Composite Workflow (Spatial + Electrical + Battery)
 
 
 def test_scenario_5_multi_step_composite_workflow(

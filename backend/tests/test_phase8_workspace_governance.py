@@ -8,8 +8,8 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 8 & Gate 8:
 
 from __future__ import annotations
 
-import os
 import pytest
+
 from backend.core.capability_registry import (
     CAP_GOVERNANCE_ARTIFACT,
     CAP_GOVERNANCE_AUDIT,
@@ -20,7 +20,6 @@ from backend.core.capability_registry import (
     CAP_WORKSPACE_MODEL,
     CAP_WORKSPACE_PROJECT,
     CAP_WORKSPACE_REVISION,
-    CapabilityRegistry,
     default_capability_registry,
 )
 from backend.core.command_bus import (
