@@ -181,35 +181,38 @@ export async function installApiMock(page: Page, options: MockOptions = {}) {
 				status: 200,
 				contentType: "application/json",
 				body: JSON.stringify({
-					plan_id: "plan-mock-101",
-					project_id: "default_project",
-					expected_revision: 1,
-					intent_summary: "Calculate optimal spacing & device placement",
-					overall_policy_decision: "AUTO_APPROVED",
-					requires_human_approval: false,
-					steps: [
-						{
-							step_id: "step-1-spacing",
-							capability_id: "spatial.place_devices",
-							description: "Calculate optimal spacing & device placement",
-							dependencies: [],
-							payload: {},
-							risk_class: "LOW",
-							policy_result: "APPROVED",
-							requires_approval: false,
-						},
-					],
-					dag: {
-						nodes: [
+					success: true,
+					data: {
+						plan_id: "plan-mock-101",
+						project_id: "default_project",
+						expected_revision: 1,
+						intent_summary: "Calculate optimal spacing & device placement",
+						overall_policy_decision: "AUTO_APPROVED",
+						requires_human_approval: false,
+						steps: [
 							{
-								node_id: "step-1-spacing",
+								step_id: "step-1-spacing",
 								capability_id: "spatial.place_devices",
-								dependencies: [],
 								description: "Calculate optimal spacing & device placement",
+								dependencies: [],
+								payload: {},
+								risk_class: "LOW",
+								policy_result: "APPROVED",
+								requires_approval: false,
 							},
 						],
+						dag: {
+							nodes: [
+								{
+									node_id: "step-1-spacing",
+									capability_id: "spatial.place_devices",
+									dependencies: [],
+									description: "Calculate optimal spacing & device placement",
+								},
+							],
+						},
+						projected_state: {},
 					},
-					projected_state: {},
 				}),
 			});
 		}
