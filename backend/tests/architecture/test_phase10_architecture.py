@@ -84,3 +84,22 @@ def test_all_phase10_capabilities_explicit_contracts():
         assert cap.contract is not None
         assert cap.contract.schema_version == "1.0"
         assert cap.contract.audit.get("enabled") is True
+
+
+def test_exactly_one_command_registry_json_in_repo():
+    """Verify single source of truth: exactly ONE command_registry.json exists in the repository (V-R1)."""
+    found_files = list(REPO_ROOT.rglob("command_registry.json"))
+    valid_files = [
+        f
+        for f in found_files
+        if not any(part.startswith(".") or part in {"venv", "node_modules", "dist", "build", "egg-info"} for part in f.parts)
+    ]
+    assert len(valid_files) == 1, (
+        f"Forensic Architecture Invariant Violated (V-R1): Expected exactly 1 command_registry.json in tree, found {len(valid_files)}: {valid_files}"
+    )
+    expected_rel_path = Path("backend") / "core" / "command_registry.json"
+    actual_rel_path = valid_files[0].relative_to(REPO_ROOT)
+    assert actual_rel_path == expected_rel_path, (
+        f"Single source of truth must be at {expected_rel_path}, found at {actual_rel_path}"
+    )
+

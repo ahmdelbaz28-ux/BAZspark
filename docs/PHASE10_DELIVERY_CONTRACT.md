@@ -22,7 +22,7 @@
 |---|---|---|
 | 1 | سلوك ETAP الحالي = SIMULATED/محلي | `backend/integrations/etap_service.py:186` («ETAP 2024.1 (simulated)»)، `:222` (list simulated)، `:263-318` (export marine-only عبر marine bridge)، `:325` («The current implementation is SIMULATED — no real network call»)، `:344` («Import completed (simulated)») |
 | 2 | حاجز SSRF القانوني قائم | `backend/integrations/_ssrf_guard.py:412` `resolve_to_safe_ip()` و`:435` `resolve_to_safe_ip_with_hostname()`؛ عقد SSRF DEFENSE CONTRACT في docstrings `etap_service.py:266-286/323-336` |
-| 3 | `command_registry.json` **غير موجود** في الشجرة | صفر نتائج بحث repo-wide؛ `backend/routers/agent_ws.py:1910-1946` يعلن العقد (D4 FIX) ويستورد `from core import command_registry` داخل try/except **fail-closed (503)** — أي أن مركز التصريح desktop غير مبني بعد |
+| 3 | `command_registry.json` في الشجرة والتوحيد المعماري | ملف `core/command_registry.{json,py}` كان موجوداً في الجذر منذ PR #426؛ قامت المرحلة 10 بتوحيده كلياً مع `backend/core/command_registry.{json,py}` ليصبح ملف `backend/core/command_registry.json` هو مصدر الحقيقة الأوحد (SSoT) في كامل الشجرة مع تحويل `core/command_registry.py` إلى shim توافقي وإضافة اختبار معماري fail-closed يمنع وجود أكثر من ملف JSON واحد |
 | 4 | تاكصولوغي الـ Contracts القائم | `backend/core/capability_registry.py:35` `execution_mode ∈ {inline, background_run}`؛ `:47` `execution_channel ∈ {sync, async, websocket, worker, inline}`؛ **لا قناة `desktop_agent` بعد**؛ `EXTERNAL_TRANSACTION` فئة سلطة (تصنيف Phase 4) وليست execution_mode |
 | 5 | بوابة `register()` صارمة ومحروسة | ثمرة R-9.1: isinstance fail-closed كامل + `test_capability_registry_rejects_alien_class_fail_closed` حارس معماري قائم |
 | 6 | رصيد العدادات | 1542 مجمعة (1541 passed + 1 skipped) + Vitest 573/60 + Build نظيف — رأس الانطلاق |
@@ -32,7 +32,7 @@
 ## §2 — الموضوع والنطاق (مساران منفصلان الطبيعة — يُسلَّمان كومِتسات منفصلة، مبدأ 14)
 
 ### S1 — External CAD Control (نص Phase 10 الأساسي)
-بناء `command_registry` القانوني من العدم (الواقعة §1-3)، ثم تغليفه كـ capabilities كاملة بقناة جديدة اسمها `desktop_agent` (توسيع `VALID_EXECUTION_CHANNELS` تعدادًا قانونيًا معلنًا). المرور الإلزامي: كل أمر desktop يمر بالسلسلة القانونية كاملة؛ الـadd-in ينفذ داخل transaction نظامه؛ evidence-based verification حصرًا (المبدأ 3).
+توحيد `command_registry` القانوني كـ Single Source of Truth في `backend/core/` (الواقعة §1-3)، ثم تغليفه كـ capabilities كاملة بقناة جديدة اسمها `desktop_agent` (توسيع `VALID_EXECUTION_CHANNELS` تعدادًا قانونيًا معلنًا). المرور الإلزامي: كل أمر desktop يمر بالسلسلة القانونية كاملة؛ الـadd-in ينفذ داخل transaction نظامه؛ evidence-based verification حصرًا (المبدأ 3).
 
 ### S2 — ETAP Live Integration (إضافة PLAN-AMEND-1 — EXTERNAL_TRANSACTION صريح)
 استبدال السلوك SIMULATED الموثق **كليًا** (المبدأ 6): جسر حي لتطبيق ETAP — بنمط `revit_adapter.py` (pythonnet) أو آلية موثقة معلنة في artifact المرحلة؛ **لا يُدّعى أصل قبل بنائه وتوثيقه**. حسابات Load Flow/Short Circuit تنفذ **داخل ETAP حصرًا** — يمنع أي إعادة حساب محلية تُقدَّم كنتيجة ETAP.
@@ -58,7 +58,7 @@
 
 | السطح | الطبيعة |
 |---|---|
-| `backend/core/command_registry.json` + موديول تحققه | **بناء جديد** — مركز التصريح desktop (الواقعة §1-3) |
+| `backend/core/command_registry.json` + موديول تحققه | **توحيد ومصدر حقيقة أوحد** — مركز التصريح desktop (الواقعة §1-3) |
 | `backend/core/capability_registry.py` | تسجيلات جديدة + **توسيع `VALID_EXECUTION_CHANNELS` بـ`desktop_agent`** — ممنوع مساس `register()` أو اختباره الحارس |
 | `backend/core/cad_control_contracts.py` | **جديد** — capabilities desktop بقناة desktop_agent |
 | `backend/core/etap_live_contracts.py` | **جديد** — قدرات ETAP Live |

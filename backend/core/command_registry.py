@@ -28,14 +28,14 @@ _cache: Optional[dict[str, Any]] = None
 def _default_path() -> Path:
     if _REGISTRY_PATH:
         return Path(_REGISTRY_PATH)
+    try:
+        import sys
+        shim_mod = sys.modules.get("core.command_registry")
+        if shim_mod and getattr(shim_mod, "_REGISTRY_PATH", None):
+            return Path(shim_mod._REGISTRY_PATH)
+    except Exception:
+        pass
     candidate = Path(__file__).resolve().parent / "command_registry.json"
-    if candidate.exists():
-        return candidate
-    # Fallback to repo-level core directory if needed
-    repo_root = Path(__file__).resolve().parent.parent.parent
-    fallback = repo_root / "core" / "command_registry.json"
-    if fallback.exists():
-        return fallback
     return candidate
 
 
