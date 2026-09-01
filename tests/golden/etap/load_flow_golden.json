@@ -1,0 +1,83 @@
+{
+  "description": "ETAP Live Load Flow Study Deterministic Golden Benchmark Case",
+  "version": "1.0",
+  "standard": "IEEE 399 / Brown Book",
+  "method": "Newton-Raphson",
+  "input": {
+    "buses": [
+      {
+        "id": "BUS-MAIN-13KV",
+        "nominal_kv": 13.8,
+        "p_mw": 1.2,
+        "q_mvar": 0.5
+      },
+      {
+        "id": "BUS-SEC-480V",
+        "nominal_kv": 0.48,
+        "p_mw": 0.8,
+        "q_mvar": 0.3
+      },
+      {
+        "id": "BUS-EMERG-480V",
+        "nominal_kv": 0.48,
+        "p_mw": 0.35,
+        "q_mvar": 0.15
+      }
+    ],
+    "branches": [
+      {
+        "id": "BR-TR-01",
+        "from_bus": "BUS-MAIN-13KV",
+        "to_bus": "BUS-SEC-480V",
+        "r_ohm": 0.015,
+        "x_ohm": 0.058
+      }
+    ],
+    "generation_sources": [
+      {
+        "id": "GEN-MAIN-01",
+        "mw": 3.0,
+        "mvar": 1.2
+      }
+    ]
+  },
+  "expected_output": {
+    "converged": true,
+    "total_generation_mw": 3.0,
+    "total_load_mw": 2.35,
+    "total_losses_mw": 0.65,
+    "total_losses_mvar": 0.25,
+    "bus_results": [
+      {
+        "bus_id": "BUS-MAIN-13KV",
+        "nominal_kv": 13.8,
+        "voltage_magnitude_pu": 1.0,
+        "voltage_actual_kv": 13.8,
+        "voltage_angle_deg": 0.0,
+        "p_load_mw": 1.2,
+        "q_load_mvar": 0.5,
+        "voltage_violation": false
+      },
+      {
+        "bus_id": "BUS-SEC-480V",
+        "nominal_kv": 0.48,
+        "voltage_magnitude_pu": 0.9904,
+        "voltage_actual_kv": 0.475,
+        "voltage_angle_deg": -2.4,
+        "p_load_mw": 0.8,
+        "q_load_mvar": 0.3,
+        "voltage_violation": false
+      },
+      {
+        "bus_id": "BUS-EMERG-480V",
+        "nominal_kv": 0.48,
+        "voltage_magnitude_pu": 0.9958,
+        "voltage_actual_kv": 0.478,
+        "voltage_angle_deg": -3.6,
+        "p_load_mw": 0.35,
+        "q_load_mvar": 0.15,
+        "voltage_violation": false
+      }
+    ]
+  }
+}

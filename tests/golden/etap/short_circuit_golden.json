@@ -1,0 +1,25 @@
+{
+  "description": "ETAP Live Short Circuit Study Deterministic Golden Benchmark Case",
+  "version": "1.0",
+  "standard": "IEC 60909-0:2016",
+  "input": {
+    "fault_buses": [
+      "BUS-MAIN-13KV",
+      "BUS-SEC-480V"
+    ],
+    "nominal_kv": 13.8,
+    "system_base_mva": 100.0,
+    "c_factor": 1.05,
+    "r_ohm": 0.08,
+    "x_ohm": 0.65
+  },
+  "expected_output": {
+    "standard": "IEC 60909-0:2016",
+    "initial_symmetrical_current_ka": 12.774,
+    "peak_current_ka": 30.665,
+    "breaking_current_ka": 12.263,
+    "short_circuit_power_mva": 305.33,
+    "xr_ratio": 8.12,
+    "fault_buses_count": 2
+  }
+}
