@@ -343,11 +343,119 @@ const SkipLink = (
 );
 
 // C-07 FIX: Typed route structure with optional requiredRole for role-based access
-interface ProtectedRoute {
+export interface ProtectedRoute {
 	path: string;
 	element: ReactNode;
 	requiredRole?: string;
 }
+
+export const PROTECTED_ROUTES: ProtectedRoute[] = [
+	{ path: "/", element: <AgentChatPage /> },
+	{ path: "/agent", element: <AgentChatPage /> },
+	{ path: "/dashboard", element: <DashboardPage /> },
+	{ path: "/projects", element: <ProjectsPage /> },
+	{ path: "/engineering", element: <EngineeringPage /> },
+	{ path: "/marine", element: <MarinePage /> },
+	{ path: "/mining", element: <MiningPage /> },
+	// C-07 FIX: Admin-only pages — RouteGuard checks role
+	{ path: "/api-keys", element: <ApiKeysPage />, requiredRole: "admin" },
+	{ path: "/exports", element: <ExportsPage />, requiredRole: "admin" },
+	{
+		path: "/self-healing",
+		element: <SelfHealingPage />,
+		requiredRole: "admin",
+	},
+	{ path: "/facp", element: <FACPPage /> },
+	{ path: "/environment", element: <EnvironmentPage /> },
+	{ path: "/monitor", element: <MonitorPage /> },
+	{ path: "/memory", element: <MemoryPage /> },
+	{ path: "/graphrag", element: <GraphRAGPage /> },
+	{ path: "/workflow", element: <WorkflowPage /> },
+	{ path: "/reports", element: <ReportsPage /> },
+	{ path: "/reports/generate", element: <ReportGeneratorPage /> },
+	{ path: "/settings", element: <SettingsPage /> },
+	{ path: "/settings/cad", element: <CADSettingsPage /> },
+	{
+		path: "/settings/database",
+		element: <DatabaseAdminPage />,
+		requiredRole: "admin",
+	},
+	// Meeza payment gateway — billing & subscriptions
+	{ path: "/billing", element: <BillingPage /> },
+	{ path: "/digital-twin", element: <DigitalTwinPage /> },
+	{ path: "/fire-alarm", element: <FireAlarmPage /> },
+
+	{ path: "/elements", element: <Elements /> },
+	{ path: "/elements/:elementId", element: <ElementDetail /> },
+	{ path: "/connections", element: <Connections /> },
+	{ path: "/conflicts", element: <Conflicts /> },
+	// V140 Phase 6: New routes for comprehensive API coverage
+	{ path: "/autocad", element: <AutoCADPage /> },
+	{ path: "/autocad/draw", element: <AutoCADDrawPage /> },
+	{ path: "/revit", element: <RevitPage /> },
+	{ path: "/revit/create", element: <RevitCreatePage /> },
+	{ path: "/revit/elements", element: <RevitElementsPage /> },
+	{ path: "/digital-twin/convert", element: <DigitalTwinConvertPage /> },
+	{ path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
+	{ path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
+	{ path: "/simready", element: <SimReadyPage /> },
+	{ path: "/etap", element: <EtapPage /> },
+	// V270: FDS Simulation — smoke simulation job submission and tracking
+	{
+		path: "/fds-simulation",
+		element: <FDSSimulationPage />,
+		requiredRole: "admin",
+	},
+	{ path: "/bim-providers", element: <BIMProvidersPage /> },
+	{
+		path: "/ifc43-mapping",
+		element: <IFC43MappingPage />,
+		requiredRole: "admin",
+	},
+	{ path: "/ar-export", element: <ARExportPage />, requiredRole: "admin" },
+	// V272: Route previously unrouted pages
+	{ path: "/dashboard/system-health", element: <SystemHealthPage /> },
+	{ path: "/engineering/generative", element: <GenerativeDesignPage /> },
+	{ path: "/engineering/fireai", element: <EngineeringFireAIPage /> },
+	{ path: "/engineering/pipeline", element: <PipelineLayersPage /> },
+	{ path: "/engineering/topology", element: <TopologyPage /> },
+	{ path: "/engineering/qomn", element: <QOMNCalculatorPage /> },
+	{ path: "/settings/rbac", element: <RbacPage />, requiredRole: "admin" },
+	{
+		path: "/settings/experimental",
+		element: <ExperimentalServicesPage />,
+		requiredRole: "admin",
+	},
+	{ path: "/settings/webhooks", element: <WebhookManagementPage /> },
+	{ path: "/monitor/agent", element: <AgentChatPage /> },
+	// V273: Add routes for previously unrouted orphaned pages
+	{ path: "/analysis", element: <AnalysisPage /> },
+	{ path: "/aps", element: <APSPage /> },
+	{ path: "/audit-trail", element: <AuditTrailPage /> },
+	{ path: "/bms", element: <BMSPage /> },
+	{ path: "/cad-tools", element: <CADToolsPage /> },
+	{ path: "/devices", element: <DevicesPage /> },
+	{ path: "/dwg", element: <DWGPage /> },
+	{ path: "/engineering-copilot", element: <EngineeringCopilotPage /> },
+	{ path: "/engineering/guards", element: <GuardsPage /> },
+	{ path: "/environment/air-quality", element: <AirQualityPage /> },
+	{ path: "/environment/context", element: <ContextPage /> },
+	{ path: "/environment/hazmat", element: <HazMatPage /> },
+	{
+		path: "/security-alerts",
+		element: <SecurityAlertsPage />,
+		requiredRole: "admin",
+	},
+	{
+		path: "/settings/advanced",
+		element: <AdvancedSettingsPage />,
+		requiredRole: "admin",
+	},
+	{ path: "/sync", element: <SyncPage /> },
+	{ path: "/multi-db", element: <MultiDBPage />, requiredRole: "admin" },
+	// Phase 3: AI Agent Settings Workspace
+	{ path: "/settings/ai-agents", element: <AgentSettingsPage /> },
+];
 
 /**
  * V193 (R1): Wrap the entire app in AuthProvider so any component can read
@@ -437,116 +545,7 @@ function App() {
 	);
 
 	// PROTECTED routes — wrapped in RouteGuard, rendered inside AppShell
-	const protectedRoutes: ProtectedRoute[] = useMemo(
-		() => [
-			{ path: "/", element: <AgentChatPage /> },
-			{ path: "/agent", element: <AgentChatPage /> },
-			{ path: "/dashboard", element: <DashboardPage /> },
-			{ path: "/projects", element: <ProjectsPage /> },
-			{ path: "/engineering", element: <EngineeringPage /> },
-			{ path: "/marine", element: <MarinePage /> },
-			{ path: "/mining", element: <MiningPage /> },
-			// C-07 FIX: Admin-only pages — RouteGuard checks role
-			{ path: "/api-keys", element: <ApiKeysPage />, requiredRole: "admin" },
-			{ path: "/exports", element: <ExportsPage />, requiredRole: "admin" },
-			{
-				path: "/self-healing",
-				element: <SelfHealingPage />,
-				requiredRole: "admin",
-			},
-			{ path: "/facp", element: <FACPPage /> },
-			{ path: "/environment", element: <EnvironmentPage /> },
-			{ path: "/monitor", element: <MonitorPage /> },
-			{ path: "/memory", element: <MemoryPage /> },
-			{ path: "/graphrag", element: <GraphRAGPage /> },
-			{ path: "/workflow", element: <WorkflowPage /> },
-			{ path: "/reports", element: <ReportsPage /> },
-			{ path: "/reports/generate", element: <ReportGeneratorPage /> },
-			{ path: "/settings", element: <SettingsPage /> },
-			{ path: "/settings/cad", element: <CADSettingsPage /> },
-			{
-				path: "/settings/database",
-				element: <DatabaseAdminPage />,
-				requiredRole: "admin",
-			},
-			// Meeza payment gateway — billing & subscriptions
-			{ path: "/billing", element: <BillingPage /> },
-			{ path: "/digital-twin", element: <DigitalTwinPage /> },
-			{ path: "/fire-alarm", element: <FireAlarmPage /> },
-
-			{ path: "/elements", element: <Elements /> },
-			{ path: "/elements/:elementId", element: <ElementDetail /> },
-			{ path: "/connections", element: <Connections /> },
-			{ path: "/conflicts", element: <Conflicts /> },
-			// V140 Phase 6: New routes for comprehensive API coverage
-			{ path: "/autocad", element: <AutoCADPage /> },
-			{ path: "/autocad/draw", element: <AutoCADDrawPage /> },
-			{ path: "/revit", element: <RevitPage /> },
-			{ path: "/revit/create", element: <RevitCreatePage /> },
-			{ path: "/revit/elements", element: <RevitElementsPage /> },
-			{ path: "/digital-twin/convert", element: <DigitalTwinConvertPage /> },
-			{ path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
-			{ path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
-			{ path: "/simready", element: <SimReadyPage /> },
-			{ path: "/etap", element: <EtapPage /> },
-			// V270: FDS Simulation — smoke simulation job submission and tracking
-			{
-				path: "/fds-simulation",
-				element: <FDSSimulationPage />,
-				requiredRole: "admin",
-			},
-			{ path: "/bim-providers", element: <BIMProvidersPage /> },
-			{
-				path: "/ifc43-mapping",
-				element: <IFC43MappingPage />,
-				requiredRole: "admin",
-			},
-			{ path: "/ar-export", element: <ARExportPage />, requiredRole: "admin" },
-			// V272: Route previously unrouted pages
-			{ path: "/dashboard/system-health", element: <SystemHealthPage /> },
-			{ path: "/engineering/generative", element: <GenerativeDesignPage /> },
-			{ path: "/engineering/fireai", element: <EngineeringFireAIPage /> },
-			{ path: "/engineering/pipeline", element: <PipelineLayersPage /> },
-			{ path: "/engineering/topology", element: <TopologyPage /> },
-			{ path: "/engineering/qomn", element: <QOMNCalculatorPage /> },
-			{ path: "/settings/rbac", element: <RbacPage />, requiredRole: "admin" },
-			{
-				path: "/settings/experimental",
-				element: <ExperimentalServicesPage />,
-				requiredRole: "admin",
-			},
-			{ path: "/settings/webhooks", element: <WebhookManagementPage /> },
-			{ path: "/monitor/agent", element: <AgentChatPage /> },
-			// V273: Add routes for previously unrouted orphaned pages
-			{ path: "/analysis", element: <AnalysisPage /> },
-			{ path: "/aps", element: <APSPage /> },
-			{ path: "/audit-trail", element: <AuditTrailPage /> },
-			{ path: "/bms", element: <BMSPage /> },
-			{ path: "/cad-tools", element: <CADToolsPage /> },
-			{ path: "/devices", element: <DevicesPage /> },
-			{ path: "/dwg", element: <DWGPage /> },
-			{ path: "/engineering-copilot", element: <EngineeringCopilotPage /> },
-			{ path: "/engineering/guards", element: <GuardsPage /> },
-			{ path: "/environment/air-quality", element: <AirQualityPage /> },
-			{ path: "/environment/context", element: <ContextPage /> },
-			{ path: "/environment/hazmat", element: <HazMatPage /> },
-			{
-				path: "/security-alerts",
-				element: <SecurityAlertsPage />,
-				requiredRole: "admin",
-			},
-			{
-				path: "/settings/advanced",
-				element: <AdvancedSettingsPage />,
-				requiredRole: "admin",
-			},
-			{ path: "/sync", element: <SyncPage /> },
-			{ path: "/multi-db", element: <MultiDBPage />, requiredRole: "admin" },
-			// Phase 3: AI Agent Settings Workspace
-			{ path: "/settings/ai-agents", element: <AgentSettingsPage /> },
-		],
-		[],
-	);
+	const protectedRoutes = PROTECTED_ROUTES;
 
 	// Determine if we're on a public route (no AppShell)
 	const isPublicRoute = location.pathname === "/login";

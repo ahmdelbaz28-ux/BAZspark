@@ -72,6 +72,7 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
 	"/digital-twin/convert": () => import("@/pages/DigitalTwinConvertPage"),
 	"/digital-twin/config": () => import("@/pages/DigitalTwinConfigPage"),
 	"/digital-twin/history": () => import("@/pages/DigitalTwinHistoryPage"),
+	"/simready": () => import("@/pages/SimReadyPage"),
 	"/reports": () => import("@/pages/ReportsPage"),
 	"/exports": () => import("@/pages/ExportsPage"),
 	"/etap": () => import("@/pages/EtapPage"),

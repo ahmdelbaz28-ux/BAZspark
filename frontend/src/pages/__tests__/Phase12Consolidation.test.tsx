@@ -14,6 +14,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { isValidElement } from "react";
+import { PROTECTED_ROUTES } from "@/App";
 import { AgentSettingsProvider } from "@/contexts/AgentSettingsContext";
 import { api } from "@/services/api";
 import type { Element } from "@/types";
@@ -306,102 +308,94 @@ describe("Phase 12 — UI Consolidation Architecture", () => {
 	});
 
 	describe("Route Inventory & Surface Architecture Preservation", () => {
-		const ALL_69_ROUTES = [
-			"/",
-			"/agent",
-			"/dashboard",
-			"/projects",
-			"/engineering",
-			"/marine",
-			"/mining",
-			"/api-keys",
-			"/exports",
-			"/self-healing",
-			"/facp",
-			"/environment",
-			"/monitor",
-			"/memory",
-			"/graphrag",
-			"/workflow",
-			"/reports",
-			"/reports/generate",
-			"/settings",
-			"/settings/cad",
-			"/settings/database",
-			"/billing",
-			"/digital-twin",
-			"/fire-alarm",
-			"/elements",
-			"/elements/:elementId",
-			"/connections",
-			"/conflicts",
-			"/autocad",
-			"/autocad/draw",
-			"/revit",
-			"/revit/create",
-			"/revit/elements",
-			"/digital-twin/convert",
-			"/digital-twin/config",
-			"/digital-twin/history",
-			"/simready",
-			"/etap",
-			"/fds-simulation",
-			"/bim-providers",
-			"/ifc43-mapping",
-			"/ar-export",
-			"/dashboard/system-health",
-			"/engineering/generative",
-			"/engineering/fireai",
-			"/engineering/pipeline",
-			"/engineering/topology",
-			"/engineering/qomn",
-			"/settings/rbac",
-			"/settings/experimental",
-			"/settings/webhooks",
-			"/monitor/agent",
-			"/analysis",
-			"/aps",
-			"/audit-trail",
-			"/bms",
-			"/cad-tools",
-			"/devices",
-			"/dwg",
-			"/engineering-copilot",
-			"/engineering/guards",
-			"/environment/air-quality",
-			"/environment/context",
-			"/environment/hazmat",
-			"/security-alerts",
-			"/settings/advanced",
-			"/sync",
-			"/multi-db",
-			"/settings/ai-agents",
-		];
+		it("contains exactly 69 protected routes derived directly from App.tsx source", () => {
+			expect(PROTECTED_ROUTES.length).toBe(69);
 
-		it("contains exactly 69 protected routes in system catalog", () => {
-			expect(ALL_69_ROUTES.length).toBe(69);
-			const uniqueRoutes = new Set(ALL_69_ROUTES);
-			expect(uniqueRoutes.size).toBe(69);
+			const paths = PROTECTED_ROUTES.map((r) => r.path);
+			const uniquePaths = new Set(paths);
+			expect(uniquePaths.size).toBe(69);
+
+			// Verify every route has a valid path format and valid element
+			for (const route of PROTECTED_ROUTES) {
+				expect(route.path.startsWith("/")).toBe(true);
+				expect(route.path.length).toBeGreaterThanOrEqual(1);
+				expect(isValidElement(route.element)).toBe(true);
+			}
 		});
 
-		it("preserves RBAC restrictions on all 12 privileged admin routes", () => {
-			const ADMIN_ROUTES = [
+		it("preserves RBAC restrictions on all 12 privileged admin routes derived from App.tsx", () => {
+			const expectedAdminRoutes = [
 				"/api-keys",
+				"/ar-export",
 				"/exports",
-				"/self-healing",
-				"/settings/database",
 				"/fds-simulation",
 				"/ifc43-mapping",
-				"/ar-export",
-				"/settings/rbac",
-				"/settings/experimental",
-				"/security-alerts",
-				"/settings/advanced",
 				"/multi-db",
+				"/security-alerts",
+				"/self-healing",
+				"/settings/advanced",
+				"/settings/database",
+				"/settings/experimental",
+				"/settings/rbac",
+			].sort();
+
+			const actualAdminRoutes = PROTECTED_ROUTES
+				.filter((route) => route.requiredRole === "admin")
+				.map((route) => route.path)
+				.sort();
+
+			expect(actualAdminRoutes).toHaveLength(12);
+			expect(actualAdminRoutes).toEqual(expectedAdminRoutes);
+
+			// Verify that non-admin routes have no requiredRole
+			const nonAdminRoutes = PROTECTED_ROUTES.filter(
+				(route) => route.requiredRole !== "admin",
+			);
+			expect(nonAdminRoutes).toHaveLength(57);
+			for (const nonAdmin of nonAdminRoutes) {
+				expect(nonAdmin.requiredRole).toBeUndefined();
+			}
+		});
+
+		it("verifies canonical / and compatibility aliases /agent and /monitor/agent in PROTECTED_ROUTES", () => {
+			const rootRoute = PROTECTED_ROUTES.find((r) => r.path === "/");
+			const agentRoute = PROTECTED_ROUTES.find((r) => r.path === "/agent");
+			const monitorAgentRoute = PROTECTED_ROUTES.find(
+				(r) => r.path === "/monitor/agent",
+			);
+
+			expect(rootRoute).toBeDefined();
+			expect(agentRoute).toBeDefined();
+			expect(monitorAgentRoute).toBeDefined();
+
+			expect(isValidElement(rootRoute?.element)).toBe(true);
+			expect(isValidElement(agentRoute?.element)).toBe(true);
+			expect(isValidElement(monitorAgentRoute?.element)).toBe(true);
+		});
+
+		it("verifies parameterized deep-link route /elements/:elementId exists in PROTECTED_ROUTES", () => {
+			const elementDetailRoute = PROTECTED_ROUTES.find(
+				(r) => r.path === "/elements/:elementId",
+			);
+			expect(elementDetailRoute).toBeDefined();
+			expect(isValidElement(elementDetailRoute?.element)).toBe(true);
+		});
+
+		it("verifies all consolidated Digital Twin and Revit compatibility routes exist in PROTECTED_ROUTES", () => {
+			const consolidatedRoutes = [
+				"/digital-twin",
+				"/digital-twin/convert",
+				"/digital-twin/config",
+				"/digital-twin/history",
+				"/revit",
+				"/revit/create",
+				"/revit/elements",
 			];
-			expect(ADMIN_ROUTES.length).toBe(12);
-			for (const adminRoute of ADMIN_ROUTES) {
-				expect(ALL_69_ROUTES).toContain(adminRoute);
+
+			for (const routePath of consolidatedRoutes) {
+				const match = PROTECTED_ROUTES.find((r) => r.path === routePath);
+				expect(match).toBeDefined();
+				expect(isValidElement(match?.element)).toBe(true);
 			}
 		});
 	});
