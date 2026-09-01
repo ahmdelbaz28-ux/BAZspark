@@ -325,23 +325,6 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 					pendingApproval: pa,
 					isActionPending: false,
 				}));
-			} else if (data.type === "approval_request") {
-				const pa: PendingApprovalData = {
-					approvalId: data.approvalId,
-					runId: data.runId,
-					stepId: data.stepId,
-					projectId: data.projectId,
-					projectRevision: data.projectRevision,
-					capabilityId: data.capabilityId,
-					policyResult: data.policyResult || {},
-					stepPayloadHash: data.stepPayloadHash,
-				};
-				setState((prev) => ({
-					...prev,
-					status: "WAITING_APPROVAL",
-					pendingApproval: pa,
-					isActionPending: false,
-				}));
 			} else if (
 				data.type === "ai_conflict" ||
 				data.errorCode === "REVISION_CONFLICT" ||
@@ -474,7 +457,9 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 
 	// Initialize WebSocket and rehydrate on mount
 	useEffect(() => {
-		connectWs();
+		void (async () => {
+			await connectWs();
+		})();
 
 		// Rehydrate stored run if available
 		const storedRunId = getStoredActiveRunId();

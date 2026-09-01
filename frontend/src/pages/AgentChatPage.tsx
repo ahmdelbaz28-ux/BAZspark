@@ -282,12 +282,15 @@ export function AgentChatPage({ projectId: propProjectId }: AgentChatPageProps =
 					mapping_status: "LOSSLESS",
 					mapping_report: {
 						target_format: targetFormat,
-						entity_counts: { devices: (plan.projected_state?.devices as unknown[])?.length || 0 },
-						unmapped_properties: [],
+						status: "LOSSLESS",
+						mapped_entities: (plan.projected_state?.devices as unknown[])?.length || 0,
+						dropped_attributes: [],
+						transformed_entities: [],
 						warnings: [],
-						is_lossless: true,
 					},
 					required_policy: plan.requires_human_approval ? "MANDATORY_HUMAN_REVIEW" : "AUTO_APPROVED",
+					summary: `Export to ${targetFormat.toUpperCase()}`,
+					options: {},
 					created_at: new Date().toISOString(),
 				};
 				setStagedExport({ plan: exportPlanObj, isExecuting: false });
