@@ -8,6 +8,7 @@ Enforces Phase 4 Gate 4 requirements:
 
 import ast
 from pathlib import Path
+
 import pytest
 import yaml
 
@@ -40,7 +41,7 @@ def test_inventory_schema_and_classes():
     for item in inventory:
         # Mandatory fields
         for field in ("id", "path_anchor", "method", "mutation_target", "authority_class", "evidence"):
-            assert field in item and item[field], f"Item {item.get('id')} missing mandatory field '{field}'"
+            assert item.get(field), f"Item {item.get('id')} missing mandatory field '{field}'"
 
         # Unique IDs
         assert item["id"] not in seen_ids, f"Duplicate mutation item ID: {item['id']}"
@@ -55,15 +56,15 @@ def test_inventory_schema_and_classes():
 
         # Legacy exceptions must specify owner and deadline
         if auth_class == "LEGACY_EXCEPTION":
-            assert "owner" in item and item["owner"], f"LEGACY_EXCEPTION {item['id']} must specify 'owner'"
-            assert "deadline" in item and item["deadline"], f"LEGACY_EXCEPTION {item['id']} must specify 'deadline'"
+            assert item.get("owner"), f"LEGACY_EXCEPTION {item['id']} must specify 'owner'"
+            assert item.get("deadline"), f"LEGACY_EXCEPTION {item['id']} must specify 'deadline'"
 
 
 def test_ast_crawler_router_coverage():
     """AST crawler over backend/routers/** to verify all write routes are cataloged."""
     data = load_yaml(INVENTORY_FILE)
     inventory = data.get("inventory", [])
-    inventory_anchors = {item["path_anchor"] for item in inventory}
+    {item["path_anchor"] for item in inventory}
 
     # Also build map by filename and function name
     cataloged_functions = set()
@@ -86,7 +87,7 @@ def test_ast_crawler_router_coverage():
             pytest.fail(f"Failed to parse {router_file}: {exc}")
 
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 for decorator in node.decorator_list:
                     call_node = decorator if isinstance(decorator, ast.Call) else None
                     if call_node and isinstance(call_node.func, ast.Attribute):
@@ -134,4 +135,4 @@ def test_bypass_exceptions_consistency():
     # 3. Validate exception schema
     for exc in exceptions:
         for field in ("id", "reason", "owner", "deadline", "removal_condition"):
-            assert field in exc and exc[field], f"Exception {exc.get('id')} missing mandatory field '{field}'"
+            assert exc.get(field), f"Exception {exc.get('id')} missing mandatory field '{field}'"

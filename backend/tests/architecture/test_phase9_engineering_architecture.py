@@ -10,19 +10,18 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 9 & Gate 9:
 from __future__ import annotations
 
 import ast
-import inspect
 from pathlib import Path
+
 import pytest
 
 from backend.core.capability_registry import (
+    VALID_CATEGORIES,
     CapabilityRegistry,
     default_capability_registry,
-    VALID_CATEGORIES,
 )
 from backend.core.engineering_expansion_contracts import ALL_PHASE9_CAPABILITIES
 from backend.core.tender_contracts import ALL_PHASE9B_TENDER_CAPABILITIES
-from backend.core.generic_planner import GenericWorkflowPlanner
-from backend.core.tool_schema_gen import derive_all_tool_schemas, derive_tool_schema_from_capability
+from backend.core.tool_schema_gen import derive_all_tool_schemas
 
 
 def test_generic_planner_ast_purity_zero_hardcoded_phase9_branches() -> None:
@@ -31,7 +30,7 @@ def test_generic_planner_ast_purity_zero_hardcoded_phase9_branches() -> None:
     assert planner_file.exists(), f"Generic planner file not found at {planner_file}"
 
     source = planner_file.read_text(encoding="utf-8")
-    tree = ast.parse(source)
+    ast.parse(source)
 
     # Inspect all String constants and Compare nodes in AST
     # Generic planner should not contain domain-specific branching like 'if domain == "marine"'
@@ -81,7 +80,7 @@ def test_tool_schema_auto_derivation_discovers_phase9_and_9b_capabilities() -> N
 
 def test_capability_registry_rejects_alien_class_fail_closed() -> None:
     """Assert CapabilityRegistry.register() strictly fails closed on alien classes matching by name only (R-9.1)."""
-    from backend.core.capability_registry import CapabilityDefinition, CapabilityContract
+    from backend.core.capability_registry import CapabilityDefinition
 
     # 1. Alien capability definition object with matching class name
     AlienCapabilityDefinition = type("CapabilityDefinition", (), {

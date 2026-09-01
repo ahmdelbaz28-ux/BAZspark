@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import ast
 import os
+
 import pytest
+
 from backend.core.capability_registry import default_capability_registry
-from backend.core.control_request import ControlRequest
 from backend.core.tool_schema_gen import (
     derive_all_tool_schemas,
     derive_tool_schema_from_capability,

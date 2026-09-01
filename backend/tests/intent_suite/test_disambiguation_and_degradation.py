@@ -10,7 +10,8 @@ Mandated by BAZSPARK_PLAN_V2_2 §5 Phase 5 (S2 & S3 Deliverables):
 from __future__ import annotations
 
 import pytest
-from backend.core.disambiguation import DisambiguationEngine, DisambiguationRequest
+
+from backend.core.disambiguation import DisambiguationEngine
 from backend.core.planner_schema import PlanSchemaValidationError, validate_plan_dict
 
 

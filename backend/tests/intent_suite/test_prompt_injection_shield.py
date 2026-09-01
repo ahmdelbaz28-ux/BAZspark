@@ -9,8 +9,8 @@ Mandated by BAZSPARK_PLAN_V2_2 §5 Phase 5 (S4 Deliverable):
 from __future__ import annotations
 
 import pytest
-from backend.core.prompt_shield import PromptInjectionShield
 
+from backend.core.prompt_shield import PromptInjectionShield
 
 # ── Adversarial Fixtures ───────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ ADVERSARIAL_FIXTURES = [
 ]
 
 
-@pytest.mark.parametrize("name,prompt,expected_injected_substring", ADVERSARIAL_FIXTURES)
+@pytest.mark.parametrize(("name", "prompt", "expected_injected_substring"), ADVERSARIAL_FIXTURES)
 def test_prompt_injection_shield_neutralizes_adversarial_vectors(
     name: str, prompt: str, expected_injected_substring: str
 ) -> None:

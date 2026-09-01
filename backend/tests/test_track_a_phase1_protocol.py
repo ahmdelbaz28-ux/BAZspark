@@ -10,14 +10,13 @@ Verifies:
 
 from __future__ import annotations
 
-import json
-import pytest
-from pathlib import Path
 from typing import Any
 
+import pytest
+
 from backend.core.command_bus import AuthenticatedPrincipal
-from backend.database import Database, get_db
-from backend.routers import agent_ws, sync
+from backend.database import get_db
+from backend.routers import agent_ws
 
 
 class MockWebSocket:

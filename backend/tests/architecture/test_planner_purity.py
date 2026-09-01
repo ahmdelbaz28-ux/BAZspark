@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import ast
 import os
-import pytest
 
 GENERIC_PLANNER_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "core", "generic_planner.py")
@@ -50,7 +49,7 @@ def test_generic_planner_ast_purity_no_hardcoded_capability_literals() -> None:
                 found_violations.append(f"Line {node.lineno}: Hardcoded capability literal '{val}'")
 
     assert not found_violations, (
-        f"Planner Purity Violation in generic_planner.py:\n" + "\n".join(found_violations)
+        "Planner Purity Violation in generic_planner.py:\n" + "\n".join(found_violations)
     )
 
 
@@ -72,6 +71,6 @@ def test_generic_planner_ast_purity_no_capability_specific_if_branches() -> None
                     violations.append(f"Line {node.lineno}: Capability-specific branch flag '{keyword}' in '{cond_str}'")
 
     assert not violations, (
-        f"Planner Purity Violation: Capability-specific branching detected in generic_planner.py:\n"
+        "Planner Purity Violation: Capability-specific branching detected in generic_planner.py:\n"
         + "\n".join(violations)
     )

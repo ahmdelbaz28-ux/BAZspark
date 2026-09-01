@@ -12,33 +12,18 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 8 & Gate 8:
 from __future__ import annotations
 
 import ast
-import os
 from pathlib import Path
-import pytest
 
 from backend.core.capability_registry import (
-    CapabilityDefinition,
-    CapabilityRegistry,
     default_capability_registry,
 )
-from backend.core.control_request import ControlRequest
 from backend.core.tool_schema_gen import (
-    derive_all_tool_schemas,
     derive_tool_schema_from_capability,
     validate_tool_schema_conformance,
 )
 from backend.core.workspace_governance_contracts import (
     ALL_PHASE8_CAPABILITIES,
     CAPABILITY_AUTHORITY_MAP,
-    CAP_GOVERNANCE_ARTIFACT,
-    CAP_GOVERNANCE_AUDIT,
-    CAP_GOVERNANCE_INSPECT,
-    CAP_GOVERNANCE_REPORT,
-    CAP_GOVERNANCE_REVIEW,
-    CAP_GOVERNANCE_VALIDATE,
-    CAP_WORKSPACE_MODEL,
-    CAP_WORKSPACE_PROJECT,
-    CAP_WORKSPACE_REVISION,
 )
 
 CORE_DIR = Path(__file__).resolve().parent.parent.parent / "core"
@@ -116,7 +101,7 @@ def test_phase8_zero_hardcoded_capability_branching_in_generic_planner() -> None
                 violations.append(f"Line {node.lineno}: Hardcoded Phase 8 capability literal '{val}'")
 
     assert not violations, (
-        f"Planner Purity Violation in generic_planner.py:\n" + "\n".join(violations)
+        "Planner Purity Violation in generic_planner.py:\n" + "\n".join(violations)
     )
 
 

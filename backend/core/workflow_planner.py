@@ -13,8 +13,6 @@ import logging
 import re
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
 from typing import Any
 
 from backend.core.agent_run_orchestrator import (
@@ -47,7 +45,6 @@ from backend.core.context_resolver import (
     default_context_resolver,
 )
 from backend.core.control_request import ControlRequest
-from backend.core.disambiguation import DisambiguationEngine, DisambiguationRequest
 from backend.core.execution_policy import (
     PolicyResult,
     build_policy_context,
@@ -60,12 +57,7 @@ from backend.core.generic_planner import (
     GenericWorkflowPlanner,
     PlannedStep,
 )
-from backend.core.planner_schema import (
-    PlanSchemaValidationError,
-    validate_plan_dict,
-)
 from backend.core.planner_telemetry import default_planner_telemetry
-from backend.core.prompt_shield import PromptInjectionShield
 from backend.core.workflow_engine import (
     CompositeWorkflowDAG,
     WorkflowExecutor,
@@ -713,7 +705,7 @@ class AutonomousWorkflowPlanner:
             raise
         except Exception as exc:
             # Fallback path: record fallback reason in telemetry
-            latency_ms = (time.perf_counter() - start_time) * 1000
+            (time.perf_counter() - start_time) * 1000
             fallback_reason = f"{type(exc).__name__}: {str(exc)[:150]}"
             logger.warning(
                 "Generic planner failed, falling back to legacy regex planner: %s",

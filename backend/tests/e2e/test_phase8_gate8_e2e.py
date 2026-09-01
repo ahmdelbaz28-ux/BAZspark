@@ -10,15 +10,11 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 8 & Gate 8:
 
 from __future__ import annotations
 
-import json
-import uuid
-from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.core.agent_run_orchestrator import (
-    AgentRun,
     AgentRunOrchestrator,
 )
 from backend.core.agent_run_store import (
@@ -29,9 +25,7 @@ from backend.core.agent_run_store import (
 from backend.core.capability_registry import (
     CAP_GOVERNANCE_ARTIFACT,
     CAP_GOVERNANCE_AUDIT,
-    CAP_GOVERNANCE_INSPECT,
     CAP_GOVERNANCE_REPORT,
-    CAP_GOVERNANCE_REVIEW,
     CAP_GOVERNANCE_VALIDATE,
     CAP_SPATIAL_PLACE_DEVICES,
     CAP_WORKSPACE_MODEL,
@@ -46,9 +40,7 @@ from backend.core.command_bus import (
 )
 from backend.core.context_resolver import default_context_resolver
 from backend.core.control_request import ControlRequest
-from backend.core.execution_policy import PolicyResult
-from backend.core.generic_planner import AutonomousPlan, GenericWorkflowPlanner
-from backend.core.session_context import UniversalSessionContext
+from backend.core.generic_planner import GenericWorkflowPlanner
 from backend.core.state_store import CommandStateStore
 from backend.core.workflow_planner import AutonomousWorkflowPlanner
 from backend.database import Database

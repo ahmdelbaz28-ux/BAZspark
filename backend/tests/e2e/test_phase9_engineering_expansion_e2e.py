@@ -17,14 +17,10 @@ Mandated by BAZSPARK_PLAN_V2_2_1 §5 Phase 9 & Gate 9:
 from __future__ import annotations
 
 import time
-import uuid
-from typing import Any
-import pytest
-from fastapi.testclient import TestClient
 
-from backend.app import app
+import pytest
+
 from backend.core.agent_run_orchestrator import (
-    AgentRun,
     AgentRunOrchestrator,
 )
 from backend.core.agent_run_store import (
@@ -42,24 +38,23 @@ from backend.core.command_bus import (
 )
 from backend.core.context_resolver import default_context_resolver
 from backend.core.control_request import ControlRequest
-from backend.core.generic_planner import GenericWorkflowPlanner
 from backend.core.engineering_expansion_contracts import (
-    CAP_MARINE_VERIFY_SOLAS,
-    CAP_MARINE_CALCULATE_SUPPRESSION,
-    CAP_FACP_VERIFY_PANEL,
-    CAP_FACP_DESIGN_LOOP,
+    ALL_PHASE9_CAPABILITIES,
+    CAP_BIM_VALIDATE_CLASH,
+    CAP_COPILOT_SYNTHESIZE_RECOMMENDATIONS,
+    CAP_COPILOT_TRANSLATE_INTENT,
+    CAP_DIGITAL_TWIN_EVALUATE_RISK,
+    CAP_DIGITAL_TWIN_SYNCHRONIZE,
     CAP_ETAP_CALCULATE_LOAD_FLOW,
     CAP_ETAP_CALCULATE_SHORT_CIRCUIT,
-    CAP_DIGITAL_TWIN_SYNCHRONIZE,
-    CAP_DIGITAL_TWIN_EVALUATE_RISK,
-    CAP_COPILOT_TRANSLATE_INTENT,
-    CAP_COPILOT_SYNTHESIZE_RECOMMENDATIONS,
-    CAP_BIM_VALIDATE_CLASH,
+    CAP_FACP_DESIGN_LOOP,
+    CAP_FACP_VERIFY_PANEL,
+    CAP_MARINE_CALCULATE_SUPPRESSION,
+    CAP_MARINE_VERIFY_SOLAS,
     CAP_SIMULATION_SMOKE_FLOW,
-    ALL_PHASE9_CAPABILITIES,
 )
+from backend.core.generic_planner import GenericWorkflowPlanner
 from backend.core.state_store import CommandStateStore
-from backend.core.workflow_planner import AutonomousWorkflowPlanner
 from backend.database import Database
 
 

@@ -19,17 +19,13 @@ The Suite Covers All 9 Mandatory Gate 6 Intent Categories:
 
 from __future__ import annotations
 
-import pytest
 from typing import Any
+
+import pytest
 
 from backend.core.agent_run_orchestrator import AgentRunOrchestrator
 from backend.core.agent_run_store import AgentRunStore, ApprovalMode, RunStatus
 from backend.core.capability_registry import (
-    CAP_ELECTRICAL_CALCULATE_BATTERY,
-    CAP_ELECTRICAL_CALCULATE_VOLTAGE_DROP,
-    CAP_SPATIAL_PLACE_DEVICES,
-    CAP_SPATIAL_VERIFY_SPACING,
-    CapabilityContract,
     CapabilityRegistry,
     default_capability_registry,
 )
@@ -39,22 +35,15 @@ from backend.core.control_request import ControlRequest
 from backend.core.disambiguation import (
     DisambiguationRequiredError,
 )
-from backend.core.generic_planner import (
-    GenericPlannerError,
-    GenericWorkflowPlanner,
-)
 from backend.core.planner_telemetry import (
     RETIREMENT_INTENT_PASS_RATE_MIN,
     default_planner_telemetry,
 )
-from backend.core.session_context import UniversalSessionContext
 from backend.core.state_store import CommandStateStore
 from backend.core.workflow_planner import (
-    AutonomousPlan,
     AutonomousPlannerError,
     AutonomousWorkflowPlanner,
     CapabilityUnavailableError,
-    InvalidWorkflowIntentError,
 )
 from backend.database import Database
 

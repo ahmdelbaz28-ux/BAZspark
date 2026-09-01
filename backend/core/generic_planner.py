@@ -12,7 +12,6 @@ Mandated by BAZSPARK_PLAN_V2_2 §5 Phase 5 & Principle 11:
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import time
@@ -28,7 +27,6 @@ from backend.core.agent_run_orchestrator import (
 )
 from backend.core.agent_run_store import ApprovalMode
 from backend.core.capability_registry import (
-    CapabilityContract,
     CapabilityRegistry,
     default_capability_registry,
 )
@@ -44,7 +42,6 @@ from backend.core.context_resolver import (
 from backend.core.control_request import ControlRequest
 from backend.core.disambiguation import (
     DisambiguationEngine,
-    DisambiguationRequest,
     DisambiguationRequiredError,
 )
 from backend.core.execution_policy import (
@@ -59,7 +56,6 @@ from backend.core.planner_schema import (
 from backend.core.planner_telemetry import default_planner_telemetry
 from backend.core.prompt_shield import PromptInjectionShield
 from backend.core.tool_schema_gen import (
-    derive_all_tool_schemas,
     format_tool_schemas_for_system_prompt,
 )
 from backend.core.workflow_engine import (
@@ -67,7 +63,6 @@ from backend.core.workflow_engine import (
     WorkflowExecutor,
     WorkflowNode,
 )
-from backend.services.llm_service import get_llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +188,8 @@ STOP_WORDS = frozenset(
         "few", "more", "most", "other", "some", "such", "no", "nor", "not",
         "only", "own", "same", "so", "than", "too", "very", "can",
         "will", "just", "should", "now", "and", "or", "is", "are", "be",
-        "this", "that", "it", "its", "of", "per", "as", "etc", "such",
-        "deterministically", "atomically", "execute", "verification", "check",
-        "run", "staged", "file", "project", "elements", "into", "integrity",
+        "this", "that", "it", "its", "of", "per", "as", "etc", "deterministically", "atomically", "execute", "verification", "check",
+        "run", "staged", "file", "project", "elements", "integrity",
         "calculate", "solve", "size", "perform", "determine", "evaluate", "analyze",
         "verify", "validation", "validate", "compliance", "format", "structural", "artifacts"
     }
@@ -433,11 +427,11 @@ class GenericWorkflowPlanner:
                     w for w in re.findall(r"[a-zA-Z]+", cid.lower())
                     if len(w) > 2 and w not in STOP_WORDS
                 }
-                cat_tokens = {
+                {
                     w for w in re.findall(r"[a-zA-Z]+", ccat.lower())
                     if len(w) > 2 and w not in STOP_WORDS
                 }
-                desc_tokens = {
+                {
                     w for w in re.findall(r"[a-zA-Z]+", cdesc.lower())
                     if len(w) > 2 and w not in STOP_WORDS
                 }
@@ -505,7 +499,7 @@ class GenericWorkflowPlanner:
                 }
             )
         cats = {_cap_category(c) for c in matched_caps if _cap_category(c)}
-        intent_cat = list(cats)[0] if len(cats) == 1 else "composite"
+        intent_cat = next(iter(cats)) if len(cats) == 1 else "composite"
 
         return {
             "plan_id": f"plan-{uuid.uuid4().hex[:12]}",

@@ -14,11 +14,8 @@ Tests:
 6. CI grep checks: 0 matches for query-string token fallback in WS handshake (agent_ws.py & revit_api.py).
 """
 
-import asyncio
-import re
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
@@ -26,34 +23,34 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 from starlette.websockets import WebSocketDisconnect
 
-from backend.app import app
 from backend.api_keys import add_api_key, delete_api_key
+from backend.app import app
 from backend.database import get_db
 from backend.rbac import Role
 from backend.routers.agent_ws import (
     _consume_ws_ticket,
     _issue_ws_ticket,
-    _extract_api_key_from_handshake,
     _ws_tickets,
 )
 from backend.routers.elements import (
     _verify_project as elements_verify_project,
-    create_element,
-    get_element,
-    update_element,
-    delete_element,
+)
+from backend.routers.elements import (
     list_elements,
 )
 from backend.routers.reports import (
     _verify_project as reports_verify_project,
+)
+from backend.routers.reports import (
     list_reports,
 )
 from backend.routers.sync import (
     _verify_project as sync_verify_project,
-    sync_project,
-    get_sync_status,
 )
-
+from backend.routers.sync import (
+    get_sync_status,
+    sync_project,
+)
 
 client = TestClient(app)
 
@@ -344,8 +341,8 @@ def test_occ_revision_validation_in_workflow():
 @pytest.mark.asyncio
 async def test_run_start_occ_revision_conflict_frame():
     """5b. WS run_start OCC revision conflict returns REVISION_CONFLICT error frame."""
-    from backend.routers import agent_ws
     from backend.core.command_bus import AuthenticatedPrincipal
+    from backend.routers import agent_ws
 
     class MockWs:
         def __init__(self):
@@ -382,8 +379,8 @@ async def test_run_start_occ_revision_conflict_frame():
 @pytest.mark.asyncio
 async def test_run_start_malformed_expected_revision_rejected():
     """5c. WS run_start malformed expected_revision (non-integer string) returns INVALID_EXPECTED_REVISION."""
-    from backend.routers import agent_ws
     from backend.core.command_bus import AuthenticatedPrincipal
+    from backend.routers import agent_ws
 
     class MockWs:
         def __init__(self):

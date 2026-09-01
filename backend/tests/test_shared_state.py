@@ -8,7 +8,7 @@ Validates:
 """
 
 from types import SimpleNamespace
-import pytest
+
 from backend.core.shared_state import SharedStateStore
 from backend.database import get_db
 

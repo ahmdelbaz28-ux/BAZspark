@@ -9,6 +9,7 @@ Mandated by BAZSPARK_PLAN_V2_2 §5 Phase 5 (S2 Deliverable):
 from __future__ import annotations
 
 from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 

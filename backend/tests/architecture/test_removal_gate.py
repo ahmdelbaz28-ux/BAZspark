@@ -7,11 +7,10 @@ Verifies the retirement criteria mechanism for the legacy regex fallback planner
 
 from __future__ import annotations
 
-import pytest
 from backend.core.planner_telemetry import (
-    PlannerTelemetry,
     RETIREMENT_INTENT_PASS_RATE_MIN,
     RETIREMENT_LLM_AVAILABILITY_MIN,
+    PlannerTelemetry,
 )
 
 

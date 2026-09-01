@@ -11,7 +11,6 @@ Verifies:
 from __future__ import annotations
 
 import pytest
-from typing import Any
 
 from backend.core.capability_registry import (
     CAP_COMPLIANCE_VERIFY_SPACING,
