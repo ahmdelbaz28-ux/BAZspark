@@ -37,6 +37,7 @@ except ImportError:  # Python < 3.9
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from backend.admin_protection import audit_operation, require_master_admin
 from backend.auth import require_permission
 from backend.core.openapi_contracts import StandardizedAPIRoute
 from backend.rbac import Permission, Role
@@ -44,6 +45,7 @@ from backend.response import success
 
 # ── Annotated dependency alias (S8410) ─────────────────────────────────────
 SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+MasterAdminIP = Annotated[str, Depends(require_master_admin)]
 # ────────────────────────────────────────────────────────────────────────────
 
 logger = logging.getLogger(__name__)
@@ -1067,6 +1069,7 @@ async def update_cad_config(
 async def rotate_secret(
     body: SecretRotationRequest,
     _role: SystemConfigRole,
+    _admin_ip: MasterAdminIP,
 ) -> dict[str, Any]:
     """Rotate a security-sensitive secret (hot rotation with grace period)."""
     from fireai.core.secret_rotation import KeyRotator
@@ -1076,12 +1079,14 @@ async def rotate_secret(
 
     if body.new_secret:
         if not body.new_secret.isalnum():
+            await audit_operation(_admin_ip, f"rotate_secret:{key_name}", False, detail="Invalid characters in new_secret")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="new_secret must be alphanumeric (letters and digits only).",
             )
         new_secret = body.new_secret
         if _SAFE_SECRET_VALUE_RE.fullmatch(new_secret) is None:
+            await audit_operation(_admin_ip, f"rotate_secret:{key_name}", False, detail="Length/format violation in new_secret")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="new_secret must be 32-4096 printable ASCII characters.",
@@ -1098,6 +1103,7 @@ async def rotate_secret(
         rotated, rotate_msg = True, "Registered new key (no previous key to rotate from)."
 
     if not rotated:
+        await audit_operation(_admin_ip, f"rotate_secret:{key_name}", False, detail=rotate_msg)
         logger.error("Secret rotation FAILED for '%s': %s", key_name, rotate_msg)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -1105,6 +1111,7 @@ async def rotate_secret(
         )
 
     _set_rotated_secret(key_name, new_secret)
+    await audit_operation(_admin_ip, f"rotate_secret:{key_name}", True, target=key_name)
     logger.info("Secret '%s' rotated successfully (hot rotation, grace period active)", key_name)
 
     return success(
@@ -1119,11 +1126,14 @@ async def rotate_secret(
 
 
 @router.post("/settings/admin-token/rotate")
-async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
+async def rotate_admin_token(
+    _role: SystemConfigRole,
+    _admin_ip: MasterAdminIP,
+) -> dict[str, Any]:
     """Rotate the BAZSPARK_MASTER_ADMIN_TOKEN."""
     from fireai.core.secret_rotation import KeyRotator
 
-    new_token = secrets.token_urlsafe(32)
+    new_token = f"master_{secrets.token_urlsafe(48)}"
     previous_token = os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN")
 
     rotator = KeyRotator()
@@ -1137,6 +1147,7 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
         rotated, rotate_msg = True, "Registered new admin token (no previous token to rotate from)."
 
     if not rotated:
+        await audit_operation(_admin_ip, "rotate_admin_token", False, detail=rotate_msg)
         logger.error("Admin token rotation FAILED: %s", rotate_msg)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -1147,6 +1158,7 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
     assert _ADMIN_TOKEN_ENV_KEY.isidentifier() and _ADMIN_TOKEN_ENV_KEY.isupper()
     os.environ[_ADMIN_TOKEN_ENV_KEY] = new_token
 
+    await audit_operation(_admin_ip, "rotate_admin_token", True)
     logger.info("Admin token rotated successfully (hot rotation, grace period active)")
     return success(
         {

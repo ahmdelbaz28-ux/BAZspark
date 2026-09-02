@@ -465,8 +465,8 @@ def _ensure_default_admin_key() -> None:
         else:
             return
     # Outside the lock — add_api_key will take the lock itself
-    env_key = os.getenv("FIREAI_API_KEY")
-    if env_key:
+    env_key = os.getenv("FIREAI_API_KEY", "").strip()
+    if env_key and len(env_key) >= 8:
         add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
         logger.info("Created default admin API key from FIREAI_API_KEY env var")
 
@@ -542,8 +542,8 @@ def validate_api_key(
     STRICT FIX F (length cap): Keys longer than _MAX_KEY_LENGTH are rejected
     immediately (before HMAC computation) to prevent CPU DoS.
     """
-    # STRICT FIX F: length cap BEFORE any computation
-    if not key or len(key) > _MAX_KEY_LENGTH:
+    # STRICT FIX F: length cap & whitespace check BEFORE any computation
+    if not key or not key.strip() or len(key) > _MAX_KEY_LENGTH:
         return None
 
     lookup = _lookup_key(key)
@@ -608,8 +608,8 @@ def validate_api_key(
         keys = _load_keys()
         info = keys.get(lookup)
         if not info:
-            env_fallback = os.getenv("FIREAI_API_KEY")
-            if env_fallback and hmac.compare_digest(key, env_fallback):
+            env_fallback = os.getenv("FIREAI_API_KEY", "").strip()
+            if len(env_fallback) >= 8 and hmac.compare_digest(key, env_fallback):
                 env_fallback_result = APIKeyInfo(
                     key_hash=lookup,
                     role=Role.ADMIN,

@@ -84,6 +84,16 @@ def extract_session_token_from_headers(
     return None
 
 
+def _is_valid_env_key(key: str | None) -> bool:
+    """Validate that an environment key is configured with non-trivial entropy."""
+    if not key:
+        return False
+    stripped = key.strip()
+    if not stripped or len(stripped) < 8:
+        return False
+    return True
+
+
 def validate_api_key_credential(api_key: str) -> Role | None:
     """
     Validate an API key credential and return the associated Role.
@@ -98,8 +108,11 @@ def validate_api_key_credential(api_key: str) -> Role | None:
       - security_middleware.py (ApiKeyMiddleware.__call__)
       - routers/auth.py (login endpoint)
     """
+    if not api_key:
+        return None
+
     env_key = os.getenv("FIREAI_API_KEY")
-    if env_key and api_key and _hmac.compare_digest(api_key, env_key):
+    if _is_valid_env_key(env_key) and _hmac.compare_digest(api_key, env_key):
         return Role.ADMIN
 
     info = _validate_api_key(api_key)
@@ -127,8 +140,11 @@ def resolve_credential(api_key: str) -> tuple[Role, str] | None:
     used by both ApiKeyMiddleware (stamping scope) and routers/auth.py
     (storing the principal in the session at login).
     """
+    if not api_key:
+        return None
+
     env_key = os.getenv("FIREAI_API_KEY")
-    if env_key and api_key and _hmac.compare_digest(api_key, env_key):
+    if _is_valid_env_key(env_key) and _hmac.compare_digest(api_key, env_key):
         principal = "env:" + _hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:32]
         return (Role.ADMIN, principal)
 
