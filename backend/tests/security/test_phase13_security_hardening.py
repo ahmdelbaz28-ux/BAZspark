@@ -32,6 +32,15 @@ def client() -> TestClient:
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _reset_admin_rate_limit_counter() -> None:
+    from backend.admin_protection import _rate_limit_counter
+
+    _rate_limit_counter.clear()
+    yield
+    _rate_limit_counter.clear()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. MASTER-ADMIN-TOKEN & ROTATION ENDPOINT SECURITY
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -184,6 +193,61 @@ def test_master_admin_rbac_permission_boundary_intact(client: TestClient, monkey
     )
     # Rejection occurs at the authentication / RBAC boundary (401 or 403)
     assert resp.status_code in (401, 403)
+
+
+def test_admin_key_get_endpoints_require_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """GET /api/admin/keys and GET /api/admin/keys/roles require both Admin RBAC and Master-Admin token."""
+    master_token = "admin_get_master_token_64chars_entropy_abcdef1234567890123456789"
+    admin_api_key = "test_admin_api_key_for_phase13_get_12345"
+    monkeypatch.setenv("BAZSPARK_MASTER_ADMIN_TOKEN", master_token)
+    monkeypatch.setenv("FIREAI_API_KEY", admin_api_key)
+    monkeypatch.setenv("FIREAI_API_KEYS_FILE", str(tmp_path / "api_keys.json"))
+    monkeypatch.setenv("FIREAI_API_KEYS_SECRET_FILE", str(tmp_path / "api_keys.secret"))
+
+    # 1. Missing Master Token -> 403 Forbidden
+    resp_no_master = client.get("/api/admin/keys", headers={"X-API-Key": admin_api_key})
+    assert resp_no_master.status_code == 403
+
+    # 2. Valid Master Token -> 200 OK
+    resp_ok = client.get(
+        "/api/admin/keys",
+        headers={"X-API-Key": admin_api_key, "X-Master-Admin-Token": master_token},
+    )
+    assert resp_ok.status_code == 200
+    assert resp_ok.json()["success"] is True
+
+    # 3. Roles endpoint with Master Token -> 200 OK
+    resp_roles = client.get(
+        "/api/admin/keys/roles",
+        headers={"X-API-Key": admin_api_key, "X-Master-Admin-Token": master_token},
+    )
+    assert resp_roles.status_code == 200
+    assert "data" in resp_roles.json()
+
+
+def test_admin_key_non_admin_rbac_rejection_with_master_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """Non-admin callers (e.g. engineer/viewer) with valid Master Token are rejected by RBAC on /api/admin/keys."""
+    from backend.api_keys import add_api_key
+    from backend.rbac import Role
+
+    keys_file = str(tmp_path / "api_keys.json")
+    secret_file = str(tmp_path / "api_keys.secret")
+    monkeypatch.setenv("FIREAI_API_KEYS_FILE", keys_file)
+    monkeypatch.setenv("FIREAI_API_KEYS_SECRET_FILE", secret_file)
+    master_token = "admin_rbac_master_token_64chars_entropy_abcdef123456789012345678"
+    monkeypatch.setenv("BAZSPARK_MASTER_ADMIN_TOKEN", master_token)
+
+    # Add an engineer API key (does not possess USER_MANAGE permission)
+    engineer_raw_key = "eng_key_test_1234567890123456789012"
+    add_api_key(engineer_raw_key, Role.ENGINEER, "Engineer User")
+
+    # Engineer attempts to create an admin key with valid Master Token -> rejected by RBAC (403)
+    resp = client.post(
+        "/api/admin/keys",
+        headers={"X-API-Key": engineer_raw_key, "X-Master-Admin-Token": master_token},
+        json={"role": "admin", "description": "Escalated Key Attempt"},
+    )
+    assert resp.status_code == 403
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
