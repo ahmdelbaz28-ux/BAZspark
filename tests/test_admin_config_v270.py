@@ -37,6 +37,12 @@ def _setup_env_module() -> None:
     os.environ["FIREAI_CSRF_DISABLED"] = "1"
     # Ensure session secret is long enough (>=43 chars per session_secret.py)
     os.environ["FIREAI_SESSION_SECRET"] = "v270_test_session_secret_minimum_43_chars_long_xxxxxx"
+    os.environ["BAZSPARK_MASTER_ADMIN_TOKEN"] = "test_master_admin_token_v270_security_12345678"
+
+
+def get_master_admin_headers() -> dict[str, str]:
+    """Dynamically fetch current active BAZSPARK_MASTER_ADMIN_TOKEN header."""
+    return {"X-Master-Admin-Token": os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN", "")}
 
 
 @pytest.fixture(scope="module")
@@ -214,6 +220,7 @@ class TestSecretRotation:
         """POST /settings/secret-rotation/rotate with no new_secret should generate one."""
         resp = client.post(
             "/api/v1/settings/secret-rotation/rotate",
+            headers=get_master_admin_headers(),
             json={"key_name": "FIREAI_TEST_SECRET_TO_ROTATE"},
         )
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -228,6 +235,7 @@ class TestSecretRotation:
         explicit = "averylongandsecuresecretvaluefortesting1234567890"
         resp = client.post(
             "/api/v1/settings/secret-rotation/rotate",
+            headers=get_master_admin_headers(),
             json={"key_name": "FIREAI_TEST_SECRET_EXPLICIT", "new_secret": explicit},
         )
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -257,7 +265,9 @@ class TestAdminTokenRotation:
         self, client: TestClient, admin_cookie: str
     ) -> None:
         """POST /settings/admin-token/rotate should return a new token."""
-        resp = client.post("/api/v1/settings/admin-token/rotate")
+        resp = client.post(
+            "/api/v1/settings/admin-token/rotate", headers=get_master_admin_headers()
+        )
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
         body = resp.json()
         assert body["success"] is True
@@ -367,31 +377,40 @@ class TestEndpointExistence:
 
     def test_all_7_endpoints_exist(self, client: TestClient, admin_cookie: str) -> None:
         """All 7 previously-404 endpoints must now return non-404."""
-        # Each tuple: (method, path, json_body_or_None, expected_min_status, expected_max_status)
+        # Each tuple: (method, path, json_body_or_None, headers_or_None, expected_min_status, expected_max_status)
         cases = [
-            ("GET", "/api/v1/feature-flags", None, 200, 200),
+            ("GET", "/api/v1/feature-flags", None, None, 200, 200),
             (
                 "POST",
                 "/api/v1/feature-flags",
                 {"flag": "SMOKE_SIMULATION", "enabled": False},
+                None,
                 200,
                 200,
             ),
-            ("GET", "/api/v1/env-config", None, 200, 200),
-            ("PUT", "/api/v1/env-config", {"overrides": {}}, 200, 200),
+            ("GET", "/api/v1/env-config", None, None, 200, 200),
+            ("PUT", "/api/v1/env-config", {"overrides": {}}, None, 200, 200),
             (
                 "POST",
                 "/api/v1/settings/secret-rotation/rotate",
                 {"key_name": "FIREAI_API_KEY"},
+                get_master_admin_headers(),
                 200,
                 200,
             ),
-            ("POST", "/api/v1/settings/admin-token/rotate", None, 200, 200),
-            ("GET", "/api/v1/admin/rbac/permissions", None, 200, 200),
-            ("POST", "/api/v1/auth/verify", {"token": "any"}, 200, 200),
+            (
+                "POST",
+                "/api/v1/settings/admin-token/rotate",
+                None,
+                get_master_admin_headers(),
+                200,
+                200,
+            ),
+            ("GET", "/api/v1/admin/rbac/permissions", None, None, 200, 200),
+            ("POST", "/api/v1/auth/verify", {"token": "any"}, None, 200, 200),
         ]
-        for method, path, body, min_status, max_status in cases:
-            resp = client.request(method, path, json=body)
+        for method, path, body, headers, min_status, max_status in cases:
+            resp = client.request(method, path, json=body, headers=headers)
             assert resp.status_code != 404, (
                 f"ENDPOINT STILL MISSING: {method} {path} returned 404. "
                 f"Router not registered. Got: {resp.status_code}"

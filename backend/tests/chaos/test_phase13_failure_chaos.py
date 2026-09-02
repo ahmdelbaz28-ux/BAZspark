@@ -270,8 +270,11 @@ def test_websocket_interruption_mid_run_preserves_persistent_state(
         # Step 1 committed (rev 1 -> 2)
         assert bus.get_project_revision("proj-ws-chaos") == 2
 
-    # 2. ws1 is now dropped / disconnected (network interruption)
-    # 3. Verify server-side state is persisted in AgentRunStore
+        # 2. Abrupt transport interruption mid-run (RFC 6455 code 1006 Abnormal Closure)
+        # Drops transport connection abnormally while the run is halted in WAITING_APPROVAL.
+        ws1.close(code=1006)
+
+    # 3. Verify server-side state remains durable in AgentRunStore despite transport drop
     persisted_run = run_store.get_run(run_id)
     assert persisted_run is not None
     assert persisted_run.status == RunStatus.WAITING_APPROVAL
