@@ -63,6 +63,13 @@ class TestNoProxyConfigured:
         req = _make_request("1.2.3.4", {"True-Client-IP": "6.6.6.6"})
         assert get_remote_address(req) == "1.2.3.4"
 
+    def test_spoofed_akamai_client_ip_ignored(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.delenv("TRUSTED_PROXIES", raising=False)
+        monkeypatch.setenv("AKAMAI_ENABLED", "false")
+
+        req = _make_request("1.2.3.4", {"Akamai-Client-IP": "6.6.6.6"})
+        assert get_remote_address(req) == "1.2.3.4"
+
     def test_no_headers_uses_peer(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.delenv("TRUSTED_PROXIES", raising=False)
 
@@ -125,6 +132,23 @@ class TestProxyEnabled:
 
         # Untrusted direct peer connecting directly with forged True-Client-IP header
         req = _make_request("198.51.100.2", {"True-Client-IP": "1.1.1.1"})
+        assert get_remote_address(req) == "198.51.100.2"
+
+    def test_akamai_client_ip_trusted_from_trusted_proxy(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+        monkeypatch.setenv("AKAMAI_ENABLED", "true")
+
+        req = _make_request("10.0.0.1", {"Akamai-Client-IP": "6.6.6.6"})
+        assert get_remote_address(req) == "6.6.6.6"
+
+    def test_akamai_client_ip_ignored_from_untrusted_peer_even_if_akamai_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+        monkeypatch.setenv("AKAMAI_ENABLED", "true")
+
+        # Untrusted direct peer connecting directly with forged Akamai-Client-IP header
+        req = _make_request("198.51.100.2", {"Akamai-Client-IP": "1.1.1.1"})
         assert get_remote_address(req) == "198.51.100.2"
 
     def test_edge_headers_beat_xff(self, monkeypatch: pytest.MonkeyPatch):

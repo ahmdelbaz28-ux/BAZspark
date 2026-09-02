@@ -55,6 +55,7 @@ import os
 import time
 from collections import defaultdict
 
+from starlette.requests import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.auth_utils import (
@@ -63,6 +64,7 @@ from backend.auth_utils import (
 from backend.auth_utils import (
     resolve_credential as _resolve_credential,
 )
+from backend.limiter import get_remote_address
 from backend.rbac import Role as _Role
 
 # Re-export CorrelationIdMiddleware for a single import surface.
@@ -77,52 +79,14 @@ _failed_auth_counter: dict[str, list[float]] = defaultdict(list)
 
 
 def _extract_client_ip_from_scope(scope: Scope) -> str:
-    """Extract client IP from ASGI scope with trusted proxy and CDN support."""
-    headers_list = scope.get("headers", [])
-    headers: dict[bytes, bytes] = {}
-    for k, v in headers_list:
-        headers[k.lower()] = v
+    """
+    Extract client IP from ASGI scope delegating to canonical limiter IP resolution.
 
-    peer = scope.get("client")
-    peer_host = peer[0] if peer else ""
-
-    trusted_proxies = [
-        p.strip() for p in os.getenv("TRUSTED_PROXIES", "").split(",") if p.strip()
-    ]
-    cdn_enabled = any(
-        os.getenv(v, "false").strip().lower() in ("true", "1", "yes", "on")
-        for v in ("CF_ENABLED", "AKAMAI_ENABLED")
-    )
-    edge_trusted = cdn_enabled or (peer_host in trusted_proxies)
-
-    if edge_trusted:
-        if b"cf-connecting-ip" in headers:
-            return (
-                headers[b"cf-connecting-ip"]
-                .decode("latin-1", errors="replace")
-                .split(",")[0]
-                .strip()
-            )
-        if b"true-client-ip" in headers:
-            return (
-                headers[b"true-client-ip"]
-                .decode("latin-1", errors="replace")
-                .split(",")[0]
-                .strip()
-            )
-        if b"akamai-client-ip" in headers:
-            return (
-                headers[b"akamai-client-ip"]
-                .decode("latin-1", errors="replace")
-                .split(",")[0]
-                .strip()
-            )
-
-    if peer_host in trusted_proxies and b"x-forwarded-for" in headers:
-        xff = headers[b"x-forwarded-for"].decode("latin-1", errors="replace")
-        return xff.split(",")[-1].strip()
-
-    return peer_host if peer_host else "0.0.0.0"
+    SECURITY (Phase 13 Hardening): Proxy/CDN headers (CF-Connecting-IP, True-Client-IP,
+    Akamai-Client-IP, X-Forwarded-For) are trusted ONLY when the direct TCP peer is a
+    configured trusted proxy. CDN enablement flags alone are never trusted from untrusted peers.
+    """
+    return get_remote_address(Request(scope))
 
 
 def _check_and_record_auth_failure(ip: str) -> bool:
@@ -139,7 +103,6 @@ def _check_and_record_auth_failure(ip: str) -> bool:
         return False
     _failed_auth_counter[ip].append(now)
     return True
-
 
 
 # ── Security header constants ───────────────────────────────────────────────
@@ -544,7 +507,9 @@ class ApiKeyMiddleware:
         """Handle authentication failure with IP-based throttling to prevent brute-force attacks."""
         client_ip = _extract_client_ip_from_scope(scope)
         if not _check_and_record_auth_failure(client_ip):
-            logger.warning("Authentication failure rate limit exceeded for IP=%s (429 emitted)", client_ip)
+            logger.warning(
+                "Authentication failure rate limit exceeded for IP=%s (429 emitted)", client_ip
+            )
             await self._send_429(scope, send)
             return
         await self._send_401(scope, send)
