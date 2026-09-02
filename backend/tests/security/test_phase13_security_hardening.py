@@ -44,7 +44,10 @@ def _reset_admin_rate_limit_counter() -> None:
 # 1. MASTER-ADMIN-TOKEN & ROTATION ENDPOINT SECURITY
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def test_secret_rotation_requires_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+
+def test_secret_rotation_requires_master_admin_token(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """POST /api/v1/settings/secret-rotation/rotate must reject requests without Master-Admin-Token."""
     master_token = "test_master_token_64chars_entropy_abcdef1234567890abcdef1234567890"
     admin_api_key = "test_admin_api_key_for_phase13_hardening_12345"
@@ -87,7 +90,9 @@ def test_secret_rotation_requires_master_admin_token(client: TestClient, monkeyp
     assert len(data["data"]["new_secret"]) >= 32
 
 
-def test_admin_token_rotation_requires_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_admin_token_rotation_requires_master_admin_token(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """POST /api/v1/settings/admin-token/rotate must verify current master token before rotating."""
     master_token = "initial_master_token_64chars_entropy_abcdef12345678901234567890"
     admin_api_key = "test_admin_api_key_for_phase13_hardening_12345"
@@ -118,21 +123,28 @@ def test_admin_token_rotation_requires_master_admin_token(client: TestClient, mo
     assert len(new_token) > 40
 
 
-def test_rotation_fail_closed_when_master_token_unset(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rotation_fail_closed_when_master_token_unset(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """When BAZSPARK_MASTER_ADMIN_TOKEN is unset, rotation endpoints must fail closed (403)."""
     monkeypatch.delenv("BAZSPARK_MASTER_ADMIN_TOKEN", raising=False)
     monkeypatch.setenv("FIREAI_API_KEY", "test_admin_api_key_12345678901234567890")
 
     resp = client.post(
         "/api/v1/settings/secret-rotation/rotate",
-        headers={"X-API-Key": "test_admin_api_key_12345678901234567890", "X-Master-Admin-Token": "some_token"},
+        headers={
+            "X-API-Key": "test_admin_api_key_12345678901234567890",
+            "X-Master-Admin-Token": "some_token",
+        },
         json={"key_name": "FIREAI_TEST_SECRET_UNSET"},
     )
     assert resp.status_code == 403
     assert is_master_token_configured() is False
 
 
-def test_admin_key_crud_requires_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_admin_key_crud_requires_master_admin_token(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Admin key operations (POST/DELETE/PUT /api/admin/keys) require Master-Admin-Token."""
     master_token = "admin_crud_master_token_64chars_entropy_abcdef123456789012345678"
     admin_api_key = "test_admin_api_key_for_phase13_crud_12345"
@@ -176,7 +188,9 @@ def test_admin_key_crud_requires_master_admin_token(client: TestClient, monkeypa
     assert "key" in key_data
 
 
-def test_master_admin_rbac_permission_boundary_intact(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_master_admin_rbac_permission_boundary_intact(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Non-admin callers (e.g. viewer role) with a Master-Admin token must still be rejected by RBAC."""
     master_token = "master_token_for_rbac_boundary_test_64chars_abcdef123456789012"
     monkeypatch.setenv("BAZSPARK_MASTER_ADMIN_TOKEN", master_token)
@@ -194,7 +208,9 @@ def test_master_admin_rbac_permission_boundary_intact(client: TestClient, monkey
     assert resp.status_code in (401, 403)
 
 
-def test_admin_key_get_endpoints_require_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_admin_key_get_endpoints_require_master_admin_token(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """GET /api/admin/keys and GET /api/admin/keys/roles require both Admin RBAC and Master-Admin token."""
     master_token = "admin_get_master_token_64chars_entropy_abcdef1234567890123456789"
     admin_api_key = "test_admin_api_key_for_phase13_get_12345"
@@ -224,7 +240,9 @@ def test_admin_key_get_endpoints_require_master_admin_token(client: TestClient, 
     assert "data" in resp_roles.json()
 
 
-def test_admin_key_non_admin_rbac_rejection_with_master_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_admin_key_non_admin_rbac_rejection_with_master_token(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Non-admin callers (e.g. engineer/viewer) with valid Master Token are rejected by RBAC on /api/admin/keys."""
     from backend.api_keys import add_api_key
 
@@ -252,6 +270,7 @@ def test_admin_key_non_admin_rbac_rejection_with_master_token(client: TestClient
 # 2. IP TRUST & SPOOFING PREVENTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_get_client_ip_rejects_untrusted_edge_headers(monkeypatch: pytest.MonkeyPatch) -> None:
     """Client-supplied CF-Connecting-IP / Akamai headers must NOT be trusted unless CDN/proxy is enabled."""
     from starlette.requests import Request
@@ -275,7 +294,9 @@ def test_get_client_ip_rejects_untrusted_edge_headers(monkeypatch: pytest.Monkey
     assert resolved_ip == "198.51.100.5"
 
 
-def test_get_client_ip_honors_edge_headers_from_trusted_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_client_ip_honors_edge_headers_from_trusted_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """When peer is a configured trusted proxy, proxy headers are trusted."""
     from starlette.requests import Request
 
@@ -296,7 +317,10 @@ def test_get_client_ip_honors_edge_headers_from_trusted_proxy(monkeypatch: pytes
 # 3. REPEATED 401 AUTHENTICATION FAILURE THROTTLING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def test_repeated_401_throttling_triggers_429(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+
+def test_repeated_401_throttling_triggers_429(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Repeated failed authentication attempts from an IP must be throttled with HTTP 429."""
     from backend.security_middleware import _failed_auth_counter
 
@@ -327,6 +351,7 @@ def test_repeated_401_throttling_triggers_429(client: TestClient, monkeypatch: p
 # 4. NEO4J PASSWORD DEFAULT INSECURE CREDENTIAL ELIMINATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_neo4j_password_default_is_empty() -> None:
     """NEO4J_PASSWORD_DEFAULT must not contain hardcoded default passwords."""
     assert NEO4J_PASSWORD_DEFAULT == ""
@@ -346,6 +371,7 @@ def test_topology_graph_service_empty_password_fallback(monkeypatch: pytest.Monk
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. ENVIRONMENT BYPASS RESTRICTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_env_bypass_rejects_weak_and_empty_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     """Weak, empty, or whitespace-only FIREAI_API_KEY must not grant admin bypass."""
@@ -423,7 +449,9 @@ ADVERSARIAL_ATTACK_SUITE = [
 ]
 
 
-@pytest.mark.parametrize(("name", "prompt", "expected_injected_substring"), ADVERSARIAL_ATTACK_SUITE)
+@pytest.mark.parametrize(
+    ("name", "prompt", "expected_injected_substring"), ADVERSARIAL_ATTACK_SUITE
+)
 def test_prompt_injection_shield_comprehensive_neutralization(
     name: str, prompt: str, expected_injected_substring: str
 ) -> None:

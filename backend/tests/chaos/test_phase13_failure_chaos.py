@@ -186,7 +186,9 @@ class ChaosMockWebSocket:
 
     async def send_json(self, data: dict[str, Any]) -> None:
         if not self.is_connected:
-            raise ConnectionResetError("WebSocket transport connection dropped (Network Interruption)")
+            raise ConnectionResetError(
+                "WebSocket transport connection dropped (Network Interruption)"
+            )
         self.sent_frames.append(data)
 
     def disconnect(self) -> None:
@@ -196,6 +198,7 @@ class ChaosMockWebSocket:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. WEBSOCKET INTERRUPTION MID-RUN & RESUMABILITY (BLOCKER 2)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_websocket_interruption_mid_run_preserves_persistent_state(
@@ -249,7 +252,9 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
 
     # Verify run entered WAITING_APPROVAL on step 2
     assert len(ws_client_1.sent_frames) >= 1
-    waiting_frame = next((f for f in ws_client_1.sent_frames if f.get("status") == "WAITING_APPROVAL"), None)
+    waiting_frame = next(
+        (f for f in ws_client_1.sent_frames if f.get("status") == "WAITING_APPROVAL"), None
+    )
     assert waiting_frame is not None
     run_id = waiting_frame["runId"]
     approval_id = waiting_frame["pendingApprovalId"]
@@ -276,7 +281,9 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     ws_client_2 = ChaosMockWebSocket()
 
     # Query run status after reconnect via message dispatcher
-    await agent_ws._handle_agent_message(ws_client_2, {"type": "run_status", "runId": run_id}, test_principal)
+    await agent_ws._handle_agent_message(
+        ws_client_2, {"type": "run_status", "runId": run_id}, test_principal
+    )
     assert len(ws_client_2.sent_frames) >= 1
     status_frame = next(f for f in ws_client_2.sent_frames if f.get("status") == "WAITING_APPROVAL")
     assert status_frame["status"] == "WAITING_APPROVAL"
@@ -294,7 +301,9 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     )
 
     # 4 & 7. Run completes without duplicate mutation of step 1
-    completed_frame = next((f for f in ws_client_2.sent_frames if f.get("status") == "COMPLETED"), None)
+    completed_frame = next(
+        (f for f in ws_client_2.sent_frames if f.get("status") == "COMPLETED"), None
+    )
     assert completed_frame is not None
     assert completed_frame["completedSteps"] == ["s1", "s2"]
 
@@ -308,6 +317,7 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. ADAPTER FAILURE IN THE MIDDLE OF A DAG & RECOVERY WITHOUT DUPLICATE MUTATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_adapter_failure_mid_dag_and_idempotent_recovery(
     fresh_db: Database,
@@ -335,7 +345,11 @@ def test_adapter_failure_mid_dag_and_idempotent_recovery(
 
     steps = [
         {"step_id": "step-1", "capability_id": "chaos.step_1", "payload": {}},
-        {"step_id": "step-2", "capability_id": "chaos.step_2_flaky", "payload": {"should_fail": True}},
+        {
+            "step_id": "step-2",
+            "capability_id": "chaos.step_2_flaky",
+            "payload": {"should_fail": True},
+        },
         {"step_id": "step-3", "capability_id": "chaos.step_3", "payload": {}},
     ]
 
@@ -398,6 +412,7 @@ def test_adapter_failure_mid_dag_and_idempotent_recovery(
 # 3. CONCURRENT / RACING APPROVALS (ATOMIC CLAIM & CONFLICT REJECTION)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_concurrent_approval_race_is_atomic(
     fresh_db: Database,
     state_store: CommandStateStore,
@@ -447,12 +462,15 @@ def test_concurrent_approval_race_is_atomic(
     # Exactly one decision succeeds; the other is rejected as already decided / invalid state
     assert len(results) == 1
     assert len(errors) == 1
-    assert isinstance(errors[0], InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError)
+    assert isinstance(
+        errors[0], InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. STALE OCC REVISION APPROVAL REJECTION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_stale_project_revision_approval_rejection(
     fresh_db: Database,
@@ -498,6 +516,7 @@ def test_stale_project_revision_approval_rejection(
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. COMMAND REPLAY & IDEMPOTENCY COLLISION DETECTION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_command_bus_idempotent_replay_and_collision(
     fresh_db: Database,
@@ -557,6 +576,7 @@ def test_command_bus_idempotent_replay_and_collision(
 # 6. REAL LLM FAILURE INJECTION & DEGRADATION LADDER (BLOCKER 1)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_generic_planner_degradation_ladder(
     fresh_db: Database,
     state_store: CommandStateStore,
@@ -582,7 +602,9 @@ def test_generic_planner_degradation_ladder(
 
     # 1. Inject deterministic LLM failure: simulate upstream LLM provider 503 outage
     def _injected_llm_failure(req: ControlRequest, **kwargs: Any) -> Any:
-        raise RuntimeError("Upstream LLM Provider HTTP 503 Service Unavailable (Injected Chaos Failure)")
+        raise RuntimeError(
+            "Upstream LLM Provider HTTP 503 Service Unavailable (Injected Chaos Failure)"
+        )
 
     monkeypatch.setattr(planner._generic_planner, "plan_control_request", _injected_llm_failure)
 
@@ -609,7 +631,10 @@ def test_generic_planner_degradation_ladder(
     # 8. Telemetry audit verification: prove degradation ladder entered and logged
     telemetry_summary = default_planner_telemetry.get_summary()
     assert telemetry_summary["regex_fallback"]["count"] >= 1
-    assert any("Upstream LLM Provider HTTP 503" in r for r in telemetry_summary["regex_fallback"]["fallback_reasons"])
+    assert any(
+        "Upstream LLM Provider HTTP 503" in r
+        for r in telemetry_summary["regex_fallback"]["fallback_reasons"]
+    )
 
     # Double check unrecoverable failure path: unresolvable intent fails cleanly and explicitly
     with pytest.raises(InvalidWorkflowIntentError):
@@ -626,6 +651,7 @@ def test_generic_planner_degradation_ladder(
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7. REDIS FAILURE DURING ACTIVE RUN (DEGRADATION & FAIL-CLOSED BOUNDARIES) (BLOCKER 3)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_redis_unavailability_graceful_degradation(
     fresh_db: Database,
@@ -731,6 +757,7 @@ def test_redis_unavailability_graceful_degradation(
 # 8. DATABASE COMMIT FAILURE & ATOMIC OCC ROLLBACK
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_database_commit_failure_atomic_rollback(
     fresh_db: Database,
     state_store: CommandStateStore,
@@ -773,6 +800,7 @@ def test_database_commit_failure_atomic_rollback(
 # 9. PARTIAL EXECUTION, PAUSE & RESUME RECOVERY STATE PRESERVATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_partial_execution_pause_and_resume_recovery(
     fresh_db: Database,
     state_store: CommandStateStore,
@@ -814,7 +842,9 @@ def test_partial_execution_pause_and_resume_recovery(
 
     # Cannot approve while paused
     with pytest.raises(InvalidRunStateError):
-        orch.decide_approval(test_principal.user_id, run.pending_approval_id, ApprovalDecisionValue.APPROVED)
+        orch.decide_approval(
+            test_principal.user_id, run.pending_approval_id, ApprovalDecisionValue.APPROVED
+        )
 
     # Resume run -> transitions back to live waiting approval state
     resumed = orch.resume_run(test_principal.user_id, run.run_id)
