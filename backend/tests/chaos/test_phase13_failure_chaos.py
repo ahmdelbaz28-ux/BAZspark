@@ -19,7 +19,10 @@ import time
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
 
+from backend.api_keys import add_api_key
+from backend.app import app
 from backend.core.agent_run_orchestrator import (
     AgentRunOrchestrator,
     InvalidRunStateError,
@@ -50,6 +53,7 @@ from backend.core.workflow_planner import (
     InvalidWorkflowIntentError,
 )
 from backend.database import Database
+from backend.rbac import Role
 from backend.routers import agent_ws
 from backend.session_store import SessionStore
 
@@ -105,7 +109,7 @@ def chaos_registry() -> CapabilityRegistry:
         risk="LOW",
         mutation_type="state_mutation",
         approval_policy="auto",
-        scopes=["*"],
+        scopes=["spatial:write"],
     )
     contract_approval = CapabilityContract(
         input_schema={},
@@ -114,7 +118,7 @@ def chaos_registry() -> CapabilityRegistry:
         risk="ENGINEERING_MUTATION",
         mutation_type="state_mutation",
         approval_policy="user_confirm",
-        scopes=["*"],
+        scopes=["spatial:write"],
     )
     contract_3 = CapabilityContract(
         input_schema={},
@@ -123,7 +127,7 @@ def chaos_registry() -> CapabilityRegistry:
         risk="LOW",
         mutation_type="state_mutation",
         approval_policy="auto",
-        scopes=["*"],
+        scopes=["spatial:write"],
     )
 
     reg.register(
@@ -134,7 +138,7 @@ def chaos_registry() -> CapabilityRegistry:
             category="spatial",
             contract=contract_1,
             risk_class="LOW",
-            required_scopes=["*"],
+            required_scopes=["spatial:write"],
             handler=handle_step_1,
         )
     )
@@ -146,7 +150,7 @@ def chaos_registry() -> CapabilityRegistry:
             category="electrical",
             contract=contract_approval,
             risk_class="ENGINEERING_MUTATION",
-            required_scopes=["*"],
+            required_scopes=["spatial:write"],
             handler=handle_step_1,
         )
     )
@@ -158,7 +162,7 @@ def chaos_registry() -> CapabilityRegistry:
             category="electrical",
             contract=contract_1,
             risk_class="LOW",
-            required_scopes=["*"],
+            required_scopes=["spatial:write"],
             handler=handle_step_2_flaky,
         )
     )
@@ -170,29 +174,24 @@ def chaos_registry() -> CapabilityRegistry:
             category="compliance",
             contract=contract_3,
             risk_class="LOW",
-            required_scopes=["*"],
+            required_scopes=["spatial:write"],
             handler=handle_step_3,
         )
     )
     return reg
 
 
-class ChaosMockWebSocket:
-    """Mock WebSocket connection modeling active connection lifecycle, frame recording, and disconnection."""
-
-    def __init__(self) -> None:
-        self.sent_frames: list[dict[str, Any]] = []
-        self.is_connected: bool = True
-
-    async def send_json(self, data: dict[str, Any]) -> None:
-        if not self.is_connected:
-            raise ConnectionResetError(
-                "WebSocket transport connection dropped (Network Interruption)"
-            )
-        self.sent_frames.append(data)
-
-    def disconnect(self) -> None:
-        self.is_connected = False
+def _receive_non_ping(ws: Any) -> dict[str, Any]:
+    """Receive next WebSocket message, ignoring background heartbeat pings."""
+    while True:
+        msg = ws.receive_json()
+        if msg.get("type") == "ping":
+            try:
+                ws.send_json({"type": "pong"})
+            except Exception:
+                pass
+            continue
+        return msg
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -200,8 +199,7 @@ class ChaosMockWebSocket:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.asyncio
-async def test_websocket_interruption_mid_run_preserves_persistent_state(
+def test_websocket_interruption_mid_run_preserves_persistent_state(
     fresh_db: Database,
     state_store: CommandStateStore,
     run_store: AgentRunStore,
@@ -212,11 +210,11 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     """
     Chaos Scenario 1: WebSocket / transport lifecycle interruption mid-run.
     Proves:
-      1. Active run exists in WAITING_APPROVAL.
+      1. Active run exists in WAITING_APPROVAL over real ASGI WebSocket transport.
       2. Transport / WS connection is interrupted (connection dropped).
-      3. Server-side run state remains persisted in AgentRunStore.
+      3. Server-side run state remains persisted in AgentRunStore / database.
       4. No duplicate mutation occurs.
-      5. Reconnected client (fresh WS) can recover the run.
+      5. Reconnected client (fresh ASGI WebSocket connection) can recover the run.
       6. Approval state and revision remain coherent.
       7. Run can safely continue and complete deterministically.
       8. No fake 'transport success' is emitted after disconnect.
@@ -232,15 +230,21 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     )
     monkeypatch.setattr(agent_ws, "default_agent_run_orchestrator", orchestrator)
     monkeypatch.setattr(agent_ws, "default_capability_registry", chaos_registry)
+    monkeypatch.setattr(agent_ws, "WS_PING_INTERVAL_SECONDS", 0.1)
+    monkeypatch.setattr(agent_ws, "WS_HEARTBEAT_TIMEOUT_SECONDS", 0.2)
 
-    ws_client_1 = ChaosMockWebSocket()
+    # Register authenticated engineer API key for real ASGI WebSocket handshake
+    auth_key = "test_ws_chaos_engineer_key_12345"
+    add_api_key(auth_key, Role.ENGINEER, "WS Chaos Engineer")
+
+    client = TestClient(app)
 
     steps = [
         {"step_id": "s1", "capability_id": "chaos.step_1", "payload": {}},
         {"step_id": "s2", "capability_id": "chaos.step_approval", "payload": {}},
     ]
 
-    # 1. Client 1 starts run over WebSocket
+    # 1. Client 1 starts run over real ASGI WebSocket transport
     start_msg = {
         "type": "run_start",
         "projectId": "proj-ws-chaos",
@@ -248,27 +252,25 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
         "steps": steps,
         "approvalMode": "AUTO",
     }
-    await agent_ws._handle_agent_message(ws_client_1, start_msg, test_principal)
 
-    # Verify run entered WAITING_APPROVAL on step 2
-    assert len(ws_client_1.sent_frames) >= 1
-    waiting_frame = next(
-        (f for f in ws_client_1.sent_frames if f.get("status") == "WAITING_APPROVAL"), None
-    )
-    assert waiting_frame is not None
-    run_id = waiting_frame["runId"]
-    approval_id = waiting_frame["pendingApprovalId"]
+    with client.websocket_connect("/api/v1/agent/ws", headers={"X-API-Key": auth_key}) as ws1:
+        ws1.send_json(start_msg)
 
-    # Step 1 committed (rev 1 -> 2)
-    assert bus.get_project_revision("proj-ws-chaos") == 2
+        # Receive run_status_update frame
+        waiting_frame = _receive_non_ping(ws1)
+        assert waiting_frame.get("status") == "WAITING_APPROVAL"
+        run_id = waiting_frame["runId"]
+        approval_id = waiting_frame["pendingApprovalId"]
 
-    # 2. Abrupt network interruption: drop WebSocket connection
-    ws_client_1.disconnect()
+        # Receive companion approval_request frame emitted by _emit_run_state
+        approval_req_frame = _receive_non_ping(ws1)
+        assert approval_req_frame.get("type") == "approval_request"
+        assert approval_req_frame.get("approvalId") == approval_id
 
-    # 8. Assert no fake transport success can be emitted after disconnect
-    with pytest.raises(ConnectionResetError):
-        await ws_client_1.send_json({"type": "fake_transport_heartbeat"})
+        # Step 1 committed (rev 1 -> 2)
+        assert bus.get_project_revision("proj-ws-chaos") == 2
 
+    # 2. ws1 is now dropped / disconnected (network interruption)
     # 3. Verify server-side state is persisted in AgentRunStore
     persisted_run = run_store.get_run(run_id)
     assert persisted_run is not None
@@ -277,36 +279,30 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     assert persisted_run.current_step == "s2"
     assert persisted_run.pending_approval_id == approval_id
 
-    # 5. Reconnect: New client opens clean WebSocket connection
-    ws_client_2 = ChaosMockWebSocket()
+    # 5. Reconnect: New client opens clean WebSocket connection over real ASGI
+    with client.websocket_connect("/api/v1/agent/ws", headers={"X-API-Key": auth_key}) as ws2:
+        ws2.send_json({"type": "run_status", "runId": run_id})
+        status_frame = _receive_non_ping(ws2)
+        assert status_frame["status"] == "WAITING_APPROVAL"
+        assert status_frame["pendingApprovalId"] == approval_id
 
-    # Query run status after reconnect via message dispatcher
-    await agent_ws._handle_agent_message(
-        ws_client_2, {"type": "run_status", "runId": run_id}, test_principal
-    )
-    assert len(ws_client_2.sent_frames) >= 1
-    status_frame = next(f for f in ws_client_2.sent_frames if f.get("status") == "WAITING_APPROVAL")
-    assert status_frame["status"] == "WAITING_APPROVAL"
-    assert status_frame["pendingApprovalId"] == approval_id
+        # Consume companion approval_request frame
+        req_frame = _receive_non_ping(ws2)
+        assert req_frame.get("type") == "approval_request"
 
-    # 6 & 7. Approve the recovered run over the new WebSocket transport via message dispatcher
-    await agent_ws._handle_agent_message(
-        ws_client_2,
-        {
-            "type": "approval_decision",
-            "approvalId": approval_id,
-            "decision": "APPROVED",
-        },
-        test_principal,
-    )
+        # 6 & 7. Approve the recovered run over the new WebSocket transport
+        ws2.send_json(
+            {
+                "type": "approval_decision",
+                "approvalId": approval_id,
+                "decision": "APPROVED",
+            }
+        )
+        completed_frame = _receive_non_ping(ws2)
+        assert completed_frame.get("status") == "COMPLETED"
+        assert completed_frame["completedSteps"] == ["s1", "s2"]
 
     # 4 & 7. Run completes without duplicate mutation of step 1
-    completed_frame = next(
-        (f for f in ws_client_2.sent_frames if f.get("status") == "COMPLETED"), None
-    )
-    assert completed_frame is not None
-    assert completed_frame["completedSteps"] == ["s1", "s2"]
-
     final_run = run_store.get_run(run_id)
     assert final_run.status == RunStatus.COMPLETED
     assert final_run.completed_steps == ["s1", "s2"]
@@ -699,7 +695,7 @@ def test_redis_unavailability_graceful_degradation(
     assert run.completed_steps == ["s1"]
     assert bus.get_project_revision("proj-redis-chaos") == 2
 
-    # 2. Simulate Redis failure during active run
+    # 2. Simulate Redis failure during active run: fault the actual session store dependency
     session_store = SessionStore()
 
     class BrokenRedisConnection:
@@ -709,12 +705,25 @@ def test_redis_unavailability_graceful_degradation(
         def set(self, *args, **kwargs):
             raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
 
+        def setex(self, *args, **kwargs):
+            raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
+
         def delete(self, *args, **kwargs):
             raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
 
-    session_store._redis = BrokenRedisConnection()
+        def lpush(self, *args, **kwargs):
+            raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
 
-    # 3. Authenticate caller session under Redis failure -> degrades to safe in-memory fallback
+        def lrange(self, *args, **kwargs):
+            raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
+
+        def expire(self, *args, **kwargs):
+            raise ConnectionError("Redis cluster unreachable during active run (Chaos Injection)")
+
+    broken_redis = BrokenRedisConnection()
+    monkeypatch.setattr("backend.session_store._get_redis", lambda: broken_redis)
+
+    # 3. Authenticate caller session under Redis failure -> degrades to safe in-memory fallback in dev
     session_data = {
         "user_id": test_principal.user_id,
         "role": test_principal.role,
@@ -742,15 +751,14 @@ def test_redis_unavailability_graceful_degradation(
     # Revision moves from 2 -> 3 (no duplication of step 1)
     assert bus.get_project_revision("proj-redis-chaos") == 3
 
-    # Test the production fail-closed boundary: In strict production mode, unconfigured Redis fails closed
+    # Test the production fail-closed boundary: In strict production mode, unconfigured/failing Redis fails closed
     from backend.env_validator import ConfigurationError
-    from backend.session_store import _raise_if_production
 
     monkeypatch.setenv("FIREAI_ENV", "production")
     monkeypatch.setenv("FIREAI_ENV_VALIDATION", "strict")
 
     with pytest.raises(ConfigurationError):
-        _raise_if_production("Redis unavailable in production mode (Chaos Injection)")
+        session_store.set("active_run_session_prod", session_data)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -91,21 +91,41 @@ class TestTrustedProxy:
 
 
 class TestProxyEnabled:
-    """When Cloudflare/Akamai integration is enabled, edge headers are trusted."""
+    """When Cloudflare/Akamai integration is enabled, edge headers are trusted ONLY from trusted peers."""
 
-    def test_cf_header_trusted_when_enabled(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.delenv("TRUSTED_PROXIES", raising=False)
+    def test_cf_header_trusted_from_trusted_proxy(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
         monkeypatch.setenv("CF_ENABLED", "true")
 
         req = _make_request("10.0.0.1", {"CF-Connecting-IP": "6.6.6.6"})
         assert get_remote_address(req) == "6.6.6.6"
 
-    def test_akamai_header_trusted_when_enabled(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.delenv("TRUSTED_PROXIES", raising=False)
+    def test_cf_header_ignored_from_untrusted_peer_even_if_cf_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+        monkeypatch.setenv("CF_ENABLED", "true")
+
+        # Untrusted direct peer connecting directly with forged CF-Connecting-IP header
+        req = _make_request("198.51.100.2", {"CF-Connecting-IP": "1.1.1.1"})
+        assert get_remote_address(req) == "198.51.100.2"
+
+    def test_akamai_header_trusted_from_trusted_proxy(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
         monkeypatch.setenv("AKAMAI_ENABLED", "true")
 
         req = _make_request("10.0.0.1", {"True-Client-IP": "6.6.6.6"})
         assert get_remote_address(req) == "6.6.6.6"
+
+    def test_akamai_header_ignored_from_untrusted_peer_even_if_akamai_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+        monkeypatch.setenv("AKAMAI_ENABLED", "true")
+
+        # Untrusted direct peer connecting directly with forged True-Client-IP header
+        req = _make_request("198.51.100.2", {"True-Client-IP": "1.1.1.1"})
+        assert get_remote_address(req) == "198.51.100.2"
 
     def test_edge_headers_beat_xff(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
