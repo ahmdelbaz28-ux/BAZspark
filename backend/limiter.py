@@ -82,33 +82,31 @@ def get_remote_address(request: Request) -> str:
     Returns "0.0.0.0" if no IP can be determined (should never happen
     in practice, but prevents a None key_func crash if it does).
     """
-    edge_headers_trusted = _cdn_enabled() or _peer_is_trusted_proxy(request)
-
-    # 1. Cloudflare CF-Connecting-IP — canonical client IP behind Cloudflare
-    if edge_headers_trusted:
+    # SECURITY (C-01 & Phase 13 Hardening): Proxy headers are trusted ONLY
+    # when the direct TCP peer is confirmed to be a configured trusted proxy.
+    if _peer_is_trusted_proxy(request):
+        # 1. Cloudflare CF-Connecting-IP
         cf_ip = request.headers.get("CF-Connecting-IP")
         if cf_ip:
             ip = cf_ip.strip().split(",")[0].strip()
             if ip:
                 return ip
 
-    # 2. Akamai True-Client-IP — canonical client IP behind Akamai
-    if edge_headers_trusted:
+        # 2. Akamai True-Client-IP
         true_client_ip = request.headers.get("True-Client-IP")
         if true_client_ip:
             ip = true_client_ip.strip().split(",")[0].strip()
             if ip:
                 return ip
 
-    # 3. X-Forwarded-For — last hop only, and only from a trusted proxy
-    if _peer_is_trusted_proxy(request):
+        # 3. X-Forwarded-For — last hop from trusted proxy
         xff = request.headers.get("X-Forwarded-For")
         if xff:
             ip = xff.split(",")[-1].strip()
             if ip:
                 return ip
 
-    # 4. Direct connection (local dev, or no proxy in front)
+    # 4. Direct connection (untrusted peer, local dev, or no proxy)
     if request.client and request.client.host:
         return request.client.host
 

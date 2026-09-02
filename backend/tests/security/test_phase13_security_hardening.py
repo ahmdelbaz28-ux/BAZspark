@@ -272,12 +272,12 @@ def test_admin_key_non_admin_rbac_rejection_with_master_token(
 
 
 def test_get_client_ip_rejects_untrusted_edge_headers(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Client-supplied CF-Connecting-IP / Akamai headers must NOT be trusted unless CDN/proxy is enabled."""
+    """Client-supplied CF-Connecting-IP / Akamai headers must NOT be trusted from untrusted peers even if CDN is enabled."""
     from starlette.requests import Request
 
-    monkeypatch.delenv("CF_ENABLED", raising=False)
-    monkeypatch.delenv("AKAMAI_ENABLED", raising=False)
-    monkeypatch.delenv("TRUSTED_PROXIES", raising=False)
+    monkeypatch.setenv("CF_ENABLED", "true")
+    monkeypatch.setenv("AKAMAI_ENABLED", "true")
+    monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
 
     scope = {
         "type": "http",
