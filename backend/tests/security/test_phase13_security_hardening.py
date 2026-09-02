@@ -12,13 +12,12 @@ Mandated by Phase 13 Governing Contract & Master Plan:
 
 from __future__ import annotations
 
-import os
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import app
-from backend.auth_utils import validate_api_key_credential, resolve_credential, _is_valid_env_key
 from backend.admin_protection import _get_client_ip, is_master_token_configured
+from backend.app import app
+from backend.auth_utils import _is_valid_env_key, resolve_credential, validate_api_key_credential
 from backend.core.prompt_shield import PromptInjectionShield
 from backend.rbac import Role
 from fireai.infrastructure.topology_graph_service import (
@@ -228,7 +227,6 @@ def test_admin_key_get_endpoints_require_master_admin_token(client: TestClient, 
 def test_admin_key_non_admin_rbac_rejection_with_master_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     """Non-admin callers (e.g. engineer/viewer) with valid Master Token are rejected by RBAC on /api/admin/keys."""
     from backend.api_keys import add_api_key
-    from backend.rbac import Role
 
     keys_file = str(tmp_path / "api_keys.json")
     secret_file = str(tmp_path / "api_keys.secret")
@@ -302,7 +300,6 @@ def test_repeated_401_throttling_triggers_429(client: TestClient, monkeypatch: p
     """Repeated failed authentication attempts from an IP must be throttled with HTTP 429."""
     from backend.security_middleware import _failed_auth_counter
 
-    test_ip = "192.0.2.77"
     _failed_auth_counter.clear()
 
     # Issue 20 unauthenticated requests (threshold)
