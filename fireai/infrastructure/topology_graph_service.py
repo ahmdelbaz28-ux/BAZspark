@@ -50,7 +50,7 @@ NEO4J_URI_DEFAULT = "bolt://localhost:7687"
 NEO4J_USER_ENV = "NEO4J_USER"
 NEO4J_USER_DEFAULT = "neo4j"
 NEO4J_PASSWORD_ENV = "NEO4J_PASSWORD"
-NEO4J_PASSWORD_DEFAULT = "etap_password"
+NEO4J_PASSWORD_DEFAULT = ""  # Hardcoded default passwords forbidden in Phase 13
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +232,12 @@ class TopologyGraphService:
     def _initialize(self) -> None:
         """Initialize Neo4j driver (lazy)."""
         if self._initialized:
+            return
+
+        if not self._password:
+            logger.info("No Neo4j password configured; topology graph using safe in-memory fallback.")
+            self._driver = None
+            self._initialized = True
             return
 
         try:

@@ -52,6 +52,8 @@ from __future__ import annotations
 
 import logging
 import os
+import time
+from collections import defaultdict
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -67,6 +69,77 @@ from backend.rbac import Role as _Role
 from backend.request_context import CorrelationIdMiddleware
 
 logger = logging.getLogger(__name__)
+
+# ── Repeated 401 Failure Rate Limiting (Phase 13 hardening) ────────────────
+_AUTH_FAILURE_WINDOW = 60.0  # seconds
+_AUTH_FAILURE_MAX_ATTEMPTS = int(os.getenv("AUTH_FAILURE_MAX_ATTEMPTS", "20"))
+_failed_auth_counter: dict[str, list[float]] = defaultdict(list)
+
+
+def _extract_client_ip_from_scope(scope: Scope) -> str:
+    """Extract client IP from ASGI scope with trusted proxy and CDN support."""
+    headers_list = scope.get("headers", [])
+    headers: dict[bytes, bytes] = {}
+    for k, v in headers_list:
+        headers[k.lower()] = v
+
+    peer = scope.get("client")
+    peer_host = peer[0] if peer else ""
+
+    trusted_proxies = [
+        p.strip() for p in os.getenv("TRUSTED_PROXIES", "").split(",") if p.strip()
+    ]
+    cdn_enabled = any(
+        os.getenv(v, "false").strip().lower() in ("true", "1", "yes", "on")
+        for v in ("CF_ENABLED", "AKAMAI_ENABLED")
+    )
+    edge_trusted = cdn_enabled or (peer_host in trusted_proxies)
+
+    if edge_trusted:
+        if b"cf-connecting-ip" in headers:
+            return (
+                headers[b"cf-connecting-ip"]
+                .decode("latin-1", errors="replace")
+                .split(",")[0]
+                .strip()
+            )
+        if b"true-client-ip" in headers:
+            return (
+                headers[b"true-client-ip"]
+                .decode("latin-1", errors="replace")
+                .split(",")[0]
+                .strip()
+            )
+        if b"akamai-client-ip" in headers:
+            return (
+                headers[b"akamai-client-ip"]
+                .decode("latin-1", errors="replace")
+                .split(",")[0]
+                .strip()
+            )
+
+    if peer_host in trusted_proxies and b"x-forwarded-for" in headers:
+        xff = headers[b"x-forwarded-for"].decode("latin-1", errors="replace")
+        return xff.split(",")[-1].strip()
+
+    return peer_host if peer_host else "0.0.0.0"
+
+
+def _check_and_record_auth_failure(ip: str) -> bool:
+    """
+    Record a failed auth attempt.
+
+    Returns True if within rate limits, False if throttled (429).
+    """
+    now = time.time()
+    _failed_auth_counter[ip] = [
+        t for t in _failed_auth_counter[ip] if now - t < _AUTH_FAILURE_WINDOW
+    ]
+    if len(_failed_auth_counter[ip]) >= _AUTH_FAILURE_MAX_ATTEMPTS:
+        return False
+    _failed_auth_counter[ip].append(now)
+    return True
+
 
 
 # ── Security header constants ───────────────────────────────────────────────
@@ -449,13 +522,12 @@ class ApiKeyMiddleware:
                 if resolved is not None:
                     role, principal = resolved
                 if role is None:
-                    # Invalid API key — return 401 directly.
-                    # Don't reveal whether the key exists; just "unauthorized".
-                    await self._send_401(scope, send)
+                    # Invalid API key — throttle repeated failures, otherwise return 401.
+                    await self._handle_auth_failure(scope, send)
                     return
             else:
-                # No API key on non-public endpoint — return 401.
-                await self._send_401(scope, send)
+                # No API key on non-public endpoint — throttle repeated failures, otherwise return 401.
+                await self._handle_auth_failure(scope, send)
                 return
 
             if role is not None:
@@ -467,6 +539,39 @@ class ApiKeyMiddleware:
                     scope["fireai_principal"] = principal
 
         await self.app(scope, receive, send)
+
+    async def _handle_auth_failure(self, scope: Scope, send: Send) -> None:
+        """Handle authentication failure with IP-based throttling to prevent brute-force attacks."""
+        client_ip = _extract_client_ip_from_scope(scope)
+        if not _check_and_record_auth_failure(client_ip):
+            logger.warning("Authentication failure rate limit exceeded for IP=%s (429 emitted)", client_ip)
+            await self._send_429(scope, send)
+            return
+        await self._send_401(scope, send)
+
+    @staticmethod
+    async def _send_429(scope: Scope, send: Send) -> None:
+        """Send a 429 Too Many Requests response for repeated auth failures."""
+        body = b'{"detail":"Too many failed authentication attempts. Please try again later.","success":false}'
+        headers = [
+            (b"content-type", b"application/json"),
+            (b"retry-after", b"60"),
+            (b"content-length", str(len(body)).encode("ascii")),
+        ]
+        for name, value in _STATIC_SECURITY_HEADERS.items():
+            headers.append((name.encode("latin-1"), value.encode("latin-1")))
+        csp_value = _build_csp(scope)
+        headers.append((b"content-security-policy", csp_value.encode("latin-1")))
+        if _should_emit_hsts(scope):
+            headers.append((b"strict-transport-security", _HSTS_HEADER.encode("latin-1")))
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 429,
+                "headers": headers,
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
     @staticmethod
     async def _send_401(scope: Scope, send: Send) -> None:

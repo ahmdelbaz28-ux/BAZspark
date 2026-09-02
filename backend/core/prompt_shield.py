@@ -13,15 +13,29 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Injection patterns targeted for neutralisation
+# Comprehensive permanent adversarial injection patterns suite (Phase 13 hardening)
 _INJECTION_PATTERNS = [
-    re.compile(r"ignore\s+(?:all\s+)?(?:previous|prior)\s+instructions?", re.IGNORECASE),
+    # 1. Instruction Overrides & Reset Attempts
+    re.compile(r"ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions?", re.IGNORECASE),
+    re.compile(r"disregard\s+(?:all\s+)?(?:previous|prior|above)\s+instructions?", re.IGNORECASE),
+    re.compile(r"forget\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions?|rules|guidelines)", re.IGNORECASE),
     re.compile(r"system\s+override\s*:", re.IGNORECASE),
     re.compile(r"you\s+are\s+now\s+(?:a|an)\s+", re.IGNORECASE),
-    re.compile(r"<\s*(?:system|assistant|admin)\s*>", re.IGNORECASE),
+    # 2. Roleplay Jailbreaks & Unrestricted Persona Modes
+    re.compile(r"\b(?:DAN\s+mode|developer\s+mode\s+enabled|jailbreak\s+mode|unrestricted\s+mode|do\s+anything\s+now)\b", re.IGNORECASE),
+    # 3. LLM Special Delimiters & Framing Tokens
+    re.compile(r"<\s*(?:system|assistant|admin|user|function|tool_call|tool_response)\s*>", re.IGNORECASE),
+    re.compile(r"<\s*/\s*(?:system|assistant|admin|user|function|tool_call|tool_response)\s*>", re.IGNORECASE),
+    re.compile(r"<\|im_start\|>|<\|im_end\|>|\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>|<s>|</s>", re.IGNORECASE),
+    # 4. System Prompt Extraction & Secret Harvesting
+    re.compile(r"(?:repeat|print|output|display|show|reveal|leak|dump)\s+(?:all\s+)?(?:the\s+)?(?:words\s+above|system\s+prompt|initial\s+prompt|system\s+instructions|developer\s+message|admin\s+keys|raw\s+admin\s+keys|secret\s+keys)", re.IGNORECASE),
+    # 5. External Exfiltration Links & Webhook Calls
     re.compile(r"(?:https?://[^\s<>\"']+|ftp://[^\s<>\"']+)", re.IGNORECASE),
-    re.compile(r"(?:DROP\s+TABLE|DELETE\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET)", re.IGNORECASE),
-    re.compile(r"bypass\s+(?:security|policy|guardrails|auth)", re.IGNORECASE),
+    re.compile(r"!\[.*?\]\(https?://[^\)]+\)", re.IGNORECASE),
+    # 6. Database / Mutation SQL Hijacking
+    re.compile(r"(?:DROP\s+TABLE|DELETE\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|UNION\s+SELECT|EXEC\s*\()", re.IGNORECASE),
+    # 7. Security Policy, Guardrail & RBAC Bypasses
+    re.compile(r"bypass\s+(?:security|policy|guardrails?|auth|rbac|filters?)", re.IGNORECASE),
 ]
 
 

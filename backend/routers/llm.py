@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.core.openapi_contracts import StandardizedAPIRoute
+from backend.core.prompt_shield import PromptInjectionShield
 from backend.limiter import limiter
 from backend.llm_constants import AI_DISCLAIMER, PERSONAE
 from backend.rbac import Permission
@@ -208,13 +209,16 @@ async def llm_chat(request: Request, req: ChatRequest) -> dict[str, Any]:
             },
         )
     try:
+        clean_prompt, was_sanitized, _ = PromptInjectionShield.sanitize_user_prompt(req.prompt)
+        if was_sanitized:
+            logger.warning("LLM chat prompt sanitized against adversarial injection vectors")
         # F5a: persona is server-owned — resolve the whitelisted role to
         # the fixed persona text. The client can no longer inject a
         # free-text system prompt via /llm/chat.
         system_msg = PERSONAE[req.role]
         history = [m.model_dump() for m in req.history] if req.history else None
         result: LLMResponse = await svc.chat(
-            req.prompt,
+            clean_prompt,
             system=system_msg,
             model=req.model,
             temperature=req.temperature,
@@ -373,11 +377,14 @@ async def llm_chat_stream(request: Request, req: ChatRequest) -> StreamingRespon
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
+            clean_prompt, was_sanitized, _ = PromptInjectionShield.sanitize_user_prompt(req.prompt)
+            if was_sanitized:
+                logger.warning("LLM chat stream prompt sanitized against adversarial injection vectors")
             # F5a/F5b: server-owned persona + bounded history window.
             system_msg = PERSONAE[req.role]
             history = [m.model_dump() for m in req.history] if req.history else None
             async for event in svc.chat_stream(
-                req.prompt,
+                clean_prompt,
                 system=system_msg,
                 model=req.model,
                 temperature=req.temperature,

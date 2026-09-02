@@ -73,31 +73,22 @@ _rate_limit_counter: dict[str, list[float]] = defaultdict(list)
 # ═══ Helpers ═════════════════════════════════════════════════════════════
 def _get_client_ip(request: Request) -> str:
     """
-    Extract client IP, respecting X-Forwarded-For ONLY from trusted proxies.
+    Extract client IP, respecting edge/proxy headers ONLY from verified sources.
 
-    SECURITY: X-Forwarded-For can be spoofed by clients. We only trust it
-    when we know we're behind a trusted proxy (Cloudflare, Akamai, or
-    explicitly configured trusted proxies).
+    SECURITY (Phase 13 hardening):
+      1. Cloudflare/Akamai headers (CF-Connecting-IP / True-Client-IP / Akamai-Client-IP)
+         are trusted only when CDN integration is enabled (CF_ENABLED/AKAMAI_ENABLED)
+         or the direct TCP peer is a configured trusted proxy.
+      2. X-Forwarded-For is only honored when the TCP peer is in TRUSTED_PROXIES,
+         and takes the last hop (proxy appended), not spoofed first hops.
+      3. Direct TCP peer host is used otherwise.
     """
-    # Check if we're behind a trusted proxy
-    trusted_proxies = os.getenv("TRUSTED_PROXIES", "").split(",")
-    trusted_proxies = [p.strip() for p in trusted_proxies if p.strip()]
+    from backend.limiter import get_remote_address
 
-    # Always trust Cloudflare and Akamai IPs
-    cf_headers = ["cf-connecting-ip", "akamai-client-ip"]
-    for header in cf_headers:
-        cf_ip = request.headers.get(header)
-        if cf_ip:
-            return cf_ip.strip()
-
-    # For X-Forwarded-For, only trust if we're behind a known proxy
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded and trusted_proxies:
-        client_ip = request.client.host if request.client else ""
-        if client_ip in trusted_proxies:
-            return forwarded.split(",")[0].strip()
-
-    return request.client.host if request.client else "unknown"
+    ip = get_remote_address(request)
+    if ip and ip != "0.0.0.0":
+        return ip
+    return request.client.host if request.client and request.client.host else "unknown"
 
 
 def _check_rate_limit(ip: str) -> bool:

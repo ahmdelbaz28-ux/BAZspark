@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from backend.auth import require_permission
 from backend.core.openapi_contracts import StandardizedAPIRoute
+from backend.core.prompt_shield import PromptInjectionShield
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,10 @@ async def chat_with_copilot(request: ChatRequest) -> dict[str, Any]:
     """
     try:
         logger.info("Processing engineering chat request")
-        result = ai_copilot.process_request(request.request, ["AutoCAD", "ETAP", "Revit"])
+        clean_prompt, was_sanitized, _ = PromptInjectionShield.sanitize_user_prompt(request.request)
+        if was_sanitized:
+            logger.warning("Engineering copilot prompt sanitized against adversarial injection vectors")
+        result = ai_copilot.process_request(clean_prompt, ["AutoCAD", "ETAP", "Revit"])
         # Extract the response text for the chat UI
         response_text = result.get("response", result.get("message", "Processing complete."))
         return {
