@@ -14,10 +14,10 @@ Contractual Scenarios Mandated by Phase 13 Governing Contract (9 Total Scenarios
 
 from __future__ import annotations
 
-import asyncio
 import concurrent.futures
 import time
 from typing import Any
+
 import pytest
 
 from backend.core.agent_run_orchestrator import (
@@ -43,7 +43,6 @@ from backend.core.command_bus import (
     DomainCommand,
 )
 from backend.core.control_request import ControlRequest
-from backend.core.generic_planner import GenericWorkflowPlanner
 from backend.core.planner_telemetry import default_planner_telemetry
 from backend.core.state_store import CommandStateStore
 from backend.core.workflow_planner import (
@@ -448,7 +447,7 @@ def test_concurrent_approval_race_is_atomic(
     # Exactly one decision succeeds; the other is rejected as already decided / invalid state
     assert len(results) == 1
     assert len(errors) == 1
-    assert isinstance(errors[0], (InvalidRunStateError, StaleApprovalError, ApprovalAlreadyDecidedError))
+    assert isinstance(errors[0], InvalidRunStateError | StaleApprovalError | ApprovalAlreadyDecidedError)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -718,8 +717,8 @@ def test_redis_unavailability_graceful_degradation(
     assert bus.get_project_revision("proj-redis-chaos") == 3
 
     # Test the production fail-closed boundary: In strict production mode, unconfigured Redis fails closed
-    from backend.session_store import _raise_if_production
     from backend.env_validator import ConfigurationError
+    from backend.session_store import _raise_if_production
 
     monkeypatch.setenv("FIREAI_ENV", "production")
     monkeypatch.setenv("FIREAI_ENV_VALIDATION", "strict")
