@@ -278,3 +278,54 @@ def test_idempotency_key_payload_conflict_rejection() -> None:
         store.check_or_set(key2)
 
     assert "Idempotency conflict" in str(exc_info.value)
+
+
+# -----------------------------------------------------------------------------
+# 9. RetryPolicy Backoff Delay & Jitter Invariants
+# -----------------------------------------------------------------------------
+
+
+def test_retry_policy_calculate_delay_invariants() -> None:
+    """Verify RetryPolicy calculate_delay bounds, negative attempt handling, and jitter modes."""
+    policy = RetryPolicy(
+        initial_backoff_seconds=1.0,
+        max_backoff_seconds=8.0,
+        backoff_multiplier=2.0,
+        jitter=True,
+    )
+
+    # Negative attempt returns 0.0
+    assert policy.calculate_delay(-1) == 0.0
+    assert policy.calculate_delay(-10) == 0.0
+
+    # Without seed: result must be in [0.5 * capped, capped]
+    for attempt in range(5):
+        raw = 1.0 * (2.0**attempt)
+        capped = min(raw, 8.0)
+        delay = policy.calculate_delay(attempt)
+        assert 0.5 * capped <= delay <= capped, f"Attempt {attempt} delay {delay} out of bounds"
+
+    # With seed: must be strictly deterministic
+    delay_seeded_1 = policy.calculate_delay(attempt=2, seed=42.0)
+    delay_seeded_2 = policy.calculate_delay(attempt=2, seed=42.0)
+    assert delay_seeded_1 == delay_seeded_2
+
+    # Without jitter: exact exponential backoff capped at max
+    no_jitter_policy = RetryPolicy(
+        initial_backoff_seconds=1.0,
+        max_backoff_seconds=8.0,
+        backoff_multiplier=2.0,
+        jitter=False,
+    )
+    assert no_jitter_policy.calculate_delay(0) == 1.0
+    assert no_jitter_policy.calculate_delay(1) == 2.0
+    assert no_jitter_policy.calculate_delay(2) == 4.0
+    assert no_jitter_policy.calculate_delay(3) == 8.0
+    assert no_jitter_policy.calculate_delay(10) == 8.0
+
+    # Serialization
+    d = policy.to_dict()
+    assert d["initial_backoff_seconds"] == 1.0
+    assert d["max_backoff_seconds"] == 8.0
+    assert d["jitter"] is True
+

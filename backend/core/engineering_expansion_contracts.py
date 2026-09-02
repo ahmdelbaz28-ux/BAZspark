@@ -660,7 +660,7 @@ def handle_digital_twin_evaluate_risk(payload: dict[str, Any]) -> dict[str, Any]
 def handle_copilot_translate_intent(payload: dict[str, Any]) -> dict[str, Any]:
     """Translate natural language engineering queries into structured parameters and capability mappings."""
     intent_text = str(payload.get("natural_language_intent", "")).strip()
-    str(payload.get("target_standard", "AUTO")).upper()
+    target_standard = str(payload.get("target_standard", "AUTO")).upper()
 
     intent_lower = intent_text.lower()
     extracted_params: dict[str, Any] = {}
@@ -694,6 +694,9 @@ def handle_copilot_translate_intent(payload: dict[str, Any]) -> dict[str, Any]:
         recommended_cap = CAP_BIM_VALIDATE_CLASH
         extracted_params = {"clearance_tolerance_m": 0.15}
         standards = ["IFC 4.3 BuildingSMART"]
+
+    if target_standard != "AUTO" and target_standard not in standards:
+        standards.append(target_standard)
 
     result = {
         "original_intent": intent_text,
@@ -819,7 +822,6 @@ def handle_simulation_smoke_flow(payload: dict[str, Any]) -> dict[str, Any]:
     ambient_temp_c = float(payload.get("ambient_temp_c", 20.0))
 
     floor_area_m2 = length_m * width_m
-    floor_area_m2 * height_m
 
     # Heskestad fire plume mass flow rate and layer descent formulation
     # z_layer(t) = H / (1 + (t / t_char)^(1.5))
