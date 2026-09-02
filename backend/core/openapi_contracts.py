@@ -6,6 +6,8 @@ eliminating repetitive per-endpoint boilerplate while maintaining strict
 OpenAPI schema contracts (resolves SonarCloud python:S8415).
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import Any, TypeVar
 

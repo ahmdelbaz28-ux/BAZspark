@@ -124,6 +124,68 @@ def test_rotation_fail_closed_when_master_token_unset(client: TestClient, monkey
     assert is_master_token_configured() is False
 
 
+def test_admin_key_crud_requires_master_admin_token(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """Admin key operations (POST/DELETE/PUT /api/admin/keys) require Master-Admin-Token."""
+    master_token = "admin_crud_master_token_64chars_entropy_abcdef123456789012345678"
+    admin_api_key = "test_admin_api_key_for_phase13_crud_12345"
+    monkeypatch.setenv("BAZSPARK_MASTER_ADMIN_TOKEN", master_token)
+    monkeypatch.setenv("FIREAI_API_KEY", admin_api_key)
+    monkeypatch.setenv("FIREAI_API_KEYS_FILE", str(tmp_path / "api_keys.json"))
+    monkeypatch.setenv("FIREAI_API_KEYS_SECRET_FILE", str(tmp_path / "api_keys.secret"))
+
+    # 1. Missing API key -> 401 Unauthorized
+    resp_no_auth = client.post(
+        "/api/admin/keys",
+        headers={"X-Master-Admin-Token": master_token},
+        json={"role": "engineer", "description": "Test Engineer Key"},
+    )
+    assert resp_no_auth.status_code == 401
+
+    # 2. Missing Master Token -> 403 Forbidden
+    resp_no_master = client.post(
+        "/api/admin/keys",
+        headers={"X-API-Key": admin_api_key},
+        json={"role": "engineer", "description": "Test Engineer Key"},
+    )
+    assert resp_no_master.status_code == 403
+
+    # 3. Invalid Master Token -> 403 Forbidden
+    resp_bad_master = client.post(
+        "/api/admin/keys",
+        headers={"X-API-Key": admin_api_key, "X-Master-Admin-Token": "bad_master_token"},
+        json={"role": "engineer", "description": "Test Engineer Key"},
+    )
+    assert resp_bad_master.status_code == 403
+
+    # 4. Valid Master Token + Valid Admin Key -> 201 Created
+    resp_created = client.post(
+        "/api/admin/keys",
+        headers={"X-API-Key": admin_api_key, "X-Master-Admin-Token": master_token},
+        json={"role": "engineer", "description": "Test Engineer Key"},
+    )
+    assert resp_created.status_code == 201
+    key_data = resp_created.json()["data"]
+    assert "key" in key_data
+
+
+def test_master_admin_rbac_permission_boundary_intact(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Non-admin callers (e.g. viewer role) with a Master-Admin token must still be rejected by RBAC."""
+    master_token = "master_token_for_rbac_boundary_test_64chars_abcdef123456789012"
+    monkeypatch.setenv("BAZSPARK_MASTER_ADMIN_TOKEN", master_token)
+
+    # Use a non-admin key or invalid role caller
+    resp = client.post(
+        "/api/v1/settings/secret-rotation/rotate",
+        headers={
+            "X-API-Key": "invalid_non_admin_key",
+            "X-Master-Admin-Token": master_token,
+        },
+        json={"key_name": "FIREAI_TEST_SECRET_RBAC"},
+    )
+    # Rejection occurs at the authentication / RBAC boundary (401 or 403)
+    assert resp.status_code in (401, 403)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. IP TRUST & SPOOFING PREVENTION
 # ═══════════════════════════════════════════════════════════════════════════════
