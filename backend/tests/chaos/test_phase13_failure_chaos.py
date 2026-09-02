@@ -246,7 +246,7 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
         "steps": steps,
         "approvalMode": "AUTO",
     }
-    await agent_ws._handle_run_start(ws_client_1, test_principal, start_msg)
+    await agent_ws._handle_agent_message(ws_client_1, start_msg, test_principal)
 
     # Verify run entered WAITING_APPROVAL on step 2
     assert len(ws_client_1.sent_frames) >= 1
@@ -276,22 +276,22 @@ async def test_websocket_interruption_mid_run_preserves_persistent_state(
     # 5. Reconnect: New client opens clean WebSocket connection
     ws_client_2 = ChaosMockWebSocket()
 
-    # Query run status after reconnect
-    await agent_ws._handle_run_status(ws_client_2, test_principal, {"type": "run_status", "runId": run_id})
+    # Query run status after reconnect via message dispatcher
+    await agent_ws._handle_agent_message(ws_client_2, {"type": "run_status", "runId": run_id}, test_principal)
     assert len(ws_client_2.sent_frames) >= 1
     status_frame = next(f for f in ws_client_2.sent_frames if f.get("status") == "WAITING_APPROVAL")
     assert status_frame["status"] == "WAITING_APPROVAL"
     assert status_frame["pendingApprovalId"] == approval_id
 
-    # 6 & 7. Approve the recovered run over the new WebSocket transport
-    await agent_ws._handle_approval_decision(
+    # 6 & 7. Approve the recovered run over the new WebSocket transport via message dispatcher
+    await agent_ws._handle_agent_message(
         ws_client_2,
-        test_principal,
         {
             "type": "approval_decision",
             "approvalId": approval_id,
             "decision": "APPROVED",
         },
+        test_principal,
     )
 
     # 4 & 7. Run completes without duplicate mutation of step 1
