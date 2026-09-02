@@ -217,33 +217,13 @@ def _record_failed_attempt(client_ip: str) -> None:
 
 
 def _effective_client_ip(request: Request) -> str:
-    """Return the real client IP, trusting proxy headers only from known proxies.
+    """Return the real client IP, trusting proxy headers only from verified proxies."""
+    from backend.limiter import get_remote_address
 
-    VULN-002 FIX: previously the bucket was keyed on ``request.client.host``
-    — the TCP peer. Behind a reverse proxy (nginx in the docker stack) every
-    client shares that peer IP, so 5 failed attempts from one attacker locked
-    out ALL users for the window. We now resolve the effective client IP the
-    same way ``backend/admin_protection._get_client_ip`` does:
-      - Cloudflare/Akamai client-IP headers are trusted (set at the edge).
-      - ``X-Forwarded-For`` is spoofable, so it is only honored when the TCP
-        peer is a configured trusted proxy, and we take the LAST entry (the
-        value the proxy appended from ``$remote_addr``, not client-supplied).
-      - Otherwise fall back to the TCP peer.
-    """
-    for header in ("cf-connecting-ip", "akamai-client-ip"):
-        ip = request.headers.get(header)
-        if ip:
-            return ip.strip()
-
-    trusted = [p.strip() for p in os.environ.get("TRUSTED_PROXIES", "").split(",") if p.strip()]
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded and trusted and request.client:
-        if request.client.host in trusted:
-            last = forwarded.split(",")[-1].strip()
-            if last:
-                return last
-
-    return request.client.host if request.client else "unknown"
+    ip = get_remote_address(request)
+    if ip and ip != "0.0.0.0":
+        return ip
+    return request.client.host if request.client and request.client.host else "unknown"
 
 
 # ENDPOINTS

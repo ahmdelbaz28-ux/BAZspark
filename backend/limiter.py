@@ -99,7 +99,14 @@ def get_remote_address(request: Request) -> str:
             if ip:
                 return ip
 
-        # 3. X-Forwarded-For — last hop from trusted proxy
+        # 3. Akamai Akamai-Client-IP
+        akamai_ip = request.headers.get("Akamai-Client-IP")
+        if akamai_ip:
+            ip = akamai_ip.strip().split(",")[0].strip()
+            if ip:
+                return ip
+
+        # 4. X-Forwarded-For — last hop from trusted proxy
         xff = request.headers.get("X-Forwarded-For")
         if xff:
             ip = xff.split(",")[-1].strip()

@@ -285,7 +285,8 @@ def test_get_client_ip_rejects_untrusted_edge_headers(monkeypatch: pytest.Monkey
         "headers": [
             (b"cf-connecting-ip", b"203.0.113.199"),
             (b"true-client-ip", b"203.0.113.200"),
-            (b"x-forwarded-for", b"203.0.113.201"),
+            (b"akamai-client-ip", b"203.0.113.201"),
+            (b"x-forwarded-for", b"203.0.113.202"),
         ],
     }
     req = Request(scope)
@@ -311,6 +312,94 @@ def test_get_client_ip_honors_edge_headers_from_trusted_proxy(
     }
     req = Request(scope)
     assert _get_client_ip(req) == "203.0.113.50"
+
+
+def test_extract_client_ip_from_scope_rejects_untrusted_edge_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mandatory Test A-D: untrusted direct peer cannot influence client identity via proxy/CDN headers."""
+    from backend.security_middleware import _extract_client_ip_from_scope
+
+    monkeypatch.setenv("CF_ENABLED", "true")
+    monkeypatch.setenv("AKAMAI_ENABLED", "true")
+    monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+
+    untrusted_peer = ("198.51.100.77", 45678)
+
+    # A. Untrusted peer + CF_ENABLED=true + forged CF-Connecting-IP
+    scope_cf = {
+        "type": "http",
+        "client": untrusted_peer,
+        "headers": [(b"cf-connecting-ip", b"1.1.1.1")],
+    }
+    assert _extract_client_ip_from_scope(scope_cf) == "198.51.100.77"
+
+    # B. Untrusted peer + AKAMAI_ENABLED=true + forged True-Client-IP
+    scope_true = {
+        "type": "http",
+        "client": untrusted_peer,
+        "headers": [(b"true-client-ip", b"2.2.2.2")],
+    }
+    assert _extract_client_ip_from_scope(scope_true) == "198.51.100.77"
+
+    # C. Untrusted peer + forged Akamai-Client-IP
+    scope_akamai = {
+        "type": "http",
+        "client": untrusted_peer,
+        "headers": [(b"akamai-client-ip", b"3.3.3.3")],
+    }
+    assert _extract_client_ip_from_scope(scope_akamai) == "198.51.100.77"
+
+    # D. Untrusted peer + forged X-Forwarded-For
+    scope_xff = {
+        "type": "http",
+        "client": untrusted_peer,
+        "headers": [(b"x-forwarded-for", b"4.4.4.4, 5.5.5.5")],
+    }
+    assert _extract_client_ip_from_scope(scope_xff) == "198.51.100.77"
+
+
+def test_extract_client_ip_from_scope_honors_trusted_proxy_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mandatory Test E: trusted proxy peer + valid proxy headers are honored."""
+    from backend.security_middleware import _extract_client_ip_from_scope
+
+    monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+
+    trusted_peer = ("10.0.0.1", 12345)
+
+    # 1. CF-Connecting-IP
+    scope_cf = {
+        "type": "http",
+        "client": trusted_peer,
+        "headers": [(b"cf-connecting-ip", b"203.0.113.10")],
+    }
+    assert _extract_client_ip_from_scope(scope_cf) == "203.0.113.10"
+
+    # 2. True-Client-IP
+    scope_true = {
+        "type": "http",
+        "client": trusted_peer,
+        "headers": [(b"true-client-ip", b"203.0.113.20")],
+    }
+    assert _extract_client_ip_from_scope(scope_true) == "203.0.113.20"
+
+    # 3. Akamai-Client-IP
+    scope_akamai = {
+        "type": "http",
+        "client": trusted_peer,
+        "headers": [(b"akamai-client-ip", b"203.0.113.30")],
+    }
+    assert _extract_client_ip_from_scope(scope_akamai) == "203.0.113.30"
+
+    # 4. X-Forwarded-For (last hop)
+    scope_xff = {
+        "type": "http",
+        "client": trusted_peer,
+        "headers": [(b"x-forwarded-for", b"1.2.3.4, 203.0.113.40")],
+    }
+    assert _extract_client_ip_from_scope(scope_xff) == "203.0.113.40"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -344,6 +433,67 @@ def test_repeated_401_throttling_triggers_429(
     assert "retry-after" in throttled_resp.headers
 
     # Cleanup
+    _failed_auth_counter.clear()
+
+
+def test_repeated_401_throttling_cannot_be_bypassed_with_forged_proxy_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An attacker rotating forged proxy headers (CF/Akamai/XFF) cannot bypass 401 throttling."""
+    from backend.security_middleware import ApiKeyMiddleware, _failed_auth_counter
+
+    _failed_auth_counter.clear()
+    monkeypatch.setenv("CF_ENABLED", "true")
+    monkeypatch.setenv("AKAMAI_ENABLED", "true")
+    monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.1")
+
+    async def dummy_app(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"ok"})
+
+    middleware = ApiKeyMiddleware(dummy_app)
+
+    async def run_req(client_ip: str, headers_dict: dict[str, str]) -> int:
+        status_code = None
+        raw_headers = [
+            (k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in headers_dict.items()
+        ]
+        scope = {
+            "type": "http",
+            "path": "/api/v1/projects",
+            "client": (client_ip, 12345),
+            "headers": raw_headers,
+        }
+
+        async def dummy_receive():
+            return {"type": "http.request"}
+
+        async def dummy_send(msg):
+            nonlocal status_code
+            if msg["type"] == "http.response.start":
+                status_code = msg["status"]
+
+        await middleware(scope, dummy_receive, dummy_send)
+        return status_code
+
+    import asyncio
+
+    attacker_ip = "198.51.100.5"
+
+    # Attacker sends 20 failed auth attempts with rotated CF-Connecting-IP headers
+    for i in range(20):
+        code = asyncio.run(
+            run_req(attacker_ip, {"X-API-Key": f"bad_key_{i}", "CF-Connecting-IP": f"1.1.1.{i}"})
+        )
+        assert code == 401
+
+    # 21st attempt with yet another spoofed IP must be throttled with 429
+    throttled_code = asyncio.run(
+        run_req(attacker_ip, {"X-API-Key": "bad_key_21", "CF-Connecting-IP": "1.1.1.99"})
+    )
+    assert throttled_code == 429
+
+    # Clean up
     _failed_auth_counter.clear()
 
 
