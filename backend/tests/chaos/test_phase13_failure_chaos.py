@@ -253,7 +253,8 @@ def test_websocket_interruption_mid_run_preserves_persistent_state(
         "approvalMode": "AUTO",
     }
 
-    with client.websocket_connect("/api/v1/agent/ws", headers={"X-API-Key": auth_key}) as ws1:
+    ws1 = client.websocket_connect("/api/v1/agent/ws", headers={"X-API-Key": auth_key}).__enter__()
+    try:
         ws1.send_json(start_msg)
 
         # Receive run_status_update frame
@@ -270,11 +271,19 @@ def test_websocket_interruption_mid_run_preserves_persistent_state(
         # Step 1 committed (rev 1 -> 2)
         assert bus.get_project_revision("proj-ws-chaos") == 2
 
-        # 2. Abrupt transport interruption mid-run (RFC 6455 code 1006 Abnormal Closure)
-        # Drops transport connection abnormally while the run is halted in WAITING_APPROVAL.
-        ws1.close(code=1006)
+        # 2. Simulate abrupt transport / network interruption mid-run without sending
+        # a Close control frame (avoiding reserved code 1006 on the wire).
+        # Pop the normal close(1000) callback so NO Close control frame is emitted,
+        # and close the transport stream directly to simulate a dropped socket / connection reset.
+        if hasattr(ws1, "exit_stack") and hasattr(ws1.exit_stack, "_exit_callbacks"):
+            ws1.exit_stack._exit_callbacks.pop()
+        if hasattr(ws1, "portal") and hasattr(ws1, "_receive_tx"):
+            ws1.portal.call(ws1._receive_tx.aclose)
+    finally:
+        if hasattr(ws1, "exit_stack"):
+            ws1.exit_stack.close()
 
-    # 3. Verify server-side state remains durable in AgentRunStore despite transport drop
+    # 3. Verify server-side state remains durable in AgentRunStore despite transport failure
     persisted_run = run_store.get_run(run_id)
     assert persisted_run is not None
     assert persisted_run.status == RunStatus.WAITING_APPROVAL
