@@ -68,7 +68,7 @@ All six contract deliverables (**S1–S6**) have been authored and verified agai
 | **Planner Schema Validator** | `backend/core/planner_schema.py` | Strict JSON Schema and Pydantic validation enforcing DAG acyclicity, referential integrity, and non-empty IDs. |
 | **Disambiguation Engine** | `backend/core/disambiguation.py` | Detects missing parameters, ambiguous export formats, and non-silent fallthrough diagnostics. |
 | **Prompt Injection Shield** | `backend/core/prompt_shield.py` | Input sanitizer and file content isolation layer guaranteeing zero raw file text/bytes enter LLM prompts. |
-| **Generic Workflow Planner** | `backend/core/generic_planner.py` | Capability-agnostic dynamic planner using dynamic capability discovery, DAG synthesis, policy evaluation, and dry-run overlay. |
+| **Generic Workflow Planner** | `backend/core/generic_planner.py` | Capability-agnostic dynamic planner using dynamic capability discovery, DAG synthesis, policy evaluation, dry-run overlay, and canonical system prompt ([`_build_system_prompt`](file:///c:/Users/EWS-01/Desktop/BAZ/backend/core/generic_planner.py#L310)). |
 | **Unified Routing & Fallback** | `backend/core/workflow_planner.py` | Routes to generic planner as preferred path, captures fallback telemetry, and isolates frozen regex planner. |
 
 ---
