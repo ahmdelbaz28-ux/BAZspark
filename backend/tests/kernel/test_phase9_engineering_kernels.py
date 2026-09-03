@@ -246,9 +246,27 @@ class TestCopilotKernel:
     def test_intent_translation_marine_solas(self):
         result = handle_copilot_translate_intent({
             "natural_language_intent": "verify marine SOLAS compartment fire compliance in machinery space",
+            "target_standard": "solas",
         })
         assert result["detected_domain"] == "marine"
         assert result["recommended_capability"] == "marine.verify_solas_compliance"
+
+    def test_intent_translation_battery_and_etap(self):
+        res_battery = handle_copilot_translate_intent({
+            "natural_language_intent": "calculate battery standby 24 hours 1.8A alarm",
+        })
+        assert res_battery["detected_domain"] == "electrical"
+        assert res_battery["recommended_capability"] == "electrical.calculate_battery"
+
+        res_etap = handle_copilot_translate_intent({
+            "natural_language_intent": "run ETAP load flow study short circuit",
+        })
+        assert res_etap["detected_domain"] == "etap"
+
+        res_clash = handle_copilot_translate_intent({
+            "natural_language_intent": "detect bim ifc clash revit conduit",
+        })
+        assert res_clash["detected_domain"] == "bim"
 
     def test_design_recommendations_synthesis(self):
         result = handle_copilot_synthesize_recommendations({

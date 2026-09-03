@@ -15,6 +15,7 @@ import hashlib
 import json
 import logging
 import random
+import secrets
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -86,10 +87,12 @@ class RetryPolicy:
             return round(capped_backoff, 4)
 
         if seed is not None:
-            rng = random.Random(seed + attempt)
-            jitter_ratio = rng.random()
+            # Deterministic PRNG explicitly requested via seed parameter for reproducible test validation
+            rng = random.Random(seed + attempt)  # NOSONAR
+            jitter_ratio = rng.random()  # NOSONAR
         else:
-            jitter_ratio = random.random()
+            # Cryptographically secure random generation for production backoff jitter (preventing retry stampedes)
+            jitter_ratio = secrets.SystemRandom().random()
 
         # Full jitter: random between 0.5 * capped and capped (or 0 to capped)
         delay = capped_backoff * (0.5 + 0.5 * jitter_ratio)

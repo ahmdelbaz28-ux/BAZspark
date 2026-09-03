@@ -152,18 +152,22 @@ def handle_workspace_model(payload: dict[str, Any], db: Database | None = None) 
     """Select, inspect, or bind CAD/BIM model context in workspace."""
     project_id = str(payload.get("project_id", "default_project")).strip()
     model_id = str(payload.get("model_id", "primary_model")).strip()
-    str(payload.get("action", "select")).lower()
+    action = str(payload.get("action", "select")).lower()
 
     if not project_id:
         raise ValueError("project_id must be a non-empty string")
 
     model_type = "BIM_AUTODESK_REVIT" if "revit" in model_id.lower() else "CAD_AUTOCAD_DWG"
 
+    if action not in ("select", "bind", "inspect"):
+        action = "select"
+
     audit_digest = _sha256_payload({
         "event_type": "WORKSPACE_MODEL_BOUND",
         "project_id": project_id,
         "model_id": model_id,
         "model_type": model_type,
+        "action": action,
         "timestamp": _now_iso(),
     })
 
@@ -279,8 +283,6 @@ def handle_governance_inspect(payload: dict[str, Any], db: Database | None = Non
 def handle_governance_validate(payload: dict[str, Any], db: Database | None = None) -> dict[str, Any]:
     """Execute comprehensive NFPA 72 compliance validation over project state."""
     project_id = str(payload.get("project_id", "default_project")).strip()
-    payload.get("rules", ["nfpa72_spacing", "voltage_drop", "battery_standby"])
-    payload.get("devices", [])
     width_m = float(payload.get("width_m", 10.0))
     length_m = float(payload.get("length_m", 15.0))
     ceiling_height_m = float(payload.get("ceiling_height_m", 3.0))

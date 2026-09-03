@@ -369,7 +369,7 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 		}
 	}, [applyRunUpdate]);
 
-	const connectWsRef = useRef<() => void>(() => {});
+	const connectWsRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
 	// WebSocket connection setup
 	const connectWs = useCallback(async () => {
@@ -436,7 +436,7 @@ export function useAgentRun(defaultProjectId: string = ""): UseAgentRunReturn {
 					reconnectAttemptsRef.current += 1;
 					setState((prev) => ({ ...prev, isReconnecting: true }));
 					reconnectTimerRef.current = setTimeout(() => {
-						connectWsRef.current();
+						void connectWsRef.current();
 					}, delay);
 				}
 			};

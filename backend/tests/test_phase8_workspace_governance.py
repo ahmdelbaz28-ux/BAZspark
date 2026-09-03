@@ -134,12 +134,22 @@ def test_handle_workspace_project(fresh_db: Database) -> None:
 
 def test_handle_workspace_model() -> None:
     """Test workspace.model handler."""
-    res = handle_workspace_model({"project_id": "proj-alpha", "model_id": "revit-bim-model-01"})
+    res = handle_workspace_model({"project_id": "proj-alpha", "model_id": "revit-bim-model-01", "action": "SELECT"})
     assert res["project_id"] == "proj-alpha"
     assert res["model_id"] == "revit-bim-model-01"
     assert res["model_type"] == "BIM_AUTODESK_REVIT"
     assert res["is_active"] is True
     assert len(res["audit_reference"]) == 64
+
+
+def test_handle_workspace_model_autocad_and_actions() -> None:
+    """Test workspace.model handler with AutoCAD DWG and BIND action."""
+    res = handle_workspace_model({"project_id": "proj-beta", "model_id": "cad-floor-01.dwg", "action": "BIND"})
+    assert res["project_id"] == "proj-beta"
+    assert res["model_id"] == "cad-floor-01.dwg"
+    assert res["model_type"] == "CAD_AUTOCAD_DWG"
+    assert res["is_active"] is True
+
 
 
 def test_handle_workspace_revision(fresh_db: Database) -> None:
