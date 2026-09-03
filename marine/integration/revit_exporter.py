@@ -52,7 +52,8 @@ from marine.core.types import DetectorPlacement, FireResistanceSpec
 
 
 def generate_revit_family(detector: DetectorPlacement) -> dict:
-    """Return a Revit family definition (JSON-serializable for OFP)."""
+    """Return a Revit family definition (JSON descriptor, not binary .rfa)."""
+    # JSON family descriptor for Revit API / OFP integration (not binary .rfa)
     return {
         "family_name": f"Marine_{detector.detector_type.value}",
         "category": "Fire Alarm Devices",
