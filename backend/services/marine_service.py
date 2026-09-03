@@ -155,7 +155,7 @@ class MarineService:
         etap_csv = export_etap_loads_csv(ship, power_spec)
         dxf_layers = generate_dxf_layer_definitions()
         dxf_entities = place_detector_entities(all_detectors) + "\n" + draw_zones(zones)
-        revit_families = [generate_revit_family(d) for d in all_detectors[:5]]  # sample
+        revit_families = [generate_revit_family(d) for d in all_detectors]
         revit_placements = [generate_revit_placement(d) for d in all_detectors]
         revit_divisions = [generate_revit_division(d) for d in divisions]
 

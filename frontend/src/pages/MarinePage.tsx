@@ -318,9 +318,13 @@ export function MarinePage() {
 		string,
 		unknown
 	> | null>(null);
-	const [, setFullDesignResult] = useState<Record<string, unknown> | null>(
+	const [fullDesignResult, setFullDesignResult] = useState<Record<
+		string,
+		unknown
+	> | null>(null);
+	const [revitExport, setRevitExport] = useState<Record<string, unknown> | null>(
 		null,
-	); // NOSONAR: fullDesignResult reserved for display
+	);
 
 	// ── Helper: Build Ship Payload (Memoized) ────────────────────────────
 	const buildShipPayload = useMemo(
@@ -350,6 +354,45 @@ export function MarinePage() {
 			classificationSociety,
 		],
 	);
+
+	// ── Memoized detector placement list & helpers ────────────────────────
+	const allDetectorsList = useMemo(() => {
+		if (
+			fullDesignResult &&
+			Array.isArray(
+				(fullDesignResult as Record<string, unknown>).detectors,
+			)
+		) {
+			return (fullDesignResult as Record<string, unknown>)
+				.detectors as Array<Record<string, unknown>>;
+		}
+		if (
+			detection &&
+			Array.isArray((detection as Record<string, unknown>).placements)
+		) {
+			return (detection as Record<string, unknown>)
+				.placements as Array<Record<string, unknown>>;
+		}
+		return [];
+	}, [fullDesignResult, detection]);
+
+	const getZoneDetectorsCount = useCallback(
+		(zoneId: string) => {
+			return allDetectorsList.filter(
+				(d) =>
+					String(d.zone_id).toLowerCase() ===
+					String(zoneId).toLowerCase(),
+			).length;
+		},
+		[allDetectorsList],
+	);
+
+	const familyCount = useMemo(() => {
+		if (typeof revitExport?.family_count === "number") {
+			return revitExport.family_count;
+		}
+		return allDetectorsList.length;
+	}, [revitExport, allDetectorsList]);
 
 	// Load GSAP dynamically for animations
 	useEffect(() => {
@@ -517,6 +560,12 @@ export function MarinePage() {
 			if (data.alarm_logic)
 				setAlarmLogic(data.alarm_logic as Record<string, unknown>);
 			if (data.power) setPowerDesign(data.power as Record<string, unknown>);
+			if (Array.isArray(data.detectors)) {
+				setRevitExport((prev) => ({
+					...prev,
+					family_count: (data.detectors as Array<unknown>).length,
+				}));
+			}
 			toast({
 				title: "Full SOLAS Design Pipeline Executed",
 				description:
@@ -715,10 +764,76 @@ export function MarinePage() {
 	const handleExportRevit = async () => {
 		setLoading("export-revit");
 		try {
-			const _res = await marineApi.exportRevit(buildShipPayload());
+			const activeZones =
+				zones.length > 0
+					? zones.map((z) => ({
+							zone_id: z.zone_id,
+							name: z.name,
+							space_category:
+								(z as Record<string, unknown>).space_category ||
+								"ACCOMMODATION",
+							deck: z.deck || "main",
+							area_m2: z.area_m2 || 100,
+							height_m: 2.5,
+							has_escape_route: true,
+							escape_route_count: 1,
+						}))
+					: [
+							{
+								zone_id: "MVZ-01",
+								name: "Accommodation & Navigation Bridge",
+								space_category: "ACCOMMODATION",
+								deck: "main",
+								area_m2: 450,
+								height_m: 2.8,
+								has_escape_route: true,
+								escape_route_count: 1,
+							},
+						];
+			const activeDetectors = (
+				allDetectorsList.length > 0
+					? allDetectorsList
+					: [
+							{
+								detector_id: "DET-01",
+								zone_id: activeZones[0].zone_id,
+								detector_type: "SMOKE_OPTICAL",
+								position_xyz_mm: [1000, 1000, 2500],
+								coverage_m2: 50,
+								mounting_height_m: 2.5,
+								rated_temp_c: null,
+								standard_reference: "SOLAS Reg. II-2/7",
+							},
+						]
+			).map((d, idx) => ({
+				detector_id:
+					(d.detector_id as string) || `DET-${idx + 1}`,
+				zone_id:
+					(d.zone_id as string) || activeZones[0].zone_id,
+				detector_type:
+					(d.detector_type as string) || "SMOKE_OPTICAL",
+				position_xyz_mm: (d.position_xyz_mm as [
+					number,
+					number,
+					number,
+				]) || [1000, 1000, 2500],
+				coverage_m2: (d.coverage_m2 as number) || 50,
+				mounting_height_m: (d.mounting_height_m as number) || 2.5,
+				rated_temp_c: (d.rated_temp_c as number) ?? null,
+				standard_reference:
+					(d.standard_reference as string) || "SOLAS Reg. II-2/7",
+			}));
+
+			const res = await marineApi.exportRevit({
+				zones: activeZones,
+				detector_placements: activeDetectors,
+				...buildShipPayload(),
+			});
+			const exportData = res as Record<string, unknown>;
+			setRevitExport(exportData);
 			toast({
 				title: "Revit BIM Families Exported",
-				description: "Exported BIM ship structures and fire safety components",
+				description: `Exported ${exportData?.family_count ?? activeDetectors.length} BIM fire safety components`,
 			});
 		} catch (err) {
 			console.error("Revit export failed:", err);
@@ -868,7 +983,7 @@ export function MarinePage() {
 						>
 							<svg
 								viewBox="0 0 1000 320"
-								className="w-full h-auto min-w-[700px]"
+								className="w-full h-auto"
 							>
 								{/* Waterline */}
 								<line
@@ -930,213 +1045,159 @@ export function MarinePage() {
 									strokeWidth="1"
 								/>
 
-								{/* MVZ Bulkhead Dividers (A-60 Rated) */}
-								<line
-									x1={280}
-									y1={40}
-									x2={280}
-									y2={250}
-									stroke="rgba(230,57,70,0.7)"
-									strokeWidth={2}
-									strokeDasharray="4 2"
-									className={alarmActive ? "marine-bulkhead--alarm" : ""}
-								/>
-								<line
-									x1={500}
-									y1={100}
-									x2={500}
-									y2={250}
-									stroke="rgba(230,57,70,0.7)"
-									strokeWidth={2}
-									strokeDasharray="4 2"
-									className={alarmActive ? "marine-bulkhead--alarm" : ""}
-								/>
-								<line
-									x1={720}
-									y1={100}
-									x2={720}
-									y2={250}
-									stroke="rgba(230,57,70,0.7)"
-									strokeWidth={2}
-									strokeDasharray="4 2"
-									className={alarmActive ? "marine-bulkhead--alarm" : ""}
-								/>
-
-								{/* MVZ Bulkhead Labels */}
-								<text
-									x={285}
-									y={32}
-									fill="rgba(230,57,70,0.8)"
-									fontSize={10}
-									fontFamily="monospace"
-								>
-									A-60 BULKHEAD
-								</text>
-								<text
-									x={505}
-									y={92}
-									fill="rgba(230,57,70,0.8)"
-									fontSize={10}
-									fontFamily="monospace"
-								>
-									A-60 BULKHEAD
-								</text>
-								<text
-									x={725}
-									y={92}
-									fill="rgba(230,57,70,0.8)"
-									fontSize={10}
-									fontFamily="monospace"
-								>
-									A-60 BULKHEAD
-								</text>
-
-								{/* Interactive MVZ Zone Clickable Overlays */}
-								{/* MVZ 1: Bridge & Accommodation */}
-								<rect
-									x="60"
-									y="45"
-									width="215"
-									height="145"
-									className={`marine-zone-overlay ${selectedZoneIndex === 0 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 0 ? "marine-zone-overlay--alarm" : ""}`}
-									onClick={() => setSelectedZoneIndex(0)}
-								/>
-								<text
-									x="80"
-									y="125"
-									fill="rgba(241,245,249,0.9)"
-									fontSize="12"
-									fontFamily="monospace"
-									fontWeight="bold"
-								>
-									MVZ 1: ACCOMMODATION
-								</text>
-								<text
-									x="80"
-									y="160"
-									fill="rgba(176,184,196,0.5)"
-									fontSize="10"
-									fontFamily="monospace"
-								>
-									Smoke Detectors: 24 | Fire Class: A-60
-								</text>
-
-								{/* MVZ 2: Engine Room & Machinery Space */}
-								<rect
-									x="285"
-									y="105"
-									width="210"
-									height="140"
-									className={`marine-zone-overlay ${selectedZoneIndex === 1 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 1 ? "marine-zone-overlay--alarm" : ""}`}
-									onClick={() => setSelectedZoneIndex(1)}
-								/>
-								<text
-									x="300"
-									y="150"
-									fill="rgba(241,245,249,0.9)"
-									fontSize="12"
-									fontFamily="monospace"
-									fontWeight="bold"
-								>
-									MVZ 2: ENGINE ROOM
-								</text>
-								<text
-									x="300"
-									y="175"
-									fill="rgba(201,168,76,0.7)"
-									fontSize="10"
-									fontFamily="monospace"
-								>
-									CO2 Flooding: 45 Cylinders
-								</text>
-
-								{/* MVZ 3: Cargo Hold #1 */}
-								<rect
-									x="505"
-									y="105"
-									width="210"
-									height="140"
-									className={`marine-zone-overlay ${selectedZoneIndex === 2 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 2 ? "marine-zone-overlay--alarm" : ""}`}
-									onClick={() => setSelectedZoneIndex(2)}
-								/>
-								<text
-									x="520"
-									y="150"
-									fill="rgba(241,245,249,0.9)"
-									fontSize="12"
-									fontFamily="monospace"
-									fontWeight="bold"
-								>
-									MVZ 3: CARGO HOLD 1
-								</text>
-								<text
-									x="520"
-									y="175"
-									fill="rgba(176,184,196,0.5)"
-									fontSize="10"
-									fontFamily="monospace"
-								>
-									Flame IR3: 8 | Smoke: 12
-								</text>
-
-								{/* MVZ 4: Cargo Hold #2 */}
-								<rect
-									x="725"
-									y="105"
-									width="220"
-									height="140"
-									className={`marine-zone-overlay ${selectedZoneIndex === 3 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 3 ? "marine-zone-overlay--alarm" : ""}`}
-									onClick={() => setSelectedZoneIndex(3)}
-								/>
-								<text
-									x="740"
-									y="150"
-									fill="rgba(241,245,249,0.9)"
-									fontSize="12"
-									fontFamily="monospace"
-									fontWeight="bold"
-								>
-									MVZ 4: CARGO HOLD 2
-								</text>
-								<text
-									x="740"
-									y="175"
-									fill="rgba(176,184,196,0.5)"
-									fontSize="10"
-									fontFamily="monospace"
-								>
-									Smoke Detectors: 16
-								</text>
-
-								{/* Detector Marker Circles */}
-								<circle cx="150" cy="120" r="5" className="marine-detector" />
-								<circle cx="380" cy="120" r="5" className="marine-detector" />
-								<circle cx="600" cy="120" r="5" className="marine-detector" />
-								<circle cx="820" cy="120" r="5" className="marine-detector" />
-
-								{/* Alarm Mode Animated Pulses */}
-								{alarmActive && (
-									<>
-										<circle
-											cx={380}
-											cy={120}
-											r={6}
-											fill="none"
-											stroke="#e63946"
-											strokeWidth={2}
-											className="marine-alarm-pulse"
+								{zones.length === 0 ? (
+									<g className="marine-viewport-empty-state">
+										<rect
+											x="200"
+											y="110"
+											width="600"
+											height="130"
+											rx="8"
+											fill="rgba(4,6,10,0.6)"
+											stroke="rgba(74,85,104,0.4)"
+											strokeDasharray="6 4"
 										/>
 										<text
-											x={350}
-											y={95}
-											fill="#e63946"
-											fontSize={11}
+											x="500"
+											y="160"
+											textAnchor="middle"
+											fill="rgba(201,168,76,0.9)"
+											fontSize="13"
 											fontFamily="monospace"
 											fontWeight="bold"
-											className="marine-alarm-text"
 										>
-											FIRE ALARM
+											NO MAIN VERTICAL ZONES DEFINED
 										</text>
+										<text
+											x="500"
+											y="185"
+											textAnchor="middle"
+											fill="rgba(176,184,196,0.6)"
+											fontSize="11"
+											fontFamily="monospace"
+										>
+											Click &quot;Divide Zones (SOLAS MVZ)&quot; or &quot;Run Full Marine Design Pipeline&quot; to populate vessel zones
+										</text>
+									</g>
+								) : (
+									<>
+										{/* Dynamic MVZ Bulkhead Dividers between zones */}
+										{zones.map((_, i) => {
+											if (i === zones.length - 1) return null;
+											const zoneWidth = 880 / zones.length;
+											const dividerX = 60 + (i + 1) * zoneWidth;
+											return (
+												<g key={`bulkhead-${i}`}>
+													<line
+														x1={dividerX}
+														y1={i === 0 ? 40 : 100}
+														x2={dividerX}
+														y2={250}
+														stroke="rgba(230,57,70,0.7)"
+														strokeWidth={2}
+														strokeDasharray="4 2"
+														className={alarmActive ? "marine-bulkhead--alarm" : ""}
+													/>
+													<text
+														x={dividerX + 4}
+														y={i === 0 ? 32 : 92}
+														fill="rgba(230,57,70,0.8)"
+														fontSize={9}
+														fontFamily="monospace"
+													>
+														A-60 BULKHEAD
+													</text>
+												</g>
+											);
+										})}
+
+										{/* Dynamic MVZ Zones & Clickable Overlays */}
+										{zones.map((zone, i) => {
+											const zoneWidth = 880 / zones.length;
+											const zoneX = 60 + i * zoneWidth;
+											const rectX = zoneX + 3;
+											const rectW = Math.max(zoneWidth - 6, 20);
+											const zoneY = (i === 0 && zones.length > 1) ? 45 : 105;
+											const zoneH = (i === 0 && zones.length > 1) ? 145 : 140;
+											const zoneDetectorsCount = getZoneDetectorsCount(zone.zone_id);
+											const isSelected = selectedZoneIndex === i;
+
+											return (
+												<g key={zone.zone_id || `zone-${i}`}>
+													<rect
+														x={rectX}
+														y={zoneY}
+														width={rectW}
+														height={zoneH}
+														className={`marine-zone-overlay ${isSelected ? "marine-zone-overlay--selected" : ""} ${alarmActive && isSelected ? "marine-zone-overlay--alarm" : ""}`}
+														onClick={() => setSelectedZoneIndex(i)}
+													/>
+													<text
+														x={rectX + 8}
+														y={zoneY + 32}
+														fill="rgba(241,245,249,0.9)"
+														fontSize={zoneWidth < 120 ? "10" : "11"}
+														fontFamily="monospace"
+														fontWeight="bold"
+													>
+														{zone.zone_id}
+													</text>
+													<text
+														x={rectX + 8}
+														y={zoneY + 50}
+														fill="rgba(176,184,196,0.8)"
+														fontSize={zoneWidth < 120 ? "9" : "10"}
+														fontFamily="monospace"
+													>
+														Detectors: {zoneDetectorsCount}
+													</text>
+													<text
+														x={rectX + 8}
+														y={zoneY + 68}
+														fill="rgba(201,168,76,0.8)"
+														fontSize={zoneWidth < 120 ? "9" : "10"}
+														fontFamily="monospace"
+													>
+														Class: {zone.required_fire_class || "A-60"}
+													</text>
+
+													{/* Detector Marker Circles */}
+													<circle
+														cx={rectX + rectW / 2}
+														cy={120}
+														r={5}
+														className="marine-detector"
+													/>
+
+													{/* Alarm Mode Animated Pulses */}
+													{alarmActive && isSelected && (
+														<>
+															<circle
+																cx={rectX + rectW / 2}
+																cy={120}
+																r={6}
+																fill="none"
+																stroke="#e63946"
+																strokeWidth={2}
+																className="marine-alarm-pulse"
+															/>
+															<text
+																x={rectX + rectW / 2}
+																y={95}
+																textAnchor="middle"
+																fill="#e63946"
+																fontSize={11}
+																fontFamily="monospace"
+																fontWeight="bold"
+																className="marine-alarm-text"
+															>
+																FIRE ALARM
+															</text>
+														</>
+													)}
+												</g>
+											);
+										})}
 									</>
 								)}
 							</svg>
@@ -1146,17 +1207,12 @@ export function MarinePage() {
 						<div className="p-4 rounded-md bg-[rgba(4,6,10,0.8)] border border-[rgba(74,85,104,0.5)] flex flex-col md:flex-row items-center justify-between gap-4">
 							<div className="flex items-center gap-3">
 								<span className="marine-badge marine-badge--brass">
-									SELECTED: MVZ-{selectedZoneIndex + 1}
+									SELECTED: {zones[selectedZoneIndex]?.zone_id || `MVZ-${selectedZoneIndex + 1}`}
 								</span>
 								<span className="text-xs text-[#b0b8c4] font-mono">
-									{selectedZoneIndex === 0 &&
-										"Accommodation & Navigation Bridge (SOLAS Reg 7.2)"}
-									{selectedZoneIndex === 1 &&
-										"Main Engine Room & Machinery Space (SOLAS Reg 10.5)"}
-									{selectedZoneIndex === 2 &&
-										"Cargo Hold 1 General Cargo (SOLAS Reg 10.7)"}
-									{selectedZoneIndex === 3 &&
-										"Cargo Hold 2 General Cargo (SOLAS Reg 10.7)"}
+									{zones[selectedZoneIndex]
+										? `${zones[selectedZoneIndex].name} (${zones[selectedZoneIndex].area_m2} m² · Class ${zones[selectedZoneIndex].required_fire_class || "A-60"})`
+										: "No active zone selected — divide vessel or run pipeline"}
 								</span>
 							</div>
 
@@ -2001,14 +2057,22 @@ export function MarinePage() {
 											variant="outline"
 											onClick={handleExportRevit}
 											disabled={loading === "export-revit"}
-											className="marine-btn marine-btn--secondary h-9 justify-start"
+											className="marine-btn marine-btn--secondary h-9 justify-between"
 										>
-											{loading === "export-revit" ? (
-												<Loader2 className="h-4 w-4 animate-spin mr-2" />
-											) : (
-												<Layers className="h-4 w-4 mr-2 text-[#c9a84c]" />
-											)}
-											Revit BIM Families
+											<div className="flex items-center">
+												{loading === "export-revit" ? (
+													<Loader2 className="h-4 w-4 animate-spin mr-2" />
+												) : (
+													<Layers className="h-4 w-4 mr-2 text-[#c9a84c]" />
+												)}
+												Revit BIM Families
+											</div>
+											<span
+												data-testid="marine-revit-family-count"
+												className="text-[10px] font-mono text-[#c9a84c] bg-[rgba(201,168,76,0.15)] px-1.5 py-0.5 rounded"
+											>
+												family_count = {familyCount}
+											</span>
 										</Button>
 									</div>
 
