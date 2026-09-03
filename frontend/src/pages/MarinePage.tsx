@@ -65,6 +65,8 @@ const SHIP_TYPES = [
 	{ value: "cargo", label: "Cargo Vessel (Bulk / General)" },
 	{ value: "tanker", label: "Oil / Chemical Tanker" },
 	{ value: "container", label: "Container Carrier" },
+	{ value: "offshore", label: "Offshore Unit (MODU Code §6.2)" },
+	{ value: "small_craft", label: "Small Commercial Craft (<24m, NFPA 302)" },
 ];
 
 const SOCIETIES = [
@@ -466,9 +468,16 @@ export function MarinePage() {
 					}
 				).zones || [];
 			setZones(zoneList);
-			toast({
+			const _shipType = buildShipPayload().ship.ship_type as string;
+			const _std =
+				_shipType === "offshore"
+					? "MODU Code §6.2 (A-60 class divisions, max 40 m per zone)"
+					: _shipType === "small_craft"
+						? "NFPA 302 (single craft zone)"
+						: "SOLAS Reg. II-2/2.2";
+				toast({
 				title: "MVZ Division Complete",
-				description: `Generated ${zoneList.length} Main Vertical Zones per SOLAS Reg. 2.2`,
+				description: `Generated ${zoneList.length} Main Vertical Zone(s) per ${_std}`,
 			});
 		} catch (err) {
 			toast({

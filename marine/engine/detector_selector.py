@@ -136,7 +136,28 @@ def calculate_detector_count(
         result.details["note"] = f"Detector type {detector_type.value} is per-run, not per-area."
         return result
 
-    base_count = math.ceil(zone.area_m2 / coverage)
+    # Use true polygon area via Shoelace formula when shape_polygon is provided.
+    zone_area = zone.area_m2
+    if zone.shape_polygon and len(zone.shape_polygon) >= 3:
+        poly = zone.shape_polygon
+        n = len(poly)
+        shoelace = 0.0
+        for _i in range(n):
+            _j = (_i + 1) % n
+            shoelace += poly[_i][0] * poly[_j][1]
+            shoelace -= poly[_j][0] * poly[_i][1]
+        calc_area = abs(shoelace) / 2.0
+        if calc_area > 0:
+            zone_area = calc_area
+    else:
+        _geom_warn = (
+            f"Zone {zone.zone_id} has no shape_polygon; "
+            "using sqrt(area_m2) square approximation."
+        )
+        result.details["geometry_warning"] = _geom_warn
+        result.warnings.append(_geom_warn)
+
+    base_count = math.ceil(zone_area / coverage)
     spares = math.ceil(base_count * 0.10)
     total = base_count + spares
 

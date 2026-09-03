@@ -108,14 +108,33 @@ def calculate_thermal_alarm_count(
 
     # Determine effective route length.
     if route_length_m is None:
-        # Fallback: derive from area assuming a square corridor footprint.
-        # This is a rough estimate — production designs should pass the
-        # actual route length from the GA plan.
-        route_length_m = math.sqrt(zone.area_m2) if zone.area_m2 > 0 else 0.0
-        result.warnings.append(
-            "route_length_m not provided — using sqrt(area_m2) as estimate. "
-            "Pass the actual route length from the GA plan for accuracy."
-        )
+        # Prefer a route_length_m stored on the zone object itself (ESCAPE_ROUTE zones
+        # may carry this from a GA plan import).
+        _zone_route_len = getattr(zone, "route_length_m", None)
+        if (
+            zone.space_category == SpaceCategory.ESCAPE_ROUTE
+            and _zone_route_len is not None
+            and _zone_route_len > 0
+        ):
+            route_length_m = _zone_route_len
+            result.warnings.append(
+                "route_length_m derived from zone.route_length_m attribute — "
+                "verify this matches the GA plan route length."
+            )
+        else:
+            # Final fallback: derive from area assuming a square corridor footprint.
+            # This is a rough estimate — production designs should pass the
+            # actual route length from the GA plan.
+            route_length_m = math.sqrt(zone.area_m2) if zone.area_m2 > 0 else 0.0
+            result.warnings.append(
+                "route_length_m not provided — using sqrt(area_m2) as estimate. "
+                "Pass the actual route length from the GA plan for accuracy."
+            )
+            result.details["geometry_warning"] = (
+                f"Zone {zone.zone_id}: route_length_m not supplied and zone "
+                "has no stored value; sqrt(area_m2) used as corridor-length proxy."
+            )
+
 
     # Linear spacing: alarms every 10 m, +1 for the start of the route.
     # BUGFIX v2: previously used int(area / spacing²) which truncated
