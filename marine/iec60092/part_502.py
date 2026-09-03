@@ -92,9 +92,23 @@ def place_detectors_grid(  # NOSONAR — S3776: cognitive complexity is inherent
     # Square-grid spacing = sqrt(coverage).
     spacing_m = min(math.sqrt(coverage), MAX_DETECTOR_SPACING_M)
 
-    # Assume zone is rectangular — derive length/width from area.
-    # (Real implementation would use the zone's actual polygon.)
-    side_m = math.sqrt(zone.area_m2)
+    # Use the zone's actual polygon area via Shoelace formula when available;
+    # otherwise fall back to the sqrt(area_m2) square approximation with a warning.
+    if zone.shape_polygon and len(zone.shape_polygon) >= 3:
+        _poly = zone.shape_polygon
+        _n = len(_poly)
+        _shoelace = 0.0
+        for _k in range(_n):
+            _l = (_k + 1) % _n
+            _shoelace += _poly[_k][0] * _poly[_l][1]
+            _shoelace -= _poly[_l][0] * _poly[_k][1]
+        _calc_area = abs(_shoelace) / 2.0
+        _effective_area = _calc_area if _calc_area > 0 else zone.area_m2
+    else:
+        _effective_area = zone.area_m2
+        # ComplianceResult callers (calculate_detector_count) record geometry_warning.
+
+    side_m = math.sqrt(_effective_area)
     rows = max(1, math.ceil(side_m / spacing_m))
     cols = max(1, math.ceil(side_m / spacing_m))
 

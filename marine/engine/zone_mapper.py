@@ -58,6 +58,14 @@ def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity 
         List of MarineZone objects — one per MVZ × deck.
 
     """
+    # MODU Code §6.2: OFFSHORE units use dedicated MVZ division rules.
+    from marine.core.types import ShipType  # noqa: PLC0415 — lazy import avoids circular dep
+
+    if ship.ship_type == ShipType.OFFSHORE:
+        from marine.modu.modu_code import divide_modu_into_main_vertical_zones  # noqa: PLC0415
+
+        return divide_modu_into_main_vertical_zones(ship_length_m, ship, deck_count)
+
     if ship.is_small_craft:
         # NFPA 302 craft: single zone, no MVZ division.
         return [
