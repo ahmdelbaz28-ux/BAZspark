@@ -1,10 +1,12 @@
 # BAZspark — Single Authoritative Project Status
 **Document ID:** STATUS-2026-09-03-FINAL-CLOSURE  
-**Status:** FINAL CLOSED — ALL PHASES COMPLETE — PRODUCTION CERTIFIED  
+**Status:** FINAL CLOSED — 14 Phases + Track A Complete — CI Verification Pending  
 **Last Updated:** 2026-09-03  
-**Baseline Hash:** `0bbf7b72` (main HEAD — chore(sonar): bump to 1.57.0 — PR #457)  
+**Baseline Hash:** `0bbf7b72` (main HEAD — PR #457: chore(sonar): bump to 1.57.0)  
 **Project Version:** `1.57.0`  
 **Active Branch:** `main` (clean, up to date with origin/main)
+
+> **Coverage Note:** SonarCloud New Code Coverage = 55.5% (threshold 80%) — this is a known Sonar baseline issue: ~77,856 lines classified as New Code due to absent prior analysis reference. Remediation: `sonar.projectVersion` bumped `1.56.0 → 1.57.0` per Owner-authorized baseline reset. Coverage metric is NOT claimed as PASS; only Reliability, Security, Maintainability gates (all A) and Bugs/Vulnerabilities (both 0) are claimed PASS.
 
 ---
 
@@ -26,11 +28,11 @@ BAZspark is an engineering copilot and digital twin platform for safety-critical
 | **Phase 8** | Workspace & Governance Capabilities (S1 – S5) | **PASS (FINAL)** | Forensic Gate 8 review (`6922845e`); 9 full contracts registered (`project`, `model`, `revision`, `inspect`, `validate`, `review`, `audit`, `artifact`, `report`); authority classes bounded to 4 plan classes; auto-derived tool schemas; generic planner AST purity preserved; 10/10 Gate 8 E2E scenarios passed with real audit IDs; visual handoff in UI; full test suite passing with zero regressions |
 | **Phase 9** | Engineering Capability Expansion (S1 – S6) | **PASS (FINAL)** | 12 deterministic REST kernels registered across 6 domains (`marine`, `facp`, `etap`, `digital_twin`, `copilot`, `bim/simulation`); zero client-side certified calculations; p95 latency < 250ms; 16 kernel reference tests + 9 E2E scenarios + 3 architecture tests passed |
 | **Phase 9b** | Tender Contracts & BOQ Traceability (S7 – S8) | **PASS (FINAL)** | 2 canonical tender contracts; 100% number traceability to BOQ & kernels; regional VAT support (EGP 14%, SAR 15%); SHA-256 artifact checksums; 1,540 pytest + 573 vitest + clean build passing |
-| **Phase 10** | Multi-Tenant RBAC & Audit Chain | **PASS (FINAL)** | Admin RBAC enforced; tamper-evident SHA-256 audit chaining; full suite passing |
-| **Phase 11** | ETAP Production Hardening / Resilience / Telemetry / Operational Readiness | **PASS (FINAL)** | Production telemetry, chaos resilience, and operational readiness delivered; governance reconciled per Owner approval |
-| **Phase 12** | Multi-Vendor Integration (UI Consolidation) | **PASS (FINAL)** | PR merged to main; frontend multi-vendor UI consolidated; branch `feature/phase-12-multi-vendor-integration` cleaned |
-| **Phase 13** | Security Hardening & Chaos Engineering | **PASS (FINAL)** | PR #454 merged (`d7fe6b8d`); IP trust semantics unified; WebSocket chaos lifecycle corrected; admin RBAC + chaos suites all green; Reliability A / Security A |
-| **Phase 14** | Post-Merge Forensic Verification & SonarCloud Quality Gate | **PASS (FINAL)** | PR #457 merged (`0bbf7b72`); `sonar.projectVersion` bumped `1.56.0 → 1.57.0` to reset Sonar leak period; `docs/SECURITY_INCIDENT_ROTATION.md` issued; CI on main: Push ✅ Bundle Size ✅ Secret Scanning ✅; branch hygiene complete |
+| **Phase 10** | External CAD Control + ETAP Live Integration (EXTERNAL_TRANSACTION) | **PASS (FINAL)** | External transaction protocol implemented; ETAP live integration delivered; CAD dispatch Principle 3 verified; full suite passing |
+| **Phase 11** | Result / Artifact / Visual Handoff | **PASS (FINAL)** | Artifact handoff pipeline delivered; visual result surfaces bound to authoritative run steps; Owner-approved governance reconciliation: ETAP production hardening scope reconciled to this phase per Phase 11 closure decision |
+| **Phase 12** | UI Consolidation | **PASS (FINAL)** | PR merged to main; frontend UI consolidated; multi-vendor interface unified under single control plane |
+| **Phase 13** | Security + Failure + Chaos | **PASS (FINAL)** | PR #454 merged (`d7fe6b8d`); IP trust semantics unified across limiter and auth middleware; WebSocket abrupt disconnect (code 1006) lifecycle corrected; admin RBAC + chaos suites all green; Reliability A / Security A |
+| **Phase 14** | Final Forensic Certification | **PASS (FINAL)** | PR #457 merged (`0bbf7b72`); `sonar.projectVersion` bumped `1.56.0 → 1.57.0`; `docs/SECURITY_INCIDENT_ROTATION.md` issued; CI on main (Push ✅ Bundle Size ✅ Secret Scanning ✅); branch hygiene: `fix/sonar-bump-1.57.0` auto-deleted post-merge |
 
 
 ---
