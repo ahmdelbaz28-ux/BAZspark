@@ -198,19 +198,29 @@ def get_config() -> MeezaConfig:
 
 # ── SQLite connection (shared with project DB) ──────────────────────────────
 
-_DB_PATH = os.environ.get(
-    "FIREAI_DATA_DIR",
-    os.path.join(os.path.dirname(__file__), "..", "..", "data"),
-)
-_DB_PATH = os.path.abspath(_DB_PATH)
-os.makedirs(_DB_PATH, exist_ok=True)
-_BILLING_DB_PATH = os.environ.get(
-    "MEEZA_DB_PATH",
-    os.path.join(_DB_PATH, "billing.sqlite"),
-)
+def _get_billing_db_path() -> str:
+    """Return the billing database path dynamically from the environment.
+
+    Allows tests to isolate their SQLite databases per-test via MEEZA_DB_PATH
+    without cross-test or cross-worker race conditions in pytest-xdist.
+    """
+    db_path = os.environ.get("MEEZA_DB_PATH")
+    if db_path:
+        return os.path.abspath(db_path)
+    data_dir = os.environ.get(
+        "FIREAI_DATA_DIR",
+        os.path.join(os.path.dirname(__file__), "..", "..", "data"),
+    )
+    data_dir = os.path.abspath(data_dir)
+    os.makedirs(data_dir, exist_ok=True)
+    return os.path.join(data_dir, "billing.sqlite")
+
+
+_BILLING_DB_PATH = _get_billing_db_path()
 
 _SCHEMA_LOCK = threading.Lock()
 _SCHEMA_INITIALIZED = False
+_INITIALIZED_DBS: set[str] = set()
 
 
 def _get_conn() -> sqlite3.Connection:
@@ -219,7 +229,9 @@ def _get_conn() -> sqlite3.Connection:
     WAL allows concurrent readers while a writer holds the lock — critical
     for the atomic UPDATE pattern used in fulfillment.
     """
-    conn = sqlite3.connect(_BILLING_DB_PATH, timeout=30.0, isolation_level=None)
+    db_path = _get_billing_db_path()
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=30.0, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
@@ -230,10 +242,11 @@ def _get_conn() -> sqlite3.Connection:
 def _init_schema() -> None:
     """Create tables if missing. Idempotent — safe to call on every request."""
     global _SCHEMA_INITIALIZED
-    if _SCHEMA_INITIALIZED:
+    db_path = _get_billing_db_path()
+    if db_path in _INITIALIZED_DBS:
         return
     with _SCHEMA_LOCK:
-        if _SCHEMA_INITIALIZED:
+        if db_path in _INITIALIZED_DBS:
             return
         with _get_conn() as conn:
             conn.executescript(
@@ -299,6 +312,7 @@ def _init_schema() -> None:
                 CREATE INDEX IF NOT EXISTS idx_evt_idem ON payment_events(idempotency_key);
                 """
             )
+        _INITIALIZED_DBS.add(db_path)
         _SCHEMA_INITIALIZED = True
 
 
@@ -1313,6 +1327,7 @@ def simulate_webhook(
 def reset_for_tests() -> None:
     """Drop all billing tables. TEST-ONLY — never call from production code."""
     global _SCHEMA_INITIALIZED, _CONFIG
+    db_path = _get_billing_db_path()
     with _SCHEMA_LOCK:
         with _get_conn() as conn:
             conn.executescript(
@@ -1320,5 +1335,6 @@ def reset_for_tests() -> None:
                 "DROP TABLE IF EXISTS payment_transactions;"
                 "DROP TABLE IF EXISTS orders;"
             )
+        _INITIALIZED_DBS.discard(db_path)
         _SCHEMA_INITIALIZED = False
         _CONFIG = None  # force re-read of env
