@@ -216,10 +216,7 @@ def _get_billing_db_path() -> str:
     return os.path.join(data_dir, "billing.sqlite")
 
 
-_BILLING_DB_PATH = _get_billing_db_path()
-
 _SCHEMA_LOCK = threading.Lock()
-_SCHEMA_INITIALIZED = False
 _INITIALIZED_DBS: set[str] = set()
 
 
@@ -230,7 +227,9 @@ def _get_conn() -> sqlite3.Connection:
     for the atomic UPDATE pattern used in fulfillment.
     """
     db_path = _get_billing_db_path()
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    dir_name = os.path.dirname(db_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=30.0, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
@@ -241,7 +240,6 @@ def _get_conn() -> sqlite3.Connection:
 
 def _init_schema() -> None:
     """Create tables if missing. Idempotent — safe to call on every request."""
-    global _SCHEMA_INITIALIZED
     db_path = _get_billing_db_path()
     if db_path in _INITIALIZED_DBS:
         return
@@ -313,7 +311,6 @@ def _init_schema() -> None:
                 """
             )
         _INITIALIZED_DBS.add(db_path)
-        _SCHEMA_INITIALIZED = True
 
 
 # ── Optional Redis Redlock (defense-in-depth for multi-instance) ────────────
@@ -1326,7 +1323,7 @@ def simulate_webhook(
 
 def reset_for_tests() -> None:
     """Drop all billing tables. TEST-ONLY — never call from production code."""
-    global _SCHEMA_INITIALIZED, _CONFIG
+    global _CONFIG
     db_path = _get_billing_db_path()
     with _SCHEMA_LOCK:
         with _get_conn() as conn:
@@ -1336,5 +1333,4 @@ def reset_for_tests() -> None:
                 "DROP TABLE IF EXISTS orders;"
             )
         _INITIALIZED_DBS.discard(db_path)
-        _SCHEMA_INITIALIZED = False
         _CONFIG = None  # force re-read of env
