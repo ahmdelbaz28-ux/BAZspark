@@ -69,7 +69,7 @@ dependencies = [
     # A1 (agent-platform-rebuild): direct declarations for packages the code
     # imports but previously relied on transitively (via mem0ai) or did not
     # declare at all — GraphRAG imported langchain-openai/langchain-neo4j.
-    "openai>=2,<3",
+    "openai>=2,<4",
     "langchain-openai>=1,<2",
     "langchain-neo4j>=0.4,<1",
     # A1/C2: official MCP Python SDK (tools/list + tools/call contract).
