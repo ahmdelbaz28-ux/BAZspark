@@ -291,7 +291,7 @@ jobs:
 
       - name: Configure kubectl
         if: steps.validate.outputs.deploy_skipped != 'true'
-        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d  # v5.1.0  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e  # v5.1.0  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
 
@@ -409,7 +409,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d  # v5.1.0  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e  # v5.1.0  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
 
