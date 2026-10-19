@@ -126,7 +126,7 @@ asyncio-mqtt>=0.16.0,<1.0.0
 # is stale — langfuse 3.x shipped in 2025 and the committed uv.lock already
 # resolves langfuse 4.14.3 (which depends on a patched langsmith). The range
 # below stays <5.0.0; no pin change required.
-langfuse>=2.0.0,<5.0.0  # lock resolves 4.14.3 (langsmith >= 0.8.18, GHSA-f4xh-w4cj-qxq8 fixed)
+langfuse>=2.0.0,<6.0.0  # lock resolves 4.14.3 (langsmith >= 0.8.18, GHSA-f4xh-w4cj-qxq8 fixed)
 
 # ── Test Dependencies (required for CI) ──────────────────────────────────────
 respx>=0.23.1,<1.0.0  # V270: HTTP mocking for httpx — used by test_external_api_adapters.py
