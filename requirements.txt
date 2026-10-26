@@ -92,7 +92,7 @@ langgraph-checkpoint-sqlite>=3.0.1,<4.0.0
 # ── Parsing & Geometry (also in [parsing] extras in pyproject.toml) ─────────
 shapely>=2.0.0,<3.0.0
 ezdxf>=1.0.0,<2.0.0
-pymupdf>=1.23.0,<2.0.0
+pymupdf>=1.23.0,<3.0.0
 reportlab>=4.0.0,<6.0.0
 numpy>=1.24.0,<3.0.0
 scipy>=1.7.3,<2.0.0  # compatible with Python 3.8
